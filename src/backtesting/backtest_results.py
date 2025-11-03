@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from datetime import datetime
 import numpy as np
+import json
 
 
 @dataclass
@@ -233,3 +234,13 @@ class BacktestResults:
             "volatility": self._calculate_volatility(),
             "performance_rating": self._get_performance_rating(),
         }
+
+    def save_to_json(self, filepath: str) -> None:
+        """
+        Save backtest results to a JSON file.
+
+        Args:
+            filepath: Path to save the JSON file
+        """
+        with open(filepath, 'w') as f:
+            json.dump(self.to_dict(), f, indent=2)
