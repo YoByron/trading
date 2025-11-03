@@ -12,6 +12,10 @@ from datetime import datetime, date
 from pathlib import Path
 import alpaca_trade_api as tradeapi
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from src.utils.data_collector import DataCollector
+
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5")
 ALPACA_SECRET = os.getenv(
@@ -303,6 +307,16 @@ def main():
     print(f"💰 Equity: ${perf['equity']:,.2f}")
     print(f"📈 P/L: ${perf['pl']:+,.2f} ({perf['pl_pct']:+.2f}%)")
     print(f"💵 Cash: ${perf['cash']:,.2f}")
+
+    # Collect historical data for ML training
+    print("\n📊 Collecting historical data for ML training...")
+    try:
+        collector = DataCollector(data_dir="data/historical")
+        symbols = ["SPY", "QQQ", "VOO", "NVDA", "GOOGL"]
+        collector.collect_daily_data(symbols, lookback_days=30)
+        print("✅ Historical data collection complete")
+    except Exception as e:
+        print(f"⚠️  Data collection failed: {str(e)}")
 
     # Summary
     print("\n" + "=" * 70)

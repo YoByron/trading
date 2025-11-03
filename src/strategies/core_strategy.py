@@ -74,6 +74,10 @@ class MomentumScore:
     volatility: float
     sharpe_ratio: float
     rsi: float
+    macd_value: float
+    macd_signal: float
+    macd_histogram: float
+    volume_ratio: float
     sentiment_boost: float
     timestamp: datetime
 
@@ -133,6 +137,11 @@ class CoreStrategy:
     RSI_PERIOD = 14
     RSI_OVERSOLD = 30
     RSI_OVERBOUGHT = 70
+
+    # MACD parameters
+    MACD_FAST_PERIOD = 12
+    MACD_SLOW_PERIOD = 26
+    MACD_SIGNAL_PERIOD = 9
 
     # Risk parameters
     DEFAULT_STOP_LOSS_PCT = 0.05  # 5% trailing stop
@@ -382,6 +391,22 @@ class CoreStrategy:
             elif self.RSI_OVERSOLD < rsi < 60:
                 momentum_score += 3
 
+            # MACD adjustment (momentum confirmation)
+            macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+            if macd_histogram > 0:  # Bullish MACD (histogram above zero)
+                momentum_score += 8
+            elif macd_histogram < 0:  # Bearish MACD (histogram below zero)
+                momentum_score -= 8
+
+            # Volume confirmation (high volume = stronger signal)
+            volume_ratio = self._calculate_volume_ratio(hist)
+            if volume_ratio > 1.5:  # Volume 50% above average
+                momentum_score += 10
+            elif volume_ratio > 1.2:  # Volume 20% above average
+                momentum_score += 5
+            elif volume_ratio < 0.8:  # Volume 20% below average (weak signal)
+                momentum_score -= 5
+
             # Normalize to 0-100 scale
             momentum_score = max(0, min(100, momentum_score))
 
@@ -389,7 +414,9 @@ class CoreStrategy:
                 f"{symbol} momentum: {momentum_score:.2f} "
                 f"(1m: {returns_1m*100:.2f}%, 3m: {returns_3m*100:.2f}%, "
                 f"6m: {returns_6m*100:.2f}%, vol: {volatility:.2f}, "
-                f"sharpe: {sharpe_ratio:.2f}, rsi: {rsi:.2f})"
+                f"sharpe: {sharpe_ratio:.2f}, rsi: {rsi:.2f}, "
+                f"macd: {macd_value:.4f}, signal: {macd_signal:.4f}, "
+                f"histogram: {macd_histogram:.4f}, vol_ratio: {volume_ratio:.2f})"
             )
 
             return momentum_score
@@ -937,6 +964,10 @@ class CoreStrategy:
 
                 rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
 
+                # Calculate MACD and volume
+                macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+                volume_ratio = self._calculate_volume_ratio(hist)
+
                 score_obj = MomentumScore(
                     symbol=symbol,
                     score=adjusted_score,
@@ -946,6 +977,10 @@ class CoreStrategy:
                     volatility=volatility,
                     sharpe_ratio=sharpe_ratio,
                     rsi=rsi,
+                    macd_value=macd_value,
+                    macd_signal=macd_signal,
+                    macd_histogram=macd_histogram,
+                    volume_ratio=volume_ratio,
                     sentiment_boost=sentiment_boost,
                     timestamp=datetime.now(),
                 )
@@ -1039,6 +1074,58 @@ class CoreStrategy:
         rsi = 100 - (100 / (1 + rs))
 
         return float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
+
+    def _calculate_macd(
+        self, prices: pd.Series
+    ) -> Tuple[float, float, float]:
+        """
+        Calculate MACD (Moving Average Convergence Divergence).
+
+        Args:
+            prices: Price series
+
+        Returns:
+            Tuple of (macd_value, signal_line, histogram)
+        """
+        # Calculate exponential moving averages
+        ema_12 = prices.ewm(span=self.MACD_FAST_PERIOD, adjust=False).mean()
+        ema_26 = prices.ewm(span=self.MACD_SLOW_PERIOD, adjust=False).mean()
+
+        # MACD line
+        macd_line = ema_12 - ema_26
+
+        # Signal line
+        signal_line = macd_line.ewm(span=self.MACD_SIGNAL_PERIOD, adjust=False).mean()
+
+        # MACD histogram
+        histogram = macd_line - signal_line
+
+        return (
+            float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
+            float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
+            float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+        )
+
+    def _calculate_volume_ratio(self, hist: pd.DataFrame) -> float:
+        """
+        Calculate volume ratio (current vs 20-day average).
+
+        Args:
+            hist: Historical price DataFrame
+
+        Returns:
+            Volume ratio (current / 20-day average)
+        """
+        if len(hist) < 20:
+            return 1.0
+
+        current_volume = hist["Volume"].iloc[-1]
+        avg_volume = hist["Volume"].iloc[-20:].mean()
+
+        if avg_volume == 0:
+            return 1.0
+
+        return current_volume / avg_volume
 
     def _validate_trade(
         self, symbol: str, quantity: float, price: float, sentiment: MarketSentiment
