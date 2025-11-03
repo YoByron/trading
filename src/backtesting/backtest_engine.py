@@ -17,11 +17,12 @@ Created: 2025-11-02
 """
 
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import pandas as pd
 import numpy as np
-import yfinance as yf
+import alpaca_trade_api as tradeapi
 
 from src.backtesting.backtest_results import BacktestResults
 
@@ -170,22 +171,53 @@ class BacktestEngine:
 
     def _preload_price_data(self) -> None:
         """
-        Pre-load historical price data for all ETFs to improve performance.
+        Pre-load historical price data for all ETFs using Alpaca API.
+        More reliable than yfinance free tier.
         """
-        logger.info("Pre-loading historical price data...")
+        logger.info("Pre-loading historical price data from Alpaca...")
+
+        # Initialize Alpaca client
+        alpaca_key = os.getenv("ALPACA_API_KEY")
+        alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
+
+        if not alpaca_key or not alpaca_secret:
+            logger.error("Alpaca API credentials not found. Set ALPACA_API_KEY and ALPACA_SECRET_KEY")
+            return
+
+        api = tradeapi.REST(alpaca_key, alpaca_secret, "https://paper-api.alpaca.markets")
 
         etf_universe = getattr(self.strategy, "etf_universe", ["SPY", "QQQ", "VOO"])
 
         for symbol in etf_universe:
             try:
-                ticker = yf.Ticker(symbol)
-                # Download with extra buffer for momentum calculations
-                hist = ticker.history(
-                    start=self.start_date - timedelta(days=200),
-                    end=self.end_date + timedelta(days=1),
-                )
-                self.price_cache[symbol] = hist
-                logger.info(f"Loaded {len(hist)} bars for {symbol}")
+                # Get historical bars from Alpaca
+                # Add 200 day buffer for momentum calculations
+                start_with_buffer = (self.start_date - timedelta(days=200)).strftime("%Y-%m-%d")
+                end_with_buffer = (self.end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+
+                bars = api.get_bars(
+                    symbol,
+                    tradeapi.TimeFrame.Day,
+                    start=start_with_buffer,
+                    end=end_with_buffer,
+                    adjustment='all'
+                ).df
+
+                if bars is not None and not bars.empty:
+                    # Rename columns to match yfinance format
+                    bars = bars.rename(columns={
+                        'open': 'Open',
+                        'high': 'High',
+                        'low': 'Low',
+                        'close': 'Close',
+                        'volume': 'Volume'
+                    })
+
+                    self.price_cache[symbol] = bars
+                    logger.info(f"Loaded {len(bars)} bars for {symbol} from Alpaca")
+                else:
+                    logger.warning(f"No data returned for {symbol}")
+
             except Exception as e:
                 logger.warning(f"Failed to load data for {symbol}: {e}")
 
@@ -222,14 +254,18 @@ class BacktestEngine:
         # Get the best ETF to buy from strategy
         try:
             # Calculate momentum scores for this date
-            sentiment = self.strategy._get_market_sentiment()
+            # Skip sentiment in backtest mode (would require live API calls)
             momentum_scores = []
 
             for symbol in self.strategy.etf_universe:
                 try:
                     # Get historical data up to this date
                     hist = self._get_historical_data(symbol, date)
-                    if hist is None or len(hist) < 50:
+                    if hist is None:
+                        logger.warning(f"{date_str}: No historical data for {symbol}")
+                        continue
+                    if len(hist) < 50:
+                        logger.warning(f"{date_str}: Insufficient data for {symbol}: {len(hist)} bars (need 50)")
                         continue
 
                     # Calculate momentum score using strategy's method
@@ -237,13 +273,16 @@ class BacktestEngine:
                     score = self._calculate_momentum_for_date(symbol, date)
                     if score is not None:
                         momentum_scores.append({"symbol": symbol, "score": score})
+                        logger.info(f"{date_str}: {symbol} momentum={score:.2f}")
+                    else:
+                        logger.warning(f"{date_str}: Momentum calculation returned None for {symbol}")
 
                 except Exception as e:
-                    logger.debug(f"Failed to calculate momentum for {symbol}: {e}")
+                    logger.warning(f"Failed to calculate momentum for {symbol}: {e}")
                     continue
 
             if not momentum_scores:
-                logger.debug(f"{date_str}: No valid momentum scores")
+                logger.warning(f"{date_str}: No valid momentum scores")
                 return
 
             # Select best ETF
@@ -307,6 +346,12 @@ class BacktestEngine:
             return None
 
         hist = self.price_cache[symbol]
+
+        # Convert date to timezone-aware datetime for comparison with Alpaca data
+        if date.tzinfo is None:
+            import pytz
+            date = pytz.UTC.localize(date)
+
         # Filter to only include data up to the simulation date
         hist_filtered = hist[hist.index <= date]
 
