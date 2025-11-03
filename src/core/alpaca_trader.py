@@ -28,7 +28,7 @@ from decimal import Decimal
 
 import alpaca_trade_api as tradeapi
 from alpaca_trade_api.rest import APIError, REST
-from alpaca_trade_api.entity import Order, Position, Account, BarSet
+from alpaca_trade_api.entity import Order, Position, Account
 
 
 # Configure logging
