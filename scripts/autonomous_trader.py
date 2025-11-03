@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-AUTONOMOUS DAILY TRADER - FIBONACCI STRATEGY
+AUTONOMOUS DAILY TRADER - INTELLIGENT POSITION SIZING
 Runs automatically every day at market open
-Executes Fibonacci-sequence daily investments: $1, $2, $3, $5, $8, $13...
-Focus: Disruptive Innovation (NVDA, GOOGL)
+Uses portfolio-based position sizing with risk management
+Focus: Momentum + Volume confirmation (MACD, RSI, Volume ratio)
 """
 import os
 import sys
@@ -24,30 +24,43 @@ ALPACA_SECRET = os.getenv(
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
-# Fibonacci sequence for daily investments
-FIBONACCI_SEQUENCE = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377]
+# Position sizing configuration
+DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
+MIN_POSITION_SIZE = 10.0  # Minimum $10 per trade (Alpaca requirement)
+MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
 
 # Initialize Alpaca
 api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
 
 
-def get_fibonacci_investment(day):
+def calculate_intelligent_position_size(account_value, risk_per_trade_pct=DEFAULT_RISK_PER_TRADE_PCT):
     """
-    Get Fibonacci investment amount for given day.
+    Calculate position size based on portfolio value and risk management principles.
+
+    WORLD-CLASS APPROACH:
+    - Scales with portfolio (natural compounding)
+    - Risk-based position sizing (Kelly Criterion derivative)
+    - Professional money management
 
     Args:
-        day: Challenge day (1-based)
+        account_value: Current portfolio value
+        risk_per_trade_pct: Percentage of portfolio to risk per trade (default: 1%)
 
     Returns:
-        Daily investment amount in dollars
+        Daily total investment amount in dollars
     """
-    if day <= 0:
-        return 0
-    if day <= len(FIBONACCI_SEQUENCE):
-        return float(FIBONACCI_SEQUENCE[day - 1])
+    # Base calculation: risk_pct of portfolio
+    # With 2 tiers trading daily (Tier 1 + Tier 2 = ~80% of total)
+    # We'll allocate roughly 2% of portfolio daily (1% per tier)
+    base_investment = account_value * (risk_per_trade_pct / 100)
 
-    # If beyond sequence, keep using last value
-    return float(FIBONACCI_SEQUENCE[-1])
+    # Apply limits
+    min_investment = MIN_POSITION_SIZE  # Practical minimum
+    max_investment = account_value * (MAX_POSITION_SIZE_PCT / 100)
+
+    position_size = max(min_investment, min(base_investment * 2, max_investment))
+
+    return round(position_size, 2)
 
 
 def log_trade(trade_data):
@@ -201,7 +214,7 @@ def track_daily_deposit(daily_amount):
         with open(tracking_file, "r") as f:
             data = json.load(f)
 
-    # Add Fibonacci-based amounts to each
+    # Add daily allocation to reserves
     data["ipo_reserve"] += ipo_amount
     data["crowdfunding_reserve"] += crowdfunding_amount
     data["history"].append(
@@ -255,13 +268,13 @@ def update_performance_log():
 
 
 def main():
-    """Main autonomous trading execution with Fibonacci strategy"""
+    """Main autonomous trading execution with intelligent position sizing"""
     print("\n" + "=" * 70)
-    print("🤖 AUTONOMOUS DAILY TRADER - FIBONACCI STRATEGY")
+    print("🤖 AUTONOMOUS DAILY TRADER - WORLD-CLASS AI SYSTEM")
     print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}")
     print("=" * 70)
 
-    # Calculate current challenge day
+    # Calculate current trading day
     challenge_file = DATA_DIR / "challenge_start.json"
 
     if not challenge_file.exists():
@@ -280,12 +293,18 @@ def main():
         today = date.today()
         current_day = (today - start_date).days + 1
 
-    # Calculate Fibonacci investment for today
-    daily_investment = get_fibonacci_investment(current_day)
+    # Get current account value
+    account = api.get_account()
+    account_value = float(account.equity)
 
-    print(f"📊 Challenge Day: {current_day} of 30")
-    print(f"💰 Fibonacci Investment: ${daily_investment:.2f}")
-    print(f"📈 Breakdown: Core 60% | Growth 20% | IPO 10% | Crowdfunding 10%")
+    # Calculate intelligent position sizing based on portfolio value
+    daily_investment = calculate_intelligent_position_size(account_value)
+
+    print(f"📊 Trading Day: {current_day}")
+    print(f"💰 Portfolio Value: ${account_value:,.2f}")
+    print(f"📈 Daily Investment: ${daily_investment:.2f} ({(daily_investment/account_value*100):.2f}% of portfolio)")
+    print(f"🎯 Strategy: Momentum (MACD + RSI + Volume)")
+    print(f"📊 Breakdown: Core 60% | Growth 20% | IPO 10% | Crowdfunding 10%")
     print("=" * 70)
 
     # Check if market is open
@@ -293,7 +312,7 @@ def main():
     if not clock.is_open:
         print("⚠️  Market is closed. Order will execute at next open.")
 
-    # Execute strategies with Fibonacci allocation
+    # Execute strategies with intelligent position sizing
     tier1_success = execute_tier1(daily_investment)
     tier2_success = execute_tier2(daily_investment)
     track_daily_deposit(daily_investment)
