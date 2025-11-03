@@ -42,3 +42,8 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Persistent State Management
+# Allow system state to be committed for cross-machine continuity
+!data/.gitkeep
+!data/system_state.json
