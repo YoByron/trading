@@ -407,10 +407,10 @@ class IPOStrategy:
 
 Company: {company.name} ({company.ticker})
 Industry: {company.industry}
-Valuation: ${company.valuation:,.0f} if company.valuation else 'N/A'}
-Revenue: ${company.revenue:,.0f} if company.revenue else 'N/A'}
-Revenue Growth: {company.revenue_growth}% if company.revenue_growth else 'N/A'
-Net Income: ${company.net_income:,.0f} if company.net_income else 'N/A'}
+Valuation: ${company.valuation:,.0f if company.valuation else 0}
+Revenue: ${company.revenue:,.0f if company.revenue else 0}
+Revenue Growth: {company.revenue_growth if company.revenue_growth else 'N/A'}%
+Net Income: ${company.net_income:,.0f if company.net_income else 0}
 Underwriters: {', '.join(company.underwriters)}
 
 Business Model: {company.business_model or 'N/A'}
@@ -455,10 +455,10 @@ Be direct and analytical. Focus on facts over speculation."""
 
 Company: {company.name} ({company.ticker})
 Industry: {company.industry}
-Valuation: ${company.valuation:,.0f} if company.valuation else 'N/A'}
-Revenue: ${company.revenue:,.0f} if company.revenue else 'N/A'}
-Revenue Growth: {company.revenue_growth}% if company.revenue_growth else 'N/A'
-Net Income: ${company.net_income:,.0f} if company.net_income else 'N/A'}
+Valuation: ${company.valuation:,.0f if company.valuation else 0}
+Revenue: ${company.revenue:,.0f if company.revenue else 0}
+Revenue Growth: {company.revenue_growth if company.revenue_growth else 'N/A'}%
+Net Income: ${company.net_income:,.0f if company.net_income else 0}
 Underwriters: {', '.join(company.underwriters)}
 
 Business Model: {company.business_model or 'N/A'}
