@@ -72,12 +72,25 @@ class AlpacaTrader:
     Attributes:
         api: Alpaca REST API client instance
         paper: Boolean indicating if using paper trading (True) or live trading (False)
+        daily_investment: Expected daily investment amount from .env (for validation)
 
     Environment Variables:
         ALPACA_API_KEY: API key for authentication
         ALPACA_SECRET_KEY: Secret key for authentication
         APCA_API_BASE_URL: Base URL for API (optional, defaults to paper/live URL)
+        DAILY_INVESTMENT: Expected daily investment amount (default: 10.0)
     """
+
+    # Tier allocation mapping (must match .env and strategy configuration)
+    TIER_ALLOCATIONS = {
+        "T1_CORE": 0.60,      # 60% of daily investment
+        "T2_GROWTH": 0.20,    # 20% of daily investment
+        "T3_IPO": 0.10,       # 10% of daily investment
+        "T4_CROWD": 0.10,     # 10% of daily investment
+    }
+
+    # Safety multiplier: reject orders >10x expected amount
+    MAX_ORDER_MULTIPLIER = 10.0
 
     def __init__(self, paper: bool = True) -> None:
         """
@@ -99,6 +112,10 @@ class AlpacaTrader:
         # Get API credentials from environment variables
         api_key = os.getenv("ALPACA_API_KEY")
         secret_key = os.getenv("ALPACA_SECRET_KEY")
+
+        # Get daily investment amount for validation
+        self.daily_investment = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+        logger.info(f"Daily investment configured: ${self.daily_investment:.2f}")
 
         if not api_key or not secret_key:
             raise AlpacaTraderError(
@@ -139,6 +156,75 @@ class AlpacaTrader:
         except Exception as e:
             logger.error(f"Unexpected error during initialization: {e}")
             raise AlpacaTraderError(f"Initialization failed: {e}") from e
+
+    def validate_order_amount(
+        self, symbol: str, amount: float, tier: Optional[str] = None
+    ) -> None:
+        """
+        Validate order amount is reasonable to prevent catastrophic errors.
+
+        This method prevents bugs like the Nov 3 incident where $1,600 was
+        deployed instead of $8 (200x too large). It checks:
+        1. Amount is not more than 10x expected for the tier
+        2. Warns if amount is 5x-10x expected (suspicious but allowed)
+
+        Args:
+            symbol: Stock or ETF symbol
+            amount: Dollar amount being ordered
+            tier: Trading tier (T1_CORE, T2_GROWTH, T3_IPO, T4_CROWD) or None
+
+        Raises:
+            OrderExecutionError: If amount exceeds 10x expected amount
+
+        Example:
+            >>> trader = AlpacaTrader()
+            >>> trader.validate_order_amount('SPY', 6.0, 'T1_CORE')  # PASS
+            >>> trader.validate_order_amount('SPY', 600.0, 'T1_CORE')  # ERROR
+        """
+        # Determine expected amount based on tier
+        if tier and tier in self.TIER_ALLOCATIONS:
+            expected_amount = self.daily_investment * self.TIER_ALLOCATIONS[tier]
+            tier_name = tier
+        else:
+            # If no tier specified, use full daily investment as baseline
+            expected_amount = self.daily_investment
+            tier_name = "UNSPECIFIED"
+
+        # Calculate maximum allowed (10x tolerance)
+        max_allowed = expected_amount * self.MAX_ORDER_MULTIPLIER
+
+        # CRITICAL: Reject orders that are too large
+        if amount > max_allowed:
+            error_msg = (
+                f"🚨 ORDER REJECTED FOR SAFETY 🚨\n"
+                f"Symbol: {symbol}\n"
+                f"Order amount: ${amount:.2f}\n"
+                f"Expected amount: ${expected_amount:.2f} (tier: {tier_name})\n"
+                f"Maximum allowed: ${max_allowed:.2f} ({self.MAX_ORDER_MULTIPLIER}x expected)\n"
+                f"This order is {amount/expected_amount:.1f}x expected - appears to be a bug.\n"
+                f"REFUSING to execute to prevent financial loss."
+            )
+            logger.error(error_msg)
+            raise OrderExecutionError(error_msg)
+
+        # WARNING: Orders that are 5x-10x expected (suspicious)
+        warning_threshold = expected_amount * 5.0
+        if amount > warning_threshold:
+            warning_msg = (
+                f"⚠️  SUSPICIOUS ORDER SIZE ⚠️\n"
+                f"Symbol: {symbol}\n"
+                f"Order amount: ${amount:.2f}\n"
+                f"Expected amount: ${expected_amount:.2f} (tier: {tier_name})\n"
+                f"This order is {amount/expected_amount:.1f}x expected.\n"
+                f"Proceeding with caution..."
+            )
+            logger.warning(warning_msg)
+        else:
+            # Normal order - log success
+            logger.info(
+                f"✅ Order validation passed: ${amount:.2f} <= ${max_allowed:.2f} "
+                f"(expected: ${expected_amount:.2f}, tier: {tier_name})"
+            )
 
     def get_account_info(self) -> Dict[str, Any]:
         """
@@ -197,7 +283,7 @@ class AlpacaTrader:
             raise AccountError(f"Unexpected error: {e}") from e
 
     def execute_order(
-        self, symbol: str, amount_usd: float, side: str = "buy"
+        self, symbol: str, amount_usd: float, side: str = "buy", tier: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute a market order with fractional shares based on USD amount.
@@ -206,6 +292,7 @@ class AlpacaTrader:
             symbol: Stock or ETF symbol (e.g., 'SPY', 'AAPL')
             amount_usd: Dollar amount to trade (e.g., 100.0 for $100)
             side: Order side - 'buy' or 'sell'. Default is 'buy'.
+            tier: Trading tier for validation (T1_CORE, T2_GROWTH, T3_IPO, T4_CROWD)
 
         Returns:
             Dictionary containing order information with keys:
@@ -220,12 +307,12 @@ class AlpacaTrader:
                 - filled_avg_price: Average fill price
 
         Raises:
-            OrderExecutionError: If order execution fails.
+            OrderExecutionError: If order execution fails or validation fails.
             ValueError: If parameters are invalid.
 
         Example:
             >>> trader = AlpacaTrader()
-            >>> order = trader.execute_order('SPY', 100.0, side='buy')
+            >>> order = trader.execute_order('SPY', 6.0, side='buy', tier='T1_CORE')
             >>> print(f"Order {order['id']} submitted for ${order['notional']}")
         """
         # Validate inputs
@@ -236,6 +323,9 @@ class AlpacaTrader:
             raise ValueError(f"Amount must be positive. Got {amount_usd}")
 
         symbol = symbol.upper().strip()
+
+        # CRITICAL: Validate order amount before proceeding
+        self.validate_order_amount(symbol, amount_usd, tier)
 
         try:
             # Check account status before placing order
