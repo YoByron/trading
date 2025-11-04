@@ -279,7 +279,7 @@ class CoreStrategy:
             if self.alpaca_trader:
                 try:
                     executed_order = self.alpaca_trader.execute_order(
-                        symbol=best_etf, amount_usd=self.daily_allocation, side="buy"
+                        symbol=best_etf, amount_usd=self.daily_allocation, side="buy", tier="T1_CORE"
                     )
                     logger.info(f"Alpaca order executed: {executed_order['id']}")
 
