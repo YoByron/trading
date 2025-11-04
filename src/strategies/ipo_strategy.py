@@ -140,7 +140,7 @@ class IPOStrategy:
 
     def __init__(
         self,
-        data_dir: str = "/Users/ganapolsky_i/workspace/git/igor/trading/data/ipo",
+        data_dir: Optional[str] = None,
         daily_deposit: float = 1.0,
         anthropic_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None
@@ -149,11 +149,16 @@ class IPOStrategy:
         Initialize the IPO Strategy.
 
         Args:
-            data_dir: Directory for storing IPO analysis data
+            data_dir: Directory for storing IPO analysis data (defaults to project_root/data/ipo)
             daily_deposit: Daily deposit amount in dollars (default $1.00)
             anthropic_api_key: Anthropic API key for Claude analysis
             openai_api_key: OpenAI API key for GPT-4 analysis
         """
+        # Use project root if data_dir not specified
+        if data_dir is None:
+            project_root = Path(__file__).parent.parent.parent
+            data_dir = project_root / "data" / "ipo"
+
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
