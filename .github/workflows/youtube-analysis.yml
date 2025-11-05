@@ -78,16 +78,12 @@ jobs:
           # Stage any new analysis reports or cache files
           git add docs/youtube_analysis/ data/youtube_cache/ || true
 
-          # Create commit with timestamp
-          git commit -m "chore: Update watchlist from YouTube analysis
+          # Create commit with simple message
+          TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          git commit -m "chore: Update watchlist from YouTube analysis - ${TIMESTAMP}
 
-Automated watchlist update from YouTube video monitoring.
-
-Run date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-Workflow: youtube-analysis.yml
-Triggered: ${{ github.event_name }}
-
-Generated with GitHub Actions"
+          Automated watchlist update from monitoring 5 financial channels.
+          Triggered by: ${{ github.event_name }}"
 
           # Push to main
           git push origin main

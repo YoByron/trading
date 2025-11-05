@@ -17,6 +17,10 @@ beautifulsoup4==4.12.2
 selenium==4.15.0
 lxml==4.9.3
 
+# YouTube Monitoring
+youtube-transcript-api==1.2.3
+yt-dlp==2025.10.22
+
 # Configuration
 python-dotenv==1.0.0
 
