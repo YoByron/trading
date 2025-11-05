@@ -2,10 +2,12 @@ name: YouTube Video Analysis
 
 on:
   schedule:
-    # Run every weekday at 8:00 AM EST (12:00 UTC in winter, 13:00 UTC in summer)
-    # Using 12:00 UTC to cover EST (UTC-5)
-    # This runs 1 hour 35 minutes BEFORE daily-trading.yml (9:35 AM EST)
-    - cron: '0 12 * * 1-5'
+    # Run every weekday at 8:00 AM EST
+    # EST (winter): 13:00 UTC (UTC-5)
+    # EDT (summer): 12:00 UTC (UTC-4)
+    # Using 13:00 UTC for consistency (8 AM EST year-round, 9 AM EDT in summer)
+    # This runs 1 hour 35 minutes BEFORE daily-trading.yml (9:35 AM EST/EDT)
+    - cron: '0 13 * * 1-5'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
