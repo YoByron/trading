@@ -1,0 +1,126 @@
+name: YouTube Video Analysis
+
+on:
+  schedule:
+    # Run every weekday at 8:00 AM EST (12:00 UTC in winter, 13:00 UTC in summer)
+    # Using 12:00 UTC to cover EST (UTC-5)
+    # This runs 1 hour 35 minutes BEFORE daily-trading.yml (9:35 AM EST)
+    - cron: '0 12 * * 1-5'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  youtube-monitoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Full history for proper git operations
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Install YouTube-specific dependencies
+          pip install youtube-transcript-api yt-dlp
+
+      - name: Create required directories
+        run: |
+          mkdir -p data/youtube_cache
+          mkdir -p docs/youtube_analysis
+          mkdir -p logs
+
+      - name: Run YouTube monitoring
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          echo "=========================================="
+          echo "YouTube Video Monitoring Started"
+          echo "Time: $(date)"
+          echo "=========================================="
+          python scripts/youtube_monitor.py
+          echo "=========================================="
+          echo "YouTube Video Monitoring Completed"
+          echo "=========================================="
+
+      - name: Check for watchlist changes
+        id: check_changes
+        run: |
+          if git diff --quiet data/tier2_watchlist.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes to watchlist detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Watchlist changes detected!"
+            git diff data/tier2_watchlist.json
+          fi
+
+      - name: Commit and push watchlist updates
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Stage watchlist changes
+          git add data/tier2_watchlist.json
+
+          # Stage any new analysis reports or cache files
+          git add docs/youtube_analysis/ data/youtube_cache/ || true
+
+          # Create commit with timestamp
+          git commit -m "chore: Update watchlist from YouTube analysis
+
+Automated watchlist update from YouTube video monitoring.
+
+Run date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+Workflow: youtube-analysis.yml
+Triggered: ${{ github.event_name }}
+
+Generated with GitHub Actions"
+
+          # Push to main
+          git push origin main
+
+          echo "✅ Watchlist changes committed and pushed"
+
+      - name: Upload execution logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-analysis-logs-${{ github.run_id }}
+          path: |
+            logs/youtube_analysis.log
+            data/youtube_cache/processed_videos.json
+            docs/youtube_analysis/*.md
+          retention-days: 30
+
+      - name: Summary report
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "YouTube Video Analysis Summary"
+          echo "=========================================="
+          echo "Workflow Status: ${{ job.status }}"
+          echo "Watchlist Updated: ${{ steps.check_changes.outputs.changed }}"
+          echo "Time Completed: $(date)"
+          echo ""
+          echo "Next Steps:"
+          echo "- Daily trading workflow runs at 9:35 AM EST"
+          echo "- Watchlist changes will be available for trading"
+          echo ""
+          if [ -f logs/youtube_analysis.log ]; then
+            echo "Log Preview (last 20 lines):"
+            tail -n 20 logs/youtube_analysis.log
+          else
+            echo "No log file found"
+          fi
+          echo "=========================================="
