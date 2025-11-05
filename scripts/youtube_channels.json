@@ -6,9 +6,9 @@
   "lookback_hours": 24,
   "channels": [
     {
-      "name": "Parkev Tatevosian",
-      "channel_id": "UCz_cXN42EAGoWFpqSE5OjBA",
-      "handle": "@parkevtatevosian",
+      "name": "Parkev Tatevosian, CFA",
+      "channel_id": "@parkevtatevosiancfa9544",
+      "handle": "@parkevtatevosiancfa9544",
       "focus": "Stock picks, value investing, dividend stocks, long-term investing",
       "priority": "high",
       "keywords": [
@@ -20,7 +20,7 @@
     },
     {
       "name": "Joseph Carlson",
-      "channel_id": "UCbta0n8i6Rljh0obO7HzG9A",
+      "channel_id": "@josephcarlsonshow",
       "handle": "@josephcarlsonshow",
       "focus": "Index investing, dividend growth, portfolio reviews",
       "priority": "medium",
@@ -32,7 +32,7 @@
     },
     {
       "name": "Let's Talk Money! with Joseph Hogue",
-      "channel_id": "UCM_CJ5J18-7YqbHCwPyZ1uw",
+      "channel_id": "@LetsTalkMoneywithJosephHogue",
       "handle": "@LetsTalkMoneywithJosephHogue",
       "focus": "Stock analysis, dividend investing, financial planning",
       "priority": "medium",
@@ -44,7 +44,7 @@
     },
     {
       "name": "Financial Education",
-      "channel_id": "UCV6KDgJskWaEckne5aPA0aQ",
+      "channel_id": "@FinancialEducation2",
       "handle": "@FinancialEducation2",
       "focus": "Growth stocks, market analysis, Tesla/tech focus",
       "priority": "medium",
@@ -56,7 +56,7 @@
     },
     {
       "name": "Everything Money",
-      "channel_id": "UCx6I6bJEeTg7Myqch0d3K_A",
+      "channel_id": "@EverythingMoney",
       "handle": "@EverythingMoney",
       "focus": "Stock picking, market analysis, value investing",
       "priority": "medium",

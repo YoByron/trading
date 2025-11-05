@@ -223,7 +223,7 @@ def track_daily_deposit(daily_amount):
 
     print(f"✅ IPO Reserve: ${data['ipo_reserve']:.2f} (+${ipo_amount:.2f} today)")
     print(f"✅ Crowdfunding Reserve: ${data['crowdfunding_reserve']:.2f} (+${crowdfunding_amount:.2f} today)")
-    print(f"💡 Manual investments ready when opportunities arise")
+    print("💡 Manual investments ready when opportunities arise")
 
 
 def get_account_summary():
@@ -296,7 +296,7 @@ def main():
     print(f"📊 Trading Day: {current_day}")
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
     print(f"📈 Daily Investment: ${daily_investment:.2f} (FIXED - not portfolio-based)")
-    print(f"🎯 Strategy: Momentum (MACD + RSI + Volume)")
+    print("🎯 Strategy: Momentum (MACD + RSI + Volume)")
     print(f"📊 Breakdown: Core 60% (${daily_investment*0.6:.2f}) | Growth 20% (${daily_investment*0.2:.2f}) | IPO 10% (${daily_investment*0.1:.2f}) | Crowdfunding 10% (${daily_investment*0.1:.2f})")
     print("=" * 70)
 
@@ -336,10 +336,10 @@ def main():
     print("=" * 70)
     print(f"Tier 1 (Core): {'✅' if tier1_success else '❌'}")
     print(f"Tier 2 (Growth): {'✅' if tier2_success else '❌'}")
-    print(f"Tier 3 (IPO): ✅ Tracked")
-    print(f"Tier 4 (Crowdfunding): ✅ Tracked")
+    print("Tier 3 (IPO): ✅ Tracked")
+    print("Tier 4 (Crowdfunding): ✅ Tracked")
     print(f"\n📁 Logs saved to: {DATA_DIR}")
-    print(f"🎯 Next execution: Tomorrow 9:35 AM ET")
+    print("🎯 Next execution: Tomorrow 9:35 AM ET")
     print("=" * 70)
 
 
