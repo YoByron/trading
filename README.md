@@ -326,6 +326,12 @@ trading/
 - **[CI_ARCHITECTURE.md](docs/CI_ARCHITECTURE.md)** - GitHub Actions CI/CD architecture and deployment
 - **[CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md](docs/CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md)** - Claude Code skills setup
 - **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine usage guide
+- **[BACKTEST_SUMMARY.txt](docs/BACKTEST_SUMMARY.txt)** - Backtest engine implementation summary
+- **[WORKFLOW_INTEGRATION_SUMMARY.md](docs/WORKFLOW_INTEGRATION_SUMMARY.md)** - CI/CD workflow integration summary
+
+### 🔬 Research & Learning
+- **[RESEARCH_AND_IMPROVEMENTS.md](docs/RESEARCH_AND_IMPROVEMENTS.md)** - Research resources and improvement roadmap
+- **[CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md)** - Cloud deployment options and guides
 
 ### 📊 System Status Reports
 - **[AUTOMATION_STATUS.md](docs/status/AUTOMATION_STATUS.md)** - Current automation configuration and status
