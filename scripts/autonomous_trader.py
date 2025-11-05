@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-AUTONOMOUS DAILY TRADER - INTELLIGENT POSITION SIZING
+AUTONOMOUS DAILY TRADER - FIXED $10/DAY STRATEGY
 Runs automatically every day at market open
-Uses portfolio-based position sizing with risk management
+Uses fixed $10/day investment (not portfolio-based)
 Focus: Momentum + Volume confirmation (MACD, RSI, Volume ratio)
 """
 import os
@@ -24,6 +24,9 @@ ALPACA_SECRET = os.getenv(
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
+# Fixed daily investment (North Star: $10/day Fibonacci strategy)
+DAILY_INVESTMENT = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+
 # Position sizing configuration
 DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
 MIN_POSITION_SIZE = 10.0  # Minimum $10 per trade (Alpaca requirement)
@@ -33,34 +36,17 @@ MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
 api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
 
 
-def calculate_intelligent_position_size(account_value, risk_per_trade_pct=DEFAULT_RISK_PER_TRADE_PCT):
+def calculate_daily_investment():
     """
-    Calculate position size based on portfolio value and risk management principles.
+    Calculate daily investment amount - FIXED $10/day strategy.
 
-    WORLD-CLASS APPROACH:
-    - Scales with portfolio (natural compounding)
-    - Risk-based position sizing (Kelly Criterion derivative)
-    - Professional money management
-
-    Args:
-        account_value: Current portfolio value
-        risk_per_trade_pct: Percentage of portfolio to risk per trade (default: 1%)
+    Uses DAILY_INVESTMENT from environment or defaults to $10.00.
+    This matches the North Star goal of Fibonacci compounding starting at $10/day.
 
     Returns:
-        Daily total investment amount in dollars
+        Daily total investment amount in dollars (fixed, not portfolio-based)
     """
-    # Base calculation: risk_pct of portfolio
-    # With 2 tiers trading daily (Tier 1 + Tier 2 = ~80% of total)
-    # We'll allocate roughly 2% of portfolio daily (1% per tier)
-    base_investment = account_value * (risk_per_trade_pct / 100)
-
-    # Apply limits
-    min_investment = MIN_POSITION_SIZE  # Practical minimum
-    max_investment = account_value * (MAX_POSITION_SIZE_PCT / 100)
-
-    position_size = max(min_investment, min(base_investment * 2, max_investment))
-
-    return round(position_size, 2)
+    return DAILY_INVESTMENT
 
 
 def log_trade(trade_data):
@@ -298,7 +284,7 @@ def main():
     account_value = float(account.equity)
 
     # Calculate intelligent position sizing based on portfolio value
-    daily_investment = calculate_intelligent_position_size(account_value)
+    daily_investment = calculate_daily_investment()
 
     print(f"📊 Trading Day: {current_day}")
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
