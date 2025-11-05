@@ -261,11 +261,15 @@ trading/
 │   └── skills/                    # Claude skills
 │       ├── precommit_hygiene/     # Auto file organization
 │       ├── financial_data_fetcher/
-│       └── portfolio_risk_assessment/
+│       ├── portfolio_risk_assessment/
+│       └── youtube_analyzer/      # YouTube video analysis
 │
 ├── docs/                          # Documentation
 │   ├── AGENT_ARCHITECTURE.md      # 🆕 Introspective agents design
 │   ├── PLAN.md                    # 🆕 90-day R&D roadmap
+│   ├── status/                    # Status reports
+│   │   ├── AUTOMATION_STATUS.md
+│   │   └── ALPACA_ACCOUNT_STATUS_*.md
 │   └── ark_invest_research_report.md
 │
 ├── data/                          # System State (gitignored)
@@ -304,17 +308,27 @@ trading/
 ### 🛡️ Safety & Verification (Week 1 Fixes)
 - **[order_validation_implementation.md](docs/order_validation_implementation.md)** - Prevents 200x order errors
 - **[staleness_detection.md](docs/staleness_detection.md)** - Prevents hallucinations from stale data
+- **[STALENESS_DETECTION_IMPLEMENTATION.md](docs/STALENESS_DETECTION_IMPLEMENTATION.md)** - Implementation details for staleness detection
+- **[STALENESS_FIX_SUMMARY.md](docs/STALENESS_FIX_SUMMARY.md)** - Summary of staleness fixes
+- **[VERIFICATION_COMPLETE.md](docs/VERIFICATION_COMPLETE.md)** - System verification completion report
 
 ### 📈 Data Collection & Analysis
 - **[data_collection.md](docs/data_collection.md)** - Data gathering strategies
+- **[DATA_COLLECTOR_README.md](docs/DATA_COLLECTOR_README.md)** - Data collector module documentation
 - **[YOUTUBE_ANALYSIS_INDEX.md](docs/YOUTUBE_ANALYSIS_INDEX.md)** - YouTube analysis hub
 - **[YOUTUBE_ANALYSIS_QUICKSTART.md](docs/YOUTUBE_ANALYSIS_QUICKSTART.md)** - Quick start for YouTube data
 - **[YOUTUBE_ANALYSIS_EXECUTIVE_SUMMARY.md](docs/YOUTUBE_ANALYSIS_EXECUTIVE_SUMMARY.md)** - YouTube insights summary
 - **[YOUTUBE_ANALYSIS_IMPLEMENTATION.md](docs/YOUTUBE_ANALYSIS_IMPLEMENTATION.md)** - YouTube implementation details
 - **[YOUTUBE_SOLUTIONS_COMPARISON.md](docs/YOUTUBE_SOLUTIONS_COMPARISON.md)** - YouTube solution options
+- **[YouTube Analyzer Skill](.claude/skills/youtube_analyzer/)** - Reusable YouTube analysis skill
 
 ### 🔧 Technical Implementation
 - **[CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md](docs/CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md)** - Claude Code skills setup
+- **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine usage guide
+
+### 📊 System Status Reports
+- **[AUTOMATION_STATUS.md](docs/status/AUTOMATION_STATUS.md)** - Current automation configuration and status
+- **[ALPACA_ACCOUNT_STATUS_2025-11-04.md](docs/status/ALPACA_ACCOUNT_STATUS_2025-11-04.md)** - Account status report (dated)
 
 ### 📚 Research & Analysis
 - **[ark_invest_research_report.md](docs/ark_invest_research_report.md)** - ARK Invest research findings

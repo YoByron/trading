@@ -333,97 +333,134 @@ class CoreStrategy:
         """
         logger.info(f"Calculating momentum for {symbol}")
 
-        try:
-            # Fetch historical data
-            lookback_days = (
-                max(self.LOOKBACK_PERIODS.values()) + 20
-            )  # Extra for calculations
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=lookback_days)
+        hist = None
+        lookback_days = (
+            max(self.LOOKBACK_PERIODS.values()) + 20
+        )  # Extra for calculations
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=lookback_days)
 
+        # Try yfinance first
+        try:
             ticker = yf.Ticker(symbol)
             hist = ticker.history(start=start_date, end=end_date)
 
-            if hist.empty or len(hist) < lookback_days * 0.7:  # Allow some missing days
-                raise ValueError(f"Insufficient data for {symbol}")
-
-            # Calculate returns for different periods
-            returns_1m = self._calculate_period_return(
-                hist, self.LOOKBACK_PERIODS["1month"]
-            )
-            returns_3m = self._calculate_period_return(
-                hist, self.LOOKBACK_PERIODS["3month"]
-            )
-            returns_6m = self._calculate_period_return(
-                hist, self.LOOKBACK_PERIODS["6month"]
-            )
-
-            # Calculate volatility (annualized)
-            daily_returns = hist["Close"].pct_change().dropna()
-            volatility = daily_returns.std() * np.sqrt(252)
-
-            # Calculate Sharpe ratio (assuming 4% risk-free rate)
-            risk_free_rate = 0.04
-            excess_return = returns_6m - risk_free_rate
-            sharpe_ratio = excess_return / volatility if volatility > 0 else 0
-
-            # Calculate RSI
-            rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
-
-            # Weighted momentum score
-            momentum_score = (
-                returns_1m * self.MOMENTUM_WEIGHTS["1month"] * 100
-                + returns_3m * self.MOMENTUM_WEIGHTS["3month"] * 100
-                + returns_6m * self.MOMENTUM_WEIGHTS["6month"] * 100
-            )
-
-            # Adjust for volatility (penalize high volatility)
-            volatility_penalty = volatility * 10  # Scale penalty
-            momentum_score -= volatility_penalty
-
-            # Adjust for Sharpe ratio (reward better risk-adjusted returns)
-            sharpe_bonus = sharpe_ratio * 5
-            momentum_score += sharpe_bonus
-
-            # RSI adjustment (slight penalty if overbought, bonus if neutral)
-            if rsi > self.RSI_OVERBOUGHT:
-                momentum_score -= 5
-            elif self.RSI_OVERSOLD < rsi < 60:
-                momentum_score += 3
-
-            # MACD adjustment (momentum confirmation)
-            macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
-            if macd_histogram > 0:  # Bullish MACD (histogram above zero)
-                momentum_score += 8
-            elif macd_histogram < 0:  # Bearish MACD (histogram below zero)
-                momentum_score -= 8
-
-            # Volume confirmation (high volume = stronger signal)
-            volume_ratio = self._calculate_volume_ratio(hist)
-            if volume_ratio > 1.5:  # Volume 50% above average
-                momentum_score += 10
-            elif volume_ratio > 1.2:  # Volume 20% above average
-                momentum_score += 5
-            elif volume_ratio < 0.8:  # Volume 20% below average (weak signal)
-                momentum_score -= 5
-
-            # Normalize to 0-100 scale
-            momentum_score = max(0, min(100, momentum_score))
-
-            logger.info(
-                f"{symbol} momentum: {momentum_score:.2f} "
-                f"(1m: {returns_1m*100:.2f}%, 3m: {returns_3m*100:.2f}%, "
-                f"6m: {returns_6m*100:.2f}%, vol: {volatility:.2f}, "
-                f"sharpe: {sharpe_ratio:.2f}, rsi: {rsi:.2f}, "
-                f"macd: {macd_value:.4f}, signal: {macd_signal:.4f}, "
-                f"histogram: {macd_histogram:.4f}, vol_ratio: {volume_ratio:.2f})"
-            )
-
-            return momentum_score
-
+            if hist.empty or len(hist) < lookback_days * 0.7:
+                logger.warning(f"yfinance returned insufficient data for {symbol}, trying Alpaca API")
+                hist = None
         except Exception as e:
-            logger.error(f"Error calculating momentum for {symbol}: {str(e)}")
-            raise ValueError(f"Failed to calculate momentum for {symbol}: {str(e)}")
+            logger.warning(f"yfinance failed for {symbol}: {str(e)}, trying Alpaca API fallback")
+            hist = None
+
+        # Fallback to Alpaca API if yfinance failed
+        if hist is None or hist.empty:
+            try:
+                if self.alpaca_trader:
+                    logger.info(f"Fetching historical data from Alpaca for {symbol}")
+                    bars = self.alpaca_trader.get_historical_bars(
+                        symbol=symbol,
+                        timeframe="1Day",
+                        limit=lookback_days
+                    )
+                    
+                    if bars and len(bars) >= lookback_days * 0.7:
+                        # Convert Alpaca bars to pandas DataFrame
+                        import pandas as pd
+                        dates = [pd.Timestamp(bar['timestamp']) for bar in bars]
+                        hist = pd.DataFrame({
+                            'Open': [bar['open'] for bar in bars],
+                            'High': [bar['high'] for bar in bars],
+                            'Low': [bar['low'] for bar in bars],
+                            'Close': [bar['close'] for bar in bars],
+                            'Volume': [bar['volume'] for bar in bars]
+                        }, index=dates)
+                        hist.index.name = 'Date'
+                        hist.sort_index(inplace=True)
+                        logger.info(f"Successfully loaded {len(hist)} bars from Alpaca for {symbol}")
+                    else:
+                        raise ValueError(f"Alpaca returned insufficient data for {symbol}")
+                else:
+                    raise ValueError(f"No Alpaca trader available and yfinance failed for {symbol}")
+            except Exception as e:
+                logger.error(f"Alpaca API fallback also failed for {symbol}: {str(e)}")
+                raise ValueError(f"Failed to fetch historical data for {symbol} from both yfinance and Alpaca: {str(e)}") from e
+
+        if hist.empty or len(hist) < lookback_days * 0.7:
+            raise ValueError(f"Insufficient data for {symbol} (got {len(hist)} bars, need {int(lookback_days * 0.7)})")
+
+        # Calculate returns for different periods
+        returns_1m = self._calculate_period_return(
+            hist, self.LOOKBACK_PERIODS["1month"]
+        )
+        returns_3m = self._calculate_period_return(
+            hist, self.LOOKBACK_PERIODS["3month"]
+        )
+        returns_6m = self._calculate_period_return(
+            hist, self.LOOKBACK_PERIODS["6month"]
+        )
+
+        # Calculate volatility (annualized)
+        daily_returns = hist["Close"].pct_change().dropna()
+        volatility = daily_returns.std() * np.sqrt(252)
+
+        # Calculate Sharpe ratio (assuming 4% risk-free rate)
+        risk_free_rate = 0.04
+        excess_return = returns_6m - risk_free_rate
+        sharpe_ratio = excess_return / volatility if volatility > 0 else 0
+
+        # Calculate RSI
+        rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
+
+        # Weighted momentum score
+        momentum_score = (
+            returns_1m * self.MOMENTUM_WEIGHTS["1month"] * 100
+            + returns_3m * self.MOMENTUM_WEIGHTS["3month"] * 100
+            + returns_6m * self.MOMENTUM_WEIGHTS["6month"] * 100
+        )
+
+        # Adjust for volatility (penalize high volatility)
+        volatility_penalty = volatility * 10  # Scale penalty
+        momentum_score -= volatility_penalty
+
+        # Adjust for Sharpe ratio (reward better risk-adjusted returns)
+        sharpe_bonus = sharpe_ratio * 5
+        momentum_score += sharpe_bonus
+
+        # RSI adjustment (slight penalty if overbought, bonus if neutral)
+        if rsi > self.RSI_OVERBOUGHT:
+            momentum_score -= 5
+        elif self.RSI_OVERSOLD < rsi < 60:
+            momentum_score += 3
+
+        # MACD adjustment (momentum confirmation)
+        macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+        if macd_histogram > 0:  # Bullish MACD (histogram above zero)
+            momentum_score += 8
+        elif macd_histogram < 0:  # Bearish MACD (histogram below zero)
+            momentum_score -= 8
+
+        # Volume confirmation (high volume = stronger signal)
+        volume_ratio = self._calculate_volume_ratio(hist)
+        if volume_ratio > 1.5:  # Volume 50% above average
+            momentum_score += 10
+        elif volume_ratio > 1.2:  # Volume 20% above average
+            momentum_score += 5
+        elif volume_ratio < 0.8:  # Volume 20% below average (weak signal)
+            momentum_score -= 5
+
+        # Normalize to 0-100 scale
+        momentum_score = max(0, min(100, momentum_score))
+
+        logger.info(
+            f"{symbol} momentum: {momentum_score:.2f} "
+            f"(1m: {returns_1m*100:.2f}%, 3m: {returns_3m*100:.2f}%, "
+            f"6m: {returns_6m*100:.2f}%, vol: {volatility:.2f}, "
+            f"sharpe: {sharpe_ratio:.2f}, rsi: {rsi:.2f}, "
+            f"macd: {macd_value:.4f}, signal: {macd_signal:.4f}, "
+            f"histogram: {macd_histogram:.4f}, vol_ratio: {volume_ratio:.2f})"
+        )
+
+        return momentum_score
 
     def select_best_etf(
         self, momentum_scores: Optional[List[MomentumScore]] = None
