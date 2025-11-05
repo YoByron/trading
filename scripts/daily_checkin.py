@@ -11,6 +11,8 @@ from pathlib import Path
 import alpaca_trade_api as tradeapi
 
 DATA_DIR = Path("data")
+WATCHLIST_FILE = DATA_DIR / "tier2_watchlist.json"
+SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 STARTING_BALANCE = 100000.0
 
 api = tradeapi.REST(
@@ -143,6 +145,49 @@ def calculate_daily_return():
     return daily_return, daily_return_pct
 
 
+def get_video_analysis_summary():
+    """Get summary of YouTube video analysis insights"""
+    if not WATCHLIST_FILE.exists():
+        return None
+
+    with open(WATCHLIST_FILE, "r") as f:
+        watchlist_data = json.load(f)
+
+    # Get watchlist stocks (not current holdings)
+    watchlist_stocks = watchlist_data.get("watchlist", [])
+
+    # Load system state for video analysis tracking
+    video_stats = None
+    if SYSTEM_STATE_FILE.exists():
+        with open(SYSTEM_STATE_FILE, "r") as f:
+            state = json.load(f)
+            video_stats = state.get("video_analysis", {})
+
+    # Count new additions today
+    today_str = date.today().isoformat()
+    new_today = [s for s in watchlist_stocks if s.get("date_added") == today_str]
+
+    # Get high priority stocks
+    high_priority = [s for s in watchlist_stocks if s.get("priority") == "high"]
+
+    # Get recent video sources from state
+    recent_videos = []
+    if video_stats and "video_sources" in video_stats:
+        recent_videos = video_stats.get("video_sources", [])[-3:]  # Last 3 videos
+
+    return {
+        "total_watchlist": len(watchlist_stocks),
+        "new_today": len(new_today),
+        "new_today_stocks": new_today,
+        "high_priority_count": len(high_priority),
+        "high_priority_stocks": high_priority,
+        "videos_analyzed_total": video_stats.get("videos_analyzed", 0) if video_stats else 0,
+        "stocks_from_videos": video_stats.get("stocks_added_from_videos", 0) if video_stats else 0,
+        "last_analysis": video_stats.get("last_analysis_date") if video_stats else None,
+        "recent_videos": recent_videos,
+    }
+
+
 def main():
     """Generate daily check-in report"""
 
@@ -219,6 +264,60 @@ def main():
         print(f"\n🔄 TODAY'S TRADES")
         print("-" * 70)
         print("No trades executed today")
+
+    # Video Analysis Updates
+    video_summary = get_video_analysis_summary()
+
+    if video_summary:
+        print(f"\n📺 VIDEO ANALYSIS UPDATES")
+        print("-" * 70)
+
+        # Overall stats
+        print(f"Total Videos Analyzed:     {video_summary['videos_analyzed_total']}")
+        print(f"Stocks from Videos:        {video_summary['stocks_from_videos']}")
+        print(f"Current Watchlist Size:    {video_summary['total_watchlist']}")
+
+        # New additions today
+        if video_summary['new_today'] > 0:
+            print(f"\n✨ NEW TODAY ({video_summary['new_today']})")
+            for stock in video_summary['new_today_stocks']:
+                analyst = stock.get('source', 'Unknown').split('-')[0].strip()
+                print(f"   📌 {stock['ticker']:5s} - {stock['name']}")
+                print(f"      Source: {analyst}")
+                print(f"      Priority: {stock.get('priority', 'medium').upper()}")
+                if 'catalyst' in stock:
+                    print(f"      Catalyst: {stock['catalyst'][:60]}...")
+        else:
+            print(f"\nNo new stocks added today")
+
+        # High priority picks
+        if video_summary['high_priority_count'] > 0:
+            print(f"\n🎯 HIGH PRIORITY WATCHLIST ({video_summary['high_priority_count']})")
+            for stock in video_summary['high_priority_stocks']:
+                analyst = stock.get('source', 'Unknown').split('-')[0].strip()
+                print(f"   ⭐ {stock['ticker']:5s} - {stock['name']}")
+                print(f"      Source: {analyst}")
+                print(f"      Rationale: {stock.get('rationale', 'See analysis')[:60]}...")
+                if 'profit_targets' in stock and stock['profit_targets']:
+                    print(f"      Target: {stock['profit_targets'][0]}")
+
+        # Recent video sources
+        if video_summary['recent_videos']:
+            print(f"\n📹 RECENT ANALYSIS")
+            for video in video_summary['recent_videos'][:3]:
+                video_date = datetime.fromisoformat(video['date']).strftime("%b %d")
+                print(f"   • {video['analyst']} ({video_date}) - {len(video.get('stocks_added', []))} stocks")
+                if video.get('stocks_added'):
+                    print(f"     Added: {', '.join(video['stocks_added'])}")
+
+        # Last analysis timestamp
+        if video_summary['last_analysis']:
+            last_date = datetime.fromisoformat(video_summary['last_analysis']).strftime("%b %d, %I:%M %p")
+            print(f"\nLast Analysis: {last_date}")
+    else:
+        print(f"\n📺 VIDEO ANALYSIS UPDATES")
+        print("-" * 70)
+        print("No video analysis data available yet")
 
     # Manual Reserves
     reserves = get_manual_reserves()

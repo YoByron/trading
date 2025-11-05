@@ -163,6 +163,14 @@ ACTION REQUIRED:
                 "execution_count": 0,
                 "failures": 0,
             },
+            "video_analysis": {
+                "enabled": True,
+                "videos_analyzed": 0,
+                "stocks_added_from_videos": 0,
+                "last_analysis_date": None,
+                "video_sources": [],
+                "watchlist_additions": [],
+            },
             "notes": [],
         }
 
@@ -219,6 +227,44 @@ ACTION REQUIRED:
         # Keep last 100 notes
         if len(self.state["notes"]) > 100:
             self.state["notes"] = self.state["notes"][-100:]
+        self.save_state()
+
+    def record_video_analysis(self, video_title: str, analyst: str, stocks_added: List[str]):
+        """Record a YouTube video analysis"""
+        if "video_analysis" not in self.state:
+            self.state["video_analysis"] = {
+                "enabled": True,
+                "videos_analyzed": 0,
+                "stocks_added_from_videos": 0,
+                "last_analysis_date": None,
+                "video_sources": [],
+                "watchlist_additions": [],
+            }
+
+        self.state["video_analysis"]["videos_analyzed"] += 1
+        self.state["video_analysis"]["stocks_added_from_videos"] += len(stocks_added)
+        self.state["video_analysis"]["last_analysis_date"] = datetime.now().isoformat()
+
+        # Add to video sources (keep last 20)
+        video_entry = {
+            "title": video_title,
+            "analyst": analyst,
+            "date": datetime.now().isoformat(),
+            "stocks_added": stocks_added,
+        }
+        self.state["video_analysis"]["video_sources"].append(video_entry)
+        if len(self.state["video_analysis"]["video_sources"]) > 20:
+            self.state["video_analysis"]["video_sources"] = self.state["video_analysis"]["video_sources"][-20:]
+
+        # Add to watchlist additions
+        for ticker in stocks_added:
+            self.state["video_analysis"]["watchlist_additions"].append({
+                "ticker": ticker,
+                "source": f"{analyst} - {video_title}",
+                "date_added": datetime.now().isoformat(),
+            })
+
+        self.add_note(f"Video analysis: {analyst} - {len(stocks_added)} stocks added to watchlist")
         self.save_state()
 
     def get_summary(self) -> Dict[str, Any]:

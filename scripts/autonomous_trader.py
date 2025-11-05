@@ -74,7 +74,7 @@ def get_momentum_score(symbol, days=20):
         # Simple momentum: use current price
         # In real scenario, would compare to historical average
         return current_price
-    except:
+    except Exception:
         return 0
 
 
@@ -286,18 +286,18 @@ def main():
         today = date.today()
         current_day = (today - start_date).days + 1
 
-    # Get current account value
+    # Get current account value (for reporting only)
     account = api.get_account()
     account_value = float(account.equity)
 
-    # Calculate intelligent position sizing based on portfolio value
+    # Fixed $10/day investment (North Star Fibonacci strategy)
     daily_investment = calculate_daily_investment()
 
     print(f"📊 Trading Day: {current_day}")
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
-    print(f"📈 Daily Investment: ${daily_investment:.2f} ({(daily_investment/account_value*100):.2f}% of portfolio)")
+    print(f"📈 Daily Investment: ${daily_investment:.2f} (FIXED - not portfolio-based)")
     print(f"🎯 Strategy: Momentum (MACD + RSI + Volume)")
-    print(f"📊 Breakdown: Core 60% | Growth 20% | IPO 10% | Crowdfunding 10%")
+    print(f"📊 Breakdown: Core 60% (${daily_investment*0.6:.2f}) | Growth 20% (${daily_investment*0.2:.2f}) | IPO 10% (${daily_investment*0.1:.2f}) | Crowdfunding 10% (${daily_investment*0.1:.2f})")
     print("=" * 70)
 
     # Check if market is open

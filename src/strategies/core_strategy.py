@@ -715,7 +715,7 @@ class CoreStrategy:
 
         except Exception as e:
             logger.error(f"Error during rebalancing: {str(e)}", exc_info=True)
-            raise ValueError(f"Rebalancing failed: {str(e)}")
+            raise ValueError(f"Rebalancing failed: {str(e)}") from e
 
     def get_account_summary(self) -> Dict[str, any]:
         """

@@ -162,7 +162,14 @@ class YouTubeAnalyzer:
         logger.info(f"Fetching transcript for video: {video_id}")
 
         try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            # Use the new API: create instance and fetch
+            api = YouTubeTranscriptApi()
+            fetched = api.fetch(video_id, languages=['en'])
+
+            # Convert to list of dicts for compatibility
+            transcript = [{'start': s.start, 'duration': s.duration, 'text': s.text}
+                          for s in fetched.snippets]
+
             logger.info(f"Transcript fetched: {len(transcript)} segments")
             return transcript
 
