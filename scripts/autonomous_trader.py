@@ -130,7 +130,7 @@ def execute_tier1(daily_amount):
 def execute_tier2(daily_amount):
     """Tier 2: Disruptive Innovation Strategy - 20% of daily Fibonacci amount
 
-    Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles)
+    Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles) + AMZN (OpenAI deal)
     Conservative approach - proven disruptive leaders
     """
     amount = daily_amount * 0.20
@@ -139,8 +139,8 @@ def execute_tier2(daily_amount):
     print("📈 TIER 2: DISRUPTIVE INNOVATION STRATEGY")
     print("=" * 70)
 
-    # Focus on NVDA + GOOGL (Cathie Wood's recommendations, conservative approach)
-    stocks = ["NVDA", "GOOGL"]
+    # Focus on NVDA + GOOGL + AMZN (3-way rotation based on momentum)
+    stocks = ["NVDA", "GOOGL", "AMZN"]
     scores = {}
 
     # Analyze momentum for each
@@ -154,7 +154,14 @@ def execute_tier2(daily_amount):
 
     print(f"\n✅ Selected: {selected}")
     print(f"💰 Investment: ${amount:.2f} (20% of ${daily_amount:.2f})")
-    print(f"🎯 Disruptive Theme: {'AI Infrastructure' if selected == 'NVDA' else 'Autonomous Vehicles + AI'}")
+
+    # Display disruptive theme
+    themes = {
+        'NVDA': 'AI Infrastructure',
+        'GOOGL': 'Autonomous Vehicles + AI',
+        'AMZN': 'OpenAI $38B Deal + Cloud AI'
+    }
+    print(f"🎯 Disruptive Theme: {themes.get(selected, 'Innovation')}")
 
     try:
         order = api.submit_order(
@@ -317,7 +324,7 @@ def main():
     print("\n📊 Collecting historical data for ML training...")
     try:
         collector = DataCollector(data_dir="data/historical")
-        symbols = ["SPY", "QQQ", "VOO", "NVDA", "GOOGL"]
+        symbols = ["SPY", "QQQ", "VOO", "NVDA", "GOOGL", "AMZN"]
         collector.collect_daily_data(symbols, lookback_days=30)
         print("✅ Historical data collection complete")
     except Exception as e:
