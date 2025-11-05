@@ -154,8 +154,15 @@ class YouTubeMonitor:
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Get channel uploads
-                url = f"https://www.youtube.com/channel/{channel_id}/videos"
+                # Get channel uploads - try multiple URL formats
+                # Try @handle format first, then channel ID
+                if channel_id.startswith('@'):
+                    url = f"https://www.youtube.com/{channel_id}/videos"
+                elif channel_id.startswith('UC'):
+                    url = f"https://www.youtube.com/channel/{channel_id}/videos"
+                else:
+                    url = f"https://www.youtube.com/@{channel_id}/videos"
+
                 info = ydl.extract_info(url, download=False)
 
                 if not info or 'entries' not in info:
@@ -264,8 +271,18 @@ class YouTubeMonitor:
 
         try:
             logger.info(f"📥 Downloading transcript for {video_id}...")
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-            transcript = " ".join([t['text'] for t in transcript_list])
+            # Use list_transcripts to get available transcripts
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            # Get English transcript (auto-generated or manual)
+            try:
+                transcript_obj = transcript_list.find_transcript(['en'])
+            except:
+                # Try auto-generated
+                transcript_obj = transcript_list.find_generated_transcript(['en'])
+
+            # Fetch transcript
+            transcript_data = transcript_obj.fetch()
+            transcript = " ".join([t['text'] for t in transcript_data])
 
             # Cache it
             cache_file.write_text(transcript)
