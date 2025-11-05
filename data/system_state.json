@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-11-04T16:45:00",
+    "last_updated": "2025-11-05T15:35:00",
     "last_audit": "2025-11-04T16:45:00",
     "audit_notes": "Complete system audit - corrected stale data from Oct 30"
   },
@@ -55,12 +55,15 @@
       "status": "active"
     },
     "tier2": {
-      "name": "Disruptive Innovation Strategy (NVDA, GOOGL)",
+      "name": "Disruptive Innovation Strategy (NVDA, GOOGL, AMZN)",
       "allocation": 0.2,
       "daily_amount": 2.0,
       "trades_executed": 3,
       "total_invested": 403.97,
-      "status": "active"
+      "status": "active",
+      "stocks": ["NVDA", "GOOGL", "AMZN"],
+      "rotation_strategy": "3-way momentum-based selection",
+      "amzn_catalyst": "OpenAI $38B deal - $295 fair value target (15% upside)"
     },
     "tier3": {
       "name": "IPO Strategy",
@@ -110,6 +113,27 @@
       "Nov 4: Network/DNS error (failed to resolve paper-api.alpaca.markets)"
     ]
   },
+  "video_analysis": {
+    "enabled": true,
+    "videos_analyzed": 1,
+    "stocks_added_from_videos": 1,
+    "last_analysis_date": "2025-11-05T15:30:00",
+    "video_sources": [
+      {
+        "title": "AMZN OpenAI Partnership Analysis",
+        "analyst": "Parkev Tatevosian CFA",
+        "date": "2025-11-05T15:30:00",
+        "stocks_added": ["AMZN"]
+      }
+    ],
+    "watchlist_additions": [
+      {
+        "ticker": "AMZN",
+        "source": "Parkev Tatevosian CFA - AMZN OpenAI Partnership Analysis",
+        "date_added": "2025-11-05T15:30:00"
+      }
+    ]
+  },
   "notes": [
     "[2025-10-29 21:06] Test trade: SPY $5.99",
     "[2025-10-29 21:08] Test trade: SPY $5.99 + GOOGL $1.99",
@@ -122,6 +146,9 @@
     "[2025-11-05 15:30] YouTube analysis capability integrated - AMZN added to Tier 2 watchlist",
     "[2025-11-05 15:30] Source: Parkev Tatevosian CFA - AMZN OpenAI $38B deal analysis",
     "[2025-11-05 15:30] Recommendation: HIGH PRIORITY - $295 fair value (15% upside from $256)",
-    "[2025-11-05 15:30] Pending: Video #2 analysis (Top 6 stocks) - 6 additional picks expected"
+    "[2025-11-05 15:30] Pending: Video #2 analysis (Top 6 stocks) - 6 additional picks expected",
+    "[2025-11-05 15:35] AMZN INTEGRATED: Added to Tier 2 rotation for execution starting Nov 6, 2025",
+    "[2025-11-05 15:35] Tier 2 now: NVDA, GOOGL, AMZN (3-way momentum-based selection)",
+    "[2025-11-05 15:35] Allocation unchanged: $2/day split among momentum leader"
   ]
 }
