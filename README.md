@@ -323,6 +323,7 @@ trading/
 - **[YouTube Analyzer Skill](.claude/skills/youtube_analyzer/)** - Reusable YouTube analysis skill
 
 ### 🔧 Technical Implementation
+- **[CI_ARCHITECTURE.md](docs/CI_ARCHITECTURE.md)** - GitHub Actions CI/CD architecture and deployment
 - **[CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md](docs/CLAUDE_SKILLS_IMPLEMENTATION_GUIDE.md)** - Claude Code skills setup
 - **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine usage guide
 
