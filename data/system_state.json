@@ -97,7 +97,11 @@
       "System state was stale for 5 days (Oct 30 - Nov 4)",
       "LESSON: Need staleness detection to prevent using expired data",
       "LESSON: Need order amount validation (reject >10x expected)",
-      "LESSON: Need proper testing before production deployment"
+      "LESSON: Need proper testing before production deployment",
+      "Nov 5: MACD indicator integrated into both Tier 1 (CoreStrategy) and Tier 2 (GrowthStrategy)",
+      "MACD confirms momentum - filters out false signals from RSI alone",
+      "MACD histogram > 0 = bullish (MACD above signal line) = BUY signal",
+      "MACD histogram < 0 = bearish (MACD below signal line) = SELL signal"
     ]
   },
   "automation": {
@@ -194,6 +198,11 @@
     "[2025-11-05 20:37] Built complete system: 5 channels, daily 8AM monitoring, auto-watchlist updates",
     "[2025-11-05 20:37] Videos analyzed today: 5 (PLTR=PASS, AMZN=INTEGRATED, 6 stocks documented)",
     "[2025-11-05 20:37] System status: PRODUCTION READY - zero manual intervention after cron activation",
-    "[2025-11-05 20:37] Monthly cost: $0 (free tier), Maintenance: Zero, Expected picks: 3-10/week"
+    "[2025-11-05 20:37] Monthly cost: $0 (free tier), Maintenance: Zero, Expected picks: 3-10/week",
+    "[2025-11-05 21:15] MACD indicator integrated into CoreStrategy (Tier 1) and GrowthStrategy (Tier 2)",
+    "[2025-11-05 21:15] MACD parameters: 12-day EMA, 26-day EMA, 9-day signal line (industry standard)",
+    "[2025-11-05 21:15] MACD scoring: +20 points if histogram > 0 (bullish), +10 if near crossover, 0 if bearish",
+    "[2025-11-05 21:15] Tier 2 filters enhanced: Now requires MACD histogram > 0 for buy signals",
+    "[2025-11-05 21:15] Technical score rebalanced: 20% momentum, 20% RSI, 20% MACD, 20% volume, 20% MA"
   ]
 }

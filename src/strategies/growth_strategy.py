@@ -66,6 +66,9 @@ class CandidateStock:
     current_price: float
     momentum: float
     rsi: float
+    macd_value: float
+    macd_signal: float
+    macd_histogram: float
     volume_ratio: float
 
 
@@ -115,11 +118,13 @@ class MultiLLMAnalyzer:
         score = 50.0  # Base score
 
         if technical_data.get("momentum", 0) > 0:
-            score += 15
+            score += 12
         if 30 < technical_data.get("rsi", 50) < 70:
-            score += 15
+            score += 12
+        if technical_data.get("macd_histogram", 0) > 0:
+            score += 13  # Bullish MACD
         if technical_data.get("volume_ratio", 1) > 1.2:
-            score += 20
+            score += 13
 
         return min(100.0, max(0.0, score))
 
@@ -484,10 +489,11 @@ class GrowthStrategy:
                 # Calculate indicators
                 momentum = self._calculate_momentum(hist)
                 rsi = self._calculate_rsi(hist)
+                macd_value, macd_signal, macd_histogram = self._calculate_macd(hist)
                 volume_ratio = self._calculate_volume_ratio(hist)
 
-                # Apply filters
-                if momentum > 0 and 30 < rsi < 70 and volume_ratio > 1.2:
+                # Apply filters (MACD histogram > 0 = bullish momentum confirmation)
+                if momentum > 0 and 30 < rsi < 70 and volume_ratio > 1.2 and macd_histogram > 0:
                     candidate = CandidateStock(
                         symbol=symbol,
                         technical_score=score,
@@ -495,15 +501,20 @@ class GrowthStrategy:
                         current_price=current_price,
                         momentum=momentum,
                         rsi=rsi,
+                        macd_value=macd_value,
+                        macd_signal=macd_signal,
+                        macd_histogram=macd_histogram,
                         volume_ratio=volume_ratio,
                     )
                     filtered_stocks.append(candidate)
                     logger.debug(
-                        f"{symbol}: PASSED (momentum={momentum:.2f}, RSI={rsi:.1f}, vol_ratio={volume_ratio:.2f})"
+                        f"{symbol}: PASSED (momentum={momentum:.2f}, RSI={rsi:.1f}, "
+                        f"MACD={macd_histogram:.4f}, vol_ratio={volume_ratio:.2f})"
                     )
                 else:
                     logger.debug(
-                        f"{symbol}: FILTERED OUT (momentum={momentum:.2f}, RSI={rsi:.1f}, vol_ratio={volume_ratio:.2f})"
+                        f"{symbol}: FILTERED OUT (momentum={momentum:.2f}, RSI={rsi:.1f}, "
+                        f"MACD={macd_histogram:.4f}, vol_ratio={volume_ratio:.2f})"
                     )
 
             except Exception as e:
@@ -539,6 +550,9 @@ class GrowthStrategy:
             technical_data = {
                 "momentum": candidate.momentum,
                 "rsi": candidate.rsi,
+                "macd_value": candidate.macd_value,
+                "macd_signal": candidate.macd_signal,
+                "macd_histogram": candidate.macd_histogram,
                 "volume_ratio": candidate.volume_ratio,
                 "technical_score": candidate.technical_score,
             }
@@ -548,7 +562,10 @@ class GrowthStrategy:
             )
             candidate.consensus_score = consensus_score
 
-            logger.debug(f"{candidate.symbol}: consensus_score={consensus_score:.1f}")
+            logger.debug(
+                f"{candidate.symbol}: consensus_score={consensus_score:.1f}, "
+                f"MACD histogram={candidate.macd_histogram:.4f}"
+            )
 
         # Rank by combined score (50% technical, 50% consensus)
         candidates.sort(
@@ -704,32 +721,48 @@ class GrowthStrategy:
 
             score = 0.0
 
-            # Momentum score (0-25 points)
+            # Momentum score (0-20 points)
             momentum = self._calculate_momentum(hist)
             if momentum > 0:
-                score += min(25, momentum * 10)
+                score += min(20, momentum * 10)
 
-            # RSI score (0-25 points)
+            # RSI score (0-20 points)
             rsi = self._calculate_rsi(hist)
             if 30 < rsi < 70:
                 # Optimal range
-                score += 25
+                score += 20
             elif 20 < rsi < 80:
                 # Acceptable range
-                score += 15
+                score += 12
 
-            # Volume score (0-25 points)
-            volume_ratio = self._calculate_volume_ratio(hist)
-            if volume_ratio > 1.5:
-                score += 25
-            elif volume_ratio > 1.2:
-                score += 15
-            elif volume_ratio > 1.0:
+            # MACD score (0-20 points) - NEW!
+            macd_value, macd_signal, macd_histogram = self._calculate_macd(hist)
+            if macd_histogram > 0:
+                # Bullish MACD (above signal line)
+                score += 20
+            elif macd_histogram > -0.01:
+                # Near crossover (potential reversal)
                 score += 10
+            elif macd_histogram < 0:
+                # Bearish MACD (below signal line)
+                score += 0
 
-            # Moving average score (0-25 points)
+            # Volume score (0-20 points)
+            # High volume = institutional participation (strong signal)
+            # Low volume = low interest (weak signal, penalize)
+            volume_ratio = self._calculate_volume_ratio(hist)
+            if volume_ratio > 1.5:  # Volume 50% above average (high conviction)
+                score += 20
+            elif volume_ratio > 1.2:  # Volume 20% above average
+                score += 12
+            elif volume_ratio > 1.0:  # Slightly above average
+                score += 8
+            elif volume_ratio < 0.5:  # Volume 50% below average (low conviction)
+                score -= 10  # Penalize low volume
+
+            # Moving average score (0-20 points)
             ma_score = self._calculate_ma_score(hist)
-            score += ma_score
+            score += min(20, ma_score)
 
             return min(100.0, max(0.0, score))
 
@@ -821,6 +854,59 @@ class GrowthStrategy:
 
         return rsi.iloc[-1]
 
+    def _calculate_macd(
+        self, hist: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9
+    ) -> tuple:
+        """
+        Calculate MACD (Moving Average Convergence Divergence).
+
+        MACD is a trend-following momentum indicator that shows the relationship between
+        two exponential moving averages (EMAs) of a security's price.
+
+        Formula:
+        - MACD Line = 12-day EMA - 26-day EMA
+        - Signal Line = 9-day EMA of MACD Line
+        - Histogram = MACD Line - Signal Line
+
+        Trading Signals:
+        - Bullish: MACD crosses above signal line (histogram > 0)
+        - Bearish: MACD crosses below signal line (histogram < 0)
+        - Momentum strength: Larger histogram = stronger momentum
+
+        Args:
+            hist: Historical price DataFrame with 'Close' column
+            fast: Fast EMA period (default: 12)
+            slow: Slow EMA period (default: 26)
+            signal: Signal line EMA period (default: 9)
+
+        Returns:
+            Tuple of (macd_value, signal_line, histogram)
+        """
+        if len(hist) < slow + signal:
+            return (0.0, 0.0, 0.0)
+
+        closes = hist["Close"]
+
+        # Calculate exponential moving averages
+        ema_fast = closes.ewm(span=fast, adjust=False).mean()
+        ema_slow = closes.ewm(span=slow, adjust=False).mean()
+
+        # MACD line = Fast EMA - Slow EMA
+        macd_line = ema_fast - ema_slow
+
+        # Signal line = 9-day EMA of MACD line
+        signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+
+        # MACD histogram = MACD line - Signal line
+        histogram = macd_line - signal_line
+
+        # Return most recent values
+        return (
+            float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
+            float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
+            float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+        )
+
     def _calculate_volume_ratio(self, hist: pd.DataFrame) -> float:
         """Calculate current volume vs 20-day average."""
         if len(hist) < 20:
@@ -835,7 +921,7 @@ class GrowthStrategy:
         return current_volume / avg_volume
 
     def _calculate_ma_score(self, hist: pd.DataFrame) -> float:
-        """Calculate moving average crossover score."""
+        """Calculate moving average crossover score (0-20 points)."""
         if len(hist) < 50:
             return 0.0
 
@@ -849,13 +935,13 @@ class GrowthStrategy:
 
         score = 0.0
 
-        # Price above both MAs
+        # Price above both MAs (12 points)
         if current_price > current_ma20 and current_price > current_ma50:
-            score += 15
+            score += 12
 
-        # Golden cross (MA20 above MA50)
+        # Golden cross - MA20 above MA50 (8 points)
         if current_ma20 > current_ma50:
-            score += 10
+            score += 8
 
         return score
 

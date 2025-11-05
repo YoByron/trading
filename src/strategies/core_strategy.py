@@ -441,12 +441,12 @@ class CoreStrategy:
 
         # Volume confirmation (high volume = stronger signal)
         volume_ratio = self._calculate_volume_ratio(hist)
-        if volume_ratio > 1.5:  # Volume 50% above average
+        if volume_ratio > 1.5:  # Volume 50% above average (high conviction)
             momentum_score += 10
         elif volume_ratio > 1.2:  # Volume 20% above average
             momentum_score += 5
-        elif volume_ratio < 0.8:  # Volume 20% below average (weak signal)
-            momentum_score -= 5
+        elif volume_ratio < 0.5:  # Volume 50% below average (low conviction)
+            momentum_score -= 10
 
         # Normalize to 0-100 scale
         momentum_score = max(0, min(100, momentum_score))
@@ -484,8 +484,15 @@ class CoreStrategy:
             sentiment = self._get_market_sentiment()
             momentum_scores = self._calculate_all_momentum_scores(sentiment)
 
+        # FALLBACK: If no momentum scores available (data failure), default to SPY
         if not momentum_scores:
-            raise ValueError("No valid momentum scores available")
+            logger.warning(
+                "No valid momentum scores available - falling back to SPY (safest ETF)"
+            )
+            logger.warning(
+                "This can happen due to yfinance/Alpaca API failures or rate limiting"
+            )
+            return "SPY"  # SPY is the safest default (S&P 500 index)
 
         # Sort by score
         momentum_scores.sort(key=lambda x: x.score, reverse=True)

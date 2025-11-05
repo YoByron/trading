@@ -1,0 +1,50 @@
+name: Daily Trading Execution
+
+on:
+  schedule:
+    # Run every weekday at 9:35 AM EST (1:35 PM UTC)
+    # Monday-Friday at 9:35 AM EST = 13:35 UTC (EST is UTC-5 in winter, UTC-4 in summer)
+    # Using 13:35 UTC to cover both EST/EDT
+    - cron: '35 13 * * 1-5'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  execute-trading:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Execute daily trading
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DAILY_INVESTMENT: ${{ secrets.DAILY_INVESTMENT || '10.0' }}
+          PAPER_TRADING: 'true'
+        run: |
+          python scripts/autonomous_trader.py
+      
+      - name: Upload execution logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-logs-${{ github.run_id }}
+          path: |
+            logs/*.log
+            data/system_state.json
+          retention-days: 30
+
