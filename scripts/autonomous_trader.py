@@ -8,13 +8,16 @@ Focus: Momentum + Volume confirmation (MACD, RSI, Volume ratio)
 import os
 import sys
 import json
-from datetime import datetime, date
+import time as time_module
+from datetime import datetime, date, time
 from pathlib import Path
 import alpaca_trade_api as tradeapi
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.utils.data_collector import DataCollector
+from src.strategies.core_strategy import CoreStrategy
+from src.strategies.growth_strategy import GrowthStrategy
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5")
@@ -64,39 +67,166 @@ def log_trade(trade_data):
         json.dump(trades, f, indent=2)
 
 
-def get_momentum_score(symbol, days=20):
-    """Calculate momentum score using latest trade data"""
-    try:
-        # Get latest price
-        latest = api.get_latest_trade(symbol)
-        current_price = latest.price
+def wait_for_market_stabilization():
+    """Wait 5-10 minutes after market open for price stabilization"""
+    now = datetime.now().time()
+    market_open = time(9, 30)
+    stabilization_time = time(9, 40)  # Wait until 9:40 AM
 
-        # Simple momentum: use current price
-        # In real scenario, would compare to historical average
-        return current_price
-    except Exception:
+    if market_open <= now < stabilization_time:
+        wait_until = datetime.combine(date.today(), stabilization_time)
+        wait_seconds = (wait_until - datetime.now()).total_seconds()
+
+        if wait_seconds > 0:
+            print(f"⏰ Market just opened. Waiting {wait_seconds/60:.1f} minutes for stabilization...")
+            time_module.sleep(wait_seconds)
+            print("✅ Stabilization period complete. Proceeding with analysis...")
+
+
+def validate_data_freshness(symbol, hist_data):
+    """Ensure market data is fresh (< 2 hours old) to prevent stale data trades"""
+    if hist_data is None or hist_data.empty:
+        print(f"⚠️  {symbol}: No data available")
+        return False
+
+    try:
+        latest_timestamp = hist_data.index[-1]
+        age_hours = (datetime.now() - latest_timestamp).total_seconds() / 3600
+
+        if age_hours > 2:
+            print(f"⚠️  {symbol}: Data is {age_hours:.1f}h old - TOO STALE (rejecting)")
+            return False
+
+        print(f"✅ {symbol}: Data is {age_hours:.1f}h old - FRESH")
+        return True
+    except Exception as e:
+        print(f"⚠️  {symbol}: Error checking data freshness: {e}")
+        return False
+
+
+def calculate_technical_score(symbol):
+    """Calculate technical score with MACD, RSI, volume (matching backtest logic)"""
+    try:
+        # Try yfinance first
+        import yfinance as yf
+        import pandas as pd
+
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period="50d")
+
+        # If yfinance fails, use Alpaca as fallback
+        if hist.empty or len(hist) < 26:
+            print(f"⚠️  {symbol}: yfinance failed, trying Alpaca fallback...")
+            try:
+                # Get 100 days from Alpaca (need 50+ trading days for MACD)
+                from datetime import timedelta
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=100)
+
+                bars = api.get_bars(
+                    symbol,
+                    "1Day",
+                    start=start_date.strftime("%Y-%m-%d"),
+                    end=end_date.strftime("%Y-%m-%d")
+                ).df
+                if not bars.empty:
+                    # Convert Alpaca format to yfinance format
+                    hist = pd.DataFrame({
+                        'Close': bars['close'],
+                        'Volume': bars['volume'],
+                        'Open': bars['open'],
+                        'High': bars['high'],
+                        'Low': bars['low']
+                    })
+                    print(f"✅ {symbol}: Using Alpaca data ({len(hist)} days)")
+                else:
+                    print(f"❌ {symbol}: Alpaca also failed - no data available")
+                    return 0
+            except Exception as e:
+                print(f"❌ {symbol}: Both yfinance and Alpaca failed: {e}")
+                return 0
+
+        if hist.empty or len(hist) < 26:
+            print(f"⚠️  {symbol}: Insufficient data ({len(hist) if not hist.empty else 0} days)")
+            return 0
+
+        # Validate data freshness
+        if not validate_data_freshness(symbol, hist):
+            return 0  # Reject stale data
+
+        # Calculate MACD
+        ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
+        ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
+        histogram = macd_line - signal_line
+
+        # Calculate RSI
+        delta = hist['Close'].diff()
+        gain = delta.where(delta > 0, 0).rolling(window=14).mean()
+        loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+
+        # Calculate volume ratio
+        avg_volume = hist['Volume'].rolling(window=20).mean()
+        volume_ratio = hist['Volume'].iloc[-1] / avg_volume.iloc[-1]
+
+        # Get current values
+        macd_hist = histogram.iloc[-1]
+        rsi_val = rsi.iloc[-1]
+        price = hist['Close'].iloc[-1]
+
+        # CRITICAL FILTERS (matching backtest)
+        if macd_hist < 0:
+            print(f"❌ {symbol}: REJECTED - Bearish MACD histogram ({macd_hist:.3f})")
+            return 0
+
+        if rsi_val > 70:
+            print(f"❌ {symbol}: REJECTED - Overbought RSI ({rsi_val:.1f})")
+            return 0
+
+        if volume_ratio < 0.8:
+            print(f"❌ {symbol}: REJECTED - Low volume ({volume_ratio:.2f}x)")
+            return 0
+
+        # Calculate composite score (price weighted by technical strength)
+        technical_score = price * (1 + macd_hist/10) * (1 + (70-rsi_val)/100) * volume_ratio
+
+        print(f"✅ {symbol}: Score {technical_score:.2f} | MACD: {macd_hist:.3f} | RSI: {rsi_val:.1f} | Vol: {volume_ratio:.2f}x")
+        return technical_score
+
+    except Exception as e:
+        print(f"❌ {symbol}: Error calculating technical score: {e}")
         return 0
 
 
 def execute_tier1(daily_amount):
-    """Tier 1: Core ETF Strategy - 60% of daily Fibonacci amount"""
+    """Tier 1: Core ETF Strategy - 60% using PROPER technical analysis"""
     amount = daily_amount * 0.60
 
     print("\n" + "=" * 70)
-    print("🎯 TIER 1: CORE ETF STRATEGY")
+    print("🎯 TIER 1: CORE ETF STRATEGY (MACD + RSI + Volume)")
     print("=" * 70)
 
     etfs = ["SPY", "QQQ", "VOO"]
     scores = {}
 
-    # Analyze each ETF
+    # Analyze each ETF with REAL technical indicators
     for symbol in etfs:
-        score = get_momentum_score(symbol)
+        score = calculate_technical_score(symbol)
         scores[symbol] = score
-        print(f"{symbol}: Score {score:.2f}")
+
+    # Filter out zeros (rejected symbols)
+    valid_scores = {k: v for k, v in scores.items() if v > 0}
+
+    if not valid_scores:
+        print("\n❌ NO VALID ENTRIES - All symbols rejected by technical filters")
+        print("💡 Skipping Tier 1 trade today (safety first)")
+        return False
 
     # Select best
-    best = max(scores, key=scores.get)
+    best = max(valid_scores, key=valid_scores.get)
 
     print(f"\n✅ Selected: {best}")
     print(f"💰 Investment: ${amount:.2f} (60% of ${daily_amount:.2f})")
@@ -128,7 +258,7 @@ def execute_tier1(daily_amount):
 
 
 def execute_tier2(daily_amount):
-    """Tier 2: Disruptive Innovation Strategy - 20% of daily Fibonacci amount
+    """Tier 2: Disruptive Innovation Strategy - 20% using PROPER technical analysis
 
     Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles) + AMZN (OpenAI deal)
     Conservative approach - proven disruptive leaders
@@ -136,21 +266,28 @@ def execute_tier2(daily_amount):
     amount = daily_amount * 0.20
 
     print("\n" + "=" * 70)
-    print("📈 TIER 2: DISRUPTIVE INNOVATION STRATEGY")
+    print("📈 TIER 2: DISRUPTIVE INNOVATION STRATEGY (MACD + RSI + Volume)")
     print("=" * 70)
 
-    # Focus on NVDA + GOOGL + AMZN (3-way rotation based on momentum)
+    # Focus on NVDA + GOOGL + AMZN (3-way rotation based on REAL momentum)
     stocks = ["NVDA", "GOOGL", "AMZN"]
     scores = {}
 
-    # Analyze momentum for each
+    # Analyze REAL technical indicators for each
     for symbol in stocks:
-        score = get_momentum_score(symbol)
+        score = calculate_technical_score(symbol)
         scores[symbol] = score
-        print(f"{symbol}: Score {score:.2f}")
 
-    # Select best momentum
-    selected = max(scores, key=scores.get)
+    # Filter out zeros (rejected symbols)
+    valid_scores = {k: v for k, v in scores.items() if v > 0}
+
+    if not valid_scores:
+        print("\n❌ NO VALID ENTRIES - All symbols rejected by technical filters")
+        print("💡 Skipping Tier 2 trade today (safety first)")
+        return False
+
+    # Select best technical score
+    selected = max(valid_scores, key=valid_scores.get)
 
     print(f"\n✅ Selected: {selected}")
     print(f"💰 Investment: ${amount:.2f} (20% of ${daily_amount:.2f})")
@@ -304,8 +441,11 @@ def main():
     clock = api.get_clock()
     if not clock.is_open:
         print("⚠️  Market is closed. Order will execute at next open.")
+    else:
+        # Wait for market stabilization (5-10 min post-open)
+        wait_for_market_stabilization()
 
-    # Execute strategies with intelligent position sizing
+    # Execute strategies with PROPER technical analysis
     tier1_success = execute_tier1(daily_investment)
     tier2_success = execute_tier2(daily_investment)
     track_daily_deposit(daily_investment)
