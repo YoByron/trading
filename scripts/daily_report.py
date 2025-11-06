@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""
+DAILY TRADING REPORT
+
+Generates comprehensive daily summary:
+- Trades executed
+- P/L for the day
+- Agent decisions
+- RL learning progress
+- Circuit breaker status
+- Win rate tracking
+
+Runs automatically after trading completes
+"""
+import os
+import sys
+import json
+from pathlib import Path
+from datetime import date, datetime
+from typing import List, Dict, Any
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+import alpaca_trade_api as tradeapi
+
+# Configuration
+ALPACA_KEY = os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY", "9DCF1pY2wgTTY3TBasjAHUWWLXiDTyrAhMJ4ZD6nVWaG")
+DATA_DIR = Path("data")
+REPORTS_DIR = Path("reports")
+REPORTS_DIR.mkdir(exist_ok=True)
+
+
+def load_todays_trades() -> List[Dict[str, Any]]:
+    """Load today's trade log."""
+    today = date.today().isoformat()
+    trades_file = DATA_DIR / f"trades_{today}.json"
+    
+    if not trades_file.exists():
+        return []
+    
+    try:
+        with open(trades_file, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+
+def get_portfolio_status() -> Dict[str, Any]:
+    """Get current portfolio status from Alpaca."""
+    try:
+        api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
+        account = api.get_account()
+        
+        return {
+            "equity": float(account.equity),
+            "cash": float(account.cash),
+            "buying_power": float(account.buying_power),
+            "pl_today": float(account.equity) - 100000.0  # Assuming $100K start
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def get_rl_stats() -> Dict[str, Any]:
+    """Get RL policy learning stats."""
+    rl_file = DATA_DIR / "rl_policy_state.json"
+    
+    if not rl_file.exists():
+        return {"states_learned": 0, "action_distribution": {}}
+    
+    try:
+        with open(rl_file, 'r') as f:
+            data = json.load(f)
+            q_table = data.get("q_table", {})
+            
+            # Count actions
+            action_counts = {"BUY": 0, "SELL": 0, "HOLD": 0}
+            for state_actions in q_table.values():
+                best_action = max(state_actions, key=state_actions.get)
+                action_counts[best_action] += 1
+            
+            return {
+                "states_learned": len(q_table),
+                "action_distribution": action_counts,
+                "exploration_rate": data.get("exploration_rate", 0.2)
+            }
+    except:
+        return {"states_learned": 0, "action_distribution": {}}
+
+
+def get_circuit_breaker_status() -> Dict[str, Any]:
+    """Get circuit breaker status."""
+    try:
+        from src.safety.circuit_breakers import CircuitBreaker
+        breaker = CircuitBreaker()
+        return breaker.get_status()
+    except:
+        return {"error": "Could not load circuit breaker status"}
+
+
+def generate_report() -> str:
+    """Generate daily report."""
+    today = date.today().isoformat()
+    
+    # Load data
+    trades = load_todays_trades()
+    portfolio = get_portfolio_status()
+    rl_stats = get_rl_stats()
+    cb_status = get_circuit_breaker_status()
+    
+    # Build report
+    report = f"""
+{'=' * 80}
+📊 DAILY TRADING REPORT - {today}
+{'=' * 80}
+
+🤖 SYSTEM STATUS
+{'=' * 80}
+Multi-Agent Trading System (2025 Standard)
+- MetaAgent + Research + Signal + Risk + Execution + RL
+
+{'=' * 80}
+💰 PORTFOLIO
+{'=' * 80}
+Equity:        ${portfolio.get('equity', 0):,.2f}
+Cash:          ${portfolio.get('cash', 0):,.2f}
+Buying Power:  ${portfolio.get('buying_power', 0):,.2f}
+P/L Today:     ${portfolio.get('pl_today', 0):+,.2f}
+
+{'=' * 80}
+📈 TRADES EXECUTED
+{'=' * 80}
+Total Trades: {len(trades)}
+
+"""
+    
+    if trades:
+        for i, trade in enumerate(trades, 1):
+            report += f"\nTrade {i}:\n"
+            report += f"  Symbol: {trade.get('symbol', 'N/A')}\n"
+            report += f"  Action: {trade.get('action', 'N/A')}\n"
+            report += f"  Amount: ${trade.get('position_size', 0):,.2f}\n"
+            report += f"  Time: {trade.get('timestamp', 'N/A')}\n"
+            if 'order_id' in trade:
+                report += f"  Order ID: {trade['order_id']}\n"
+    else:
+        report += "No trades executed today\n"
+    
+    report += f"""
+{'=' * 80}
+🎓 REINFORCEMENT LEARNING
+{'=' * 80}
+States Learned:     {rl_stats['states_learned']}
+Exploration Rate:   {rl_stats.get('exploration_rate', 0.2):.2%}
+Action Preferences:
+  BUY:  {rl_stats['action_distribution'].get('BUY', 0)} states
+  SELL: {rl_stats['action_distribution'].get('SELL', 0)} states
+  HOLD: {rl_stats['action_distribution'].get('HOLD', 0)} states
+
+{'=' * 80}
+🛡️ CIRCUIT BREAKERS
+{'=' * 80}
+Status:             {'🚨 TRIPPED' if cb_status.get('is_tripped') else '✅ OK'}
+Consecutive Losses: {cb_status.get('consecutive_losses', 0)}
+API Errors Today:   {cb_status.get('api_errors_today', 0)}
+"""
+    
+    if cb_status.get('is_tripped'):
+        report += f"\n⚠️  TRIP REASON: {cb_status.get('trip_reason', 'Unknown')}\n"
+        report += f"⚠️  DETAILS: {cb_status.get('trip_details', 'N/A')}\n"
+        report += f"⚠️  ACTION REQUIRED: Manual reset needed\n"
+    
+    report += f"""
+{'=' * 80}
+📁 LOG FILES
+{'=' * 80}
+Trading Log:  logs/advanced_trading.log
+Trade Data:   data/trades_{today}.json
+RL Policy:    data/rl_policy_state.json
+CB State:     data/circuit_breaker_state.json
+
+{'=' * 80}
+Generated: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}
+{'=' * 80}
+"""
+    
+    return report
+
+
+def main():
+    """Generate and save daily report."""
+    today = date.today().isoformat()
+    report = generate_report()
+    
+    # Print to console
+    print(report)
+    
+    # Save to file
+    report_file = REPORTS_DIR / f"daily_report_{today}.txt"
+    with open(report_file, 'w') as f:
+        f.write(report)
+    
+    print(f"\n📁 Report saved to: {report_file}\n")
+
+
+if __name__ == "__main__":
+    main()
+

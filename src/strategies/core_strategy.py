@@ -251,9 +251,14 @@ class CoreStrategy:
             # Step 3: Calculate momentum scores for all ETFs
             momentum_scores = self._calculate_all_momentum_scores(sentiment)
 
-            # Step 4: Select best ETF
-            best_etf = self.select_best_etf(momentum_scores)
-            logger.info(f"Selected ETF: {best_etf}")
+            # Step 4: Select best ETF (may skip if all fail hard filters)
+            try:
+                best_etf = self.select_best_etf(momentum_scores)
+                logger.info(f"Selected ETF: {best_etf}")
+            except ValueError as e:
+                logger.warning(f"No valid ETF selection today: {e}")
+                logger.info("SKIPPING TRADE - Will try again tomorrow")
+                return None
 
             # Step 5: Get current price
             current_price = self._get_current_price(best_etf)
@@ -428,18 +433,32 @@ class CoreStrategy:
         sharpe_bonus = sharpe_ratio * 5
         momentum_score += sharpe_bonus
 
-        # RSI adjustment (slight penalty if overbought, bonus if neutral)
-        if rsi > self.RSI_OVERBOUGHT:
-            momentum_score -= 5
-        elif self.RSI_OVERSOLD < rsi < 60:
+        # HARD FILTERS - Reject entries that don't meet criteria
+        # Calculate MACD first for filtering
+        macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+
+        # HARD FILTER 1: Reject bearish MACD (histogram below zero)
+        if macd_histogram < 0:
+            logger.warning(
+                f"{symbol} REJECTED - Bearish MACD histogram ({macd_histogram:.4f}). "
+                f"Trend is down, not entering position."
+            )
+            return -1  # Return invalid score to filter out
+
+        # HARD FILTER 2: Reject overbought RSI (>70)
+        if rsi > 70:
+            logger.warning(
+                f"{symbol} REJECTED - Overbought RSI ({rsi:.2f}). "
+                f"Too extended, high reversal risk."
+            )
+            return -1  # Return invalid score to filter out
+        # RSI adjustment (bonus if in healthy range)
+        if self.RSI_OVERSOLD < rsi < 60:
             momentum_score += 3
 
-        # MACD adjustment (momentum confirmation)
-        macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
-        if macd_histogram > 0:  # Bullish MACD (histogram above zero)
+        # MACD adjustment (momentum confirmation for bullish signals)
+        if macd_histogram > 0:  # Bullish MACD (passed hard filter)
             momentum_score += 8
-        elif macd_histogram < 0:  # Bearish MACD (histogram below zero)
-            momentum_score -= 8
 
         # Volume confirmation (high volume = stronger signal)
         volume_ratio = self._calculate_volume_ratio(hist)
@@ -486,15 +505,20 @@ class CoreStrategy:
             sentiment = self._get_market_sentiment()
             momentum_scores = self._calculate_all_momentum_scores(sentiment)
 
-        # FALLBACK: If no momentum scores available (data failure), default to SPY
+        # If no momentum scores available, DO NOT TRADE
         if not momentum_scores:
             logger.warning(
-                "No valid momentum scores available - falling back to SPY (safest ETF)"
+                "🚫 NO VALID ENTRIES TODAY - All symbols rejected by hard filters"
             )
             logger.warning(
-                "This can happen due to yfinance/Alpaca API failures or rate limiting"
+                "Either all symbols have bearish MACD or overbought RSI"
             )
-            return "SPY"  # SPY is the safest default (S&P 500 index)
+            logger.warning(
+                "SKIPPING TRADE - Better to sit in cash than fight the trend"
+            )
+            raise ValueError(
+                "No valid trading opportunities today. All symbols failed hard filters."
+            )
 
         # Sort by score
         momentum_scores.sort(key=lambda x: x.score, reverse=True)
@@ -988,6 +1012,11 @@ class CoreStrategy:
         for symbol in self.etf_universe:
             try:
                 base_score = self.calculate_momentum(symbol)
+
+                # Skip if symbol was rejected by hard filters (score = -1)
+                if base_score < 0:
+                    logger.info(f"{symbol} skipped - failed hard filters")
+                    continue
 
                 # Apply sentiment boost
                 adjusted_score = base_score + sentiment_boost
