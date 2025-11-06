@@ -24,10 +24,6 @@ yt-dlp==2025.10.22
 # Configuration
 python-dotenv==1.0.0
 
-# Dashboard
-streamlit==1.37.0
-plotly==5.17.0
-
 # API Framework
 fastapi==0.104.0
 uvicorn==0.24.0

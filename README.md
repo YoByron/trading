@@ -164,16 +164,6 @@ python scripts/check_positions.py
 
 ---
 
-## 📊 Dashboard
-
-```bash
-streamlit run dashboard/dashboard.py
-```
-
-Monitor performance at http://localhost:8501
-
----
-
 ## 🚨 Safety First
 
 **Before live trading**:
