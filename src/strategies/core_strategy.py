@@ -144,7 +144,9 @@ class CoreStrategy:
     MACD_SIGNAL_PERIOD = 9
 
     # Risk parameters
-    DEFAULT_STOP_LOSS_PCT = 0.05  # 5% trailing stop
+    DEFAULT_STOP_LOSS_PCT = 0.05  # 5% trailing stop (fallback)
+    ATR_STOP_MULTIPLIER = 2.0  # ATR multiplier for dynamic stops
+    USE_ATR_STOPS = True  # Use ATR-based stops (more adaptive)
     REBALANCE_THRESHOLD = 0.15  # 15% deviation triggers rebalance
     REBALANCE_FREQUENCY_DAYS = 30  # Monthly rebalancing
 
