@@ -16,14 +16,16 @@ from datetime import datetime
 
 
 def test_empty_momentum_scores_fallback():
-    """Test that empty momentum scores falls back to SPY."""
+    """Test that empty momentum scores raises ValueError (no trading today)."""
     strategy = CoreStrategy(daily_allocation=6.0, use_sentiment=False)
 
-    # Simulate the bug scenario: empty momentum scores
-    result = strategy.select_best_etf(momentum_scores=[])
-
-    assert result == "SPY", f"Expected SPY fallback, got {result}"
-    print("✅ Empty momentum scores correctly falls back to SPY")
+    # Simulate scenario: empty momentum scores (all symbols rejected by filters)
+    try:
+        result = strategy.select_best_etf(momentum_scores=[])
+        assert False, "Expected ValueError to be raised, but got result: {result}"
+    except ValueError as e:
+        assert "No valid trading opportunities" in str(e)
+        print("✅ Empty momentum scores correctly raises ValueError (skip trading)")
 
 
 def test_none_momentum_scores_fallback():
