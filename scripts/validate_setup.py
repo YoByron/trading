@@ -79,7 +79,6 @@ required_files = [
     "src/strategies/growth_strategy.py",
     "src/strategies/ipo_strategy.py",
     "src/main.py",
-    "dashboard/dashboard.py",
 ]
 
 all_present = True
@@ -100,7 +99,7 @@ print("✅ ALL SYSTEMS GO!")
 print("=" * 60)
 print("\n📋 Next Steps:")
 print("   1. Run paper trade test: python3 src/main.py --mode paper --run-once")
-print("   2. Launch dashboard: streamlit run dashboard/dashboard.py")
-print("   3. Review logs: tail -f logs/trading.log")
+print("   2. Review logs: tail -f logs/trading_system.log")
+print("   3. Check Alpaca dashboard for positions and P/L")
 print("\n🎯 Your system is ready for paper trading!")
 print("=" * 60)
