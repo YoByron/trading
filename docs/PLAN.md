@@ -324,6 +324,52 @@ For the record - tools evaluated and rejected during R&D Phase:
 
 ---
 
+### ❌ MCP Code Execution (November 6, 2025)
+**Source**: https://www.anthropic.com/engineering/code-execution-with-mcp
+
+**What It Is**:
+- Model Context Protocol enhancement for Claude
+- Agents write code to interact with MCP servers instead of direct tool calls
+- Executes in sandboxed environment before returning results
+- Reduces token usage by 98.7% (150K → 2K tokens in Anthropic's example)
+- Avoids redundant data flow through context window
+
+**Why We're NOT Doing This Now**:
+- **Wrong problem**: Our issue is 0% win rate (trading execution), not token efficiency
+- **Setup overhead**: Requires sandboxed execution environment, infrastructure monitoring, TypeScript module mapping (2-5 days work)
+- **Not a bottleneck**: Not currently hitting token limits or performance issues
+- **Tool moratorium**: 30-day moratorium active (Nov 3 - Dec 2)
+- **Unclear applicability**: Blog post focuses on Claude Desktop, not Claude Code CLI
+
+**How It Would Help** (theoretically):
+- Reduce token costs by processing data locally vs passing through context
+- Improve latency by composing multiple tool calls into single code block
+- Enable complex multi-step data transformations without context bloat
+
+**Why This Isn't Our Constraint**:
+- **Current constraint**: Win rate 0%, system profitability
+- **Not constrained by**: My token efficiency or execution speed
+- **Example**: 150K → 2K token savings means nothing if we're losing money every day
+
+**When This BECOMES Relevant** (Phase 3+ - Month 6+):
+- IF making hundreds of tool calls per day
+- IF token usage becomes significant cost factor
+- IF complex multi-step data processing tasks emerge
+- IF we're optimizing costs at scale ($1000+/day operations)
+- IF Claude Code CLI officially supports MCP code execution (unclear if it does)
+
+**Better ROI Right Now** (Priority Order):
+1. 🔄 Get win rate >0% (market opens in 20 mins)
+2. 🔄 Validate backtest (62.2% win rate) in live trading
+3. 🔄 Build profitable system ($100+/day by Month 6)
+4. ❌ Optimize CTO token efficiency (not the constraint)
+
+**Decision**: Good idea, wrong problem. Premature optimization. Focus on profitability first, efficiency later.
+
+**Status**: Rejected for now, bookmarked for Phase 3+ (Month 6+) when optimizing at scale
+
+---
+
 ### ❌ Context Engineering 2.0 (November 6, 2025)
 **Paper**: [arXiv:2510.26493](https://arxiv.org/abs/2510.26493) - "Context Engineering 2.0: The Context of Context Engineering"
 
