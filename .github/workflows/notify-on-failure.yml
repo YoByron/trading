@@ -1,0 +1,70 @@
+name: Notify on Trading Failure
+
+on:
+  workflow_run:
+    workflows: ["Daily Trading Execution"]
+    types:
+      - completed
+
+jobs:
+  notify-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    
+    steps:
+      - name: Create GitHub Issue on Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const runUrl = run.html_url;
+            const runNumber = run.run_number;
+            const runDate = new Date(run.created_at).toLocaleString('en-US', { 
+              timeZone: 'America/New_York' 
+            });
+            
+            const issueTitle = `🚨 Daily Trading Execution Failed - Run #${runNumber}`;
+            const issueBody = `## Trading Execution Failure Alert
+            
+**Workflow Run**: [#${runNumber}](${runUrl})
+**Date/Time**: ${runDate} EST
+**Status**: ${run.conclusion}
+
+### Action Required
+1. Check the workflow logs: ${runUrl}
+2. Verify GitHub Secrets are configured
+3. Check Alpaca API status
+4. Run manually if needed: \`python scripts/autonomous_trader.py\`
+
+### Fallback
+LaunchAgent on Mac should execute as backup at 9:35 AM EST.
+
+---
+*This issue was automatically created by the trading system.*`;
+            
+            // Check if issue already exists for this run
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'trading-failure'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes(`Run #${runNumber}`)
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['trading-failure', 'automated']
+              });
+              
+              core.info(`Created issue for failed run #${runNumber}`);
+            } else {
+              core.info(`Issue already exists for run #${runNumber}`);
+            }
+
