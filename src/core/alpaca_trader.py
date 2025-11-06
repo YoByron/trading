@@ -30,6 +30,11 @@ import alpaca_trade_api as tradeapi
 from alpaca_trade_api.rest import APIError, REST
 from alpaca_trade_api.entity import Order, Position, Account
 
+# Import retry decorator
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from src.utils.retry_decorator import retry_with_backoff
+
 
 # Configure logging
 logging.basicConfig(
@@ -226,9 +231,12 @@ class AlpacaTrader:
                 f"(expected: ${expected_amount:.2f}, tier: {tier_name})"
             )
 
+    @retry_with_backoff(max_retries=3, initial_delay=1.0, exceptions=(APIError, ConnectionError))
     def get_account_info(self) -> Dict[str, Any]:
         """
         Retrieve account information including buying power, equity, and cash.
+
+        Retries up to 3 times with exponential backoff on network errors.
 
         Returns:
             Dictionary containing account information with keys:
@@ -282,11 +290,14 @@ class AlpacaTrader:
             logger.error(f"Unexpected error retrieving account info: {e}")
             raise AccountError(f"Unexpected error: {e}") from e
 
+    @retry_with_backoff(max_retries=3, initial_delay=2.0, exceptions=(APIError, ConnectionError))
     def execute_order(
         self, symbol: str, amount_usd: float, side: str = "buy", tier: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute a market order with fractional shares based on USD amount.
+
+        Retries up to 3 times with exponential backoff on network/API errors.
 
         Args:
             symbol: Stock or ETF symbol (e.g., 'SPY', 'AAPL')
