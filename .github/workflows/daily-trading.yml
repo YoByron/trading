@@ -2,10 +2,11 @@ name: Daily Trading Execution
 
 on:
   schedule:
-    # Run every weekday at 9:35 AM EST (1:35 PM UTC)
-    # Monday-Friday at 9:35 AM EST = 13:35 UTC (EST is UTC-5 in winter, UTC-4 in summer)
-    # Using 13:35 UTC to cover both EST/EDT
-    - cron: '35 13 * * 1-5'
+    # Run every weekday at 9:35 AM Eastern
+    # When the US is on Daylight Saving Time (UTC-4) -> 13:35 UTC
+    # When the US is on Standard Time (UTC-5)       -> 14:35 UTC
+    - cron: '35 13 * * 1-5'   # 9:35 AM Eastern during DST (Mar-Nov)
+    - cron: '35 14 * * 1-5'   # 9:35 AM Eastern during Standard Time (Nov-Mar)
   workflow_dispatch:  # Allow manual trigger
   workflow_run:
     # Also trigger when YouTube analysis completes (ensures latest watchlist)
@@ -134,7 +135,60 @@ jobs:
               print('   Trading will proceed (state will be regenerated)')
           "
 
+      - name: Check if today's trade already executed
+        id: check_execution
+        run: |
+          echo "🔍 Checking last execution date..."
+          python - <<'PY'
+import json
+import os
+from datetime import datetime, timezone
+
+state_path = "data/system_state.json"
+skip = False
+reason = ""
+
+today = datetime.now(timezone.utc).date()
+
+if os.path.exists(state_path):
+    try:
+        with open(state_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        last_updated = data.get("meta", {}).get("last_updated")
+        if last_updated:
+            try:
+                # Support both ISO and "YYYY-MM-DD HH:MM:SS" formats
+                if "T" in last_updated:
+                    last_dt = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
+                else:
+                    last_dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
+
+                if last_dt.date() == today:
+                    skip = True
+                    reason = f"Trading already executed today at {last_dt.isoformat()}"
+            except ValueError:
+                reason = "Could not parse last_updated timestamp"
+    except Exception as exc:
+        reason = f"Unable to inspect system_state.json ({exc})"
+
+output_path = os.environ["GITHUB_OUTPUT"]
+with open(output_path, "a", encoding="utf-8") as fh:
+    fh.write(f"skip={'true' if skip else 'false'}\n")
+    if reason:
+        fh.write(f"skip_reason={reason}\n")
+
+print(f"skip={'true' if skip else 'false'}")
+if reason:
+    print(f"ℹ️  {reason}")
+PY
+
+          if [ "${{ steps.check_execution.outputs.skip }}" = "true" ]; then
+            echo "⚠️  Trading already executed today. Skipping run."
+          fi
+
       - name: Execute daily trading
+        if: steps.check_execution.outputs.skip != 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
@@ -146,7 +200,7 @@ jobs:
       
       - name: Check for state changes
         id: check_state_changes
-        if: always()
+        if: steps.check_execution.outputs.skip != 'true'
         run: |
           echo "🔍 Checking for system_state.json updates..."
 
@@ -164,7 +218,7 @@ jobs:
           fi
 
       - name: Commit system state updates
-        if: steps.check_state_changes.outputs.state_changed == 'true'
+        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
         run: |
           echo "💾 Committing system_state.json updates..."
 
