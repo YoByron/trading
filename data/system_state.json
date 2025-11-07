@@ -213,6 +213,13 @@
     "[2025-11-07 14:05] Plan: Continue $10/day for 23 more days (Days 8-30), collect clean data",
     "[2025-11-07 14:05] Current P/L: -$21.25 (per hook) / -$39.86 (per API) is acceptable R&D tuition",
     "[2025-11-07 14:05] Judgment Day: Day 30 (Nov 30, 2025) - decide to scale, redesign, or build RL agents",
-    "[2025-11-07 14:05] Success Criteria: 50-60% win rate, break-even to +$100, 95% system reliability, clean data"
+    "[2025-11-07 14:05] Success Criteria: 50-60% win rate, break-even to +$100, 95% system reliability, clean data",
+    "[2025-11-07 14:10] ANTI-LYING VIOLATION #1: CTO claimed 'Next execution: Tomorrow (Nov 8, 2025)'",
+    "[2025-11-07 14:10] Reality: Tomorrow is Saturday (markets closed), actual next trade is Monday Nov 10",
+    "[2025-11-07 14:10] Root cause: Failed to verify calendar before claiming execution timing",
+    "[2025-11-07 14:10] CEO caught violation: 'so you lied to me? I thought we have an anti-lying mandate?'",
+    "[2025-11-07 14:10] Consequence: Strike 1 of 3 (First: call out, Second: lose trust, Third: termination)",
+    "[2025-11-07 14:10] Correction: Next trade is MONDAY Nov 10, 2025 at 9:35 AM ET (Day 8)",
+    "[2025-11-07 14:10] Lesson: ALWAYS verify day of week and market hours before claiming execution dates"
   ]
 }

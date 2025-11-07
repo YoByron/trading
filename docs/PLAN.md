@@ -123,8 +123,13 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 - ✅ Committed and pushed all fixes
 - ✅ Ready for tomorrow's trading session
 
-### **Tomorrow (Nov 8)** - Day 8 of R&D Phase:
-- Launchd triggers at 9:35 AM ET with NEW hard filters
+### **Weekend (Nov 8-9)** - Markets Closed:
+- Saturday/Sunday - No trading
+- Automation will NOT trigger (configured for weekdays only)
+- System paused until Monday
+
+### **Monday (Nov 10)** - Day 8 of R&D Phase:
+- Launchd triggers at 9:35 AM ET with hard filters
 - System will REJECT bearish MACD or overbought RSI entries
 - If all symbols fail filters, system will SKIP trading (sit in cash)
 - Monitor: Did filters prevent bad entries?
