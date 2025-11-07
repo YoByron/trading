@@ -47,3 +47,4 @@ build/
 # Allow system state to be committed for cross-machine continuity
 !data/.gitkeep
 !data/system_state.json
+!data/tier2_watchlist.json
