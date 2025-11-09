@@ -12,6 +12,10 @@ import time as time_module
 from datetime import datetime, date, time
 from pathlib import Path
 import alpaca_trade_api as tradeapi
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
