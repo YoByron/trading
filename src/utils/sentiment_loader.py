@@ -28,6 +28,13 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
+try:
+    from rag_store.sqlite_store import SentimentSQLiteStore
+except Exception:  # noqa: BLE001
+    _SQLITE_STORE: Optional["SentimentSQLiteStore"] = None
+else:
+    _SQLITE_STORE = SentimentSQLiteStore()
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +51,49 @@ VERY_BULLISH_THRESHOLD = 70  # Above 70 = very bullish
 
 # Data freshness threshold (hours)
 MAX_AGE_HOURS = 24
+
+
+def _load_source_from_sqlite(source: str, date_str: str) -> Optional[Dict]:
+    """
+    Load sentiment snapshot from SQLite store when JSON cache is missing.
+
+    Args:
+        source: Data source identifier ("reddit" or "news")
+        date_str: Date string (YYYY-MM-DD)
+
+    Returns:
+        Sentiment dict matching cached JSON structure, or None if unavailable.
+    """
+    if _SQLITE_STORE is None:
+        return None
+
+    rows = list(
+        _SQLITE_STORE.fetch_by_source_date(source=source, snapshot_date=date_str)
+    )
+    if not rows:
+        return None
+
+    sentiment_by_ticker = {}
+    for row in rows:
+        metadata = json.loads(row["metadata"])
+        sentiment_by_ticker[row["ticker"]] = metadata
+
+    meta = {
+        "date": date_str,
+        "timestamp": rows[0]["created_at"],
+        "sources": [source],
+        "tickers_analyzed": len(sentiment_by_ticker),
+        "store_backfill": True,
+    }
+
+    if source == "reddit":
+        meta.update(
+            {
+                "subreddits": [],
+                "total_tickers": len(sentiment_by_ticker),
+            }
+        )
+    return {"meta": meta, "sentiment_by_ticker": sentiment_by_ticker}
 
 
 def normalize_sentiment_score(score: float, source: str) -> float:
@@ -154,6 +204,10 @@ def load_latest_sentiment(
                         logger.info(f"Loaded Reddit sentiment from {reddit_file}")
                 except Exception as e:
                     logger.error(f"Failed to load Reddit sentiment: {e}")
+            elif _SQLITE_STORE:
+                reddit_data = _load_source_from_sqlite("reddit", date_str)
+                if reddit_data:
+                    logger.info("Loaded Reddit sentiment from SQLite fallback")
 
         # Try News data
         if news_data is None:
@@ -165,6 +219,10 @@ def load_latest_sentiment(
                         logger.info(f"Loaded news sentiment from {news_file}")
                 except Exception as e:
                     logger.error(f"Failed to load news sentiment: {e}")
+            elif _SQLITE_STORE:
+                news_data = _load_source_from_sqlite("news", date_str)
+                if news_data:
+                    logger.info("Loaded news sentiment from SQLite fallback")
 
         # If we found both, stop searching
         if reddit_data and news_data:
