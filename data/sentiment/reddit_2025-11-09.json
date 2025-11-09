@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "date": "2025-11-09",
+    "timestamp": "2025-11-09T16:59:39.770277",
+    "subreddits": [
+      "wallstreetbets"
+    ],
+    "total_posts": 0,
+    "total_tickers": 0,
+    "subreddit_stats": {
+      "wallstreetbets": {
+        "posts_collected": 0,
+        "status": "failed",
+        "error": "received 401 HTTP response"
+      }
+    }
+  },
+  "sentiment_by_ticker": {}
+}
