@@ -135,6 +135,7 @@ python scripts/autonomous_trader.py
 ### Technical Docs
 - **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine
 - **[ORCHESTRATOR_README.md](docs/ORCHESTRATOR_README.md)** - Main orchestrator
+- **[MCP_EXECUTION_GUIDE.md](docs/MCP_EXECUTION_GUIDE.md)** - Code-execution harness for MCP servers
 - **[Full Documentation Index](docs/)** - All 42 documentation files
 
 ---

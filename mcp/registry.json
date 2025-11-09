@@ -1,0 +1,69 @@
+{
+  "generated_at": "2025-11-09T00:00:00Z",
+  "servers": [
+    {
+      "id": "trade-agent",
+      "display_name": "Trade Agent MCP Server",
+      "module": "mcp.servers.trade_agent",
+      "tools": {
+        "place_equity_order": "place_equity_order",
+        "place_crypto_order": "place_crypto_order",
+        "get_positions": "get_positions",
+        "get_account_overview": "get_account_overview",
+        "cancel_order": "cancel_order"
+      }
+    },
+    {
+      "id": "alpaca-trading",
+      "display_name": "Alpaca Trading MCP Server",
+      "module": "mcp.servers.alpaca",
+      "tools": {
+        "submit_order": "submit_order",
+        "get_positions": "get_positions",
+        "get_clock": "get_clock",
+        "get_account": "get_account"
+      }
+    },
+    {
+      "id": "mcp-trader",
+      "display_name": "MCP Trader Analytics",
+      "module": "mcp.servers.mcp_trader",
+      "tools": {
+        "analyze_stock": "analyze_stock",
+        "relative_strength": "relative_strength",
+        "position_size": "position_size"
+      }
+    },
+    {
+      "id": "options-order-flow",
+      "display_name": "Options Order Flow",
+      "module": "mcp.servers.options_order_flow",
+      "tools": {
+        "live_summary": "live_summary",
+        "unusual_activity": "unusual_activity",
+        "flow_snapshot": "flow_snapshot"
+      }
+    },
+    {
+      "id": "tradovate",
+      "display_name": "Tradovate Trading",
+      "module": "mcp.servers.tradovate",
+      "tools": {
+        "place_order": "place_order",
+        "get_positions": "get_positions",
+        "get_contract_details": "get_contract_details"
+      }
+    },
+    {
+      "id": "metatrader",
+      "display_name": "MetaTrader 5 Bridge",
+      "module": "mcp.servers.metatrader",
+      "tools": {
+        "place_order": "place_order",
+        "get_open_positions": "get_open_positions",
+        "get_indicator": "get_indicator"
+      }
+    }
+  ]
+}
+

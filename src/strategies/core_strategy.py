@@ -46,6 +46,7 @@ import yfinance as yf
 from src.core.multi_llm_analysis import MultiLLMAnalyzer
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
+from src.utils.sentiment_loader import load_latest_sentiment, get_ticker_sentiment, get_market_regime
 
 
 # Configure logging
@@ -952,45 +953,71 @@ class CoreStrategy:
 
     def _get_market_sentiment(self) -> MarketSentiment:
         """
-        Query AI for current market sentiment analysis using MultiLLMAnalyzer.
+        Query sentiment data (Reddit + News) for current market sentiment.
+
+        This method now uses the sentiment_loader to get pre-collected sentiment
+        from Reddit and news sources instead of querying LLMs in real-time.
+
+        Priority:
+        1. Load pre-collected sentiment from data/sentiment/
+        2. Use SPY as proxy for overall market sentiment
+        3. Apply risk-off filter if market is bearish
 
         Returns:
             MarketSentiment enum value
         """
-        if not self.use_sentiment or not self.llm_analyzer:
-            logger.debug("Using default neutral sentiment (AI analyzer disabled)")
+        if not self.use_sentiment:
+            logger.debug("Sentiment disabled - using default neutral")
             return MarketSentiment.NEUTRAL
 
         try:
-            # Get market outlook from AI
-            import asyncio
+            # Load latest sentiment data
+            sentiment_data = load_latest_sentiment()
 
-            outlook = asyncio.run(self.llm_analyzer.get_market_outlook())
+            # Check if data is available
+            if not sentiment_data.get("sentiment_by_ticker"):
+                logger.warning("No sentiment data available - using neutral")
+                return MarketSentiment.NEUTRAL
 
-            sentiment_score = outlook["overall_sentiment"]
+            # Get market regime from SPY sentiment
+            market_regime = get_market_regime(sentiment_data)
 
-            # Convert sentiment score to enum
-            if sentiment_score >= 0.6:
-                sentiment = MarketSentiment.VERY_BULLISH
-            elif sentiment_score >= 0.2:
-                sentiment = MarketSentiment.BULLISH
-            elif sentiment_score >= -0.2:
-                sentiment = MarketSentiment.NEUTRAL
-            elif sentiment_score >= -0.6:
-                sentiment = MarketSentiment.BEARISH
-            else:
+            # Get SPY sentiment score
+            spy_score, spy_confidence, _ = get_ticker_sentiment("SPY", sentiment_data)
+
+            # Convert 0-100 sentiment score to MarketSentiment enum
+            # 0-30 = very bearish, 30-40 = bearish, 40-60 = neutral,
+            # 60-70 = bullish, 70-100 = very bullish
+            if spy_score < 30:
                 sentiment = MarketSentiment.VERY_BEARISH
+            elif spy_score < 40:
+                sentiment = MarketSentiment.BEARISH
+            elif spy_score < 60:
+                sentiment = MarketSentiment.NEUTRAL
+            elif spy_score < 70:
+                sentiment = MarketSentiment.BULLISH
+            else:
+                sentiment = MarketSentiment.VERY_BULLISH
 
             logger.info(
-                f"AI sentiment analysis: {sentiment.value} (score: {sentiment_score:.2f})"
+                f"Sentiment analysis: {sentiment.value} "
+                f"(SPY score: {spy_score:.1f}, confidence: {spy_confidence}, "
+                f"market regime: {market_regime})"
             )
-            logger.info(f"Market trend: {outlook['trend']}")
-            logger.info(f"Key drivers: {outlook['key_drivers'][:3]}")
+
+            # Log data freshness
+            meta = sentiment_data.get("meta", {})
+            freshness = meta.get("freshness", "unknown")
+            days_old = meta.get("days_old", 0)
+            logger.info(
+                f"Sentiment data: {freshness} ({days_old} days old), "
+                f"sources: {', '.join(meta.get('sources', []))}"
+            )
 
             return sentiment
 
         except Exception as e:
-            logger.error(f"Error getting AI sentiment: {e}")
+            logger.error(f"Error loading sentiment data: {e}")
             logger.debug("Falling back to neutral sentiment")
             return MarketSentiment.NEUTRAL
 
