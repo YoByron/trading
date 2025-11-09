@@ -1,11 +1,11 @@
 """
-Lightweight MCP client abstraction.
+MCP client utilities and shared resource factories.
 
-This module provides a thin wrapper around the `claude` CLI (or any compatible
-MCP client binary) so that agents can execute MCP tools from Python code.  The
-goal is to keep tool invocation logic out of the prompt loop and inside the code
-execution harness, following Anthropic's guidance on context-efficient MCP
-usage.
+This module serves two purposes:
+1. Provide a lightweight wrapper around MCP-compatible CLIs (for legacy usage).
+2. Expose cached factories for high-cost resources (OpenRouter analyzers,
+   Alpaca traders) so MCP code can load them once per execution run as
+   recommended by Anthropic's code-execution workflow.
 """
 
 from __future__ import annotations
@@ -14,8 +14,12 @@ import json
 import os
 import subprocess
 from dataclasses import dataclass
+from functools import lru_cache
 from threading import Lock
 from typing import Any, Dict, Optional
+
+from src.core.alpaca_trader import AlpacaTrader, AlpacaTraderError
+from src.core.multi_llm_analysis import MultiLLMAnalyzer
 
 DEFAULT_CLI_BIN = os.environ.get("MCP_CLI_BIN", "claude")
 DEFAULT_PROFILE = os.environ.get("MCP_PROFILE")
@@ -32,12 +36,6 @@ class MCPError(RuntimeError):
 class MCPClient:
     """
     Simple shell-based MCP client.
-
-    Args:
-        cli_bin: Path to the CLI binary (defaults to env `MCP_CLI_BIN` or
-                 `claude`).
-        profile: Optional CLI profile to pass (via `--profile` flag).
-        env: Extra environment variables to include when invoking the CLI.
     """
 
     cli_bin: str = DEFAULT_CLI_BIN
@@ -53,20 +51,9 @@ class MCPClient:
         timeout: int = 120,
     ) -> Dict[str, Any]:
         """
-        Invoke an MCP tool via the CLI.
-
-        Args:
-            server: MCP server identifier.
-            tool: Tool name on the server.
-            payload: JSON-serialisable arguments for the tool.
-            timeout: Maximum number of seconds to wait for the command.
-
-        Returns:
-            Parsed JSON response from the tool.
-
-        Raises:
-            MCPError: If the command exits non-zero or returns invalid JSON.
+        Invoke an MCP tool via the CLI and return parsed JSON.
         """
+
         cmd = [self.cli_bin, "mcp", "run", server, tool]
         if self.profile:
             cmd.extend(["--profile", self.profile])
@@ -125,12 +112,35 @@ class MCPClient:
 
 def default_client() -> MCPClient:
     """
-    Return a singleton MCPClient, lazily configured from environment variables.
+    Return a singleton MCPClient configured from environment variables.
     """
+
     global _DEFAULT_CLIENT
     if _DEFAULT_CLIENT is None:
         with _DEFAULT_CLIENT_LOCK:
             if _DEFAULT_CLIENT is None:
                 _DEFAULT_CLIENT = MCPClient()
     return _DEFAULT_CLIENT
+
+
+@lru_cache(maxsize=4)
+def get_multi_llm_analyzer(use_async: bool = True) -> MultiLLMAnalyzer:
+    """
+    Return a cached MultiLLMAnalyzer instance.
+    """
+
+    return MultiLLMAnalyzer(use_async=use_async)
+
+
+@lru_cache(maxsize=2)
+def get_alpaca_trader(paper: bool = True) -> AlpacaTrader:
+    """
+    Return a cached AlpacaTrader instance.
+    """
+
+    try:
+        return AlpacaTrader(paper=paper)
+    except AlpacaTraderError:
+        get_alpaca_trader.cache_clear()  # type: ignore[attr-defined]
+        raise
 

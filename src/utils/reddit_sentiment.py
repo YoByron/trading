@@ -34,7 +34,7 @@ import argparse
 import praw
 from praw.exceptions import PRAWException
 
-from retry_decorator import retry_with_backoff
+from src.utils.retry_decorator import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 

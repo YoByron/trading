@@ -1,0 +1,6 @@
+"""
+High-level orchestration utilities.
+"""
+
+__all__ = ["mcp_trading"]
+
