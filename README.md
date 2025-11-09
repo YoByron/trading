@@ -153,6 +153,7 @@ python scripts/autonomous_trader.py
 - **YouTube Analysis**: Automated monitoring of 5 financial channels (Parkev Tatevosian CFA, etc)
 - **Reddit Sentiment**: Daily scraping from r/wallstreetbets, r/stocks, r/investing, r/options
 - **Technical Indicators**: MACD, RSI, Volume, Moving Averages
+- **Sentiment RAG Store**: SQLite metadata + Chroma vector index for historical retrieval
 
 ### Automation
 - **Cloud Deployment**: GitHub Actions (weekdays 9:35 AM EST)

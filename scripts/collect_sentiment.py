@@ -19,6 +19,7 @@ import os
 import sys
 import logging
 import argparse
+from dataclasses import asdict
 from pathlib import Path
 from datetime import datetime
 
@@ -28,6 +29,8 @@ sys.path.insert(0, str(project_root))
 
 from src.utils.reddit_sentiment import RedditSentiment
 from src.utils.news_sentiment import NewsSentimentAggregator
+from rag_store import ingest_news_snapshot, ingest_reddit_snapshot
+
 from src.utils.sentiment_loader import (
     load_latest_sentiment,
     print_sentiment_summary,
@@ -81,6 +84,12 @@ def collect_reddit_sentiment(
         logger.info(f"  Total Posts: {meta.get('total_posts')}")
         logger.info(f"  Total Tickers: {meta.get('total_tickers')}")
         logger.info(f"  Subreddits: {', '.join(['r/' + s for s in meta.get('subreddits', [])])}")
+
+        try:
+            ingest_reddit_snapshot(sentiment_data)
+            logger.info("✓ Reddit sentiment ingested into RAG store")
+        except Exception as ingest_error:  # noqa: BLE001
+            logger.error(f"Failed to ingest Reddit sentiment: {ingest_error}", exc_info=True)
 
         return True
 
@@ -136,6 +145,20 @@ def collect_news_sentiment(
         logger.info(f"  Tickers Analyzed: {report.meta['tickers_analyzed']}")
         logger.info(f"  Sources: {', '.join(report.meta['sources'])}")
         logger.info(f"  Saved to: {filepath}")
+
+        try:
+            # Convert dataclasses to plain dict for ingestion
+            report_dict = {
+                "meta": report.meta,
+                "sentiment_by_ticker": {
+                    ticker: asdict(sentiment)
+                    for ticker, sentiment in report.sentiment_by_ticker.items()
+                },
+            }
+            ingest_news_snapshot(report_dict)
+            logger.info("✓ News sentiment ingested into RAG store")
+        except Exception as ingest_error:  # noqa: BLE001
+            logger.error(f"Failed to ingest news sentiment: {ingest_error}", exc_info=True)
 
         return True
 
