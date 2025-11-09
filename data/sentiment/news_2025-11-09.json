@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "date": "2025-11-09",
+    "timestamp": "2025-11-09T16:59:41.475969",
+    "sources": [],
+    "tickers_analyzed": 1
+  },
+  "sentiment_by_ticker": {
+    "SPY": {
+      "ticker": "SPY",
+      "score": 0.0,
+      "confidence": "low",
+      "sources": {
+        "yahoo": {
+          "score": 0,
+          "articles": 0,
+          "confidence": "low",
+          "error": "Expecting value: line 1 column 1 (char 0)"
+        },
+        "stocktwits": {
+          "score": 0,
+          "messages": 0,
+          "confidence": "low",
+          "error": "403 Client Error: Forbidden for url: https://api.stocktwits.com/api/2/streams/symbol/SPY.json"
+        },
+        "alphavantage": {
+          "score": 0,
+          "articles": 0,
+          "confidence": "low",
+          "error": "no_api_key"
+        }
+      },
+      "timestamp": "2025-11-09T16:59:41.475925"
+    }
+  }
+}

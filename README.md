@@ -139,6 +139,42 @@ python scripts/autonomous_trader.py
 
 ---
 
+## 🌟 Features
+
+### Core Trading
+- **Momentum Indicators**: MACD, RSI, Volume analysis
+- **Multi-tier Allocation**: ETFs (60%), Growth stocks (20%), IPOs (10%), Crowdfunding (10%)
+- **Risk Management**: Daily loss limits, max drawdown protection, position sizing
+- **Paper Trading**: 90-day validation before live trading
+
+### Data Sources & Sentiment
+- **Market Data**: Real-time via Alpaca API
+- **YouTube Analysis**: Automated monitoring of 5 financial channels (Parkev Tatevosian CFA, etc)
+- **Reddit Sentiment**: Daily scraping from r/wallstreetbets, r/stocks, r/investing, r/options
+- **Technical Indicators**: MACD, RSI, Volume, Moving Averages
+
+### Automation
+- **Cloud Deployment**: GitHub Actions (weekdays 9:35 AM EST)
+- **Daily Reporting**: Automated CEO reports with performance metrics
+- **State Persistence**: Complete system state tracking
+- **Error Handling**: Retry logic, graceful failures, comprehensive logging
+
+### Sentiment Analysis
+- **Reddit Scraper**: Monitors 4 key investing subreddits
+  - Extracts ticker mentions and sentiment scores
+  - Weighted by upvotes and engagement
+  - Confidence levels (high/medium/low)
+  - Detects meme stocks and sentiment shifts
+  - See [Reddit Sentiment Setup Guide](docs/reddit_sentiment_setup.md)
+
+- **YouTube Monitor**: Analyzes financial video content
+  - Daily monitoring of 5 pro financial channels
+  - Stock picks and recommendations
+  - Auto-updates watchlist
+  - Integration with Tier 2 strategy
+
+---
+
 ## 🛡️ Risk Management
 
 - **Daily loss limit**: 2% of account value
