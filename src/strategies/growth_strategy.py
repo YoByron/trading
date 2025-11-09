@@ -25,6 +25,8 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+from src.utils.sentiment_loader import load_latest_sentiment, get_ticker_sentiment
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -344,12 +346,13 @@ class GrowthStrategy:
         "CAT",
     ]
 
-    def __init__(self, weekly_allocation: float = 10.0):
+    def __init__(self, weekly_allocation: float = 10.0, use_sentiment: bool = True):
         """
         Initialize the Growth Strategy.
 
         Args:
             weekly_allocation: Weekly trading allocation in dollars (default $10 = 5 days * $2)
+            use_sentiment: Whether to use sentiment scoring (default: True)
         """
         self.weekly_allocation = weekly_allocation
         self.stop_loss_pct = 0.03  # 3% stop-loss
@@ -357,6 +360,7 @@ class GrowthStrategy:
         self.max_positions = 2
         self.min_holding_weeks = 2
         self.max_holding_weeks = 4
+        self.use_sentiment = use_sentiment
 
         # Initialize components
         self.llm_analyzer = MultiLLMAnalyzer()
@@ -368,8 +372,12 @@ class GrowthStrategy:
         self.winning_trades = 0
         self.total_pnl = 0.0
 
+        # Sentiment data cache (loaded once per execution)
+        self.sentiment_data = None
+
         logger.info(
-            f"GrowthStrategy initialized with ${weekly_allocation} weekly allocation"
+            f"GrowthStrategy initialized with ${weekly_allocation} weekly allocation, "
+            f"sentiment={'enabled' if use_sentiment else 'disabled'}"
         )
 
     def execute_weekly(self) -> List[Order]:
@@ -530,10 +538,14 @@ class GrowthStrategy:
         self, candidates: List[CandidateStock]
     ) -> List[CandidateStock]:
         """
-        Get multi-LLM consensus scores and rank candidates.
+        Get multi-LLM consensus scores and rank candidates with sentiment overlay.
 
-        Queries multiple LLM providers to get consensus on each stock's potential,
-        then ranks stocks by combined technical + consensus scores.
+        Combines:
+        1. Technical score (from MACD, RSI, volume)
+        2. LLM consensus score (multi-model agreement)
+        3. Sentiment modifier (Reddit + News sentiment)
+
+        Final score = 40% technical + 40% consensus + 20% sentiment
 
         Args:
             candidates: List of candidate stocks to rank
@@ -545,7 +557,16 @@ class GrowthStrategy:
             f"Getting multi-LLM consensus scores for {len(candidates)} candidates"
         )
 
-        # Get consensus scores from LLM analyzer
+        # Load sentiment data once (cached for all candidates)
+        if self.use_sentiment and self.sentiment_data is None:
+            try:
+                self.sentiment_data = load_latest_sentiment()
+                logger.info("Loaded sentiment data for ranking")
+            except Exception as e:
+                logger.warning(f"Failed to load sentiment data: {e}")
+                self.sentiment_data = {}
+
+        # Get consensus scores from LLM analyzer + apply sentiment
         for candidate in candidates:
             technical_data = {
                 "momentum": candidate.momentum,
@@ -557,31 +578,72 @@ class GrowthStrategy:
                 "technical_score": candidate.technical_score,
             }
 
+            # Get LLM consensus score
             consensus_score = self.llm_analyzer.get_consensus_score(
                 candidate.symbol, technical_data
             )
             candidate.consensus_score = consensus_score
 
+            # Apply sentiment modifier if enabled
+            sentiment_modifier = 0
+            if self.use_sentiment and self.sentiment_data:
+                try:
+                    sent_score, sent_confidence, _ = get_ticker_sentiment(
+                        candidate.symbol,
+                        self.sentiment_data,
+                        default_score=50.0  # Neutral default
+                    )
+
+                    # Convert 0-100 sentiment to -15 to +15 point modifier
+                    # Weight by confidence: high=1.0, medium=0.6, low=0.3
+                    confidence_weight = {"high": 1.0, "medium": 0.6, "low": 0.3}.get(
+                        sent_confidence, 0.3
+                    )
+
+                    # Sentiment score 70+ = +15 bonus, 30- = -15 penalty
+                    # Linear scaling: score 50 (neutral) = 0 modifier
+                    sentiment_modifier = ((sent_score - 50) / 50) * 15 * confidence_weight
+
+                    logger.debug(
+                        f"{candidate.symbol}: sentiment={sent_score:.1f} "
+                        f"(confidence={sent_confidence}) → modifier={sentiment_modifier:+.1f}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to get sentiment for {candidate.symbol}: {e}")
+
+            # Store sentiment modifier for logging
+            candidate.sentiment_modifier = sentiment_modifier
+
             logger.debug(
                 f"{candidate.symbol}: consensus_score={consensus_score:.1f}, "
+                f"sentiment_modifier={sentiment_modifier:+.1f}, "
                 f"MACD histogram={candidate.macd_histogram:.4f}"
             )
 
-        # Rank by combined score (50% technical, 50% consensus)
+        # Rank by combined score (40% technical, 40% consensus, 20% sentiment via modifier)
+        # Note: sentiment_modifier is in the same 0-100 scale, so it affects final ranking
         candidates.sort(
-            key=lambda x: (0.5 * x.technical_score + 0.5 * x.consensus_score),
+            key=lambda x: (
+                0.4 * x.technical_score +
+                0.4 * x.consensus_score +
+                0.2 * (50 + getattr(x, 'sentiment_modifier', 0))  # Normalize to 0-100
+            ),
             reverse=True,
         )
 
-        logger.info("Multi-LLM ranking complete")
+        logger.info("Multi-LLM ranking complete (with sentiment)")
         for i, candidate in enumerate(candidates[:5], 1):
+            sentiment_mod = getattr(candidate, 'sentiment_modifier', 0)
             combined_score = (
-                0.5 * candidate.technical_score + 0.5 * candidate.consensus_score
+                0.4 * candidate.technical_score +
+                0.4 * candidate.consensus_score +
+                0.2 * (50 + sentiment_mod)
             )
             logger.info(
                 f"  #{i}: {candidate.symbol} (combined={combined_score:.1f}, "
                 f"technical={candidate.technical_score:.1f}, "
-                f"consensus={candidate.consensus_score:.1f})"
+                f"consensus={candidate.consensus_score:.1f}, "
+                f"sentiment_mod={sentiment_mod:+.1f})"
             )
 
         return candidates
