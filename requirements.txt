@@ -29,7 +29,7 @@ yt-dlp==2025.10.22
 python-dotenv==1.0.0
 
 # API Framework
-fastapi==0.104.0
+fastapi==0.110.2
 uvicorn==0.24.0
 
 # Testing
@@ -44,5 +44,5 @@ loguru==0.7.2
 anthropic==0.18.1
 
 # Dashboard & Visualization
-streamlit==1.29.0
+streamlit==1.39.0
 plotly==5.18.0
