@@ -139,49 +139,7 @@ jobs:
         id: check_execution
         run: |
           echo "🔍 Checking last execution date..."
-          python - <<'PY'
-import json
-import os
-from datetime import datetime, timezone
-
-state_path = "data/system_state.json"
-skip = False
-reason = ""
-
-today = datetime.now(timezone.utc).date()
-
-if os.path.exists(state_path):
-    try:
-        with open(state_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        last_updated = data.get("meta", {}).get("last_updated")
-        if last_updated:
-            try:
-                # Support both ISO and "YYYY-MM-DD HH:MM:SS" formats
-                if "T" in last_updated:
-                    last_dt = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
-                else:
-                    last_dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
-
-                if last_dt.date() == today:
-                    skip = True
-                    reason = f"Trading already executed today at {last_dt.isoformat()}"
-            except ValueError:
-                reason = "Could not parse last_updated timestamp"
-    except Exception as exc:
-        reason = f"Unable to inspect system_state.json ({exc})"
-
-output_path = os.environ["GITHUB_OUTPUT"]
-with open(output_path, "a", encoding="utf-8") as fh:
-    fh.write(f"skip={'true' if skip else 'false'}\n")
-    if reason:
-        fh.write(f"skip_reason={reason}\n")
-
-print(f"skip={'true' if skip else 'false'}")
-if reason:
-    print(f"ℹ️  {reason}")
-PY
+          python3 scripts/check_duplicate_execution.py
 
           if [ "${{ steps.check_execution.outputs.skip }}" = "true" ]; then
             echo "⚠️  Trading already executed today. Skipping run."
