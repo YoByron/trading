@@ -10,7 +10,7 @@ import json
 import argparse
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 import shutil
 
 
@@ -145,11 +145,11 @@ class PreCommitHygiene:
                 "target_dir": "scripts",
             }
 
-        # Check if it's a utility Python script
-        if filename in self.UTILITY_SCRIPTS:
+        # Check if it's a Python script outside allowed list
+        if ext == ".py" and filename not in self.ROOT_ALLOWED_FILES:
             return {
                 "file": filename,
-                "issue": "Utility script in root",
+                "issue": "Python script in root",
                 "recommendation": "Move to scripts/",
                 "severity": "warning",
                 "target_dir": "scripts",
