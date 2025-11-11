@@ -6,7 +6,12 @@ on:
     # Standard Time (Nov-Mar): UTC-5 -> 14:35 UTC = 9:35 AM ET
     # TODO: Switch to 13:35 UTC in March when DST starts
     - cron: '35 14 * * 1-5'   # 9:35 AM Eastern (Standard Time Nov-Mar)
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      force_trade:
+        description: "Force execution even if trading already ran today"
+        required: false
+        default: "false"
   workflow_run:
     # Also trigger when YouTube analysis completes (ensures latest watchlist)
     workflows: ["YouTube Video Analysis"]
@@ -139,6 +144,8 @@ jobs:
 
       - name: Check if today's trade already executed
         id: check_execution
+        env:
+          FORCE_TRADE: ${{ inputs.force_trade || 'false' }}
         run: |
           echo "🔍 Checking last execution date..."
           python3 scripts/check_duplicate_execution.py

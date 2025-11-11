@@ -23,6 +23,12 @@ def main():
     reason = ""
 
     today = datetime.now(timezone.utc).date()
+    force_trade = os.getenv("FORCE_TRADE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "force",
+    }
 
     if os.path.exists(state_path):
         try:
@@ -53,6 +59,12 @@ def main():
             sys.exit(1)
     else:
         reason = "system_state.json not found (first run)"
+
+    if force_trade and skip:
+        skip = False
+        reason = "Forced execution requested via FORCE_TRADE flag"
+    elif not skip and not reason:
+        reason = "No previous execution recorded for today"
 
     # Write to GitHub Actions output file
     output_path = os.environ.get("GITHUB_OUTPUT")
