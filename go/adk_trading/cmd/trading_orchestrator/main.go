@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/igorganapolsky/trading/adk_trading/internal/agents"
+	"github.com/igorganapolsky/trading/adk_trading/internal/observability"
 	"google.golang.org/adk/artifact"
 	"google.golang.org/adk/cmd/launcher/adk"
 	"google.golang.org/adk/cmd/launcher/full"
@@ -32,11 +33,19 @@ func main() {
 	flag.StringVar(&cfg.appName, "app", envOrDefault("ADK_APP_NAME", "trading_orchestrator"), "App name to register with the ADK runtime.")
 	flag.Parse()
 
+	healthAddr := envOrDefault("ADK_HEALTH_ADDR", ":8091")
+	obsRecorder := observability.NewRecorder(healthAddr)
+	obsCtx, obsCancel := context.WithCancel(ctx)
+	defer obsCancel()
+	obsRecorder.Start(obsCtx)
+	defer obsRecorder.Shutdown(context.Background())
+
 	rootAgent, subAgents, err := agents.BuildTradingOrchestrator(ctx, agents.Config{
-		AppName:   cfg.appName,
-		ModelName: cfg.modelName,
-		DataDir:   cfg.dataDir,
-		LogPath:   cfg.logPath,
+		AppName:               cfg.appName,
+		ModelName:             cfg.modelName,
+		DataDir:               cfg.dataDir,
+		LogPath:               cfg.logPath,
+		ObservabilityRecorder: obsRecorder,
 	})
 	if err != nil {
 		log.Fatalf("failed to initialize trading orchestrator: %v", err)

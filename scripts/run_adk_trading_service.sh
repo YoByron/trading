@@ -8,6 +8,9 @@ GO_DIR="${ROOT_DIR}/go/adk_trading"
 LOG_PATH="${ROOT_DIR}/logs/adk_orchestrator.jsonl"
 PORT="${ADK_PORT:-8080}"
 WEBUI_ORIGIN="${ADK_WEBUI_ORIGIN:-localhost:8080}"
+HEALTH_ADDR="${ADK_HEALTH_ADDR:-:8091}"
+
+export ADK_HEALTH_ADDR="${HEALTH_ADDR}"
 
 mkdir -p "$(dirname "${LOG_PATH}")"
 
