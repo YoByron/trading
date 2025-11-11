@@ -523,6 +523,43 @@ def print_sentiment_summary(sentiment_data: Optional[Dict] = None):
     print("="*80 + "\n")
 
 
+def query_sentiment_rag(
+    query: str,
+    ticker: Optional[str] = None,
+    top_k: int = 5,
+) -> List[Dict]:
+    """
+    Retrieve historical sentiment snapshots using the vector store.
+
+    Args:
+        query: Natural language query
+        ticker: Optional ticker symbol to filter results
+        top_k: Number of results to return
+    """
+    from src.rag.sentiment_store import SentimentRAGStore  # Lazy import to avoid
+    # heavy dependencies when only using JSON loader
+
+    store = SentimentRAGStore()
+    return store.query(query=query, ticker=ticker, top_k=top_k)
+
+
+def get_sentiment_history(
+    ticker: str,
+    limit: int = 10,
+) -> List[Dict]:
+    """
+    Fetch the most recent sentiment snapshots for a ticker from the RAG store.
+
+    Args:
+        ticker: Stock ticker symbol
+        limit: Maximum number of snapshots to return
+    """
+    from src.rag.sentiment_store import SentimentRAGStore  # Lazy import
+
+    store = SentimentRAGStore()
+    return store.get_ticker_history(ticker=ticker, limit=limit)
+
+
 if __name__ == "__main__":
     """CLI interface for testing sentiment loader."""
     import sys
