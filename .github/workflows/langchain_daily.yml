@@ -1,0 +1,40 @@
+name: LangChain Daily Scenario
+
+on:
+  schedule:
+    - cron: "45 11 * * 1-5"  # 6:45 AM ET weekdays
+  workflow_dispatch: {}
+
+jobs:
+  price_action_brief:
+    runs-on: macos-latest
+    env:
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run price action agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LANGCHAIN_TEMPERATURE: "0.2"
+        run: |
+          source venv/bin/activate
+          python -m langchain_agents.playbooks.price_action_analyst --ticker SPY --output reports/langchain_price_action.txt
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: langchain-price-action-report
+          path: reports/langchain_price_action.txt
+
