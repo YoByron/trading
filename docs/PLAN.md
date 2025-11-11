@@ -17,7 +17,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 ---
 
-## 📊 CURRENT STATUS (Day 7 - November 7, 2025)
+## 📊 CURRENT STATUS (Day 7 - November 10, 2025)
 
 **Portfolio**: $99,960.14 (verified via Alpaca API)
 **P/L**: -$39.86 (-0.04%) - Down from starting $100,000
@@ -26,6 +26,14 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 **Automation**: ✅ OPERATIONAL (launchd configured for 9:35 AM ET)
 **System Status**: FILTERS IMPLEMENTED, BUT STRATEGY BARELY PROFITABLE
 **Critical Discovery**: Backtest shows 62.2% win rate BUT only +$12.71 profit over 60 days (essentially break-even)
+
+**Go ADK Orchestrator Status** (November 10, 2025):
+- **Existence**: Go ADK orchestrator EXISTS in codebase (`go/adk_trading/`) but is DORMANT
+- **Current Execution Path**: Python-only (`autonomous_trader.py` → `CoreStrategy`/`GrowthStrategy`)
+- **Decision**: Keep ADK DISABLED during R&D Phase (Days 1-90)
+- **Rationale**: Focus on proving trading edge with simple, reliable Python execution first
+- **Future Consideration**: Enable in Month 4+ IF Python system proves profitable (win rate >60%, Sharpe >1.5)
+- **Current Priority**: Build profitable strategy, NOT sophisticated infrastructure
 
 ---
 
@@ -305,6 +313,26 @@ For the record - tools evaluated and rejected during R&D Phase:
 
 **Philosophy**: "Better to sit in cash than fight the trend"
 
+### **November 10, 2025** - Go ADK Orchestrator Architectural Decision:
+**Discovery**: Found Go ADK orchestrator codebase (`go/adk_trading/`) in repository
+**Status**: Code exists but is DORMANT (not used in current execution path)
+**Current System**: Python-only execution (`autonomous_trader.py` → strategies)
+**Decision**: Keep Go ADK DISABLED during R&D Phase (Days 1-90)
+
+**Rationale**:
+- Focus on proving trading edge, not optimizing infrastructure
+- Python system is working reliably (automation operational)
+- No performance bottlenecks requiring Go's speed/concurrency
+- Simpler = easier to debug and validate
+- Don't solve problems we don't have yet
+
+**Future Consideration**:
+- Revisit in Month 4+ IF Python system proves profitable (win rate >60%, Sharpe >1.5)
+- Go ADK could enable: faster execution, concurrent agents, lower latency
+- Enable ONLY if profitability proven AND performance becomes constraint
+
+**Current Priority**: Prove trading edge with simple, reliable Python execution first
+
 ### **Strategy**:
 - PROVE IT WORKS (backtest) ✅ DONE
 - STRENGTHEN filters based on live data ✅ DONE
@@ -314,6 +342,24 @@ For the record - tools evaluated and rejected during R&D Phase:
 ---
 
 ## 🚫 WHAT WE'RE NOT DOING
+
+### ❌ Go ADK Orchestrator (November 10, 2025)
+**What It Is**: Go-based Anthropic Agent SDK orchestrator (`go/adk_trading/`) in codebase
+**Status**: EXISTS but DORMANT (not in execution path)
+**Why We're NOT Using It Now**:
+- **Focus mismatch**: Building trading edge, not optimizing infrastructure
+- **No bottleneck**: Python execution is fast enough for daily 9:35 AM trades
+- **Complexity cost**: Go adds deployment/debugging overhead without current benefit
+- **YAGNI principle**: Don't solve problems we don't have yet
+- **R&D priority**: Prove profitability first, optimize performance later
+
+**When It BECOMES Relevant** (Month 4+):
+- IF Python system proves profitable (win rate >60%, Sharpe >1.5)
+- IF we need faster execution (intraday trading, sub-second decisions)
+- IF concurrent agent orchestration becomes critical (multi-agent swarms)
+- IF performance bottlenecks emerge (not current constraint)
+
+**Decision**: Keep dormant during R&D Phase. Python is simple, reliable, and sufficient.
 
 ### ❌ AGNTCY.org Integration
 **Why**: Solves multi-vendor agent collaboration problems we don't have yet. Revisit in Month 3-4 IF we scale to complex agent swarms.
