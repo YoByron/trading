@@ -23,6 +23,7 @@ from src.utils.data_collector import DataCollector
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
 from src.utils.market_data import get_market_data_provider
+from src.verification.output_verifier import OutputVerifier  # Claude Agent SDK Loop pattern
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
@@ -449,6 +450,39 @@ def main():
         print("✅ Historical data collection complete")
     except Exception as e:
         print(f"⚠️  Data collection failed: {str(e)}")
+
+    # VERIFY OUTPUT (Claude Agent SDK Loop Pattern)
+    print("\n" + "=" * 70)
+    print("🔍 OUTPUT VERIFICATION (Claude Agent SDK Loop)")
+    print("=" * 70)
+    try:
+        verifier = OutputVerifier()
+        success, results = verifier.verify_system_state()
+
+        if success:
+            print("✅ VERIFICATION PASSED - All critical rules satisfied")
+        else:
+            print("❌ VERIFICATION FAILED - Critical issues detected:")
+            for issue in results["critical"]:
+                print(f"  🚨 {issue}")
+
+        if results["warning"]:
+            print("\n⚠️  WARNINGS:")
+            for warning in results["warning"]:
+                print(f"  ⚠️  {warning}")
+
+        # Verify portfolio claims (anti-lying check)
+        accurate, message = verifier.verify_portfolio_claims(
+            claimed_pl=perf['pl'],
+            claimed_equity=perf['equity']
+        )
+        if not accurate:
+            print(f"\n🚨 ANTI-LYING VIOLATION: {message}")
+        else:
+            print(f"✅ Portfolio claims verified accurate")
+
+    except Exception as e:
+        print(f"⚠️  Verification failed: {str(e)}")
 
     # Summary
     print("\n" + "=" * 70)
