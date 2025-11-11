@@ -43,6 +43,21 @@ class OrchestratorResult:
     final_text: Optional[str] = None
     root_event: Optional[Dict[str, Any]] = None
 
+    def as_structured(self) -> Optional[Dict[str, Any]]:
+        """
+        Parse the final orchestrator response as JSON if possible.
+
+        Returns:
+            Parsed dictionary when the response is valid JSON, otherwise None.
+        """
+        if not self.final_text:
+            return None
+        try:
+            return json.loads(self.final_text)
+        except json.JSONDecodeError as exc:
+            logger.warning("Failed to parse orchestrator response: %s", exc)
+            return None
+
 
 class ADKOrchestratorClient:
     """
@@ -95,6 +110,41 @@ class ADKOrchestratorClient:
             final_text=final_text,
             root_event=root_event,
         )
+
+    def run_structured(
+        self,
+        symbol: str,
+        context: Optional[Dict[str, Any]] = None,
+        *,
+        session_id: Optional[str] = None,
+        streaming: bool = False,
+        require_json: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Execute the orchestrator and return the parsed JSON payload.
+
+        Args:
+            symbol: Target symbol to analyze.
+            context: Optional auxiliary context dict to embed in the prompt.
+            session_id: Override the session identifier.
+            streaming: Enable SSE streaming if True.
+            require_json: If True, raise ValueError when the response is not JSON.
+
+        Returns:
+            Parsed dictionary produced by the root ADK agent.
+        """
+        result = self.run(
+            symbol,
+            context=context,
+            session_id=session_id,
+            streaming=streaming,
+        )
+        parsed = result.as_structured()
+        if parsed is None:
+            if require_json:
+                raise ValueError("ADK orchestrator did not return valid JSON payload")
+            return {}
+        return parsed
 
     # --------------------------------------------------------------------- #
     # Internal helpers

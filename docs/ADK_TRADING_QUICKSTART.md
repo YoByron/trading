@@ -30,6 +30,13 @@ result = client.run(
 )
 
 print(result.final_text)
+
+# Parse the structured JSON payload (raises if invalid JSON).
+structured = client.run_structured(
+    symbol="NVDA",
+    context={"mode": "paper", "notes": "evening risk check"},
+)
+print(structured["trade_summary"])
 ```
 
 The client automatically provisions sessions and returns the final JSON summary emitted by the root ADK agent alongside the raw event stream.
@@ -41,6 +48,7 @@ The client automatically provisions sessions and returns the final JSON summary 
   - `ADK_MODEL`
   - `ADK_DATA_DIR`
   - `ADK_LOG_PATH`
-- To expose the API on a different port, append `--port 8090` after `web api` in the run script invocation.
+- To expose the API on a different port, set `ADK_PORT` before running the launcher, e.g. `ADK_PORT=8090 ./scripts/run_adk_trading_service.sh`.
+- For cross-origin access, configure `ADK_WEBUI_ORIGIN` to set the API CORS allow-list (defaults to `localhost:8080`).
 
 
