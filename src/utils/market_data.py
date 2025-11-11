@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import logging
 import os
+import random
 import time
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -26,7 +28,11 @@ class MarketDataProvider:
     """Fetch daily OHLCV data with retries and multi-source fallbacks."""
 
     YFINANCE_LOOKBACK_BUFFER_DAYS = 5
+    YFINANCE_SECONDARY_LOOKBACK_DAYS = 120
     ALPHAVANTAGE_MIN_INTERVAL_SECONDS = 15  # Free tier: 5 calls/minute
+    ALPHAVANTAGE_BACKOFF_SECONDS = 60
+    ALPHAVANTAGE_MAX_RETRIES = 4
+    CACHE_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 
     def __init__(
         self,
@@ -49,6 +55,10 @@ class MarketDataProvider:
             "ALPHA_VANTAGE_API_KEY"
         )
         self._last_alpha_call_ts: float = 0.0
+        self._cache: Dict[Tuple[str, int, date], pd.DataFrame] = {}
+        cache_root = os.getenv("MARKET_DATA_CACHE_DIR", "data/cache/alpha_vantage")
+        self.cache_dir = Path(cache_root)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get_daily_bars(
         self,
@@ -75,10 +85,16 @@ class MarketDataProvider:
         start_dt = end_dt - timedelta(
             days=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS
         )
+        cache_key = (symbol.upper(), lookback_days, end_dt.date())
+        cached = self._cache.get(cache_key)
+        if cached is not None and not cached.empty:
+            return cached.copy()
 
         data = self._fetch_yfinance(symbol, start_dt, end_dt)
         if self._is_valid(data, lookback_days):
-            return self._prepare(data, lookback_days)
+            prepared = self._prepare(data, lookback_days)
+            self._cache[cache_key] = prepared
+            return prepared.copy()
 
         logger.warning(
             "%s: yfinance returned insufficient data (%s rows). Falling back to Alpha Vantage.",
@@ -88,7 +104,9 @@ class MarketDataProvider:
 
         data = self._fetch_alpha_vantage(symbol)
         if self._is_valid(data, lookback_days):
-            return self._prepare(data, lookback_days)
+            prepared = self._prepare(data, lookback_days)
+            self._cache[cache_key] = prepared
+            return prepared.copy()
 
         raise ValueError(
             f"Failed to fetch {lookback_days} days of data for {symbol} "
@@ -101,6 +119,8 @@ class MarketDataProvider:
     def _fetch_yfinance(
         self, symbol: str, start_dt: datetime, end_dt: datetime
     ) -> Optional[pd.DataFrame]:
+        sleep_seconds = random.uniform(0.3, 1.2)
+        time.sleep(sleep_seconds)
         try:
             data = yf.download(
                 symbol,
@@ -113,8 +133,41 @@ class MarketDataProvider:
             )
             if isinstance(data, pd.DataFrame) and not data.empty:
                 return data
+            logger.debug("%s: yfinance primary download returned empty frame.", symbol)
         except Exception as exc:
             logger.warning("yfinance fetch failed for %s: %s", symbol, exc)
+
+        # Secondary attempt using Ticker.history (sometimes succeeds when download fails)
+        try:
+            ticker = yf.Ticker(symbol, session=self.session)
+            history = ticker.history(
+                start=start_dt.strftime("%Y-%m-%d"),
+                end=end_dt.strftime("%Y-%m-%d"),
+                interval="1d",
+                auto_adjust=False,
+            )
+            if isinstance(history, pd.DataFrame) and not history.empty:
+                return history
+        except Exception as exc:
+            logger.debug("%s: yfinance ticker.history failed: %s", symbol, exc)
+
+        # Final attempt: broader lookback to mitigate sparse weekends/holidays
+        try:
+            extended_start = end_dt - timedelta(days=self.YFINANCE_SECONDARY_LOOKBACK_DAYS)
+            extended = yf.download(
+                symbol,
+                start=extended_start,
+                end=end_dt,
+                progress=False,
+                session=self.session,
+                auto_adjust=False,
+                threads=False,
+            )
+            if isinstance(extended, pd.DataFrame) and not extended.empty:
+                return extended
+        except Exception as exc:
+            logger.debug("%s: yfinance extended download failed: %s", symbol, exc)
+
         return None
 
     def _fetch_alpha_vantage(self, symbol: str) -> Optional[pd.DataFrame]:
@@ -124,62 +177,96 @@ class MarketDataProvider:
             )
             return None
 
+        cache_file = self.cache_dir / f"{symbol.upper()}_{datetime.utcnow().date()}.csv"
+        if cache_file.exists():
+            age = time.time() - cache_file.stat().st_mtime
+            if age <= self.CACHE_TTL_SECONDS:
+                try:
+                    cached_df = pd.read_csv(cache_file, parse_dates=["Date"], index_col="Date")
+                    if not cached_df.empty:
+                        return cached_df
+                except Exception as exc:
+                    logger.debug("%s: Failed to load cached Alpha Vantage data: %s", symbol, exc)
+
         # Throttle to respect free-tier rate limits
-        elapsed = time.time() - self._last_alpha_call_ts
-        if elapsed < self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS:
-            sleep_time = self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS - elapsed
-            time.sleep(sleep_time)
+        def respect_rate_limit(min_interval: float) -> None:
+            elapsed = time.time() - self._last_alpha_call_ts
+            if elapsed < min_interval:
+                sleep_time = min_interval - elapsed
+                logger.debug("Sleeping %.2fs to respect Alpha Vantage rate limit", sleep_time)
+                time.sleep(sleep_time)
 
         params = {
             "function": "TIME_SERIES_DAILY_ADJUSTED",
             "symbol": symbol,
             "outputsize": "compact",
+            "datatype": "json",
             "apikey": self.alpha_vantage_key,
         }
 
-        try:
-            response = self.session.get(
-                "https://www.alphavantage.co/query", params=params, timeout=30
-            )
-            self._last_alpha_call_ts = time.time()
-            response.raise_for_status()
-            payload = response.json()
-        except Exception as exc:
-            logger.warning("Alpha Vantage request failed for %s: %s", symbol, exc)
-            return None
+        for attempt in range(1, self.ALPHAVANTAGE_MAX_RETRIES + 1):
+            respect_rate_limit(self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS)
+            try:
+                response = self.session.get(
+                    "https://www.alphavantage.co/query", params=params, timeout=30
+                )
+                self._last_alpha_call_ts = time.time()
+                response.raise_for_status()
+                payload = response.json()
+            except Exception as exc:
+                logger.warning("Alpha Vantage request failed for %s (attempt %s): %s", symbol, attempt, exc)
+                continue
 
-        time_series = payload.get("Time Series (Daily)")
-        if not time_series:
+            time_series = payload.get("Time Series (Daily)")
+            if time_series:
+                records = []
+                for date_str, values in time_series.items():
+                    try:
+                        records.append(
+                            {
+                                "Date": datetime.strptime(date_str, "%Y-%m-%d"),
+                                "Open": float(values["1. open"]),
+                                "High": float(values["2. high"]),
+                                "Low": float(values["3. low"]),
+                                "Close": float(values["4. close"]),
+                                "Volume": float(values["6. volume"]),
+                            }
+                        )
+                    except Exception as exc:
+                        logger.debug(
+                            "%s: Skipping Alpha Vantage row %s (%s)", symbol, date_str, exc
+                        )
+
+                if records:
+                    df = pd.DataFrame(records).set_index("Date").sort_index()
+                    try:
+                        df.to_csv(cache_file, index=True)
+                    except Exception as exc:
+                        logger.debug("%s: Unable to cache Alpha Vantage data: %s", symbol, exc)
+                    return df
+
+            # Handle throttling notices
+            info_message = payload.get("Information") or payload.get("Note")
+            if info_message:
+                backoff = self.ALPHAVANTAGE_BACKOFF_SECONDS * attempt
+                logger.warning(
+                    "%s: Alpha Vantage rate limit hit (attempt %s). Backing off for %ss. Message: %s",
+                    symbol,
+                    attempt,
+                    backoff,
+                    info_message,
+                )
+                time.sleep(backoff)
+                continue
+
             logger.warning(
-                "%s: Alpha Vantage response missing time series (payload keys: %s)",
+                "%s: Alpha Vantage response missing time series (keys: %s)",
                 symbol,
                 list(payload.keys()),
             )
-            return None
+            time.sleep(self.ALPHAVANTAGE_BACKOFF_SECONDS * attempt)
 
-        records = []
-        for date_str, values in time_series.items():
-            try:
-                records.append(
-                    {
-                        "Date": datetime.strptime(date_str, "%Y-%m-%d"),
-                        "Open": float(values["1. open"]),
-                        "High": float(values["2. high"]),
-                        "Low": float(values["3. low"]),
-                        "Close": float(values["4. close"]),
-                        "Volume": float(values["6. volume"]),
-                    }
-                )
-            except Exception as exc:
-                logger.debug(
-                    "%s: Skipping Alpha Vantage row %s (%s)", symbol, date_str, exc
-                )
-
-        if not records:
-            return None
-
-        df = pd.DataFrame(records).set_index("Date").sort_index()
-        return df
+        return None
 
     @staticmethod
     def _is_valid(data: Optional[pd.DataFrame], lookback_days: int) -> bool:
