@@ -38,6 +38,7 @@ DATA_DIR.mkdir(exist_ok=True)
 
 # Fixed daily investment (North Star: $10/day Fibonacci strategy)
 DAILY_INVESTMENT = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+ALPACA_DATA_FEED = os.getenv("ALPACA_DATA_FEED", "iex").lower()
 
 # Position sizing configuration
 DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
@@ -121,7 +122,11 @@ def calculate_technical_score(symbol):
         import pandas as pd
 
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="50d")
+        # Use explicit dates instead of period to avoid timezone lookup rate limiting
+        from datetime import timedelta
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=60)  # 60 calendar days = ~50 trading days
+        hist = ticker.history(start=start_date, end=end_date)
 
         # If yfinance fails, use Alpaca as fallback
         if hist.empty or len(hist) < 26:
@@ -136,7 +141,8 @@ def calculate_technical_score(symbol):
                     symbol,
                     "1Day",
                     start=start_date.strftime("%Y-%m-%d"),
-                    end=end_date.strftime("%Y-%m-%d")
+                    end=end_date.strftime("%Y-%m-%d"),
+                    feed=ALPACA_DATA_FEED
                 ).df
                 if not bars.empty:
                     # Convert Alpaca format to yfinance format
