@@ -20,6 +20,7 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import logging
+import os
 
 import yfinance as yf
 import pandas as pd
@@ -378,6 +379,11 @@ class GrowthStrategy:
 
         # Sentiment data cache (loaded once per execution)
         self.sentiment_data = None
+
+        self.langchain_guard_enabled = (
+            os.getenv("LANGCHAIN_APPROVAL_ENABLED", "false").lower() == "true"
+        )
+        self._langchain_agent = None
 
         logger.info(
             f"GrowthStrategy initialized with ${weekly_allocation} weekly allocation, "
@@ -1065,6 +1071,13 @@ class GrowthStrategy:
                 )
 
                 if is_valid:
+                    if self.langchain_guard_enabled and not self._langchain_guard(candidate.symbol):
+                        logger.warning(
+                            "  LangChain approval gate rejected order for %s",
+                            candidate.symbol,
+                        )
+                        continue
+
                     orders.append(order)
                     logger.info(
                         f"  BUY order created: {candidate.symbol} x{quantity} @ ${candidate.current_price:.2f}"
@@ -1119,6 +1132,50 @@ class GrowthStrategy:
             f"Trade recorded: {position.symbol} {exit_reason} - "
             f"P&L: ${pnl:.2f} ({pnl_pct:.2%})"
         )
+
+    def _langchain_guard(self, symbol: str) -> bool:
+        """
+        Optional LangChain approval step for GrowthStrategy orders.
+        """
+        try:
+            if self._langchain_agent is None:
+                from langchain_agents.agents import build_price_action_agent
+
+                self._langchain_agent = build_price_action_agent()
+
+            prompt = (
+                "You are the growth strategy approval co-pilot. Decide whether we "
+                "should open a NEW long position today. Respond with only APPROVE "
+                "or DECLINE.\n\n"
+                f"Ticker: {symbol}\n"
+                "Use the available sentiment and MCP tools to gather context. "
+                "Decline if sentiment is negative, confidence is low, or data is stale."
+            )
+
+            response = self._langchain_agent.invoke({"input": prompt})
+            if isinstance(response, dict):
+                text = response.get("output", "")
+            else:
+                text = str(response)
+
+            normalized = text.strip().lower()
+            approved = "approve" in normalized and "decline" not in normalized
+
+            if approved:
+                logger.info("LangChain approval granted for %s: %s", symbol, text)
+            else:
+                logger.warning("LangChain approval denied for %s: %s", symbol, text)
+
+            return approved
+        except Exception as exc:
+            logger.error("LangChain approval gate error for %s: %s", symbol, exc)
+            fail_open = os.getenv("LANGCHAIN_APPROVAL_FAIL_OPEN", "true").lower()
+            if fail_open == "true":
+                logger.warning(
+                    "LangChain approval unavailable; defaulting to APPROVE (fail-open)."
+                )
+                return True
+            return False
 
 
 def main():

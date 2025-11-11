@@ -1310,11 +1310,23 @@ class CoreStrategy:
                     logger.warning("Trading suspended by circuit breaker")
                     return False
 
+                if self.langchain_guard_enabled and not self._langchain_guard(
+                    symbol, sentiment
+                ):
+                    logger.warning(
+                        "LangChain approval gate rejected trade for %s", symbol
+                    )
+                    return False
+
                 return True
 
             except Exception as e:
                 logger.error(f"Error in risk validation: {e}")
                 # Fall through to basic validation
+
+        if self.langchain_guard_enabled and not self._langchain_guard(symbol, sentiment):
+            logger.warning("LangChain approval gate rejected trade for %s", symbol)
+            return False
 
         return True
 
@@ -1356,6 +1368,54 @@ class CoreStrategy:
             timestamp=datetime.now(),
             reason=reason,
         )
+
+    def _langchain_guard(self, symbol: str, sentiment: MarketSentiment) -> bool:
+        """
+        Invoke the LangChain approval agent if enabled.
+
+        Returns True when the agent responds with APPROVE. On failure, defaults to
+        fail-open unless LANGCHAIN_APPROVAL_FAIL_OPEN is set to false.
+        """
+        try:
+            if self._langchain_agent is None:
+                from langchain_agents.agents import build_price_action_agent
+
+                self._langchain_agent = build_price_action_agent()
+
+            prompt = (
+                "You are the trading desk's approval co-pilot. Evaluate whether "
+                "we should execute a BUY trade today. Respond with a single word: "
+                "'APPROVE' or 'DECLINE'.\n\n"
+                f"Ticker: {symbol}\n"
+                f"Current market sentiment: {sentiment.value}\n"
+                "Use the available sentiment tools to gather recent context. "
+                "Decline if the data is missing, highly bearish, or confidence is low."
+            )
+
+            response = self._langchain_agent.invoke({"input": prompt})
+            if isinstance(response, dict):
+                text = response.get("output", "")
+            else:
+                text = str(response)
+
+            normalized = text.strip().lower()
+            approved = "approve" in normalized and "decline" not in normalized
+
+            if approved:
+                logger.info("LangChain approval granted for %s: %s", symbol, text)
+            else:
+                logger.warning("LangChain approval denied for %s: %s", symbol, text)
+
+            return approved
+        except Exception as exc:
+            logger.error("LangChain approval gate error: %s", exc)
+            fail_open = os.getenv("LANGCHAIN_APPROVAL_FAIL_OPEN", "true").lower()
+            if fail_open == "true":
+                logger.warning(
+                    "LangChain approval unavailable; defaulting to APPROVE (fail-open)."
+                )
+                return True
+            return False
 
     def _update_holdings(self, symbol: str, quantity: float) -> None:
         """
