@@ -3,7 +3,7 @@ Research Agent: Multi-modal financial analysis
 
 Responsibilities:
 - Analyze company fundamentals
-- Process news and sentiment
+- Process news and sentiment (via RAG database)
 - Evaluate market context
 - Provide investment thesis
 
@@ -12,6 +12,14 @@ Inspired by P1GPT multi-modal analysis framework
 import logging
 from typing import Dict, Any
 from .base_agent import BaseAgent
+
+# Import RAG retriever for semantic news search
+try:
+    from src.rag.vector_db.retriever import get_retriever
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    logger.warning("RAG system not available - using fallback news")
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +39,63 @@ class ResearchAgent(BaseAgent):
             name="ResearchAgent",
             role="Multi-modal fundamental analysis and sentiment"
         )
+
+        # Initialize RAG retriever if available
+        if RAG_AVAILABLE:
+            try:
+                self.retriever = get_retriever()
+                logger.info("RAG retriever initialized for ResearchAgent")
+            except Exception as e:
+                logger.warning(f"Failed to initialize RAG retriever: {e}")
+                self.retriever = None
+        else:
+            self.retriever = None
     
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze fundamentals, news, and sentiment.
-        
+
         Args:
             data: Contains symbol, fundamentals, news, market context
-            
+
         Returns:
             Research analysis with investment thesis
         """
         symbol = data.get("symbol", "UNKNOWN")
         fundamentals = data.get("fundamentals", {})
-        news = data.get("news", [])
         market_context = data.get("market_context", {})
+
+        # Get news from RAG database or fallback to passed-in news
+        if self.retriever:
+            try:
+                # Query RAG for recent news (last 7 days)
+                logger.info(f"Querying RAG database for {symbol} news...")
+                rag_articles = self.retriever.query_rag(
+                    query=f"Latest news and analysis for {symbol}",
+                    n_results=10,
+                    ticker=symbol,
+                    days_back=7
+                )
+
+                # Convert RAG articles to expected news format
+                news = []
+                for article in rag_articles:
+                    news.append({
+                        "title": article["metadata"].get("title", article["content"][:100]),
+                        "date": article["metadata"].get("date", "N/A"),
+                        "sentiment": article["metadata"].get("sentiment", 0.5),
+                        "source": article["metadata"].get("source", "unknown"),
+                        "relevance": article["relevance_score"]
+                    })
+
+                logger.info(f"Retrieved {len(news)} articles from RAG for {symbol}")
+
+            except Exception as e:
+                logger.warning(f"Failed to query RAG, using fallback news: {e}")
+                news = data.get("news", [])
+        else:
+            # Fallback to passed-in news if RAG not available
+            news = data.get("news", [])
         
         # Build comprehensive research prompt
         memory_context = self.get_memory_context(limit=3)
