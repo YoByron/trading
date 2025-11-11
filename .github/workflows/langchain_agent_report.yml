@@ -5,6 +5,9 @@ on:
     - cron: "15 12 * * 1-5" # 7:15 AM ET on weekdays
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   morning-brief:
     runs-on: macos-latest
