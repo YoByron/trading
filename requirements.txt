@@ -49,3 +49,6 @@ plotly==5.18.0
 # NOTE: ChromaDB requires Python <=3.13 (GitHub Actions uses 3.11)
 chromadb==0.4.22
 sentence-transformers==3.0.1
+
+# Modeling & Training
+scikit-learn==1.4.2
