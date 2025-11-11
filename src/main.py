@@ -40,6 +40,7 @@ from dotenv import load_dotenv
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.orchestration.adk_integration import ADKTradeAdapter, summarize_adk_decision
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
 from src.strategies.ipo_strategy import IPOStrategy
@@ -163,6 +164,7 @@ class TradingOrchestrator:
         self.timezone = pytz.timezone("America/New_York")
 
         # Initialize components
+        self.adk_adapter: Optional[ADKTradeAdapter] = None
         self._initialize_components()
 
         # Orchestrator state
@@ -321,6 +323,21 @@ class TradingOrchestrator:
                 f"IPO strategy initialized (daily deposit: ${tier3_daily:.2f})"
             )
 
+            # Initialize ADK orchestrator adapter
+            adk_enabled_env = os.getenv("ADK_ENABLED", "1").lower()
+            adk_enabled = adk_enabled_env not in {"0", "false", "off", "no"}
+            self.adk_adapter = ADKTradeAdapter(
+                enabled=adk_enabled,
+                base_url=os.getenv("ADK_BASE_URL"),
+                app_name=os.getenv("ADK_APP_NAME"),
+                root_agent_name=os.getenv("ADK_ROOT_AGENT"),
+                user_id=os.getenv("ADK_USER_ID"),
+            )
+            if self.adk_adapter.enabled:
+                self.logger.info("ADK orchestrator client initialized (base_url=%s)", self.adk_adapter.client.config.base_url)  # type: ignore[union-attr]
+            else:
+                self.logger.info("ADK orchestrator integration disabled via ADK_ENABLED=0")
+
             self.logger.info("All components initialized successfully")
 
         except Exception as e:
@@ -404,6 +421,85 @@ class TradingOrchestrator:
             )
             self._send_alert("Risk Reset Error", str(e), severity="ERROR")
 
+    def _execute_core_strategy_with_adk(self, account_info: Dict[str, Any]) -> bool:
+        """
+        Attempt to execute the core strategy via the Go ADK orchestrator.
+
+        Returns True when the decision loop is fully handled by ADK (either
+        trade executed or intentionally skipped). Returning False indicates the
+        caller should fall back to the legacy Python strategy.
+        """
+        if not self.adk_adapter or not self.adk_adapter.enabled:
+            return False
+
+        try:
+            context = {
+                "mode": self.mode,
+                "account": {
+                    "portfolio_value": account_info.get("portfolio_value"),
+                    "cash": account_info.get("cash"),
+                    "buying_power": account_info.get("buying_power"),
+                },
+                "risk_limits": {
+                    "max_daily_loss_pct": self.config["max_daily_loss_pct"],
+                    "max_position_size_pct": self.config["max_position_size_pct"],
+                    "max_drawdown_pct": self.config["max_drawdown_pct"],
+                    "stop_loss_pct": self.config["stop_loss_pct"],
+                },
+                "daily_allocation": self.core_strategy.daily_allocation,
+            }
+            decision = self.adk_adapter.evaluate(
+                symbols=self.core_strategy.etf_universe,
+                context=context,
+            )
+        except Exception as exc:
+            self.logger.error("ADK evaluation failed: %s", exc, exc_info=True)
+            return False
+
+        if not decision:
+            return False
+
+        if decision.risk.get("decision", "").upper() == "REVIEW":
+            self.logger.warning(
+                "ADK risk agent requested review for %s; deferring to legacy strategy",
+                decision.symbol,
+            )
+            return False
+
+        trade_amount = decision.position_size or self.core_strategy.daily_allocation
+        if trade_amount <= 0:
+            trade_amount = self.core_strategy.daily_allocation
+        trade_amount = min(trade_amount, self.core_strategy.daily_allocation * 3)
+
+        side = "buy" if decision.action == "BUY" else "sell"
+        try:
+            executed = self.alpaca_trader.execute_order(
+                symbol=decision.symbol,
+                amount_usd=trade_amount,
+                side=side,
+                tier="T1_CORE_ADK",
+            )
+            summary = summarize_adk_decision(decision)
+            self.logger.info(
+                "ADK %s order executed id=%s amount=$%.2f summary=%s",
+                side.upper(),
+                executed.get("id"),
+                trade_amount,
+                summary,
+            )
+            self.health_status["last_core_execution"] = datetime.now().isoformat()
+            self.health_status["adk_summary"] = summary
+            self.last_execution["core_strategy"] = datetime.now()
+            return True
+        except Exception as exc:
+            self.logger.error("ADK order execution failed: %s", exc, exc_info=True)
+            self._send_alert(
+                "ADK Execution Error",
+                f"{decision.symbol} {decision.action}: {exc}",
+                severity="ERROR",
+            )
+            return False
+
     def _execute_core_strategy(self) -> None:
         """Execute Core Strategy (Tier 1) - Daily momentum index investing."""
         self.logger.info("=" * 80)
@@ -425,6 +521,10 @@ class TradingOrchestrator:
                     "Core Strategy execution skipped due to risk limits",
                     severity="WARNING",
                 )
+                return
+
+            if self._execute_core_strategy_with_adk(account_info):
+                self.logger.info("Core Strategy satisfied via ADK orchestrator")
                 return
 
             # Execute strategy

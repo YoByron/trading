@@ -50,5 +50,13 @@ The client automatically provisions sessions and returns the final JSON summary 
   - `ADK_LOG_PATH`
 - To expose the API on a different port, set `ADK_PORT` before running the launcher, e.g. `ADK_PORT=8090 ./scripts/run_adk_trading_service.sh`.
 - For cross-origin access, configure `ADK_WEBUI_ORIGIN` to set the API CORS allow-list (defaults to `localhost:8080`).
+- Health and metrics endpoints are exposed via `ADK_HEALTH_ADDR` (default `:8091`). Example:
+
+```bash
+curl -s http://127.0.0.1:8091/healthz | jq
+curl -s http://127.0.0.1:8091/metrics
+```
+
+- Decision logs are stored at `logs/adk_orchestrator.jsonl`; ensure your log shipper tails this file for compliance.
 
 

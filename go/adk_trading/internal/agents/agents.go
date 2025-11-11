@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/igorganapolsky/trading/adk_trading/internal/observability"
 	"github.com/igorganapolsky/trading/adk_trading/internal/tools/logging"
 	"github.com/igorganapolsky/trading/adk_trading/internal/tools/marketdata"
 	"github.com/igorganapolsky/trading/adk_trading/internal/tools/risk"
@@ -21,11 +22,12 @@ import (
 )
 
 type Config struct {
-	AppName        string
-	ModelName      string
-	DataDir        string
-	LogPath        string
-	PortfolioValue float64
+	AppName               string
+	ModelName             string
+	DataDir               string
+	LogPath               string
+	PortfolioValue        float64
+	ObservabilityRecorder *observability.Recorder
 }
 
 func (c Config) validate() error {
@@ -72,7 +74,7 @@ func BuildTradingOrchestrator(ctx context.Context, cfg Config) (agent.Agent, []a
 		return nil, nil, fmt.Errorf("market data tool: %w", err)
 	}
 
-	logTool, err := logging.New(cfg.LogPath)
+	logTool, err := logging.New(cfg.LogPath, cfg.ObservabilityRecorder)
 	if err != nil {
 		return nil, nil, fmt.Errorf("logging tool: %w", err)
 	}
