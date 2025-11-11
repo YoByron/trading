@@ -13,6 +13,9 @@ on:
     types:
       - completed
 
+permissions:
+  contents: write
+
 jobs:
   execute-trading:
     runs-on: ubuntu-latest
