@@ -46,7 +46,12 @@ import yfinance as yf
 from src.core.multi_llm_analysis import MultiLLMAnalyzer
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
-from src.utils.sentiment_loader import load_latest_sentiment, get_ticker_sentiment, get_market_regime
+from src.utils.sentiment_loader import (
+    load_latest_sentiment,
+    get_ticker_sentiment,
+    get_market_regime,
+    get_sentiment_history,
+)
 
 
 # Configure logging
@@ -998,6 +1003,21 @@ class CoreStrategy:
                 sentiment = MarketSentiment.BULLISH
             else:
                 sentiment = MarketSentiment.VERY_BULLISH
+
+            # Optionally log historical context from RAG store
+            if getattr(self, "sentiment_rag_enabled", True):
+                history = get_sentiment_history("SPY", limit=5)
+                if history:
+                    logger.info("Recent SPY sentiment snapshots (RAG):")
+                    for entry in history:
+                        meta = entry["metadata"]
+                        logger.info(
+                            "  %s score=%.1f confidence=%s regime=%s",
+                            meta.get("snapshot_date"),
+                            meta.get("sentiment_score", 0.0),
+                            meta.get("confidence", "n/a"),
+                            meta.get("market_regime", "n/a"),
+                        )
 
             logger.info(
                 f"Sentiment analysis: {sentiment.value} "

@@ -25,7 +25,11 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-from src.utils.sentiment_loader import load_latest_sentiment, get_ticker_sentiment
+from src.utils.sentiment_loader import (
+    load_latest_sentiment,
+    get_ticker_sentiment,
+    get_sentiment_history,
+)
 
 
 # Configure logging
@@ -562,6 +566,20 @@ class GrowthStrategy:
             try:
                 self.sentiment_data = load_latest_sentiment()
                 logger.info("Loaded sentiment data for ranking")
+
+                if getattr(self, "sentiment_rag_enabled", True):
+                    history = get_sentiment_history("SPY", limit=5)
+                    formatted = [
+                        f"{h['metadata'].get('snapshot_date')} "
+                        f"(score={h['metadata'].get('sentiment_score', 0.0):.1f}, "
+                        f"confidence={h['metadata'].get('confidence', 'n/a')})"
+                        for h in history
+                    ]
+                    if formatted:
+                        logger.info(
+                            "Recent SPY sentiment snapshots (RAG): %s",
+                            "; ".join(formatted),
+                        )
             except Exception as e:
                 logger.warning(f"Failed to load sentiment data: {e}")
                 self.sentiment_data = {}
