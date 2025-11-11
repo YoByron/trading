@@ -23,7 +23,7 @@ from .vector_db.embedder import get_embedder, NewsEmbedder
 
 logger = logging.getLogger(__name__)
 
-SENTIMENT_DIR = Path("data/sentiment")
+DEFAULT_SENTIMENT_DIR = Path("data/sentiment")
 STORAGE_DIR = Path("data/rag")
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = STORAGE_DIR / "sentiment_rag.db"
@@ -43,9 +43,15 @@ class SentimentRAGStore:
     Lightweight sentiment vector store using SQLite for persistence.
     """
 
-    def __init__(self, db_path: Path = DB_PATH, embedder: Optional[NewsEmbedder] = None):
+    def __init__(
+        self,
+        db_path: Path = DB_PATH,
+        embedder: Optional[NewsEmbedder] = None,
+        sentiment_dir: Path = DEFAULT_SENTIMENT_DIR,
+    ):
         self.db_path = Path(db_path)
         self.embedder = embedder or get_embedder()
+        self.sentiment_dir = Path(sentiment_dir)
         self.connection = sqlite3.connect(self.db_path)
         self.connection.execute("PRAGMA journal_mode=WAL;")
         self._create_schema()
@@ -134,7 +140,7 @@ class SentimentRAGStore:
         return len(docs)
 
     def ingest_from_cache(self, days: int = 30) -> int:
-        documents = list(load_sentiment_documents(window_days=days))
+        documents = list(load_sentiment_documents(window_days=days, base_dir=self.sentiment_dir))
         return self.upsert_documents(documents)
 
     def reset(self) -> None:
@@ -262,12 +268,15 @@ class SentimentRow:
 # Document preparation
 # --------------------------------------------------------------------- #
 
-def load_sentiment_documents(window_days: int = 30) -> Iterable[SentimentDocument]:
-    if not SENTIMENT_DIR.exists():
-        logger.warning("Sentiment directory %s does not exist.", SENTIMENT_DIR)
+def load_sentiment_documents(
+    window_days: int = 30,
+    base_dir: Path = DEFAULT_SENTIMENT_DIR,
+) -> Iterable[SentimentDocument]:
+    if not base_dir.exists():
+        logger.warning("Sentiment directory %s does not exist.", base_dir)
         return
 
-    files = sorted(SENTIMENT_DIR.glob("*.json"), reverse=True)
+    files = sorted(base_dir.glob("*.json"), reverse=True)
     seen_dates = set()
 
     for file_path in files:
