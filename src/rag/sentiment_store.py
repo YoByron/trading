@@ -13,7 +13,7 @@ import json
 import logging
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -91,7 +91,7 @@ class SentimentRAGStore:
             return 0
 
         embeddings = self.embedder.embed_batch([doc.text for doc in docs])
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(UTC).isoformat()
 
         with self.connection:
             for doc, embedding in zip(docs, embeddings):
