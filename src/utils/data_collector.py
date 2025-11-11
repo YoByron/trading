@@ -4,14 +4,14 @@ Data Collection Module for Historical Market Data
 Systematically archives OHLCV data for ML training and backtesting.
 """
 
-import os
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 import pandas as pd
-import yfinance as yf
 import argparse
+
+from src.utils.market_data import get_market_data_provider
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class DataCollector:
     def __init__(self, data_dir: str = "data/historical"):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.market_data = get_market_data_provider()
         logger.info(f"DataCollector initialized: {self.data_dir}")
 
     def collect_daily_data(self, symbols: List[str], lookback_days: int = 30) -> None:
@@ -37,24 +38,10 @@ class DataCollector:
             try:
                 logger.info(f"Fetching data for {symbol}...")
 
-                # Calculate date range (add extra days to ensure we get enough data)
-                end_date = datetime.now()
-                start_date = end_date - timedelta(days=lookback_days + 5)
-
-                # Fetch data from yfinance using download (more reliable)
-                data = yf.download(
-                    symbol,
-                    start=start_date,
-                    end=end_date,
-                    progress=False
-                )
-
-                if data.empty:
-                    logger.warning(f"No data returned for {symbol}")
+                data = self.market_data.get_daily_bars(symbol, lookback_days)
+                if data.empty:  # pragma: no cover - defensive
+                    logger.warning(f"No data returned for {symbol} after fallbacks")
                     continue
-
-                # Trim to actual requested lookback period
-                data = data.tail(lookback_days)
 
                 # Save to CSV
                 filepath = self.save_to_csv(symbol, data)

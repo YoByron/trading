@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.utils.data_collector import DataCollector
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
+from src.utils.market_data import get_market_data_provider
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
@@ -46,6 +47,7 @@ MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
 
 # Initialize Alpaca
 api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
+market_data_provider = get_market_data_provider()
 
 
 def calculate_daily_investment():
@@ -116,47 +118,16 @@ def validate_data_freshness(symbol, hist_data):
 def calculate_technical_score(symbol):
     """Calculate technical score with MACD, RSI, volume (matching backtest logic)"""
     try:
-        # Try yfinance first
-        import yfinance as yf
-        import pandas as pd
-
-        ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="50d")
-
-        # If yfinance fails, use Alpaca as fallback
-        if hist.empty or len(hist) < 26:
-            print(f"⚠️  {symbol}: yfinance failed, trying Alpaca fallback...")
-            try:
-                # Get 100 days from Alpaca (need 50+ trading days for MACD)
-                from datetime import timedelta
-                end_date = datetime.now()
-                start_date = end_date - timedelta(days=100)
-
-                bars = api.get_bars(
-                    symbol,
-                    "1Day",
-                    start=start_date.strftime("%Y-%m-%d"),
-                    end=end_date.strftime("%Y-%m-%d")
-                ).df
-                if not bars.empty:
-                    # Convert Alpaca format to yfinance format
-                    hist = pd.DataFrame({
-                        'Close': bars['close'],
-                        'Volume': bars['volume'],
-                        'Open': bars['open'],
-                        'High': bars['high'],
-                        'Low': bars['low']
-                    })
-                    print(f"✅ {symbol}: Using Alpaca data ({len(hist)} days)")
-                else:
-                    print(f"❌ {symbol}: Alpaca also failed - no data available")
-                    return 0
-            except Exception as e:
-                print(f"❌ {symbol}: Both yfinance and Alpaca failed: {e}")
-                return 0
+        try:
+            hist = market_data_provider.get_daily_bars(symbol, lookback_days=60)
+        except ValueError as exc:
+            print(f"❌ {symbol}: Market data unavailable: {exc}")
+            return 0
 
         if hist.empty or len(hist) < 26:
-            print(f"⚠️  {symbol}: Insufficient data ({len(hist) if not hist.empty else 0} days)")
+            print(
+                f"⚠️  {symbol}: Insufficient data ({len(hist) if not hist.empty else 0} days)"
+            )
             return 0
 
         # Validate data freshness
