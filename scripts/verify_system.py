@@ -33,7 +33,9 @@ def test_alpaca_connection():
         secret_key = os.getenv('ALPACA_SECRET_KEY')
         paper_trading = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
 
-        print(f"API Key: {api_key[:10]}...{api_key[-4:]}")
+        # Mask API key for security (show only first 4 chars)
+        masked_key = f"{api_key[:4]}***" if api_key and len(api_key) >= 4 else "***"
+        print(f"API Key: {masked_key}")
         print(f"Paper Trading: {paper_trading}")
 
         # Initialize client
