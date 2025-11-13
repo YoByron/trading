@@ -485,9 +485,126 @@ def main():
         # Wait for market stabilization (5-10 min post-open)
         wait_for_market_stabilization()
 
-    # Execute strategies with PROPER technical analysis
-    tier1_success = execute_tier1(daily_investment)
-    tier2_success = execute_tier2(daily_investment)
+    # TURBO MODE: Try ADK orchestrator first (if enabled)
+    adk_used = False
+    tier1_success = False
+    tier2_success = False
+    
+    if adk_adapter.enabled:
+        try:
+            print("\n" + "=" * 70)
+            print("🚀 TURBO MODE: Attempting ADK orchestrator evaluation")
+            print("=" * 70)
+            
+            context = {
+                "mode": "paper",
+                "daily_investment": daily_investment,
+                "tier1_allocation": daily_investment * 0.60,
+                "tier2_allocation": daily_investment * 0.20,
+                "account_value": account_value,
+            }
+            
+            # Try ADK for Tier 1 (Core ETF)
+            tier1_symbols = ["SPY", "QQQ", "VOO"]
+            tier1_decision = adk_adapter.evaluate(
+                symbols=tier1_symbols,
+                context={**context, "tier": "T1_CORE"},
+            )
+            
+            if tier1_decision and tier1_decision.action == "BUY":
+                print(f"✅ ADK Tier 1 Decision: {tier1_decision.symbol} BUY (confidence: {tier1_decision.confidence:.2f})")
+                amount = tier1_decision.position_size or (daily_investment * 0.60)
+                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.60, "T1_CORE_ADK")
+                if is_valid:
+                    try:
+                        order = api.submit_order(
+                            symbol=tier1_decision.symbol,
+                            notional=amount,
+                            side="buy",
+                            type="market",
+                            time_in_force="day"
+                        )
+                        print(f"✅ ADK Tier 1 Order placed: {order.id}")
+                        log_trade({
+                            "timestamp": datetime.now().isoformat(),
+                            "tier": "T1_CORE_ADK",
+                            "symbol": tier1_decision.symbol,
+                            "amount": amount,
+                            "order_id": order.id,
+                            "status": order.status,
+                            "adk_confidence": tier1_decision.confidence,
+                        })
+                        tier1_success = True
+                        adk_used = True
+                    except Exception as e:
+                        print(f"❌ ADK Tier 1 order failed: {e}")
+                        tier1_success = False
+                else:
+                    print(f"❌ ADK Tier 1 order rejected: {error_msg}")
+                    tier1_success = False
+            else:
+                print("⚠️  ADK Tier 1: No BUY decision (will fallback to rule-based)")
+                tier1_success = False
+            
+            # Try ADK for Tier 2 (Growth)
+            tier2_symbols = ["NVDA", "GOOGL", "AMZN"]
+            tier2_decision = adk_adapter.evaluate(
+                symbols=tier2_symbols,
+                context={**context, "tier": "T2_GROWTH"},
+            )
+            
+            if tier2_decision and tier2_decision.action == "BUY":
+                print(f"✅ ADK Tier 2 Decision: {tier2_decision.symbol} BUY (confidence: {tier2_decision.confidence:.2f})")
+                amount = tier2_decision.position_size or (daily_investment * 0.20)
+                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.20, "T2_GROWTH_ADK")
+                if is_valid:
+                    try:
+                        order = api.submit_order(
+                            symbol=tier2_decision.symbol,
+                            notional=amount,
+                            side="buy",
+                            type="market",
+                            time_in_force="day"
+                        )
+                        print(f"✅ ADK Tier 2 Order placed: {order.id}")
+                        log_trade({
+                            "timestamp": datetime.now().isoformat(),
+                            "tier": "T2_GROWTH_ADK",
+                            "symbol": tier2_decision.symbol,
+                            "amount": amount,
+                            "order_id": order.id,
+                            "status": order.status,
+                            "adk_confidence": tier2_decision.confidence,
+                        })
+                        tier2_success = True
+                        adk_used = True
+                    except Exception as e:
+                        print(f"❌ ADK Tier 2 order failed: {e}")
+                        tier2_success = False
+                else:
+                    print(f"❌ ADK Tier 2 order rejected: {error_msg}")
+                    tier2_success = False
+            else:
+                print("⚠️  ADK Tier 2: No BUY decision (will fallback to rule-based)")
+                tier2_success = False
+                
+        except Exception as e:
+            print(f"⚠️  ADK orchestrator error: {e}")
+            print("   Falling back to rule-based strategies")
+            import traceback
+            traceback.print_exc()
+            tier1_success = False
+            tier2_success = False
+    
+    # Fallback to rule-based strategies if ADK not used or failed
+    if not adk_used:
+        print("\n" + "=" * 70)
+        print("📊 Using rule-based strategies (MACD + RSI + Volume)")
+        print("=" * 70)
+        # Execute strategies with PROPER technical analysis
+        tier1_success = execute_tier1(daily_investment)
+        tier2_success = execute_tier2(daily_investment)
+    
     track_daily_deposit(daily_investment)
 
     # Update performance
