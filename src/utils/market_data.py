@@ -140,9 +140,22 @@ class MarketDataProvider:
             self._cache[cache_key] = prepared
             return prepared.copy()
 
+        # Final fallback: Use cached data if available (stale but better than nothing)
+        logger.warning(
+            "%s: All live data sources failed. Attempting to use cached data.",
+            symbol,
+        )
+        cached_data = self._load_cached_data(symbol, lookback_days)
+        if cached_data is not None:
+            logger.warning(
+                "%s: Using cached data (may be stale). Trading will proceed with caution.",
+                symbol,
+            )
+            return cached_data
+
         raise ValueError(
             f"Failed to fetch {lookback_days} days of data for {symbol} "
-            "from yfinance, Alpaca API, and Alpha Vantage."
+            "from yfinance, Alpaca API, Alpha Vantage, and cached data."
         )
 
     # ------------------------------------------------------------------
@@ -344,6 +357,43 @@ class MarketDataProvider:
             )
             time.sleep(self.ALPHAVANTAGE_BACKOFF_SECONDS * attempt)
 
+        return None
+
+    def _load_cached_data(self, symbol: str, lookback_days: int) -> Optional[pd.DataFrame]:
+        """Load cached data from disk as last resort fallback."""
+        try:
+            # Check cache directory for any recent data
+            cache_pattern = self.cache_dir / f"{symbol.upper()}_*.csv"
+            import glob
+            cache_files = glob.glob(str(cache_pattern))
+            
+            if not cache_files:
+                return None
+            
+            # Get most recent cache file
+            cache_files.sort(key=lambda f: Path(f).stat().st_mtime, reverse=True)
+            latest_cache = Path(cache_files[0])
+            
+            # Check age (use if < 7 days old)
+            age_hours = (time.time() - latest_cache.stat().st_mtime) / 3600
+            if age_hours > 168:  # 7 days
+                logger.debug("%s: Cached data too old (%.1f hours)", symbol, age_hours)
+                return None
+            
+            # Load cached data
+            cached_df = pd.read_csv(latest_cache, parse_dates=["Date"], index_col="Date")
+            if not cached_df.empty and len(cached_df) >= lookback_days * 0.5:
+                logger.info(
+                    "%s: Loaded %d rows from cache (%.1f hours old)",
+                    symbol,
+                    len(cached_df),
+                    age_hours,
+                )
+                return cached_df.tail(lookback_days)
+            
+        except Exception as exc:
+            logger.debug("%s: Failed to load cached data: %s", symbol, exc)
+        
         return None
 
     @staticmethod
