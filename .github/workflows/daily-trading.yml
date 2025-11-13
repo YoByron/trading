@@ -341,22 +341,33 @@ jobs:
             cd ..
           }
           
-          # Copy generated dashboard to wiki
+          # Copy generated dashboard and home page to wiki
           cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
+          if [ -f wiki/Home.md ]; then
+            cp wiki/Home.md "$WIKI_DIR/Home.md"
+          fi
           
           # Commit and push to wiki
           cd "$WIKI_DIR"
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add Progress-Dashboard.md
+          git add -A
           
           if git diff --staged --quiet; then
             echo "📋 No changes to dashboard"
           else
             git commit -m "📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-            git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:main || \
-            git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:master
-            echo "✅ Wiki dashboard updated successfully!"
+            
+            # Try pushing to main branch first, then master
+            if git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:main 2>&1; then
+              echo "✅ Wiki dashboard updated successfully (main branch)!"
+            elif git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:master 2>&1; then
+              echo "✅ Wiki dashboard updated successfully (master branch)!"
+            else
+              echo "⚠️  Wiki push failed - wiki may need to be initialized manually"
+              echo "   Visit: https://github.com/IgorGanapolsky/trading/wiki"
+              echo "   Click 'Create the first page' to initialize wiki"
+            fi
           fi
 
       - name: Upload execution logs
