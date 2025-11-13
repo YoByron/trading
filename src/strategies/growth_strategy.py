@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 import logging
 import os
+import json
+from pathlib import Path
 
 import yfinance as yf
 import pandas as pd
@@ -323,6 +325,7 @@ class GrowthStrategy:
         "ABBV",
         "MRK",
         "LLY",
+        "UBER",
         "AVGO",
         "PEP",
         "COST",
@@ -353,6 +356,7 @@ class GrowthStrategy:
         "BA",
         "GE",
         "CAT",
+        "PINS",
     ]
 
     def __init__(self, weekly_allocation: float = 10.0, use_sentiment: bool = True):
@@ -382,6 +386,14 @@ class GrowthStrategy:
         except ValueError:
             mos_env = 0.15
         self.required_margin_of_safety = max(0.0, min(0.5, mos_env))
+
+        self.priority_watchlist = ["UBER", "LLY", "PINS"]
+        self.watchlist_dir = Path("data/watchlists")
+        try:
+            self.watchlist_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as exc:
+            logger.warning("Unable to create watchlist directory %s: %s", self.watchlist_dir, exc)
+        self.priority_watchlist_file = self.watchlist_dir / "tier2_priority.json"
 
         # Performance tracking
         self.total_trades = 0
@@ -471,7 +483,12 @@ class GrowthStrategy:
         logger.info("Starting AI screening of S&P 500 stocks")
 
         # Get initial candidates from S&P 500
-        candidates = self.SP500_TICKERS.copy()
+        base_universe = self.SP500_TICKERS.copy()
+        for ticker in reversed(self.priority_watchlist):
+            if ticker not in base_universe:
+                base_universe.insert(0, ticker)
+
+        candidates = base_universe
 
         # Use LLM analyzer to screen
         screened = self.llm_analyzer.screen_stocks(candidates)
