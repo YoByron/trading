@@ -1,8 +1,10 @@
 """
-Market data utilities with resilient fetching across free sources.
+Market data utilities with resilient fetching across multiple sources.
 
-Primary source: Yahoo Finance via yfinance (with hardened session headers)
-Fallback source: Alpha Vantage Daily Adjusted (free tier, throttled).
+Priority order:
+1. Yahoo Finance via yfinance (with hardened session headers)
+2. Alpaca API (if credentials available - preferred fallback)
+3. Alpha Vantage Daily Adjusted (free tier, throttled - last resort)
 
 Designed to keep the trading workflows running on zero-cost data plans.
 """
@@ -59,6 +61,24 @@ class MarketDataProvider:
         cache_root = os.getenv("MARKET_DATA_CACHE_DIR", "data/cache/alpha_vantage")
         self.cache_dir = Path(cache_root)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize Alpaca API if credentials available
+        self._alpaca_api = None
+        alpaca_key = os.getenv("ALPACA_API_KEY")
+        alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
+        if alpaca_key and alpaca_secret:
+            try:
+                import alpaca_trade_api as tradeapi
+                self._alpaca_api = tradeapi.REST(
+                    key_id=alpaca_key,
+                    secret_key=alpaca_secret,
+                    base_url=os.getenv("APCA_API_BASE_URL", "https://paper-api.alpaca.markets"),
+                    api_version="v2",
+                )
+                logger.info("Alpaca API initialized for market data fallback")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Alpaca API for market data: {e}")
+                self._alpaca_api = None
 
     def get_daily_bars(
         self,
@@ -97,11 +117,23 @@ class MarketDataProvider:
             return prepared.copy()
 
         logger.warning(
-            "%s: yfinance returned insufficient data (%s rows). Falling back to Alpha Vantage.",
+            "%s: yfinance returned insufficient data (%s rows). Trying Alpaca API fallback.",
             symbol,
             len(data) if data is not None else 0,
         )
 
+        # Try Alpaca API first (faster, more reliable than Alpha Vantage)
+        data = self._fetch_alpaca(symbol, lookback_days)
+        if self._is_valid(data, lookback_days):
+            prepared = self._prepare(data, lookback_days)
+            self._cache[cache_key] = prepared
+            return prepared.copy()
+
+        # Last resort: Alpha Vantage (slow, rate-limited)
+        logger.warning(
+            "%s: Alpaca API failed. Falling back to Alpha Vantage (may be slow).",
+            symbol,
+        )
         data = self._fetch_alpha_vantage(symbol)
         if self._is_valid(data, lookback_days):
             prepared = self._prepare(data, lookback_days)
@@ -110,7 +142,7 @@ class MarketDataProvider:
 
         raise ValueError(
             f"Failed to fetch {lookback_days} days of data for {symbol} "
-            "from both yfinance and Alpha Vantage."
+            "from yfinance, Alpaca API, and Alpha Vantage."
         )
 
     # ------------------------------------------------------------------
@@ -169,6 +201,52 @@ class MarketDataProvider:
             logger.debug("%s: yfinance extended download failed: %s", symbol, exc)
 
         return None
+
+    def _fetch_alpaca(self, symbol: str, lookback_days: int) -> Optional[pd.DataFrame]:
+        """Fetch market data from Alpaca API (preferred fallback)."""
+        if not self._alpaca_api:
+            logger.debug("%s: Alpaca API not available (missing credentials)", symbol)
+            return None
+
+        try:
+            # Alpaca API: get_bars returns BarSet, convert to DataFrame
+            barset = self._alpaca_api.get_bars(
+                symbol,
+                "1Day",
+                limit=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS,
+            )
+            
+            if not barset or len(barset) == 0:
+                logger.warning("%s: Alpaca API returned no bars", symbol)
+                return None
+
+            # Convert Alpaca bars to pandas DataFrame
+            records = []
+            for bar in barset:
+                records.append(
+                    {
+                        "Open": float(bar.o),
+                        "High": float(bar.h),
+                        "Low": float(bar.l),
+                        "Close": float(bar.c),
+                        "Volume": int(bar.v),
+                    }
+                )
+            
+            if not records:
+                return None
+
+            # Create DataFrame with datetime index
+            df = pd.DataFrame(records, index=[bar.t for bar in barset])
+            df.index.name = "Date"
+            df = df.sort_index()
+            
+            logger.info("%s: Successfully fetched %d bars from Alpaca API", symbol, len(df))
+            return df
+
+        except Exception as exc:
+            logger.warning("%s: Alpaca API fetch failed: %s", symbol, exc)
+            return None
 
     def _fetch_alpha_vantage(self, symbol: str) -> Optional[pd.DataFrame]:
         if not self.alpha_vantage_key:
