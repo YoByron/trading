@@ -15,9 +15,11 @@ import logging
 import os
 import random
 import time
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -26,21 +28,86 @@ import yfinance as yf
 logger = logging.getLogger(__name__)
 
 
+class DataSource(Enum):
+    """Data source enumeration for tracking which provider was used."""
+    YFINANCE = "yfinance"
+    ALPACA = "alpaca"
+    ALPHA_VANTAGE = "alpha_vantage"
+    CACHE = "cache"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class FetchAttempt:
+    """Record of a single data fetch attempt."""
+    source: DataSource
+    timestamp: float
+    success: bool
+    error_message: Optional[str] = None
+    rows_fetched: int = 0
+    latency_ms: float = 0.0
+
+
+@dataclass
+class MarketDataResult:
+    """Enhanced result with metadata about data source and fetch attempts."""
+    data: pd.DataFrame
+    source: DataSource
+    attempts: List[FetchAttempt] = field(default_factory=list)
+    total_attempts: int = 0
+    total_latency_ms: float = 0.0
+    cache_age_hours: Optional[float] = None
+
+    def add_attempt(self, attempt: FetchAttempt) -> None:
+        """Track a fetch attempt."""
+        self.attempts.append(attempt)
+        self.total_attempts += 1
+        self.total_latency_ms += attempt.latency_ms
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for logging/reporting."""
+        return {
+            "source": self.source.value,
+            "rows": len(self.data),
+            "total_attempts": self.total_attempts,
+            "total_latency_ms": round(self.total_latency_ms, 2),
+            "cache_age_hours": round(self.cache_age_hours, 2) if self.cache_age_hours else None,
+            "attempts": [
+                {
+                    "source": a.source.value,
+                    "success": a.success,
+                    "error": a.error_message,
+                    "rows": a.rows_fetched,
+                    "latency_ms": round(a.latency_ms, 2),
+                }
+                for a in self.attempts
+            ],
+        }
+
+
 class MarketDataProvider:
     """Fetch daily OHLCV data with retries and multi-source fallbacks."""
-
-    YFINANCE_LOOKBACK_BUFFER_DAYS = 35  # Increased to account for weekends/holidays
-    YFINANCE_SECONDARY_LOOKBACK_DAYS = 150  # Increased proportionally
-    ALPHAVANTAGE_MIN_INTERVAL_SECONDS = 15  # Free tier: 5 calls/minute
-    ALPHAVANTAGE_BACKOFF_SECONDS = 60
-    ALPHAVANTAGE_MAX_RETRIES = 4
-    CACHE_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 
     def __init__(
         self,
         alpha_vantage_key: Optional[str] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
+        # Configuration (loaded from env vars at instance creation)
+        self.YFINANCE_LOOKBACK_BUFFER_DAYS = int(os.getenv("YFINANCE_LOOKBACK_BUFFER_DAYS", "35"))
+        self.YFINANCE_SECONDARY_LOOKBACK_DAYS = int(os.getenv("YFINANCE_SECONDARY_LOOKBACK_DAYS", "150"))
+        self.YFINANCE_MAX_RETRIES = int(os.getenv("YFINANCE_MAX_RETRIES", "3"))
+        self.YFINANCE_INITIAL_BACKOFF_SECONDS = float(os.getenv("YFINANCE_INITIAL_BACKOFF_SECONDS", "1.0"))
+
+        self.ALPACA_MAX_RETRIES = int(os.getenv("ALPACA_MAX_RETRIES", "3"))
+        self.ALPACA_INITIAL_BACKOFF_SECONDS = float(os.getenv("ALPACA_INITIAL_BACKOFF_SECONDS", "2.0"))
+
+        self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS = float(os.getenv("ALPHAVANTAGE_MIN_INTERVAL_SECONDS", "15"))
+        self.ALPHAVANTAGE_BACKOFF_SECONDS = float(os.getenv("ALPHAVANTAGE_BACKOFF_SECONDS", "60"))
+        self.ALPHAVANTAGE_MAX_RETRIES = int(os.getenv("ALPHAVANTAGE_MAX_RETRIES", "4"))
+
+        self.CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", str(6 * 60 * 60)))  # 6 hours
+        self.CACHE_MAX_AGE_DAYS = int(os.getenv("CACHE_MAX_AGE_DAYS", "7"))  # Use cached data up to 7 days old
         self.session = session or requests.Session()
         # Harden yfinance requests to reduce 403/429 responses
         self.session.headers.update(
@@ -61,7 +128,10 @@ class MarketDataProvider:
         cache_root = os.getenv("MARKET_DATA_CACHE_DIR", "data/cache/alpha_vantage")
         self.cache_dir = Path(cache_root)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
+        # Health tracking
+        self._health_log_file = self.cache_dir / "health_log.jsonl"
+
         # Initialize Alpaca API if credentials available
         self._alpaca_api = None
         alpaca_key = os.getenv("ALPACA_API_KEY")
@@ -80,14 +150,17 @@ class MarketDataProvider:
                 logger.warning(f"Failed to initialize Alpaca API for market data: {e}")
                 self._alpaca_api = None
 
+        # Log configuration at startup
+        self._log_configuration()
+
     def get_daily_bars(
         self,
         symbol: str,
         lookback_days: int,
         end_datetime: Optional[datetime] = None,
-    ) -> pd.DataFrame:
+    ) -> MarketDataResult:
         """
-        Retrieve daily OHLCV candles for a symbol.
+        Retrieve daily OHLCV candles for a symbol with comprehensive fallback tracking.
 
         Args:
             symbol: Equity ticker symbol.
@@ -95,68 +168,304 @@ class MarketDataProvider:
             end_datetime: Optional custom end date (defaults to now).
 
         Returns:
-            pandas.DataFrame with columns [Open, High, Low, Close, Volume]
-            indexed by pandas.DatetimeIndex.
+            MarketDataResult with data and metadata about fetch attempts.
 
         Raises:
-            ValueError: if data cannot be fetched from either source.
+            ValueError: if data cannot be fetched from any source.
         """
         end_dt = end_datetime or datetime.now()
         start_dt = end_dt - timedelta(
             days=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS
         )
         cache_key = (symbol.upper(), lookback_days, end_dt.date())
+        result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
+
+        # Check in-memory cache first (fastest)
         cached = self._cache.get(cache_key)
         if cached is not None and not cached.empty:
-            return cached.copy()
+            logger.debug("%s: Serving from in-memory cache", symbol)
+            result.data = cached.copy()
+            result.source = DataSource.CACHE
+            return result
 
-        data = self._fetch_yfinance(symbol, start_dt, end_dt)
+        # Try yfinance (primary source)
+        data = self._fetch_yfinance_with_retries(symbol, start_dt, end_dt, result)
         if self._is_valid(data, lookback_days):
             prepared = self._prepare(data, lookback_days)
             self._cache[cache_key] = prepared
-            return prepared.copy()
+            result.data = prepared.copy()
+            result.source = DataSource.YFINANCE
+            self._log_health(symbol, result)
+            logger.info(
+                "%s: Successfully fetched from yfinance (%d rows, %d attempts, %.2fms)",
+                symbol,
+                len(prepared),
+                result.total_attempts,
+                result.total_latency_ms,
+            )
+            return result
 
+        # Try Alpaca API (preferred fallback)
         logger.warning(
-            "%s: yfinance returned insufficient data (%s rows). Trying Alpaca API fallback.",
+            "%s: yfinance returned insufficient data (%d rows). Trying Alpaca API.",
             symbol,
             len(data) if data is not None else 0,
         )
-
-        # Try Alpaca API first (faster, more reliable than Alpha Vantage)
-        data = self._fetch_alpaca(symbol, lookback_days)
+        data = self._fetch_alpaca_with_retries(symbol, lookback_days, result)
         if self._is_valid(data, lookback_days):
             prepared = self._prepare(data, lookback_days)
             self._cache[cache_key] = prepared
-            return prepared.copy()
+            result.data = prepared.copy()
+            result.source = DataSource.ALPACA
+            self._log_health(symbol, result)
+            logger.info(
+                "%s: Successfully fetched from Alpaca API (%d rows, %d attempts, %.2fms)",
+                symbol,
+                len(prepared),
+                result.total_attempts,
+                result.total_latency_ms,
+            )
+            return result
 
-        # Last resort: Alpha Vantage (slow, rate-limited)
-        logger.warning(
-            "%s: Alpaca API failed. Falling back to Alpha Vantage (may be slow).",
-            symbol,
-        )
-        data = self._fetch_alpha_vantage(symbol)
-        if self._is_valid(data, lookback_days):
-            prepared = self._prepare(data, lookback_days)
-            self._cache[cache_key] = prepared
-            return prepared.copy()
+        # Try Alpha Vantage (last resort live source)
+        if not self.alpha_vantage_key:
+            logger.warning(
+                "%s: Alpha Vantage fallback unavailable (ALPHA_VANTAGE_API_KEY not configured).",
+                symbol,
+            )
+        else:
+            logger.warning(
+                "%s: Alpaca API failed. Falling back to Alpha Vantage (rate-limited).",
+                symbol,
+            )
+            data = self._fetch_alpha_vantage_with_retries(symbol, result)
+            if self._is_valid(data, lookback_days):
+                prepared = self._prepare(data, lookback_days)
+                self._cache[cache_key] = prepared
+                result.data = prepared.copy()
+                result.source = DataSource.ALPHA_VANTAGE
+                self._log_health(symbol, result)
+                logger.info(
+                    "%s: Successfully fetched from Alpha Vantage (%d rows, %d attempts, %.2fms)",
+                    symbol,
+                    len(prepared),
+                    result.total_attempts,
+                    result.total_latency_ms,
+                )
+                return result
 
         # Final fallback: Use cached data if available (stale but better than nothing)
         logger.warning(
             "%s: All live data sources failed. Attempting to use cached data.",
             symbol,
         )
-        cached_data = self._load_cached_data(symbol, lookback_days)
+        cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
         if cached_data is not None:
+            result.data = cached_data
+            result.source = DataSource.CACHE
+            result.cache_age_hours = cache_age_hours
+            self._log_health(symbol, result)
             logger.warning(
-                "%s: Using cached data (may be stale). Trading will proceed with caution.",
+                "%s: Using cached data (%.1f hours old). Trading will proceed with caution.",
                 symbol,
+                cache_age_hours,
             )
-            return cached_data
+            return result
 
-        raise ValueError(
-            f"Failed to fetch {lookback_days} days of data for {symbol} "
-            "from yfinance, Alpaca API, Alpha Vantage, and cached data."
+        # Complete failure - log and raise
+        self._log_health(symbol, result)
+        error_summary = "\n".join(
+            [f"  - {a.source.value}: {a.error_message}" for a in result.attempts if not a.success]
         )
+        raise ValueError(
+            f"Failed to fetch {lookback_days} days of data for {symbol} from all sources:\n{error_summary}"
+        )
+
+    # ------------------------------------------------------------------
+    # Configuration and Health Tracking
+    # ------------------------------------------------------------------
+    def _log_configuration(self) -> None:
+        """Log configuration at startup for debugging."""
+        logger.info("MarketDataProvider configuration:")
+        logger.info("  - yfinance: max_retries=%d, backoff=%.1fs", self.YFINANCE_MAX_RETRIES, self.YFINANCE_INITIAL_BACKOFF_SECONDS)
+        logger.info("  - Alpaca API: %s, max_retries=%d", "enabled" if self._alpaca_api else "disabled", self.ALPACA_MAX_RETRIES)
+        logger.info("  - Alpha Vantage: %s, max_retries=%d", "enabled" if self.alpha_vantage_key else "disabled", self.ALPHAVANTAGE_MAX_RETRIES)
+        logger.info("  - Cache: dir=%s, ttl=%ds, max_age=%dd", self.cache_dir, self.CACHE_TTL_SECONDS, self.CACHE_MAX_AGE_DAYS)
+
+    def _log_health(self, symbol: str, result: MarketDataResult) -> None:
+        """Log fetch result to health log for monitoring."""
+        try:
+            import json
+            from datetime import timezone
+            health_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "symbol": symbol,
+                **result.to_dict(),
+            }
+            with open(self._health_log_file, "a") as f:
+                f.write(json.dumps(health_entry) + "\n")
+        except Exception as exc:
+            logger.debug("Failed to write health log: %s", exc)
+
+    # ------------------------------------------------------------------
+    # Retry Wrappers with Exponential Backoff
+    # ------------------------------------------------------------------
+    def _fetch_yfinance_with_retries(
+        self, symbol: str, start_dt: datetime, end_dt: datetime, result: MarketDataResult
+    ) -> Optional[pd.DataFrame]:
+        """Fetch from yfinance with exponential backoff retries."""
+        for attempt in range(1, self.YFINANCE_MAX_RETRIES + 1):
+            start_time = time.time()
+            try:
+                data = self._fetch_yfinance(symbol, start_dt, end_dt)
+                latency_ms = (time.time() - start_time) * 1000
+                if data is not None and not data.empty:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.YFINANCE,
+                            timestamp=time.time(),
+                            success=True,
+                            rows_fetched=len(data),
+                            latency_ms=latency_ms,
+                        )
+                    )
+                    return data
+                else:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.YFINANCE,
+                            timestamp=time.time(),
+                            success=False,
+                            error_message="Empty DataFrame returned",
+                            latency_ms=latency_ms,
+                        )
+                    )
+            except Exception as exc:
+                latency_ms = (time.time() - start_time) * 1000
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.YFINANCE,
+                        timestamp=time.time(),
+                        success=False,
+                        error_message=str(exc),
+                        latency_ms=latency_ms,
+                    )
+                )
+                logger.debug("%s: yfinance attempt %d/%d failed: %s", symbol, attempt, self.YFINANCE_MAX_RETRIES, exc)
+
+            # Exponential backoff before retry
+            if attempt < self.YFINANCE_MAX_RETRIES:
+                backoff = self.YFINANCE_INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
+                logger.debug("%s: Retrying yfinance in %.1fs...", symbol, backoff)
+                time.sleep(backoff)
+
+        return None
+
+    def _fetch_alpaca_with_retries(
+        self, symbol: str, lookback_days: int, result: MarketDataResult
+    ) -> Optional[pd.DataFrame]:
+        """Fetch from Alpaca API with exponential backoff retries."""
+        if not self._alpaca_api:
+            result.add_attempt(
+                FetchAttempt(
+                    source=DataSource.ALPACA,
+                    timestamp=time.time(),
+                    success=False,
+                    error_message="Alpaca API not initialized (missing credentials)",
+                )
+            )
+            return None
+
+        for attempt in range(1, self.ALPACA_MAX_RETRIES + 1):
+            start_time = time.time()
+            try:
+                data = self._fetch_alpaca(symbol, lookback_days)
+                latency_ms = (time.time() - start_time) * 1000
+                if data is not None and not data.empty:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.ALPACA,
+                            timestamp=time.time(),
+                            success=True,
+                            rows_fetched=len(data),
+                            latency_ms=latency_ms,
+                        )
+                    )
+                    return data
+                else:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.ALPACA,
+                            timestamp=time.time(),
+                            success=False,
+                            error_message="No bars returned",
+                            latency_ms=latency_ms,
+                        )
+                    )
+            except Exception as exc:
+                latency_ms = (time.time() - start_time) * 1000
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.ALPACA,
+                        timestamp=time.time(),
+                        success=False,
+                        error_message=str(exc),
+                        latency_ms=latency_ms,
+                    )
+                )
+                logger.debug("%s: Alpaca attempt %d/%d failed: %s", symbol, attempt, self.ALPACA_MAX_RETRIES, exc)
+
+            # Exponential backoff before retry
+            if attempt < self.ALPACA_MAX_RETRIES:
+                backoff = self.ALPACA_INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
+                logger.debug("%s: Retrying Alpaca API in %.1fs...", symbol, backoff)
+                time.sleep(backoff)
+
+        return None
+
+    def _fetch_alpha_vantage_with_retries(
+        self, symbol: str, result: MarketDataResult
+    ) -> Optional[pd.DataFrame]:
+        """Fetch from Alpha Vantage with existing retry logic (already has exponential backoff)."""
+        start_time = time.time()
+        try:
+            data = self._fetch_alpha_vantage(symbol)
+            latency_ms = (time.time() - start_time) * 1000
+            if data is not None and not data.empty:
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.ALPHA_VANTAGE,
+                        timestamp=time.time(),
+                        success=True,
+                        rows_fetched=len(data),
+                        latency_ms=latency_ms,
+                    )
+                )
+                return data
+            else:
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.ALPHA_VANTAGE,
+                        timestamp=time.time(),
+                        success=False,
+                        error_message="No time series data returned",
+                        latency_ms=latency_ms,
+                    )
+                )
+        except Exception as exc:
+            latency_ms = (time.time() - start_time) * 1000
+            result.add_attempt(
+                FetchAttempt(
+                    source=DataSource.ALPHA_VANTAGE,
+                    timestamp=time.time(),
+                    success=False,
+                    error_message=str(exc),
+                    latency_ms=latency_ms,
+                )
+            )
+            logger.debug("%s: Alpha Vantage failed: %s", symbol, exc)
+
+        return None
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -358,26 +667,32 @@ class MarketDataProvider:
         return None
 
     def _load_cached_data(self, symbol: str, lookback_days: int) -> Optional[pd.DataFrame]:
-        """Load cached data from disk as last resort fallback."""
+        """Load cached data from disk as last resort fallback (legacy method)."""
+        data, _ = self._load_cached_data_with_age(symbol, lookback_days)
+        return data
+
+    def _load_cached_data_with_age(self, symbol: str, lookback_days: int) -> Tuple[Optional[pd.DataFrame], Optional[float]]:
+        """Load cached data from disk with age information."""
         try:
             # Check cache directory for any recent data
             cache_pattern = self.cache_dir / f"{symbol.upper()}_*.csv"
             import glob
             cache_files = glob.glob(str(cache_pattern))
-            
+
             if not cache_files:
-                return None
-            
+                return None, None
+
             # Get most recent cache file
             cache_files.sort(key=lambda f: Path(f).stat().st_mtime, reverse=True)
             latest_cache = Path(cache_files[0])
-            
-            # Check age (use if < 7 days old)
+
+            # Check age (use if < configured max age)
             age_hours = (time.time() - latest_cache.stat().st_mtime) / 3600
-            if age_hours > 168:  # 7 days
-                logger.debug("%s: Cached data too old (%.1f hours)", symbol, age_hours)
-                return None
-            
+            max_age_hours = self.CACHE_MAX_AGE_DAYS * 24
+            if age_hours > max_age_hours:
+                logger.debug("%s: Cached data too old (%.1f hours > %d hours)", symbol, age_hours, max_age_hours)
+                return None, None
+
             # Load cached data
             cached_df = pd.read_csv(latest_cache, parse_dates=["Date"], index_col="Date")
             if not cached_df.empty and len(cached_df) >= lookback_days * 0.5:
@@ -387,12 +702,12 @@ class MarketDataProvider:
                     len(cached_df),
                     age_hours,
                 )
-                return cached_df.tail(lookback_days)
-            
+                return cached_df.tail(lookback_days), age_hours
+
         except Exception as exc:
             logger.debug("%s: Failed to load cached data: %s", symbol, exc)
-        
-        return None
+
+        return None, None
 
     @staticmethod
     def _is_valid(data: Optional[pd.DataFrame], lookback_days: int) -> bool:
