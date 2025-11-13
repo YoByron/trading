@@ -63,7 +63,7 @@ jobs:
             echo "⚠️  ADK disabled via ADK_ENABLED=0, skipping service startup"
             exit 0
           fi
-        run: |
+          
           echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
           cd go/adk_trading
           nohup go run ./cmd/trading_orchestrator \
