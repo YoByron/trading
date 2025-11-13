@@ -39,7 +39,7 @@ DAILY_INVESTMENT=10.0
 python scripts/autonomous_trader.py
 
 # New agent-based orchestrator (paper mode)
-python -m orchestrator.main --mode paper
+PYTHONPATH=src python3 -m orchestrator.main --mode paper
 ```
 
 **Done!** System is ready for autonomous execution.
