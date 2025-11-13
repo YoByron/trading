@@ -45,6 +45,44 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set up Go for ADK orchestrator
+        if: env.ADK_ENABLED != '0'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Start ADK orchestrator service (background)
+        if: env.ADK_ENABLED != '0'
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          ADK_PORT: '8080'
+          ADK_HEALTH_ADDR: ':8091'
+        run: |
+          echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
+          cd go/adk_trading
+          nohup go run ./cmd/trading_orchestrator \
+            --data_dir ../../data \
+            --log_path ../../logs/adk_orchestrator.jsonl \
+            --app trading_orchestrator \
+            web --port 8080 api --webui_address localhost:8080 > ../../logs/adk_service.log 2>&1 &
+          echo $! > /tmp/adk_service.pid
+          
+          # Wait for service to be ready (max 30 seconds)
+          echo "Waiting for ADK service to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/api/health 2>/dev/null; then
+              echo "✅ ADK service is ready!"
+              break
+            fi
+            echo "  Attempt $i/30..."
+            sleep 1
+          done
+          
+          # Check if service started
+          if ! curl -f http://localhost:8080/api/health 2>/dev/null; then
+            echo "⚠️  ADK service may not have started properly, but continuing..."
+          fi
+
       - name: Validate watchlist exists
         id: validate_watchlist
         run: |
@@ -183,6 +221,14 @@ jobs:
           ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
           DAILY_INVESTMENT: ${{ secrets.DAILY_INVESTMENT || '10.0' }}
           PAPER_TRADING: 'true'
+          # TURBO MODE: Enable ADK orchestrator
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
+          ADK_BASE_URL: ${{ secrets.ADK_BASE_URL || 'http://127.0.0.1:8080/api' }}
+          ADK_APP_NAME: ${{ secrets.ADK_APP_NAME || 'trading_orchestrator' }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          # Enable Langchain agents
+          LANGCHAIN_ENABLE_MCP: ${{ secrets.LANGCHAIN_ENABLE_MCP || 'true' }}
+          LANGCHAIN_MODEL: ${{ secrets.LANGCHAIN_MODEL || 'claude-3-5-sonnet-20241022' }}
         run: |
           python scripts/autonomous_trader.py
       
@@ -253,6 +299,17 @@ jobs:
 
           echo "✅ System state changes committed and pushed"
 
+      - name: Stop ADK service
+        if: always() && env.ADK_ENABLED != '0'
+        run: |
+          if [ -f /tmp/adk_service.pid ]; then
+            PID=$(cat /tmp/adk_service.pid)
+            if ps -p $PID > /dev/null 2>&1; then
+              echo "Stopping ADK service (PID: $PID)..."
+              kill $PID || true
+            fi
+          fi
+
       - name: Upload execution logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -260,6 +317,8 @@ jobs:
           name: trading-logs-${{ github.run_id }}
           path: |
             logs/*.log
+            logs/adk_service.log
+            logs/adk_orchestrator.jsonl
             data/system_state.json
             data/trades_*.json
           retention-days: 30

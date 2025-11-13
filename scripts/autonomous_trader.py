@@ -24,6 +24,7 @@ from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
 from src.utils.market_data import get_market_data_provider
 from src.verification.output_verifier import OutputVerifier  # Claude Agent SDK Loop pattern
+from src.orchestration.adk_integration import ADKTradeAdapter  # TURBO MODE: ADK integration
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
@@ -50,6 +51,20 @@ MAX_ORDER_MULTIPLIER = 10.0  # Reject orders >10x expected amount (safety gate)
 # Initialize Alpaca
 api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
 market_data_provider = get_market_data_provider()
+
+# TURBO MODE: Initialize ADK adapter (enabled by default, can disable via ADK_ENABLED=0)
+adk_enabled = os.getenv("ADK_ENABLED", "1").lower() not in {"0", "false", "off", "no"}
+adk_adapter = ADKTradeAdapter(
+    enabled=adk_enabled,
+    base_url=os.getenv("ADK_BASE_URL", "http://127.0.0.1:8080/api"),
+    app_name=os.getenv("ADK_APP_NAME", "trading_orchestrator"),
+    root_agent_name=os.getenv("ADK_ROOT_AGENT", "trading_orchestrator_root_agent"),
+    user_id=os.getenv("ADK_USER_ID", "autonomous_trader"),
+)
+if adk_adapter.enabled:
+    print("🚀 TURBO MODE: ADK orchestrator ENABLED")
+else:
+    print("⚠️  ADK orchestrator disabled (set ADK_ENABLED=1 to enable)")
 
 
 def calculate_daily_investment():
