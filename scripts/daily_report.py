@@ -89,6 +89,47 @@ def get_rl_stats() -> Dict[str, Any]:
         return {"states_learned": 0, "action_distribution": {}}
 
 
+def get_manual_trading_status() -> Dict[str, Any]:
+    """Get manual trading status from SoFi and crowdfunding platforms."""
+    manual_trades_file = DATA_DIR / "manual_trades.json"
+
+    if not manual_trades_file.exists():
+        return {
+            "positions": [],
+            "total_equity": 0.0,
+            "total_pl": 0.0,
+            "trade_count": 0
+        }
+
+    try:
+        with open(manual_trades_file, 'r') as f:
+            data = json.load(f)
+            positions = data.get("positions", [])
+
+            # Calculate totals
+            total_equity = 0.0
+            total_pl = 0.0
+            for pos in positions:
+                value = pos["quantity"] * pos["current_price"]
+                cost = pos["quantity"] * pos["avg_price"]
+                total_equity += value
+                total_pl += (value - cost)
+
+            return {
+                "positions": positions,
+                "total_equity": total_equity,
+                "total_pl": total_pl,
+                "trade_count": len(data.get("trades", []))
+            }
+    except:
+        return {
+            "positions": [],
+            "total_equity": 0.0,
+            "total_pl": 0.0,
+            "trade_count": 0
+        }
+
+
 def get_circuit_breaker_status() -> Dict[str, Any]:
     """Get circuit breaker status."""
     try:
@@ -102,10 +143,11 @@ def get_circuit_breaker_status() -> Dict[str, Any]:
 def generate_report() -> str:
     """Generate daily report."""
     today = date.today().isoformat()
-    
+
     # Load data
     trades = load_todays_trades()
     portfolio = get_portfolio_status()
+    manual_trading = get_manual_trading_status()
     rl_stats = get_rl_stats()
     cb_status = get_circuit_breaker_status()
     
@@ -121,12 +163,24 @@ Multi-Agent Trading System (2025 Standard)
 - MetaAgent + Research + Signal + Risk + Execution + RL
 
 {'=' * 80}
-💰 PORTFOLIO
+💰 PORTFOLIO (Multi-Platform Summary)
 {'=' * 80}
-Equity:        ${portfolio.get('equity', 0):,.2f}
-Cash:          ${portfolio.get('cash', 0):,.2f}
-Buying Power:  ${portfolio.get('buying_power', 0):,.2f}
-P/L Today:     ${portfolio.get('pl_today', 0):+,.2f}
+
+ALPACA (Automated - Tiers 1-2):
+  Equity:        ${portfolio.get('equity', 0):,.2f}
+  Cash:          ${portfolio.get('cash', 0):,.2f}
+  Buying Power:  ${portfolio.get('buying_power', 0):,.2f}
+  P/L Today:     ${portfolio.get('pl_today', 0):+,.2f}
+
+MANUAL TRADING (Tiers 3-4):
+  Total Value:   ${manual_trading['total_equity']:,.2f}
+  Positions:     {len(manual_trading['positions'])}
+  P/L:           ${manual_trading['total_pl']:+,.2f}
+  Trades Total:  {manual_trading['trade_count']}
+
+COMBINED TOTAL:
+  Total Equity:  ${portfolio.get('equity', 0) + manual_trading['total_equity']:,.2f}
+  Total P/L:     ${portfolio.get('pl_today', 0) + manual_trading['total_pl']:+,.2f}
 
 {'=' * 80}
 📈 TRADES EXECUTED
@@ -146,7 +200,43 @@ Total Trades: {len(trades)}
                 report += f"  Order ID: {trade['order_id']}\n"
     else:
         report += "No trades executed today\n"
-    
+
+    # Add manual trading positions section
+    report += f"""
+{'=' * 80}
+📊 MANUAL POSITIONS (SoFi + Crowdfunding)
+{'=' * 80}
+"""
+
+    if manual_trading['positions']:
+        # Platform mapping
+        platform_names = {
+            "sofi": "SoFi",
+            "wefunder": "Wefunder",
+            "republic": "Republic",
+            "startengine": "StartEngine"
+        }
+
+        for pos in manual_trading['positions']:
+            platform = platform_names.get(pos['platform'], pos['platform'])
+            value = pos['quantity'] * pos['current_price']
+            cost = pos['quantity'] * pos['avg_price']
+            pl = value - cost
+            pl_pct = (pl / cost * 100) if cost > 0 else 0
+            status = "✅" if pl > 0 else "❌" if pl < 0 else "➖"
+
+            report += f"""
+{status} {pos['symbol']} ({platform} - {pos['tier'].upper()})
+  Quantity:      {pos['quantity']}
+  Avg Price:     ${pos['avg_price']:.2f}
+  Current Price: ${pos['current_price']:.2f}
+  Total Value:   ${value:.2f}
+  P/L:           ${pl:+.2f} ({pl_pct:+.2f}%)
+"""
+    else:
+        report += "No manual positions yet\n"
+        report += "\n💡 Use 'python scripts/manual_trade_entry.py' to log manual trades\n"
+
     report += f"""
 {'=' * 80}
 🎓 REINFORCEMENT LEARNING
