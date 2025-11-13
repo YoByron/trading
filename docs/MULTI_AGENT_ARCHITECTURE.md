@@ -1,3 +1,73 @@
+# Multi-Agent Trading System Upgrade
+
+## Objectives
+- Transform the current tiered scripts into cooperative AI agents.
+- Preserve existing Alpaca/Jupyter automation while enabling autonomous decision loops.
+- Provide a framework for rapid experimentation with new strategies, data sources, and guardrails.
+
+## Target Architecture
+
+### Agents
+| Agent | Responsibilities | Key Inputs | Key Outputs |
+|-------|------------------|------------|-------------|
+| **Data Agent** | Fetches and normalizes market & alt data, manages caching & QoS. | Symbol universe, data policies. | Time-series snapshots, feature frames, freshness metrics. |
+| **Strategy Agent** | Generates trade intents using rule-based, ML, or RL models. | Data Agent outputs, research notes, config. | Trade candidates (symbol, direction, sizing score, rationale). |
+| **Risk Agent** | Validates intents against portfolio limits, market conditions, compliance rules. | Trade candidates, portfolio state, risk config. | Approved orders with stop/limit instructions, or rejection reasons. |
+| **Execution Agent** | Places, monitors, and reconciles orders via broker APIs. | Approved orders, market status. | Execution receipts, order state updates, alerts. |
+| **Audit Agent** | Journals activity, summarizes rationales, updates knowledge base. | Trade lifecycle events, agent logs. | Daily reports, compliance trail, retraining datasets. |
+| **Orchestrator** | Coordinates agent lifecycle, handles retries, schedules runs, and exposes CLI/API controls. | Scheduler trigger, incident signals. | Run status, escalation events, metrics. |
+
+### Message & State Flow
+1. **Trigger**: Orchestrator receives schedule or manual command (supports `force`, `dry-run`).
+2. **Data Pull**: Orchestrator requests latest context from Data Agent. Data Agent stores results in shared cache (Redis or S3-backed store) and publishes metadata (freshness, source).
+3. **Strategy Evaluation**: Strategy Agent consumes normalized data plus previous audit notes, computes intents with confidence scores and rationales (LLM assisted when available).
+4. **Risk Vetting**: Risk Agent enforces hard guards (exposure, drawdown, liquidity), annotates decisions, and either approves or rejects each intent.
+5. **Execution**: Execution Agent submits approved orders via Alpaca, monitors fills, and handles retries/cancellations. It emits events to both Orchestrator and Audit Agent.
+6. **Audit Trail**: Audit Agent records the full narrative (inputs, rationales, outcomes) to persistent storage, pushes summaries to Slack/email, and updates datasets used for model retraining.
+7. **State Update**: Orchestrator aggregates outcomes, updates `system_state`, and schedules follow-up tasks (e.g., RL retraining job, post-mortem on failures).
+
+### Shared Infrastructure
+- **Message Bus**: Lightweight queue (Redis Streams, NATS, or simple in-process pub/sub for initial release).
+- **State Store**: Replace `system_state.json` with typed store (Redis hash or SQLite/Parquet) for durability and concurrency.
+- **Config Layer**: Centralized YAML/JSON configs validated via Pydantic; supports environment overrides.
+- **Logging & Metrics**: Structured JSON logs + Prometheus-style metrics for each agent; integrates with GA artifacts and local CLI.
+- **Error Handling**: Standard retry/backoff policy, dead-letter queue, escalation via orchestrator (Slack/email).
+
+## Implementation Plan
+
+### Phase 1 — Foundation
+1. Introduce `/src/agents` package with base `Agent` abstract class (lifecycle hooks, telemetry, state helpers).
+2. Add orchestrator scaffold (`src/orchestrator/main.py`) capable of sequential agent invocation with dependency injection.
+3. Swap `system_state.json` usage for state provider interface (file-backed during transition, upgradeable to Redis/S3).
+4. Update GA workflow to call orchestrator and expose manual flags (`force`, `dry_run`).
+
+### Phase 2 — Agentization
+1. **Data Agent**: Wrap existing `DataCollector` logic + new market data provider; add caching & rate-limit protection.
+2. **Strategy Agent**: Encapsulate Tier 1 & Tier 2 logic behind strategy interface; support multi-model pipelines (rule/ML/RL).
+3. **Risk Agent**: Centralize risk rules (allocation, stop-loss, exposure); produce enriched annotations for audit.
+4. **Execution Agent**: Harden Alpaca integration with idempotent order submission, reconciliation loop, and circuit breaker.
+5. **Audit Agent**: Automate trade journaling, rationale logging, and dataset export (CSV/Parquet + markdown summaries).
+6. Embed optional LLM reasoning path for Strategy/Audit agents (via Anthropic/OpenRouter credentials).
+
+### Phase 3 — Advanced Enhancements
+1. Integrate reinforcement learning hooks (daily or weekly retraining jobs).
+2. Add alternative data ingestion (news sentiment, social signals) into Data Agent.
+3. Enable concurrent agent execution with message bus and asynchronous orchestrator.
+4. Deploy monitoring dashboards (Grafana) and incident response runbooks.
+5. Roll out canary/live trading once paper-trading KPIs are met, with kill-switch and config gating.
+
+## Testing & Rollout Strategy
+- **Unit Tests**: For agent interfaces, state adapters, and orchestrator control flow.
+- **Integration Tests**: Run full agent pipeline against recorded market data (backtesting harness).
+- **Simulation**: Stress test failure scenarios (API outage, rate limits, invalid data).
+- **Paper Trading**: Run side-by-side with legacy pipeline during burn-in; compare outcomes daily.
+- **Deployment**: Use feature flag to switch orchestrator into production once stability proven.
+
+## Immediate Next Steps
+1. Implement base agent classes, orchestrator skeleton, and state provider adapter.
+2. Refactor Data Agent from existing collectors with caching improvements already underway.
+3. Gradually migrate existing Tier 1 & Tier 2 logic into Strategy Agent while maintaining legacy path for fallback.
+
 # Multi-Agent AI Trading System Architecture
 
 **Version:** 1.0.0
