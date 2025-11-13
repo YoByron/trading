@@ -45,6 +45,7 @@ DAILY_INVESTMENT = float(os.getenv("DAILY_INVESTMENT", "10.0"))
 DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
 MIN_POSITION_SIZE = 10.0  # Minimum $10 per trade (Alpaca requirement)
 MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
+MAX_ORDER_MULTIPLIER = 10.0  # Reject orders >10x expected amount (safety gate)
 
 # Initialize Alpaca
 api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
@@ -62,6 +63,37 @@ def calculate_daily_investment():
         Daily total investment amount in dollars (fixed, not portfolio-based)
     """
     return DAILY_INVESTMENT
+
+
+def validate_order_size(amount: float, expected: float, tier: str) -> tuple[bool, str]:
+    """
+    Validate order size before execution.
+    
+    Rejects orders that exceed MAX_ORDER_MULTIPLIER times expected amount.
+    This prevents catastrophic errors like the Nov 3 $1,600 order (200x expected).
+    
+    Args:
+        amount: Proposed order amount
+        expected: Expected order amount for this tier
+        tier: Tier name for logging
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    if amount > expected * MAX_ORDER_MULTIPLIER:
+        error_msg = (
+            f"🚨 ORDER REJECTED: ${amount:.2f} exceeds ${expected * MAX_ORDER_MULTIPLIER:.2f} "
+            f"({MAX_ORDER_MULTIPLIER}x expected ${expected:.2f} for {tier})"
+        )
+        print(f"❌ {error_msg}")
+        return False, error_msg
+    
+    if amount < MIN_POSITION_SIZE:
+        error_msg = f"⚠️  Order ${amount:.2f} below minimum ${MIN_POSITION_SIZE:.2f}"
+        print(f"❌ {error_msg}")
+        return False, error_msg
+    
+    return True, ""
 
 
 def log_trade(trade_data):
@@ -212,6 +244,12 @@ def execute_tier1(daily_amount):
     print(f"\n✅ Selected: {best}")
     print(f"💰 Investment: ${amount:.2f} (60% of ${daily_amount:.2f})")
 
+    # VALIDATION GATE: Check order size before execution
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.60, "T1_CORE")
+    if not is_valid:
+        print(f"❌ Tier 1 trade rejected: {error_msg}")
+        return False
+
     try:
         # Place order
         order = api.submit_order(
@@ -280,6 +318,12 @@ def execute_tier2(daily_amount):
         'AMZN': 'OpenAI $38B Deal + Cloud AI'
     }
     print(f"🎯 Disruptive Theme: {themes.get(selected, 'Innovation')}")
+
+    # VALIDATION GATE: Check order size before execution
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.20, "T2_GROWTH")
+    if not is_valid:
+        print(f"❌ Tier 2 trade rejected: {error_msg}")
+        return False
 
     try:
         order = api.submit_order(

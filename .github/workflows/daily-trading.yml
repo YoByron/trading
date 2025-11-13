@@ -154,8 +154,28 @@ jobs:
             echo "⚠️  Trading already executed today. Skipping run."
           fi
 
-      - name: Execute daily trading
+      - name: Pre-market health check
+        id: health_check
         if: steps.check_execution.outputs.skip != 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          echo "🏥 Running pre-market health check..."
+          python3 scripts/pre_market_health_check.py
+
+          if [ $? -ne 0 ]; then
+            echo "❌ HEALTH CHECK FAILED - Aborting trading execution"
+            echo "health_check_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ HEALTH CHECK PASSED - Proceeding with trading"
+            echo "health_check_passed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute daily trading
+        if: steps.check_execution.outputs.skip != 'true' && steps.health_check.outputs.health_check_passed == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
