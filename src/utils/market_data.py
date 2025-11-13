@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 class MarketDataProvider:
     """Fetch daily OHLCV data with retries and multi-source fallbacks."""
 
-    YFINANCE_LOOKBACK_BUFFER_DAYS = 5
-    YFINANCE_SECONDARY_LOOKBACK_DAYS = 120
+    YFINANCE_LOOKBACK_BUFFER_DAYS = 35  # Increased to account for weekends/holidays
+    YFINANCE_SECONDARY_LOOKBACK_DAYS = 150  # Increased proportionally
     ALPHAVANTAGE_MIN_INTERVAL_SECONDS = 15  # Free tier: 5 calls/minute
     ALPHAVANTAGE_BACKOFF_SECONDS = 60
     ALPHAVANTAGE_MAX_RETRIES = 4
@@ -172,7 +172,6 @@ class MarketDataProvider:
                 start=start_dt,
                 end=end_dt,
                 progress=False,
-                session=self.session,
                 auto_adjust=False,
                 threads=False,
             )
@@ -184,7 +183,7 @@ class MarketDataProvider:
 
         # Secondary attempt using Ticker.history (sometimes succeeds when download fails)
         try:
-            ticker = yf.Ticker(symbol, session=self.session)
+            ticker = yf.Ticker(symbol)
             history = ticker.history(
                 start=start_dt.strftime("%Y-%m-%d"),
                 end=end_dt.strftime("%Y-%m-%d"),
@@ -204,7 +203,6 @@ class MarketDataProvider:
                 start=extended_start,
                 end=end_dt,
                 progress=False,
-                session=self.session,
                 auto_adjust=False,
                 threads=False,
             )
