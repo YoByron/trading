@@ -46,17 +46,23 @@ jobs:
           pip install -r requirements.txt
 
       - name: Set up Go for ADK orchestrator
-        if: env.ADK_ENABLED != '0'
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+        env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
 
       - name: Start ADK orchestrator service (background)
-        if: env.ADK_ENABLED != '0'
         env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           ADK_PORT: '8080'
           ADK_HEALTH_ADDR: ':8091'
+        run: |
+          if [ "$ADK_ENABLED" = "0" ]; then
+            echo "⚠️  ADK disabled via ADK_ENABLED=0, skipping service startup"
+            exit 0
+          fi
         run: |
           echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
           cd go/adk_trading
@@ -300,9 +306,11 @@ jobs:
           echo "✅ System state changes committed and pushed"
 
       - name: Stop ADK service
-        if: always() && env.ADK_ENABLED != '0'
+        if: always()
+        env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
         run: |
-          if [ -f /tmp/adk_service.pid ]; then
+          if [ "$ADK_ENABLED" != "0" ] && [ -f /tmp/adk_service.pid ]; then
             PID=$(cat /tmp/adk_service.pid)
             if ps -p $PID > /dev/null 2>&1; then
               echo "Stopping ADK service (PID: $PID)..."
