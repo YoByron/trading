@@ -28,19 +28,12 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-merge security patches
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      - name: Auto-merge patches and minor updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: |
           gh pr merge --auto --squash "$PR_URL"
-          echo "✅ Auto-merged security patch for ${{ steps.metadata.outputs.dependency-names }}"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Comment on minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: |
-          gh pr comment "$PR_URL" --body "✅ Auto-approved minor version update. Ready to merge when tests pass."
+          echo "✅ Auto-merged ${{ steps.metadata.outputs.update-type }} for ${{ steps.metadata.outputs.dependency-names }}"
+          echo "Tests will run before merge completes (GitHub auto-merge waits for required checks)"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

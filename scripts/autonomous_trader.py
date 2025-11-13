@@ -230,8 +230,8 @@ def calculate_technical_score(symbol):
 
 
 def execute_tier1(daily_amount):
-    """Tier 1: Core ETF Strategy - 60% using PROPER technical analysis"""
-    amount = daily_amount * 0.60
+    """Tier 1: Core ETF Strategy - 70% using PROPER technical analysis"""
+    amount = daily_amount * 0.70
 
     print("\n" + "=" * 70)
     print("🎯 TIER 1: CORE ETF STRATEGY (MACD + RSI + Volume)")
@@ -257,10 +257,10 @@ def execute_tier1(daily_amount):
     best = max(valid_scores, key=valid_scores.get)
 
     print(f"\n✅ Selected: {best}")
-    print(f"💰 Investment: ${amount:.2f} (60% of ${daily_amount:.2f})")
+    print(f"💰 Investment: ${amount:.2f} (70% of ${daily_amount:.2f})")
 
     # VALIDATION GATE: Check order size before execution
-    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.60, "T1_CORE")
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.70, "T1_CORE")
     if not is_valid:
         print(f"❌ Tier 1 trade rejected: {error_msg}")
         return False
@@ -292,12 +292,12 @@ def execute_tier1(daily_amount):
 
 
 def execute_tier2(daily_amount):
-    """Tier 2: Disruptive Innovation Strategy - 20% using PROPER technical analysis
+    """Tier 2: Disruptive Innovation Strategy - 30% using PROPER technical analysis
 
     Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles) + AMZN (OpenAI deal)
     Conservative approach - proven disruptive leaders
     """
-    amount = daily_amount * 0.20
+    amount = daily_amount * 0.30
 
     print("\n" + "=" * 70)
     print("📈 TIER 2: DISRUPTIVE INNOVATION STRATEGY (MACD + RSI + Volume)")
@@ -324,7 +324,7 @@ def execute_tier2(daily_amount):
     selected = max(valid_scores, key=valid_scores.get)
 
     print(f"\n✅ Selected: {selected}")
-    print(f"💰 Investment: ${amount:.2f} (20% of ${daily_amount:.2f})")
+    print(f"💰 Investment: ${amount:.2f} (30% of ${daily_amount:.2f})")
 
     # Display disruptive theme
     themes = {
@@ -335,7 +335,7 @@ def execute_tier2(daily_amount):
     print(f"🎯 Disruptive Theme: {themes.get(selected, 'Innovation')}")
 
     # VALIDATION GATE: Check order size before execution
-    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.20, "T2_GROWTH")
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.30, "T2_GROWTH")
     if not is_valid:
         print(f"❌ Tier 2 trade rejected: {error_msg}")
         return False
@@ -474,7 +474,7 @@ def main():
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
     print(f"📈 Daily Investment: ${daily_investment:.2f} (FIXED - not portfolio-based)")
     print("🎯 Strategy: Momentum (MACD + RSI + Volume)")
-    print(f"📊 Breakdown: Core 60% (${daily_investment*0.6:.2f}) | Growth 20% (${daily_investment*0.2:.2f}) | IPO 10% (${daily_investment*0.1:.2f}) | Crowdfunding 10% (${daily_investment*0.1:.2f})")
+    print(f"📊 Breakdown: Core 70% (${daily_investment*0.7:.2f}) | Growth 30% (${daily_investment*0.3:.2f})")
     print("=" * 70)
 
     # Check if market is open
@@ -499,8 +499,8 @@ def main():
             context = {
                 "mode": "paper",
                 "daily_investment": daily_investment,
-                "tier1_allocation": daily_investment * 0.60,
-                "tier2_allocation": daily_investment * 0.20,
+                "tier1_allocation": daily_investment * 0.70,
+                "tier2_allocation": daily_investment * 0.30,
                 "account_value": account_value,
             }
             
@@ -513,8 +513,8 @@ def main():
             
             if tier1_decision and tier1_decision.action == "BUY":
                 print(f"✅ ADK Tier 1 Decision: {tier1_decision.symbol} BUY (confidence: {tier1_decision.confidence:.2f})")
-                amount = tier1_decision.position_size or (daily_investment * 0.60)
-                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.60, "T1_CORE_ADK")
+                amount = tier1_decision.position_size or (daily_investment * 0.70)
+                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.70, "T1_CORE_ADK")
                 if is_valid:
                     try:
                         order = api.submit_order(
@@ -555,8 +555,8 @@ def main():
             
             if tier2_decision and tier2_decision.action == "BUY":
                 print(f"✅ ADK Tier 2 Decision: {tier2_decision.symbol} BUY (confidence: {tier2_decision.confidence:.2f})")
-                amount = tier2_decision.position_size or (daily_investment * 0.20)
-                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.20, "T2_GROWTH_ADK")
+                amount = tier2_decision.position_size or (daily_investment * 0.30)
+                is_valid, error_msg = validate_order_size(amount, daily_investment * 0.30, "T2_GROWTH_ADK")
                 if is_valid:
                     try:
                         order = api.submit_order(
