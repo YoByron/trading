@@ -20,6 +20,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  wiki: write
 
 jobs:
   execute-trading:
@@ -318,6 +320,45 @@ jobs:
             fi
           fi
 
+      - name: Update Progress Dashboard Wiki
+        if: steps.check_execution.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📊 Generating progress dashboard..."
+          python3 scripts/generate_progress_dashboard.py
+          
+          echo "📝 Updating GitHub Wiki..."
+          
+          # Clone wiki repository
+          WIKI_DIR="wiki_repo"
+          git clone https://github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" || {
+            echo "⚠️  Wiki doesn't exist yet, creating..."
+            mkdir -p "$WIKI_DIR"
+            cd "$WIKI_DIR"
+            git init
+            git remote add origin https://github.com/IgorGanapolsky/trading.wiki.git
+            cd ..
+          }
+          
+          # Copy generated dashboard to wiki
+          cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
+          
+          # Commit and push to wiki
+          cd "$WIKI_DIR"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add Progress-Dashboard.md
+          
+          if git diff --staged --quiet; then
+            echo "📋 No changes to dashboard"
+          else
+            git commit -m "📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:main || \
+            git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:master
+            echo "✅ Wiki dashboard updated successfully!"
+          fi
+
       - name: Upload execution logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -329,5 +370,6 @@ jobs:
             logs/adk_orchestrator.jsonl
             data/system_state.json
             data/trades_*.json
+            wiki/Progress-Dashboard.md
           retention-days: 30
 

@@ -35,7 +35,11 @@ DAILY_INVESTMENT=10.0
 ### 3. Test Run
 
 ```bash
+# Legacy single-script flow
 python scripts/autonomous_trader.py
+
+# New agent-based orchestrator (paper mode)
+python -m orchestrator.main --mode paper
 ```
 
 **Done!** System is ready for autonomous execution.
@@ -126,6 +130,7 @@ python scripts/autonomous_trader.py
 - **[START_HERE.md](docs/START_HERE.md)** - Complete setup guide
 - **[CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md)** - Cloud deployment options
 - **[RESEARCH_AND_IMPROVEMENTS.md](docs/RESEARCH_AND_IMPROVEMENTS.md)** - Learning resources
+- **[MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md)** - Multi-agent upgrade blueprint
 
 ### System Status
 - **[PLAN.md](docs/PLAN.md)** - 90-day R&D roadmap
@@ -134,7 +139,9 @@ python scripts/autonomous_trader.py
 
 ### Technical Docs
 - **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine
-- **[ORCHESTRATOR_README.md](docs/ORCHESTRATOR_README.md)** - Main orchestrator
+- **[ORCHESTRATOR_README.md](docs/ORCHESTRATOR_README.md)** - (Legacy) main orchestrator
+- **[agent_framework/](src/agent_framework/)** - Base classes for the new agent architecture
+- **[orchestrator/main.py](src/orchestrator/main.py)** - CLI entrypoint for the new orchestrator
 - **[MCP_EXECUTION_GUIDE.md](docs/MCP_EXECUTION_GUIDE.md)** - Code-execution harness for MCP servers
 - **[Full Documentation Index](docs/)** - All 42 documentation files
 

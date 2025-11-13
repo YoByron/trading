@@ -31,6 +31,7 @@ from src.utils.sentiment_loader import (
     get_ticker_sentiment,
     get_sentiment_history,
 )
+from src.utils.dcf_valuation import get_global_dcf_calculator, DCFValuationCalculator
 
 
 # Configure logging
@@ -77,6 +78,9 @@ class CandidateStock:
     macd_signal: float
     macd_histogram: float
     volume_ratio: float
+    intrinsic_value: Optional[float] = None
+    dcf_discount: Optional[float] = None
+    sentiment_modifier: float = 0.0
 
 
 class MultiLLMAnalyzer:
@@ -371,6 +375,13 @@ class GrowthStrategy:
         self.llm_analyzer = MultiLLMAnalyzer()
         self.trader = AlpacaTrader()
         self.risk_manager = RiskManager(max_position_size=0.15, max_daily_loss=0.05)
+        self.dcf_calculator: DCFValuationCalculator = get_global_dcf_calculator()
+
+        try:
+            mos_env = float(os.getenv("DCF_MARGIN_OF_SAFETY", "0.15"))
+        except ValueError:
+            mos_env = 0.15
+        self.required_margin_of_safety = max(0.0, min(0.5, mos_env))
 
         # Performance tracking
         self.total_trades = 0
@@ -554,8 +565,13 @@ class GrowthStrategy:
         1. Technical score (from MACD, RSI, volume)
         2. LLM consensus score (multi-model agreement)
         3. Sentiment modifier (Reddit + News sentiment)
+        4. DCF margin-of-safety filter + score
 
-        Final score = 40% technical + 40% consensus + 20% sentiment
+        Final score weights:
+            - 35% technical
+            - 35% consensus
+            - 15% sentiment (confidence-weighted)
+            - 15% DCF discount (capped at 100)
 
         Args:
             candidates: List of candidate stocks to rank
@@ -590,7 +606,8 @@ class GrowthStrategy:
                 logger.warning(f"Failed to load sentiment data: {e}")
                 self.sentiment_data = {}
 
-        # Get consensus scores from LLM analyzer + apply sentiment
+        # Get consensus scores from LLM analyzer + apply sentiment + DCF filter
+        filtered_candidates: List[CandidateStock] = []
         for candidate in candidates:
             technical_data = {
                 "momentum": candidate.momentum,
@@ -638,39 +655,78 @@ class GrowthStrategy:
             # Store sentiment modifier for logging
             candidate.sentiment_modifier = sentiment_modifier
 
+            # Fetch DCF valuation and enforce margin of safety
+            dcf_result = self.dcf_calculator.get_intrinsic_value(candidate.symbol)
+            if not dcf_result:
+                logger.info(
+                    "Skipping %s - DCF valuation unavailable (requires Alpha Vantage fundamentals)",
+                    candidate.symbol,
+                )
+                continue
+
+            intrinsic_value = dcf_result.intrinsic_value
+            if intrinsic_value <= 0:
+                logger.info("Skipping %s - intrinsic value invalid (%.2f)", candidate.symbol, intrinsic_value)
+                continue
+
+            discount = (intrinsic_value - candidate.current_price) / intrinsic_value
+            candidate.intrinsic_value = intrinsic_value
+            candidate.dcf_discount = discount
+
+            if discount < self.required_margin_of_safety:
+                logger.info(
+                    "Skipping %s - margin of safety %.1f%% below threshold %.1f%%",
+                    candidate.symbol,
+                    discount * 100,
+                    self.required_margin_of_safety * 100,
+                )
+                continue
+
             logger.debug(
-                f"{candidate.symbol}: consensus_score={consensus_score:.1f}, "
-                f"sentiment_modifier={sentiment_modifier:+.1f}, "
-                f"MACD histogram={candidate.macd_histogram:.4f}"
+                "%s: consensus=%.1f, sentiment=%.1f, MACD=%.4f, intrinsic=%.2f, discount=%.1f%%",
+                candidate.symbol,
+                consensus_score,
+                sentiment_modifier,
+                candidate.macd_histogram,
+                intrinsic_value,
+                discount * 100,
             )
 
-        # Rank by combined score (40% technical, 40% consensus, 20% sentiment via modifier)
+            filtered_candidates.append(candidate)
+
+        if not filtered_candidates:
+            logger.warning("All candidates rejected after DCF margin-of-safety filter")
+            return []
+
+        # Rank by combined score (35% technical, 35% consensus, 15% sentiment, 15% DCF discount)
         # Note: sentiment_modifier is in the same 0-100 scale, so it affects final ranking
-        candidates.sort(
+        filtered_candidates.sort(
             key=lambda x: (
-                0.4 * x.technical_score +
-                0.4 * x.consensus_score +
-                0.2 * (50 + getattr(x, 'sentiment_modifier', 0))  # Normalize to 0-100
+                0.35 * x.technical_score
+                + 0.35 * x.consensus_score
+                + 0.15 * (50 + x.sentiment_modifier)
+                + 0.15 * min(100.0, max(0.0, (x.dcf_discount or 0.0) * 400))
             ),
             reverse=True,
         )
 
-        logger.info("Multi-LLM ranking complete (with sentiment)")
-        for i, candidate in enumerate(candidates[:5], 1):
-            sentiment_mod = getattr(candidate, 'sentiment_modifier', 0)
+        logger.info("Multi-LLM ranking complete (with sentiment + DCF)")
+        for i, candidate in enumerate(filtered_candidates[:5], 1):
+            sentiment_mod = candidate.sentiment_modifier
+            dcf_score = min(100.0, max(0.0, (candidate.dcf_discount or 0.0) * 400))
             combined_score = (
-                0.4 * candidate.technical_score +
-                0.4 * candidate.consensus_score +
-                0.2 * (50 + sentiment_mod)
+                0.35 * candidate.technical_score
+                + 0.35 * candidate.consensus_score
+                + 0.15 * (50 + sentiment_mod)
+                + 0.15 * dcf_score
             )
             logger.info(
-                f"  #{i}: {candidate.symbol} (combined={combined_score:.1f}, "
-                f"technical={candidate.technical_score:.1f}, "
-                f"consensus={candidate.consensus_score:.1f}, "
-                f"sentiment_mod={sentiment_mod:+.1f})"
+                f"  #{i}: {candidate.symbol} (combined={combined_score:.1f}, technical={candidate.technical_score:.1f}, "
+                f"consensus={candidate.consensus_score:.1f}, sentiment_mod={sentiment_mod:+.1f}, "
+                f"dcf_discount={(candidate.dcf_discount or 0.0)*100:.1f}%, intrinsic={candidate.intrinsic_value:.2f})"
             )
 
-        return candidates
+        return filtered_candidates
 
     def manage_existing_positions(self) -> List[Order]:
         """
@@ -1044,6 +1100,25 @@ class GrowthStrategy:
 
         for candidate in candidates:
             try:
+                if candidate.dcf_discount is None or candidate.intrinsic_value is None:
+                    logger.warning(
+                        "Skipping order for %s - missing DCF metrics (discount=%s, intrinsic=%s)",
+                        candidate.symbol,
+                        candidate.dcf_discount,
+                        candidate.intrinsic_value,
+                    )
+                    continue
+
+                dcf_discount_pct = candidate.dcf_discount * 100
+                if candidate.dcf_discount < self.required_margin_of_safety:
+                    logger.info(
+                        "Skipping order for %s - margin of safety %.1f%% below threshold %.1f%%",
+                        candidate.symbol,
+                        dcf_discount_pct,
+                        self.required_margin_of_safety * 100,
+                    )
+                    continue
+
                 # Calculate position size
                 quantity = int(cash_per_position / candidate.current_price)
 
@@ -1054,13 +1129,25 @@ class GrowthStrategy:
                     continue
 
                 # Validate order with risk manager
+                dcf_score = min(100.0, max(0.0, candidate.dcf_discount * 400))
+                combined_score = (
+                    0.35 * candidate.technical_score
+                    + 0.35 * candidate.consensus_score
+                    + 0.15 * (50 + candidate.sentiment_modifier)
+                    + 0.15 * dcf_score
+                )
                 order = Order(
                     symbol=candidate.symbol,
                     action="buy",
                     quantity=quantity,
                     order_type="market",
                     limit_price=candidate.current_price,
-                    reason=f"Top ranked stock (score={0.5 * candidate.technical_score + 0.5 * candidate.consensus_score:.1f})",
+                    reason=(
+                        "Top ranked stock "
+                        f"(combined={combined_score:.1f}, "
+                        f"DCF discount={dcf_discount_pct:.1f}%, "
+                        f"intrinsic=${candidate.intrinsic_value:.2f})"
+                    ),
                 )
 
                 portfolio_value = available_cash

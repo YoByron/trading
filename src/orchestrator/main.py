@@ -18,6 +18,7 @@ from agent_framework import (
     TradingAgent,
 )
 from agent_framework.base import AgentResult
+from agents.data_agent import DataAgent
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     orchestrator = TradingOrchestrator(
         OrchestratorConfig(
             agents=[
-                NoOpAgent("data-agent"),
+                DataAgent(),
                 NoOpAgent("strategy-agent"),
                 NoOpAgent("risk-agent"),
                 NoOpAgent("execution-agent"),
