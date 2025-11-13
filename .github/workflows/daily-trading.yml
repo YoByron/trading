@@ -330,16 +330,20 @@ jobs:
           
           echo "📝 Updating GitHub Wiki..."
           
-          # Clone wiki repository
+          # Clone wiki repository (create if doesn't exist)
           WIKI_DIR="wiki_repo"
-          git clone https://github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" || {
-            echo "⚠️  Wiki doesn't exist yet, creating..."
+          if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
+            echo "✅ Wiki repository exists, updating..."
+          else
+            echo "⚠️  Wiki repository doesn't exist yet - will create on first push"
             mkdir -p "$WIKI_DIR"
             cd "$WIKI_DIR"
             git init
-            git remote add origin https://github.com/IgorGanapolsky/trading.wiki.git
+            git config user.name "GitHub Actions Bot"
+            git config user.email "actions@github.com"
+            git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
             cd ..
-          }
+          fi
           
           # Copy generated dashboard and home page to wiki
           cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
@@ -353,20 +357,29 @@ jobs:
           git config user.email "actions@github.com"
           git add -A
           
-          if git diff --staged --quiet; then
+          if git diff --staged --quiet && [ -n "$(git log --oneline 2>/dev/null)" ]; then
             echo "📋 No changes to dashboard"
           else
-            git commit -m "📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            if [ -z "$(git log --oneline 2>/dev/null)" ]; then
+              COMMIT_MSG="🎉 Initial wiki setup - Progress Dashboard and Home page"
+            else
+              COMMIT_MSG="📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            fi
+            
+            git commit -m "$COMMIT_MSG" || echo "No changes to commit"
             
             # Try pushing to main branch first, then master
-            if git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:main 2>&1; then
+            if git push -u origin main 2>&1; then
               echo "✅ Wiki dashboard updated successfully (main branch)!"
-            elif git push https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git HEAD:master 2>&1; then
+            elif git push -u origin master 2>&1; then
               echo "✅ Wiki dashboard updated successfully (master branch)!"
             else
-              echo "⚠️  Wiki push failed - wiki may need to be initialized manually"
-              echo "   Visit: https://github.com/IgorGanapolsky/trading/wiki"
-              echo "   Click 'Create the first page' to initialize wiki"
+              echo "⚠️  Wiki push failed - wiki repository needs manual initialization"
+              echo "   This is normal on first run. To initialize:"
+              echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
+              echo "   2. Click 'Create the first page'"
+              echo "   3. Name it 'Home' and save (content will be auto-updated on next run)"
+              echo "   4. GitHub Actions will update it automatically after that"
             fi
           fi
 
