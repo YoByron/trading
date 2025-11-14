@@ -38,9 +38,10 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 **Service Stack Integration** (November 12, 2025):
 - **Decision**: Phased approach to paid services (minimize risk, validate ROI)
-- **Phase 1**: Koyfin + Finnhub ($48.99/mo) - Starting Month 1-2
-- **Phase 2**: Add Grok ($78.99/mo) - Month 3-4 (if Phase 1 successful)
-- **Phase 3**: Add Morningstar ($113.99/mo) - Month 5-6 (if Phase 2 successful)
+- **Phase 1**: Polygon.io + Finnhub ($38.99/mo) - Starting Month 1-2
+  - **Update**: Koyfin doesn't offer API access, using Polygon.io instead
+- **Phase 2**: Add Grok ($68.99/mo) - Month 3-4 (if Phase 1 successful)
+- **Phase 3**: Add Morningstar ($103.99/mo) - Month 5-6 (if Phase 2 successful)
 - **Rationale**: Lower risk, validate ROI before scaling, can drop services that don't deliver
 - **Expected ROI**: 2-3x in 2-3 months, 10x in 6-7 months (with scaling)
 
@@ -304,10 +305,11 @@ For the record - tools evaluated and rejected during R&D Phase:
 - [ ] Consider live trading (if paper proves profitable)
 
 ### **Service Stack Integration (November 12, 2025)**:
-- [ ] **Phase 1 (Month 1-2)**: Koyfin + Finnhub ($48.99/mo)
-  - [ ] Integrate Koyfin API (replace Alpha Vantage in DCF calculator)
+- [ ] **Phase 1 (Month 1-2)**: Polygon.io + Finnhub ($38.99/mo)
+  - [ ] Integrate Polygon.io API (replace Alpha Vantage in DCF calculator)
   - [ ] Integrate Finnhub economic calendar (avoid Fed meetings/earnings)
   - [ ] Track ROI: Win rate 66.7% → 70%+, Daily profit $1.37 → $2.00+
+  - **Note**: Koyfin doesn't offer API access, using Polygon.io instead
 - [ ] **Phase 2 (Month 3-4)**: Add Grok ($78.99/mo) - IF Phase 1 successful
   - [ ] Integrate Grok API (real-time Twitter sentiment)
   - [ ] Track ROI: Signal speed +20-30%, Daily profit $2.00 → $2.50+
@@ -352,9 +354,10 @@ For the record - tools evaluated and rejected during R&D Phase:
 **Analysis**: Services improve quality, but scaling gets you to 10x
 **Decision**: **Phased approach** - Start lean, validate ROI, scale when proven
 
-**Phase 1 (Month 1-2)**: Koyfin + Finnhub ($48.99/mo)
-- **Why**: Lower risk, easier break-even ($1.63/day vs $3.43/day)
-- **What**: Better fundamentals (Koyfin) + Timing avoidance (Finnhub)
+**Phase 1 (Month 1-2)**: Polygon.io + Finnhub ($38.99/mo)
+- **Why**: Lower risk, easier break-even ($1.30/day vs $3.43/day)
+- **What**: Better fundamentals (Polygon.io) + Timing avoidance (Finnhub)
+- **Update**: Koyfin doesn't offer API access, using Polygon.io instead
 - **Success Criteria**: Win rate 66.7% → 70%+, Daily profit $1.37 → $2.00+
 - **If Successful**: Proceed to Phase 2
 - **If Not**: Drop services, try different approach
@@ -725,13 +728,15 @@ For the record - tools evaluated and rejected during R&D Phase:
 
 | Service | Cost | Purpose | Maps To | Phase |
 |---------|------|---------|---------|-------|
-| **Koyfin Plus** | $39/mo | Fundamentals + DCF data | Data/Strategy agents | Phase 1 |
+| **Polygon.io Starter** | $29/mo | Fundamentals + Data reliability | Data/Strategy agents | Phase 1 |
 | **Finnhub Premium** | $9.99/mo | Economic calendar + Earnings | Timing avoidance | Phase 1 |
 | **Grok API** | $30/mo | Real-time Twitter sentiment | Audit/Research agents | Phase 2 |
 | **Morningstar Investor** | $35/mo | Professional research + Ratings | Risk agent | Phase 3 |
 
-**Total (Full Stack)**: $113.99/mo  
-**Phase 1 Start**: $48.99/mo (lower risk)
+**Total (Full Stack)**: $103.99/mo  
+**Phase 1 Start**: $38.99/mo (lower risk)
+
+**Note**: Koyfin doesn't offer API access (confirmed Nov 12, 2025). Polygon.io is the best alternative.
 
 ### **ROI Analysis**
 
@@ -741,8 +746,8 @@ For the record - tools evaluated and rejected during R&D Phase:
 - 10x Target: $13.70/day = $411/month
 
 **Break-Even Analysis**:
-- Phase 1 ($48.99/mo): Need $1.63/day (1.2x current) ✅ Achievable
-- Full Stack ($103/mo): Need $3.43/day (2.5x current) ⚠️ Harder
+- Phase 1 ($38.99/mo): Need $1.30/day (0.9x current) ✅ Already profitable!
+- Full Stack ($103.99/mo): Need $3.47/day (2.5x current) ⚠️ Harder
 
 **Expected ROI Timeline**:
 - Month 1-2: Break-even to 0.5x (services improve quality)
