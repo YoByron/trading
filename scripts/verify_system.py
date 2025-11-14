@@ -295,9 +295,10 @@ def verify_system_state():
         print(f"   Tier 2 Stocks: {', '.join(state['strategies']['tier2']['stocks'])}")
 
         print(f"\n🤖 Automation:")
-        print(f"   Cron Enabled: {state['automation']['cron_enabled']}")
-        print(f"   Launchd Configured: {state['automation']['launchd_configured']}")
-        print(f"   Launchd Status: {state['automation']['launchd_status']}")
+        automation = state["automation"]
+        print(f"   GitHub Actions Enabled: {automation.get('github_actions_enabled')}")
+        print(f"   Workflow Name: {automation.get('workflow_name')}")
+        print(f"   Workflow Status: {automation.get('workflow_status')}")
         print(f"   Execution Count: {state['automation']['execution_count']}")
         print(f"   Failures: {state['automation']['failures']}")
 

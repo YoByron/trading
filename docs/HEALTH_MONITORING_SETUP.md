@@ -77,23 +77,12 @@ TELEGRAM_CHAT_ID=123456789
 # Save (Ctrl+O, Enter, Ctrl+X)
 ```
 
-### Step 4: Install Health Check Automation (2 minutes)
+### Step 4: Enable GitHub Actions Workflow (2 minutes)
 
-```bash
-# Copy launchd job to system location
-cp launchd/com.trading.healthcheck.plist ~/Library/LaunchAgents/
-
-# Load the job
-launchctl load ~/Library/LaunchAgents/com.trading.healthcheck.plist
-
-# Verify it's loaded
-launchctl list | grep trading.healthcheck
-```
-
-You should see output like:
-```
--    0    com.trading.healthcheck
-```
+1. Commit `.github/workflows/health-check.yml` (already in repo).
+2. In GitHub → **Actions**, make sure the **Health Check** workflow is enabled.
+3. Configure the repository secret `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`.
+4. The workflow runs daily at 10:05 AM ET and calls `scripts/health_check.py`.
 
 ### Step 5: Manual Test (Optional)
 
@@ -223,10 +212,9 @@ Failed Checks:
    grep TELEGRAM .env
    ```
 
-3. **Check launchd job status:**
-   ```bash
-   launchctl list | grep trading.healthcheck
-   ```
+3. **Check GitHub Actions workflow status:**
+   - Open **Actions → Health Check** in GitHub.
+   - Confirm the latest run succeeded.
 
 4. **Review health check logs:**
    ```bash
@@ -242,16 +230,11 @@ If you're getting alerts when everything is actually working:
 2. **Adjust thresholds** for warning vs critical
 3. **Review error log parsing** logic
 
-### Launchd Job Not Running?
+### Workflow Not Running?
 
-```bash
-# Unload and reload
-launchctl unload ~/Library/LaunchAgents/com.trading.healthcheck.plist
-launchctl load ~/Library/LaunchAgents/com.trading.healthcheck.plist
-
-# Check for errors
-cat logs/health_check_stderr.log
-```
+1. Re-run the most recent failed job from the Actions UI.
+2. Ensure required secrets exist (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
+3. Check `logs/health_check_stderr.log` for Python errors.
 
 ## Maintenance
 

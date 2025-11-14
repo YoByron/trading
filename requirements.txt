@@ -25,6 +25,7 @@ yt-dlp==2025.10.22
 
 # Configuration
 python-dotenv==1.0.0
+pydantic-settings==2.2.1
 
 # API Framework
 fastapi==0.110.2

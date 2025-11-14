@@ -508,6 +508,30 @@ class RedditSentiment:
         return sorted_tickers[:limit]
 
 
+def get_reddit_sentiment(
+    subreddits: Optional[List[str]] = None,
+    limit_per_sub: int = 25,
+    force_refresh: bool = False
+) -> Dict:
+    """
+    Lightweight helper to fetch sentiment data with graceful degradation.
+    """
+    try:
+        scraper = RedditSentiment()
+        return scraper.collect_daily_sentiment(
+            subreddits=subreddits,
+            limit_per_sub=limit_per_sub,
+            force_refresh=force_refresh,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Reddit sentiment unavailable: %s", exc)
+        return {
+            "sentiment_by_ticker": {},
+            "error": str(exc),
+            "subreddits": subreddits or RedditSentiment.SUBREDDITS,
+        }
+
+
 def main():
     """CLI interface for Reddit sentiment scraping."""
     parser = argparse.ArgumentParser(

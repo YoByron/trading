@@ -4,13 +4,23 @@ ChromaDB Vector Database Client for Trading RAG System
 Provides persistent vector storage for market news, sentiment, and research.
 """
 
-import chromadb
-from chromadb.config import Settings
+import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import logging
+
+from src.utils.pydantic_compat import ensure_pydantic_base_settings
 
 logger = logging.getLogger(__name__)
+
+ensure_pydantic_base_settings()
+
+try:
+    import chromadb  # type: ignore
+    from chromadb.config import Settings  # type: ignore
+except Exception as exc:  # noqa: BLE001
+    chromadb = None  # type: ignore
+    Settings = None  # type: ignore
+    logger.warning("ChromaDB import failed - RAG persistence disabled: %s", exc)
 
 
 class TradingRAGDatabase:
@@ -32,6 +42,11 @@ class TradingRAGDatabase:
             persist_directory: Path to store ChromaDB data
         """
         self.persist_directory = persist_directory
+
+        if chromadb is None:
+            raise RuntimeError(
+                "ChromaDB is not available. Install dependencies or disable the RAG pipeline."
+            )
 
         # Initialize persistent client
         self.client = chromadb.PersistentClient(path=persist_directory)
