@@ -100,6 +100,21 @@ def check_market_status() -> bool:
         return False
 
 
+def check_economic_calendar() -> bool:
+    """Check if major economic events today (Fed meetings, GDP, CPI)."""
+    try:
+        from src.utils.finnhub_client import FinnhubClient
+        
+        client = FinnhubClient()
+        if client.has_major_event_today():
+            print("⚠️  MAJOR ECONOMIC EVENT TODAY - Consider skipping trading")
+            print("   (Fed meeting, GDP release, CPI, or Employment data)")
+            return False  # Not a failure, but warning
+        return True
+    except Exception as e:
+        print(f"⚠️  Economic calendar check failed: {e}")
+        return True  # Don't block trading if check fails
+
 def check_circuit_breakers() -> bool:
     """Check circuit breaker status."""
     try:

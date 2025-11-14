@@ -181,10 +181,12 @@
 
 ### **Start with Phased Approach**
 
-**Month 1-2**: Koyfin + Finnhub ($48.99/mo)
+**Month 1-2**: Polygon.io + Finnhub ($38.99/mo)
 - Lower risk
-- Easier break-even ($1.63/day)
+- Easier break-even ($1.30/day)
 - Validate ROI before adding more
+
+**Note**: Koyfin doesn't offer API access. Polygon.io is the best alternative with API access.
 
 **Then**:
 - If successful → Add Grok (Month 3-4)
