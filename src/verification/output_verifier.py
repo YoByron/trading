@@ -55,9 +55,9 @@ class OutputVerifier:
             ),
             VerificationRule(
                 name="automation_operational",
-                condition=lambda state: state["automation"]["launchd_status"] == "OPERATIONAL",
+                condition=lambda state: state["automation"].get("workflow_status") == "OPERATIONAL",
                 severity="critical",
-                message="Automation is not operational"
+                message="Automation workflow is not operational"
             ),
             VerificationRule(
                 name="data_freshness",

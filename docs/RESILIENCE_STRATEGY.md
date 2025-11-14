@@ -78,11 +78,11 @@
 ---
 
 ### 6. **Fragile Automation**
-**Problem**: Multiple automation systems not coordinated  
+**Problem**: Automation must run exclusively via GitHub Actions  
 **Evidence**:
-- launchd configured but unloaded
-- GitHub Actions scheduled but timing out
-- No single source of truth for execution
+- Historical reliance on a local macOS scheduler created conflicting sources of truth
+- GitHub Actions was timing out with zero-duration runs
+- No single monitoring view for workflow health
 
 **Impact**: Confusion about which system is actually running
 

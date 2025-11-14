@@ -102,8 +102,8 @@ cat reports/daily_report_$(date +%Y-%m-%d).txt
 # Trip circuit breaker manually
 python3 -c "from src.safety.circuit_breakers import CircuitBreaker; CircuitBreaker()._trip_breaker('MANUAL', 'User emergency stop')"
 
-# Or unload launchd
-launchctl unload ~/Library/LaunchAgents/com.trading.advanced.plist
+# Temporarily disable GitHub Actions workflow
+gh workflow disable .github/workflows/daily-trading.yml
 ```
 
 ### **Reset Circuit Breaker**

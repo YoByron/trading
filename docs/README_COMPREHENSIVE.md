@@ -51,7 +51,7 @@ This trading system has **proven profitability** through:
 2. **Intelligent Position Sizing**: Kelly Criterion-based portfolio-percentage allocation (2% daily)
 3. **Systematic Risk Management**: Circuit breakers, position limits, and automated stop-losses
 4. ~~**Fibonacci Compounding**~~ → **Professional Position Sizing** (scales naturally with portfolio growth)
-5. **Full Automation**: Scheduled daily execution (macOS launchd) with comprehensive reporting
+5. **Full Automation**: Scheduled daily execution (GitHub Actions) with comprehensive reporting
 
 ### Key Features
 

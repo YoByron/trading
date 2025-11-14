@@ -170,7 +170,7 @@ System automatically collects historical data for:
 
 ### Automation Status
 - **Script**: `scripts/autonomous_trader.py`
-- **Scheduler**: launchd (macOS) - currently being fixed
+- **Scheduler**: GitHub Actions (Daily Trading Execution workflow)
 - **Logs**: `data/trades_YYYY-MM-DD.json`
 - **Performance**: `data/performance_log.json`
 

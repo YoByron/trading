@@ -263,14 +263,7 @@ for ticker, data in top:
 
 ### Schedule Daily Scraping (Before Market Open)
 
-Add to cron or launchd:
-
-```bash
-# Run at 8:30 AM ET (before market open at 9:30 AM)
-30 8 * * 1-5 cd /Users/igorganapolsky/workspace/git/apps/trading && python3 src/utils/reddit_sentiment.py
-```
-
-Or integrate into existing `main.py`:
+Add a lightweight GitHub Actions workflow (`reddit-sentiment.yml`) that runs at 8:30 AM ET and executes `python3 src/utils/reddit_sentiment.py`. This ensures sentiment data is gathered before the main trading workflow. Alternatively integrate directly into `main.py`:
 
 ```python
 # At start of daily execution

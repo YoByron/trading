@@ -45,7 +45,7 @@ The AI Trading System runs **100% in GitHub Actions cloud infrastructure**, not 
 ### The Problem with Local Execution
 
 **Historical Issues (Nov 2025)**:
-- Automation never properly configured (cron failed, launchd failed)
+- Automation never properly configured (cron failed, local macOS scheduler failed)
 - System state went stale for 5 days (Oct 30 - Nov 4)
 - Manual execution required daily by CEO
 - Large order errors ($1,600 instead of $8) went undetected
@@ -882,7 +882,7 @@ gh run download [run-id]
 
 **Phase 3: Production** (ongoing)
 - [ ] Enable scheduled workflows
-- [ ] Disable local cron/launchd
+- [ ] Remove legacy local cron jobs
 - [ ] Monitor GitHub Actions daily
 - [ ] Download reports as needed
 
@@ -1031,7 +1031,7 @@ gh secret delete SECRET_NAME
 2. Test manual workflow trigger
 3. Monitor daily runs for 1 week
 4. Create YouTube workflow (when ready)
-5. Decommission local automation (cron/launchd)
+5. Decommission local automation (legacy cron scripts)
 
 **Questions?** See [Troubleshooting](#troubleshooting) or contact CTO.
 
