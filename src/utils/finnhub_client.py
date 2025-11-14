@@ -71,6 +71,15 @@ class FinnhubClient:
             response.raise_for_status()
             data = response.json()
 
+            # Check for API errors (plan limitations, etc.)
+            if "error" in data:
+                error_msg = data.get("error", "Unknown error")
+                if "access" in error_msg.lower() or "permission" in error_msg.lower():
+                    logger.warning("Finnhub economic calendar requires premium plan - feature unavailable")
+                    return []
+                logger.warning("Finnhub API error: %s", error_msg)
+                return []
+            
             events = data.get("economicCalendar", [])
             logger.info("Fetched %d economic events from Finnhub", len(events))
             return events
