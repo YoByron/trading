@@ -191,7 +191,7 @@ jobs:
       - name: Check if today's trade already executed
         id: check_execution
         env:
-          FORCE_TRADE: ${{ inputs.force_trade || 'false' }}
+          FORCE_TRADE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_trade || 'false' }}
         run: |
           echo "🔍 Checking last execution date..."
           python3 scripts/check_duplicate_execution.py
