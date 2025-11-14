@@ -1,8 +1,8 @@
 """
 Discounted Cash Flow (DCF) valuation utilities.
 
-This module fetches fundamental data from the Alpha Vantage API and computes a
-simple two-stage DCF valuation for equities. Results are cached locally to
+This module fetches fundamental data from Polygon.io (preferred) or Alpha Vantage API (fallback)
+and computes a simple two-stage DCF valuation for equities. Results are cached locally to
 avoid breaching the provider's rate limits.
 """
 
@@ -77,8 +77,12 @@ class DCFValuationCalculator:
         6. Divide enterprise value by shares outstanding to get intrinsic price
     """
 
+    # Alpha Vantage endpoints (fallback)
     OVERVIEW_ENDPOINT = "https://www.alphavantage.co/query?function=OVERVIEW&symbol={ticker}&apikey={api_key}"
     CASH_FLOW_ENDPOINT = "https://www.alphavantage.co/query?function=CASH_FLOW&symbol={ticker}&apikey={api_key}"
+
+    # Polygon.io endpoints (preferred)
+    POLYGON_BASE_URL = "https://api.polygon.io/v2"
 
     def __init__(
         self,
@@ -86,9 +90,16 @@ class DCFValuationCalculator:
         cache_dir: Optional[Path] = None,
         cache_ttl_hours: int = DEFAULT_CACHE_TTL_HOURS,
     ) -> None:
+        # Try Polygon.io first (preferred), then Alpha Vantage (fallback)
+        self.polygon_api_key = os.getenv("POLYGON_API_KEY")
         self.api_key = api_key or os.getenv("ALPHA_VANTAGE_API_KEY")
-        if not self.api_key:
-            logger.warning("ALPHA_VANTAGE_API_KEY not set. DCF valuations will be unavailable.")
+        
+        if not self.polygon_api_key and not self.api_key:
+            logger.warning("Neither POLYGON_API_KEY nor ALPHA_VANTAGE_API_KEY set. DCF valuations will be unavailable.")
+        elif self.polygon_api_key:
+            logger.info("Using Polygon.io API for DCF valuations (preferred)")
+        elif self.api_key:
+            logger.info("Using Alpha Vantage API for DCF valuations (fallback)")
 
         self.cache_dir = cache_dir or Path("data/cache/dcf")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -115,7 +126,7 @@ class DCFValuationCalculator:
         if not ticker:
             return None
 
-        if self.api_key is None:
+        if not self.polygon_api_key and not self.api_key:
             logger.debug("Skipping DCF valuation for %s (no API key)", ticker)
             return None
 
@@ -124,14 +135,32 @@ class DCFValuationCalculator:
             if cached:
                 return cached
 
+        # Try Polygon.io first (preferred), then Alpha Vantage (fallback)
         try:
-            overview = self._fetch_company_overview(ticker)
-            cash_flows = self._fetch_cash_flows(ticker)
+            if self.polygon_api_key:
+                overview = self._fetch_polygon_overview(ticker)
+                cash_flows = self._fetch_polygon_cash_flows(ticker)
+            else:
+                overview = self._fetch_company_overview(ticker)
+                cash_flows = self._fetch_cash_flows(ticker)
+            
             dcf_result = self._compute_dcf(ticker, overview, cash_flows)
             self._store_in_cache(ticker, dcf_result)
             return dcf_result
         except DCFError as exc:
-            logger.warning("DCF valuation unavailable for %s: %s", ticker, exc)
+            # If Polygon.io fails and we have Alpha Vantage, try fallback
+            if self.polygon_api_key and self.api_key:
+                logger.info("Polygon.io failed for %s, trying Alpha Vantage fallback: %s", ticker, exc)
+                try:
+                    overview = self._fetch_company_overview(ticker)
+                    cash_flows = self._fetch_cash_flows(ticker)
+                    dcf_result = self._compute_dcf(ticker, overview, cash_flows)
+                    self._store_in_cache(ticker, dcf_result)
+                    return dcf_result
+                except Exception as fallback_exc:
+                    logger.warning("DCF valuation unavailable for %s (both Polygon.io and Alpha Vantage failed): %s", ticker, fallback_exc)
+            else:
+                logger.warning("DCF valuation unavailable for %s: %s", ticker, exc)
         except Exception as exc:  # noqa: BLE001
             logger.error("Unexpected error computing DCF for %s: %s", ticker, exc, exc_info=True)
 
@@ -190,7 +219,95 @@ class DCFValuationCalculator:
         except Exception as exc:  # noqa: BLE001
             logger.debug("Failed to persist DCF cache for %s: %s", ticker, exc)
 
+    def _fetch_polygon_overview(self, ticker: str) -> Dict:
+        """Fetch company overview from Polygon.io."""
+        url = f"{self.POLYGON_BASE_URL}/reference/tickers/{ticker}"
+        params = {"apiKey": self.polygon_api_key}
+        
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("status") != "OK" or "results" not in data:
+                raise DCFError("Polygon.io overview unavailable")
+            
+            result = data["results"]
+            
+            # Convert Polygon.io format to Alpha Vantage-like format for compatibility
+            overview = {
+                "Symbol": result.get("ticker", ticker),
+                "Beta": str(result.get("beta", "1.0")),
+                "SharesOutstanding": str(result.get("share_class_shares_outstanding", "0")),
+                "MarketCapitalization": str(result.get("market_cap", "0")),
+                "Name": result.get("name", ""),
+            }
+            
+            return overview
+        except requests.RequestException as exc:
+            raise DCFError(f"Polygon.io HTTP error: {exc}") from exc
+        except (ValueError, KeyError) as exc:
+            raise DCFError("Invalid Polygon.io JSON response") from exc
+
+    def _fetch_polygon_cash_flows(self, ticker: str) -> Dict:
+        """Fetch cash flow statements from Polygon.io."""
+        url = f"{self.POLYGON_BASE_URL}/reference/financials"
+        params = {
+            "ticker": ticker,
+            "apiKey": self.polygon_api_key,
+            "timeframe": "annual",
+            "filing_date.gte": "2015-01-01",  # 10 years of data
+        }
+        
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("status") != "OK" or "results" not in data:
+                raise DCFError("Polygon.io cash flows unavailable")
+            
+            results = data["results"]
+            if not results:
+                raise DCFError("No cash flow data from Polygon.io")
+            
+            # Convert Polygon.io format to Alpha Vantage-like format
+            annual_reports = []
+            for result in results:
+                financials = result.get("financials", {})
+                cash_flow = financials.get("cash_flow_statement", {})
+                
+                # Extract operating cash flow and capital expenditures
+                operating_cf = None
+                capex = None
+                
+                for item in cash_flow.get("financials", []):
+                    label = item.get("label", "").lower()
+                    value = item.get("value")
+                    
+                    if "operating" in label and "cash" in label and "flow" in label:
+                        operating_cf = value
+                    elif "capital" in label and "expenditure" in label:
+                        capex = value
+                
+                if operating_cf is not None:
+                    annual_reports.append({
+                        "fiscalDateEnding": result.get("filing_date", ""),
+                        "operatingCashflow": str(operating_cf) if operating_cf else "0",
+                        "capitalExpenditures": str(capex) if capex else "0",
+                    })
+            
+            if not annual_reports:
+                raise DCFError("No cash flow reports from Polygon.io")
+            
+            return {"annualReports": annual_reports}
+        except requests.RequestException as exc:
+            raise DCFError(f"Polygon.io HTTP error: {exc}") from exc
+        except (ValueError, KeyError) as exc:
+            raise DCFError("Invalid Polygon.io JSON response") from exc
+
     def _fetch_company_overview(self, ticker: str) -> Dict:
+        """Fetch company overview from Alpha Vantage (fallback)."""
         url = self.OVERVIEW_ENDPOINT.format(ticker=ticker, api_key=self.api_key)
         data = self._perform_request(url)
 
@@ -199,6 +316,7 @@ class DCFValuationCalculator:
         return data
 
     def _fetch_cash_flows(self, ticker: str) -> Dict:
+        """Fetch cash flows from Alpha Vantage (fallback)."""
         url = self.CASH_FLOW_ENDPOINT.format(ticker=ticker, api_key=self.api_key)
         data = self._perform_request(url)
 

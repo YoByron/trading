@@ -106,10 +106,16 @@ def check_economic_calendar() -> bool:
         from src.utils.finnhub_client import FinnhubClient
         
         client = FinnhubClient()
+        if not client.api_key:
+            print("⚠️  Finnhub API key not configured - skipping economic calendar check")
+            return True  # Not critical if not configured
+        
         if client.has_major_event_today():
             print("⚠️  MAJOR ECONOMIC EVENT TODAY - Consider skipping trading")
             print("   (Fed meeting, GDP release, CPI, or Employment data)")
             return False  # Not a failure, but warning
+        else:
+            print("✅ Economic Calendar: No major events today")
         return True
     except Exception as e:
         print(f"⚠️  Economic calendar check failed: {e}")
@@ -189,6 +195,7 @@ def main():
         "Alpaca API": check_alpaca_api(),
         "Market Status": check_market_status(),
         "Anthropic API": check_anthropic_api(),
+        "Economic Calendar": check_economic_calendar(),
         "Circuit Breakers": check_circuit_breakers()
     }
     
