@@ -167,7 +167,8 @@ def calculate_technical_score(symbol):
     """Calculate technical score with MACD, RSI, volume (matching backtest logic)"""
     try:
         try:
-            hist = market_data_provider.get_daily_bars(symbol, lookback_days=60)
+            result = market_data_provider.get_daily_bars(symbol, lookback_days=60)
+            hist = result.data  # Extract DataFrame from MarketDataResult
         except ValueError as exc:
             print(f"❌ {symbol}: Market data unavailable: {exc}")
             return 0
