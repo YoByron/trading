@@ -221,7 +221,8 @@ class DCFValuationCalculator:
 
     def _fetch_polygon_overview(self, ticker: str) -> Dict:
         """Fetch company overview from Polygon.io."""
-        url = f"{self.POLYGON_BASE_URL}/reference/tickers/{ticker}"
+        # Polygon.io v3 API endpoint
+        url = f"https://api.polygon.io/v3/reference/tickers/{ticker}"
         params = {"apiKey": self.polygon_api_key}
         
         try:
@@ -229,17 +230,23 @@ class DCFValuationCalculator:
             response.raise_for_status()
             data = response.json()
             
-            if data.get("status") != "OK" or "results" not in data:
-                raise DCFError("Polygon.io overview unavailable")
+            # Polygon.io v3 returns results directly, not nested
+            if data.get("status") != "OK":
+                raise DCFError(f"Polygon.io API error: {data.get('error', 'Unknown error')}")
             
-            result = data["results"]
+            result = data.get("results", {})
+            if not result:
+                raise DCFError("Polygon.io overview unavailable - no results")
             
             # Convert Polygon.io format to Alpha Vantage-like format for compatibility
+            shares_outstanding = result.get("share_class_shares_outstanding") or result.get("weighted_shares_outstanding", 0)
+            market_cap = result.get("market_cap", 0)
+            
             overview = {
                 "Symbol": result.get("ticker", ticker),
-                "Beta": str(result.get("beta", "1.0")),
-                "SharesOutstanding": str(result.get("share_class_shares_outstanding", "0")),
-                "MarketCapitalization": str(result.get("market_cap", "0")),
+                "Beta": "1.0",  # Polygon.io doesn't provide beta in ticker endpoint, use default
+                "SharesOutstanding": str(int(shares_outstanding)) if shares_outstanding else "0",
+                "MarketCapitalization": str(int(market_cap)) if market_cap else "0",
                 "Name": result.get("name", ""),
             }
             
@@ -250,8 +257,14 @@ class DCFValuationCalculator:
             raise DCFError("Invalid Polygon.io JSON response") from exc
 
     def _fetch_polygon_cash_flows(self, ticker: str) -> Dict:
-        """Fetch cash flow statements from Polygon.io."""
-        url = f"{self.POLYGON_BASE_URL}/reference/financials"
+        """
+        Fetch cash flow statements from Polygon.io.
+        
+        Note: Polygon.io Starter plan may not include financials endpoint.
+        This will raise DCFError to trigger Alpha Vantage fallback.
+        """
+        # Polygon.io v2 API endpoint for financials (may require higher tier)
+        url = f"https://api.polygon.io/v2/reference/financials"
         params = {
             "ticker": ticker,
             "apiKey": self.polygon_api_key,
@@ -264,12 +277,17 @@ class DCFValuationCalculator:
             response.raise_for_status()
             data = response.json()
             
-            if data.get("status") != "OK" or "results" not in data:
-                raise DCFError("Polygon.io cash flows unavailable")
+            # Check for API errors (plan limitations, etc.)
+            if data.get("status") != "OK":
+                error_msg = data.get("error", "Unknown error")
+                # If access denied, trigger fallback
+                if "access" in error_msg.lower() or "permission" in error_msg.lower():
+                    raise DCFError("Polygon.io financials endpoint requires higher tier plan - using Alpha Vantage fallback")
+                raise DCFError(f"Polygon.io API error: {error_msg}")
             
-            results = data["results"]
+            results = data.get("results", [])
             if not results:
-                raise DCFError("No cash flow data from Polygon.io")
+                raise DCFError("No cash flow data from Polygon.io - using Alpha Vantage fallback")
             
             # Convert Polygon.io format to Alpha Vantage-like format
             annual_reports = []
@@ -298,13 +316,14 @@ class DCFValuationCalculator:
                     })
             
             if not annual_reports:
-                raise DCFError("No cash flow reports from Polygon.io")
+                raise DCFError("No cash flow reports from Polygon.io - using Alpha Vantage fallback")
             
             return {"annualReports": annual_reports}
         except requests.RequestException as exc:
-            raise DCFError(f"Polygon.io HTTP error: {exc}") from exc
+            # Trigger fallback for HTTP errors
+            raise DCFError(f"Polygon.io HTTP error (will use Alpha Vantage fallback): {exc}") from exc
         except (ValueError, KeyError) as exc:
-            raise DCFError("Invalid Polygon.io JSON response") from exc
+            raise DCFError("Invalid Polygon.io JSON response - using Alpha Vantage fallback") from exc
 
     def _fetch_company_overview(self, ticker: str) -> Dict:
         """Fetch company overview from Alpha Vantage (fallback)."""
