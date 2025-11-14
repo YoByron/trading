@@ -21,8 +21,6 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 import logging
 import os
-import json
-from pathlib import Path
 
 import yfinance as yf
 import pandas as pd
@@ -34,6 +32,7 @@ from src.utils.sentiment_loader import (
     get_sentiment_history,
 )
 from src.utils.dcf_valuation import get_global_dcf_calculator, DCFValuationCalculator
+from src.utils.external_signal_loader import load_latest_signals, get_signal_for_ticker
 
 
 # Configure logging
@@ -83,6 +82,8 @@ class CandidateStock:
     intrinsic_value: Optional[float] = None
     dcf_discount: Optional[float] = None
     sentiment_modifier: float = 0.0
+    external_signal_score: float = 0.0
+    external_signal_confidence: float = 0.0
 
 
 class MultiLLMAnalyzer:
@@ -358,6 +359,7 @@ class GrowthStrategy:
         "CAT",
         "PINS",
     ]
+    PRIORITY_TICKERS = ["UBER", "LLY", "PINS"]
 
     def __init__(self, weekly_allocation: float = 10.0, use_sentiment: bool = True):
         """
@@ -380,20 +382,13 @@ class GrowthStrategy:
         self.trader = AlpacaTrader()
         self.risk_manager = RiskManager(max_position_size=0.15, max_daily_loss=0.05)
         self.dcf_calculator: DCFValuationCalculator = get_global_dcf_calculator()
+        self.external_signals_cache: Dict[str, Dict] = {}
 
         try:
             mos_env = float(os.getenv("DCF_MARGIN_OF_SAFETY", "0.15"))
         except ValueError:
             mos_env = 0.15
         self.required_margin_of_safety = max(0.0, min(0.5, mos_env))
-
-        self.priority_watchlist = ["UBER", "LLY", "PINS"]
-        self.watchlist_dir = Path("data/watchlists")
-        try:
-            self.watchlist_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as exc:
-            logger.warning("Unable to create watchlist directory %s: %s", self.watchlist_dir, exc)
-        self.priority_watchlist_file = self.watchlist_dir / "tier2_priority.json"
 
         # Performance tracking
         self.total_trades = 0
@@ -430,6 +425,17 @@ class GrowthStrategy:
         logger.info("=" * 80)
         logger.info("Starting weekly execution")
         logger.info("=" * 80)
+
+        # Load latest external signals (sandbox feed)
+        self.external_signals_cache = load_latest_signals()
+        if self.external_signals_cache:
+            logger.info(
+                "Loaded %d external signals (sources: %s)",
+                len(self.external_signals_cache),
+                ", ".join(sorted({sig.get("source", "unknown") for sig in self.external_signals_cache.values()})),
+            )
+        else:
+            logger.info("No external signals found - proceeding with internal models only")
 
         orders = []
 
@@ -484,7 +490,7 @@ class GrowthStrategy:
 
         # Get initial candidates from S&P 500
         base_universe = self.SP500_TICKERS.copy()
-        for ticker in reversed(self.priority_watchlist):
+        for ticker in reversed(self.PRIORITY_TICKERS):
             if ticker not in base_universe:
                 base_universe.insert(0, ticker)
 
@@ -583,12 +589,14 @@ class GrowthStrategy:
         2. LLM consensus score (multi-model agreement)
         3. Sentiment modifier (Reddit + News sentiment)
         4. DCF margin-of-safety filter + score
+        5. External signal conviction (Alpha Vantage news + YouTube analysis)
 
         Final score weights:
-            - 35% technical
-            - 35% consensus
+            - 30% technical
+            - 30% consensus
             - 15% sentiment (confidence-weighted)
             - 15% DCF discount (capped at 100)
+            - 10% external signal score (mapped to 0-100)
 
         Args:
             candidates: List of candidate stocks to rank
@@ -699,14 +707,33 @@ class GrowthStrategy:
                 )
                 continue
 
+            external_signal = get_signal_for_ticker(
+                candidate.symbol, signals=self.external_signals_cache
+            )
+            if external_signal:
+                candidate.external_signal_score = external_signal.get("score", 0.0)
+                candidate.external_signal_confidence = external_signal.get("confidence", 0.0)
+
+                if candidate.external_signal_score < -20:
+                    logger.info(
+                        "Skipping %s - external signals bearish (score=%.1f)",
+                        candidate.symbol,
+                        candidate.external_signal_score,
+                    )
+                    continue
+            else:
+                candidate.external_signal_score = 0.0
+                candidate.external_signal_confidence = 0.0
+
             logger.debug(
-                "%s: consensus=%.1f, sentiment=%.1f, MACD=%.4f, intrinsic=%.2f, discount=%.1f%%",
+                "%s: consensus=%.1f, sentiment=%.1f, MACD=%.4f, intrinsic=%.2f, discount=%.1f%%, external=%.1f",
                 candidate.symbol,
                 consensus_score,
                 sentiment_modifier,
                 candidate.macd_histogram,
                 intrinsic_value,
                 discount * 100,
+                candidate.external_signal_score,
             )
 
             filtered_candidates.append(candidate)
@@ -715,14 +742,15 @@ class GrowthStrategy:
             logger.warning("All candidates rejected after DCF margin-of-safety filter")
             return []
 
-        # Rank by combined score (35% technical, 35% consensus, 15% sentiment, 15% DCF discount)
+        # Rank by combined score (30% technical, 30% consensus, 15% sentiment, 15% DCF discount, 10% external)
         # Note: sentiment_modifier is in the same 0-100 scale, so it affects final ranking
         filtered_candidates.sort(
             key=lambda x: (
-                0.35 * x.technical_score
-                + 0.35 * x.consensus_score
+                0.30 * x.technical_score
+                + 0.30 * x.consensus_score
                 + 0.15 * (50 + x.sentiment_modifier)
                 + 0.15 * min(100.0, max(0.0, (x.dcf_discount or 0.0) * 400))
+                + 0.10 * min(100.0, max(0.0, (x.external_signal_score + 100) / 2))
             ),
             reverse=True,
         )
@@ -731,16 +759,19 @@ class GrowthStrategy:
         for i, candidate in enumerate(filtered_candidates[:5], 1):
             sentiment_mod = candidate.sentiment_modifier
             dcf_score = min(100.0, max(0.0, (candidate.dcf_discount or 0.0) * 400))
+            external_score = min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
             combined_score = (
-                0.35 * candidate.technical_score
-                + 0.35 * candidate.consensus_score
+                0.30 * candidate.technical_score
+                + 0.30 * candidate.consensus_score
                 + 0.15 * (50 + sentiment_mod)
                 + 0.15 * dcf_score
+                + 0.10 * external_score
             )
             logger.info(
                 f"  #{i}: {candidate.symbol} (combined={combined_score:.1f}, technical={candidate.technical_score:.1f}, "
                 f"consensus={candidate.consensus_score:.1f}, sentiment_mod={sentiment_mod:+.1f}, "
-                f"dcf_discount={(candidate.dcf_discount or 0.0)*100:.1f}%, intrinsic={candidate.intrinsic_value:.2f})"
+                f"dcf_discount={(candidate.dcf_discount or 0.0)*100:.1f}%, external={candidate.external_signal_score:.1f}, "
+                f"intrinsic={candidate.intrinsic_value:.2f})"
             )
 
         return filtered_candidates
@@ -1148,10 +1179,11 @@ class GrowthStrategy:
                 # Validate order with risk manager
                 dcf_score = min(100.0, max(0.0, candidate.dcf_discount * 400))
                 combined_score = (
-                    0.35 * candidate.technical_score
-                    + 0.35 * candidate.consensus_score
+                    0.30 * candidate.technical_score
+                    + 0.30 * candidate.consensus_score
                     + 0.15 * (50 + candidate.sentiment_modifier)
                     + 0.15 * dcf_score
+                    + 0.10 * min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
                 )
                 order = Order(
                     symbol=candidate.symbol,
@@ -1163,6 +1195,7 @@ class GrowthStrategy:
                         "Top ranked stock "
                         f"(combined={combined_score:.1f}, "
                         f"DCF discount={dcf_discount_pct:.1f}%, "
+                        f"external_score={candidate.external_signal_score:.1f}, "
                         f"intrinsic=${candidate.intrinsic_value:.2f})"
                     ),
                 )

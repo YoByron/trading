@@ -24,7 +24,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 **Win Rate**: 66.7% live (2 of 3 positions profitable)
 **Daily Investment**: $10/day ($7 Core + $3 Growth, updated allocation)
 **Average Daily Profit**: $1.37/day
-**Automation**: ✅ OPERATIONAL (GitHub Actions + launchd)
+**Automation**: ✅ OPERATIONAL (GitHub Actions workflow)
 **System Status**: ✅ PROFITABLE + TURBO MODE ENABLED (ADK + Langchain + Python)
 **Critical Discovery**: System is profitable but needs better data/services to scale to $100+/day target
 
@@ -108,7 +108,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 1. **MACD + RSI + Volume Indicators** - Full momentum system
 2. **Data Collection Pipeline** - Automatic OHLCV archival
 3. **Backtesting Engine** - 754 lines, fully functional
-4. **Automation (launchd)** - Runs weekdays 9:35 AM ET
+4. **Automation (GitHub Actions)** - Runs weekdays 9:35 AM ET
 5. **Intelligent Position Sizing** - Portfolio-percentage based
 6. **Risk Management** - Stop-loss, circuit breakers, position limits
 
@@ -146,7 +146,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 - System paused until Monday
 
 ### **Monday (Nov 10)** - Day 8 of R&D Phase:
-- Launchd triggers at 9:35 AM ET with hard filters
+- GitHub Actions workflow triggers at 9:35 AM ET with hard filters
 - System will REJECT bearish MACD or overbought RSI entries
 - If all symbols fail filters, system will SKIP trading (sit in cash)
 - Monitor: Did filters prevent bad entries?

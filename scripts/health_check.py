@@ -195,13 +195,13 @@ class HealthChecker:
         """Parse logs for market data fetch failures."""
         print("🔍 Checking for market data errors...")
 
-        stderr_log = self.logs_dir / "launchd_stderr.log"
+        stderr_log = self.logs_dir / "workflow_stderr.log"
 
         if not stderr_log.exists():
             return HealthCheckResult(
                 check_name="market_data_errors",
                 status="WARNING",
-                message="launchd_stderr.log does not exist"
+                message="workflow_stderr.log does not exist"
             )
 
         try:

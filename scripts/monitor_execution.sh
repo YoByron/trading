@@ -18,8 +18,8 @@ echo ""
 
 echo "💬 Tailing logs (CTRL+C to exit)..."
 echo "===================================="
-tail -f /Users/igorganapolsky/workspace/git/apps/trading/logs/launchd_stdout.log \
-        /Users/igorganapolsky/workspace/git/apps/trading/logs/launchd_stderr.log 2>/dev/null &
+tail -f /Users/igorganapolsky/workspace/git/apps/trading/logs/workflow_stdout.log \
+        /Users/igorganapolsky/workspace/git/apps/trading/logs/workflow_stderr.log 2>/dev/null &
 
 TAIL_PID=$!
 

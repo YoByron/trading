@@ -84,7 +84,7 @@ def calculate_metrics():
 
     # Get automation status
     automation = system_state.get('automation', {})
-    automation_status = automation.get('launchd_status', 'UNKNOWN')
+    automation_status = automation.get('workflow_status', 'UNKNOWN')
     last_execution = automation.get('last_successful_execution', 'Never')
 
     # Get recent trades

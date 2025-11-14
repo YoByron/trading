@@ -13,6 +13,8 @@ import logging
 from typing import Dict, Any
 from .base_agent import BaseAgent
 
+logger = logging.getLogger(__name__)
+
 # Import RAG retriever for semantic news search
 try:
     from src.rag.vector_db.retriever import get_retriever
@@ -20,8 +22,6 @@ try:
 except ImportError:
     RAG_AVAILABLE = False
     logger.warning("RAG system not available - using fallback news")
-
-logger = logging.getLogger(__name__)
 
 
 class ResearchAgent(BaseAgent):
