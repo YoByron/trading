@@ -161,10 +161,7 @@ python3 scripts/advanced_autonomous_trader.py
 ```
 
 ### **Schedule Daily (9:35 AM ET)**
-Add to cron or launchd:
-```bash
-35 9 * * 1-5 cd /path/to/trading && python3 scripts/advanced_autonomous_trader.py
-```
+Use the `Daily Trading Execution` GitHub Actions workflow (already configured) to run automatically each weekday at 9:35 AM ET. Manual cron jobs are no longer required.
 
 ### **Monitor Logs**
 ```bash
