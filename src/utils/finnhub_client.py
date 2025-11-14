@@ -1,197 +1,186 @@
 """
 Finnhub API client for economic calendar and earnings calendar.
 
-Finnhub provides:
-- Economic calendar (Fed meetings, GDP, CPI, Employment)
-- Earnings calendar (upcoming earnings dates)
-- Company fundamentals (financials, earnings)
-- Real-time news
+Used to avoid trading during major economic events (Fed meetings, GDP releases, etc.)
+and earnings announcements.
 """
-import os
-import logging
-from datetime import datetime, date, timedelta
-from typing import Dict, List, Optional
-import requests
-from dotenv import load_dotenv
 
-load_dotenv()
+from __future__ import annotations
+
+import logging
+import os
+from datetime import date, datetime, timedelta
+from typing import Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
 
 class FinnhubClient:
-    """Client for Finnhub API."""
-    
+    """Client for Finnhub API (economic calendar, earnings calendar)."""
+
     BASE_URL = "https://finnhub.io/api/v1"
-    
-    def __init__(self, api_key: Optional[str] = None):
-        """
-        Initialize Finnhub client.
-        
-        Args:
-            api_key: Finnhub API key (reads from FINNHUB_API_KEY env var if not provided)
-        """
+
+    # Major economic events that should trigger trading avoidance
+    MAJOR_EVENT_TYPES = [
+        "FOMC",  # Federal Open Market Committee meetings
+        "GDP",  # Gross Domestic Product releases
+        "CPI",  # Consumer Price Index
+        "PPI",  # Producer Price Index
+        "Employment",  # Employment data (NFP, unemployment)
+        "Interest Rate Decision",  # Central bank rate decisions
+    ]
+
+    def __init__(self, api_key: Optional[str] = None) -> None:
         self.api_key = api_key or os.getenv("FINNHUB_API_KEY")
         if not self.api_key:
-            logger.warning("FINNHUB_API_KEY not set. Finnhub features will be unavailable.")
-        self.session = requests.Session()
-        self.session.headers.update({"X-Finnhub-Token": self.api_key})
-    
+            logger.warning("FINNHUB_API_KEY not set. Economic calendar checks will be unavailable.")
+
     def get_economic_calendar(
-        self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        self, start_date: Optional[date] = None, end_date: Optional[date] = None
     ) -> List[Dict]:
         """
-        Get economic calendar events.
-        
+        Get economic calendar events for a date range.
+
         Args:
             start_date: Start date (defaults to today)
             end_date: End date (defaults to today)
-        
+
         Returns:
             List of economic events
         """
         if not self.api_key:
-            logger.warning("Finnhub API key not available")
+            logger.debug("Finnhub API key not available")
             return []
-        
+
         if start_date is None:
             start_date = date.today()
         if end_date is None:
             end_date = date.today()
-        
+
         try:
             url = f"{self.BASE_URL}/calendar/economic"
             params = {
+                "token": self.api_key,
                 "from": start_date.strftime("%Y-%m-%d"),
-                "to": end_date.strftime("%Y-%m-%d")
+                "to": end_date.strftime("%Y-%m-%d"),
             }
-            
-            response = self.session.get(url, params=params, timeout=10)
+
+            response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
-            
+
             events = data.get("economicCalendar", [])
-            logger.info(f"Retrieved {len(events)} economic events from Finnhub")
+            logger.info("Fetched %d economic events from Finnhub", len(events))
             return events
-        except Exception as e:
-            logger.warning(f"Failed to fetch economic calendar from Finnhub: {e}")
+        except Exception as exc:
+            logger.warning("Failed to fetch economic calendar: %s", exc)
             return []
-    
+
     def has_major_event_today(self) -> bool:
         """
         Check if there's a major economic event today.
-        
-        Major events include:
-        - Fed FOMC meetings
-        - GDP releases
-        - CPI releases
-        - Employment data (NFP)
-        
+
         Returns:
             True if major event today, False otherwise
         """
+        if not self.api_key:
+            return False
+
         events = self.get_economic_calendar()
-        
-        major_keywords = ["FOMC", "Fed", "GDP", "CPI", "Employment", "NFP", "Non-Farm Payrolls"]
-        
+        if not events:
+            return False
+
+        today_str = date.today().strftime("%Y-%m-%d")
         for event in events:
-            event_name = event.get("event", "").upper()
-            if any(keyword.upper() in event_name for keyword in major_keywords):
-                logger.info(f"Major economic event detected: {event.get('event')}")
-                return True
-        
+            event_date = event.get("date", "")
+            event_type = event.get("event", "")
+
+            # Check if event is today
+            if event_date.startswith(today_str):
+                # Check if it's a major event type
+                for major_type in self.MAJOR_EVENT_TYPES:
+                    if major_type.upper() in event_type.upper():
+                        logger.warning(
+                            "Major economic event today: %s (%s)", event_type, event_date
+                        )
+                        return True
+
         return False
-    
+
     def get_earnings_calendar(
-        self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        self, start_date: Optional[date] = None, end_date: Optional[date] = None
     ) -> List[Dict]:
         """
-        Get earnings calendar.
-        
+        Get earnings calendar for a date range.
+
         Args:
             start_date: Start date (defaults to today)
-            end_date: End date (defaults to 7 days from today)
-        
+            end_date: End date (defaults to today + 7 days)
+
         Returns:
-            List of earnings events
+            List of earnings announcements
         """
         if not self.api_key:
-            logger.warning("Finnhub API key not available")
+            logger.debug("Finnhub API key not available")
             return []
-        
+
         if start_date is None:
             start_date = date.today()
         if end_date is None:
             end_date = date.today() + timedelta(days=7)
-        
+
         try:
             url = f"{self.BASE_URL}/calendar/earnings"
             params = {
+                "token": self.api_key,
                 "from": start_date.strftime("%Y-%m-%d"),
-                "to": end_date.strftime("%Y-%m-%d")
+                "to": end_date.strftime("%Y-%m-%d"),
             }
-            
-            response = self.session.get(url, params=params, timeout=10)
+
+            response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
-            
+
             earnings = data.get("earningsCalendar", [])
-            logger.info(f"Retrieved {len(earnings)} earnings events from Finnhub")
+            logger.info("Fetched %d earnings announcements from Finnhub", len(earnings))
             return earnings
-        except Exception as e:
-            logger.warning(f"Failed to fetch earnings calendar from Finnhub: {e}")
+        except Exception as exc:
+            logger.warning("Failed to fetch earnings calendar: %s", exc)
             return []
-    
-    def is_earnings_week(self, symbol: str) -> bool:
+
+    def is_earnings_week(self, symbol: Optional[str] = None) -> bool:
         """
-        Check if symbol has earnings coming up this week.
-        
+        Check if it's earnings week for a symbol (or any major symbol).
+
         Args:
-            symbol: Stock ticker symbol
-        
+            symbol: Optional symbol to check (if None, checks for major indices)
+
         Returns:
-            True if earnings this week, False otherwise
-        """
-        earnings = self.get_earnings_calendar()
-        
-        for earning in earnings:
-            if earning.get("symbol", "").upper() == symbol.upper():
-                logger.info(f"{symbol} has earnings: {earning.get('date')}")
-                return True
-        
-        return False
-    
-    def get_company_profile(self, symbol: str) -> Optional[Dict]:
-        """
-        Get company profile and fundamentals.
-        
-        Args:
-            symbol: Stock ticker symbol
-        
-        Returns:
-            Company profile data or None
+            True if earnings week, False otherwise
         """
         if not self.api_key:
-            logger.warning("Finnhub API key not available")
-            return None
-        
-        try:
-            url = f"{self.BASE_URL}/stock/profile2"
-            params = {"symbol": symbol}
-            
-            response = self.session.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data and "name" in data:
-                logger.debug(f"Retrieved company profile for {symbol} from Finnhub")
-                return data
-            return None
-        except Exception as e:
-            logger.warning(f"Failed to fetch company profile for {symbol} from Finnhub: {e}")
-            return None
+            return False
 
+        # Check next 7 days for earnings
+        earnings = self.get_earnings_calendar(
+            start_date=date.today(), end_date=date.today() + timedelta(days=7)
+        )
+
+        if symbol:
+            # Check specific symbol
+            symbol_upper = symbol.upper()
+            for earning in earnings:
+                if earning.get("symbol", "").upper() == symbol_upper:
+                    return True
+        else:
+            # Check for major symbols (SPY, QQQ, VOO components)
+            major_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
+            for earning in earnings:
+                earning_symbol = earning.get("symbol", "").upper()
+                if earning_symbol in major_symbols:
+                    logger.info("Earnings week detected for %s", earning_symbol)
+                    return True
+
+        return False
