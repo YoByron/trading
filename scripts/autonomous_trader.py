@@ -292,6 +292,132 @@ def execute_tier1(daily_amount):
         return False
 
 
+def manage_existing_positions():
+    """
+    Check existing positions and close them if exit rules trigger.
+    
+    Exit Rules:
+    - Tier 2 (NVDA, GOOGL, AMZN): Stop-loss 3%, Take-profit 10%, Max holding 4 weeks
+    - Tier 1 (SPY, QQQ, VOO): Buy-and-hold (no automatic exits)
+    """
+    try:
+        positions = api.list_positions()
+        if not positions:
+            print("✅ No existing positions to manage")
+            return
+        
+        print(f"📊 Checking {len(positions)} existing positions...")
+        
+        from scripts.state_manager import StateManager
+        state_manager = StateManager()
+        
+        for pos in positions:
+            symbol = pos.symbol
+            qty = float(pos.qty)
+            entry_price = float(pos.avg_entry_price)
+            current_price = float(pos.current_price)
+            unrealized_pl = float(pos.unrealized_pl)
+            unrealized_plpc = float(pos.unrealized_plpc) * 100
+            
+            # Determine tier and exit rules
+            if symbol in ['NVDA', 'GOOGL', 'AMZN']:
+                tier = 'Tier 2'
+                stop_loss_pct = -3.0
+                take_profit_pct = 10.0
+                max_holding_days = 28  # 4 weeks
+            else:
+                tier = 'Tier 1'
+                stop_loss_pct = None  # Buy-and-hold
+                take_profit_pct = None
+                max_holding_days = None
+            
+            print(f"\n{symbol} ({tier}):")
+            print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
+            print(f"  P/L: ${unrealized_pl:.2f} ({unrealized_plpc:+.2f}%)")
+            
+            # Get entry date from orders
+            orders = api.list_orders(status='all', limit=100, symbols=[symbol])
+            buy_orders = [o for o in orders if o.side == 'buy' and o.status == 'filled']
+            holding_days = None
+            
+            if buy_orders:
+                latest_order = buy_orders[-1]
+                if latest_order.filled_at:
+                    entry_date = datetime.fromisoformat(str(latest_order.filled_at).replace('Z', '+00:00')).date()
+                    holding_days = (date.today() - entry_date).days
+                    print(f"  Holding: {holding_days} days")
+            
+            should_close = False
+            close_reason = None
+            
+            # Check stop-loss (Tier 2 only)
+            if stop_loss_pct and unrealized_plpc <= stop_loss_pct:
+                should_close = True
+                close_reason = f"Stop-loss triggered ({unrealized_plpc:.2f}% <= {stop_loss_pct}%)"
+                print(f"  ⚠️  STOP-LOSS TRIGGERED: {close_reason}")
+            
+            # Check take-profit (Tier 2 only)
+            elif take_profit_pct and unrealized_plpc >= take_profit_pct:
+                should_close = True
+                close_reason = f"Take-profit triggered ({unrealized_plpc:.2f}% >= {take_profit_pct}%)"
+                print(f"  ✅ TAKE-PROFIT TRIGGERED: {close_reason}")
+            
+            # Check max holding period (Tier 2 only)
+            elif max_holding_days and holding_days and holding_days >= max_holding_days:
+                should_close = True
+                close_reason = f"Max holding period reached ({holding_days} days >= {max_holding_days} days)"
+                print(f"  ⏰ MAX HOLDING PERIOD: {close_reason}")
+            
+            # Execute close if needed
+            if should_close:
+                try:
+                    print(f"  🚀 Closing position: {symbol}...")
+                    close_order = api.close_position(symbol)
+                    print(f"  ✅ Position closed: Order {close_order.id}")
+                    
+                    # Record closed trade
+                    entry_date_str = latest_order.filled_at.isoformat() if buy_orders and latest_order.filled_at else datetime.now().isoformat()
+                    state_manager.record_closed_trade(
+                        symbol=symbol,
+                        entry_price=entry_price,
+                        exit_price=current_price,
+                        quantity=qty,
+                        entry_date=entry_date_str,
+                        exit_date=datetime.now().isoformat()
+                    )
+                    
+                    # Log trade
+                    log_trade({
+                        "timestamp": datetime.now().isoformat(),
+                        "tier": tier,
+                        "symbol": symbol,
+                        "action": "SELL",
+                        "quantity": qty,
+                        "entry_price": entry_price,
+                        "exit_price": current_price,
+                        "pl": unrealized_pl,
+                        "pl_pct": unrealized_plpc,
+                        "reason": close_reason,
+                        "order_id": close_order.id,
+                        "status": close_order.status,
+                    })
+                    
+                except Exception as e:
+                    print(f"  ❌ Failed to close position: {e}")
+            else:
+                if tier == 'Tier 2':
+                    print(f"  ✅ Hold: No exit signals (stop-loss: {stop_loss_pct}%, take-profit: {take_profit_pct}%)")
+                else:
+                    print(f"  📊 Hold: Buy-and-hold strategy (no exit rules)")
+        
+        print("\n✅ Position management complete")
+        
+    except Exception as e:
+        print(f"⚠️  Error managing positions: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def execute_tier2(daily_amount):
     """Tier 2: Disruptive Innovation Strategy - 30% using PROPER technical analysis
 
@@ -485,6 +611,12 @@ def main():
     else:
         # Wait for market stabilization (5-10 min post-open)
         wait_for_market_stabilization()
+
+    # STEP 1: Manage existing positions FIRST (check stop-loss, take-profit, holding period)
+    print("\n" + "=" * 70)
+    print("🔍 MANAGING EXISTING POSITIONS")
+    print("=" * 70)
+    manage_existing_positions()
 
     # TURBO MODE: Try ADK orchestrator first (if enabled)
     adk_used = False
