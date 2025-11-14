@@ -2,9 +2,9 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-11-11T21:15:00",
-    "last_audit": "2025-11-11T21:15:00",
-    "audit_notes": "Day 9 - Automation FIXED, trades executed, portfolio PROFITABLE"
+    "last_updated": "2025-11-14T13:34:03.418892",
+    "last_audit": "2025-11-14T13:34:03.418894",
+    "audit_notes": "Day 9 - Win rate tracking updated (separated closed vs open)"
   },
   "challenge": {
     "start_date": "2025-10-29",
@@ -31,7 +31,7 @@
   "performance": {
     "total_trades": 7,
     "winning_trades": 0,
-    "losing_trades": 3,
+    "losing_trades": 0,
     "win_rate": 0.0,
     "best_trade": {
       "symbol": "NVDA",
@@ -43,7 +43,49 @@
       "pl": -14.25,
       "pl_pct": -1.17
     },
-    "avg_return": -3.04
+    "avg_return": -3.04,
+    "closed_trades": [],
+    "open_positions": [
+      {
+        "symbol": "GOOGL",
+        "tier": "unknown",
+        "amount": 405.9599988797613,
+        "order_id": null,
+        "entry_date": "2025-11-14T13:34:03.418858",
+        "entry_price": 282.436493,
+        "current_price": 277.44,
+        "quantity": 1.437349666,
+        "unrealized_pl": -7.181708,
+        "unrealized_pl_pct": -1.7690678928196601,
+        "last_updated": "2025-11-14T13:34:03.418865"
+      },
+      {
+        "symbol": "NVDA",
+        "tier": "unknown",
+        "amount": 3.9799998237414234,
+        "order_id": null,
+        "entry_date": "2025-11-14T13:34:03.418870",
+        "entry_price": 199.031896,
+        "current_price": 189.58,
+        "quantity": 0.019996794,
+        "unrealized_pl": -0.189008,
+        "unrealized_pl_pct": -4.74894472361809,
+        "last_updated": "2025-11-14T13:34:03.418872"
+      },
+      {
+        "symbol": "SPY",
+        "tier": "unknown",
+        "amount": 1235.929996893679,
+        "order_id": null,
+        "entry_date": "2025-11-14T13:34:03.418875",
+        "entry_price": 682.698584,
+        "current_price": 673.61,
+        "quantity": 1.81035969,
+        "unrealized_pl": -16.453607,
+        "unrealized_pl_pct": -1.33127337524176,
+        "last_updated": "2025-11-14T13:34:03.418876"
+      }
+    ]
   },
   "strategies": {
     "tier1": {
@@ -61,7 +103,11 @@
       "trades_executed": 3,
       "total_invested": 403.97,
       "status": "active",
-      "stocks": ["NVDA", "GOOGL", "AMZN"],
+      "stocks": [
+        "NVDA",
+        "GOOGL",
+        "AMZN"
+      ],
       "rotation_strategy": "3-way momentum-based selection",
       "amzn_catalyst": "OpenAI $38B deal - $295 fair value target (15% upside)"
     },
@@ -88,7 +134,11 @@
     "sharpe_ratio": 0.0,
     "volatility": 0.0,
     "winning_symbols": [],
-    "losing_symbols": ["SPY", "GOOGL", "NVDA"],
+    "losing_symbols": [
+      "SPY",
+      "GOOGL",
+      "NVDA"
+    ],
     "learned_patterns": [
       "CRITICAL: Nov 3 deployed $1,600 instead of planned $8/day (200x error)",
       "Root cause: Wrong script executed (autonomous_trader.py vs main.py)",
@@ -130,21 +180,34 @@
         "title": "PLTR Analysis - Why Stock Falling Despite Spectacular Earnings",
         "analyst": "Parkev Tatevosian CFA",
         "date": "2025-11-05T20:30:00",
-        "stocks_analyzed": ["PLTR"],
+        "stocks_analyzed": [
+          "PLTR"
+        ],
         "recommendation": "PASS - 454% overvalued (wait for 50-80% pullback)"
       },
       {
         "title": "Top 6 Stocks to Buy November 2025",
         "analyst": "Parkev Tatevosian CFA",
         "date": "2025-11-05T15:30:00",
-        "stocks_analyzed": ["NVDA", "AMZN", "GOOGL", "LLY", "UBER", "PINS"],
-        "stocks_added": ["AMZN"]
+        "stocks_analyzed": [
+          "NVDA",
+          "AMZN",
+          "GOOGL",
+          "LLY",
+          "UBER",
+          "PINS"
+        ],
+        "stocks_added": [
+          "AMZN"
+        ]
       },
       {
         "title": "AMZN OpenAI Partnership Analysis",
         "analyst": "Parkev Tatevosian CFA",
         "date": "2025-11-05T15:30:00",
-        "stocks_added": ["AMZN"]
+        "stocks_added": [
+          "AMZN"
+        ]
       }
     ],
     "watchlist_additions": [

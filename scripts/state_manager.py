@@ -107,9 +107,11 @@ ACTION REQUIRED:
             },
             "performance": {
                 "total_trades": 0,
-                "winning_trades": 0,
-                "losing_trades": 0,
-                "win_rate": 0.0,
+                "closed_trades": [],  # List of closed trades with realized P/L
+                "open_positions": [],  # List of open positions with unrealized P/L
+                "winning_trades": 0,  # Count of closed winning trades
+                "losing_trades": 0,  # Count of closed losing trades
+                "win_rate": 0.0,  # Win rate based on closed trades only
                 "best_trade": None,
                 "worst_trade": None,
                 "avg_return": 0.0,
@@ -183,7 +185,7 @@ ACTION REQUIRED:
         self.save_state()
 
     def record_trade(self, tier: str, symbol: str, amount: float, order_id: str):
-        """Record a trade execution"""
+        """Record a trade execution (opening a position)"""
         # Update strategy stats
         if tier in ["tier1", "tier2"]:
             self.state["strategies"][tier]["trades_executed"] += 1
@@ -198,10 +200,141 @@ ACTION REQUIRED:
 
         # Update performance
         self.state["performance"]["total_trades"] += 1
+        
+        # Add to open positions (will be moved to closed_trades when position closes)
+        if "open_positions" not in self.state["performance"]:
+            self.state["performance"]["open_positions"] = []
+        
+        self.state["performance"]["open_positions"].append({
+            "tier": tier,
+            "symbol": symbol,
+            "amount": amount,
+            "order_id": order_id,
+            "entry_date": datetime.now().isoformat(),
+            "entry_price": None,  # Will be updated when we get fill price
+        })
 
         # Add note
         self.add_note(f"Trade executed: {tier.upper()} - {symbol} ${amount}")
 
+        self.save_state()
+    
+    def record_closed_trade(self, symbol: str, entry_price: float, exit_price: float, 
+                           quantity: float, entry_date: str, exit_date: str = None):
+        """
+        Record a closed trade with realized P/L.
+        
+        Args:
+            symbol: Stock symbol
+            entry_price: Price when position was opened
+            exit_price: Price when position was closed
+            quantity: Number of shares
+            entry_date: Date position was opened
+            exit_date: Date position was closed (defaults to now)
+        """
+        if exit_date is None:
+            exit_date = datetime.now().isoformat()
+        
+        # Calculate realized P/L
+        pl = (exit_price - entry_price) * quantity
+        pl_pct = ((exit_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
+        
+        # Find and remove from open_positions
+        if "open_positions" not in self.state["performance"]:
+            self.state["performance"]["open_positions"] = []
+        if "closed_trades" not in self.state["performance"]:
+            self.state["performance"]["closed_trades"] = []
+        
+        # Remove from open positions (find matching symbol)
+        open_positions = self.state["performance"]["open_positions"]
+        matching_position = None
+        for pos in open_positions:
+            if pos.get("symbol") == symbol:
+                matching_position = pos
+                open_positions.remove(pos)
+                break
+        
+        # Add to closed trades
+        closed_trade = {
+            "symbol": symbol,
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "quantity": quantity,
+            "entry_date": entry_date,
+            "exit_date": exit_date,
+            "pl": pl,
+            "pl_pct": pl_pct,
+            "tier": matching_position.get("tier") if matching_position else "unknown",
+        }
+        self.state["performance"]["closed_trades"].append(closed_trade)
+        
+        # Update win/loss counts
+        if pl > 0:
+            self.state["performance"]["winning_trades"] += 1
+        elif pl < 0:
+            self.state["performance"]["losing_trades"] += 1
+        
+        # Recalculate win rate based on closed trades only
+        total_closed = len(self.state["performance"]["closed_trades"])
+        if total_closed > 0:
+            self.state["performance"]["win_rate"] = (
+                self.state["performance"]["winning_trades"] / total_closed * 100
+            )
+        else:
+            self.state["performance"]["win_rate"] = 0.0
+        
+        # Update best/worst trade
+        if not self.state["performance"]["best_trade"] or pl > self.state["performance"]["best_trade"].get("pl", -float("inf")):
+            self.state["performance"]["best_trade"] = {
+                "symbol": symbol,
+                "pl": pl,
+                "pl_pct": pl_pct,
+            }
+        if not self.state["performance"]["worst_trade"] or pl < self.state["performance"]["worst_trade"].get("pl", float("inf")):
+            self.state["performance"]["worst_trade"] = {
+                "symbol": symbol,
+                "pl": pl,
+                "pl_pct": pl_pct,
+            }
+        
+        # Calculate average return
+        if total_closed > 0:
+            total_return = sum(t["pl_pct"] for t in self.state["performance"]["closed_trades"])
+            self.state["performance"]["avg_return"] = total_return / total_closed
+        
+        self.add_note(f"Position closed: {symbol} - Entry: ${entry_price:.2f}, Exit: ${exit_price:.2f}, P/L: ${pl:.2f} ({pl_pct:+.2f}%)")
+        self.save_state()
+    
+    def update_open_positions(self, positions: list):
+        """
+        Update open positions with current unrealized P/L.
+        
+        Args:
+            positions: List of position dicts with symbol, qty, entry_price, current_price, etc.
+        """
+        if "open_positions" not in self.state["performance"]:
+            self.state["performance"]["open_positions"] = []
+        
+        # Update existing open positions with current prices
+        for pos_data in positions:
+            symbol = pos_data.get("symbol")
+            current_price = pos_data.get("current_price")
+            entry_price = pos_data.get("entry_price")
+            qty = pos_data.get("qty", 0)
+            
+            if not symbol or not current_price or not entry_price:
+                continue
+            
+            # Find matching open position
+            for open_pos in self.state["performance"]["open_positions"]:
+                if open_pos.get("symbol") == symbol:
+                    # Update with current price and unrealized P/L
+                    open_pos["current_price"] = current_price
+                    open_pos["unrealized_pl"] = (current_price - entry_price) * qty
+                    open_pos["unrealized_pl_pct"] = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+                    open_pos["last_updated"] = datetime.now().isoformat()
+                    break
+        
         self.save_state()
 
     def update_account(self, equity: float, cash: float, pl: float, pl_pct: float):
