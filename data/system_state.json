@@ -2,9 +2,9 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-11-14T13:34:03.418892",
+    "last_updated": "2025-11-17T08:42:34.317503",
     "last_audit": "2025-11-14T13:34:03.418894",
-    "audit_notes": "Day 9 - Win rate tracking updated (separated closed vs open)"
+    "audit_notes": "Day 9 - Updated via manual refresh (Nov 17 8:45 AM ET)"
   },
   "challenge": {
     "start_date": "2025-10-29",
@@ -15,11 +15,11 @@
   },
   "account": {
     "starting_balance": 100000.0,
-    "current_equity": 100013.96,
-    "cash": 98362.08,
-    "positions_value": 1651.88,
-    "total_pl": 13.96,
-    "total_pl_pct": 0.01
+    "current_equity": 99982.75,
+    "cash": 98354.09,
+    "positions_value": 1628.6600000000035,
+    "total_pl": -17.25,
+    "total_pl_pct": -0.02
   },
   "investments": {
     "total_invested": 1621.93,
@@ -49,41 +49,41 @@
       {
         "symbol": "GOOGL",
         "tier": "unknown",
-        "amount": 405.9599988797613,
+        "amount": 405.959999,
         "order_id": null,
-        "entry_date": "2025-11-14T13:34:03.418858",
+        "entry_date": "2025-11-17T08:42:34.317487",
         "entry_price": 282.436493,
-        "current_price": 277.44,
+        "current_price": 285.97,
         "quantity": 1.437349666,
-        "unrealized_pl": -7.181708,
-        "unrealized_pl_pct": -1.7690678928196601,
-        "last_updated": "2025-11-14T13:34:03.418865"
+        "unrealized_pl": 5.078885,
+        "unrealized_pl_pct": 1.25108015876214,
+        "last_updated": "2025-11-17T08:42:34.317496"
       },
       {
         "symbol": "NVDA",
         "tier": "unknown",
-        "amount": 3.9799998237414234,
+        "amount": 3.98,
         "order_id": null,
-        "entry_date": "2025-11-14T13:34:03.418870",
+        "entry_date": "2025-11-17T08:42:34.317498",
         "entry_price": 199.031896,
-        "current_price": 189.58,
+        "current_price": 187.0902,
         "quantity": 0.019996794,
-        "unrealized_pl": -0.189008,
-        "unrealized_pl_pct": -4.74894472361809,
-        "last_updated": "2025-11-14T13:34:03.418872"
+        "unrealized_pl": -0.238796,
+        "unrealized_pl_pct": -5.999899497487441,
+        "last_updated": "2025-11-17T08:42:34.317500"
       },
       {
         "symbol": "SPY",
         "tier": "unknown",
-        "amount": 1235.929996893679,
+        "amount": 1235.929998,
         "order_id": null,
-        "entry_date": "2025-11-14T13:34:03.418875",
+        "entry_date": "2025-11-17T08:42:34.317501",
         "entry_price": 682.698584,
-        "current_price": 673.61,
+        "current_price": 670.52,
         "quantity": 1.81035969,
-        "unrealized_pl": -16.453607,
-        "unrealized_pl_pct": -1.33127337524176,
-        "last_updated": "2025-11-14T13:34:03.418876"
+        "unrealized_pl": -22.047619,
+        "unrealized_pl_pct": -1.78388897718138,
+        "last_updated": "2025-11-17T08:42:34.317502"
       }
     ]
   },

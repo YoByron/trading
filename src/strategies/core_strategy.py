@@ -1203,34 +1203,28 @@ class CoreStrategy:
         """
         Calculate MACD (Moving Average Convergence Divergence).
 
+        Uses shared utility from src.utils.technical_indicators.
+
         Args:
             prices: Price series
 
         Returns:
             Tuple of (macd_value, signal_line, histogram)
         """
-        # Calculate exponential moving averages
-        ema_12 = prices.ewm(span=self.MACD_FAST_PERIOD, adjust=False).mean()
-        ema_26 = prices.ewm(span=self.MACD_SLOW_PERIOD, adjust=False).mean()
-
-        # MACD line
-        macd_line = ema_12 - ema_26
-
-        # Signal line
-        signal_line = macd_line.ewm(span=self.MACD_SIGNAL_PERIOD, adjust=False).mean()
-
-        # MACD histogram
-        histogram = macd_line - signal_line
-
-        return (
-            float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
-            float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
-            float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+        from src.utils.technical_indicators import calculate_macd
+        
+        return calculate_macd(
+            prices,
+            fast_period=self.MACD_FAST_PERIOD,
+            slow_period=self.MACD_SLOW_PERIOD,
+            signal_period=self.MACD_SIGNAL_PERIOD,
         )
 
     def _calculate_volume_ratio(self, hist: pd.DataFrame) -> float:
         """
         Calculate volume ratio (current vs 20-day average).
+
+        Uses shared utility from src.utils.technical_indicators.
 
         Args:
             hist: Historical price DataFrame
@@ -1238,16 +1232,9 @@ class CoreStrategy:
         Returns:
             Volume ratio (current / 20-day average)
         """
-        if len(hist) < 20:
-            return 1.0
-
-        current_volume = hist["Volume"].iloc[-1]
-        avg_volume = hist["Volume"].iloc[-20:].mean()
-
-        if avg_volume == 0:
-            return 1.0
-
-        return current_volume / avg_volume
+        from src.utils.technical_indicators import calculate_volume_ratio
+        
+        return calculate_volume_ratio(hist, window=20)
 
     def _validate_trade(
         self, symbol: str, quantity: float, price: float, sentiment: MarketSentiment
