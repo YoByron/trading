@@ -360,19 +360,21 @@ Investment Orchestrator (Python)
 │   ├── Tier 1: Core Strategy (60% - Index ETFs)
 │   ├── Tier 2: Growth Strategy (20% - Stock Picking)
 │   ├── Tier 3: IPO Strategy (10% - Manual SoFi)
-│   └── Tier 4: Crowdfunding (10% - Manual)
+│   ├── Tier 4: Crowdfunding (10% - Manual)
+│   └── Tier 5: Crypto Strategy (5% - Weekend-Only Automated)
 ├── Monitoring Dashboard (Streamlit)
 └── Deployment (Docker + Scheduler)
 ```
 
 ## Daily Investment Allocation
 
-Total: $10/day = $300/month = $3,650/year
+Total: $10.50/day (weekdays) + $0.50/day (weekends) = $315/month = $3,800/year
 
 - **Tier 1 (Core)**: $6/day - Automated via Alpaca
 - **Tier 2 (Growth)**: $2/day - Automated via Alpaca
 - **Tier 3 (IPO)**: $1/day - Manual via SoFi
 - **Tier 4 (Crowdfunding)**: $1/day - Manual via platforms
+- **Tier 5 (Crypto)**: $0.50/day (weekends only) - Automated via Alpaca
 
 ## Target Returns (Conservative)
 
@@ -380,6 +382,7 @@ Total: $10/day = $300/month = $3,650/year
 - Tier 2: 15-25% annually (MEDIUM risk)
 - Tier 3: 10-20% per IPO (MEDIUM-HIGH risk)
 - Tier 4: 100-1000% on winners, 67% failure rate (HIGH risk)
+- Tier 5: 15-30% annually (HIGH risk, weekend-only)
 
 **Overall Target**: 10-15% blended annual return
 
@@ -393,7 +396,81 @@ Total: $10/day = $300/month = $3,650/year
 ### Position Sizing
 - Max position: 10% of portfolio
 - Risk per trade: 1-2%
-- Stop-loss: 5% (Tier 1), 3% (Tier 2)
+- Stop-loss: 5% (Tier 1), 3% (Tier 2), 7% (Tier 5)
+
+## Tier 5: Crypto Weekend Strategy
+
+**Overview**: Experimental crypto tier to capture weekend volatility when traditional markets are closed.
+
+**Allocation**: 5% of portfolio ($0.50/day on Sat/Sun = $1/week = $52/year)
+
+**Supported Assets** (via Alpaca Crypto):
+- BTC/USD (Bitcoin)
+- ETH/USD (Ethereum)
+
+**Strategy**: Momentum-based crypto selection
+- Uses same MACD + RSI + Volume indicators as equity strategies
+- Selects BTC or ETH based on strongest momentum signal
+- Only executes if momentum is strong (MACD crossover + RSI 40-60 + Volume spike)
+
+**Execution Schedule**:
+- **Saturdays**: 10:00 AM ET - Weekend crypto trading
+- **Sundays**: 10:00 AM ET - Weekend crypto trading
+- **Weekdays**: No crypto trades (traditional markets open)
+
+**Risk Parameters**:
+- Max position: 2% of portfolio (more conservative than equity tiers)
+- Stop-loss: 7% (wider due to crypto volatility)
+- Risk per trade: 1%
+- Daily loss limit: 2% (same as equity strategies)
+
+**Technical Indicators**:
+- **MACD**: Trend direction and momentum
+- **RSI**: 40/60 thresholds (modified for crypto volatility)
+  - RSI < 40: Oversold, potential buy signal
+  - RSI > 60: Overbought, avoid entry
+  - RSI 40-60: Neutral zone, evaluate other indicators
+- **Volume**: Confirm momentum strength
+
+**Entry Rules**:
+1. MACD bullish crossover (MACD line crosses above signal line)
+2. RSI between 40-60 (not overbought)
+3. Volume > 20-day average (confirms trend)
+4. All three conditions must be true
+
+**Exit Rules**:
+1. 7% stop-loss triggered
+2. MACD bearish crossover
+3. RSI > 70 (take profits in overbought zone)
+
+**Rationale**:
+- **24/7 Markets**: Crypto trades on weekends when equities are closed
+- **Experimental Learning**: Small allocation (5%) limits downside while testing crypto strategies
+- **Volatility Opportunity**: Higher volatility = higher potential returns (with higher risk)
+- **Weekend Utilization**: Generates trading activity during market downtime
+- **Data Collection**: Builds crypto market knowledge for potential future scaling
+
+**Expected Performance**:
+- Target: 15-30% annual return
+- Risk: HIGH (crypto volatility)
+- Win Rate Target: 50-55% (lower than equities due to volatility)
+- Sharpe Ratio Target: >1.0
+
+**Integration with R&D Phase**:
+- Month 1 (Days 1-30): Test weekend execution, collect crypto data
+- Month 2 (Days 31-60): Refine indicators for crypto-specific volatility
+- Month 3 (Days 61-90): Validate profitability, decide if worth continuing
+
+**Success Criteria** (Day 90):
+- Weekend trades execute reliably
+- Crypto P/L doesn't drag down overall portfolio
+- Win rate >50%
+- No critical bugs in crypto execution
+
+**Notes**:
+- Crypto available 24/7 but we only trade weekends (learning phase)
+- Future: Could expand to weekday crypto if weekend strategy proves profitable
+- Alpaca crypto trading has same API as equity trading (easy integration)
 
 ## Current Status
 
@@ -406,6 +483,7 @@ Total: $10/day = $300/month = $3,650/year
 
 ### In Progress
 🔄 Core Strategy (Tier 1)
+🔄 Crypto Strategy (Tier 5)
 🔄 Main Orchestrator
 🔄 Monitoring Dashboard
 🔄 Docker Deployment
