@@ -4,6 +4,9 @@ AUTONOMOUS DAILY TRADER - FIXED $10/DAY STRATEGY
 Runs automatically every day at market open
 Uses fixed $10/day investment (not portfolio-based)
 Focus: Momentum + Volume confirmation (MACD, RSI, Volume ratio)
+
+WEEKEND MODE: Executes Tier 5 (Crypto) on Saturdays and Sundays
+WEEKDAY MODE: Executes Tiers 1-2 (Stocks) Monday-Friday
 """
 import os
 import sys
@@ -11,6 +14,7 @@ import json
 import time as time_module
 from datetime import datetime, date, time
 from pathlib import Path
+import argparse
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
 import requests  # For ADK health checks
@@ -23,6 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.utils.data_collector import DataCollector
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
+from src.strategies.crypto_strategy import CryptoStrategy  # WEEKEND MODE: Crypto trading
 from src.utils.market_data import get_market_data_provider
 from src.utils.technical_indicators import calculate_technical_score  # Shared utility
 from src.verification.output_verifier import OutputVerifier  # Claude Agent SDK Loop pattern
@@ -105,6 +110,16 @@ if langchain_enabled:
         langchain_agent = None
 else:
     print("⚠️  Langchain approval gate disabled (set LANGCHAIN_APPROVAL_ENABLED=true to enable)")
+
+
+def is_weekend():
+    """
+    Check if today is Saturday or Sunday (weekend).
+
+    Returns:
+        True if weekend (Sat=5, Sun=6), False otherwise
+    """
+    return datetime.now().weekday() in [5, 6]  # Saturday=5, Sunday=6
 
 
 def calculate_daily_investment():
@@ -668,8 +683,69 @@ def update_performance_log():
     return summary
 
 
+def execute_crypto_strategy(daily_investment):
+    """
+    Execute Tier 5: Crypto Strategy (Weekend Mode).
+
+    Args:
+        daily_investment: Daily investment amount
+
+    Returns:
+        Boolean indicating success
+    """
+    print("\n" + "=" * 70)
+    print("🌐 WEEKEND MODE: TIER 5 CRYPTO STRATEGY")
+    print("=" * 70)
+
+    try:
+        # Import risk manager for crypto strategy
+        from src.core.risk_manager import RiskManager
+
+        # Initialize risk manager (create placeholder if needed)
+        risk_manager = RiskManager(
+            max_daily_loss_pct=5.0,  # Higher risk tolerance for crypto
+            max_position_size_pct=10.0,
+            max_drawdown_pct=15.0
+        )
+
+        # Initialize crypto strategy
+        crypto_strategy = CryptoStrategy(
+            trader=api,
+            risk_manager=risk_manager,
+            daily_amount=daily_investment
+        )
+
+        # Execute crypto strategy
+        result = crypto_strategy.execute()
+
+        if result.get("success"):
+            print(f"✅ Crypto trade executed: {result.get('symbol')} for ${result.get('amount', 0):.2f}")
+            return True
+        else:
+            reason = result.get("reason", "unknown")
+            message = result.get("message", "No details available")
+            print(f"⚠️  Crypto trade skipped: {reason}")
+            print(f"   Details: {message}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Crypto strategy execution failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Main autonomous trading execution with intelligent position sizing"""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Autonomous Daily Trader")
+    parser.add_argument(
+        "--crypto-only",
+        action="store_true",
+        help="Force crypto-only execution (Tier 5) regardless of day of week"
+    )
+    args = parser.parse_args()
+
     print("\n" + "=" * 70)
     print("🤖 AUTONOMOUS DAILY TRADER - WORLD-CLASS AI SYSTEM")
     print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}")
@@ -701,13 +777,53 @@ def main():
     # Fixed $10/day investment (North Star Fibonacci strategy)
     daily_investment = calculate_daily_investment()
 
+    # WEEKEND vs WEEKDAY MODE (or force crypto with --crypto-only flag)
+    weekend_mode = args.crypto_only or is_weekend()
+
     print(f"📊 Trading Day: {current_day}")
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
     print(f"📈 Daily Investment: ${daily_investment:.2f} (FIXED - not portfolio-based)")
-    print("🎯 Strategy: Momentum (MACD + RSI + Volume)")
-    print(f"📊 Breakdown: Core 70% (${daily_investment*0.7:.2f}) | Growth 30% (${daily_investment*0.3:.2f})")
+
+    if weekend_mode:
+        mode_source = "(FORCED via --crypto-only)" if args.crypto_only else "(Auto: Weekend)"
+        print(f"🌐 MODE: WEEKEND {mode_source} (Crypto Trading)")
+        print("🎯 Strategy: Tier 5 - Cryptocurrency 24/7")
+    else:
+        print("📈 MODE: WEEKDAY (Stock Trading)")
+        print("🎯 Strategy: Momentum (MACD + RSI + Volume)")
+        print(f"📊 Breakdown: Core 70% (${daily_investment*0.7:.2f}) | Growth 30% (${daily_investment*0.3:.2f})")
+
     print("=" * 70)
 
+    # WEEKEND MODE: Execute crypto strategy and skip stock logic
+    if weekend_mode:
+        mode_reason = "Manual override (--crypto-only flag)" if args.crypto_only else "Stock markets closed (Sat-Sun)"
+        print(f"\n🌐 WEEKEND MODE ACTIVE - Executing Crypto Strategy")
+        print(f"💡 {mode_reason} - Crypto trades 24/7")
+
+        crypto_success = execute_crypto_strategy(daily_investment)
+
+        # Update performance and skip stock-specific logic
+        print("\n" + "=" * 70)
+        print("📊 PERFORMANCE UPDATE")
+        print("=" * 70)
+
+        perf = update_performance_log()
+        print(f"💰 Equity: ${perf['equity']:,.2f}")
+        print(f"📈 P/L: ${perf['pl']:+,.2f} ({perf['pl_pct']:+.2f}%)")
+        print(f"💵 Cash: ${perf['cash']:,.2f}")
+
+        print("\n" + "=" * 70)
+        print("✅ WEEKEND EXECUTION COMPLETE")
+        print("=" * 70)
+        print(f"Tier 5 (Crypto): {'✅' if crypto_success else '⚠️'}")
+        print(f"\n📁 Logs saved to: {DATA_DIR}")
+        print("🎯 Next execution: Monday 9:35 AM ET (or tomorrow if Sunday)")
+        print("=" * 70)
+
+        return  # Exit early - no stock trading on weekends
+
+    # WEEKDAY MODE: Execute stock strategies (existing logic)
     # Check if market is open
     clock = api.get_clock()
     if not clock.is_open:

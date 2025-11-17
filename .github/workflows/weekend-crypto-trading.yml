@@ -1,0 +1,277 @@
+name: Weekend Crypto Trading
+
+on:
+  schedule:
+    # Run on Saturdays and Sundays at 10:00 AM Eastern
+    # Standard Time (Nov-Mar): UTC-5 -> 15:00 UTC = 10:00 AM ET
+    # TODO: Switch to 14:00 UTC in March when DST starts (UTC-4)
+    - cron: '0 15 * * 0,6'   # 10:00 AM Eastern (Standard Time Nov-Mar)
+  workflow_dispatch:
+    inputs:
+      force_trade:
+        description: "Force execution even if crypto trading already ran today"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+  pages: write
+
+# Prevent parallel weekend crypto runs
+concurrency:
+  group: weekend-crypto-trading
+  cancel-in-progress: false
+
+jobs:
+  execute-crypto-trading:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate system_state.json
+        run: |
+          echo "🔍 Validating system_state.json..."
+
+          if [ ! -f "data/system_state.json" ]; then
+            echo "⚠️  WARNING: system_state.json not found (will be created on first run)"
+            exit 0
+          fi
+
+          # Validate JSON and check staleness
+          python -c "
+          import json
+          import sys
+          from datetime import datetime, timedelta
+
+          try:
+              with open('data/system_state.json', 'r') as f:
+                  data = json.load(f)
+
+              # Check staleness
+              last_updated = data.get('meta', {}).get('last_updated', '')
+              if last_updated:
+                  updated_date = datetime.fromisoformat(last_updated.replace('Z', '+00:00')) if 'T' in last_updated else datetime.strptime(last_updated, '%Y-%m-%d %H:%M:%S')
+                  age_hours = (datetime.now() - updated_date.replace(tzinfo=None)).total_seconds() / 3600
+
+                  if age_hours > 48:
+                      print(f'⚠️  WARNING: system_state.json is {age_hours:.1f} hours old')
+                      print(f'   Last updated: {last_updated}')
+                  else:
+                      print(f'✅ System state current (updated {age_hours:.1f} hours ago)')
+
+              print(f'✅ Valid system_state.json')
+
+          except Exception as e:
+              print(f'⚠️  WARNING: Could not validate system_state.json: {e}')
+              print('   Crypto trading will proceed (state will be regenerated)')
+          "
+
+      - name: Check if today's crypto trade already executed
+        id: check_execution
+        env:
+          FORCE_TRADE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_trade || 'false' }}
+        run: |
+          echo "🔍 Checking last crypto execution date..."
+          python3 scripts/check_duplicate_execution.py
+
+          if [ "${{ steps.check_execution.outputs.skip }}" = "true" ]; then
+            echo "⚠️  Crypto trading already executed today. Skipping run."
+          fi
+
+      - name: Pre-market health check
+        id: health_check
+        if: steps.check_execution.outputs.skip != 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          echo "🏥 Running pre-market health check for crypto..."
+          python3 scripts/pre_market_health_check.py
+
+          if [ $? -ne 0 ]; then
+            echo "❌ HEALTH CHECK FAILED - Aborting crypto trading execution"
+            echo "health_check_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ HEALTH CHECK PASSED - Proceeding with crypto trading"
+            echo "health_check_passed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute weekend crypto trading
+        if: steps.check_execution.outputs.skip != 'true' && steps.health_check.outputs.health_check_passed == 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DAILY_INVESTMENT: ${{ secrets.DAILY_INVESTMENT || '10.0' }}
+          PAPER_TRADING: 'true'
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          LANGCHAIN_ENABLE_MCP: ${{ secrets.LANGCHAIN_ENABLE_MCP || 'true' }}
+          LANGCHAIN_MODEL: ${{ secrets.LANGCHAIN_MODEL || 'claude-3-5-sonnet-20241022' }}
+        run: |
+          echo "🚀 Executing weekend crypto trading..."
+          python3 scripts/autonomous_trader.py --crypto-only
+
+      - name: Check for state changes
+        id: check_state_changes
+        if: steps.check_execution.outputs.skip != 'true'
+        run: |
+          echo "🔍 Checking for system_state.json updates..."
+
+          # Check if system_state.json changed during execution
+          if git diff --quiet data/system_state.json; then
+            echo "state_changed=false" >> $GITHUB_OUTPUT
+            echo "📋 No changes to system state"
+          else
+            echo "state_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ System state updated after crypto trading"
+
+            # Show summary of changes
+            echo "Changes detected:"
+            git diff --stat data/system_state.json
+          fi
+
+      - name: Commit system state updates
+        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        run: |
+          echo "💾 Committing system_state.json updates..."
+
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+          # Pull latest changes to avoid conflicts
+          git pull --rebase origin main || {
+            echo "⚠️  Merge conflict detected - resolving..."
+
+            # Keep our version (trading execution takes precedence)
+            git checkout --ours data/system_state.json
+            git add data/system_state.json
+            git rebase --continue
+          }
+
+          # Stage system_state.json
+          git add data/system_state.json
+
+          # Create commit with trading execution details
+          git commit -m "$(cat <<'EOF'
+          chore: Update system state after weekend crypto trading
+
+          Weekend crypto trading execution completed and system state updated.
+
+          Execution details:
+          - Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          - Workflow: weekend-crypto-trading.yml
+          - Run ID: ${{ github.run_id }}
+
+          Changes:
+          - Updated account balances
+          - Recorded crypto trade execution results
+          - Updated performance metrics
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude <noreply@anthropic.com>
+          EOF
+          )"
+
+          # Push changes
+          git push origin main
+
+          echo "✅ System state changes committed and pushed"
+
+      - name: Update Progress Dashboard Wiki
+        if: steps.check_execution.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📊 Generating progress dashboard..."
+          python3 scripts/generate_progress_dashboard.py
+
+          echo "📝 Updating GitHub Wiki..."
+
+          # Clone wiki repository (create if doesn't exist)
+          WIKI_DIR="wiki_repo"
+          if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
+            echo "✅ Wiki repository exists, updating..."
+          else
+            echo "⚠️  Wiki repository doesn't exist yet - will create on first push"
+            mkdir -p "$WIKI_DIR"
+            cd "$WIKI_DIR"
+            git init
+            git config user.name "GitHub Actions Bot"
+            git config user.email "actions@github.com"
+            git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
+            cd ..
+          fi
+
+          # Copy generated dashboard and home page to wiki
+          cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
+          if [ -f wiki/Home.md ]; then
+            cp wiki/Home.md "$WIKI_DIR/Home.md"
+          fi
+
+          # Commit and push to wiki
+          cd "$WIKI_DIR"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add -A
+
+          if git diff --staged --quiet && [ -n "$(git log --oneline 2>/dev/null)" ]; then
+            echo "📋 No changes to dashboard"
+          else
+            if [ -z "$(git log --oneline 2>/dev/null)" ]; then
+              COMMIT_MSG="🎉 Initial wiki setup - Progress Dashboard and Home page"
+            else
+              COMMIT_MSG="📊 Auto-update progress dashboard (weekend crypto) - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            fi
+
+            git commit -m "$COMMIT_MSG" || echo "No changes to commit"
+
+            # Try pushing to main branch first, then master
+            if git push -u origin main 2>&1; then
+              echo "✅ Wiki dashboard updated successfully (main branch)!"
+            elif git push -u origin master 2>&1; then
+              echo "✅ Wiki dashboard updated successfully (master branch)!"
+            else
+              echo "⚠️  Wiki push failed - wiki repository needs manual initialization"
+              echo "   This is normal on first run. To initialize:"
+              echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
+              echo "   2. Click 'Create the first page'"
+              echo "   3. Name it 'Home' and save (content will be auto-updated on next run)"
+              echo "   4. GitHub Actions will update it automatically after that"
+            fi
+          fi
+
+      - name: Upload execution logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekend-crypto-logs-${{ github.run_id }}
+          path: |
+            logs/*.log
+            data/system_state.json
+            data/trades_*.json
+            wiki/Progress-Dashboard.md
+          retention-days: 30

@@ -3,8 +3,8 @@
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
     "last_updated": "2025-11-17T08:42:34.317503",
-    "last_audit": "2025-11-14T13:34:03.418894",
-    "audit_notes": "Day 9 - Updated via manual refresh (Nov 17 8:45 AM ET)"
+    "last_audit": "2025-11-17T09:00:00.000000",
+    "audit_notes": "Day 9 - Added Tier 5 crypto tracking (BTC/ETH weekend strategy)"
   },
   "challenge": {
     "start_date": "2025-10-29",
@@ -26,7 +26,8 @@
     "tier1_invested": 1217.96,
     "tier2_invested": 403.97,
     "tier3_reserve": 0.0,
-    "tier4_reserve": 0.0
+    "tier4_reserve": 0.0,
+    "tier5_invested": 0.0
   },
   "performance": {
     "total_trades": 7,
@@ -124,6 +125,18 @@
       "daily_amount": 1.0,
       "reserve_balance": 0.0,
       "status": "tracking"
+    },
+    "tier5": {
+      "name": "Crypto Weekend Strategy (BTC, ETH)",
+      "allocation": 0.05,
+      "daily_amount": 0.50,
+      "coins": ["BTC/USD", "ETH/USD"],
+      "trades_executed": 0,
+      "total_invested": 0.0,
+      "status": "active",
+      "execution_schedule": "Saturday & Sunday 10:00 AM ET",
+      "last_execution": null,
+      "next_execution": null
     }
   },
   "heuristics": {
@@ -152,6 +165,12 @@
       "MACD confirms momentum - filters out false signals from RSI alone",
       "MACD histogram > 0 = bullish (MACD above signal line) = BUY signal",
       "MACD histogram < 0 = bearish (MACD below signal line) = SELL signal"
+    ],
+    "crypto_patterns": [
+      "Nov 17: Tier 5 crypto strategy activated - BTC/ETH weekend trading",
+      "Execution schedule: Saturday & Sunday 10:00 AM ET",
+      "Initial allocation: $0.50/day (5% of $10 daily budget)",
+      "Strategy: 24/7 crypto markets provide weekend trading opportunities"
     ]
   },
   "automation": {
@@ -290,6 +309,11 @@
     "[2025-11-11 21:15] BREAKTHROUGH: Portfolio now PROFITABLE +$13.96 (+0.01%)",
     "[2025-11-11 21:15] Current positions: GOOGL +$13.03 (+3.21%), SPY +$0.96 (+0.08%), NVDA -$0.09 (-4.64%)",
     "[2025-11-11 21:15] Win rate: 66.7% (2 of 3 positions profitable)",
-    "[2025-11-11 21:15] Automation status: OPERATIONAL - next execution Nov 12 at 9:35 AM ET"
+    "[2025-11-11 21:15] Automation status: OPERATIONAL - next execution Nov 12 at 9:35 AM ET",
+    "[2025-11-17 09:00] TIER 5 ACTIVATED: Crypto weekend trading strategy (BTC/ETH)",
+    "[2025-11-17 09:00] Allocation: $0.50/day (5% of daily budget)",
+    "[2025-11-17 09:00] Execution: Saturday & Sunday 10:00 AM ET",
+    "[2025-11-17 09:00] Coins: BTC/USD, ETH/USD (24/7 trading capability)",
+    "[2025-11-17 09:00] Status: Active - first execution pending next weekend"
   ]
 }
