@@ -13,6 +13,7 @@ from datetime import datetime, date, time
 from pathlib import Path
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
+import requests  # For ADK health checks
 
 # Load environment variables from .env file
 load_dotenv()
@@ -55,15 +56,39 @@ market_data_provider = get_market_data_provider()
 
 # TURBO MODE: Initialize ADK adapter (enabled by default, can disable via ADK_ENABLED=0)
 adk_enabled = os.getenv("ADK_ENABLED", "1").lower() not in {"0", "false", "off", "no"}
+adk_base_url = os.getenv("ADK_BASE_URL", "http://127.0.0.1:8080/api")
 adk_adapter = ADKTradeAdapter(
     enabled=adk_enabled,
-    base_url=os.getenv("ADK_BASE_URL", "http://127.0.0.1:8080/api"),
+    base_url=adk_base_url,
     app_name=os.getenv("ADK_APP_NAME", "trading_orchestrator"),
     root_agent_name=os.getenv("ADK_ROOT_AGENT", "trading_orchestrator_root_agent"),
     user_id=os.getenv("ADK_USER_ID", "autonomous_trader"),
 )
+
+# Check if ADK service is actually running
+adk_service_available = False
 if adk_adapter.enabled:
-    print("🚀 TURBO MODE: ADK orchestrator ENABLED")
+    try:
+        # Try health endpoint first
+        health_url = adk_base_url.replace("/api", "/api/health")
+        response = requests.get(health_url, timeout=3)
+        if response.status_code == 200:
+            adk_service_available = True
+            print("🚀 TURBO MODE: ADK orchestrator ENABLED and SERVICE RUNNING")
+            print(f"   Service URL: {adk_base_url}")
+        else:
+            print(f"⚠️  ADK orchestrator enabled but service not responding (HTTP {response.status_code})")
+            print(f"   Health URL: {health_url}")
+    except requests.exceptions.ConnectionError:
+        print(f"⚠️  ADK orchestrator enabled but service not available (connection refused)")
+        print(f"   Expected URL: {adk_base_url}")
+        print("   Will fall back to Python strategies")
+    except requests.exceptions.Timeout:
+        print(f"⚠️  ADK orchestrator enabled but service timeout (taking too long)")
+        print("   Will fall back to Python strategies")
+    except Exception as e:
+        print(f"⚠️  ADK orchestrator enabled but service check failed: {e}")
+        print("   Will fall back to Python strategies")
 else:
     print("⚠️  ADK orchestrator disabled (set ADK_ENABLED=1 to enable)")
 
@@ -697,15 +722,21 @@ def main():
     print("=" * 70)
     manage_existing_positions()
 
-    # TURBO MODE: Try ADK orchestrator first (if enabled)
+    # TURBO MODE: Try ADK orchestrator first (if enabled and service available)
     adk_used = False
     tier1_success = False
     tier2_success = False
     
-    if adk_adapter.enabled:
+    if adk_adapter.enabled and adk_service_available:
         try:
             print("\n" + "=" * 70)
-            print("🚀 TURBO MODE: Attempting ADK orchestrator evaluation")
+            print("🚀 TURBO MODE: ADK Orchestrator Evaluation (Primary Decision Maker)")
+            print("=" * 70)
+            print("📊 Using Go ADK multi-agent system:")
+            print("   1. Research Agent → Market analysis")
+            print("   2. Signal Agent → Trade signal generation")
+            print("   3. Risk Agent → Position sizing & validation")
+            print("   4. Execution Agent → Trade planning")
             print("=" * 70)
             
             context = {
@@ -714,99 +745,172 @@ def main():
                 "tier1_allocation": daily_investment * 0.70,
                 "tier2_allocation": daily_investment * 0.30,
                 "account_value": account_value,
+                "current_day": current_day,
+                "portfolio_equity": account_value,
             }
             
-            # Try ADK for Tier 1 (Core ETF)
+            # Try ADK for Tier 1 (Core ETF) - PRIMARY DECISION MAKER
+            print("\n🎯 TIER 1: ADK Orchestrator Evaluation")
             tier1_symbols = ["SPY", "QQQ", "VOO"]
             tier1_decision = adk_adapter.evaluate(
                 symbols=tier1_symbols,
-                context={**context, "tier": "T1_CORE"},
+                context={**context, "tier": "T1_CORE", "strategy": "Core ETF Momentum"},
             )
             
             if tier1_decision and tier1_decision.action == "BUY":
-                print(f"✅ ADK Tier 1 Decision: {tier1_decision.symbol} BUY (confidence: {tier1_decision.confidence:.2f})")
+                print(f"✅ ADK Tier 1 Decision: {tier1_decision.symbol} BUY")
+                print(f"   Confidence: {tier1_decision.confidence:.2%}")
+                print(f"   Position Size: ${tier1_decision.position_size:.2f}")
+                print(f"   Risk Assessment: {tier1_decision.risk.get('decision', 'UNKNOWN')}")
+                
                 amount = tier1_decision.position_size or (daily_investment * 0.70)
                 is_valid, error_msg = validate_order_size(amount, daily_investment * 0.70, "T1_CORE_ADK")
                 if is_valid:
-                    try:
-                        order = api.submit_order(
-                            symbol=tier1_decision.symbol,
-                            notional=amount,
-                            side="buy",
-                            type="market",
-                            time_in_force="day"
-                        )
-                        print(f"✅ ADK Tier 1 Order placed: {order.id}")
-                        log_trade({
-                            "timestamp": datetime.now().isoformat(),
-                            "tier": "T1_CORE_ADK",
-                            "symbol": tier1_decision.symbol,
-                            "amount": amount,
-                            "order_id": order.id,
-                            "status": order.status,
-                            "adk_confidence": tier1_decision.confidence,
-                        })
-                        tier1_success = True
-                        adk_used = True
-                    except Exception as e:
-                        print(f"❌ ADK Tier 1 order failed: {e}")
-                        tier1_success = False
+                    # LANGCHAIN APPROVAL GATE (if enabled) - Secondary validation
+                    langchain_approved = True
+                    if langchain_enabled and langchain_agent:
+                        try:
+                            prompt = (
+                                f"ADK orchestrator recommends BUY {tier1_decision.symbol} "
+                                f"with {tier1_decision.confidence:.2%} confidence. "
+                                f"Final approval check - respond 'APPROVE' or 'DECLINE'."
+                            )
+                            response = langchain_agent.invoke({"input": prompt})
+                            text = response.get("output", "") if isinstance(response, dict) else str(response)
+                            langchain_approved = "approve" in text.lower() and "decline" not in text.lower()
+                            
+                            if not langchain_approved:
+                                print(f"❌ Langchain approval gate REJECTED ADK decision: {text}")
+                            else:
+                                print(f"✅ Langchain approval gate APPROVED ADK decision")
+                        except Exception as e:
+                            print(f"⚠️  Langchain approval gate error: {e} (proceeding with ADK decision)")
+                            langchain_approved = True  # Fail-open
+                    
+                    if langchain_approved:
+                        try:
+                            order = api.submit_order(
+                                symbol=tier1_decision.symbol,
+                                notional=amount,
+                                side="buy",
+                                type="market",
+                                time_in_force="day"
+                            )
+                            print(f"✅ ADK Tier 1 Order EXECUTED: {order.id}")
+                            log_trade({
+                                "timestamp": datetime.now().isoformat(),
+                                "tier": "T1_CORE_ADK",
+                                "symbol": tier1_decision.symbol,
+                                "amount": amount,
+                                "order_id": order.id,
+                                "status": order.status,
+                                "adk_confidence": tier1_decision.confidence,
+                                "adk_risk_decision": tier1_decision.risk.get("decision", "UNKNOWN"),
+                            })
+                            tier1_success = True
+                            adk_used = True
+                        except Exception as e:
+                            print(f"❌ ADK Tier 1 order execution failed: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            tier1_success = False
                 else:
-                    print(f"❌ ADK Tier 1 order rejected: {error_msg}")
+                    print(f"❌ ADK Tier 1 order rejected by validation: {error_msg}")
                     tier1_success = False
+            elif tier1_decision:
+                print(f"⚠️  ADK Tier 1 Decision: {tier1_decision.action} (not BUY)")
+                print(f"   Confidence: {tier1_decision.confidence:.2%}")
+                tier1_success = False
             else:
-                print("⚠️  ADK Tier 1: No BUY decision (will fallback to rule-based)")
+                print("⚠️  ADK Tier 1: No decision returned (will fallback to rule-based)")
                 tier1_success = False
             
-            # Try ADK for Tier 2 (Growth)
+            # Try ADK for Tier 2 (Growth) - PRIMARY DECISION MAKER
+            print("\n🎯 TIER 2: ADK Orchestrator Evaluation")
             tier2_symbols = ["NVDA", "GOOGL", "AMZN"]
             tier2_decision = adk_adapter.evaluate(
                 symbols=tier2_symbols,
-                context={**context, "tier": "T2_GROWTH"},
+                context={**context, "tier": "T2_GROWTH", "strategy": "Disruptive Innovation"},
             )
             
             if tier2_decision and tier2_decision.action == "BUY":
-                print(f"✅ ADK Tier 2 Decision: {tier2_decision.symbol} BUY (confidence: {tier2_decision.confidence:.2f})")
+                print(f"✅ ADK Tier 2 Decision: {tier2_decision.symbol} BUY")
+                print(f"   Confidence: {tier2_decision.confidence:.2%}")
+                print(f"   Position Size: ${tier2_decision.position_size:.2f}")
+                print(f"   Risk Assessment: {tier2_decision.risk.get('decision', 'UNKNOWN')}")
+                
                 amount = tier2_decision.position_size or (daily_investment * 0.30)
                 is_valid, error_msg = validate_order_size(amount, daily_investment * 0.30, "T2_GROWTH_ADK")
                 if is_valid:
-                    try:
-                        order = api.submit_order(
-                            symbol=tier2_decision.symbol,
-                            notional=amount,
-                            side="buy",
-                            type="market",
-                            time_in_force="day"
-                        )
-                        print(f"✅ ADK Tier 2 Order placed: {order.id}")
-                        log_trade({
-                            "timestamp": datetime.now().isoformat(),
-                            "tier": "T2_GROWTH_ADK",
-                            "symbol": tier2_decision.symbol,
-                            "amount": amount,
-                            "order_id": order.id,
-                            "status": order.status,
-                            "adk_confidence": tier2_decision.confidence,
-                        })
-                        tier2_success = True
-                        adk_used = True
-                    except Exception as e:
-                        print(f"❌ ADK Tier 2 order failed: {e}")
-                        tier2_success = False
+                    # LANGCHAIN APPROVAL GATE (if enabled) - Secondary validation
+                    langchain_approved = True
+                    if langchain_enabled and langchain_agent:
+                        try:
+                            prompt = (
+                                f"ADK orchestrator recommends BUY {tier2_decision.symbol} "
+                                f"with {tier2_decision.confidence:.2%} confidence. "
+                                f"Final approval check - respond 'APPROVE' or 'DECLINE'."
+                            )
+                            response = langchain_agent.invoke({"input": prompt})
+                            text = response.get("output", "") if isinstance(response, dict) else str(response)
+                            langchain_approved = "approve" in text.lower() and "decline" not in text.lower()
+                            
+                            if not langchain_approved:
+                                print(f"❌ Langchain approval gate REJECTED ADK decision: {text}")
+                            else:
+                                print(f"✅ Langchain approval gate APPROVED ADK decision")
+                        except Exception as e:
+                            print(f"⚠️  Langchain approval gate error: {e} (proceeding with ADK decision)")
+                            langchain_approved = True  # Fail-open
+                    
+                    if langchain_approved:
+                        try:
+                            order = api.submit_order(
+                                symbol=tier2_decision.symbol,
+                                notional=amount,
+                                side="buy",
+                                type="market",
+                                time_in_force="day"
+                            )
+                            print(f"✅ ADK Tier 2 Order EXECUTED: {order.id}")
+                            log_trade({
+                                "timestamp": datetime.now().isoformat(),
+                                "tier": "T2_GROWTH_ADK",
+                                "symbol": tier2_decision.symbol,
+                                "amount": amount,
+                                "order_id": order.id,
+                                "status": order.status,
+                                "adk_confidence": tier2_decision.confidence,
+                                "adk_risk_decision": tier2_decision.risk.get("decision", "UNKNOWN"),
+                            })
+                            tier2_success = True
+                            adk_used = True
+                        except Exception as e:
+                            print(f"❌ ADK Tier 2 order execution failed: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            tier2_success = False
                 else:
-                    print(f"❌ ADK Tier 2 order rejected: {error_msg}")
+                    print(f"❌ ADK Tier 2 order rejected by validation: {error_msg}")
                     tier2_success = False
+            elif tier2_decision:
+                print(f"⚠️  ADK Tier 2 Decision: {tier2_decision.action} (not BUY)")
+                print(f"   Confidence: {tier2_decision.confidence:.2%}")
+                tier2_success = False
             else:
-                print("⚠️  ADK Tier 2: No BUY decision (will fallback to rule-based)")
+                print("⚠️  ADK Tier 2: No decision returned (will fallback to rule-based)")
                 tier2_success = False
                 
         except Exception as e:
-            print(f"⚠️  ADK orchestrator error: {e}")
-            print("   Falling back to rule-based strategies")
+            print(f"\n❌ ADK orchestrator error: {e}")
+            print("   Falling back to Python rule-based strategies")
             import traceback
             traceback.print_exc()
             tier1_success = False
             tier2_success = False
+    elif adk_adapter.enabled and not adk_service_available:
+        print("\n⚠️  ADK orchestrator enabled but service not available")
+        print("   Falling back to Python rule-based strategies")
     
     # Fallback to rule-based strategies if ADK not used or failed
     if not adk_used:

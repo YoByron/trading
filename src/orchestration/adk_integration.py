@@ -115,7 +115,15 @@ class ADKTradeAdapter:
                     require_json=False,
                 )
             except Exception as exc:
-                logger.error("ADK run failed for %s: %s", symbol, exc, exc_info=True)
+                # More detailed error logging
+                import traceback
+                logger.error(
+                    "ADK run failed for %s: %s\n%s",
+                    symbol,
+                    exc,
+                    traceback.format_exc(),
+                )
+                # Don't silently continue - log and continue to next symbol
                 continue
 
             if not result:
@@ -131,14 +139,18 @@ class ADKTradeAdapter:
 
         if best:
             logger.info(
-                "ADK selected %s action=%s confidence=%.2f position_size=%.2f",
+                "ADK selected %s action=%s confidence=%.2f%% position_size=%.2f risk=%s",
                 best.symbol,
                 best.action,
-                best.confidence,
+                best.confidence * 100,
                 best.position_size,
+                best.risk.get("decision", "UNKNOWN"),
             )
         else:
-            logger.info("ADK provided no actionable decisions; will fall back")
+            logger.warning(
+                "ADK provided no actionable decisions for symbols %s; will fall back to Python strategies",
+                symbols,
+            )
 
         return best
 

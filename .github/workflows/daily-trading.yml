@@ -76,18 +76,25 @@ jobs:
           
           # Wait for service to be ready (max 30 seconds)
           echo "Waiting for ADK service to start..."
+          ADK_READY=false
           for i in {1..30}; do
             if curl -f http://localhost:8080/api/health 2>/dev/null; then
               echo "✅ ADK service is ready!"
+              ADK_READY=true
               break
             fi
             echo "  Attempt $i/30..."
             sleep 1
           done
           
-          # Check if service started
-          if ! curl -f http://localhost:8080/api/health 2>/dev/null; then
-            echo "⚠️  ADK service may not have started properly, but continuing..."
+          # Verify service started
+          if [ "$ADK_READY" = "false" ]; then
+            echo "⚠️  WARNING: ADK service may not have started properly"
+            echo "   Checking logs..."
+            tail -20 ../../logs/adk_service.log || echo "   No log file found"
+            echo "   Continuing with fallback to Python strategies..."
+          else
+            echo "✅ ADK service verified and ready for trading"
           fi
 
       - name: Validate watchlist exists
