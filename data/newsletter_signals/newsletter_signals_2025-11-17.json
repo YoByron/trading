@@ -1,0 +1,24 @@
+{
+  "BTC": {
+    "ticker": "BTC",
+    "sentiment": "bullish",
+    "confidence": 0.8999999999999999,
+    "entry_price": 47200.0,
+    "target_price": null,
+    "stop_loss": null,
+    "timeframe": "medium-term",
+    "reasoning": "Bitcoin surging above $47k with bullish MACD and RSI indicators.\nEntry point at $47,200, target $52k, stop loss at $45k.\nMedium-term bullish setup with strong volume confirmation.",
+    "source_date": "2025-11-17T14:25:08.048430+00:00"
+  },
+  "ETH": {
+    "ticker": "ETH",
+    "sentiment": "bullish",
+    "confidence": 0.8999999999999999,
+    "entry_price": 47200.0,
+    "target_price": null,
+    "stop_loss": null,
+    "timeframe": "medium-term",
+    "reasoning": null,
+    "source_date": "2025-11-17T14:25:08.048621+00:00"
+  }
+}

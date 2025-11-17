@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.claudedesktop.com/mcp.json",
+  "mcpServers": {
+    "rss": {
+      "command": "npx",
+      "args": ["-y", "@veithly/rss-mcp"],
+      "description": "RSS feed reader for consuming crypto newsletters and market analysis",
+      "env": {
+        "RSS_FEEDS": "https://medium.com/feed/coinsnacks"
+      }
+    }
+  }
+}
