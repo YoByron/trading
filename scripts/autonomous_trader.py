@@ -23,6 +23,7 @@ from src.utils.data_collector import DataCollector
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
 from src.utils.market_data import get_market_data_provider
+from src.utils.technical_indicators import calculate_technical_score  # Shared utility
 from src.verification.output_verifier import OutputVerifier  # Claude Agent SDK Loop pattern
 from src.orchestration.adk_integration import ADKTradeAdapter  # TURBO MODE: ADK integration
 
@@ -65,6 +66,20 @@ if adk_adapter.enabled:
     print("🚀 TURBO MODE: ADK orchestrator ENABLED")
 else:
     print("⚠️  ADK orchestrator disabled (set ADK_ENABLED=1 to enable)")
+
+# Langchain approval gate (enabled by default for intelligent filtering)
+langchain_enabled = os.getenv("LANGCHAIN_APPROVAL_ENABLED", "true").lower() == "true"
+langchain_agent = None
+if langchain_enabled:
+    try:
+        from langchain_agents.agents import build_price_action_agent
+        langchain_agent = build_price_action_agent()
+        print("✅ Langchain approval gate ENABLED")
+    except Exception as e:
+        print(f"⚠️  Langchain approval gate unavailable: {e}")
+        langchain_agent = None
+else:
+    print("⚠️  Langchain approval gate disabled (set LANGCHAIN_APPROVAL_ENABLED=true to enable)")
 
 
 def calculate_daily_investment():
@@ -163,9 +178,15 @@ def validate_data_freshness(symbol, hist_data):
         return False
 
 
-def calculate_technical_score(symbol):
-    """Calculate technical score with MACD, RSI, volume (matching backtest logic)"""
+def calculate_technical_score_wrapper(symbol):
+    """
+    Calculate technical score using shared utility.
+    
+    Wrapper around shared calculate_technical_score() function that handles
+    data fetching and validation.
+    """
     try:
+        # Get market data
         try:
             result = market_data_provider.get_daily_bars(symbol, lookback_days=60)
             hist = result.data  # Extract DataFrame from MarketDataResult
@@ -183,50 +204,23 @@ def calculate_technical_score(symbol):
         if not validate_data_freshness(symbol, hist):
             return 0  # Reject stale data
 
-        # Calculate MACD
-        ema12 = hist['Close'].ewm(span=12, adjust=False).mean()
-        ema26 = hist['Close'].ewm(span=26, adjust=False).mean()
-        macd_line = ema12 - ema26
-        signal_line = macd_line.ewm(span=9, adjust=False).mean()
-        histogram = macd_line - signal_line
-
-        # Calculate RSI
-        delta = hist['Close'].diff()
-        gain = delta.where(delta > 0, 0).rolling(window=14).mean()
-        loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-
-        # Calculate volume ratio
-        avg_volume = hist['Volume'].rolling(window=20).mean()
-        volume_ratio = hist['Volume'].iloc[-1] / avg_volume.iloc[-1]
-
-        # Get current values
-        macd_hist = histogram.iloc[-1]
-        rsi_val = rsi.iloc[-1]
-        price = hist['Close'].iloc[-1]
-
-        # CRITICAL FILTERS (matching backtest)
-        if macd_hist < 0:
-            print(f"❌ {symbol}: REJECTED - Bearish MACD histogram ({macd_hist:.3f})")
-            return 0
-
-        if rsi_val > 70:
-            print(f"❌ {symbol}: REJECTED - Overbought RSI ({rsi_val:.1f})")
-            return 0
-
-        if volume_ratio < 0.8:
-            print(f"❌ {symbol}: REJECTED - Low volume ({volume_ratio:.2f}x)")
-            return 0
-
-        # Calculate composite score (price weighted by technical strength)
-        technical_score = price * (1 + macd_hist/10) * (1 + (70-rsi_val)/100) * volume_ratio
-
-        print(f"✅ {symbol}: Score {technical_score:.2f} | MACD: {macd_hist:.3f} | RSI: {rsi_val:.1f} | Vol: {volume_ratio:.2f}x")
-        return technical_score
+        # Use shared technical indicator utility
+        score, indicators = calculate_technical_score(hist, symbol)
+        
+        if score > 0:
+            print(
+                f"✅ {symbol}: Score {score:.2f} | "
+                f"MACD: {indicators.get('macd_histogram', 0):.3f} | "
+                f"RSI: {indicators.get('rsi', 50):.1f} | "
+                f"Vol: {indicators.get('volume_ratio', 1.0):.2f}x"
+            )
+        
+        return score
 
     except Exception as e:
         print(f"❌ {symbol}: Error calculating technical score: {e}")
+        import traceback
+        traceback.print_exc()
         return 0
 
 
@@ -241,9 +235,9 @@ def execute_tier1(daily_amount):
     etfs = ["SPY", "QQQ", "VOO"]
     scores = {}
 
-    # Analyze each ETF with REAL technical indicators
+    # Analyze each ETF with REAL technical indicators (using shared utility)
     for symbol in etfs:
-        score = calculate_technical_score(symbol)
+        score = calculate_technical_score_wrapper(symbol)
         scores[symbol] = score
 
     # Filter out zeros (rejected symbols)
@@ -259,6 +253,41 @@ def execute_tier1(daily_amount):
 
     print(f"\n✅ Selected: {best}")
     print(f"💰 Investment: ${amount:.2f} (70% of ${daily_amount:.2f})")
+
+    # LANGCHAIN APPROVAL GATE (if enabled)
+    if langchain_enabled and langchain_agent:
+        try:
+            prompt = (
+                f"You are the trading desk's approval co-pilot. Evaluate whether "
+                f"we should execute a BUY trade for {best} (Core ETF Strategy). "
+                f"Respond with a single word: 'APPROVE' or 'DECLINE'.\n\n"
+                f"Ticker: {best}\n"
+                f"Strategy: Core ETF (SPY/QQQ/VOO momentum)\n"
+                f"Use the available sentiment tools to gather recent context. "
+                f"Decline if the data is missing, highly bearish, or confidence is low."
+            )
+            response = langchain_agent.invoke({"input": prompt})
+            if isinstance(response, dict):
+                text = response.get("output", "")
+            else:
+                text = str(response)
+            
+            normalized = text.strip().lower()
+            approved = "approve" in normalized and "decline" not in normalized
+            
+            if not approved:
+                print(f"❌ Langchain approval gate REJECTED: {best}")
+                print(f"   Response: {text}")
+                return False
+            else:
+                print(f"✅ Langchain approval gate APPROVED: {best}")
+        except Exception as e:
+            print(f"⚠️  Langchain approval gate error: {e}")
+            # Fail-open: proceed if Langchain unavailable
+            fail_open = os.getenv("LANGCHAIN_APPROVAL_FAIL_OPEN", "true").lower() == "true"
+            if not fail_open:
+                print(f"❌ Langchain approval required but unavailable - rejecting trade")
+                return False
 
     # VALIDATION GATE: Check order size before execution
     is_valid, error_msg = validate_order_size(amount, daily_amount * 0.70, "T1_CORE")
@@ -351,10 +380,18 @@ def manage_existing_positions():
             close_reason = None
             
             # Check stop-loss (Tier 2 only)
-            if stop_loss_pct and unrealized_plpc <= stop_loss_pct:
-                should_close = True
-                close_reason = f"Stop-loss triggered ({unrealized_plpc:.2f}% <= {stop_loss_pct}%)"
-                print(f"  ⚠️  STOP-LOSS TRIGGERED: {close_reason}")
+            if stop_loss_pct is not None:
+                print(f"  🔍 Stop-loss check:")
+                print(f"     unrealized_plpc: {unrealized_plpc:.2f}%")
+                print(f"     stop_loss_pct: {stop_loss_pct:.2f}%")
+                print(f"     Condition: {unrealized_plpc:.2f} <= {stop_loss_pct:.2f} = {unrealized_plpc <= stop_loss_pct}")
+                
+                if unrealized_plpc <= stop_loss_pct:
+                    should_close = True
+                    close_reason = f"Stop-loss triggered ({unrealized_plpc:.2f}% <= {stop_loss_pct}%)"
+                    print(f"  ⚠️  STOP-LOSS TRIGGERED: {close_reason}")
+                else:
+                    print(f"  ✅ Stop-loss OK: {unrealized_plpc:.2f}% > {stop_loss_pct}%")
             
             # Check take-profit (Tier 2 only)
             elif take_profit_pct and unrealized_plpc >= take_profit_pct:
@@ -371,9 +408,16 @@ def manage_existing_positions():
             # Execute close if needed
             if should_close:
                 try:
-                    print(f"  🚀 Closing position: {symbol}...")
+                    print(f"\n  🚀 CLOSING POSITION: {symbol}")
+                    print(f"     Reason: {close_reason}")
+                    print(f"     Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
+                    print(f"     P/L: ${unrealized_pl:.2f} ({unrealized_plpc:+.2f}%)")
+                    print(f"     Quantity: {qty:.6f} shares")
+                    
                     close_order = api.close_position(symbol)
-                    print(f"  ✅ Position closed: Order {close_order.id}")
+                    print(f"  ✅ Position closed successfully!")
+                    print(f"     Order ID: {close_order.id}")
+                    print(f"     Order Status: {close_order.status}")
                     
                     # Record closed trade
                     entry_date_str = latest_order.filled_at.isoformat() if buy_orders and latest_order.filled_at else datetime.now().isoformat()
@@ -434,9 +478,9 @@ def execute_tier2(daily_amount):
     stocks = ["NVDA", "GOOGL", "AMZN"]
     scores = {}
 
-    # Analyze REAL technical indicators for each
+    # Analyze REAL technical indicators for each (using shared utility)
     for symbol in stocks:
-        score = calculate_technical_score(symbol)
+        score = calculate_technical_score_wrapper(symbol)
         scores[symbol] = score
 
     # Filter out zeros (rejected symbols)
@@ -460,6 +504,41 @@ def execute_tier2(daily_amount):
         'AMZN': 'OpenAI $38B Deal + Cloud AI'
     }
     print(f"🎯 Disruptive Theme: {themes.get(selected, 'Innovation')}")
+
+    # LANGCHAIN APPROVAL GATE (if enabled)
+    if langchain_enabled and langchain_agent:
+        try:
+            prompt = (
+                f"You are the trading desk's approval co-pilot. Evaluate whether "
+                f"we should execute a BUY trade for {selected} (Growth Strategy). "
+                f"Respond with a single word: 'APPROVE' or 'DECLINE'.\n\n"
+                f"Ticker: {selected}\n"
+                f"Strategy: Disruptive Innovation (NVDA/GOOGL/AMZN momentum)\n"
+                f"Use the available sentiment tools to gather recent context. "
+                f"Decline if the data is missing, highly bearish, or confidence is low."
+            )
+            response = langchain_agent.invoke({"input": prompt})
+            if isinstance(response, dict):
+                text = response.get("output", "")
+            else:
+                text = str(response)
+            
+            normalized = text.strip().lower()
+            approved = "approve" in normalized and "decline" not in normalized
+            
+            if not approved:
+                print(f"❌ Langchain approval gate REJECTED: {selected}")
+                print(f"   Response: {text}")
+                return False
+            else:
+                print(f"✅ Langchain approval gate APPROVED: {selected}")
+        except Exception as e:
+            print(f"⚠️  Langchain approval gate error: {e}")
+            # Fail-open: proceed if Langchain unavailable
+            fail_open = os.getenv("LANGCHAIN_APPROVAL_FAIL_OPEN", "true").lower() == "true"
+            if not fail_open:
+                print(f"❌ Langchain approval required but unavailable - rejecting trade")
+                return False
 
     # VALIDATION GATE: Check order size before execution
     is_valid, error_msg = validate_order_size(amount, daily_amount * 0.30, "T2_GROWTH")
