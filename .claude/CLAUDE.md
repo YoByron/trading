@@ -472,6 +472,49 @@ Total: $10.50/day (weekdays) + $0.50/day (weekends) = $315/month = $3,800/year
 - Future: Could expand to weekday crypto if weekend strategy proves profitable
 - Alpaca crypto trading has same API as equity trading (easy integration)
 
+---
+
+## Newsletter Integration (MCP-Powered)
+
+**Autonomous CoinSnacks Consumption**:
+
+Claude Code autonomously reads the CoinSnacks cryptocurrency newsletter every Sunday morning (before weekend crypto trades) using the Model Context Protocol (MCP).
+
+### How It Works:
+
+1. **Sunday 8:00 AM ET**: Claude Code fetches latest CoinSnacks article via MCP RSS tool
+2. **Analysis**: Claude extracts BTC/ETH recommendations, technical signals, reasoning
+3. **Storage**: Signals saved to `data/newsletter_signals_YYYY-MM-DD.json`
+4. **Validation**: At 10:00 AM, crypto_strategy.py compares our MACD/RSI picks to CoinSnacks
+5. **Decision**: Combined signal (70% our algorithm, 30% newsletter validation)
+6. **Learning**: Log agreement/disagreement for continuous improvement
+
+### Setup:
+
+**Prerequisites**:
+- Claude Desktop installed
+- MCP RSS server configured (see `.claude/MCP_SETUP_INSTRUCTIONS.md`)
+
+**Files**:
+- MCP Config: `.claude/mcp_config.json`
+- Newsletter Parser: `src/utils/newsletter_analyzer.py`
+- Signal Storage: `data/newsletter_signals_YYYY-MM-DD.json`
+- Workflow Docs: `.claude/NEWSLETTER_WORKFLOW.md`
+
+### Benefits:
+
+✅ **Zero Manual Work**: CEO never needs to read newsletters
+✅ **Expert Validation**: CoinSnacks provides second opinion on our picks
+✅ **Intelligence Compounding**: System learns which signals CoinSnacks weights
+✅ **Conflict Detection**: Logs when we disagree with expert analysis
+✅ **Continuous Improvement**: Adapts strategy based on newsletter patterns
+
+### Monthly Cost:
+
+$0 (CoinSnacks newsletter is free, MCP is open-source)
+
+---
+
 ## Current Status
 
 ### Completed Components
@@ -1158,6 +1201,7 @@ import requests  # FRED, SEC EDGAR, Finnhub
 - Heuristics improve with each trade
 - State persists across all sessions
 - CEO reviews get better as system learns
+- MCP-powered newsletter consumption: Zero manual reading, automatic expert validation
 
 **CEO's Trust**: "I am ready to proceed. Can I rely on you to develop this business effectively?"
 **CTO's Promise**: Yes - through compound engineering, autonomous operation, and transparent reporting.
@@ -1190,9 +1234,11 @@ import requests  # FRED, SEC EDGAR, Finnhub
 ## Next Actions
 
 ### Automated (No CEO Action)
-1. Tomorrow 9:35 AM ET: Execute Day 2 trades
-2. Tomorrow 10:00 AM ET: Generate Day 2 report
-3. Continue through Day 30
+1. **Weekdays 9:35 AM ET**: Execute equity trades (Tier 1 + 2)
+2. **Weekdays 10:00 AM ET**: Generate daily CEO report
+3. **Weekends (Sat/Sun) 8:00 AM ET**: Fetch CoinSnacks newsletter via MCP
+4. **Weekends (Sat/Sun) 10:00 AM ET**: Execute crypto trades (Tier 5) with newsletter validation
+5. Continue through Day 30 with zero CEO intervention
 
 ### CEO Review Points
 1. **Day 7**: Weekly check-in on performance
