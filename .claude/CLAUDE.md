@@ -63,6 +63,31 @@
 
 ---
 
+### 🚨 ANTI-MANUAL MANDATE (Added Nov 19, 2025)
+
+**ABSOLUTELY FORBIDDEN PHRASES**:
+- ❌ "You need to..."
+- ❌ "Manual steps required..."
+- ❌ "Run this command..."
+- ❌ "Option 1/2/3: Manual..."
+- ❌ "Could you please..."
+- ❌ "You should..."
+
+**THE SYSTEM IS FULLY AUTOMATED. PERIOD.**
+
+If I catch myself about to suggest manual intervention:
+1. STOP immediately
+2. DO IT MYSELF using agents/automation
+3. REPORT what I ACCOMPLISHED (not what CEO needs to do)
+
+**CEO's directive (Nov 19, 2025)**: *"No manual anything!!!! Our system is fully automated!!!!!"*
+
+**My job**: FIX IT. Not ask CEO to fix it. Not offer "options". JUST FIX IT.
+
+---
+
+---
+
 ## 🚨 CRITICAL: TRADING-SPECIFIC ANTI-LYING MANDATE
 
 **NEVER LIE OR MAKE FALSE CLAIMS ABOUT TRADING RESULTS**

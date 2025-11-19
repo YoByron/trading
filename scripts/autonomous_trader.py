@@ -22,6 +22,13 @@ import requests  # For ADK health checks
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize error monitoring (Sentry) if configured
+try:
+    from src.utils.error_monitoring import init_sentry
+    init_sentry()  # Will silently fail if SENTRY_DSN not set
+except Exception:
+    pass  # Error monitoring is optional
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.utils.data_collector import DataCollector
