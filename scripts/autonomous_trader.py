@@ -283,9 +283,19 @@ def execute_tier1(daily_amount):
     scores = {}
 
     # Analyze each ETF with REAL technical indicators (using shared utility)
-    for symbol in etfs:
-        score = calculate_technical_score_wrapper(symbol)
-        scores[symbol] = score
+    # PARALLELIZED: Fetch all symbols concurrently for 3x speed improvement
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    def fetch_symbol_score(symbol):
+        """Fetch score for a single symbol."""
+        return symbol, calculate_technical_score_wrapper(symbol)
+    
+    print(f"📊 Analyzing {len(etfs)} ETFs in parallel...")
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_symbol = {executor.submit(fetch_symbol_score, symbol): symbol for symbol in etfs}
+        for future in as_completed(future_to_symbol):
+            symbol, score = future.result()
+            scores[symbol] = score
 
     # Filter out zeros (rejected symbols)
     valid_scores = {k: v for k, v in scores.items() if v > 0}

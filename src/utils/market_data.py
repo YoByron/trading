@@ -52,6 +52,29 @@ class FetchAttempt:
 
 
 @dataclass
+class PerformanceMetrics:
+    """Performance metrics for data source usage."""
+    source: DataSource
+    total_requests: int = 0
+    successful_requests: int = 0
+    failed_requests: int = 0
+    total_latency_ms: float = 0.0
+    avg_latency_ms: float = 0.0
+    success_rate: float = 0.0
+    
+    def update(self, success: bool, latency_ms: float):
+        """Update metrics with a new request."""
+        self.total_requests += 1
+        if success:
+            self.successful_requests += 1
+        else:
+            self.failed_requests += 1
+        self.total_latency_ms += latency_ms
+        self.avg_latency_ms = self.total_latency_ms / self.total_requests
+        self.success_rate = self.successful_requests / self.total_requests if self.total_requests > 0 else 0.0
+
+
+@dataclass
 class MarketDataResult:
     """Enhanced result with metadata about data source and fetch attempts."""
     data: pd.DataFrame
@@ -164,6 +187,20 @@ class MarketDataProvider:
 
         # Log configuration at startup
         self._log_configuration()
+    
+    def get_performance_metrics(self) -> Dict[str, Dict[str, float]]:
+        """Get performance metrics for all data sources."""
+        return {
+            source.value: {
+                "total_requests": metrics.total_requests,
+                "successful_requests": metrics.successful_requests,
+                "failed_requests": metrics.failed_requests,
+                "success_rate": metrics.success_rate,
+                "avg_latency_ms": metrics.avg_latency_ms,
+            }
+            for source, metrics in self._metrics.items()
+            if metrics.total_requests > 0
+        }
 
     def get_daily_bars(
         self,
@@ -231,6 +268,8 @@ class MarketDataProvider:
                 result.data = prepared.copy()
                 result.source = DataSource.POLYGON
                 self._log_health(symbol, result)
+                # Update performance metrics
+                self._metrics[DataSource.POLYGON].update(True, result.total_latency_ms)
                 logger.info(
                     "%s: ✅ Successfully fetched from Polygon.io (%d rows, %d attempts, %.2fms)",
                     symbol,
