@@ -44,8 +44,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-ALPACA_KEY = os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5")
-ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY", "9DCF1pY2wgTTY3TBasjAHUWWLXiDTyrAhMJ4ZD6nVWaG")
+ALPACA_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
+
+if not ALPACA_KEY or not ALPACA_SECRET:
+    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 

@@ -15,9 +15,15 @@ WATCHLIST_FILE = DATA_DIR / "tier2_watchlist.json"
 SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 STARTING_BALANCE = 100000.0
 
+ALPACA_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
+
+if not ALPACA_KEY or not ALPACA_SECRET:
+    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+
 api = tradeapi.REST(
-    os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5"),
-    os.getenv("ALPACA_SECRET_KEY", "9DCF1pY2wgTTY3TBasjAHUWWLXiDTyrAhMJ4ZD6nVWaG"),
+    ALPACA_KEY,
+    ALPACA_SECRET,
     "https://paper-api.alpaca.markets",
 )
 
