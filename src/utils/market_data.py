@@ -266,6 +266,8 @@ class MarketDataProvider:
                 result.data = prepared.copy()
                 result.source = DataSource.ALPACA
                 self._log_health(symbol, result)
+                # Update performance metrics
+                self._metrics[DataSource.ALPACA].update(True, result.total_latency_ms)
                 logger.info(
                     "%s: ✅ Successfully fetched from Alpaca API (%d rows, %d attempts, %.2fms)",
                     symbol,
