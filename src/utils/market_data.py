@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import requests
@@ -105,6 +105,8 @@ class MarketDataProvider:
         self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS = float(os.getenv("ALPHAVANTAGE_MIN_INTERVAL_SECONDS", "15"))
         self.ALPHAVANTAGE_BACKOFF_SECONDS = float(os.getenv("ALPHAVANTAGE_BACKOFF_SECONDS", "60"))
         self.ALPHAVANTAGE_MAX_RETRIES = int(os.getenv("ALPHAVANTAGE_MAX_RETRIES", "4"))
+        # CRITICAL: Max total time to spend on Alpha Vantage (fail fast to avoid workflow timeouts)
+        self.ALPHAVANTAGE_MAX_TOTAL_SECONDS = float(os.getenv("ALPHAVANTAGE_MAX_TOTAL_SECONDS", "90"))  # 90s max
 
         self.CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", str(6 * 60 * 60)))  # 6 hours
         self.CACHE_MAX_AGE_DAYS = int(os.getenv("CACHE_MAX_AGE_DAYS", "7"))  # Use cached data up to 7 days old
@@ -227,7 +229,22 @@ class MarketDataProvider:
             )
             return result
 
-        # Try Alpha Vantage (last resort live source)
+        # Try Alpha Vantage (last resort live source) - BUT CHECK CACHE FIRST
+        # Skip Alpha Vantage if we have cached data (faster and avoids rate limits)
+        cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
+        if cached_data is not None and cache_age_hours is not None and cache_age_hours < 24:
+            logger.info(
+                "%s: Using cached data (%.1f hours old) instead of Alpha Vantage to avoid rate limits",
+                symbol,
+                cache_age_hours,
+            )
+            result.data = cached_data
+            result.source = DataSource.CACHE
+            result.cache_age_hours = cache_age_hours
+            self._log_health(symbol, result)
+            return result
+        
+        # Only try Alpha Vantage if no recent cache available
         if not self.alpha_vantage_key:
             logger.warning(
                 "%s: Alpha Vantage fallback unavailable (ALPHA_VANTAGE_API_KEY not configured).",
@@ -235,7 +252,7 @@ class MarketDataProvider:
             )
         else:
             logger.warning(
-                "%s: Alpaca API failed. Falling back to Alpha Vantage (rate-limited).",
+                "%s: Alpaca API failed. Trying Alpha Vantage (will fail fast if rate-limited).",
                 symbol,
             )
             data = self._fetch_alpha_vantage_with_retries(symbol, result)
@@ -426,10 +443,17 @@ class MarketDataProvider:
     def _fetch_alpha_vantage_with_retries(
         self, symbol: str, result: MarketDataResult
     ) -> Optional[pd.DataFrame]:
-        """Fetch from Alpha Vantage with existing retry logic (already has exponential backoff)."""
+        """
+        Fetch from Alpha Vantage with FAIL-FAST logic to avoid workflow timeouts.
+        
+        CRITICAL: If rate-limited, we FAIL IMMEDIATELY instead of waiting 10+ minutes
+        for exponential backoff. This prevents GitHub Actions workflow timeouts.
+        """
         start_time = time.time()
+        max_total_time = self.ALPHAVANTAGE_MAX_TOTAL_SECONDS
+        
         try:
-            data = self._fetch_alpha_vantage(symbol)
+            data = self._fetch_alpha_vantage(symbol, max_total_time=max_total_time, start_time=start_time)
             latency_ms = (time.time() - start_time) * 1000
             if data is not None and not data.empty:
                 result.add_attempt(
@@ -452,6 +476,22 @@ class MarketDataProvider:
                         latency_ms=latency_ms,
                     )
                 )
+        except TimeoutError as exc:
+            latency_ms = (time.time() - start_time) * 1000
+            result.add_attempt(
+                FetchAttempt(
+                    source=DataSource.ALPHA_VANTAGE,
+                    timestamp=time.time(),
+                    success=False,
+                    error_message=f"Timeout after {latency_ms/1000:.1f}s (max {max_total_time}s): {exc}",
+                    latency_ms=latency_ms,
+                )
+            )
+            logger.warning(
+                "%s: Alpha Vantage timed out after %.1fs (rate-limited). Using cached data instead.",
+                symbol,
+                latency_ms / 1000,
+            )
         except Exception as exc:
             latency_ms = (time.time() - start_time) * 1000
             result.add_attempt(
@@ -568,12 +608,26 @@ class MarketDataProvider:
             logger.warning("%s: Alpaca API fetch failed: %s", symbol, exc)
             return None
 
-    def _fetch_alpha_vantage(self, symbol: str) -> Optional[pd.DataFrame]:
+    def _fetch_alpha_vantage(self, symbol: str, max_total_time: float = 90.0, start_time: Optional[float] = None) -> Optional[pd.DataFrame]:
+        """
+        Fetch from Alpha Vantage with FAIL-FAST timeout logic.
+        
+        CRITICAL FIX: If rate-limited, we FAIL IMMEDIATELY instead of waiting 10+ minutes.
+        This prevents GitHub Actions workflow timeouts (20 minute limit).
+        
+        Args:
+            symbol: Stock symbol to fetch
+            max_total_time: Maximum total time to spend (default 90s)
+            start_time: Start time for timeout calculation (defaults to now)
+        """
         if not self.alpha_vantage_key:
             logger.warning(
                 "%s: Alpha Vantage fallback unavailable (missing API key).", symbol
             )
             return None
+
+        if start_time is None:
+            start_time = time.time()
 
         cache_file = self.cache_dir / f"{symbol.upper()}_{datetime.utcnow().date()}.csv"
         if cache_file.exists():
@@ -582,6 +636,7 @@ class MarketDataProvider:
                 try:
                     cached_df = pd.read_csv(cache_file, parse_dates=["Date"], index_col="Date")
                     if not cached_df.empty:
+                        logger.debug("%s: Using cached Alpha Vantage data (%.1f hours old)", symbol, age / 3600)
                         return cached_df
                 except Exception as exc:
                     logger.debug("%s: Failed to load cached Alpha Vantage data: %s", symbol, exc)
@@ -591,6 +646,10 @@ class MarketDataProvider:
             elapsed = time.time() - self._last_alpha_call_ts
             if elapsed < min_interval:
                 sleep_time = min_interval - elapsed
+                # CHECK TIMEOUT BEFORE SLEEPING
+                elapsed_total = time.time() - start_time
+                if elapsed_total + sleep_time > max_total_time:
+                    raise TimeoutError(f"Would exceed max_total_time ({max_total_time}s) waiting for rate limit")
                 logger.debug("Sleeping %.2fs to respect Alpha Vantage rate limit", sleep_time)
                 time.sleep(sleep_time)
 
@@ -603,7 +662,13 @@ class MarketDataProvider:
         }
 
         for attempt in range(1, self.ALPHAVANTAGE_MAX_RETRIES + 1):
+            # CHECK TIMEOUT BEFORE EACH ATTEMPT
+            elapsed_total = time.time() - start_time
+            if elapsed_total >= max_total_time:
+                raise TimeoutError(f"Exceeded max_total_time ({max_total_time}s) after {attempt-1} attempts")
+            
             respect_rate_limit(self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS)
+            
             try:
                 response = self.session.get(
                     "https://www.alphavantage.co/query", params=params, timeout=30
@@ -643,18 +708,33 @@ class MarketDataProvider:
                         logger.debug("%s: Unable to cache Alpha Vantage data: %s", symbol, exc)
                     return df
 
-            # Handle throttling notices
+            # Handle throttling notices - FAIL FAST INSTEAD OF WAITING
             info_message = payload.get("Information") or payload.get("Note")
             if info_message:
-                backoff = self.ALPHAVANTAGE_BACKOFF_SECONDS * attempt
-                logger.warning(
-                    "%s: Alpha Vantage rate limit hit (attempt %s). Backing off for %ss. Message: %s",
-                    symbol,
-                    attempt,
-                    backoff,
-                    info_message,
-                )
-                time.sleep(backoff)
+                # CRITICAL FIX: If rate-limited, FAIL IMMEDIATELY instead of waiting
+                elapsed_total = time.time() - start_time
+                if elapsed_total >= max_total_time * 0.8:  # Fail if we've used 80% of time
+                    raise TimeoutError(
+                        f"Alpha Vantage rate-limited after {elapsed_total:.1f}s. "
+                        f"Message: {info_message}. Using cached data instead."
+                    )
+                
+                # Only wait if we have time remaining (max 30s wait)
+                max_wait = min(30.0, max_total_time - elapsed_total - 5)  # Leave 5s buffer
+                if max_wait > 0:
+                    logger.warning(
+                        "%s: Alpha Vantage rate limit hit (attempt %s). Waiting %ss (max %ss). Message: %s",
+                        symbol,
+                        attempt,
+                        max_wait,
+                        max_total_time,
+                        info_message,
+                    )
+                    time.sleep(max_wait)
+                else:
+                    raise TimeoutError(
+                        f"Alpha Vantage rate-limited. No time remaining (used {elapsed_total:.1f}s of {max_total_time}s)"
+                    )
                 continue
 
             logger.warning(
@@ -662,7 +742,14 @@ class MarketDataProvider:
                 symbol,
                 list(payload.keys()),
             )
-            time.sleep(self.ALPHAVANTAGE_BACKOFF_SECONDS * attempt)
+            # Don't sleep on last attempt
+            if attempt < self.ALPHAVANTAGE_MAX_RETRIES:
+                elapsed_total = time.time() - start_time
+                max_wait = min(10.0, max_total_time - elapsed_total - 5)
+                if max_wait > 0:
+                    time.sleep(max_wait)
+                else:
+                    raise TimeoutError(f"No time remaining for retry (used {elapsed_total:.1f}s)")
 
         return None
 
