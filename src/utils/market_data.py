@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -154,7 +154,7 @@ class MarketDataProvider:
             except Exception as e:
                 logger.warning(f"Failed to initialize Alpaca API for market data: {e}")
                 self._alpaca_api = None
-        
+
         # Initialize Polygon.io API if available (SECONDARY RELIABLE SOURCE)
         self.polygon_api_key = os.getenv("POLYGON_API_KEY")
         if self.polygon_api_key:
@@ -220,7 +220,7 @@ class MarketDataProvider:
                 return result
             else:
                 logger.warning("%s: Alpaca API returned insufficient data, trying Polygon.io", symbol)
-        
+
         # PRIORITY 3: Try Polygon.io API (reliable paid source)
         if self.polygon_api_key:
             logger.info("%s: Fetching from Polygon.io API (secondary reliable source)", symbol)
@@ -239,7 +239,7 @@ class MarketDataProvider:
                     result.total_latency_ms,
                 )
                 return result
-        
+
         # PRIORITY 4: Check disk cache (may be stale but better than nothing)
         cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
         if cached_data is not None and cache_age_hours is not None and cache_age_hours < 24:
@@ -253,7 +253,7 @@ class MarketDataProvider:
             result.cache_age_hours = cache_age_hours
             self._log_health(symbol, result)
             return result
-        
+
         # PRIORITY 5: Try yfinance (unreliable free source - only if no paid sources available)
         logger.warning(
             "%s: Paid sources unavailable/unreliable. Trying yfinance (unreliable free source).",
@@ -289,7 +289,7 @@ class MarketDataProvider:
             result.cache_age_hours = cache_age_hours
             self._log_health(symbol, result)
             return result
-        
+
         # Only try Alpha Vantage if no recent cache available
         if not self.alpha_vantage_key:
             logger.warning(
@@ -492,13 +492,13 @@ class MarketDataProvider:
     ) -> Optional[pd.DataFrame]:
         """
         Fetch from Alpha Vantage with FAIL-FAST logic to avoid workflow timeouts.
-        
+
         CRITICAL: If rate-limited, we FAIL IMMEDIATELY instead of waiting 10+ minutes
         for exponential backoff. This prevents GitHub Actions workflow timeouts.
         """
         start_time = time.time()
         max_total_time = self.ALPHAVANTAGE_MAX_TOTAL_SECONDS
-        
+
         try:
             data = self._fetch_alpha_vantage(symbol, max_total_time=max_total_time, start_time=start_time)
             latency_ms = (time.time() - start_time) * 1000
@@ -622,7 +622,7 @@ class MarketDataProvider:
                 "1Day",
                 limit=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS,
             )
-            
+
             if not barset or len(barset) == 0:
                 logger.warning("%s: Alpaca API returned no bars", symbol)
                 return None
@@ -639,7 +639,7 @@ class MarketDataProvider:
                         "Volume": int(bar.v),
                     }
                 )
-            
+
             if not records:
                 return None
 
@@ -647,7 +647,7 @@ class MarketDataProvider:
             df = pd.DataFrame(records, index=[bar.t for bar in barset])
             df.index.name = "Date"
             df = df.sort_index()
-            
+
             logger.info("%s: Successfully fetched %d bars from Alpaca API", symbol, len(df))
             return df
 
@@ -722,7 +722,7 @@ class MarketDataProvider:
             # Polygon.io v2 aggregates endpoint
             end_date = datetime.now().date()
             start_date = end_date - timedelta(days=lookback_days + 30)  # Buffer for weekends/holidays
-            
+
             url = f"https://api.polygon.io/v2/aggs/ticker/{symbol.upper()}/range/1/day/{start_date}/{end_date}"
             params = {
                 "adjusted": "true",
@@ -730,25 +730,27 @@ class MarketDataProvider:
                 "limit": 5000,
                 "apiKey": self.polygon_api_key,
             }
-            
+
             response = self.session.get(url, params=params, timeout=10)
             response.raise_for_status()
             payload = response.json()
-            
+
             if payload.get("status") != "OK":
                 error_msg = payload.get("error", "Unknown error")
                 raise ValueError(f"Polygon.io API error: {error_msg}")
-            
+
             results = payload.get("results", [])
             if not results:
                 logger.warning("%s: Polygon.io returned no bars", symbol)
                 return None
-            
+
             # Convert Polygon.io format to DataFrame
             records = []
+            timestamps = []
             for bar in results:
                 # Polygon.io returns: t (timestamp ms), o, h, l, c, v
                 dt = datetime.fromtimestamp(bar["t"] / 1000)
+                timestamps.append(dt)
                 records.append({
                     "Open": float(bar["o"]),
                     "High": float(bar["h"]),
@@ -756,17 +758,17 @@ class MarketDataProvider:
                     "Close": float(bar["c"]),
                     "Volume": float(bar.get("v", 0)),
                 })
-            
+
             if not records:
                 return None
-            
-            df = pd.DataFrame(records, index=[datetime.fromtimestamp(bar["t"] / 1000) for bar in results])
+
+            df = pd.DataFrame(records, index=timestamps)
             df.index.name = "Date"
             df = df.sort_index()
-            
+
             logger.info("%s: Successfully fetched %d bars from Polygon.io", symbol, len(df))
             return df
-            
+
         except Exception as exc:
             logger.warning("%s: Polygon.io fetch failed: %s", symbol, exc)
             return None
@@ -774,10 +776,10 @@ class MarketDataProvider:
     def _fetch_alpha_vantage(self, symbol: str, max_total_time: float = 90.0, start_time: Optional[float] = None) -> Optional[pd.DataFrame]:
         """
         Fetch from Alpha Vantage with FAIL-FAST timeout logic.
-        
+
         CRITICAL FIX: If rate-limited, we FAIL IMMEDIATELY instead of waiting 10+ minutes.
         This prevents GitHub Actions workflow timeouts (20 minute limit).
-        
+
         Args:
             symbol: Stock symbol to fetch
             max_total_time: Maximum total time to spend (default 90s)
@@ -829,9 +831,9 @@ class MarketDataProvider:
             elapsed_total = time.time() - start_time
             if elapsed_total >= max_total_time:
                 raise TimeoutError(f"Exceeded max_total_time ({max_total_time}s) after {attempt-1} attempts")
-            
+
             respect_rate_limit(self.ALPHAVANTAGE_MIN_INTERVAL_SECONDS)
-            
+
             try:
                 response = self.session.get(
                     "https://www.alphavantage.co/query", params=params, timeout=30
@@ -881,7 +883,7 @@ class MarketDataProvider:
                         f"Alpha Vantage rate-limited after {elapsed_total:.1f}s. "
                         f"Message: {info_message}. Using cached data instead."
                     )
-                
+
                 # Only wait if we have time remaining (max 30s wait)
                 max_wait = min(30.0, max_total_time - elapsed_total - 5)  # Leave 5s buffer
                 if max_wait > 0:
