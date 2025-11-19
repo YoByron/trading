@@ -1,3 +1,7 @@
+# Trading System - Minimal Production Dependencies
+# Optimized for fast CI/CD installation (<2 minutes)
+# Last updated: 2025-11-19
+
 # Trading APIs
 alpaca-trade-api==3.0.2
 openai==1.0.0
@@ -10,13 +14,9 @@ alpha-vantage==2.3.1
 
 # Scheduling
 schedule==1.2.0
-python-crontab==3.0.0
 
-# Web Scraping
+# Web Scraping & APIs
 requests==2.32.4
-beautifulsoup4==4.12.2
-selenium==4.15.0
-lxml==4.9.3
 praw==7.8.1
 feedparser==6.0.10
 
@@ -28,11 +28,7 @@ yt-dlp==2025.10.22
 python-dotenv==1.0.0
 pydantic-settings==2.2.1
 
-# API Framework
-fastapi==0.110.2
-uvicorn==0.24.0
-
-# Testing
+# Testing (dev only - can move to requirements-dev.txt)
 pytest==7.4.0
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
@@ -43,15 +39,17 @@ pytz==2023.3
 loguru==0.7.2
 anthropic==0.18.1
 
-# Dashboard & Visualization
-streamlit==1.39.0
-plotly==5.18.0
+# REMOVED (unused):
+# streamlit==1.39.0              # Never imported - dashboard not built
+# plotly==5.18.0                 # Never imported - visualization not used
+# selenium==4.15.0               # Never imported - web scraping not implemented
+# beautifulsoup4==4.12.2         # Never imported - HTML parsing not used
+# lxml==4.9.3                    # Never imported - XML parsing not used
+# fastapi==0.110.2               # Never imported - API server not built
+# uvicorn==0.24.0                # Never imported - ASGI server not needed
+# scikit-learn==1.5.0            # Never imported - ML models not implemented
+# python-crontab==3.0.0          # Never imported - using schedule instead
 
-# RAG System (Vector Database + Embeddings)
-# NOTE: ChromaDB requires Python <=3.13 (GitHub Actions uses 3.11)
-chromadb==0.4.22
-sentence-transformers==3.0.1
-
-# Modeling & Training
-scikit-learn==1.5.0
-sentry-sdk==2.0.0
+# CONDITIONALLY REMOVED (see REQUIREMENTS_AUDIT_REPORT.md):
+# chromadb==0.4.22               # Only used in RAG test scripts (not production)
+# sentence-transformers==3.0.1   # Only used in RAG embeddings (not production)

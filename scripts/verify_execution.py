@@ -19,12 +19,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import alpaca_trade_api as tradeapi
 
-# Configuration - Load from .env or use defaults
+# Configuration - Load from .env
 from dotenv import load_dotenv
 load_dotenv()
 
-ALPACA_KEY = os.getenv("ALPACA_API_KEY", "PKSGVK5JNGYIFPTW53EAKCNBP5")
-ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY", "9DCF1pY2wgTTY3TBasjAHUWWLXiDTyrAhMJ4ZD6nVWaG")
+ALPACA_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
+
+if not ALPACA_KEY or not ALPACA_SECRET:
+    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
 
 def verify_execution():
     """Verify today's trade execution with ACTUAL Alpaca API data."""

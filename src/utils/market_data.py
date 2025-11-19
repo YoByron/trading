@@ -574,14 +574,14 @@ class MarketDataProvider:
             if isinstance(data, pd.DataFrame) and not data.empty:
                 return data
             logger.debug("%s: yfinance primary download returned empty frame.", symbol)
-            except Exception as exc:
-                logger.warning("yfinance fetch failed for %s: %s", symbol, exc)
-                # Track data source failures for monitoring
-                try:
-                    from src.utils.error_monitoring import capture_data_source_failure
-                    capture_data_source_failure("yfinance", symbol, str(exc))
-                except Exception:
-                    pass  # Error monitoring is optional
+        except Exception as exc:
+            logger.warning("yfinance fetch failed for %s: %s", symbol, exc)
+            # Track data source failures for monitoring
+            try:
+                from src.utils.error_monitoring import capture_data_source_failure
+                capture_data_source_failure("yfinance", symbol, str(exc))
+            except Exception:
+                pass  # Error monitoring is optional
 
         # Secondary attempt using Ticker.history (sometimes succeeds when download fails)
         try:

@@ -3,6 +3,7 @@
 DEMO: First Paper Trade Without AI
 Shows how the system executes a trade using technical analysis only
 """
+import os
 import alpaca_trade_api as tradeapi
 from datetime import datetime, timedelta
 
@@ -10,10 +11,17 @@ print("=" * 70)
 print("🎯 DEMO: YOUR FIRST PAPER TRADE")
 print("=" * 70)
 
+# Load credentials from environment
+ALPACA_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
+
+if not ALPACA_KEY or not ALPACA_SECRET:
+    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+
 # Connect to Alpaca
 api = tradeapi.REST(
-    "PKSGVK5JNGYIFPTW53EAKCNBP5",
-    "9DCF1pY2wgTTY3TBasjAHUWWLXiDTyrAhMJ4ZD6nVWaG",
+    ALPACA_KEY,
+    ALPACA_SECRET,
     "https://paper-api.alpaca.markets",
 )
 

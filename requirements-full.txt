@@ -1,0 +1,57 @@
+# Trading APIs
+alpaca-trade-api==3.0.2
+openai==1.0.0
+
+# Data Processing
+pandas==2.1.0
+numpy==1.25.0
+yfinance==0.2.28
+alpha-vantage==2.3.1
+
+# Scheduling
+schedule==1.2.0
+python-crontab==3.0.0
+
+# Web Scraping
+requests==2.32.4
+beautifulsoup4==4.12.2
+selenium==4.15.0
+lxml==4.9.3
+praw==7.8.1
+feedparser==6.0.10
+
+# YouTube Monitoring
+youtube-transcript-api==1.2.3
+yt-dlp==2025.10.22
+
+# Configuration
+python-dotenv==1.0.0
+pydantic-settings==2.2.1
+
+# API Framework
+fastapi==0.110.2
+uvicorn==0.24.0
+
+# Testing
+pytest==7.4.0
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+loguru==0.7.2
+anthropic==0.18.1
+
+# Dashboard & Visualization
+streamlit==1.39.0
+plotly==5.18.0
+
+# RAG System (Vector Database + Embeddings)
+# NOTE: ChromaDB requires Python <=3.13 (GitHub Actions uses 3.11)
+chromadb==0.4.22
+sentence-transformers==3.0.1
+
+# Modeling & Training
+scikit-learn==1.5.0
+sentry-sdk==2.0.0
