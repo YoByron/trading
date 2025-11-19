@@ -160,6 +160,11 @@ class MarketDataProvider:
         # Health tracking
         self._health_log_file = self.cache_dir / "health_log.jsonl"
 
+        # Performance metrics tracking
+        self._metrics: Dict[DataSource, PerformanceMetrics] = {
+            source: PerformanceMetrics(source=source) for source in DataSource
+        }
+
         # Initialize Alpaca API if credentials available (PRIMARY SOURCE - MOST RELIABLE)
         self._alpaca_api = None
         alpaca_key = os.getenv("ALPACA_API_KEY")
@@ -187,6 +192,20 @@ class MarketDataProvider:
 
         # Log configuration at startup
         self._log_configuration()
+
+    def get_performance_metrics(self) -> Dict[str, Dict[str, float]]:
+        """Get performance metrics for all data sources."""
+        return {
+            source.value: {
+                "total_requests": metrics.total_requests,
+                "successful_requests": metrics.successful_requests,
+                "failed_requests": metrics.failed_requests,
+                "success_rate": metrics.success_rate,
+                "avg_latency_ms": metrics.avg_latency_ms,
+            }
+            for source, metrics in self._metrics.items()
+            if metrics.total_requests > 0
+        }
     
     def get_performance_metrics(self) -> Dict[str, Dict[str, float]]:
         """Get performance metrics for all data sources."""
