@@ -1,12 +1,14 @@
 """
 Market data utilities with resilient fetching across multiple sources.
 
-Priority order:
-1. Yahoo Finance via yfinance (with hardened session headers)
-2. Alpaca API (if credentials available - preferred fallback)
-3. Alpha Vantage Daily Adjusted (free tier, throttled - last resort)
+Priority order (RELIABLE FIRST):
+1. Alpaca API (if credentials available - MOST RELIABLE, use FIRST)
+2. Polygon.io API (if available - PAID SERVICE, reliable)
+3. Cache (use cached data aggressively - faster than API calls)
+4. Yahoo Finance via yfinance (unreliable free source - last resort)
+5. Alpha Vantage Daily Adjusted (free tier, throttled - avoid if possible)
 
-Designed to keep the trading workflows running on zero-cost data plans.
+CRITICAL: System should NEVER fail completely - skip trades gracefully if data unavailable.
 """
 
 from __future__ import annotations
@@ -30,10 +32,11 @@ logger = logging.getLogger(__name__)
 
 class DataSource(Enum):
     """Data source enumeration for tracking which provider was used."""
-    YFINANCE = "yfinance"
-    ALPACA = "alpaca"
-    ALPHA_VANTAGE = "alpha_vantage"
-    CACHE = "cache"
+    ALPACA = "alpaca"  # Most reliable - use FIRST
+    POLYGON = "polygon"  # Paid service - reliable
+    CACHE = "cache"  # Fast and reliable if recent
+    YFINANCE = "yfinance"  # Unreliable free source
+    ALPHA_VANTAGE = "alpha_vantage"  # Slow, rate-limited
     UNKNOWN = "unknown"
 
 
@@ -134,7 +137,7 @@ class MarketDataProvider:
         # Health tracking
         self._health_log_file = self.cache_dir / "health_log.jsonl"
 
-        # Initialize Alpaca API if credentials available
+        # Initialize Alpaca API if credentials available (PRIMARY SOURCE - MOST RELIABLE)
         self._alpaca_api = None
         alpaca_key = os.getenv("ALPACA_API_KEY")
         alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
@@ -147,10 +150,17 @@ class MarketDataProvider:
                     base_url=os.getenv("APCA_API_BASE_URL", "https://paper-api.alpaca.markets"),
                     api_version="v2",
                 )
-                logger.info("Alpaca API initialized for market data fallback")
+                logger.info("✅ Alpaca API initialized as PRIMARY market data source (most reliable)")
             except Exception as e:
                 logger.warning(f"Failed to initialize Alpaca API for market data: {e}")
                 self._alpaca_api = None
+        
+        # Initialize Polygon.io API if available (SECONDARY RELIABLE SOURCE)
+        self.polygon_api_key = os.getenv("POLYGON_API_KEY")
+        if self.polygon_api_key:
+            logger.info("✅ Polygon.io API available as secondary market data source")
+        else:
+            logger.debug("Polygon.io API not configured (optional)")
 
         # Log configuration at startup
         self._log_configuration()
@@ -182,7 +192,7 @@ class MarketDataProvider:
         cache_key = (symbol.upper(), lookback_days, end_dt.date())
         result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
 
-        # Check in-memory cache first (fastest)
+        # PRIORITY 1: Check in-memory cache first (fastest, most reliable if recent)
         cached = self._cache.get(cache_key)
         if cached is not None and not cached.empty:
             logger.debug("%s: Serving from in-memory cache", symbol)
@@ -190,7 +200,65 @@ class MarketDataProvider:
             result.source = DataSource.CACHE
             return result
 
-        # Try yfinance (primary source)
+        # PRIORITY 2: Try Alpaca API FIRST (most reliable paid source)
+        if self._alpaca_api:
+            logger.info("%s: Fetching from Alpaca API (primary reliable source)", symbol)
+            data = self._fetch_alpaca_with_retries(symbol, lookback_days, result)
+            if self._is_valid(data, lookback_days):
+                prepared = self._prepare(data, lookback_days)
+                self._cache[cache_key] = prepared
+                result.data = prepared.copy()
+                result.source = DataSource.ALPACA
+                self._log_health(symbol, result)
+                logger.info(
+                    "%s: ✅ Successfully fetched from Alpaca API (%d rows, %d attempts, %.2fms)",
+                    symbol,
+                    len(prepared),
+                    result.total_attempts,
+                    result.total_latency_ms,
+                )
+                return result
+            else:
+                logger.warning("%s: Alpaca API returned insufficient data, trying Polygon.io", symbol)
+        
+        # PRIORITY 3: Try Polygon.io API (reliable paid source)
+        if self.polygon_api_key:
+            logger.info("%s: Fetching from Polygon.io API (secondary reliable source)", symbol)
+            data = self._fetch_polygon_with_retries(symbol, lookback_days, result)
+            if self._is_valid(data, lookback_days):
+                prepared = self._prepare(data, lookback_days)
+                self._cache[cache_key] = prepared
+                result.data = prepared.copy()
+                result.source = DataSource.POLYGON
+                self._log_health(symbol, result)
+                logger.info(
+                    "%s: ✅ Successfully fetched from Polygon.io (%d rows, %d attempts, %.2fms)",
+                    symbol,
+                    len(prepared),
+                    result.total_attempts,
+                    result.total_latency_ms,
+                )
+                return result
+        
+        # PRIORITY 4: Check disk cache (may be stale but better than nothing)
+        cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
+        if cached_data is not None and cache_age_hours is not None and cache_age_hours < 24:
+            logger.info(
+                "%s: Using cached data (%.1f hours old) - reliable fallback",
+                symbol,
+                cache_age_hours,
+            )
+            result.data = cached_data
+            result.source = DataSource.CACHE
+            result.cache_age_hours = cache_age_hours
+            self._log_health(symbol, result)
+            return result
+        
+        # PRIORITY 5: Try yfinance (unreliable free source - only if no paid sources available)
+        logger.warning(
+            "%s: Paid sources unavailable/unreliable. Trying yfinance (unreliable free source).",
+            symbol,
+        )
         data = self._fetch_yfinance_with_retries(symbol, start_dt, end_dt, result)
         if self._is_valid(data, lookback_days):
             prepared = self._prepare(data, lookback_days)
@@ -200,28 +268,6 @@ class MarketDataProvider:
             self._log_health(symbol, result)
             logger.info(
                 "%s: Successfully fetched from yfinance (%d rows, %d attempts, %.2fms)",
-                symbol,
-                len(prepared),
-                result.total_attempts,
-                result.total_latency_ms,
-            )
-            return result
-
-        # Try Alpaca API (preferred fallback)
-        logger.warning(
-            "%s: yfinance returned insufficient data (%d rows). Trying Alpaca API.",
-            symbol,
-            len(data) if data is not None else 0,
-        )
-        data = self._fetch_alpaca_with_retries(symbol, lookback_days, result)
-        if self._is_valid(data, lookback_days):
-            prepared = self._prepare(data, lookback_days)
-            self._cache[cache_key] = prepared
-            result.data = prepared.copy()
-            result.source = DataSource.ALPACA
-            self._log_health(symbol, result)
-            logger.info(
-                "%s: Successfully fetched from Alpaca API (%d rows, %d attempts, %.2fms)",
                 symbol,
                 len(prepared),
                 result.total_attempts,
@@ -303,11 +349,12 @@ class MarketDataProvider:
     # ------------------------------------------------------------------
     def _log_configuration(self) -> None:
         """Log configuration at startup for debugging."""
-        logger.info("MarketDataProvider configuration:")
-        logger.info("  - yfinance: max_retries=%d, backoff=%.1fs", self.YFINANCE_MAX_RETRIES, self.YFINANCE_INITIAL_BACKOFF_SECONDS)
-        logger.info("  - Alpaca API: %s, max_retries=%d", "enabled" if self._alpaca_api else "disabled", self.ALPACA_MAX_RETRIES)
-        logger.info("  - Alpha Vantage: %s, max_retries=%d", "enabled" if self.alpha_vantage_key else "disabled", self.ALPHAVANTAGE_MAX_RETRIES)
-        logger.info("  - Cache: dir=%s, ttl=%ds, max_age=%dd", self.cache_dir, self.CACHE_TTL_SECONDS, self.CACHE_MAX_AGE_DAYS)
+        logger.info("MarketDataProvider configuration (RELIABLE FIRST):")
+        logger.info("  - Alpaca API: %s (PRIMARY - most reliable)", "✅ enabled" if self._alpaca_api else "❌ disabled")
+        logger.info("  - Polygon.io: %s (SECONDARY - reliable paid)", "✅ enabled" if self.polygon_api_key else "❌ disabled")
+        logger.info("  - Cache: dir=%s, ttl=%ds, max_age=%dd (FAST FALLBACK)", self.cache_dir, self.CACHE_TTL_SECONDS, self.CACHE_MAX_AGE_DAYS)
+        logger.info("  - yfinance: max_retries=%d (UNRELIABLE FREE - last resort)", self.YFINANCE_MAX_RETRIES)
+        logger.info("  - Alpha Vantage: %s (SLOW RATE-LIMITED - avoid)", "enabled" if self.alpha_vantage_key else "disabled")
 
     def _log_health(self, symbol: str, result: MarketDataResult) -> None:
         """Log fetch result to health log for monitoring."""
@@ -606,6 +653,122 @@ class MarketDataProvider:
 
         except Exception as exc:
             logger.warning("%s: Alpaca API fetch failed: %s", symbol, exc)
+            return None
+
+    def _fetch_polygon_with_retries(
+        self, symbol: str, lookback_days: int, result: MarketDataResult
+    ) -> Optional[pd.DataFrame]:
+        """Fetch from Polygon.io API with retries."""
+        if not self.polygon_api_key:
+            result.add_attempt(
+                FetchAttempt(
+                    source=DataSource.POLYGON,
+                    timestamp=time.time(),
+                    success=False,
+                    error_message="Polygon.io API not configured (missing POLYGON_API_KEY)",
+                )
+            )
+            return None
+
+        for attempt in range(1, 3):  # Max 2 attempts for Polygon
+            start_time = time.time()
+            try:
+                data = self._fetch_polygon(symbol, lookback_days)
+                latency_ms = (time.time() - start_time) * 1000
+                if data is not None and not data.empty:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.POLYGON,
+                            timestamp=time.time(),
+                            success=True,
+                            rows_fetched=len(data),
+                            latency_ms=latency_ms,
+                        )
+                    )
+                    return data
+                else:
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.POLYGON,
+                            timestamp=time.time(),
+                            success=False,
+                            error_message="No bars returned",
+                            latency_ms=latency_ms,
+                        )
+                    )
+            except Exception as exc:
+                latency_ms = (time.time() - start_time) * 1000
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.POLYGON,
+                        timestamp=time.time(),
+                        success=False,
+                        error_message=str(exc),
+                        latency_ms=latency_ms,
+                    )
+                )
+                logger.debug("%s: Polygon.io attempt %d/2 failed: %s", symbol, attempt, exc)
+                if attempt < 2:
+                    time.sleep(1)  # Brief backoff
+
+        return None
+
+    def _fetch_polygon(self, symbol: str, lookback_days: int) -> Optional[pd.DataFrame]:
+        """Fetch market data from Polygon.io API."""
+        if not self.polygon_api_key:
+            return None
+
+        try:
+            # Polygon.io v2 aggregates endpoint
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=lookback_days + 30)  # Buffer for weekends/holidays
+            
+            url = f"https://api.polygon.io/v2/aggs/ticker/{symbol.upper()}/range/1/day/{start_date}/{end_date}"
+            params = {
+                "adjusted": "true",
+                "sort": "asc",
+                "limit": 5000,
+                "apiKey": self.polygon_api_key,
+            }
+            
+            response = self.session.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            payload = response.json()
+            
+            if payload.get("status") != "OK":
+                error_msg = payload.get("error", "Unknown error")
+                raise ValueError(f"Polygon.io API error: {error_msg}")
+            
+            results = payload.get("results", [])
+            if not results:
+                logger.warning("%s: Polygon.io returned no bars", symbol)
+                return None
+            
+            # Convert Polygon.io format to DataFrame
+            records = []
+            for bar in results:
+                # Polygon.io returns: t (timestamp ms), o, h, l, c, v
+                dt = datetime.fromtimestamp(bar["t"] / 1000)
+                records.append({
+                    "Open": float(bar["o"]),
+                    "High": float(bar["h"]),
+                    "Low": float(bar["l"]),
+                    "Close": float(bar["c"]),
+                    "Volume": float(bar.get("v", 0)),
+                })
+            
+            if not records:
+                return None
+            
+            df = pd.DataFrame(records, index=[datetime.fromtimestamp(bar["t"] / 1000) for bar in results])
+            df.index.name = "Date"
+            df = df.sort_index()
+            
+            logger.info("%s: Successfully fetched %d bars from Polygon.io", symbol, len(df))
+            return df
+            
+        except Exception as exc:
+            logger.warning("%s: Polygon.io fetch failed: %s", symbol, exc)
             return None
 
     def _fetch_alpha_vantage(self, symbol: str, max_total_time: float = 90.0, start_time: Optional[float] = None) -> Optional[pd.DataFrame]:
