@@ -1,3 +1,19 @@
+---
+skill_id: youtube_analyzer
+name: YouTube Analyzer
+version: 1.0.0
+description: Extracts and analyzes YouTube videos for trading insights using AI-powered transcript analysis
+author: Trading System CTO
+tags: [youtube, analysis, trading-insights, transcripts, sentiment]
+tools:
+  - analyze_youtube_video
+  - extract_transcript
+  - analyze_trading_signals
+dependencies:
+  - yt-dlp
+  - youtube-transcript-api
+---
+
 # YouTube Analyzer Skill
 
 Extracts and analyzes YouTube videos (podcasts, trading analysis, market commentary) for actionable trading insights using AI-powered transcript analysis.
@@ -63,24 +79,24 @@ pip install yt-dlp youtube-transcript-api
 
 ```bash
 # Analyze single video
-python3 analyze_youtube.py --url "https://youtube.com/watch?v=VIDEO_ID"
+python3 scripts/analyze_youtube.py --url "https://youtube.com/watch?v=VIDEO_ID"
 
 # Analyze with custom output directory
-python3 analyze_youtube.py --url "URL" --output docs/youtube_analysis/
+python3 scripts/analyze_youtube.py --url "URL" --output docs/youtube_analysis/
 
 # Analyze video by ID only
-python3 analyze_youtube.py --video-id "VIDEO_ID"
+python3 scripts/analyze_youtube.py --video-id "VIDEO_ID"
 
 # Include AI analysis (requires OpenRouter API)
-python3 analyze_youtube.py --url "URL" --analyze
+python3 scripts/analyze_youtube.py --url "URL" --analyze
 ```
 
 ## Skill Files
 
-- **skill.md**: This file - skill documentation
+- **SKILL.md**: This file - skill documentation
 - **README.md**: Detailed usage guide and examples
-- **analyze_youtube.py**: Python script for video analysis
-- **example.sh**: Example shell script demonstrating usage
+- **scripts/analyze_youtube.py**: Python script for video analysis
+- **scripts/example.sh**: Example shell script demonstrating usage
 
 ## Safety & Ethics
 
