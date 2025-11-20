@@ -28,7 +28,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EvaluationResult:
-    """Result of a single evaluation dimension."""
+    """
+    Result of a single evaluation dimension.
+    
+    Attributes:
+        dimension: Evaluation dimension name ("accuracy", "compliance", "reliability", "errors")
+        score: Score from 0.0 to 1.0 (1.0 = perfect)
+        passed: Whether this dimension passed (score >= 0.7)
+        issues: List of issues found in this dimension
+        metadata: Additional metadata about the evaluation
+        timestamp: ISO format timestamp of when evaluation was performed
+    """
     dimension: str  # "accuracy", "compliance", "reliability", "errors"
     score: float  # 0.0 to 1.0 (1.0 = perfect)
     passed: bool
@@ -39,7 +49,18 @@ class EvaluationResult:
 
 @dataclass
 class TradeEvaluation:
-    """Complete evaluation of a single trade execution."""
+    """
+    Complete evaluation of a single trade execution.
+    
+    Attributes:
+        trade_id: Unique identifier for the trade
+        symbol: Stock symbol that was traded
+        timestamp: ISO format timestamp of when trade was executed
+        evaluation: Dictionary of evaluation results by dimension
+        overall_score: Average score across all dimensions (0.0 to 1.0)
+        passed: Whether trade passed all critical checks
+        critical_issues: List of critical issues that caused failure
+    """
     trade_id: str
     symbol: str
     timestamp: str

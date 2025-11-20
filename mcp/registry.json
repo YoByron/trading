@@ -63,6 +63,36 @@
         "get_open_positions": "get_open_positions",
         "get_indicator": "get_indicator"
       }
+    },
+    {
+      "id": "gmail",
+      "display_name": "Gmail Integration",
+      "module": "mcp.servers.gmail",
+      "tools": {
+        "monitor_emails": "monitor_emails",
+        "send_email": "send_email",
+        "process_attachment": "process_attachment"
+      }
+    },
+    {
+      "id": "slack",
+      "display_name": "Slack Integration",
+      "module": "mcp.servers.slack",
+      "tools": {
+        "send_message": "send_message",
+        "send_formatted_message": "send_formatted_message",
+        "send_dm": "send_dm"
+      }
+    },
+    {
+      "id": "google-sheets",
+      "display_name": "Google Sheets Integration",
+      "module": "mcp.servers.google_sheets",
+      "tools": {
+        "read_range": "read_range",
+        "write_range": "write_range",
+        "create_report": "create_report"
+      }
     }
   ]
 }
