@@ -552,6 +552,7 @@ def manage_existing_positions():
             orders = api.list_orders(status='all', limit=100, symbols=[symbol])
             buy_orders = [o for o in orders if o.side == 'buy' and o.status == 'filled']
             holding_days = None
+            latest_order = None
             
             if buy_orders:
                 latest_order = buy_orders[-1]
@@ -559,6 +560,8 @@ def manage_existing_positions():
                     entry_date = datetime.fromisoformat(str(latest_order.filled_at).replace('Z', '+00:00')).date()
                     holding_days = (date.today() - entry_date).days
                     print(f"  Holding: {holding_days} days")
+            else:
+                print(f"  ⚠️  Warning: No buy orders found for {symbol}")
             
             should_close = False
             close_reason = None
