@@ -990,8 +990,8 @@ def main():
     print("=" * 70)
     manage_existing_positions()
 
-    # DEEPAGENTS MODE: Try DeepAgents orchestrator (optional, experimental)
-    deepagents_enabled = os.getenv("DEEPAGENTS_ENABLED", "false").lower() == "true"
+    # DEEPAGENTS MODE: Try DeepAgents orchestrator (ENABLED BY DEFAULT)
+    deepagents_enabled = os.getenv("DEEPAGENTS_ENABLED", "true").lower() == "true"
     deepagents_used = False
     
     if deepagents_enabled:
