@@ -12,10 +12,14 @@ import alpaca_trade_api as tradeapi
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
+# Load from .env or environment
+from dotenv import load_dotenv
+load_dotenv()
+
 api = tradeapi.REST(
-    os.getenv("ALPACA_API_KEY"),
-    os.getenv("ALPACA_SECRET_KEY"),
-    os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
+    os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
+    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
     api_version="v2"
 )
 
