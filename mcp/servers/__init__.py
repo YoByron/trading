@@ -7,4 +7,7 @@ __all__ = [
     "options_order_flow",
     "tradovate",
     "metatrader",
+    "gmail",
+    "slack",
+    "google_sheets",
 ]
