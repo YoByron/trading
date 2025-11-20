@@ -2,7 +2,7 @@
 Multi-LLM Analysis Engine for Trading System
 
 This module provides a comprehensive analysis engine that queries multiple LLMs
-(Gemini 3 Pro, Claude 3.5 Sonnet, GPT-4o) through OpenRouter API to generate
+(Gemini 3 Pro Preview, Claude Sonnet 4, GPT-4o) through OpenRouter API to generate
 ensemble sentiment scores, IPO analysis, and market outlooks.
 
 Features:
@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 class LLMModel(Enum):
     """Available LLM models through OpenRouter."""
 
-    CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"
-    GPT4O = "openai/gpt-4o"
-    GEMINI_3_PRO = "google/gemini-3-pro"
-    GEMINI_2_FLASH = "google/gemini-2.0-flash-exp:free"
+    GEMINI_3_PRO = "google/gemini-3-pro-preview"  # Latest Gemini 3 Pro
+    CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4"  # Latest Claude Sonnet
+    GPT4O = "openai/gpt-4o"  # GPT-4o
+    GEMINI_2_FLASH = "google/gemini-2.5-flash"  # Fallback Gemini model
 
 
 @dataclass
@@ -150,8 +150,8 @@ class MultiLLMAnalyzer:
 
         self.models = models or [
             LLMModel.GEMINI_3_PRO,  # Latest model with improved reasoning
-            LLMModel.CLAUDE_35_SONNET,
-            LLMModel.GPT4O,
+            LLMModel.CLAUDE_SONNET_4,  # Latest Claude Sonnet
+            LLMModel.GPT4O,  # GPT-4o
         ]
         self.max_retries = max_retries
         self.timeout = timeout

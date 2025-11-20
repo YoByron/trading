@@ -39,8 +39,8 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
   exit 1
 fi
 
-# Use Gemini 3 Pro - latest model with improved reasoning and multimodal capabilities
-MODEL="google/gemini-3-pro"
+# Use Gemini 3 Pro Preview - latest model with improved reasoning and multimodal capabilities
+MODEL="google/gemini-3-pro-preview"
 
 echo "🤖 Sending prompt to Gemini 3 Pro via OpenRouter..."
 echo "----------------------------------------------------"
