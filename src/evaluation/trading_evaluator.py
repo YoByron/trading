@@ -97,7 +97,15 @@ class TradingSystemEvaluator:
         self.MIN_DAILY_ALLOCATION = 1.0  # Minimum $1/day
         self.MAX_DAILY_ALLOCATION = 100.0  # Maximum $100/day (safety)
         
-        logger.info("TradingSystemEvaluator initialized")
+        logger.info(
+            "TradingSystemEvaluator initialized",
+            extra={
+                "component": "evaluation",
+                "action": "init",
+                "data_dir": str(self.data_dir),
+                "eval_dir": str(self.eval_dir)
+            }
+        )
     
     def evaluate_trade_execution(
         self,
