@@ -14,11 +14,25 @@ import logging
 from typing import Dict, List, Any, Optional, TypedDict, Annotated
 from datetime import datetime
 
-import google.generativeai as genai
-from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
+try:
+    from langgraph.graph import StateGraph, END
+    from langgraph.graph.message import add_messages
+    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    # Graceful degradation if LangGraph not available
+    StateGraph = None
+    END = None
+    add_messages = None
+    HumanMessage = None
+    AIMessage = None
+    SystemMessage = None
+    ChatGoogleGenerativeAI = None
 
 logger = logging.getLogger(__name__)
 
@@ -67,22 +81,39 @@ class Gemini3LangGraphAgent:
         if not api_key:
             logger.warning("GOOGLE_API_KEY not found")
             self.llm = None
+            self.workflow = None
+        elif not genai or not ChatGoogleGenerativeAI:
+            logger.warning("Gemini dependencies not installed")
+            self.llm = None
+            self.workflow = None
         else:
-            genai.configure(api_key=api_key)
-            # Initialize LangChain Gemini integration
-            self.llm = ChatGoogleGenerativeAI(
-                model=model,
-                temperature=temperature,
-                google_api_key=api_key,
-            )
-        
-        # Build agent graph
-        self.workflow = self._build_workflow()
+            try:
+                genai.configure(api_key=api_key)
+                # Initialize LangChain Gemini integration
+                self.llm = ChatGoogleGenerativeAI(
+                    model=model,
+                    temperature=temperature,
+                    google_api_key=api_key,
+                )
+                
+                # Build agent graph
+                if StateGraph:
+                    self.workflow = self._build_workflow()
+                else:
+                    logger.warning("LangGraph not available - workflow disabled")
+                    self.workflow = None
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini 3: {e}")
+                self.llm = None
+                self.workflow = None
         
         logger.info(f"Initialized Gemini3LangGraphAgent with {model}")
     
-    def _build_workflow(self) -> StateGraph:
+    def _build_workflow(self):
         """Build LangGraph workflow for multi-agent system."""
+        if not StateGraph:
+            return None
+        
         workflow = StateGraph(AgentState)
         
         # Add nodes
@@ -254,6 +285,21 @@ Format as JSON.
         }
         
         # Run workflow
+        if not self.workflow:
+            # Fallback: direct LLM call if workflow unavailable
+            if self.llm:
+                try:
+                    response = self.llm.invoke(initial_state["messages"])
+                    return {
+                        "decision": {"action": "HOLD", "reasoning": response.content},
+                        "analysis": {},
+                        "thought_signatures": [],
+                        "thinking_level": thinking_level,
+                    }
+                except Exception as e:
+                    logger.error(f"Direct LLM call failed: {e}")
+            return {"error": "Workflow not available"}
+        
         try:
             final_state = self.workflow.invoke(initial_state)
             
