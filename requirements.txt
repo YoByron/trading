@@ -2,6 +2,9 @@
 # Optimized for fast CI/CD installation (<2 minutes)
 # Last updated: 2025-11-19
 
+# Gemini 3 AI
+google-generativeai>=0.3.0
+
 # Trading APIs
 alpaca-trade-api==3.0.2
 openai==1.0.0
