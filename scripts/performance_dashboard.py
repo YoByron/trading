@@ -1,280 +1,196 @@
 #!/usr/bin/env python3
 """
-Performance Analytics and Reporting Dashboard
-
-Generates comprehensive performance analytics including:
-- Win rate and Sharpe ratio
-- P/L trends over time
-- Data source performance metrics
-- System reliability metrics
-- Position analysis
+Performance Dashboard - Visual charts for P/L, win rate, positions
 """
-
 import os
-import sys
 import json
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
-from collections import defaultdict
-
-# Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 from dotenv import load_dotenv
+import alpaca_trade_api as tradeapi
+
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Configuration
 DATA_DIR = Path("data")
-PERF_LOG_FILE = DATA_DIR / "performance_log.json"
-SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
+DATA_DIR.mkdir(exist_ok=True)
+
+api = tradeapi.REST(
+    os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
+    os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
+    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    api_version="v2"
+)
 
 
-class PerformanceDashboard:
-    """Generates performance analytics and reports."""
+def load_performance_log():
+    """Load performance log data."""
+    log_file = DATA_DIR / "performance_log.json"
+    if not log_file.exists():
+        return []
+    
+    with open(log_file) as f:
+        data = json.load(f)
+    
+    return data.get("entries", [])
 
-    def __init__(self):
-        self.perf_data: List[Dict] = []
-        self.system_state: Dict = {}
-        self.load_data()
 
-    def load_data(self):
-        """Load performance and system state data."""
-        if PERF_LOG_FILE.exists():
-            try:
-                with open(PERF_LOG_FILE, 'r') as f:
-                    self.perf_data = json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading performance log: {e}")
+def generate_text_chart(values, width=50, height=10):
+    """Generate ASCII text chart."""
+    if not values:
+        return ""
+    
+    min_val = min(values)
+    max_val = max(values)
+    range_val = max_val - min_val if max_val != min_val else 1
+    
+    chart = []
+    for i in range(height):
+        threshold = max_val - (range_val * i / height)
+        row = ""
+        for val in values:
+            if val >= threshold:
+                row += "█"
+            else:
+                row += " "
+        chart.append(row)
+    
+    return "\n".join(chart)
 
-        if SYSTEM_STATE_FILE.exists():
-            try:
-                with open(SYSTEM_STATE_FILE, 'r') as f:
-                    self.system_state = json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading system state: {e}")
 
-    def calculate_win_rate(self) -> Dict:
-        """Calculate win rate from closed trades."""
-        closed_trades = self.system_state.get("closed_trades", [])
-        if not closed_trades:
-            return {
-                "win_rate": 0.0,
-                "total_trades": 0,
-                "wins": 0,
-                "losses": 0
-            }
-
-        wins = sum(1 for trade in closed_trades if trade.get("pl", 0) > 0)
-        losses = sum(1 for trade in closed_trades if trade.get("pl", 0) <= 0)
-        total = len(closed_trades)
-        win_rate = (wins / total * 100) if total > 0 else 0.0
-
-        return {
-            "win_rate": win_rate,
-            "total_trades": total,
-            "wins": wins,
-            "losses": losses
-        }
-
-    def calculate_pl_trends(self, days: int = 30) -> Dict:
-        """Calculate P/L trends over time."""
-        if not self.perf_data:
-            return {}
-
-        # Get last N days
-        recent_data = self.perf_data[-days:] if len(self.perf_data) > days else self.perf_data
-
-        daily_pl = []
-        cumulative_pl = 0
-        for entry in recent_data:
-            pl = entry.get("pl", 0)
-            cumulative_pl += pl
-            daily_pl.append({
-                "date": entry.get("date"),
-                "pl": pl,
-                "cumulative_pl": cumulative_pl,
-                "equity": entry.get("equity", 0)
-            })
-
-        if not daily_pl:
-            return {}
-
-        total_pl = daily_pl[-1]["cumulative_pl"] if daily_pl else 0
-        avg_daily_pl = total_pl / len(daily_pl) if daily_pl else 0
-
-        return {
-            "total_pl": total_pl,
-            "avg_daily_pl": avg_daily_pl,
-            "daily_pl": daily_pl,
-            "period_days": len(daily_pl)
-        }
-
-    def get_data_source_metrics(self) -> Dict:
-        """Get data source performance metrics."""
-        try:
-            from src.utils.market_data import get_market_data_provider
-            provider = get_market_data_provider()
-            return provider.get_performance_metrics()
-        except Exception as e:
-            logger.warning(f"Could not fetch data source metrics: {e}")
-            return {}
-
-    def get_system_reliability(self) -> Dict:
-        """Calculate system reliability metrics."""
-        if not self.perf_data:
-            return {}
-
-        # Count days with data
-        total_days = len(self.perf_data)
-        if total_days == 0:
-            return {}
-
-        # Check for gaps (days without entries)
-        gaps = 0
-        if total_days > 1:
-            for i in range(1, total_days):
-                prev_date = datetime.fromisoformat(self.perf_data[i-1]["date"])
-                curr_date = datetime.fromisoformat(self.perf_data[i]["date"])
-                days_diff = (curr_date - prev_date).days
-                if days_diff > 1:
-                    gaps += days_diff - 1
-
-        reliability = ((total_days - gaps) / (total_days + gaps) * 100) if (total_days + gaps) > 0 else 0
-
-        return {
-            "total_days_tracked": total_days,
-            "data_gaps": gaps,
-            "reliability_percent": reliability
-        }
-
-    def get_position_analysis(self) -> Dict:
-        """Analyze current positions."""
-        positions = self.system_state.get("positions", [])
-        if not positions:
-            return {"total_positions": 0}
-
-        total_value = sum(pos.get("market_value", 0) for pos in positions)
-        total_pl = sum(pos.get("unrealized_pl", 0) for pos in positions)
-        total_pl_pct = (total_pl / total_value * 100) if total_value > 0 else 0
-
-        return {
-            "total_positions": len(positions),
-            "total_value": total_value,
-            "total_unrealized_pl": total_pl,
-            "total_unrealized_pl_pct": total_pl_pct,
-            "positions": positions
-        }
-
-    def generate_report(self, days: int = 30) -> Dict:
-        """Generate comprehensive performance report."""
-        win_rate_stats = self.calculate_win_rate()
-        pl_trends = self.calculate_pl_trends(days)
-        data_source_metrics = self.get_data_source_metrics()
-        reliability = self.get_system_reliability()
-        position_analysis = self.get_position_analysis()
-
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "period_days": days,
-            "win_rate": win_rate_stats,
-            "pl_trends": pl_trends,
-            "data_source_metrics": data_source_metrics,
-            "system_reliability": reliability,
-            "position_analysis": position_analysis
-        }
-
-    def print_dashboard(self, report: Dict):
-        """Print formatted dashboard."""
-        print("\n" + "=" * 70)
-        print("PERFORMANCE ANALYTICS DASHBOARD")
-        print("=" * 70)
-        print(f"Generated: {report['timestamp']}")
-        print(f"Period: Last {report['period_days']} days")
+def display_dashboard():
+    """Display performance dashboard."""
+    print("=" * 70)
+    print("📊 PERFORMANCE DASHBOARD")
+    print("=" * 70)
+    print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    
+    # Get account info
+    try:
+        account = api.get_account()
+        equity = float(account.equity)
+        cash = float(account.cash)
+        portfolio_value = float(account.portfolio_value)
+        
+        print("💰 ACCOUNT OVERVIEW")
+        print("-" * 70)
+        print(f"Equity:        ${equity:,.2f}")
+        print(f"Cash:          ${cash:,.2f}")
+        print(f"Portfolio:     ${portfolio_value:,.2f}")
         print()
-
-        # Win Rate
-        wr = report["win_rate"]
-        print("📊 WIN RATE:")
-        print(f"   Rate: {wr['win_rate']:.1f}%")
-        print(f"   Total Trades: {wr['total_trades']}")
-        print(f"   Wins: {wr['wins']} | Losses: {wr['losses']}")
+    except Exception as e:
+        print(f"⚠️  Error fetching account: {e}")
         print()
-
-        # P/L Trends
-        pl = report["pl_trends"]
-        if pl:
-            print("💰 P/L TRENDS:")
-            print(f"   Total P/L: ${pl['total_pl']:+,.2f}")
-            print(f"   Avg Daily P/L: ${pl['avg_daily_pl']:+,.2f}")
-            print(f"   Period: {pl['period_days']} days")
+    
+    # Get positions
+    try:
+        positions = api.list_positions()
+        
+        if positions:
+            print("📦 CURRENT POSITIONS")
+            print("-" * 70)
+            
+            total_unrealized = 0
+            position_data = []
+            
+            for pos in positions:
+                symbol = pos.symbol
+                qty = float(pos.qty)
+                entry_price = float(pos.avg_entry_price)
+                current_price = float(pos.current_price)
+                unrealized_pl = float(pos.unrealized_pl)
+                unrealized_plpc = float(pos.unrealized_plpc) * 100
+                total_unrealized += unrealized_pl
+                
+                position_data.append({
+                    "symbol": symbol,
+                    "qty": qty,
+                    "entry": entry_price,
+                    "current": current_price,
+                    "pl": unrealized_pl,
+                    "pl_pct": unrealized_plpc,
+                })
+                
+                emoji = "🟢" if unrealized_pl > 0 else "🔴"
+                print(f"{emoji} {symbol:6s} {qty:8.4f} shares  "
+                      f"Entry: ${entry_price:7.2f}  Current: ${current_price:7.2f}  "
+                      f"P/L: ${unrealized_pl:+8.2f} ({unrealized_plpc:+.2f}%)")
+            
             print()
-
-        # System Reliability
-        rel = report["system_reliability"]
-        if rel:
-            print("🔧 SYSTEM RELIABILITY:")
-            print(f"   Reliability: {rel['reliability_percent']:.1f}%")
-            print(f"   Days Tracked: {rel['total_days_tracked']}")
-            print(f"   Data Gaps: {rel['data_gaps']}")
+            print(f"Total Unrealized P/L: ${total_unrealized:+,.2f}")
             print()
-
-        # Data Source Metrics
-        dsm = report["data_source_metrics"]
-        if dsm:
-            print("📡 DATA SOURCE PERFORMANCE:")
-            for source, metrics in dsm.items():
-                print(f"   {source.upper()}:")
-                print(f"      Success Rate: {metrics['success_rate']:.1%}")
-                print(f"      Avg Latency: {metrics['avg_latency_ms']:.1f}ms")
-                print(f"      Total Requests: {metrics['total_requests']}")
+            
+            # P/L chart
+            pl_values = [p["pl_pct"] for p in position_data]
+            if pl_values:
+                print("P/L Distribution:")
+                print(generate_text_chart(pl_values, width=50, height=5))
+                print()
+        else:
+            print("📦 No open positions")
             print()
-
-        # Position Analysis
-        pos = report["position_analysis"]
-        if pos.get("total_positions", 0) > 0:
-            print("📈 POSITION ANALYSIS:")
-            print(f"   Total Positions: {pos['total_positions']}")
-            print(f"   Total Value: ${pos['total_value']:,.2f}")
-            print(f"   Unrealized P/L: ${pos['total_unrealized_pl']:+,.2f} ({pos['total_unrealized_pl_pct']:+.2f}%)")
+    except Exception as e:
+        print(f"⚠️  Error fetching positions: {e}")
+        print()
+    
+    # Performance over time
+    perf_log = load_performance_log()
+    if perf_log:
+        print("📈 PERFORMANCE OVER TIME")
+        print("-" * 70)
+        
+        # Last 30 days
+        recent = perf_log[-30:]
+        dates = [e.get("date", "") for e in recent]
+        pl_values = [e.get("pl", 0) for e in recent]
+        equity_values = [e.get("equity", 0) for e in recent]
+        
+        if pl_values:
+            print("P/L Trend (Last 30 Days):")
+            print(generate_text_chart(pl_values, width=60, height=8))
             print()
-
-        print("=" * 70)
+            
+            print(f"Best Day:  ${max(pl_values):+,.2f}")
+            print(f"Worst Day: ${min(pl_values):+,.2f}")
+            print(f"Avg Daily: ${sum(pl_values)/len(pl_values):+,.2f}")
+            print()
+        
+        if equity_values:
+            starting_equity = equity_values[0] if equity_values else 100000
+            current_equity = equity_values[-1] if equity_values else 100000
+            total_return = ((current_equity - starting_equity) / starting_equity) * 100
+            
+            print("Equity Trend:")
+            print(generate_text_chart(equity_values, width=60, height=8))
+            print()
+            print(f"Starting Equity: ${starting_equity:,.2f}")
+            print(f"Current Equity:  ${current_equity:,.2f}")
+            print(f"Total Return:    {total_return:+.2f}%")
+            print()
+    
+    # Trade statistics
+    try:
+        orders = api.list_orders(status='all', limit=100)
+        buy_orders = [o for o in orders if o.side == 'buy' and o.status == 'filled']
+        sell_orders = [o for o in orders if o.side == 'sell' and o.status == 'filled']
+        
+        print("📊 TRADE STATISTICS")
+        print("-" * 70)
+        print(f"Total Buy Orders:  {len(buy_orders)}")
+        print(f"Total Sell Orders: {len(sell_orders)}")
+        print(f"Open Positions:    {len(positions) if positions else 0}")
+        print()
+    except Exception as e:
+        print(f"⚠️  Error fetching orders: {e}")
+        print()
+    
+    print("=" * 70)
 
 
 def main():
-    """Main entry point."""
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Generate performance analytics dashboard")
-    parser.add_argument(
-        "--days",
-        type=int,
-        default=30,
-        help="Number of days to analyze (default: 30)"
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output as JSON instead of formatted text"
-    )
-    args = parser.parse_args()
-
-    dashboard = PerformanceDashboard()
-    report = dashboard.generate_report(args.days)
-
-    if args.json:
-        print(json.dumps(report, indent=2))
-    else:
-        dashboard.print_dashboard(report)
+    """Run dashboard."""
+    display_dashboard()
 
 
 if __name__ == "__main__":
     main()
-
-

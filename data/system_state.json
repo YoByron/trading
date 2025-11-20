@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-11-17T08:42:34.317503",
+    "last_updated": "2025-11-20T16:05:14.763499",
     "last_audit": "2025-11-17T09:00:00.000000",
     "audit_notes": "Day 9 - Added Tier 5 crypto tracking (BTC/ETH weekend strategy)"
   },
@@ -15,11 +15,11 @@
   },
   "account": {
     "starting_balance": 100000.0,
-    "current_equity": 99982.75,
-    "cash": 98354.09,
-    "positions_value": 1628.6600000000035,
-    "total_pl": -17.25,
-    "total_pl_pct": -0.02
+    "current_equity": 99954.36,
+    "cash": 98357.79,
+    "positions_value": 1596.5664160000001,
+    "total_pl": -45.63999999999942,
+    "total_pl_pct": -0.04563999999999942
   },
   "investments": {
     "total_invested": 1621.93,
@@ -50,41 +50,28 @@
       {
         "symbol": "GOOGL",
         "tier": "unknown",
-        "amount": 405.959999,
+        "amount": 415.451547,
         "order_id": null,
-        "entry_date": "2025-11-17T08:42:34.317487",
+        "entry_date": "2025-11-20T16:05:14.763478",
         "entry_price": 282.436493,
-        "current_price": 285.97,
+        "current_price": 289.04,
         "quantity": 1.437349666,
-        "unrealized_pl": 5.078885,
-        "unrealized_pl_pct": 1.25108015876214,
-        "last_updated": "2025-11-17T08:42:34.317496"
-      },
-      {
-        "symbol": "NVDA",
-        "tier": "unknown",
-        "amount": 3.98,
-        "order_id": null,
-        "entry_date": "2025-11-17T08:42:34.317498",
-        "entry_price": 199.031896,
-        "current_price": 187.0902,
-        "quantity": 0.019996794,
-        "unrealized_pl": -0.238796,
-        "unrealized_pl_pct": -5.999899497487441,
-        "last_updated": "2025-11-17T08:42:34.317500"
+        "unrealized_pl": 9.491548580878714,
+        "unrealized_pl_pct": 2.3380502037320072,
+        "last_updated": "2025-11-20T16:05:14.763491"
       },
       {
         "symbol": "SPY",
         "tier": "unknown",
-        "amount": 1235.929998,
+        "amount": 1181.114869,
         "order_id": null,
-        "entry_date": "2025-11-17T08:42:34.317501",
+        "entry_date": "2025-11-20T16:05:14.763496",
         "entry_price": 682.698584,
-        "current_price": 670.52,
+        "current_price": 652.42,
         "quantity": 1.81035969,
-        "unrealized_pl": -22.047619,
-        "unrealized_pl_pct": -1.78388897718138,
-        "last_updated": "2025-11-17T08:42:34.317502"
+        "unrealized_pl": -54.815127943879006,
+        "unrealized_pl_pct": -4.435132093374904,
+        "last_updated": "2025-11-20T16:05:14.763498"
       }
     ]
   },
@@ -129,8 +116,11 @@
     "tier5": {
       "name": "Crypto Weekend Strategy (BTC, ETH)",
       "allocation": 0.05,
-      "daily_amount": 0.50,
-      "coins": ["BTC/USD", "ETH/USD"],
+      "daily_amount": 0.5,
+      "coins": [
+        "BTC/USD",
+        "ETH/USD"
+      ],
       "trades_executed": 0,
       "total_invested": 0.0,
       "status": "active",

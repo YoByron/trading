@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from anthropic import Anthropic
+from src.utils.self_healing import with_retry, health_check
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class BaseAgent(ABC):
         """
         pass
     
+    @with_retry(max_attempts=3, backoff=2.0)
     def reason_with_llm(self, prompt: str, tools: Optional[List[Dict]] = None) -> Dict[str, Any]:
         """
         Use LLM reasoning to make decisions.

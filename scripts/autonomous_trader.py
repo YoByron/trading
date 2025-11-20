@@ -535,7 +535,35 @@ def manage_existing_positions():
             # Determine tier and exit rules
             if symbol in ['NVDA', 'GOOGL', 'AMZN']:
                 tier = 'Tier 2'
-                stop_loss_pct = -3.0
+                
+                # Use ATR-based dynamic stop-loss if available
+                try:
+                    from src.utils.technical_indicators import calculate_atr, calculate_atr_stop_loss
+                    from src.utils.market_data import get_market_data_provider
+                    
+                    # Get market data
+                    data_provider = get_market_data_provider()
+                    hist = data_provider.get_historical_data(symbol, days=30)
+                    
+                    if not hist.empty and len(hist) >= 15:
+                        atr = calculate_atr(hist)
+                        atr_stop_price = calculate_atr_stop_loss(entry_price, atr, multiplier=2.0)
+                        atr_stop_pct = ((atr_stop_price - entry_price) / entry_price) * 100
+                        
+                        # Use ATR stop if it's tighter than 3% (better protection)
+                        if atr_stop_pct < -3.0:
+                            stop_loss_pct = atr_stop_pct
+                            print(f"  📊 Using ATR-based stop-loss: {stop_loss_pct:.2f}% (ATR: ${atr:.2f})")
+                        else:
+                            stop_loss_pct = -3.0
+                            print(f"  📊 Using fixed stop-loss: {stop_loss_pct:.2f}% (ATR stop too wide)")
+                    else:
+                        stop_loss_pct = -3.0
+                        print(f"  📊 Using fixed stop-loss: {stop_loss_pct:.2f}% (ATR unavailable)")
+                except Exception as e:
+                    stop_loss_pct = -3.0
+                    print(f"  📊 Using fixed stop-loss: {stop_loss_pct:.2f}% (ATR calculation failed: {e})")
+                
                 take_profit_pct = 10.0
                 max_holding_days = 28  # 4 weeks
             else:
