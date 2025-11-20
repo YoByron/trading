@@ -50,6 +50,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      
+      - name: Run tests
+        run: |
+          echo "🧪 Running test suite..."
+          python3 tests/test_evaluation_system.py || exit 1
+          echo "✅ All tests passed"
 
       # TEMPORARILY DISABLED: ADK service not starting in GitHub Actions (Nov 19, 2025)
       # Causing 20-minute timeout - will re-enable after debugging
