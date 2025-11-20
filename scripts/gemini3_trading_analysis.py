@@ -30,23 +30,43 @@ def main():
     
     print("\n✅ Gemini 3 integration enabled")
     
-    # Example market data
+    # Get real market data
+    from src.utils.market_data import get_market_data_provider
+    from datetime import datetime
+    
+    market_provider = get_market_data_provider()
+    
+    print("\n📊 Gathering real market data...")
+    symbols = ["SPY", "QQQ", "VOO"]
     market_data = {
-        "symbols": ["SPY", "QQQ", "VOO"],
-        "timestamp": "2025-11-20T16:00:00",
+        "symbols": symbols,
+        "timestamp": datetime.now().isoformat(),
         "market_regime": "neutral",
         "volatility": "moderate",
     }
     
-    print("\n📊 Analyzing market with Gemini 3...")
-    print(f"   Thinking level: medium")
-    print(f"   Symbols: {market_data['symbols']}")
+    # Get current prices
+    for symbol in symbols:
+        try:
+            price_data = market_provider.get_latest_price(symbol)
+            if price_data:
+                market_data[symbol] = {
+                    "price": price_data.get("price", 0),
+                    "change_pct": price_data.get("change_pct", 0),
+                }
+        except Exception as e:
+            print(f"   ⚠️  Could not fetch {symbol}: {e}")
     
-    # Analyze with medium thinking level
+    print("\n📊 Analyzing market with Gemini 3...")
+    print(f"   Thinking level: high (deep analysis)")
+    print(f"   Symbols: {symbols}")
+    print(f"   Market data: {len([k for k in market_data.keys() if k != 'symbols' and k != 'timestamp'])} symbols loaded")
+    
+    # Analyze with high thinking level for comprehensive analysis
     result = integration.analyze_market(
-        symbols=market_data["symbols"],
+        symbols=symbols,
         market_data=market_data,
-        thinking_level="medium",
+        thinking_level="high",  # Deep analysis
     )
     
     if "error" in result:
