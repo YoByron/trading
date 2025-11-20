@@ -151,11 +151,18 @@ def check_stop_loss_alerts(positions: List[Dict]) -> List[str]:
     return alerts
 
 
-def generate_alerts():
-    """Generate all alerts."""
+def generate_alerts(suppress_known: bool = False):
+    """
+    Generate all alerts.
+    
+    Args:
+        suppress_known: If True, only show new alerts or changes (not implemented yet)
+    """
     print("=" * 80)
     print("🔔 AUTOMATED ALERTS")
     print(f"   Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    if suppress_known:
+        print("   Mode: Suppressing known alerts")
     print("=" * 80)
     
     state = load_system_state()
@@ -196,6 +203,12 @@ def generate_alerts():
     
     print("\n" + "=" * 80)
     
+    if all_alerts:
+        print("\n💡 NOTE: Alerts will persist until underlying conditions change.")
+        print("   - SPY loss alert: Will stop when position recovers or is closed")
+        print("   - Concentration alert: Will stop when portfolio rebalances")
+        print("   - These are informational, not errors")
+    
     # Return exit code based on alert severity
     critical_alerts = [a for a in all_alerts if "🚨" in a]
     if critical_alerts:
@@ -205,8 +218,18 @@ def generate_alerts():
 
 
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Generate automated trading alerts")
+    parser.add_argument(
+        "--suppress-known",
+        action="store_true",
+        help="Suppress known/persistent alerts (not implemented yet)"
+    )
+    args = parser.parse_args()
+    
     try:
-        exit_code = generate_alerts()
+        exit_code = generate_alerts(suppress_known=args.suppress_known)
         sys.exit(exit_code)
     except Exception as e:
         logger.exception("Alert generation failed")
