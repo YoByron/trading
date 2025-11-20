@@ -1,6 +1,6 @@
 # 🎯 TRADING SYSTEM MASTER PLAN
 
-**Last Updated**: November 19, 2025
+**Last Updated**: November 20, 2025
 **CTO**: Claude (AI Agent)
 **CEO**: Igor Ganapolsky
 **Status**: R&D Phase - Infrastructure Reliability Fixes + Error Monitoring
@@ -196,38 +196,35 @@ Decision made on Day 30 based on data, not guesses
 
 ---
 
-## 🚫 30-DAY TOOL MORATORIUM (Nov 3 - Dec 2, 2025)
+## 🚫 TOOL EVALUATION POLICY (Updated - Nov 20, 2025)
 
-**CEO Commitment**: "No more extra tools, I promise :)"
-**Date Established**: November 3, 2025 (Evening)
-**Enforcement Period**: Days 1-30 (Until Dec 2, 2025)
+**CEO Override**: "If something can prevent errors and make our system better, we use it!"
+**Date Updated**: November 20, 2025
+**Previous Policy**: 30-day moratorium (Nov 3 - Dec 2, 2025) - **OVERRIDDEN**
 
-### The Rule
+### The New Rule
 
-**NO new tools, platforms, frameworks, or integrations until Day 30**
+**Evaluate tools based on VALUE, not arbitrary timelines**
 
-**Rationale**:
-- System is validated (62.2% win rate, 2.18 Sharpe ratio)
-- Main risk = distraction, not missing features
-- Need 30 days of live data to prove backtest holds
-- Tool accumulation ≠ improved performance
-- Execution > optimization
+**Criteria for Adding Tools**:
+- ✅ **Prevents documented mistakes** (we have 10 documented mistakes)
+- ✅ **Improves system reliability** (we've had daily crises)
+- ✅ **Addresses root causes** (not just symptoms)
+- ✅ **Has clear ROI** (reduces errors, improves performance)
+- ❌ **Distractions** (tools that don't solve actual problems)
 
 ### What This Means
 
-❌ **FORBIDDEN**:
-- Researching new tools/platforms/frameworks
-- Asking "should we add X?"
-- Integration of new services (Linear, DSPy, Mistral, etc.)
-- Adding complexity to validated system
-- Tool shopping as anxiety relief
+✅ **ENCOURAGED**:
+- Tools that prevent errors (self-improving systems, diagnostic agents)
+- Tools that improve reliability (monitoring, health checks, validation)
+- Tools that address root causes (automated testing, error detection)
+- Strategic improvements based on documented mistakes
 
-✅ **ALLOWED**:
-- Fixing critical bugs (if system breaks)
-- Monitoring daily performance
-- Reading trading reports
-- Asking about system performance/issues
-- Strategic discussions about data/results
+❌ **STILL AVOID**:
+- Tool shopping as anxiety relief
+- Adding complexity without clear benefit
+- Distractions from proven profitable system
 
 ### The 15 Tools We Said NO To (Nov 3-6, 2025)
 
@@ -290,7 +287,7 @@ For the record - tools evaluated and rejected during R&D Phase:
 - Analysis paralysis
 - Miss the opportunity to prove the system
 
-**This moratorium is about TRUST - trust the backtest, trust the process, trust the CTO.**
+**Previous Policy Rationale**: The moratorium was meant to prevent distraction, but CEO correctly identified that tools that prevent errors are valuable, not distractions. Policy updated to focus on VALUE over arbitrary timelines.
 
 ---
 
@@ -450,19 +447,14 @@ For the record - tools evaluated and rejected during R&D Phase:
 - EU-based (privacy, GDPR compliance)
 - Competitive pricing vs OpenAI/Anthropic
 
-**Why We're NOT Doing This Now**:
-- **Multi-LLM already disabled**: OpenRouter (Claude 3.5 Sonnet, GPT-4o, Gemini 2 Flash) currently OFF
-- **Not profitable yet**: Operating at $10/day scale, win rate 0% (Day 7)
-- **Cost > benefit**: Multi-LLM costs $0.50-2/day, not justified until making $10+/day consistently
-- **3 models sufficient**: More consensus doesn't mean better (diminishing returns)
-- **Focus on execution**: Problem is 0% win rate, not analysis quality
-- **Backtest doesn't need it**: 62.2% win rate achieved WITHOUT multi-LLM (technical indicators only)
-
-**Current Multi-LLM Setup** (built but disabled):
-- ✅ OpenRouter integrated (3-model consensus)
-- ❌ Disabled in production (cost optimization)
-- 💰 Costs $0.50-2/day if enabled
-- 🎯 Enable when: Daily profit > $10 AND Fibonacci phase ≥ $5/day
+**Current Multi-LLM Setup** (enabled for system improvement):
+- ✅ OpenRouter integrated and enabled
+- ✅ Using Gemini 3 Pro (latest model with improved reasoning)
+- ✅ Ensemble analysis: Gemini 3 Pro + Claude 3.5 Sonnet + GPT-4o
+- ✅ Graceful fallback if API unavailable (system continues without it)
+- 💰 Costs $0.50-2/day when actively analyzing
+- 🎯 Provides advanced sentiment analysis and market reasoning
+- 🎯 Improves trading decisions through multi-model consensus
 
 **When Mistral BECOMES Relevant** (Phase 3 - Month 4+):
 - IF we're making $50+/day consistently (Mistral cost becomes negligible)

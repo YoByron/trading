@@ -204,10 +204,17 @@ class MCPTradingOrchestrator:
                     market_payload, market_payload["news"]
                 )
                 result.sentiment = sentiment
-                market_payload["sentiment"] = sentiment.get("score", 0.0)
+                sentiment_score = sentiment.get("score", 0.0)
+                market_payload["sentiment"] = sentiment_score
+                logger.info(
+                    f"{symbol}: OpenRouter LLM sentiment analysis complete "
+                    f"(score={sentiment_score:.3f})"
+                )
             except Exception as exc:  # noqa: BLE001
                 error_msg = f"Sentiment analysis failed: {exc}"
-                logger.warning(error_msg)
+                logger.warning(
+                    f"{symbol}: {error_msg} - falling back to neutral sentiment"
+                )
                 result.errors.append(error_msg)
                 market_payload["sentiment"] = 0.0
 
