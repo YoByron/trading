@@ -170,15 +170,28 @@ class TradingSystemEvaluator:
         
         # Check order size
         actual_amount = trade_result.get("amount", 0.0)
+        logger.debug(
+            f"Accuracy check: actual=${actual_amount:.2f}, "
+            f"expected=${expected_amount:.2f}, "
+            f"multiplier={actual_amount/expected_amount if expected_amount > 0 else 0:.2f}x"
+        )
+        
         if actual_amount == 0:
             issues.append("Order amount is zero")
             score = 0.0
+            logger.error(f"CRITICAL: Order amount is zero for {trade_result.get('symbol', 'UNKNOWN')}")
         elif actual_amount > expected_amount * self.MAX_ORDER_MULTIPLIER:
-            issues.append(
+            error_msg = (
                 f"Order size {actual_amount} is >{self.MAX_ORDER_MULTIPLIER}x expected "
                 f"({expected_amount}) - CRITICAL ERROR"
             )
+            issues.append(error_msg)
             score = 0.0
+            logger.error(
+                f"CRITICAL ERROR PATTERN #1: {error_msg} | "
+                f"Symbol: {trade_result.get('symbol', 'UNKNOWN')} | "
+                f"Order ID: {trade_result.get('order_id', 'unknown')}"
+            )
         elif abs(actual_amount - expected_amount) > expected_amount * 0.1:
             # Allow 10% variance
             issues.append(
@@ -292,12 +305,18 @@ class TradingSystemEvaluator:
         # Check system state freshness
         system_state_age_hours = trade_result.get("system_state_age_hours", None)
         if system_state_age_hours is not None:
+            logger.debug(f"System state age: {system_state_age_hours:.1f} hours")
             if system_state_age_hours > self.MAX_STALENESS_HOURS:
-                issues.append(
+                error_msg = (
                     f"System state is {system_state_age_hours:.1f} hours old "
                     f"(max: {self.MAX_STALENESS_HOURS}h) - CRITICAL ERROR"
                 )
+                issues.append(error_msg)
                 score = 0.0
+                logger.error(
+                    f"CRITICAL ERROR PATTERN #2: {error_msg} | "
+                    f"Symbol: {trade_result.get('symbol', 'UNKNOWN')}"
+                )
         
         # Check data source reliability
         data_source = trade_result.get("data_source", "unknown")
@@ -380,6 +399,11 @@ class TradingSystemEvaluator:
         if any("network" in str(e).lower() or "dns" in str(e).lower() for e in api_errors):
             errors.append("ERROR PATTERN #3: Network/DNS errors detected")
             score = min(score, 0.3)
+            logger.warning(
+                f"ERROR PATTERN #3 detected: Network/DNS errors | "
+                f"Symbol: {trade_result.get('symbol', 'UNKNOWN')} | "
+                f"Errors: {api_errors}"
+            )
         
         # Pattern 4: Wrong script executed (Mistake #1)
         script_name = trade_result.get("script_name", "")
