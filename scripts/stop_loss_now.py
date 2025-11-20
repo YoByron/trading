@@ -56,17 +56,35 @@ def get_existing_orders():
 
 def place_stop_order(symbol, qty, stop_price):
     """Place stop-loss order."""
+    # Round qty to avoid fractional share issues
+    qty_rounded = round(qty, 4)
+    if qty_rounded <= 0:
+        return None
+    
     data = {
         "symbol": symbol,
-        "qty": str(qty),
+        "qty": qty_rounded,
         "side": "sell",
         "type": "stop",
-        "stop_price": str(stop_price),
+        "stop_price": round(stop_price, 2),
         "time_in_force": "gtc",
     }
     
     try:
-        return make_request(f"{ALPACA_BASE_URL}/v2/orders", method="POST", data=data)
+        req = Request(f"{ALPACA_BASE_URL}/v2/orders")
+        req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
+        req.add_header("APCA-API-SECRET-KEY", ALPACA_SECRET)
+        req.add_header("Content-Type", "application/json")
+        req.data = json.dumps(data).encode('utf-8')
+        req.get_method = lambda: "POST"
+        
+        with urlopen(req) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            return result
+    except HTTPError as e:
+        error_body = e.read().decode('utf-8') if hasattr(e, 'read') else str(e)
+        print(f"  ❌ API Error {e.code}: {error_body[:200]}")
+        return None
     except Exception as e:
         print(f"  ❌ Failed: {e}")
         return None
