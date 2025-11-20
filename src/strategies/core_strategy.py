@@ -266,6 +266,43 @@ class CoreStrategy:
                 logger.info("SKIPPING TRADE - Will try again tomorrow")
                 return None
 
+            # Step 4.5: Gemini 3 AI Validation (if enabled)
+            if self.gemini3_enabled and self._gemini3_integration and self._gemini3_integration.enabled:
+                try:
+                    logger.info("Validating trade with Gemini 3 AI...")
+                    market_context = {
+                        "symbol": best_etf,
+                        "sentiment": sentiment.value,
+                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    
+                    gemini_recommendation = self._gemini3_integration.get_trading_recommendation(
+                        symbol=best_etf,
+                        market_context=market_context,
+                        thinking_level="high",  # Deep analysis for trade validation
+                    )
+                    
+                    if gemini_recommendation.get("decision"):
+                        decision = gemini_recommendation["decision"]
+                        action = decision.get("action", "HOLD")
+                        confidence = decision.get("confidence", 0.0)
+                        
+                        if action != "BUY" or confidence < 0.6:
+                            logger.warning(
+                                f"Gemini 3 AI rejected trade: {action} (confidence: {confidence:.2f})"
+                            )
+                            logger.info(f"Gemini reasoning: {decision.get('reasoning', 'N/A')}")
+                            logger.info("SKIPPING TRADE - AI validation failed")
+                            return None
+                        else:
+                            logger.info(
+                                f"Gemini 3 AI approved trade: {action} (confidence: {confidence:.2f})"
+                            )
+                except Exception as e:
+                    logger.warning(f"Gemini 3 validation error (proceeding): {e}")
+                    # Fail-open: continue with trade if Gemini 3 unavailable
+
             # Step 5: Get current price
             current_price = self._get_current_price(best_etf)
             if current_price is None:
