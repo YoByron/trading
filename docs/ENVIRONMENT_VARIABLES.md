@@ -70,11 +70,35 @@
   - Graceful fallback if unavailable (system continues without it)
 
 #### `GOOGLE_API_KEY`
-- **Required**: ⚠️ If using ADK orchestrator
-- **Purpose**: Google Gemini API for ADK agents
-- **Where to Get**: https://makersuite.google.com/app/apikey
+- **Required**: ⚠️ If using ADK orchestrator or Google services
+- **Purpose**: Google Cloud API key for various Google services
+- **Format**: String (e.g., `AIzaSy...`)
+- **GitHub Secret**: ✅ Yes
+
+#### `GEMINI_API_KEY`
+- **Required**: ⚠️ If using Gemini API directly
+- **Purpose**: Google Gemini API for direct Gemini access
+- **Format**: String (e.g., `AIzaSy...`)
+- **GitHub Secret**: ✅ Yes
+
+#### `GOOGLE_PROJECT_ID`
+- **Required**: ⚠️ If using Google Cloud services
+- **Purpose**: Google Cloud project ID
 - **Format**: String
 - **GitHub Secret**: ✅ Yes
+
+#### `NOTIFICATION_CHANNELS`
+- **Required**: ❌ Optional
+- **Purpose**: Comma-separated list of notification channels
+- **Default**: `email,dashboard,log`
+- **Options**: `email`, `dashboard`, `log`, `slack` (if configured)
+- **Note**: Slack removed from defaults - use email instead
+
+#### `APPROVAL_NOTIFICATION_CHANNELS`
+- **Required**: ❌ Optional
+- **Purpose**: Channels for approval request notifications
+- **Default**: `email`
+- **Options**: `email`, `slack` (if configured)
 
 ---
 

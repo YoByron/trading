@@ -54,7 +54,7 @@ class NotificationAgent(BaseAgent):
         )
         self.enabled_channels = os.getenv(
             "NOTIFICATION_CHANNELS",
-            "slack,email,dashboard,log"
+            "email,dashboard,log"  # Slack removed - use email instead
         ).split(",")
         
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -252,7 +252,7 @@ class NotificationAgent(BaseAgent):
         
         return self.analyze({
             "message": message,
-            "channels": ["slack", "email", "dashboard"],
+            "channels": ["email", "dashboard"],  # Removed Slack
             "priority": NotificationPriority.MEDIUM.value,
             "type": "trade",
             "context": trade_data
@@ -267,7 +267,7 @@ class NotificationAgent(BaseAgent):
         
         return self.analyze({
             "message": message,
-            "channels": ["slack", "email"],
+            "channels": ["email"],  # Removed Slack
             "priority": NotificationPriority.HIGH.value,
             "type": "risk",
             "context": risk_data
@@ -282,7 +282,7 @@ class NotificationAgent(BaseAgent):
         
         return self.analyze({
             "message": message,
-            "channels": ["slack", "email"],
+            "channels": ["email"],  # Removed Slack
             "priority": NotificationPriority.CRITICAL.value,
             "type": "approval",
             "context": approval_data
