@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""
+Automated Alert System
+
+Implements CTO/CFO Decision #4: Automated alerts for:
+- P/L thresholds (>3% loss, >5% profit)
+- Position concentration (>60%)
+- System health issues
+- Stop-loss triggers
+"""
+
+import os
+import sys
+import json
+import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dotenv import load_dotenv
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+DATA_DIR = Path("data")
+SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
+
+# Alert thresholds
+LOSS_THRESHOLD = -0.03  # -3%
+PROFIT_THRESHOLD = 0.05  # +5%
+CONCENTRATION_THRESHOLD = 0.60  # 60%
+STALE_THRESHOLD_HOURS = 24  # 24 hours
+
+
+def load_system_state() -> Dict:
+    """Load system state."""
+    if not SYSTEM_STATE_FILE.exists():
+        return {}
+    
+    with open(SYSTEM_STATE_FILE) as f:
+        return json.load(f)
+
+
+def check_pl_alerts(positions: List[Dict]) -> List[str]:
+    """Check for P/L threshold alerts."""
+    alerts = []
+    
+    for position in positions:
+        symbol = position.get("symbol")
+        unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
+        
+        if unrealized_pl_pct <= LOSS_THRESHOLD:
+            alerts.append(
+                f"🚨 {symbol}: Loss exceeds {LOSS_THRESHOLD*100:.0f}% threshold "
+                f"({unrealized_pl_pct*100:.2f}% loss)"
+            )
+        elif unrealized_pl_pct >= PROFIT_THRESHOLD:
+            alerts.append(
+                f"✅ {symbol}: Profit exceeds {PROFIT_THRESHOLD*100:.0f}% threshold "
+                f"({unrealized_pl_pct*100:.2f}% profit) - Consider profit-taking"
+            )
+    
+    return alerts
+
+
+def check_concentration_alerts(positions: List[Dict], total_value: float) -> List[str]:
+    """Check for position concentration alerts."""
+    alerts = []
+    
+    if total_value == 0:
+        return alerts
+    
+    for position in positions:
+        symbol = position.get("symbol")
+        position_value = position.get("amount", 0)
+        concentration = position_value / total_value if total_value > 0 else 0
+        
+        if concentration > CONCENTRATION_THRESHOLD:
+            alerts.append(
+                f"⚠️ {symbol}: Position concentration {concentration*100:.1f}% "
+                f"exceeds {CONCENTRATION_THRESHOLD*100:.0f}% threshold"
+            )
+    
+    return alerts
+
+
+def check_system_health(state: Dict) -> List[str]:
+    """Check for system health issues."""
+    alerts = []
+    
+    # Check state freshness
+    last_updated_str = state.get("meta", {}).get("last_updated")
+    if last_updated_str:
+        try:
+            last_updated = datetime.fromisoformat(last_updated_str)
+            hours_old = (datetime.now() - last_updated).total_seconds() / 3600
+            
+            if hours_old > STALE_THRESHOLD_HOURS:
+                alerts.append(
+                    f"⚠️ System state is {hours_old:.1f} hours old "
+                    f"(threshold: {STALE_THRESHOLD_HOURS} hours)"
+                )
+        except Exception as e:
+            logger.debug(f"Failed to parse last_updated: {e}")
+    
+    # Check automation status
+    automation = state.get("automation", {})
+    if not automation.get("github_actions_enabled", False):
+        alerts.append("⚠️ GitHub Actions automation is disabled")
+    
+    # Check for recent failures
+    failures = automation.get("failures", 0)
+    if failures > 0:
+        alerts.append(f"⚠️ Automation has {failures} failure(s)")
+    
+    return alerts
+
+
+def check_stop_loss_alerts(positions: List[Dict]) -> List[str]:
+    """Check for stop-loss proximity alerts."""
+    alerts = []
+    
+    for position in positions:
+        symbol = position.get("symbol")
+        entry_price = position.get("entry_price", 0)
+        current_price = position.get("current_price", 0)
+        unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
+        
+        if entry_price == 0 or current_price == 0:
+            continue
+        
+        # Calculate stop-loss price (assuming 2% trailing stop)
+        stop_loss_price = entry_price * 0.98
+        distance_to_stop = ((current_price - stop_loss_price) / entry_price) * 100
+        
+        # Alert if within 0.5% of stop-loss
+        if 0 < distance_to_stop < 0.5:
+            alerts.append(
+                f"⚠️ {symbol}: Price ${current_price:.2f} is within 0.5% of stop-loss "
+                f"${stop_loss_price:.2f} (P/L: {unrealized_pl_pct*100:.2f}%)"
+            )
+    
+    return alerts
+
+
+def generate_alerts():
+    """Generate all alerts."""
+    print("=" * 80)
+    print("🔔 AUTOMATED ALERTS")
+    print(f"   Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    
+    state = load_system_state()
+    
+    if not state:
+        print("\n❌ System state not found")
+        return
+    
+    positions = state.get("performance", {}).get("open_positions", [])
+    account = state.get("account", {})
+    total_value = account.get("positions_value", 0)
+    
+    all_alerts = []
+    
+    # Check P/L alerts
+    pl_alerts = check_pl_alerts(positions)
+    all_alerts.extend(pl_alerts)
+    
+    # Check concentration alerts
+    concentration_alerts = check_concentration_alerts(positions, total_value)
+    all_alerts.extend(concentration_alerts)
+    
+    # Check system health
+    health_alerts = check_system_health(state)
+    all_alerts.extend(health_alerts)
+    
+    # Check stop-loss proximity
+    stop_loss_alerts = check_stop_loss_alerts(positions)
+    all_alerts.extend(stop_loss_alerts)
+    
+    # Display alerts
+    if all_alerts:
+        print("\n📋 ALERTS:")
+        for alert in all_alerts:
+            print(f"  {alert}")
+    else:
+        print("\n✅ No alerts - System healthy")
+    
+    print("\n" + "=" * 80)
+    
+    # Return exit code based on alert severity
+    critical_alerts = [a for a in all_alerts if "🚨" in a]
+    if critical_alerts:
+        return 1  # Exit code 1 = critical alerts
+    
+    return 0  # Exit code 0 = no critical alerts
+
+
+if __name__ == "__main__":
+    try:
+        exit_code = generate_alerts()
+        sys.exit(exit_code)
+    except Exception as e:
+        logger.exception("Alert generation failed")
+        sys.exit(1)
+

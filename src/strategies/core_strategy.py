@@ -509,6 +509,37 @@ class CoreStrategy:
             )
             return -1  # Return invalid score to filter out
         
+        # HARD FILTER 4: Reject if price within 2% of 5-day high (local peak detection)
+        # CTO Decision Nov 20, 2025: Prevent entries near local highs
+        if len(hist) >= 5:
+            high_5d = hist["High"].iloc[-5:].max()
+            if current_price >= high_5d * 0.98:  # Within 2% of 5-day high
+                logger.warning(
+                    f"{symbol} REJECTED - Price ${current_price:.2f} is within 2% of 5-day high ${high_5d:.2f}. "
+                    f"Avoiding entry at local peak."
+                )
+                return -1
+        
+        # HARD FILTER 5: Reject if volatility too high (ATR-based filter)
+        # CTO Decision Nov 20, 2025: Skip entries during high volatility periods
+        try:
+            from src.utils.technical_indicators import calculate_atr
+            atr = calculate_atr(hist, period=14)
+            if atr > 0:
+                atr_pct = (atr / current_price) * 100
+                avg_atr_pct = (hist["High"].iloc[-14:].max() - hist["Low"].iloc[-14:].min()) / current_price * 100 / 14
+                
+                # Reject if ATR > 2x average volatility (too volatile)
+                if atr_pct > avg_atr_pct * 2.0:
+                    logger.warning(
+                        f"{symbol} REJECTED - High volatility detected (ATR: {atr_pct:.2f}% vs avg: {avg_atr_pct:.2f}%). "
+                        f"Skipping entry during volatile period."
+                    )
+                    return -1
+        except Exception as e:
+            logger.debug(f"{symbol}: ATR calculation failed, skipping volatility filter: {e}")
+            # Fail-open: continue if ATR unavailable
+        
         # RSI adjustment (bonus if in healthy range, prefer pullbacks)
         if self.RSI_OVERSOLD < rsi < 50:  # Prefer RSI < 50 for pullback entries
             momentum_score += 5
