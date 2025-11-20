@@ -61,13 +61,16 @@ def place_stop_order(symbol, qty, stop_price):
     if qty_rounded <= 0:
         return None
     
+    # Fractional orders must use DAY, not GTC
+    time_in_force = "day" if qty_rounded != int(qty_rounded) else "gtc"
+    
     data = {
         "symbol": symbol,
         "qty": qty_rounded,
         "side": "sell",
         "type": "stop",
         "stop_price": round(stop_price, 2),
-        "time_in_force": "gtc",
+        "time_in_force": time_in_force,
     }
     
     try:
