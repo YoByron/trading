@@ -42,10 +42,12 @@ This implementation brings AgentKit-style workflow automation to the trading sys
 - Email-based workflow triggers
 
 **Slack MCP** (`mcp/servers/slack.py`):
-- Send messages to channels
+- Optional - removed from defaults
+- Send messages to channels (if configured)
 - Send direct messages
 - Formatted messages with block kit
 - Trade alert formatting
+- **Note**: Slack is optional - system uses email by default
 
 **Google Sheets MCP** (`mcp/servers/google_sheets.py`):
 - Read/write spreadsheet data
@@ -144,20 +146,25 @@ workflow = {
 # Approval thresholds
 APPROVAL_HIGH_VALUE_THRESHOLD=1000.0  # Trades above this require approval
 
-# Notification channels
-NOTIFICATION_CHANNELS=slack,email,dashboard,log
+# Notification channels (Slack removed from defaults)
+NOTIFICATION_CHANNELS=email,dashboard,log
 
 # Approval notification channels
-APPROVAL_NOTIFICATION_CHANNELS=email,slack
+APPROVAL_NOTIFICATION_CHANNELS=email
 
-# Gmail (when implemented)
-GMAIL_CREDENTIALS=/path/to/credentials.json
+# Google API Keys
+GOOGLE_API_KEY=AIzaSy...  # Google Cloud API key
+GEMINI_API_KEY=AIzaSy...  # Gemini API key
+GOOGLE_PROJECT_ID=your-project-id
 
-# Slack (when implemented)
-SLACK_BOT_TOKEN=xoxb-your-token
+# Gmail (uses Google API key)
+# No separate credentials needed if using Google API key
 
-# Google Sheets (when implemented)
-GOOGLE_SHEETS_CREDENTIALS=/path/to/credentials.json
+# Google Sheets (uses Google API key)
+# No separate credentials needed if using Google API key
+
+# Slack (optional - only if you want Slack notifications)
+SLACK_BOT_TOKEN=xoxb-your-token  # Only needed if using Slack
 ```
 
 ## Architecture

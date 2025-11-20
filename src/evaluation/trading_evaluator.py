@@ -15,7 +15,7 @@ import json
 import logging
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date, timedelta
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pathlib import Path
 import sys
 import os
@@ -77,9 +77,14 @@ class TradingSystemEvaluator:
     FREE - No API costs, local processing only.
     """
     
-    def __init__(self, data_dir: Path = Path("data")):
-        """Initialize evaluator."""
-        self.data_dir = data_dir
+    def __init__(self, data_dir: Optional[Path] = None) -> None:
+        """
+        Initialize evaluator.
+        
+        Args:
+            data_dir: Directory for storing evaluation data (default: "data")
+        """
+        self.data_dir = data_dir or Path("data")
         self.data_dir.mkdir(exist_ok=True)
         
         # Evaluation history storage
@@ -415,6 +420,17 @@ class TradingSystemEvaluator:
         Returns:
             Path to saved evaluation file
         """
+        """
+        Save evaluation to disk (JSON format).
+        
+        Saves to: data/evaluations/evaluations_YYYY-MM-DD.json
+        
+        Args:
+            evaluation: TradeEvaluation object to save
+        
+        Returns:
+            Path to saved evaluation file
+        """
         today = date.today().isoformat()
         eval_file = self.eval_dir / f"evaluations_{today}.json"
         
@@ -468,15 +484,19 @@ class TradingSystemEvaluator:
         cutoff_date = date.today() - timedelta(days=days)
         evaluations = []
         
+        logger.debug(f"Loading evaluations from last {days} days (since {cutoff_date})")
+        
         for eval_file in self.eval_dir.glob("evaluations_*.json"):
             try:
                 file_date_str = eval_file.stem.replace("evaluations_", "")
                 file_date = datetime.fromisoformat(file_date_str).date()
                 if file_date >= cutoff_date:
                     with open(eval_file, 'r') as f:
-                        evaluations.extend(json.load(f))
+                        file_evaluations = json.load(f)
+                        evaluations.extend(file_evaluations)
+                        logger.debug(f"Loaded {len(file_evaluations)} evaluations from {eval_file.name}")
             except Exception as e:
-                logger.warning(f"Error loading {eval_file}: {e}")
+                logger.warning(f"Error loading {eval_file}: {e}", exc_info=True)
         
         if not evaluations:
             return summary

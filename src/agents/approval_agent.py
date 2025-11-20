@@ -69,7 +69,7 @@ class ApprovalAgent(BaseAgent):
         
         # Configuration
         self.high_value_threshold = float(os.getenv("APPROVAL_HIGH_VALUE_THRESHOLD", "1000.0"))
-        self.notification_channels = os.getenv("APPROVAL_NOTIFICATION_CHANNELS", "email,slack").split(",")
+        self.notification_channels = os.getenv("APPROVAL_NOTIFICATION_CHANNELS", "email").split(",")
     
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
