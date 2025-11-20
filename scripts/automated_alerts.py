@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path("data")
 SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 
-# Alert thresholds
-LOSS_THRESHOLD = -0.03  # -3%
-PROFIT_THRESHOLD = 0.05  # +5%
+# Alert thresholds (unrealized_pl_pct is stored as percentage, e.g., 2.33 for 2.33%)
+LOSS_THRESHOLD = -3.0  # -3%
+PROFIT_THRESHOLD = 5.0  # +5%
 CONCENTRATION_THRESHOLD = 0.60  # 60%
 STALE_THRESHOLD_HOURS = 24  # 24 hours
 
@@ -56,16 +56,16 @@ def check_pl_alerts(positions: List[Dict]) -> List[str]:
         symbol = position.get("symbol")
         unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
         
-        # unrealized_pl_pct is already a decimal (e.g., 0.0233 for 2.33%)
+        # unrealized_pl_pct is stored as percentage (e.g., 2.33 for 2.33%, -4.44 for -4.44%)
         if unrealized_pl_pct <= LOSS_THRESHOLD:
             alerts.append(
-                f"🚨 {symbol}: Loss exceeds {abs(LOSS_THRESHOLD*100):.0f}% threshold "
-                f"({unrealized_pl_pct*100:.2f}% loss)"
+                f"🚨 {symbol}: Loss exceeds {abs(LOSS_THRESHOLD):.0f}% threshold "
+                f"({unrealized_pl_pct:.2f}% loss)"
             )
         elif unrealized_pl_pct >= PROFIT_THRESHOLD:
             alerts.append(
-                f"✅ {symbol}: Profit exceeds {PROFIT_THRESHOLD*100:.0f}% threshold "
-                f"({unrealized_pl_pct*100:.2f}% profit) - Consider profit-taking"
+                f"✅ {symbol}: Profit exceeds {PROFIT_THRESHOLD:.0f}% threshold "
+                f"({unrealized_pl_pct:.2f}% profit) - Consider profit-taking"
             )
     
     return alerts
