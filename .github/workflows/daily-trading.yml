@@ -27,15 +27,6 @@ concurrency:
   group: daily-trading
   cancel-in-progress: false
 
-# Retry failed workflows automatically (improves reliability)
-on:
-  workflow_run:
-    workflows: ["Daily Trading Execution"]
-    types:
-      - completed
-    branches:
-      - main
-
 jobs:
   execute-trading:
     runs-on: ubuntu-latest

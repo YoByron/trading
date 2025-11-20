@@ -128,6 +128,18 @@ class TradingSystemEvaluator:
         symbol = trade_result.get("symbol", "UNKNOWN")
         timestamp = trade_result.get("timestamp", datetime.now().isoformat())
         
+        logger.info(
+            f"Evaluating trade: {symbol}",
+            extra={
+                "component": "evaluation",
+                "action": "evaluate_trade",
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "expected_amount": expected_amount,
+                "daily_allocation": daily_allocation
+            }
+        )
+        
         evaluation = TradeEvaluation(
             trade_id=trade_id,
             symbol=symbol,
