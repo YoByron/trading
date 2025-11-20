@@ -278,7 +278,7 @@ def evaluate_trade_execution(
         traceback.print_exc()
 
 
-def _get_system_state_age_hours() -> float:
+def _get_system_state_age_hours() -> Optional[float]:
     """Get system state age in hours."""
     try:
         system_state_file = DATA_DIR / "system_state.json"
@@ -990,12 +990,50 @@ def main():
     print("=" * 70)
     manage_existing_positions()
 
+    # DEEPAGENTS MODE: Try DeepAgents orchestrator (optional, experimental)
+    deepagents_enabled = os.getenv("DEEPAGENTS_ENABLED", "false").lower() == "true"
+    deepagents_used = False
+    
+    if deepagents_enabled:
+        try:
+            print("\n" + "=" * 70)
+            print("🧠 DEEPAGENTS MODE: Planning-Based Trading Cycle")
+            print("=" * 70)
+            print("📋 Using DeepAgents pattern:")
+            print("   1. Planning: Break down trading cycle into steps")
+            print("   2. Research: Delegate to research sub-agents")
+            print("   3. Signal: Generate trading signals")
+            print("   4. Risk: Validate with risk sub-agent")
+            print("   5. Execute: Place orders with approval gates")
+            print("=" * 70)
+            
+            from src.orchestration.deepagents_trading import DeepAgentsTradingOrchestrator
+            
+            symbols = ["SPY", "QQQ", "VOO", "NVDA", "GOOGL", "AMZN"]
+            orchestrator = DeepAgentsTradingOrchestrator(symbols=symbols, paper=True)
+            
+            result = asyncio.run(orchestrator.execute_trading_cycle())
+            
+            if result.get("status") == "completed":
+                deepagents_used = True
+                print("✅ DeepAgents cycle completed successfully")
+                print(f"   Plan: {result.get('plan', {}).get('cycle_id', 'N/A')}")
+                print(f"   Results: {len(result.get('results', {}))} steps executed")
+            else:
+                print(f"⚠️  DeepAgents cycle failed: {result.get('error', 'Unknown')}")
+                print("   Falling back to standard strategies")
+        except Exception as e:
+            print(f"⚠️  DeepAgents mode failed: {e}")
+            print("   Falling back to standard strategies")
+            import traceback
+            traceback.print_exc()
+    
     # TURBO MODE: Try ADK orchestrator first (if enabled and service available)
     adk_used = False
     tier1_success = False
     tier2_success = False
     
-    if adk_adapter.enabled and adk_service_available:
+    if not deepagents_used and adk_adapter.enabled and adk_service_available:
         try:
             print("\n" + "=" * 70)
             print("🚀 TURBO MODE: ADK Orchestrator Evaluation (Primary Decision Maker)")

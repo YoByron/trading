@@ -15,7 +15,7 @@ import json
 import logging
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Optional
 from pathlib import Path
 import sys
 import os
@@ -84,11 +84,11 @@ class TradingSystemEvaluator:
         Args:
             data_dir: Directory for storing evaluation data (default: "data")
         """
-        self.data_dir = data_dir or Path("data")
+        self.data_dir = Path(data_dir) if data_dir else Path("data")
         self.data_dir.mkdir(exist_ok=True)
         
         # Evaluation history storage
-        self.eval_dir = data_dir / "evaluations"
+        self.eval_dir = self.data_dir / "evaluations"
         self.eval_dir.mkdir(exist_ok=True)
         
         # Configuration thresholds
