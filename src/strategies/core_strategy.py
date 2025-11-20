@@ -458,8 +458,24 @@ class CoreStrategy:
                 f"Too extended, high reversal risk."
             )
             return -1  # Return invalid score to filter out
-        # RSI adjustment (bonus if in healthy range)
-        if self.RSI_OVERSOLD < rsi < 60:
+        
+        # HARD FILTER 3: Reject if price > 20-day MA (wait for pullback)
+        # CTO Decision: Prevent entries at peaks (like SPY -4.44% loss)
+        ma_20 = hist["Close"].rolling(window=20).mean().iloc[-1]
+        current_price = hist["Close"].iloc[-1]
+        price_vs_ma_pct = ((current_price - ma_20) / ma_20) * 100
+        
+        if current_price > ma_20 * 1.02:  # Price > 2% above 20-day MA
+            logger.warning(
+                f"{symbol} REJECTED - Price ${current_price:.2f} is {price_vs_ma_pct:.2f}% above 20-day MA ${ma_20:.2f}. "
+                f"Waiting for pullback entry to avoid buying at peak."
+            )
+            return -1  # Return invalid score to filter out
+        
+        # RSI adjustment (bonus if in healthy range, prefer pullbacks)
+        if self.RSI_OVERSOLD < rsi < 50:  # Prefer RSI < 50 for pullback entries
+            momentum_score += 5
+        elif self.RSI_OVERSOLD < rsi < 60:
             momentum_score += 3
 
         # MACD adjustment (momentum confirmation for bullish signals)
@@ -1257,6 +1273,21 @@ class CoreStrategy:
         if trade_value > self.daily_allocation * 1.1:  # 10% tolerance
             logger.warning(f"Trade value ${trade_value:.2f} exceeds daily allocation")
             return False
+        
+        # CTO Decision: Position size limit - max 50% per symbol
+        # Prevents concentration like SPY (74% of portfolio)
+        total_portfolio_value = self._calculate_total_portfolio_value()
+        if total_portfolio_value > 0:
+            current_position_value = self.current_holdings.get(symbol, 0) * price
+            new_position_value = current_position_value + trade_value
+            position_pct = (new_position_value / (total_portfolio_value + trade_value)) * 100
+            
+            if position_pct > 50:
+                logger.warning(
+                    f"Position size limit exceeded: {symbol} would be {position_pct:.1f}% of portfolio "
+                    f"(max 50%). Skipping trade to maintain diversification."
+                )
+                return False
 
         # Use RiskManager if available
         if self.risk_manager:
