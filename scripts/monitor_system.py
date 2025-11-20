@@ -112,7 +112,8 @@ class SystemMonitor:
             with open(SYSTEM_STATE_FILE, 'r') as f:
                 system_state = json.load(f)
 
-            last_updated_str = system_state.get("last_updated")
+            # Check both root level and meta.last_updated (backwards compatibility)
+            last_updated_str = system_state.get("last_updated") or system_state.get("meta", {}).get("last_updated")
             if not last_updated_str:
                 self.alerts.append({
                     "level": "WARNING",
@@ -122,7 +123,7 @@ class SystemMonitor:
                 })
                 return False
 
-            last_updated = datetime.fromisoformat(last_updated_str)
+            last_updated = datetime.fromisoformat(last_updated_str.replace("Z", "+00:00"))
             age_hours = (datetime.now() - last_updated.replace(tzinfo=None)).total_seconds() / 3600
 
             self.metrics["system_state_age_hours"] = age_hours
