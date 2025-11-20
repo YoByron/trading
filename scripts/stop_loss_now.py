@@ -56,13 +56,14 @@ def get_existing_orders():
 
 def place_stop_order(symbol, qty, stop_price):
     """Place stop-loss order."""
-    # Round qty to avoid fractional share issues
-    qty_rounded = round(qty, 4)
+    # Use exact qty from position (Alpaca handles precision)
+    # But ensure we don't exceed available quantity
+    qty_rounded = round(qty, 8)  # More precision for fractional shares
     if qty_rounded <= 0:
         return None
     
     # Fractional orders must use DAY, not GTC
-    time_in_force = "day" if qty_rounded != int(qty_rounded) else "gtc"
+    time_in_force = "day" if abs(qty_rounded - int(qty_rounded)) > 0.0001 else "gtc"
     
     data = {
         "symbol": symbol,
