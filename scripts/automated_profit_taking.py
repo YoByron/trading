@@ -1,141 +1,256 @@
 #!/usr/bin/env python3
 """
-Automated Profit-Taking
+Automated Profit-Taking Script
 
-CTO Decision: Take partial profits at +3% to lock in gains.
+Implements CTO/CFO Decision #5: Automated profit-taking rules
+- Partial profit-taking: Sell 50% at +3% profit
+- Trail stop: Move stop-loss to breakeven at +2%
+- Full exit: Sell remaining at +5% or stop-loss
 """
 
 import os
-import json
 import sys
+import json
+import logging
+from datetime import datetime
 from pathlib import Path
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
+from typing import Dict, List, Optional
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-ALPACA_KEY = os.getenv("ALPACA_API_KEY")
-ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
-ALPACA_BASE_URL = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+from dotenv import load_dotenv
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
 SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 
-PROFIT_TARGET_PCT = 3.0  # Take profit at +3%
-PARTIAL_SELL_PCT = 0.5  # Sell 50% of position
+# Profit-taking thresholds
+PARTIAL_PROFIT_THRESHOLD = 0.03  # 3%
+TRAIL_STOP_THRESHOLD = 0.02  # 2% (move stop to breakeven)
+FULL_EXIT_THRESHOLD = 0.05  # 5%
 
 
-def make_request(url, method="GET", data=None):
-    """Make HTTP request."""
-    req = Request(url)
-    req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
-    req.add_header("APCA-API-SECRET-KEY", ALPACA_SECRET)
-    req.add_header("Content-Type", "application/json")
-    
-    if method == "POST" and data:
-        req.data = json.dumps(data).encode('utf-8')
-        req.get_method = lambda: "POST"
-    
-    with urlopen(req) as response:
-        return json.loads(response.read().decode('utf-8'))
+def get_alpaca_client():
+    """Get Alpaca API client."""
+    try:
+        from src.core.alpaca_trader import AlpacaTrader
+        return AlpacaTrader(paper=True)
+    except Exception as e:
+        logger.error(f"Failed to initialize Alpaca client: {e}")
+        return None
 
 
-def check_profit_taking_opportunities():
-    """Check for positions that have reached profit target."""
-    print("=" * 80)
-    print("💰 AUTOMATED PROFIT-TAKING")
-    print("=" * 80)
-    
+def load_system_state() -> Dict:
+    """Load system state."""
     if not SYSTEM_STATE_FILE.exists():
-        print("System state not found")
-        return
+        logger.error("System state file not found")
+        return {}
     
     with open(SYSTEM_STATE_FILE) as f:
-        state = json.load(f)
+        return json.load(f)
+
+
+def get_open_positions() -> List[Dict]:
+    """Get open positions from system state."""
+    state = load_system_state()
+    return state.get("performance", {}).get("open_positions", [])
+
+
+def calculate_profit_pct(entry_price: float, current_price: float) -> float:
+    """Calculate profit percentage."""
+    return (current_price - entry_price) / entry_price
+
+
+def should_partial_profit(position: Dict) -> bool:
+    """Check if position should trigger partial profit-taking."""
+    entry_price = position.get("entry_price", 0)
+    current_price = position.get("current_price", 0)
+    unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
     
-    positions = state.get("performance", {}).get("open_positions", [])
+    if entry_price == 0 or current_price == 0:
+        return False
+    
+    return unrealized_pl_pct >= PARTIAL_PROFIT_THRESHOLD
+
+
+def should_trail_stop(position: Dict) -> bool:
+    """Check if position should trigger trailing stop to breakeven."""
+    unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
+    return unrealized_pl_pct >= TRAIL_STOP_THRESHOLD
+
+
+def should_full_exit(position: Dict) -> bool:
+    """Check if position should trigger full exit."""
+    unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
+    return unrealized_pl_pct >= FULL_EXIT_THRESHOLD
+
+
+def execute_partial_profit(position: Dict, trader) -> bool:
+    """Execute partial profit-taking (sell 50%)."""
+    symbol = position.get("symbol")
+    quantity = position.get("quantity", 0)
+    current_price = position.get("current_price", 0)
+    
+    if quantity == 0 or current_price == 0:
+        logger.warning(f"{symbol}: Invalid quantity or price")
+        return False
+    
+    # Sell 50% of position
+    sell_quantity = quantity * 0.5
+    
+    try:
+        logger.info(f"{symbol}: Executing partial profit-taking")
+        logger.info(f"  Selling: {sell_quantity:.6f} shares (50% of {quantity:.6f})")
+        logger.info(f"  Current price: ${current_price:.2f}")
+        logger.info(f"  Profit: {position.get('unrealized_pl_pct', 0)*100:.2f}%")
+        
+        # Execute sell order
+        result = trader.execute_order(
+            symbol=symbol,
+            amount_usd=sell_quantity * current_price,
+            side="sell",
+            tier="T1_CORE"
+        )
+        
+        logger.info(f"✅ Partial profit-taking executed: {result.get('id', 'N/A')}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"{symbol}: Failed to execute partial profit-taking: {e}")
+        return False
+
+
+def update_stop_loss(position: Dict, trader) -> bool:
+    """Update stop-loss to breakeven (trailing stop)."""
+    symbol = position.get("symbol")
+    quantity = position.get("quantity", 0)
+    entry_price = position.get("entry_price", 0)
+    
+    if quantity == 0 or entry_price == 0:
+        logger.warning(f"{symbol}: Invalid quantity or entry price")
+        return False
+    
+    try:
+        logger.info(f"{symbol}: Moving stop-loss to breakeven")
+        logger.info(f"  Entry price: ${entry_price:.2f}")
+        logger.info(f"  Stop-loss: ${entry_price:.2f} (breakeven)")
+        
+        # Set stop-loss at entry price (breakeven)
+        trader.set_stop_loss(
+            symbol=symbol,
+            qty=quantity,
+            stop_price=entry_price
+        )
+        
+        logger.info(f"✅ Stop-loss updated to breakeven")
+        return True
+        
+    except Exception as e:
+        logger.error(f"{symbol}: Failed to update stop-loss: {e}")
+        return False
+
+
+def execute_full_exit(position: Dict, trader) -> bool:
+    """Execute full exit (sell 100%)."""
+    symbol = position.get("symbol")
+    quantity = position.get("quantity", 0)
+    current_price = position.get("current_price", 0)
+    
+    if quantity == 0 or current_price == 0:
+        logger.warning(f"{symbol}: Invalid quantity or price")
+        return False
+    
+    try:
+        logger.info(f"{symbol}: Executing full exit")
+        logger.info(f"  Selling: {quantity:.6f} shares (100%)")
+        logger.info(f"  Current price: ${current_price:.2f}")
+        logger.info(f"  Profit: {position.get('unrealized_pl_pct', 0)*100:.2f}%")
+        
+        # Execute sell order
+        result = trader.execute_order(
+            symbol=symbol,
+            amount_usd=quantity * current_price,
+            side="sell",
+            tier="T1_CORE"
+        )
+        
+        logger.info(f"✅ Full exit executed: {result.get('id', 'N/A')}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"{symbol}: Failed to execute full exit: {e}")
+        return False
+
+
+def process_positions():
+    """Process all positions for profit-taking."""
+    print("=" * 80)
+    print("💰 AUTOMATED PROFIT-TAKING")
+    print(f"   Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    
+    positions = get_open_positions()
     
     if not positions:
-        print("No open positions")
+        print("\n✅ No open positions")
         return
     
-    print(f"\n📊 Analyzing {len(positions)} positions for profit-taking...\n")
+    trader = get_alpaca_client()
+    if not trader:
+        print("\n❌ Failed to initialize Alpaca client")
+        return
+    
+    print(f"\n📊 Analyzing {len(positions)} positions...")
     
     actions_taken = []
     
-    for pos in positions:
-        symbol = pos.get("symbol", "UNKNOWN")
-        entry_price = pos.get("entry_price", 0)
-        current_price = pos.get("current_price", 0)
-        quantity = pos.get("quantity", 0)
-        unrealized_pl_pct = pos.get("unrealized_pl_pct", 0)
+    for position in positions:
+        symbol = position.get("symbol")
+        unrealized_pl_pct = position.get("unrealized_pl_pct", 0)
+        entry_price = position.get("entry_price", 0)
+        current_price = position.get("current_price", 0)
         
-        print(f"{symbol}:")
-        print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
-        print(f"  P/L: {unrealized_pl_pct:+.2f}%")
+        print(f"\n{symbol}:")
+        print(f"  Entry: ${entry_price:.2f}")
+        print(f"  Current: ${current_price:.2f}")
+        print(f"  P/L: {unrealized_pl_pct*100:.2f}%")
         
-        if unrealized_pl_pct >= PROFIT_TARGET_PCT:
-            sell_qty = quantity * PARTIAL_SELL_PCT
-            
-            print(f"  ✅ Profit target reached (+{unrealized_pl_pct:.2f}%)")
-            print(f"  🎯 Selling {sell_qty:.4f} shares (50% of position)")
-            
-            # Place sell order
-            try:
-                data = {
-                    "symbol": symbol,
-                    "qty": round(sell_qty, 4),
-                    "side": "sell",
-                    "type": "market",
-                    "time_in_force": "day",
-                }
-                
-                req = Request(f"{ALPACA_BASE_URL}/v2/orders")
-                req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
-                req.add_header("APCA-API-SECRET-KEY", ALPACA_SECRET)
-                req.add_header("Content-Type", "application/json")
-                req.data = json.dumps(data).encode('utf-8')
-                req.get_method = lambda: "POST"
-                
-                with urlopen(req) as response:
-                    order = json.loads(response.read().decode('utf-8'))
-                    actions_taken.append({
-                        "symbol": symbol,
-                        "qty_sold": sell_qty,
-                        "order_id": order.get("id"),
-                    })
-                    print(f"  ✅ Profit-taking order placed: {order.get('id')}")
-            except Exception as e:
-                print(f"  ❌ Failed to place order: {e}")
+        # Check profit-taking rules
+        if should_full_exit(position):
+            print(f"  🎯 Action: FULL EXIT (≥{FULL_EXIT_THRESHOLD*100:.0f}% profit)")
+            if execute_full_exit(position, trader):
+                actions_taken.append(f"{symbol}: Full exit executed")
+        elif should_partial_profit(position):
+            print(f"  🎯 Action: PARTIAL PROFIT-TAKING (≥{PARTIAL_PROFIT_THRESHOLD*100:.0f}% profit)")
+            if execute_partial_profit(position, trader):
+                actions_taken.append(f"{symbol}: Partial profit-taking executed")
+        elif should_trail_stop(position):
+            print(f"  🎯 Action: TRAIL STOP TO BREAKEVEN (≥{TRAIL_STOP_THRESHOLD*100:.0f}% profit)")
+            if update_stop_loss(position, trader):
+                actions_taken.append(f"{symbol}: Stop-loss trailed to breakeven")
         else:
-            print(f"  ⏳ Not yet at profit target ({PROFIT_TARGET_PCT}%)")
-        
-        print()
+            print(f"  ✅ No action needed (profit: {unrealized_pl_pct*100:.2f}%)")
     
+    print("\n" + "=" * 80)
+    if actions_taken:
+        print("✅ ACTIONS TAKEN:")
+        for action in actions_taken:
+            print(f"  • {action}")
+    else:
+        print("✅ No profit-taking actions needed")
     print("=" * 80)
-    print("📋 SUMMARY")
-    print("=" * 80)
-    print(f"Profit-taking orders placed: {len(actions_taken)}")
-    for action in actions_taken:
-        print(f"  ✅ {action['symbol']}: Sold {action['qty_sold']:.4f} shares")
-    
-    return actions_taken
 
 
 if __name__ == "__main__":
-    if not ALPACA_KEY or not ALPACA_SECRET:
-        print("ERROR: Alpaca credentials not found")
-        sys.exit(1)
-    
     try:
-        check_profit_taking_opportunities()
+        process_positions()
     except Exception as e:
-        print(f"\n❌ ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Profit-taking script failed")
         sys.exit(1)
-
