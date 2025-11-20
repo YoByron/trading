@@ -31,7 +31,13 @@ def load_performance_log():
     with open(log_file) as f:
         data = json.load(f)
     
-    return data.get("entries", [])
+    # Handle both dict and list formats
+    if isinstance(data, list):
+        return data
+    elif isinstance(data, dict):
+        return data.get("entries", [])
+    else:
+        return []
 
 
 def generate_text_chart(values, width=50, height=10):
