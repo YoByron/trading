@@ -57,12 +57,17 @@
 ## AI/LLM APIs
 
 #### `OPENROUTER_API_KEY`
-- **Required**: ❌ Optional (currently disabled)
-- **Purpose**: Multi-LLM analysis (Claude, GPT-4, Gemini)
+- **Required**: ⚠️ Recommended (enables advanced LLM analysis)
+- **Purpose**: Multi-LLM ensemble analysis (Gemini 3 Pro, Claude 3.5 Sonnet, GPT-4o)
 - **Where to Get**: https://openrouter.ai/keys
-- **Format**: String
+- **Format**: String (e.g., `sk-or-v1-...`)
 - **GitHub Secret**: ✅ Yes
-- **Status**: Disabled during R&D phase (cost optimization)
+- **Status**: ✅ Enabled for system improvement
+- **Benefits**: 
+  - Advanced sentiment analysis with multi-model consensus
+  - Better reasoning and market understanding
+  - IPO analysis capabilities
+  - Graceful fallback if unavailable (system continues without it)
 
 #### `GOOGLE_API_KEY`
 - **Required**: ⚠️ If using ADK orchestrator

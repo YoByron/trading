@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# gemini-yolo: A command-line interface to chat with Gemini 1.5 Pro via OpenRouter.
+# gemini-yolo: A command-line interface to chat with Gemini 3 Pro via OpenRouter.
 #
 
 set -euo pipefail
@@ -39,10 +39,10 @@ if [ -z "$OPENROUTER_API_KEY" ]; then
   exit 1
 fi
 
-# The model to use. "Gemini 3 Pro" doesn't exist, so we use the latest Gemini 1.5 Pro.
-MODEL="google/gemini-1.5-pro-latest"
+# Use Gemini 3 Pro - latest model with improved reasoning and multimodal capabilities
+MODEL="google/gemini-3-pro"
 
-echo "🤖 Sending prompt to Gemini 1.5 Pro via OpenRouter..."
+echo "🤖 Sending prompt to Gemini 3 Pro via OpenRouter..."
 echo "----------------------------------------------------"
 
 # Construct the JSON payload

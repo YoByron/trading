@@ -2,7 +2,7 @@
 Multi-LLM Analysis Engine for Trading System
 
 This module provides a comprehensive analysis engine that queries multiple LLMs
-(Claude 3.5 Sonnet, GPT-4o, Gemini 2.0 Flash) through OpenRouter API to generate
+(Gemini 3 Pro, Claude 3.5 Sonnet, GPT-4o) through OpenRouter API to generate
 ensemble sentiment scores, IPO analysis, and market outlooks.
 
 Features:
@@ -29,7 +29,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from openai import AsyncOpenAI, OpenAI
-from openai.types.chat import ChatCompletion
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -40,6 +39,7 @@ class LLMModel(Enum):
 
     CLAUDE_35_SONNET = "anthropic/claude-3.5-sonnet"
     GPT4O = "openai/gpt-4o"
+    GEMINI_3_PRO = "google/gemini-3-pro"
     GEMINI_2_FLASH = "google/gemini-2.0-flash-exp:free"
 
 
@@ -149,9 +149,9 @@ class MultiLLMAnalyzer:
             )
 
         self.models = models or [
+            LLMModel.GEMINI_3_PRO,  # Latest model with improved reasoning
             LLMModel.CLAUDE_35_SONNET,
             LLMModel.GPT4O,
-            LLMModel.GEMINI_2_FLASH,
         ]
         self.max_retries = max_retries
         self.timeout = timeout
@@ -670,7 +670,7 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
                         reasoning_parts.append(
                             f"[{response.model}] {data['reasoning']}"
                         )
-                except:
+                except Exception:  # noqa: BLE001
                     pass
 
         reasoning = (
@@ -1105,7 +1105,7 @@ if __name__ == "__main__":
 
         # Get detailed sentiment analysis
         detailed = await analyzer.get_ensemble_sentiment_detailed(market_data, news)
-        print(f"\nDetailed Analysis:")
+        print("\nDetailed Analysis:")
         print(f"Score: {detailed.score:.3f}")
         print(f"Confidence: {detailed.confidence:.3f}")
         print(f"Individual Scores: {detailed.individual_scores}")
@@ -1128,14 +1128,14 @@ if __name__ == "__main__":
         }
 
         ipo_analysis = await analyzer.analyze_ipo(ipo_data)
-        print(f"\nIPO Analysis:")
+        print("\nIPO Analysis:")
         print(f"Score: {ipo_analysis['score']}/100")
         print(f"Recommendation: {ipo_analysis['recommendation']}")
         print(f"Risk Level: {ipo_analysis['risk_level']}")
 
         # Get market outlook
         outlook = await analyzer.get_market_outlook()
-        print(f"\nMarket Outlook:")
+        print("\nMarket Outlook:")
         print(f"Trend: {outlook['trend']}")
         print(f"Sentiment: {outlook['overall_sentiment']:.3f}")
         print(f"Key Drivers: {outlook['key_drivers'][:3]}")
