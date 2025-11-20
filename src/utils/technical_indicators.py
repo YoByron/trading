@@ -237,3 +237,108 @@ def calculate_technical_score(
 
     return (technical_score, indicators)
 
+
+def calculate_atr(
+    hist: pd.DataFrame,
+    period: int = 14
+) -> float:
+    """
+    Calculate Average True Range (ATR) for dynamic stop-loss placement.
+    
+    ATR measures market volatility by calculating the average of true ranges
+    over a specified period. True Range is the maximum of:
+    1. Current High - Current Low
+    2. |Current High - Previous Close|
+    3. |Current Low - Previous Close|
+    
+    ATR-based stop-losses adapt to volatility:
+    - High volatility = wider stops (less likely to be stopped out by noise)
+    - Low volatility = tighter stops (protect profits better)
+    
+    Args:
+        hist: Historical price DataFrame with 'High', 'Low', 'Close' columns
+        period: ATR period (default: 14)
+    
+    Returns:
+        ATR value (in price units)
+    """
+    if len(hist) < period + 1:
+        logger.warning(
+            f"Insufficient data for ATR calculation: {len(hist)} bars, "
+            f"need at least {period + 1}"
+        )
+        return 0.0
+    
+    if not all(col in hist.columns for col in ['High', 'Low', 'Close']):
+        logger.warning("Missing required columns for ATR: High, Low, Close")
+        return 0.0
+    
+    # Calculate True Range for each period
+    high = hist['High']
+    low = hist['Low']
+    close = hist['Close']
+    
+    # True Range = max of:
+    # 1. High - Low
+    # 2. |High - Previous Close|
+    # 3. |Low - Previous Close|
+    tr1 = high - low
+    tr2 = abs(high - close.shift(1))
+    tr3 = abs(low - close.shift(1))
+    
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    
+    # Calculate ATR as simple moving average of True Range
+    atr = true_range.rolling(window=period).mean()
+    
+    # Return most recent value
+    atr_value = atr.iloc[-1]
+    if pd.isna(atr_value) or atr_value <= 0:
+        return 0.0
+    
+    return float(atr_value)
+
+
+def calculate_atr_stop_loss(
+    entry_price: float,
+    atr: float,
+    multiplier: float = 2.0,
+    direction: str = 'long'
+) -> float:
+    """
+    Calculate ATR-based stop-loss price.
+    
+    Stop-loss is placed at entry_price ± (multiplier × ATR)
+    - Long positions: entry_price - (multiplier × ATR)
+    - Short positions: entry_price + (multiplier × ATR)
+    
+    Common multipliers:
+    - 1.5x ATR: Tighter stop (more sensitive)
+    - 2.0x ATR: Balanced (default)
+    - 2.5x ATR: Wider stop (less sensitive, good for volatile stocks)
+    
+    Args:
+        entry_price: Entry price of the position
+        atr: Average True Range value
+        multiplier: ATR multiplier (default: 2.0)
+        direction: 'long' or 'short' (default: 'long')
+    
+    Returns:
+        Stop-loss price
+    """
+    if atr <= 0:
+        # Fallback to percentage-based stop if ATR unavailable
+        if direction == 'long':
+            return entry_price * 0.97  # 3% stop-loss
+        else:
+            return entry_price * 1.03  # 3% stop-loss
+    
+    stop_distance = multiplier * atr
+    
+    if direction == 'long':
+        stop_price = entry_price - stop_distance
+    else:  # short
+        stop_price = entry_price + stop_distance
+    
+    return max(0.0, stop_price)  # Ensure non-negative
+
