@@ -205,7 +205,21 @@ class TradingSystemEvaluator:
         trade_result: Dict[str, Any],
         daily_allocation: float
     ) -> EvaluationResult:
-        """Evaluate procedure compliance."""
+        """
+        Evaluate procedure compliance.
+        
+        Checks:
+        - Daily allocation within limits ($1-$100)
+        - Order was validated before execution
+        - Pre-flight checks passed
+        
+        Args:
+            trade_result: Trade execution result dictionary
+            daily_allocation: Total daily allocation in dollars
+        
+        Returns:
+            EvaluationResult with compliance score and issues
+        """
         issues = []
         score = 1.0
         
@@ -252,7 +266,21 @@ class TradingSystemEvaluator:
         self,
         trade_result: Dict[str, Any]
     ) -> EvaluationResult:
-        """Evaluate system reliability."""
+        """
+        Evaluate system reliability.
+        
+        Checks:
+        - System state freshness (<24h old)
+        - Data source reliability (prefer Alpaca/Polygon over Alpha Vantage)
+        - API errors present
+        - Execution time reasonable (<30s)
+        
+        Args:
+            trade_result: Trade execution result dictionary
+        
+        Returns:
+            EvaluationResult with reliability score and issues
+        """
         issues = []
         score = 1.0
         
@@ -303,7 +331,23 @@ class TradingSystemEvaluator:
         trade_result: Dict[str, Any],
         expected_amount: float
     ) -> EvaluationResult:
-        """Detect errors and issues."""
+        """
+        Detect known error patterns from documented mistakes.
+        
+        Patterns detected:
+        - Pattern #1: Order size >10x expected (Mistake #1)
+        - Pattern #2: System state stale (Mistake #2)
+        - Pattern #3: Network/DNS errors (Mistake #3)
+        - Pattern #4: Wrong script executed (Mistake #1)
+        - Pattern #5: Calendar errors - weekend trades (Mistake #5)
+        
+        Args:
+            trade_result: Trade execution result dictionary
+            expected_amount: Expected trade amount in dollars
+        
+        Returns:
+            EvaluationResult with detected error patterns
+        """
         errors = []
         score = 1.0
         
@@ -360,7 +404,17 @@ class TradingSystemEvaluator:
         )
     
     def save_evaluation(self, evaluation: TradeEvaluation) -> Path:
-        """Save evaluation to disk (JSON)."""
+        """
+        Save evaluation to disk (JSON format).
+        
+        Saves to: data/evaluations/evaluations_YYYY-MM-DD.json
+        
+        Args:
+            evaluation: TradeEvaluation object to save
+        
+        Returns:
+            Path to saved evaluation file
+        """
         today = date.today().isoformat()
         eval_file = self.eval_dir / f"evaluations_{today}.json"
         
@@ -384,7 +438,22 @@ class TradingSystemEvaluator:
         return eval_file
     
     def get_evaluation_summary(self, days: int = 7) -> Dict[str, Any]:
-        """Get summary of recent evaluations."""
+        """
+        Get summary of recent evaluations.
+        
+        Aggregates evaluation results from last N days and provides:
+        - Total evaluations count
+        - Pass/fail statistics
+        - Average score
+        - Critical issues list
+        - Error pattern counts
+        
+        Args:
+            days: Number of days to look back (default: 7)
+        
+        Returns:
+            Dictionary with summary statistics and aggregated data
+        """
         summary = {
             "period_days": days,
             "total_evaluations": 0,

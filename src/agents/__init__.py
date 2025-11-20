@@ -22,5 +22,8 @@ __all__ = [
     "SignalAgent",
     "RiskAgent",
     "ExecutionAgent",
+    "WorkflowAgent",
+    "ApprovalAgent",
+    "NotificationAgent",
 ]
 
