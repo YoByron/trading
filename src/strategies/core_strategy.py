@@ -1360,12 +1360,21 @@ class CoreStrategy:
         # Use RiskManager if available
         if self.risk_manager:
             try:
-                # Get account info
+                # Get account info from Alpaca if available
+                account_info = None
                 account_value = (
                     self._calculate_total_portfolio_value() + self.total_invested
                 )
                 if account_value == 0:
                     account_value = 10000.0  # Default starting value
+                
+                # Try to get real account info for PDT checking
+                if self.alpaca_trader:
+                    try:
+                        account_info = self.alpaca_trader.get_account_info()
+                        account_value = account_info.get("portfolio_value", account_value)
+                    except Exception:
+                        pass  # Fall back to calculated value
 
                 # Convert sentiment to score
                 sentiment_score = self._get_sentiment_boost(sentiment) / 10.0
@@ -1377,6 +1386,7 @@ class CoreStrategy:
                     sentiment_score=sentiment_score,
                     account_value=account_value,
                     trade_type="BUY",
+                    account_info=account_info,
                 )
 
                 if not validation["valid"]:
@@ -1391,7 +1401,7 @@ class CoreStrategy:
 
                 # Check if trading is allowed (circuit breakers)
                 if not self.risk_manager.can_trade(
-                    account_value, self.risk_manager.metrics.daily_pl
+                    account_value, self.risk_manager.metrics.daily_pl, account_info
                 ):
                     logger.warning("Trading suspended by circuit breaker")
                     return False
