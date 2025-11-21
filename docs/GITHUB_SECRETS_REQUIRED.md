@@ -24,13 +24,13 @@ These secrets are needed for the IPO scraper workflow:
 | Secret Name | Purpose | Required? | How to Get |
 |------------|---------|-----------|------------|
 | `GOOGLE_SHEETS_IPO_SPREADSHEET_ID` | Google Sheets spreadsheet ID with IPO targets | ✅ **YES** | Copy from Google Sheets URL |
-| `GOOGLE_SHEETS_CREDENTIALS_PATH` | Path to OAuth2 credentials JSON | ✅ **YES** | Download from Google Cloud Console |
-| `SLACK_BOT_TOKEN` | Slack bot token for alerts | ✅ **YES** | Create Slack app, get bot token |
+| `GOOGLE_SHEETS_CREDENTIALS_PATH` | Path to OAuth2 credentials JSON | ✅ **YES** | Create credentials.json (see below) |
 | `GOOGLE_SHEETS_TOKEN_PATH` | Path to store OAuth token | ❌ Optional | Defaults to `data/google_sheets_token.json` |
 | `GOOGLE_SHEETS_IPO_RANGE` | Sheet range to read | ❌ Optional | Defaults to `Target IPOs!A2:E100` |
+| `SLACK_BOT_TOKEN` | Slack bot token for alerts | ❌ **OPTIONAL** | IPO monitor works without Slack |
 | `SLACK_IPO_CHANNEL` | Slack channel for alerts | ❌ Optional | Defaults to `#trading-alerts` |
 
-**Note**: IPO Monitor workflow will skip gracefully if these secrets are missing (won't break daily trading).
+**Note**: IPO Monitor works without Slack - it will just print alerts to logs instead of sending Slack messages.
 
 ---
 
@@ -50,41 +50,51 @@ These secrets enable full MCP functionality (Gmail, Slack, Google Sheets):
 
 ## 📋 Quick Setup Guide
 
-### For IPO Monitor (Minimum Required)
+### For IPO Monitor (Minimum Required - NO SLACK NEEDED)
 
-1. **Google Sheets Setup**:
+1. **Create credentials.json**:
+   ```bash
+   # Run the setup script:
+   ./scripts/setup_google_sheets_credentials.sh
+   
+   # Or create manually: data/google_sheets_credentials.json
+   {
+     "installed": {
+       "client_id": "your-client-id.apps.googleusercontent.com",
+       "client_secret": "your-client-secret",
+       "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+       "token_uri": "https://oauth2.googleapis.com/token",
+       "redirect_uris": ["http://localhost:8080/"]
+     }
+   }
+   ```
+
+2. **Get Client ID and Secret from Google Cloud Console**:
+   ```bash
+   # 1. Go to: https://console.cloud.google.com/
+   # 2. Create project or select existing
+   # 3. Enable "Google Sheets API" and "Google Drive API"
+   # 4. Go to: APIs & Services → Credentials
+   # 5. Create OAuth 2.0 Client ID (Desktop app type)
+   # 6. Copy Client ID and Client Secret
+   ```
+
+3. **Create Google Sheet**:
    ```bash
    # 1. Create a Google Sheet with "Target IPOs" tab
    # 2. Add columns: Ticker (A), Company Name (B), Expected Date (C), Status (D), Notes (E)
    # 3. Get spreadsheet ID from URL: https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
    ```
 
-2. **Google Cloud Console Setup**:
-   ```bash
-   # 1. Go to: https://console.cloud.google.com/
-   # 2. Create project or select existing
-   # 3. Enable "Google Sheets API" and "Google Drive API"
-   # 4. Create OAuth 2.0 credentials (Desktop app)
-   # 5. Download JSON credentials file
-   # 6. Upload to GitHub Secrets as base64 or store securely
-   ```
-
-3. **Slack Setup**:
-   ```bash
-   # 1. Go to: https://api.slack.com/apps
-   # 2. Create new app → "From scratch"
-   # 3. Add bot token scopes: chat:write, channels:read, users:read
-   # 4. Install app to workspace
-   # 5. Copy "Bot User OAuth Token" (starts with xoxb-)
-   ```
-
 4. **Add to GitHub Secrets**:
    ```bash
    # Go to: https://github.com/IgorGanapolsky/trading/settings/secrets/actions
-   # Add these secrets:
+   # Add these 2 secrets (Slack is OPTIONAL):
    GOOGLE_SHEETS_IPO_SPREADSHEET_ID=<your_spreadsheet_id>
-   GOOGLE_SHEETS_CREDENTIALS_PATH=<path_or_base64_encoded_json>
-   SLACK_BOT_TOKEN=xoxb-your-token-here
+   GOOGLE_SHEETS_CREDENTIALS_PATH=data/google_sheets_credentials.json
+   
+   # Optional (for Slack alerts):
+   # SLACK_BOT_TOKEN=xoxb-your-token-here
    ```
 
 ---
@@ -101,9 +111,9 @@ These secrets enable full MCP functionality (Gmail, Slack, Google Sheets):
 - ⚠️ `OPENROUTER_API_KEY` (sentiment analysis)
 
 ### Nice to Have (New Features)
-- 📈 IPO Monitor: `GOOGLE_SHEETS_IPO_SPREADSHEET_ID`, `GOOGLE_SHEETS_CREDENTIALS_PATH`, `SLACK_BOT_TOKEN`
-- 📧 Gmail Integration: `GMAIL_CREDENTIALS_PATH`
-- 💬 Slack Integration: `SLACK_BOT_TOKEN` (shared with IPO Monitor)
+- 📈 IPO Monitor: `GOOGLE_SHEETS_IPO_SPREADSHEET_ID`, `GOOGLE_SHEETS_CREDENTIALS_PATH` (Slack optional)
+- 📧 Gmail Integration: `GMAIL_CREDENTIALS_PATH` (not needed)
+- 💬 Slack Integration: `SLACK_BOT_TOKEN` (optional - IPO monitor works without it)
 
 ---
 
@@ -139,10 +149,11 @@ If you just want to get started quickly:
 - ✅ `ALPACA_API_KEY`
 - ✅ `ALPACA_SECRET_KEY`
 
-**For IPO Monitor** (add these):
-- `GOOGLE_SHEETS_IPO_SPREADSHEET_ID`
-- `GOOGLE_SHEETS_CREDENTIALS_PATH`  
-- `SLACK_BOT_TOKEN`
+**For IPO Monitor** (add these 2 - NO SLACK NEEDED):
+- `GOOGLE_SHEETS_IPO_SPREADSHEET_ID` (from Google Sheets URL)
+- `GOOGLE_SHEETS_CREDENTIALS_PATH` (create credentials.json file)
+
+**Slack is OPTIONAL** - IPO monitor will work fine without it (just prints to logs).
 
 Everything else is optional and can be added later!
 

@@ -40,10 +40,11 @@ jobs:
           PAPER_TRADING: 'true'
           GOOGLE_SHEETS_IPO_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_IPO_SPREADSHEET_ID }}
           GOOGLE_SHEETS_IPO_RANGE: ${{ secrets.GOOGLE_SHEETS_IPO_RANGE || 'Target IPOs!A2:E100' }}
-          SLACK_IPO_CHANNEL: ${{ secrets.SLACK_IPO_CHANNEL || '#trading-alerts' }}
           GOOGLE_SHEETS_CREDENTIALS_PATH: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS_PATH }}
           GOOGLE_SHEETS_TOKEN_PATH: ${{ secrets.GOOGLE_SHEETS_TOKEN_PATH || 'data/google_sheets_token.json' }}
+          # Slack is optional - IPO monitor works without it
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_IPO_CHANNEL: ${{ secrets.SLACK_IPO_CHANNEL || '#trading-alerts' }}
         run: |
           echo "🚀 Running IPO scraper..."
           python3 scripts/ipo_scraper.py
