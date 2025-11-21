@@ -107,7 +107,24 @@ class RiskManager:
         if account_info:
             is_pdt = account_info.get("pattern_day_trader", False)
             equity = account_info.get("equity", account_value)
+            daytrade_count = account_info.get("daytrade_count", 0)
             
+            # Critical PDT protection: Block trading if daytrade_count >= 3 and equity < $25k
+            if daytrade_count >= 3 and equity < 25000.0:
+                self._send_alert(
+                    severity="CRITICAL",
+                    message=f"🚨 PDT PROTECTION: Daytrade count ({daytrade_count}) >= 3 and equity ${equity:,.2f} < $25,000. Trading blocked to prevent account lock.",
+                    details={
+                        "equity": equity,
+                        "daytrade_count": daytrade_count,
+                        "pattern_day_trader": is_pdt,
+                        "minimum_required": 25000.0
+                    },
+                )
+                self.metrics.circuit_breaker_triggered = True
+                return False
+            
+            # Standard PDT check (if flagged as PDT and equity insufficient)
             if is_pdt and equity < 25000.0:
                 self._send_alert(
                     severity="CRITICAL",
@@ -250,7 +267,28 @@ class RiskManager:
         if account_info:
             is_pdt = account_info.get("pattern_day_trader", False)
             equity = account_info.get("equity", account_value)
+            daytrade_count = account_info.get("daytrade_count", 0)
             
+            # Critical PDT protection: Block trade if daytrade_count >= 3 and equity < $25k
+            if daytrade_count >= 3 and equity < 25000.0:
+                validation_result["valid"] = False
+                validation_result["reason"] = (
+                    f"🚨 PDT PROTECTION: Daytrade count ({daytrade_count}) >= 3 and "
+                    f"equity ${equity:,.2f} < $25,000. Trading blocked to prevent account lock."
+                )
+                validation_result["warnings"].append(
+                    "PDT restriction: Account must maintain $25,000 equity for unlimited day trading"
+                )
+                return validation_result
+            
+            # Warn if approaching PDT limit
+            if daytrade_count >= 2 and equity < 25000.0:
+                validation_result["warnings"].append(
+                    f"⚠️  Warning: Daytrade count ({daytrade_count}/3). "
+                    f"Next trade will trigger PDT restriction if equity < $25,000"
+                )
+            
+            # Standard PDT check (if flagged as PDT and equity insufficient)
             if is_pdt and equity < 25000.0:
                 validation_result["valid"] = False
                 validation_result["reason"] = (

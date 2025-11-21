@@ -455,9 +455,36 @@ def execute_tier1(daily_amount):
 
     # Select best
     best = max(valid_scores, key=valid_scores.get)
+    technical_score = valid_scores[best]
 
     print(f"\n✅ Selected: {best}")
-    print(f"💰 Investment: ${amount:.2f} (70% of ${daily_amount:.2f})")
+    print(f"📊 Technical Score: {technical_score:.2f}")
+    
+    # 🚀 ALPHA GENERATION: Apply sentiment boost if conditions met
+    try:
+        from src.utils.sentiment_boost import calculate_sentiment_boost
+        
+        adjusted_amount, boost_info = calculate_sentiment_boost(
+            symbol=best,
+            base_amount=amount,
+            technical_score=technical_score,
+            sentiment_threshold=0.8,  # 80% sentiment threshold
+            boost_multiplier=1.2      # 20% boost
+        )
+        
+        if boost_info["boost_applied"]:
+            print(f"🚀 SENTIMENT EDGE APPLIED: ${amount:.2f} -> ${adjusted_amount:.2f} (+20%)")
+            print(f"   Reason: {boost_info['reason']}")
+            amount = adjusted_amount
+        else:
+            print(f"📊 No sentiment boost: {boost_info['reason']}")
+            if boost_info.get("sentiment_score") is not None:
+                print(f"   Sentiment: {boost_info['sentiment_score']:.2f}, Technical: {technical_score:.2f}")
+    except Exception as e:
+        print(f"⚠️  Sentiment boost error (non-critical): {e}")
+        # Continue with base amount if sentiment boost fails
+    
+    print(f"💰 Final Investment: ${amount:.2f} (70% base + sentiment boost)")
 
     # LANGCHAIN APPROVAL GATE (if enabled)
     if langchain_enabled and langchain_agent:
@@ -736,9 +763,36 @@ def execute_tier2(daily_amount):
 
     # Select best technical score
     selected = max(valid_scores, key=valid_scores.get)
+    technical_score = valid_scores[selected]
 
     print(f"\n✅ Selected: {selected}")
-    print(f"💰 Investment: ${amount:.2f} (30% of ${daily_amount:.2f})")
+    print(f"📊 Technical Score: {technical_score:.2f}")
+    
+    # 🚀 ALPHA GENERATION: Apply sentiment boost if conditions met
+    try:
+        from src.utils.sentiment_boost import calculate_sentiment_boost
+        
+        adjusted_amount, boost_info = calculate_sentiment_boost(
+            symbol=selected,
+            base_amount=amount,
+            technical_score=technical_score,
+            sentiment_threshold=0.8,  # 80% sentiment threshold
+            boost_multiplier=1.2      # 20% boost
+        )
+        
+        if boost_info["boost_applied"]:
+            print(f"🚀 SENTIMENT EDGE APPLIED: ${amount:.2f} -> ${adjusted_amount:.2f} (+20%)")
+            print(f"   Reason: {boost_info['reason']}")
+            amount = adjusted_amount
+        else:
+            print(f"📊 No sentiment boost: {boost_info['reason']}")
+            if boost_info.get("sentiment_score") is not None:
+                print(f"   Sentiment: {boost_info['sentiment_score']:.2f}, Technical: {technical_score:.2f}")
+    except Exception as e:
+        print(f"⚠️  Sentiment boost error (non-critical): {e}")
+        # Continue with base amount if sentiment boost fails
+    
+    print(f"💰 Final Investment: ${amount:.2f} (30% base + sentiment boost)")
 
     # Display disruptive theme
     themes = {

@@ -277,6 +277,15 @@ class AlpacaTrader:
                 "created_at": str(account.created_at),
                 "trade_suspended_by_user": account.trade_suspended_by_user,
             }
+            
+            # Add daytrade_count if available (Alpaca API attribute)
+            if hasattr(account, 'daytrade_count'):
+                account_info["daytrade_count"] = account.daytrade_count
+            elif hasattr(account, 'day_trade_count'):
+                account_info["daytrade_count"] = account.day_trade_count
+            else:
+                # Default to 0 if not available (paper trading may not track this)
+                account_info["daytrade_count"] = 0
 
             logger.info(
                 f"Retrieved account info: Portfolio value ${account_info['portfolio_value']:.2f}"
