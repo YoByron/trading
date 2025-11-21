@@ -39,10 +39,14 @@ if [ ! -f ".env" ]; then
     echo -e "${YELLOW}Dashboard will work but API features require ALPACA_API_KEY and ALPACA_SECRET_KEY${NC}\n"
 fi
 
+# Get local IP address for mobile access
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
+
 # Launch dashboard
 echo -e "${GREEN}Launching Trading Control Center...${NC}\n"
 echo -e "${BLUE}Dashboard will open at: http://localhost:8501${NC}"
+echo -e "${BLUE}Access from iPhone: http://${LOCAL_IP}:8501${NC}"
 echo -e "${BLUE}Press Ctrl+C to stop${NC}\n"
 
-streamlit run dashboard/trading_dashboard.py
+streamlit run dashboard/trading_dashboard.py --server.address=0.0.0.0 --server.port=8501
 
