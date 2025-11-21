@@ -52,17 +52,13 @@ langchain-anthropic>=1.0.0
 langchain-community>=0.4.0
 langgraph>=1.0.0
 
-# REMOVED (unused):
-# streamlit==1.39.0              # Never imported - dashboard not built
-# plotly==5.18.0                 # Never imported - visualization not used
-# selenium==4.15.0               # Never imported - web scraping not implemented
-# beautifulsoup4==4.12.2         # Never imported - HTML parsing not used
-# lxml==4.9.3                    # Never imported - XML parsing not used
-# fastapi==0.110.2               # Never imported - API server not built
-# uvicorn==0.24.0                # Never imported - ASGI server not needed
-# scikit-learn==1.5.0            # Never imported - ML models not implemented
-# python-crontab==3.0.0          # Never imported - using schedule instead
+# MCP Integrations
+google-api-python-client>=2.100.0  # Gmail and Google Sheets API
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0
+slack-sdk>=3.27.0  # Slack Web API
+gspread>=5.12.0  # Google Sheets helper library
 
-# CONDITIONALLY REMOVED (see REQUIREMENTS_AUDIT_REPORT.md):
-# chromadb==0.4.22               # Only used in RAG test scripts (not production)
-# sentence-transformers==3.0.1   # Only used in RAG embeddings (not production)
+# Monitoring & Alerts
+# requests already included above (line 25)
+# python-telegram-bot not needed - using direct Telegram API via requests

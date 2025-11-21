@@ -15,20 +15,46 @@ import logging
 from typing import Any, Dict, Mapping, Optional
 from datetime import datetime
 
+try:
+    from slack_sdk import WebClient
+    from slack_sdk.errors import SlackApiError
+    SLACK_API_AVAILABLE = True
+except ImportError:
+    SLACK_API_AVAILABLE = False
+
 from mcp.client import default_client
 from mcp.utils import ensure_env_var, run_sync
 
 logger = logging.getLogger(__name__)
 
+_slack_client = None
+
 
 def _get_slack_client():
-    """Get Slack client (placeholder for actual implementation)."""
-    # TODO: Integrate with Slack Web API
+    """Get Slack Web API client."""
+    global _slack_client
+    
+    if not SLACK_API_AVAILABLE:
+        logger.warning("Slack SDK not installed - install slack-sdk")
+        return None
+    
+    if _slack_client is not None:
+        return _slack_client
+    
     slack_token = os.getenv("SLACK_BOT_TOKEN")
     if not slack_token:
         logger.warning("SLACK_BOT_TOKEN not set - Slack MCP will be limited")
         return None
-    return None  # Placeholder
+    
+    try:
+        _slack_client = WebClient(token=slack_token)
+        # Test connection
+        _slack_client.auth_test()
+        logger.info("Slack API client initialized successfully")
+        return _slack_client
+    except Exception as e:
+        logger.error(f"Failed to initialize Slack client: {e}")
+        return None
 
 
 async def send_message_async(
@@ -49,17 +75,50 @@ async def send_message_async(
     """
     logger.info(f"Sending Slack message to {channel}")
     
-    # TODO: Implement actual Slack Web API integration
-    # For now, return mock data structure
+    client = _get_slack_client()
+    if not client:
+        return {
+            "success": False,
+            "channel": channel,
+            "message": message,
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+        }
     
-    return {
-        "success": True,
-        "channel": channel,
-        "message": message,
-        "ts": f"{datetime.now().timestamp()}",
-        "timestamp": datetime.now().isoformat(),
-        "note": "Slack MCP integration pending - requires SLACK_BOT_TOKEN"
-    }
+    try:
+        kwargs = {
+            "channel": channel,
+            "text": message
+        }
+        if thread_ts:
+            kwargs["thread_ts"] = thread_ts
+        
+        response = client.chat_postMessage(**kwargs)
+        
+        return {
+            "success": True,
+            "channel": channel,
+            "message": message,
+            "ts": response["ts"],
+            "timestamp": datetime.now().isoformat(),
+            "message_id": response.get("message", {}).get("ts")
+        }
+        
+    except SlackApiError as e:
+        logger.error(f"Slack API error: {e.response['error']}")
+        return {
+            "success": False,
+            "channel": channel,
+            "message": message,
+            "error": f"Slack API error: {e.response['error']}"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error sending Slack message: {e}")
+        return {
+            "success": False,
+            "channel": channel,
+            "message": message,
+            "error": str(e)
+        }
 
 
 def send_message(
@@ -89,16 +148,50 @@ async def send_formatted_message_async(
     """
     logger.info(f"Sending formatted Slack message to {channel}")
     
-    # TODO: Implement actual Slack Web API integration
+    client = _get_slack_client()
+    if not client:
+        return {
+            "success": False,
+            "channel": channel,
+            "blocks": blocks,
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+        }
     
-    return {
-        "success": True,
-        "channel": channel,
-        "blocks": blocks,
-        "ts": f"{datetime.now().timestamp()}",
-        "timestamp": datetime.now().isoformat(),
-        "note": "Slack MCP integration pending"
-    }
+    try:
+        kwargs = {
+            "channel": channel,
+            "blocks": blocks
+        }
+        if text:
+            kwargs["text"] = text
+        
+        response = client.chat_postMessage(**kwargs)
+        
+        return {
+            "success": True,
+            "channel": channel,
+            "blocks": blocks,
+            "ts": response["ts"],
+            "timestamp": datetime.now().isoformat(),
+            "message_id": response.get("message", {}).get("ts")
+        }
+        
+    except SlackApiError as e:
+        logger.error(f"Slack API error: {e.response['error']}")
+        return {
+            "success": False,
+            "channel": channel,
+            "blocks": blocks,
+            "error": f"Slack API error: {e.response['error']}"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error sending formatted Slack message: {e}")
+        return {
+            "success": False,
+            "channel": channel,
+            "blocks": blocks,
+            "error": str(e)
+        }
 
 
 def send_formatted_message(
@@ -126,16 +219,52 @@ async def send_dm_async(
     """
     logger.info(f"Sending DM to user {user_id}")
     
-    # TODO: Implement actual Slack Web API integration
+    client = _get_slack_client()
+    if not client:
+        return {
+            "success": False,
+            "user_id": user_id,
+            "message": message,
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+        }
     
-    return {
-        "success": True,
-        "user_id": user_id,
-        "message": message,
-        "ts": f"{datetime.now().timestamp()}",
-        "timestamp": datetime.now().isoformat(),
-        "note": "Slack MCP integration pending"
-    }
+    try:
+        # Open DM channel with user
+        conversation = client.conversations_open(users=[user_id])
+        channel_id = conversation["channel"]["id"]
+        
+        # Send message to DM channel
+        response = client.chat_postMessage(
+            channel=channel_id,
+            text=message
+        )
+        
+        return {
+            "success": True,
+            "user_id": user_id,
+            "message": message,
+            "ts": response["ts"],
+            "channel_id": channel_id,
+            "timestamp": datetime.now().isoformat(),
+            "message_id": response.get("message", {}).get("ts")
+        }
+        
+    except SlackApiError as e:
+        logger.error(f"Slack API error: {e.response['error']}")
+        return {
+            "success": False,
+            "user_id": user_id,
+            "message": message,
+            "error": f"Slack API error: {e.response['error']}"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error sending DM: {e}")
+        return {
+            "success": False,
+            "user_id": user_id,
+            "message": message,
+            "error": str(e)
+        }
 
 
 def send_dm(
