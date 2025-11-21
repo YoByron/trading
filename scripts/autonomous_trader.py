@@ -346,20 +346,27 @@ def wait_for_market_stabilization():
 
 
 def validate_data_freshness(symbol, hist_data):
-    """Ensure market data is fresh (< 2 hours old) to prevent stale data trades"""
+    """Ensure market data is fresh enough for trading (allows up to 48h for free Polygon tier)"""
     if hist_data is None or hist_data.empty:
         print(f"⚠️  {symbol}: No data available")
         return False
 
     try:
+        # Get max age from config (default 48 hours for free Polygon tier)
+        max_age_hours = int(os.getenv("MAX_DATA_AGE_HOURS", "48"))
+        
         latest_timestamp = hist_data.index[-1]
         age_hours = (datetime.now() - latest_timestamp).total_seconds() / 3600
 
-        if age_hours > 2:
-            print(f"⚠️  {symbol}: Data is {age_hours:.1f}h old - TOO STALE (rejecting)")
+        if age_hours > max_age_hours:
+            print(f"⚠️  {symbol}: Data is {age_hours:.1f}h old - TOO STALE (max: {max_age_hours}h, rejecting)")
             return False
 
-        print(f"✅ {symbol}: Data is {age_hours:.1f}h old - FRESH")
+        # Warn if data is older than 24h but still acceptable
+        if age_hours > 24:
+            print(f"⚠️  {symbol}: Data is {age_hours:.1f}h old - ACCEPTABLE (within {max_age_hours}h limit)")
+        else:
+            print(f"✅ {symbol}: Data is {age_hours:.1f}h old - FRESH")
         return True
     except Exception as e:
         print(f"⚠️  {symbol}: Error checking data freshness: {e}")
