@@ -50,19 +50,30 @@ def timeout_handler(signum, frame):
 def check_alpaca_api() -> bool:
     """Check Alpaca API connectivity and account access."""
     try:
-        api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
-        account = api.get_account()
-        equity = float(account.equity)
+        # Use broker health monitor for comprehensive check
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from src.core.broker_health import BrokerHealthMonitor
         
-        print(f"✅ Alpaca API: Connected")
-        print(f"   Portfolio: ${equity:,.2f}")
-        print(f"   Status: {account.status}")
+        monitor = BrokerHealthMonitor(broker_name="alpaca")
+        metrics = monitor.check_health()
         
-        if account.status != "ACTIVE":
-            print(f"⚠️  Account status: {account.status}")
+        if metrics.is_healthy:
+            print(f"✅ Alpaca API: Connected")
+            if metrics.buying_power:
+                print(f"   Buying Power: ${metrics.buying_power:,.2f}")
+            if metrics.account_status:
+                print(f"   Status: {metrics.account_status}")
+            if metrics.avg_response_time_ms > 0:
+                print(f"   Response Time: {metrics.avg_response_time_ms:.2f}ms")
+            return True
+        else:
+            print(f"❌ Alpaca API: UNHEALTHY")
+            print(f"   Status: {metrics.status.value}")
+            if metrics.last_error:
+                print(f"   Error: {metrics.last_error}")
+            if metrics.consecutive_failures > 0:
+                print(f"   Consecutive Failures: {metrics.consecutive_failures}")
             return False
-        
-        return True
     except Exception as e:
         print(f"❌ Alpaca API: FAILED - {e}")
         return False
