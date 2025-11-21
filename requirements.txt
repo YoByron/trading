@@ -4,8 +4,8 @@
 
 # Gemini 3 AI
 # Note: google-generativeai and langchain-google-genai versions must be compatible
-# Latest available version is 0.8.5 (as of Nov 2025)
-google-generativeai>=0.8.5
+# langchain-google-genai 2.0.0 requires google-generativeai<0.8.0, so we use 0.7.2
+google-generativeai>=0.7.2,<0.8.0
 langchain-google-genai>=2.0.0
 
 # Trading APIs
