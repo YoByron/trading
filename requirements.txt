@@ -9,7 +9,7 @@
 # langchain-google-genai>=2.0.0      # REMOVED - unused
 
 # Trading APIs
-alpaca-trade-api==3.0.2
+alpaca-trade-api==3.2.0  # Updated for aiohttp>=3.8.3 compatibility with langchain
 openai==1.0.0
 
 # Data Processing
