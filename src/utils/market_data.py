@@ -799,24 +799,29 @@ class MarketDataProvider:
             params = {
                 "adjusted": "true",
                 "sort": "asc",
-                "limit": 5000,
+                "limit": 120,  # Reduced limit to avoid rate limits
                 "apiKey": self.polygon_api_key,
             }
 
             response = self.session.get(url, params=params, timeout=10)
-            response.raise_for_status()
+            if response.status_code == 429:
+                # Too many requests – wait and raise to trigger retry
+                logger.warning("%s: Polygon.io rate limit hit (429). Sleeping 60s before retry.", symbol)
+                time.sleep(60)
+                response.raise_for_status()
+            else:
+                response.raise_for_status()
+
             payload = response.json()
 
             # Polygon v2 response handling
             status = payload.get("status")
-            if status != "OK" and status != "DELAYED":
-                # Only raise if it's an actual error, not just empty
+            if status not in ("OK", "DELAYED"):
                 if "error" in payload:
                     raise ValueError(f"Polygon.io API error: {payload['error']}")
                 elif "results" not in payload:
-                     # Sometimes empty responses just have status/request_id/count
-                     logger.warning("%s: Polygon.io returned no results (status: %s)", symbol, status)
-                     return None
+                    logger.warning("%s: Polygon.io returned no results (status: %s)", symbol, status)
+                    return None
 
             results = payload.get("results", [])
             if not results:
