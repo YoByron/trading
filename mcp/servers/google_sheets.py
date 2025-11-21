@@ -53,9 +53,15 @@ def _get_sheets_client():
     credentials_path = os.getenv("GOOGLE_SHEETS_CREDENTIALS_PATH")
     token_path = os.getenv("GOOGLE_SHEETS_TOKEN_PATH", "data/google_sheets_token.json")
     
+    # Default to data/google_sheets_credentials.json if not specified
     if not credentials_path:
-        logger.warning("GOOGLE_SHEETS_CREDENTIALS_PATH not set - Sheets MCP will be limited")
-        return None, None
+        default_path = "data/google_sheets_credentials.json"
+        if os.path.exists(default_path):
+            credentials_path = default_path
+            logger.info(f"Using default credentials path: {default_path}")
+        else:
+            logger.warning("GOOGLE_SHEETS_CREDENTIALS_PATH not set and default file not found - Sheets MCP will be limited")
+            return None, None
     
     try:
         creds = None
