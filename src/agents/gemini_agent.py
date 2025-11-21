@@ -33,7 +33,7 @@ class GeminiAgent:
         self,
         name: str,
         role: str,
-        model: str = "gemini-3.0-pro",
+        model: str = "gemini-3-pro-preview",
         default_thinking_level: str = "medium"
     ):
         """
