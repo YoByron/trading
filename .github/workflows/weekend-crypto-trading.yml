@@ -3,9 +3,11 @@ name: Weekend Crypto Trading
 on:
   schedule:
     # Run on Saturdays and Sundays at 10:00 AM Eastern
-    # Standard Time (Nov-Mar): UTC-5 -> 15:00 UTC = 10:00 AM ET
-    # TODO: Switch to 14:00 UTC in March when DST starts (UTC-4)
-    - cron: '0 15 * * 0,6'   # 10:00 AM Eastern (Standard Time Nov-Mar)
+    # IMPORTANT: Update cron expression when DST changes (March/November)
+    # EST (Nov-Mar): UTC-5 -> 10:00 AM ET = 15:00 UTC
+    # EDT (Mar-Nov): UTC-4 -> 10:00 AM ET = 14:00 UTC
+    # Run: python3 scripts/get_utc_time.py 10 0 0,6
+    - cron: '0 15 * * 0,6'   # 10:00 AM Eastern (EST: Nov-Mar, update to 14:00 UTC in March)
   workflow_dispatch:
     inputs:
       force_trade:

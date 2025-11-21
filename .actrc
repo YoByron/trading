@@ -1,0 +1,15 @@
+# ACT Configuration - Local GitHub Actions Runner
+# See: https://github.com/nektos/act
+
+# Use larger runner image for better compatibility
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Enable secrets from .github/local-secrets.env
+--secret-file .github/local-secrets.env
+
+# Enable verbose output
+-v
+
+# Set working directory
+-W .github/workflows
+

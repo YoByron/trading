@@ -83,20 +83,43 @@ class RiskManager:
         print(f"  - Max Drawdown: {max_drawdown_pct}%")
         print(f"  - Max Consecutive Losses: {max_consecutive_losses}")
 
-    def can_trade(self, account_value: float, daily_pl: float) -> bool:
+    def can_trade(
+        self, 
+        account_value: float, 
+        daily_pl: float, 
+        account_info: Optional[Dict[str, any]] = None
+    ) -> bool:
         """
         Determine if trading is allowed based on current risk parameters.
 
-        Checks circuit breakers including daily loss limits and drawdown limits
-        to determine if new trades can be executed.
+        Checks circuit breakers including daily loss limits, drawdown limits,
+        and Pattern Day Trader (PDT) restrictions to determine if new trades can be executed.
 
         Args:
             account_value: Current account value
             daily_pl: Today's profit/loss
+            account_info: Optional account info dict with 'pattern_day_trader' and 'equity' keys
 
         Returns:
             bool: True if trading is allowed, False otherwise
         """
+        # Check Pattern Day Trader restrictions
+        if account_info:
+            is_pdt = account_info.get("pattern_day_trader", False)
+            equity = account_info.get("equity", account_value)
+            
+            if is_pdt and equity < 25000.0:
+                self._send_alert(
+                    severity="CRITICAL",
+                    message=f"Pattern Day Trader restriction: Account equity ${equity:,.2f} below $25,000 minimum. Day trading restricted.",
+                    details={
+                        "equity": equity,
+                        "pattern_day_trader": is_pdt,
+                        "minimum_required": 25000.0
+                    },
+                )
+                self.metrics.circuit_breaker_triggered = True
+                return False
         # Update peak account value
         if account_value > self.peak_account_value:
             self.peak_account_value = account_value
@@ -187,12 +210,13 @@ class RiskManager:
         sentiment_score: float,
         account_value: float,
         trade_type: str = "BUY",
+        account_info: Optional[Dict[str, any]] = None,
     ) -> Dict[str, any]:
         """
         Validate a trade before execution.
 
         Performs comprehensive validation checks including position sizing,
-        sentiment score thresholds, and risk limits.
+        sentiment score thresholds, risk limits, and Pattern Day Trader restrictions.
 
         Args:
             symbol: Trading symbol
@@ -200,6 +224,7 @@ class RiskManager:
             sentiment_score: Sentiment analysis score (-1 to 1)
             account_value: Current account value
             trade_type: Type of trade (BUY/SELL)
+            account_info: Optional account info dict with PDT and equity info
 
         Returns:
             dict: Validation result with 'valid' flag and 'reason' for rejection
@@ -220,6 +245,22 @@ class RiskManager:
                 "Circuit breaker triggered - trading suspended"
             )
             return validation_result
+
+        # Check Pattern Day Trader restrictions
+        if account_info:
+            is_pdt = account_info.get("pattern_day_trader", False)
+            equity = account_info.get("equity", account_value)
+            
+            if is_pdt and equity < 25000.0:
+                validation_result["valid"] = False
+                validation_result["reason"] = (
+                    f"Pattern Day Trader restriction: Account equity ${equity:,.2f} "
+                    f"below $25,000 minimum required for day trading"
+                )
+                validation_result["warnings"].append(
+                    "PDT restriction: Account must maintain $25,000 equity for unlimited day trading"
+                )
+                return validation_result
 
         # Validate amount is positive
         if amount <= 0:
