@@ -62,12 +62,27 @@
 - **Where to Get**: https://openrouter.ai/keys
 - **Format**: String (e.g., `sk-or-v1-...`)
 - **GitHub Secret**: ✅ Yes
-- **Status**: ✅ Enabled for system improvement
+- **Status**: ✅ **ENABLED** - System uses multi-LLM sentiment analysis
 - **Benefits**: 
   - Advanced sentiment analysis with multi-model consensus
   - Better reasoning and market understanding
   - IPO analysis capabilities
   - Graceful fallback if unavailable (system continues without it)
+- **Cost**: ~$15-60/month (within $100/month budget)
+
+#### `GROK_API_KEY`
+- **Required**: ⚠️ Recommended (enables real-time Twitter/X sentiment)
+- **Purpose**: Real-time Twitter/X sentiment analysis via Grok API
+- **Where to Get**: https://x.ai/api (X.ai developer portal)
+- **Format**: String (API key from X.ai)
+- **GitHub Secret**: ✅ Yes
+- **Status**: ✅ **ENABLED** - Adds real-time FinTwit sentiment
+- **Benefits**:
+  - Real-time Twitter/X sentiment (faster than Reddit/Stocktwits)
+  - FinTwit community analysis
+  - Breaking news reactions
+  - Influencer tracking (Elon, Cathie Wood, analysts)
+- **Cost**: $30/month (within $100/month budget)
 
 #### `GOOGLE_API_KEY`
 - **Required**: ⚠️ If using ADK orchestrator or Google services
