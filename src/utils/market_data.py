@@ -122,6 +122,8 @@ class MarketDataProvider:
         # Configuration (loaded from env vars at instance creation)
         self.YFINANCE_LOOKBACK_BUFFER_DAYS = int(os.getenv("YFINANCE_LOOKBACK_BUFFER_DAYS", "35"))
         self.YFINANCE_SECONDARY_LOOKBACK_DAYS = int(os.getenv("YFINANCE_SECONDARY_LOOKBACK_DAYS", "150"))
+        # Polygon-specific lookback buffer (can be larger for free tier with delayed data)
+        self.POLYGON_LOOKBACK_BUFFER_DAYS = int(os.getenv("POLYGON_LOOKBACK_BUFFER_DAYS", "45"))  # Increased for free tier
         self.YFINANCE_MAX_RETRIES = int(os.getenv("YFINANCE_MAX_RETRIES", "3"))
         self.YFINANCE_INITIAL_BACKOFF_SECONDS = float(os.getenv("YFINANCE_INITIAL_BACKOFF_SECONDS", "1.0"))
 
@@ -136,6 +138,9 @@ class MarketDataProvider:
 
         self.CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", str(6 * 60 * 60)))  # 6 hours
         self.CACHE_MAX_AGE_DAYS = int(os.getenv("CACHE_MAX_AGE_DAYS", "7"))  # Use cached data up to 7 days old
+        self.MAX_DATA_AGE_HOURS = int(os.getenv("MAX_DATA_AGE_HOURS", "48"))  # Allow data up to 48h old for free Polygon tier
+        self.POLYGON_MAX_RETRIES = int(os.getenv("POLYGON_MAX_RETRIES", "3"))  # Max retries for Polygon API
+        self.POLYGON_INITIAL_BACKOFF_SECONDS = float(os.getenv("POLYGON_INITIAL_BACKOFF_SECONDS", "30.0"))  # Initial backoff: 30s
         self.session = session or requests.Session()
         # Harden yfinance requests to reduce 403/429 responses
         self.session.headers.update(
@@ -268,6 +273,8 @@ class MarketDataProvider:
                 self._log_health(symbol, result)
                 # Update performance metrics
                 self._metrics[DataSource.POLYGON].update(True, result.total_latency_ms)
+                # Cache successful response to disk for full CACHE_TTL_SECONDS
+                self._cache_polygon_response(symbol, prepared)
                 logger.info(
                     "%s: ✅ Successfully fetched from Polygon.io (%d rows, %d attempts, %.2fms)",
                     symbol,
@@ -414,6 +421,9 @@ class MarketDataProvider:
         logger.info("MarketDataProvider configuration (RELIABLE FIRST):")
         logger.info("  - Alpaca API: %s (PRIMARY - most reliable)", "✅ enabled" if self._alpaca_api else "❌ disabled")
         logger.info("  - Polygon.io: %s (SECONDARY - reliable paid)", "✅ enabled" if self.polygon_api_key else "❌ disabled")
+        if self.polygon_api_key:
+            logger.info("    * Polygon retries: %d, backoff: %.0fs (exponential), max_data_age: %dh", 
+                       self.POLYGON_MAX_RETRIES, self.POLYGON_INITIAL_BACKOFF_SECONDS, self.MAX_DATA_AGE_HOURS)
         logger.info("  - Cache: dir=%s, ttl=%ds, max_age=%dd (FAST FALLBACK)", self.cache_dir, self.CACHE_TTL_SECONDS, self.CACHE_MAX_AGE_DAYS)
         logger.info("  - yfinance: max_retries=%d (UNRELIABLE FREE - last resort)", self.YFINANCE_MAX_RETRIES)
         logger.info("  - Alpha Vantage: %s (SLOW RATE-LIMITED - avoid)", "enabled" if self.alpha_vantage_key else "disabled")
@@ -726,7 +736,7 @@ class MarketDataProvider:
     def _fetch_polygon_with_retries(
         self, symbol: str, lookback_days: int, result: MarketDataResult
     ) -> Optional[pd.DataFrame]:
-        """Fetch from Polygon.io API with retries."""
+        """Fetch from Polygon.io API with exponential backoff retries and cache fallback."""
         if not self.polygon_api_key:
             result.add_attempt(
                 FetchAttempt(
@@ -738,7 +748,7 @@ class MarketDataProvider:
             )
             return None
 
-        for attempt in range(1, 3):  # Max 2 attempts for Polygon
+        for attempt in range(1, self.POLYGON_MAX_RETRIES + 1):
             start_time = time.time()
             try:
                 data = self._fetch_polygon(symbol, lookback_days)
@@ -753,6 +763,8 @@ class MarketDataProvider:
                             latency_ms=latency_ms,
                         )
                     )
+                    # Cache successful response for full CACHE_TTL_SECONDS
+                    self._cache_polygon_response(symbol, data)
                     return data
                 else:
                     result.add_attempt(
@@ -764,6 +776,69 @@ class MarketDataProvider:
                             latency_ms=latency_ms,
                         )
                     )
+            except requests.exceptions.HTTPError as exc:
+                latency_ms = (time.time() - start_time) * 1000
+                # Check if it's a 429 rate limit error
+                response = getattr(exc, 'response', None)
+                if response is not None and response.status_code == 429:
+                    logger.warning(
+                        "%s: Polygon.io rate limit hit (429) on attempt %d/%d",
+                        symbol,
+                        attempt,
+                        self.POLYGON_MAX_RETRIES,
+                    )
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.POLYGON,
+                            timestamp=time.time(),
+                            success=False,
+                            error_message=f"Rate limit (429) on attempt {attempt}",
+                            latency_ms=latency_ms,
+                        )
+                    )
+                    # Check cache before retrying
+                    if attempt < self.POLYGON_MAX_RETRIES:
+                        cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
+                        if cached_data is not None and cache_age_hours is not None:
+                            max_age_hours = self.MAX_DATA_AGE_HOURS
+                            if cache_age_hours <= max_age_hours:
+                                logger.info(
+                                    "%s: Using cached Polygon data (%.1f hours old) after 429",
+                                    symbol,
+                                    cache_age_hours,
+                                )
+                                result.add_attempt(
+                                    FetchAttempt(
+                                        source=DataSource.CACHE,
+                                        timestamp=time.time(),
+                                        success=True,
+                                        rows_fetched=len(cached_data),
+                                        latency_ms=0.0,
+                                    )
+                                )
+                                return cached_data
+                    # Exponential backoff: 30s → 60s → 120s
+                    backoff = self.POLYGON_INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
+                    logger.info(
+                        "%s: Waiting %.0fs before retry (exponential backoff)",
+                        symbol,
+                        backoff,
+                    )
+                    time.sleep(backoff)
+                else:
+                    # Other HTTP errors - log and continue
+                    result.add_attempt(
+                        FetchAttempt(
+                            source=DataSource.POLYGON,
+                            timestamp=time.time(),
+                            success=False,
+                            error_message=str(exc),
+                            latency_ms=latency_ms,
+                        )
+                    )
+                    logger.debug("%s: Polygon.io attempt %d/%d failed: %s", symbol, attempt, self.POLYGON_MAX_RETRIES, exc)
+                    if attempt < self.POLYGON_MAX_RETRIES:
+                        time.sleep(1)  # Brief backoff for non-rate-limit errors
             except Exception as exc:
                 latency_ms = (time.time() - start_time) * 1000
                 result.add_attempt(
@@ -775,9 +850,30 @@ class MarketDataProvider:
                         latency_ms=latency_ms,
                     )
                 )
-                logger.debug("%s: Polygon.io attempt %d/2 failed: %s", symbol, attempt, exc)
-                if attempt < 2:
+                logger.debug("%s: Polygon.io attempt %d/%d failed: %s", symbol, attempt, self.POLYGON_MAX_RETRIES, exc)
+                if attempt < self.POLYGON_MAX_RETRIES:
                     time.sleep(1)  # Brief backoff
+
+        # Final fallback: check cache one more time
+        cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
+        if cached_data is not None and cache_age_hours is not None:
+            max_age_hours = self.MAX_DATA_AGE_HOURS
+            if cache_age_hours <= max_age_hours:
+                logger.info(
+                    "%s: Using cached Polygon data (%.1f hours old) after all retries failed",
+                    symbol,
+                    cache_age_hours,
+                )
+                result.add_attempt(
+                    FetchAttempt(
+                        source=DataSource.CACHE,
+                        timestamp=time.time(),
+                        success=True,
+                        rows_fetched=len(cached_data),
+                        latency_ms=0.0,
+                    )
+                )
+                return cached_data
 
         return None
 
@@ -789,7 +885,7 @@ class MarketDataProvider:
         try:
             # Polygon.io v2 aggregates endpoint
             end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=lookback_days + 30)  # Buffer for weekends/holidays
+            start_date = end_date - timedelta(days=lookback_days + self.POLYGON_LOOKBACK_BUFFER_DAYS)  # Buffer for weekends/holidays
             
             # Ensure dates are strings in YYYY-MM-DD format
             start_str = start_date.strftime('%Y-%m-%d')
@@ -804,13 +900,8 @@ class MarketDataProvider:
             }
 
             response = self.session.get(url, params=params, timeout=10)
-            if response.status_code == 429:
-                # Too many requests – wait and raise to trigger retry
-                logger.warning("%s: Polygon.io rate limit hit (429). Sleeping 60s before retry.", symbol)
-                time.sleep(60)
-                response.raise_for_status()
-            else:
-                response.raise_for_status()
+            # Don't handle 429 here - let _fetch_polygon_with_retries handle it with exponential backoff
+            response.raise_for_status()
 
             payload = response.json()
 
@@ -856,6 +947,15 @@ class MarketDataProvider:
         except Exception as exc:
             logger.warning("%s: Polygon.io fetch failed: %s", symbol, exc)
             return None
+
+    def _cache_polygon_response(self, symbol: str, data: pd.DataFrame) -> None:
+        """Cache successful Polygon response to disk for reuse."""
+        try:
+            cache_file = self.cache_dir / f"{symbol.upper()}_{datetime.now().date()}.csv"
+            data.to_csv(cache_file, index=True)
+            logger.debug("%s: Cached Polygon response to %s", symbol, cache_file)
+        except Exception as exc:
+            logger.debug("%s: Failed to cache Polygon response: %s", symbol, exc)
 
     def _fetch_alpha_vantage(self, symbol: str, max_total_time: float = 90.0, start_time: Optional[float] = None) -> Optional[pd.DataFrame]:
         """
