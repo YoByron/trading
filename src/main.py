@@ -512,7 +512,7 @@ class TradingOrchestrator:
             account_value = account_info["portfolio_value"]
             daily_pl = account_value - account_info.get("last_equity", account_value)
 
-            if not self.risk_manager.can_trade(account_value, daily_pl):
+            if not self.risk_manager.can_trade(account_value, daily_pl, account_info):
                 self.logger.warning(
                     "Trading blocked by risk manager - skipping Core Strategy execution"
                 )
@@ -568,7 +568,7 @@ class TradingOrchestrator:
             account_value = account_info["portfolio_value"]
             daily_pl = account_value - account_info.get("last_equity", account_value)
 
-            if not self.risk_manager.can_trade(account_value, daily_pl):
+            if not self.risk_manager.can_trade(account_value, daily_pl, account_info):
                 self.logger.warning(
                     "Trading blocked by risk manager - skipping Growth Strategy execution"
                 )
