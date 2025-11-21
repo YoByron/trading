@@ -74,7 +74,7 @@
 - **Required**: ⚠️ Recommended (enables real-time Twitter/X sentiment)
 - **Purpose**: Real-time Twitter/X sentiment analysis via Grok API
 - **Where to Get**: https://x.ai/api (X.ai developer portal)
-- **Format**: String (API key from X.ai)
+- **Format**: String starting with `xai-` (API key from X.ai)
 - **GitHub Secret**: ✅ Yes
 - **Status**: ✅ **ENABLED** - Adds real-time FinTwit sentiment
 - **Benefits**:
@@ -83,6 +83,23 @@
   - Breaking news reactions
   - Influencer tracking (Elon, Cathie Wood, analysts)
 - **Cost**: $30/month (within $100/month budget)
+
+#### X.com API Credentials (Optional - for direct Twitter API access)
+- **Required**: ❌ Optional (Grok API is primary method)
+- **Purpose**: Direct X.com/Twitter API access (if needed for advanced features)
+- **Where to Get**: https://developer.twitter.com/en/portal/dashboard
+- **GitHub Secret**: ✅ Yes (all credentials)
+- **Variables**:
+  - `X_API_KEY`: Twitter API key
+  - `X_API_SECRET`: Twitter API secret
+  - `X_BEARER_TOKEN`: Bearer token for API v2
+  - `X_CLIENT_ID`: OAuth 2.0 client ID
+  - `X_CLIENT_SECRET`: OAuth 2.0 client secret
+  - `X_ACCESS_TOKEN`: OAuth access token
+  - `X_ACCESS_TOKEN_SECRET`: OAuth access token secret
+  - `X_PROJECT_ID`: Twitter project ID
+  - `X_SCREEN_NAME`: Twitter screen name
+- **Status**: ✅ Configured (for future direct API integration if needed)
 
 #### `GOOGLE_API_KEY`
 - **Required**: ⚠️ If using ADK orchestrator or Google services
