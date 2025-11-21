@@ -34,7 +34,9 @@ def test_polygon_api():
         print("❌ POLYGON_API_KEY not set in environment")
         return False
     
-    print(f"✅ Polygon.io API key found: {api_key[:10]}...")
+    # Security: Mask API key in output (show only first 4 chars)
+    from src.utils.security import mask_api_key
+    print(f"✅ Polygon.io API key found: {mask_api_key(api_key)}")
     
     try:
         calculator = DCFValuationCalculator()
@@ -78,7 +80,9 @@ def test_finnhub_api():
         print("❌ FINNHUB_API_KEY not set in environment")
         return False
     
-    print(f"✅ Finnhub API key found: {api_key[:10]}...")
+    # Security: Mask API key in output (show only first 4 chars)
+    from src.utils.security import mask_api_key
+    print(f"✅ Finnhub API key found: {mask_api_key(api_key)}")
     
     try:
         client = FinnhubClient()
