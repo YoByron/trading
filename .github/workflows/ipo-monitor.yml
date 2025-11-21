@@ -33,6 +33,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Create credentials.json from secret (if provided)
+        if: secrets.GOOGLE_SHEETS_CREDENTIALS_JSON != ''
+        run: |
+          echo "${{ secrets.GOOGLE_SHEETS_CREDENTIALS_JSON }}" | base64 -d > data/google_sheets_credentials.json
+          echo "✅ Credentials file created from secret"
+
       - name: Run IPO scraper
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -40,7 +46,7 @@ jobs:
           PAPER_TRADING: 'true'
           GOOGLE_SHEETS_IPO_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_IPO_SPREADSHEET_ID }}
           GOOGLE_SHEETS_IPO_RANGE: ${{ secrets.GOOGLE_SHEETS_IPO_RANGE || 'Target IPOs!A2:E100' }}
-          GOOGLE_SHEETS_CREDENTIALS_PATH: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS_PATH }}
+          GOOGLE_SHEETS_CREDENTIALS_PATH: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS_PATH || 'data/google_sheets_credentials.json' }}
           GOOGLE_SHEETS_TOKEN_PATH: ${{ secrets.GOOGLE_SHEETS_TOKEN_PATH || 'data/google_sheets_token.json' }}
           # Slack is optional - IPO monitor works without it
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
