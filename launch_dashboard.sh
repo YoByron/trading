@@ -41,9 +41,13 @@ if [ ! -f "data/sentiment/reddit_2025-11-09.json" ]; then
     echo -e "  python scripts/collect_news_sentiment.py\n"
 fi
 
+# Get local IP address for mobile access
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
+
 # Launch dashboard
 echo -e "${GREEN}Launching dashboard...${NC}\n"
 echo -e "${BLUE}Dashboard will open at: http://localhost:8501${NC}"
+echo -e "${BLUE}Access from iPhone: http://${LOCAL_IP}:8501${NC}"
 echo -e "${BLUE}Press Ctrl+C to stop${NC}\n"
 
-streamlit run dashboard/sentiment_dashboard.py
+streamlit run dashboard/sentiment_dashboard.py --server.address=0.0.0.0 --server.port=8501
