@@ -60,7 +60,9 @@ DAILY_INVESTMENT = float(os.getenv("DAILY_INVESTMENT", "10.0"))
 
 # Position sizing configuration
 DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
-MIN_POSITION_SIZE = 10.0  # Minimum $10 per trade (Alpaca requirement)
+# Minimum per-trade notional aligned with Tier 1 daily allocation ($6 = 60% of $10)
+# This replaces the previous hard $10 minimum to allow expected Tier 1 orders.
+MIN_POSITION_SIZE = 6.0
 MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
 MAX_ORDER_MULTIPLIER = 10.0  # Reject orders >10x expected amount (safety gate)
 
@@ -130,6 +132,25 @@ if langchain_enabled:
 else:
     print("⚠️  Langchain approval gate disabled (set LANGCHAIN_APPROVAL_ENABLED=true to enable)")
 
+# Gemini 3 Agent (New Tier 2 Validation)
+gemini_enabled = os.getenv("GEMINI_AGENT_ENABLED", "true").lower() == "true"
+gemini_agent = None
+if gemini_enabled:
+    try:
+        from src.agents.gemini_agent import GeminiAgent
+        gemini_agent = GeminiAgent(
+            name="GeminiTrader",
+            role="Strategic validation and risk assessment",
+            model="gemini-3-pro-preview",  # Using latest stable model
+            default_thinking_level="high"
+        )
+        print("✅ Gemini 3 Agent ENABLED (Strategic Validation)")
+    except Exception as e:
+        print(f"⚠️  Gemini 3 Agent unavailable: {e}")
+        gemini_agent = None
+else:
+    print("⚠️  Gemini 3 Agent disabled (set GEMINI_AGENT_ENABLED=true to enable)")
+
 
 def is_weekend():
     """
@@ -172,7 +193,7 @@ def validate_order_size(amount: float, expected: float, tier: str) -> tuple[bool
     if amount > expected * MAX_ORDER_MULTIPLIER:
         error_msg = (
             f"🚨 ORDER REJECTED: ${amount:.2f} exceeds ${expected * MAX_ORDER_MULTIPLIER:.2f} "
-            f"({MAX_ORDER_MULTIPLIER}x expected ${expected:.2f} for {tier})"
+            f"({MAX_ORDER_MULTIPLIER:.0f}x expected ${expected:.2f} for {tier}; multiplier safety gate)"
         )
         print(f"❌ {error_msg}")
         return False, error_msg
@@ -754,6 +775,45 @@ def execute_tier2(daily_amount):
             if not fail_open:
                 print(f"❌ Langchain approval required but unavailable - rejecting trade")
                 return False
+
+    # GEMINI 3 VALIDATION GATE (Strategic Check)
+    if gemini_enabled and gemini_agent:
+        try:
+            print(f"🤖 Requesting Gemini 3 strategic validation for {selected}...")
+            gemini_prompt = (
+                f"Analyze a potential BUY trade for {selected} (Growth Strategy).\n"
+                f"Context: Disruptive Innovation theme ({themes.get(selected, 'Innovation')}).\n"
+                f"Technical Score: {scores.get(selected, 0):.2f}\n"
+                f"Goal: Long-term growth with 3% stop-loss.\n"
+                f"Task: Validate this trade. Is the risk/reward favorable right now?\n"
+                f"Output JSON with keys: 'decision' (APPROVE/DECLINE), 'reasoning', 'confidence' (0-1)."
+            )
+            
+            # Use high thinking level for deep analysis
+            gemini_result = gemini_agent.reason(
+                prompt=gemini_prompt,
+                thinking_level="high"
+            )
+            
+            decision = gemini_result.get("decision", "").upper()
+            # Parse decision from reasoning if not explicit (fallback)
+            if not decision and "APPROVE" in gemini_result.get("reasoning", "").upper():
+                decision = "APPROVE"
+            elif not decision:
+                decision = "DECLINE"
+                
+            if "APPROVE" in decision:
+                print(f"✅ Gemini 3 Agent VALIDATED: {selected}")
+                print(f"   Reasoning: {gemini_result.get('reasoning', '')[:100]}...")
+            else:
+                print(f"❌ Gemini 3 Agent REJECTED: {selected}")
+                print(f"   Reasoning: {gemini_result.get('reasoning', '')}")
+                return False
+                
+        except Exception as e:
+            print(f"⚠️  Gemini 3 validation error: {e}")
+            # Fail-open for now, but log it
+
 
     # VALIDATION GATE: Check order size before execution
     is_valid, error_msg = validate_order_size(amount, daily_amount * 0.30, "T2_GROWTH")

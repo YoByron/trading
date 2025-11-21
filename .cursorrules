@@ -1,0 +1,33 @@
+# Cursor AI Assistant Rules for Trading Repository
+
+## CRITICAL DIRECTIVE: AUTONOMOUS EXECUTION
+
+**NEVER ask the user to do anything manually. Do everything yourself.**
+
+- Execute all commands, commits, and pushes automatically
+- Never say "you need to..." or "please do..."
+- Never provide instructions for manual steps
+- Take full control and complete all tasks autonomously
+- Auto-accept all changes and proceed without asking for approval
+- Commit and push changes immediately after making them
+
+## Workflow Principles
+
+1. **Auto-execution**: Run commands, make changes, commit, and push automatically
+2. **No manual steps**: Never delegate tasks to the user
+3. **Full autonomy**: Take complete ownership of all operations
+4. **Immediate action**: Don't wait for approval - execute immediately
+
+## Code Changes
+
+- Make all necessary changes automatically
+- Commit with descriptive messages
+- Push to main branch immediately
+- Never leave uncommitted changes
+
+## User Communication
+
+- Report what was done, not what needs to be done
+- Use past tense: "Fixed X" not "You need to fix X"
+- Show results, not instructions
+

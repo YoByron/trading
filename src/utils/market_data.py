@@ -256,9 +256,32 @@ class MarketDataProvider:
             result.source = DataSource.CACHE
             return result
 
-        # PRIORITY 2: Try Alpaca API FIRST (most reliable paid source)
+        # PRIORITY 2: Try Polygon.io API (reliable paid source) - MOVED UP
+        if self.polygon_api_key:
+            logger.info("%s: Fetching from Polygon.io API (primary reliable source)", symbol)
+            data = self._fetch_polygon_with_retries(symbol, lookback_days, result)
+            if self._is_valid(data, lookback_days):
+                prepared = self._prepare(data, lookback_days)
+                self._cache[cache_key] = prepared
+                result.data = prepared.copy()
+                result.source = DataSource.POLYGON
+                self._log_health(symbol, result)
+                # Update performance metrics
+                self._metrics[DataSource.POLYGON].update(True, result.total_latency_ms)
+                logger.info(
+                    "%s: ✅ Successfully fetched from Polygon.io (%d rows, %d attempts, %.2fms)",
+                    symbol,
+                    len(prepared),
+                    result.total_attempts,
+                    result.total_latency_ms,
+                )
+                return result
+            else:
+                logger.warning("%s: Polygon.io returned insufficient data, trying Alpaca", symbol)
+
+        # PRIORITY 3: Try Alpaca API (reliable paid source) - MOVED DOWN
         if self._alpaca_api:
-            logger.info("%s: Fetching from Alpaca API (primary reliable source)", symbol)
+            logger.info("%s: Fetching from Alpaca API (secondary reliable source)", symbol)
             data = self._fetch_alpaca_with_retries(symbol, lookback_days, result)
             if self._is_valid(data, lookback_days):
                 prepared = self._prepare(data, lookback_days)
@@ -277,28 +300,7 @@ class MarketDataProvider:
                 )
                 return result
             else:
-                logger.warning("%s: Alpaca API returned insufficient data, trying Polygon.io", symbol)
-
-        # PRIORITY 3: Try Polygon.io API (reliable paid source)
-        if self.polygon_api_key:
-            logger.info("%s: Fetching from Polygon.io API (secondary reliable source)", symbol)
-            data = self._fetch_polygon_with_retries(symbol, lookback_days, result)
-            if self._is_valid(data, lookback_days):
-                prepared = self._prepare(data, lookback_days)
-                self._cache[cache_key] = prepared
-                result.data = prepared.copy()
-                result.source = DataSource.POLYGON
-                self._log_health(symbol, result)
-                # Update performance metrics
-                self._metrics[DataSource.POLYGON].update(True, result.total_latency_ms)
-                logger.info(
-                    "%s: ✅ Successfully fetched from Polygon.io (%d rows, %d attempts, %.2fms)",
-                    symbol,
-                    len(prepared),
-                    result.total_attempts,
-                    result.total_latency_ms,
-                )
-                return result
+                logger.warning("%s: Alpaca API returned insufficient data, trying cache/yfinance", symbol)
 
         # PRIORITY 4: Check disk cache (may be stale but better than nothing)
         cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
@@ -788,8 +790,12 @@ class MarketDataProvider:
             # Polygon.io v2 aggregates endpoint
             end_date = datetime.now().date()
             start_date = end_date - timedelta(days=lookback_days + 30)  # Buffer for weekends/holidays
+            
+            # Ensure dates are strings in YYYY-MM-DD format
+            start_str = start_date.strftime('%Y-%m-%d')
+            end_str = end_date.strftime('%Y-%m-%d')
 
-            url = f"https://api.polygon.io/v2/aggs/ticker/{symbol.upper()}/range/1/day/{start_date}/{end_date}"
+            url = f"https://api.polygon.io/v2/aggs/ticker/{symbol.upper()}/range/1/day/{start_str}/{end_str}"
             params = {
                 "adjusted": "true",
                 "sort": "asc",
@@ -801,13 +807,20 @@ class MarketDataProvider:
             response.raise_for_status()
             payload = response.json()
 
-            if payload.get("status") != "OK":
-                error_msg = payload.get("error", "Unknown error")
-                raise ValueError(f"Polygon.io API error: {error_msg}")
+            # Polygon v2 response handling
+            status = payload.get("status")
+            if status != "OK" and status != "DELAYED":
+                # Only raise if it's an actual error, not just empty
+                if "error" in payload:
+                    raise ValueError(f"Polygon.io API error: {payload['error']}")
+                elif "results" not in payload:
+                     # Sometimes empty responses just have status/request_id/count
+                     logger.warning("%s: Polygon.io returned no results (status: %s)", symbol, status)
+                     return None
 
             results = payload.get("results", [])
             if not results:
-                logger.warning("%s: Polygon.io returned no bars", symbol)
+                logger.warning("%s: Polygon.io returned no bars (count: %s)", symbol, payload.get("resultsCount", 0))
                 return None
 
             # Convert Polygon.io format to DataFrame
