@@ -41,6 +41,7 @@ from src.verification.output_verifier import OutputVerifier  # Claude Agent SDK 
 from src.orchestration.adk_integration import ADKTradeAdapter  # TURBO MODE: ADK integration
 from src.evaluation.trading_evaluator import TradingSystemEvaluator  # Week 1: Self-improving RAG evaluation
 from src.evaluation.rag_storage import EvaluationRAGStorage  # Optional RAG storage
+from src.core.risk_manager import RiskManager  # Risk management with PDT protection
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
@@ -419,7 +420,7 @@ def calculate_technical_score_wrapper(symbol):
         return 0
 
 
-def execute_tier1(daily_amount):
+def execute_tier1(daily_amount, risk_manager, account):
     """Tier 1: Core ETF Strategy - 70% using PROPER technical analysis"""
     amount = daily_amount * 0.70
 
@@ -525,6 +526,25 @@ def execute_tier1(daily_amount):
     is_valid, error_msg = validate_order_size(amount, daily_amount * 0.70, "T1_CORE")
     if not is_valid:
         print(f"❌ Tier 1 trade rejected: {error_msg}")
+        return False
+
+    # RISK MANAGER CHECK: PDT protection and daily loss limits
+    account_value = float(account.equity)
+    last_equity = float(account.last_equity) if hasattr(account, 'last_equity') else account_value
+    daily_pl = account_value - last_equity
+    
+    # Prepare account info for PDT checks
+    account_info = {
+        "equity": account_value,
+        "pattern_day_trader": account.pattern_day_trader if hasattr(account, 'pattern_day_trader') else False,
+        "daytrade_count": getattr(account, 'daytrade_count', getattr(account, 'day_trade_count', 0))
+    }
+    
+    if not risk_manager.can_trade(account_value, daily_pl, account_info):
+        print(f"🚨 RISK MANAGER BLOCKED: Trading not allowed (PDT protection or daily loss limit)")
+        risk_metrics = risk_manager.get_risk_metrics()
+        if risk_metrics.get("account_metrics", {}).get("circuit_breaker_triggered"):
+            print(f"   Circuit breaker triggered - check risk alerts")
         return False
 
     try:
@@ -732,7 +752,7 @@ def manage_existing_positions():
         traceback.print_exc()
 
 
-def execute_tier2(daily_amount):
+def execute_tier2(daily_amount, risk_manager, account):
     """Tier 2: Disruptive Innovation Strategy - 30% using PROPER technical analysis
 
     Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles) + AMZN (OpenAI deal)
@@ -880,6 +900,25 @@ def execute_tier2(daily_amount):
     is_valid, error_msg = validate_order_size(amount, daily_amount * 0.30, "T2_GROWTH")
     if not is_valid:
         print(f"❌ Tier 2 trade rejected: {error_msg}")
+        return False
+
+    # RISK MANAGER CHECK: PDT protection and daily loss limits
+    account_value = float(account.equity)
+    last_equity = float(account.last_equity) if hasattr(account, 'last_equity') else account_value
+    daily_pl = account_value - last_equity
+    
+    # Prepare account info for PDT checks
+    account_info = {
+        "equity": account_value,
+        "pattern_day_trader": account.pattern_day_trader if hasattr(account, 'pattern_day_trader') else False,
+        "daytrade_count": getattr(account, 'daytrade_count', getattr(account, 'day_trade_count', 0))
+    }
+    
+    if not risk_manager.can_trade(account_value, daily_pl, account_info):
+        print(f"🚨 RISK MANAGER BLOCKED: Trading not allowed (PDT protection or daily loss limit)")
+        risk_metrics = risk_manager.get_risk_metrics()
+        if risk_metrics.get("account_metrics", {}).get("circuit_breaker_triggered"):
+            print(f"   Circuit breaker triggered - check risk alerts")
         return False
 
     try:
@@ -1077,6 +1116,19 @@ def main():
     # Get current account value (for reporting only)
     account = api.get_account()
     account_value = float(account.equity)
+    
+    # Initialize Risk Manager with 2% daily loss limit (PDT protection included)
+    risk_manager = RiskManager(
+        max_daily_loss_pct=2.0,
+        max_position_size_pct=MAX_POSITION_SIZE_PCT,
+        max_drawdown_pct=10.0,
+        max_consecutive_losses=3
+    )
+    
+    # Reset daily counters if needed (check if new trading day)
+    current_date = date.today().isoformat()
+    if risk_manager.metrics.last_reset_date != current_date:
+        risk_manager.reset_daily_counters()
 
     # Fixed $10/day investment (North Star Fibonacci strategy)
     daily_investment = calculate_daily_investment()
@@ -1245,7 +1297,24 @@ def main():
                             print(f"⚠️  Langchain approval gate error: {e} (proceeding with ADK decision)")
                             langchain_approved = True  # Fail-open
                     
-                    if langchain_approved:
+                    # RISK MANAGER CHECK: PDT protection and daily loss limits
+                    account_value_adk = float(account.equity)
+                    last_equity_adk = float(account.last_equity) if hasattr(account, 'last_equity') else account_value_adk
+                    daily_pl_adk = account_value_adk - last_equity_adk
+                    
+                    account_info_adk = {
+                        "equity": account_value_adk,
+                        "pattern_day_trader": account.pattern_day_trader if hasattr(account, 'pattern_day_trader') else False,
+                        "daytrade_count": getattr(account, 'daytrade_count', getattr(account, 'day_trade_count', 0))
+                    }
+                    
+                    if not risk_manager.can_trade(account_value_adk, daily_pl_adk, account_info_adk):
+                        print(f"🚨 RISK MANAGER BLOCKED ADK Tier 1: Trading not allowed (PDT protection or daily loss limit)")
+                        risk_metrics = risk_manager.get_risk_metrics()
+                        if risk_metrics.get("account_metrics", {}).get("circuit_breaker_triggered"):
+                            print(f"   Circuit breaker triggered - check risk alerts")
+                        tier1_success = False
+                    elif langchain_approved:
                         try:
                             order = api.submit_order(
                                 symbol=tier1_decision.symbol,
@@ -1331,7 +1400,24 @@ def main():
                             print(f"⚠️  Langchain approval gate error: {e} (proceeding with ADK decision)")
                             langchain_approved = True  # Fail-open
                     
-                    if langchain_approved:
+                    # RISK MANAGER CHECK: PDT protection and daily loss limits
+                    account_value_adk2 = float(account.equity)
+                    last_equity_adk2 = float(account.last_equity) if hasattr(account, 'last_equity') else account_value_adk2
+                    daily_pl_adk2 = account_value_adk2 - last_equity_adk2
+                    
+                    account_info_adk2 = {
+                        "equity": account_value_adk2,
+                        "pattern_day_trader": account.pattern_day_trader if hasattr(account, 'pattern_day_trader') else False,
+                        "daytrade_count": getattr(account, 'daytrade_count', getattr(account, 'day_trade_count', 0))
+                    }
+                    
+                    if not risk_manager.can_trade(account_value_adk2, daily_pl_adk2, account_info_adk2):
+                        print(f"🚨 RISK MANAGER BLOCKED ADK Tier 2: Trading not allowed (PDT protection or daily loss limit)")
+                        risk_metrics = risk_manager.get_risk_metrics()
+                        if risk_metrics.get("account_metrics", {}).get("circuit_breaker_triggered"):
+                            print(f"   Circuit breaker triggered - check risk alerts")
+                        tier2_success = False
+                    elif langchain_approved:
                         try:
                             order = api.submit_order(
                                 symbol=tier2_decision.symbol,
@@ -1396,8 +1482,8 @@ def main():
         print("📊 Using rule-based strategies (MACD + RSI + Volume)")
         print("=" * 70)
         # Execute strategies with PROPER technical analysis
-        tier1_success = execute_tier1(daily_investment)
-        tier2_success = execute_tier2(daily_investment)
+        tier1_success = execute_tier1(daily_investment, risk_manager, account)
+        tier2_success = execute_tier2(daily_investment, risk_manager, account)
     
     track_daily_deposit(daily_investment)
 
