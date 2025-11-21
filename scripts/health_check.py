@@ -14,6 +14,7 @@ Alerts CEO via Telegram if any issues detected.
 import os
 import sys
 import json
+import subprocess
 from pathlib import Path
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional
@@ -68,19 +69,120 @@ class HealthChecker:
         print("=" * 70)
         print()
 
-        # Check 1: Trade file exists for today
+        # Check 1: GitHub Actions workflow status (MOST CRITICAL)
+        results.append(self.check_github_actions_status())
+
+        # Check 2: Trade file exists for today
         results.append(self.check_trade_file_exists())
 
-        # Check 2: System state is fresh
+        # Check 3: System state is fresh
         results.append(self.check_system_state_freshness())
 
-        # Check 3: No market data errors in logs
+        # Check 4: No market data errors in logs
         results.append(self.check_market_data_errors())
 
-        # Check 4: Portfolio matches Alpaca API (if available)
+        # Check 5: Portfolio matches Alpaca API (if available)
         results.append(self.check_portfolio_accuracy())
 
         return results
+
+    def check_github_actions_status(self) -> HealthCheckResult:
+        """
+        Check GitHub Actions workflow status for last 3 runs.
+        This is THE MOST CRITICAL check - if workflow fails, nothing executes.
+        """
+        print("🔍 Checking GitHub Actions workflow status...")
+
+        try:
+            # Query GitHub API for last 3 workflow runs
+            result = subprocess.run(
+                ["gh", "run", "list", "--workflow=daily-trading.yml", "--limit", "3", "--json", "conclusion,createdAt,displayTitle"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode != 0:
+                return HealthCheckResult(
+                    check_name="github_actions_status",
+                    status="WARNING",
+                    message=f"Cannot query GitHub API: {result.stderr[:100]}"
+                )
+
+            runs = json.loads(result.stdout)
+
+            if not runs:
+                return HealthCheckResult(
+                    check_name="github_actions_status",
+                    status="CRITICAL",
+                    message="No workflow runs found"
+                )
+
+            # Check last 3 runs
+            failures = [r for r in runs if r.get("conclusion") == "failure"]
+            successes = [r for r in runs if r.get("conclusion") == "success"]
+
+            # CRITICAL: 3 consecutive failures
+            if len(failures) >= 3:
+                return HealthCheckResult(
+                    check_name="github_actions_status",
+                    status="CRITICAL",
+                    message=f"Last 3 workflow runs FAILED - trading not executing!",
+                    details={
+                        "consecutive_failures": 3,
+                        "last_run": runs[0].get("createdAt"),
+                        "action": "Check GitHub Actions logs immediately"
+                    }
+                )
+
+            # WARNING: 2 failures
+            if len(failures) >= 2:
+                return HealthCheckResult(
+                    check_name="github_actions_status",
+                    status="WARNING",
+                    message=f"2 of last 3 workflow runs FAILED",
+                    details={
+                        "failures": len(failures),
+                        "successes": len(successes),
+                        "last_run": runs[0].get("createdAt")
+                    }
+                )
+
+            # WARNING: Latest run failed
+            if runs[0].get("conclusion") == "failure":
+                return HealthCheckResult(
+                    check_name="github_actions_status",
+                    status="WARNING",
+                    message="Latest workflow run FAILED",
+                    details={
+                        "last_run": runs[0].get("createdAt"),
+                        "action": "Check GitHub Actions logs"
+                    }
+                )
+
+            # HEALTHY: Recent successes
+            return HealthCheckResult(
+                check_name="github_actions_status",
+                status="HEALTHY",
+                message=f"Last 3 workflow runs: {len(successes)} success, {len(failures)} failure",
+                details={
+                    "last_run": runs[0].get("createdAt"),
+                    "last_conclusion": runs[0].get("conclusion")
+                }
+            )
+
+        except subprocess.TimeoutExpired:
+            return HealthCheckResult(
+                check_name="github_actions_status",
+                status="WARNING",
+                message="GitHub API query timed out"
+            )
+        except Exception as e:
+            return HealthCheckResult(
+                check_name="github_actions_status",
+                status="WARNING",
+                message=f"Failed to check workflow status: {str(e)[:100]}"
+            )
 
     def check_trade_file_exists(self) -> HealthCheckResult:
         """Verify data/trades_YYYY-MM-DD.json exists for today."""

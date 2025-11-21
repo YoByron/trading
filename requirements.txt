@@ -2,14 +2,11 @@
 # Optimized for fast CI/CD installation (<2 minutes)
 # Last updated: 2025-11-19
 
-# Gemini 3 AI
-# Note: google-generativeai and langchain-google-genai versions must be compatible
-# google-generativeai 0.7.2 uses google-ai-generativelanguage==0.6.6
-# langchain-google-genai 2.0.11+ requires google-ai-generativelanguage>=0.6.16
-# Solution: Use older langchain-google-genai that accepts 0.6.6, or make optional
-# Making langchain-google-genai optional - code gracefully degrades if not available
-google-generativeai>=0.7.2,<0.8.0
-# langchain-google-genai>=2.0.0  # TEMPORARILY DISABLED - dependency conflict
+# Gemini 3 AI - REMOVED (not used in production code)
+# Removed 2025-11-21: Caused dependency conflicts with google-api-core
+# No code imports google.generativeai - verified via grep
+# google-generativeai>=0.7.2,<0.8.0  # REMOVED - unused
+# langchain-google-genai>=2.0.0      # REMOVED - unused
 
 # Trading APIs
 alpaca-trade-api==3.0.2
