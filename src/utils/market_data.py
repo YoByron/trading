@@ -311,11 +311,12 @@ class MarketDataProvider:
 
         # PRIORITY 4: Check disk cache (may be stale but better than nothing)
         cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
-        if cached_data is not None and cache_age_hours is not None and cache_age_hours < 24:
+        if cached_data is not None and cache_age_hours is not None and cache_age_hours <= self.MAX_DATA_AGE_HOURS:
             logger.info(
-                "%s: Using cached data (%.1f hours old) - reliable fallback",
+                "%s: Using cached data (%.1f hours old, max allowed: %d hours) - reliable fallback",
                 symbol,
                 cache_age_hours,
+                self.MAX_DATA_AGE_HOURS,
             )
             result.data = cached_data
             result.source = DataSource.CACHE
@@ -347,11 +348,12 @@ class MarketDataProvider:
         # Try Alpha Vantage (last resort live source) - BUT CHECK CACHE FIRST
         # Skip Alpha Vantage if we have cached data (faster and avoids rate limits)
         cached_data, cache_age_hours = self._load_cached_data_with_age(symbol, lookback_days)
-        if cached_data is not None and cache_age_hours is not None and cache_age_hours < 24:
+        if cached_data is not None and cache_age_hours is not None and cache_age_hours <= self.MAX_DATA_AGE_HOURS:
             logger.info(
-                "%s: Using cached data (%.1f hours old) instead of Alpha Vantage to avoid rate limits",
+                "%s: Using cached data (%.1f hours old, max allowed: %d hours) before trying Alpha Vantage",
                 symbol,
                 cache_age_hours,
+                self.MAX_DATA_AGE_HOURS,
             )
             result.data = cached_data
             result.source = DataSource.CACHE
