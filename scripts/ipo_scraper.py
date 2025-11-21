@@ -27,11 +27,18 @@ import alpaca_trade_api as tradeapi
 # Import MCP integrations
 try:
     from mcp.servers.google_sheets import read_range
-    from mcp.servers.slack import send_message, create_trade_alert_block
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
-    print("⚠️  MCP integrations not available - install dependencies")
+    print("⚠️  Google Sheets MCP not available - install dependencies")
+
+# Slack is optional - only used if SLACK_BOT_TOKEN is set
+SLACK_AVAILABLE = False
+try:
+    from mcp.servers.slack import send_message
+    SLACK_AVAILABLE = True
+except ImportError:
+    pass
 
 load_dotenv()
 
@@ -39,6 +46,7 @@ load_dotenv()
 DATA_DIR = Path(__file__).parent.parent / "data"
 IPO_TRACKING_FILE = DATA_DIR / "ipo_tracking.json"
 SLACK_CHANNEL = os.getenv("SLACK_IPO_CHANNEL", "#trading-alerts")
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # Optional - IPO monitor works without it
 GOOGLE_SHEETS_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_IPO_SPREADSHEET_ID")
 GOOGLE_SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_IPO_RANGE", "Target IPOs!A2:E100")
 
@@ -151,7 +159,7 @@ def check_tradable_on_alpaca(ticker: str, api: tradeapi.REST) -> bool:
 
 def send_ipo_alert(ticker: str, company_name: str, notes: str = "") -> bool:
     """
-    Send IPO alert via Slack.
+    Send IPO alert via Slack (optional - only if SLACK_BOT_TOKEN is set).
     
     Args:
         ticker: Stock ticker symbol
@@ -159,10 +167,10 @@ def send_ipo_alert(ticker: str, company_name: str, notes: str = "") -> bool:
         notes: Additional notes
         
     Returns:
-        True if alert sent successfully
+        True if alert sent successfully, False if Slack not configured
     """
-    if not MCP_AVAILABLE:
-        logger.error("Slack MCP not available")
+    if not SLACK_AVAILABLE or not SLACK_BOT_TOKEN:
+        logger.debug("Slack not configured - skipping alert (IPO monitor works without it)")
         return False
     
     try:
@@ -217,11 +225,11 @@ def send_ipo_alert(ticker: str, company_name: str, notes: str = "") -> bool:
             logger.info(f"✅ IPO alert sent for {ticker}")
             return True
         else:
-            logger.error(f"Failed to send IPO alert: {result.get('error')}")
+            logger.warning(f"Failed to send IPO alert: {result.get('error')}")
             return False
             
     except Exception as e:
-        logger.error(f"Error sending IPO alert: {e}")
+        logger.warning(f"Error sending IPO alert (non-critical): {e}")
         return False
 
 
@@ -323,7 +331,12 @@ def main():
     if new_live_ipos:
         print("\n🚀 New Live IPOs:")
         for ipo in new_live_ipos:
-            print(f"   - {ipo['ticker']}: {ipo['company_name']}")
+            print(f"   ✅ {ipo['ticker']}: {ipo['company_name']}")
+            if ipo.get('notes'):
+                print(f"      Notes: {ipo['notes']}")
+    
+    if new_live_ipos and not alerts_sent:
+        print("\n💡 Tip: Set SLACK_BOT_TOKEN to receive Slack alerts for new IPOs")
     
     print("=" * 70)
     
