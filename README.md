@@ -158,6 +158,7 @@ These documents contain critical protocols and context for understanding how the
 - **[agent_framework/](src/agent_framework/)** - Base classes for the new agent architecture
 - **[orchestrator/main.py](src/orchestrator/main.py)** - CLI entrypoint for the new orchestrator
 - **[MCP_EXECUTION_GUIDE.md](docs/MCP_EXECUTION_GUIDE.md)** - Code-execution harness for MCP servers
+- **[UNUSED_FILE_DETECTION.md](docs/UNUSED_FILE_DETECTION.md)** - Automated unused file detection system
 - **[Full Documentation Index](docs/)** - All 42 documentation files
 
 ---
