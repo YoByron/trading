@@ -7,7 +7,7 @@ alpaca-trade-api==3.0.2
 openai==1.109.1
 
 # Data Processing
-pandas==2.1.0
+pandas==2.3.3
 numpy==1.25.0
 yfinance==0.2.66
 alpha-vantage==2.3.1
