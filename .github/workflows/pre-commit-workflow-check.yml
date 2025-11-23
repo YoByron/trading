@@ -1,0 +1,45 @@
+name: Pre-Commit Workflow Validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/test-workflows-local.sh'
+      - '.actrc'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Validate workflow files
+        run: |
+          echo "🔍 Validating workflow syntax..."
+          
+          # Check for YAML syntax errors
+          for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
+            if [ -f "$workflow" ] && [[ ! "$workflow" == *.disabled ]]; then
+              echo "Checking: $workflow"
+              python3 -c "
+          import yaml
+          import sys
+          try:
+              with open('$workflow', 'r') as f:
+                  yaml.safe_load(f)
+              print('  ✅ Valid YAML')
+          except yaml.YAMLError as e:
+              print(f'  ❌ YAML Error: {e}')
+              sys.exit(1)
+          " || exit 1
+            fi
+          done
+          
+          echo "✅ All workflows have valid syntax"
+
