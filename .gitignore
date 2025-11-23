@@ -30,6 +30,7 @@ logs/*.log
 *_key*
 api_keys.txt
 .github/local-secrets.env
+.secrets
 # Block test files in root (but allow in tests/ directory)
 /test_*.py
 /*_test.py

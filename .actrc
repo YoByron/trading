@@ -1,15 +1,17 @@
-# ACT Configuration - Local GitHub Actions Runner
+# ACT Configuration for Local GitHub Actions Testing
 # See: https://github.com/nektos/act
 
-# Use larger runner image for better compatibility
+# Use larger Ubuntu image for better compatibility
 -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
-# Enable secrets from .github/local-secrets.env
---secret-file .github/local-secrets.env
+# Use macOS image for macOS workflows (limited support)
+-P macos-latest=catthehacker/macos:act-latest
 
-# Enable verbose output
+# Container platform (auto-detect)
+--container-architecture linux/amd64
+
+# Reuse containers for faster runs
+--reuse
+
+# Verbose output for debugging
 -v
-
-# Set working directory
--W .github/workflows
-
