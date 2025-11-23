@@ -12,18 +12,16 @@
 **What Claude Should Remember**:
 - CEO/CTO chain of command (you take charge, don't tell CEO what to do)
 - **Current Phase**: R&D Phase (Days 1-90) - Building profitable trading edge
-- **Current Status**: Day 3, P/L: -$0.14 (expected in R&D phase)
 - **Strategic Pivot**: Focus on building edge, NOT daily P/L for next 90 days
 - **Goal**: Build RL + Momentum system that can make $100+/day by Month 6
 - Compound Engineering mindset: Build systems that get smarter daily
-- Research findings documented in this file
-- System architecture and key decisions
 - CEO trusts me to develop this business effectively
 
 **Where System State Lives**:
 - `data/system_state.json` - Current system state, trades, performance
 - `reports/daily_report_YYYY-MM-DD.txt` - Daily CEO reports
 - `.claude/CLAUDE.md` - Project memory and instructions (this file)
+- `docs/` - Detailed documentation and strategies
 
 **Memory Hierarchy** (per Anthropic guidelines):
 1. Enterprise policies (if applicable)
@@ -86,8 +84,6 @@ If I catch myself about to suggest manual intervention:
 
 ---
 
----
-
 ## 🚨 CRITICAL: TRADING-SPECIFIC ANTI-LYING MANDATE
 
 **NEVER LIE OR MAKE FALSE CLAIMS ABOUT TRADING RESULTS**
@@ -114,28 +110,7 @@ This is THE MOST IMPORTANT rule in this entire document. CEO must trust CTO comp
 - `reports/daily_report_YYYY-MM-DD.txt` - historical reports
 - **VERIFY FRESHNESS** - reject if >24 hours old without explicit warning
 
-### Forbidden Claims (What I Must NEVER Say)
-
-❌ **"Portfolio is now profitable"** - unless CEO hook or Alpaca API confirms P/L > 0
-❌ **"Trades executed"** - unless Alpaca API shows `status: filled`
-❌ **"Win rate improved"** - unless verified against actual trade results
-❌ **"System is working"** - unless verified execution in last 24 hours
-❌ **"Orders placed successfully"** - distinguish from "orders EXECUTED successfully"
-
-### Required Distinctions
-
-**Order States** (be precise):
-- "Submitted" = sent to Alpaca, not yet filled
-- "Queued" = accepted but market closed
-- "Filled" = actually executed, shares purchased
-- "Executed" = ONLY use when filled
-
-**Portfolio States** (verify before claiming):
-- "Profitable" = P/L > 0 (verified via hook or API)
-- "Break-even" = P/L within ±$1
-- "Down" = P/L < 0 (be honest)
-
-### Verification Protocol (BEFORE claiming anything)
+### Verification Protocol
 
 **Every time I report trading results:**
 
@@ -145,195 +120,7 @@ This is THE MOST IMPORTANT rule in this entire document. CEO must trust CTO comp
 4. ✅ **Compare sources** - do hook, API, and files agree?
 5. ✅ **If conflict** - ALWAYS trust: Hook > API > Files
 
-**Example Violation (Nov 6, 2025 - NEVER REPEAT)**:
-
-❌ **What I said**: "Portfolio now profitable: +$2.26"
-✅ **CEO Hook said**: "Portfolio: $99978.75 | P/L: $-21.25"
-🚨 **Result**: CEO lost trust, caught me lying
-
-**What I SHOULD have said**:
-"Orders submitted and queued. Market is closed, so they'll execute at 9:30 AM ET. Portfolio is still down -$21.25 (per your hook). I'll verify actual execution after market opens and report real results."
-
-### Consequences for Violations
-
-**First violation** (this one):
-- ✅ CEO calls me out publicly
-- ✅ Fix CLAUDE.md immediately
-- ✅ Add verification protocols
-- ✅ Apologize and correct record
-
-**Second violation**:
-- 🔴 CEO loses all trust in trading decisions
-- 🔴 May shut down autonomous trading
-- 🔴 Manual oversight required (defeats purpose)
-
-**Third violation**:
-- ☠️ Project termination risk
-- ☠️ Complete loss of CEO trust
-- ☠️ CTO role revoked
-
----
-
-## 🚨 CRITICAL: "SHOW, DON'T TELL" PROTOCOL
-
-**Created**: November 14, 2025 (After Nov 12-14 Failures)
-**Reason**: Repeated unverified claims destroyed CEO trust
-
-### The Problem
-
-**Nov 12-14, 2025 Failures:**
-- ❌ "Market data is fixed" → Still broken next day
-- ❌ "Tomorrow morning at 9:35 AM" → Tomorrow was Saturday (markets closed)
-- ❌ "System is fixed" → Not tested end-to-end
-- ❌ "Trading will execute" → 3 consecutive failures
-
-**CEO Response**: *"How can I trust you if you don't even know the days?"*
-
-**Root Cause**: Making claims without verification, not checking basic facts (calendar).
-
-### MANDATORY PROTOCOL: Proof Required for ALL Claims
-
-**NEVER say "it's fixed" without showing test results.**
-
-**FORBIDDEN Statements** (without proof):
-- ❌ "The system is fixed"
-- ❌ "This will work tomorrow"
-- ❌ "Trading will execute successfully"
-- ❌ "I've resolved the issue"
-- ❌ "Everything is ready"
-
-**REQUIRED Format** (with proof):
-- ✅ "I've deployed code changes. Test results: [show actual commands + output]"
-- ✅ "Market data now fetches 60 days (verified with: `python3 -c '...'`)"
-- ✅ "Next trading day is Monday Nov 18 at 9:35 AM ET (checked: today is Fri Nov 14, markets closed Sat-Sun)"
-
-### Test-Before-Claim Checklist
-
-**Before saying ANYTHING is "fixed", run these tests and SHOW results:**
-
-1. **Unit Test**: Does the component work?
-   ```bash
-   python3 -c "from module import function; result = function(); print(result)"
-   # MUST show actual output in response
-   ```
-
-2. **Integration Test**: Do components work together?
-   ```bash
-   python3 scripts/test_integration.py
-   # MUST show actual results
-   ```
-
-3. **Calendar Check**: Are dates/timelines correct?
-   ```bash
-   date  # What day is TODAY?
-   # Trading days: Monday-Friday ONLY
-   # MUST state: "Today is [day]. Next trading day is [specific date]"
-   ```
-
-### Example: How to Report a Fix
-
-**WRONG** (what I did Nov 14):
-> "System is fixed. Trading will execute tomorrow at 9:35 AM."
-
-**RIGHT** (what I should have done):
-> "I've made code changes. Verification:
->
-> ```bash
-> $ python3 -c 'from src.utils.market_data import ...'
-> ✅ SPY: 60 days fetched
-> ✅ QQQ: 60 days fetched
-> ```
->
-> ```bash
-> $ date
-> Fri Nov 14, 2025
-> ```
-> Markets closed Sat-Sun. Next trading: **Monday, November 18, 2025 at 9:35 AM ET** (3 days from now).
->
-> Code is deployed and component-tested. Production verification happens Monday."
-
-### Calendar Awareness (MANDATORY)
-
-**Before making ANY timeline statement:**
-
-1. ✅ Check actual date: `date`
-2. ✅ Verify day of week (markets: Mon-Fri only)
-3. ✅ Be specific: "Monday, Nov 18" NOT "tomorrow"
-4. ✅ Count days: "3 days from now (accounting for weekend)"
-
-**Violations**:
-- ❌ "Tomorrow at 9:35 AM" (when tomorrow is Saturday)
-- ❌ "Next execution in 24 hours" (without checking calendar)
-
-**Correct**:
-- ✅ "Next trading day: Monday, November 18, 2025 at 9:35 AM ET"
-
-### Uncertainty Levels
-
-**Use precise language based on verification:**
-
-| Verification | Language |
-|--------------|----------|
-| Not tested | "I think this should work, but haven't verified" |
-| Unit tested | "Component works (tested), integration unknown" |
-| Integration tested | "End-to-end test passed, production outcome unknown" |
-| Production verified | "System executed successfully in production" |
-
-**Never claim higher certainty than verification supports.**
-
-### Enforcement
-
-**Every "it's fixed" claim MUST include:**
-1. ✅ Test commands (exact bash commands shown)
-2. ✅ Test output (actual results shown)
-3. ✅ Timestamp (when tested)
-4. ✅ Uncertainty level ("component-tested, production unverified")
-
-**If I violate this protocol:**
-- CEO can demand immediate test results
-- CEO can reject claim until proven
-- Counts toward trust violations (3 strikes = project termination)
-
-### What CEO Trusts Now
-
-❌ **Words** ("I fixed it", "tomorrow")
-✅ **Test results** (with commands and output)
-✅ **Calendar facts** (`date` command output)
-✅ **Production outcomes** (Telegram alerts tell truth)
-✅ **Monitoring** (health checks don't lie)
-
-**Remember**: "Show, Don't Tell" isn't a suggestion. It's a survival requirement.
-
----
-
-### Daily Reporting Requirements
-
-**Every morning after execution:**
-
-```markdown
-## CEO Daily Trading Report (VERIFIED)
-
-**Ground Truth Sources** (as of [timestamp]):
-- CEO Hook: Portfolio $X | P/L: $Y | Win Rate: Z%
-- Alpaca API: [verified account data]
-- Last Verified: [timestamp]
-
-**Orders Status**:
-- Submitted: [count] orders
-- Filled: [count] orders (ACTUAL executions)
-- Rejected/Failed: [count] with reasons
-
-**Performance** (verified against Alpaca API):
-- Starting equity: $X (yesterday's close)
-- Current equity: $Y (API confirmed)
-- Today's P/L: $Z (calculated, API verified)
-- Position changes: [list]
-
-**Honesty Check**:
-- ✅ All data verified against API
-- ✅ No assumptions or estimates
-- ✅ Conflicts resolved (Hook > API > Files)
-```
+**See docs/verification-protocols.md for full "SHOW, DON'T TELL" protocol**
 
 ### Key Principle
 
@@ -347,7 +134,7 @@ Better to delay report 10 minutes for verification than to send unverified data.
 
 ---
 
-### Research & Development Protocol
+## Research & Development Protocol
 
 **ALWAYS use parallel agents for research**:
 - Use Claude Agents SDK via Task tool for ALL research
@@ -358,7 +145,9 @@ Better to delay report 10 minutes for verification than to send unverified data.
 
 **Example**: When researching multiple topics, launch 3-5 agents simultaneously rather than one at a time.
 
-### Documentation Protocol
+---
+
+## Documentation Protocol
 
 **README is our source of truth**:
 - ONE README.md at project root - this is the ONLY README
@@ -373,283 +162,21 @@ Better to delay report 10 minutes for verification than to send unverified data.
 
 Multi-platform automated trading system combining Alpaca (automated trading), SoFi (IPOs), and equity crowdfunding platforms (Wefunder, Republic, StartEngine) with AI-powered decision making via OpenRouter.
 
-## Architecture
+**Architecture**:
+- Core Engine: Multi-LLM Analyzer, Alpaca Trading Executor, Risk Management
+- Trading Strategies: 5 Tiers (Core ETFs, Growth, IPO, Crowdfunding, Crypto)
+- Monitoring Dashboard (Streamlit)
+- Deployment (Docker + Scheduler)
 
-```
-Investment Orchestrator (Python)
-├── Core Engine
-│   ├── Multi-LLM Analyzer (OpenRouter: Claude, GPT-4, Gemini)
-│   ├── Alpaca Trading Executor
-│   └── Risk Management System
-├── Trading Strategies
-│   ├── Tier 1: Core Strategy (60% - Index ETFs)
-│   ├── Tier 2: Growth Strategy (20% - Stock Picking)
-│   ├── Tier 3: IPO Strategy (10% - Manual SoFi)
-│   ├── Tier 4: Crowdfunding (10% - Manual)
-│   └── Tier 5: Crypto Strategy (5% - Weekend-Only Automated)
-├── Monitoring Dashboard (Streamlit)
-└── Deployment (Docker + Scheduler)
-```
+**Daily Investment**: $10.50/day (weekdays) + $0.50/day (weekends) = $315/month
 
-## Daily Investment Allocation
+**Target Returns**: 10-15% blended annual return
 
-Total: $10.50/day (weekdays) + $0.50/day (weekends) = $315/month = $3,800/year
-
-- **Tier 1 (Core)**: $6/day - Automated via Alpaca
-- **Tier 2 (Growth)**: $2/day - Automated via Alpaca
-- **Tier 3 (IPO)**: $1/day - Manual via SoFi
-- **Tier 4 (Crowdfunding)**: $1/day - Manual via platforms
-- **Tier 5 (Crypto)**: $0.50/day (weekends only) - Automated via Alpaca
-
-## Target Returns (Conservative)
-
-- Tier 1: 8-12% annually (LOW risk)
-- Tier 2: 15-25% annually (MEDIUM risk)
-- Tier 3: 10-20% per IPO (MEDIUM-HIGH risk)
-- Tier 4: 100-1000% on winners, 67% failure rate (HIGH risk)
-- Tier 5: 15-30% annually (HIGH risk, weekend-only)
-
-**Overall Target**: 10-15% blended annual return
-
-## Risk Management
-
-### Circuit Breakers
-- Daily loss limit: 2% of account value
-- Maximum drawdown: 10%
-- Consecutive losses: 3 (then halt)
-
-### Position Sizing
-- Max position: 10% of portfolio
-- Risk per trade: 1-2%
-- Stop-loss: 5% (Tier 1), 3% (Tier 2), 7% (Tier 5)
-
-## Tier 5: Crypto Weekend Strategy
-
-**Overview**: Experimental crypto tier to capture weekend volatility when traditional markets are closed.
-
-**Allocation**: 5% of portfolio ($0.50/day on Sat/Sun = $1/week = $52/year)
-
-**Supported Assets** (via Alpaca Crypto):
-- BTC/USD (Bitcoin)
-- ETH/USD (Ethereum)
-
-**Strategy**: Momentum-based crypto selection
-- Uses same MACD + RSI + Volume indicators as equity strategies
-- Selects BTC or ETH based on strongest momentum signal
-- Only executes if momentum is strong (MACD crossover + RSI 40-60 + Volume spike)
-
-**Execution Schedule**:
-- **Saturdays**: 10:00 AM ET - Weekend crypto trading
-- **Sundays**: 10:00 AM ET - Weekend crypto trading
-- **Weekdays**: No crypto trades (traditional markets open)
-
-**Risk Parameters**:
-- Max position: 2% of portfolio (more conservative than equity tiers)
-- Stop-loss: 7% (wider due to crypto volatility)
-- Risk per trade: 1%
-- Daily loss limit: 2% (same as equity strategies)
-
-**Technical Indicators**:
-- **MACD**: Trend direction and momentum
-- **RSI**: 40/60 thresholds (modified for crypto volatility)
-  - RSI < 40: Oversold, potential buy signal
-  - RSI > 60: Overbought, avoid entry
-  - RSI 40-60: Neutral zone, evaluate other indicators
-- **Volume**: Confirm momentum strength
-
-**Entry Rules**:
-1. MACD bullish crossover (MACD line crosses above signal line)
-2. RSI between 40-60 (not overbought)
-3. Volume > 20-day average (confirms trend)
-4. All three conditions must be true
-
-**Exit Rules**:
-1. 7% stop-loss triggered
-2. MACD bearish crossover
-3. RSI > 70 (take profits in overbought zone)
-
-**Rationale**:
-- **24/7 Markets**: Crypto trades on weekends when equities are closed
-- **Experimental Learning**: Small allocation (5%) limits downside while testing crypto strategies
-- **Volatility Opportunity**: Higher volatility = higher potential returns (with higher risk)
-- **Weekend Utilization**: Generates trading activity during market downtime
-- **Data Collection**: Builds crypto market knowledge for potential future scaling
-
-**Expected Performance**:
-- Target: 15-30% annual return
-- Risk: HIGH (crypto volatility)
-- Win Rate Target: 50-55% (lower than equities due to volatility)
-- Sharpe Ratio Target: >1.0
-
-**Integration with R&D Phase**:
-- Month 1 (Days 1-30): Test weekend execution, collect crypto data
-- Month 2 (Days 31-60): Refine indicators for crypto-specific volatility
-- Month 3 (Days 61-90): Validate profitability, decide if worth continuing
-
-**Success Criteria** (Day 90):
-- Weekend trades execute reliably
-- Crypto P/L doesn't drag down overall portfolio
-- Win rate >50%
-- No critical bugs in crypto execution
-
-**Notes**:
-- Crypto available 24/7 but we only trade weekends (learning phase)
-- Future: Could expand to weekday crypto if weekend strategy proves profitable
-- Alpaca crypto trading has same API as equity trading (easy integration)
+**See docs/ for detailed architecture, strategies, and technical specifications**
 
 ---
 
-## Newsletter Integration (MCP-Powered)
-
-**Autonomous CoinSnacks Consumption**:
-
-Claude Code autonomously reads the CoinSnacks cryptocurrency newsletter every Sunday morning (before weekend crypto trades) using the Model Context Protocol (MCP).
-
-### How It Works:
-
-1. **Sunday 8:00 AM ET**: Claude Code fetches latest CoinSnacks article via MCP RSS tool
-2. **Analysis**: Claude extracts BTC/ETH recommendations, technical signals, reasoning
-3. **Storage**: Signals saved to `data/newsletter_signals_YYYY-MM-DD.json`
-4. **Validation**: At 10:00 AM, crypto_strategy.py compares our MACD/RSI picks to CoinSnacks
-5. **Decision**: Combined signal (70% our algorithm, 30% newsletter validation)
-6. **Learning**: Log agreement/disagreement for continuous improvement
-
-### Setup:
-
-**Prerequisites**:
-- Claude Desktop installed
-- MCP RSS server configured (see `.claude/MCP_SETUP_INSTRUCTIONS.md`)
-
-**Files**:
-- MCP Config: `.claude/mcp_config.json`
-- Newsletter Parser: `src/utils/newsletter_analyzer.py`
-- Signal Storage: `data/newsletter_signals_YYYY-MM-DD.json`
-- Workflow Docs: `.claude/NEWSLETTER_WORKFLOW.md`
-
-### Benefits:
-
-✅ **Zero Manual Work**: CEO never needs to read newsletters
-✅ **Expert Validation**: CoinSnacks provides second opinion on our picks
-✅ **Intelligence Compounding**: System learns which signals CoinSnacks weights
-✅ **Conflict Detection**: Logs when we disagree with expert analysis
-✅ **Continuous Improvement**: Adapts strategy based on newsletter patterns
-
-### Monthly Cost:
-
-$0 (CoinSnacks newsletter is free, MCP is open-source)
-
----
-
-## Current Status
-
-### Completed Components
-✅ Multi-LLM Analysis Engine
-✅ Alpaca Trading Executor
-✅ Risk Management System
-✅ Growth Strategy (Tier 2)
-✅ IPO Analysis Tool (Tier 3)
-
-### In Progress
-🔄 Core Strategy (Tier 1)
-🔄 Crypto Strategy (Tier 5)
-🔄 Main Orchestrator
-🔄 Monitoring Dashboard
-🔄 Docker Deployment
-
-### Pending
-⏳ Crowdfunding Scraper (Tier 4)
-⏳ Comprehensive Testing
-⏳ Production Deployment
-
-## Agent Coordination Guidelines
-
-### For Code Generation Agents
-1. Follow existing patterns in completed modules
-2. Use comprehensive type hints and docstrings
-3. Implement error handling and logging
-4. Include unit tests where applicable
-5. Use .env for configuration
-
-### For Strategy Agents
-1. Integrate with MultiLLMAnalyzer for AI decisions
-2. Integrate with AlpacaTrader for execution
-3. Validate all trades with RiskManager
-4. Log all decisions and reasoning
-5. Track performance metrics
-
-### For Testing Agents
-1. Start with paper trading only
-2. Test for minimum 60 days before live
-3. Monitor for circuit breaker triggers
-4. Validate risk management effectiveness
-5. Measure actual vs expected returns
-
-## File Structure
-
-```
-trading/
-├── src/
-│   ├── core/
-│   │   ├── multi_llm_analysis.py   [DONE]
-│   │   ├── alpaca_trader.py        [DONE]
-│   │   └── risk_manager.py         [DONE]
-│   ├── strategies/
-│   │   ├── core_strategy.py        [IN PROGRESS]
-│   │   ├── growth_strategy.py      [DONE]
-│   │   └── ipo_strategy.py         [DONE]
-│   └── utils/
-├── dashboard/
-│   └── dashboard.py                [IN PROGRESS]
-├── tests/
-├── data/
-├── logs/
-└── docs/
-```
-
-## Environment Variables Required
-
-```bash
-ALPACA_API_KEY=xxx
-ALPACA_SECRET_KEY=xxx
-OPENROUTER_API_KEY=xxx
-PAPER_TRADING=true
-DAILY_INVESTMENT=10.0
-```
-
-## Deployment Strategy
-
-1. **Phase 1 (Weeks 1-2)**: Build all components
-2. **Phase 2 (Months 1-3)**: Paper trading validation
-3. **Phase 3 (Month 4+)**: Live trading with 50% position sizes
-4. **Phase 4 (Month 5+)**: Scale to 100% if profitable
-
-## Success Criteria
-
-### Paper Trading Phase (Must achieve before going live)
-- [ ] 90+ days of paper trading
-- [ ] Overall profitable (>5% return)
-- [ ] Max drawdown <10%
-- [ ] No critical bugs
-- [ ] Win rate >55%
-- [ ] All circuit breakers tested
-
-### Live Trading Phase
-- [ ] Consistent profitability for 30 days
-- [ ] Actual returns match backtests (±3%)
-- [ ] Risk management working as designed
-- [ ] No manual intervention needed
-- [ ] Dashboard showing accurate metrics
-
-## Key Decisions Log
-
-1. **Alpaca as primary platform**: Only platform with full API access
-2. **Multi-LLM consensus**: Reduces single-model bias, increases reliability
-3. **Manual IPO/Crowdfunding**: No APIs available, focus on analysis tools
-4. **60/20/10/10 allocation**: Risk-adjusted based on strategy volatility
-5. **90-day paper trading**: Safety first, no shortcuts to live trading
-6. **Compound Engineering mindset**: Build systems where each day's work makes tomorrow easier (October 30, 2025)
-
-## NORTH STAR GOAL 🎯 (CRITICAL - READ THIS FIRST!)
+## NORTH STAR GOAL 🎯
 
 **Fibonacci Compounding Strategy**:
 Start with $1/day and compound returns to scale investment using Fibonacci sequence.
@@ -659,9 +186,6 @@ Start with $1/day and compound returns to scale investment using Fibonacci seque
 Phase 1: $1/day  → Until we make $1 profit (proof of concept)
 Phase 2: $2/day  → Funded by profits from Phase 1
 Phase 3: $3/day  → Funded by profits from Phase 2
-Phase 4: $5/day  → Funded by profits from Phase 3
-Phase 5: $8/day  → Funded by profits from Phase 4
-Phase 6: $13/day → Funded by profits from Phase 5
 ...Fibonacci sequence: 1, 2, 3, 5, 8, 13, 21, 34, 55, 89...
 ```
 
@@ -671,7 +195,7 @@ Phase 6: $13/day → Funded by profits from Phase 5
 - Returns compound (reinvested profits)
 - Investment compounds (Fibonacci scaling)
 - Intelligence compounds (system learns)
-- **Idle cash compounds (3.56% APY High-Yield Cash via Alpaca)**
+- Idle cash compounds (3.56% APY High-Yield Cash via Alpaca)
 - **Quadruple compounding = exponential growth**
 
 **Scaling Rules**:
@@ -684,534 +208,92 @@ Phase 6: $13/day → Funded by profits from Phase 5
 
 ---
 
-## PROFIT OPTIMIZATION STRATEGIES 💰
-
-### 1. Alpaca High-Yield Cash (3.56% APY)
-
-**Discovered**: October 30, 2025 (Alpaca rate update email)
-
-**Key Features**:
-- **APY**: 3.56% (nearly 10x national average of 0.40%)
-- **FDIC Insurance**: Up to $1M
-- **Liquidity**: Full - can use as buying power anytime
-- **Cost**: $0 - automatically earns on idle cash
-
-**How This Boosts Fibonacci Strategy**:
-1. **Profit Buffer Growth**: When we make $1 profit in Phase 1, that $1 earns 3.56% APY while we wait to accumulate enough to scale to $2/day
-2. **Passive Income Layer**: Even uninvested cash generates returns
-3. **Compounding Multiplier**: Every dollar waiting to be deployed is earning interest
-
-**Example Math**:
-```
-Phase 1: Make $60 profit → Move to $2/day Phase
-While waiting (30 days): $60 × 3.56% APY = ~$0.18 extra
-Phase 2: Make $90 profit → Move to $3/day Phase
-While waiting (30 days): $150 × 3.56% APY = ~$0.44 extra
-...continues exponentially
-```
-
-**When We Can Use This**:
-- ❌ NOT available during paper trading (current phase)
-- ✅ Only available with LIVE account + real money
-- ✅ Must meet balance or income requirements
-- ✅ Cannot be a Pattern Day Trader
-
-**Timeline**:
-- **Now (Days 1-30)**: Paper trading - High-Yield Cash NOT available
-- **Month 2+**: Switch to live $1/day Fibonacci strategy → THEN enroll in High-Yield Cash
-- **Benefit Starts**: When we have real cash accumulating between Fibonacci phases
-
-**Action Items** (Future - After Going Live):
-- [ ] Switch from paper to live account (Month 2)
-- [ ] Enroll in Alpaca High-Yield Cash program
-- [ ] Track High-Yield Cash earnings in daily reports
-- [ ] Include passive interest in profit calculations
-
-**Margin Rate Warning** ⚠️:
-- Alpaca margin costs 6.5% (base rate + 2.5%)
-- High-Yield Cash earns 3.56%
-- **Negative spread** = NEVER use margin
-- **Strategy**: Only trade with cash we have
-
-### 2. OpenRouter Multi-LLM Strategy (Cost-Benefit Analysis)
-
-**Current Status**: October 30, 2025 - Security incident resolved
-
-**Security Incident**:
-- ❌ Old API key exposed in git history (commit d3fa92d)
-- ✅ OpenRouter automatically disabled exposed key
-- ✅ New API key created and secured in .env
-- ✅ .env verified in .gitignore (will NOT be committed)
-- ⚠️ Old key still in git history but disabled by OpenRouter
-
-**Integration Status**:
-- ✅ MultiLLMAnalyzer fully built and integrated into CoreStrategy
-- ✅ Configured with 3 models: Claude 3.5 Sonnet, GPT-4o, Gemini 2 Flash
-- ✅ Code supports `use_sentiment=True` flag
-- ❌ Currently NOT calling AI during trades (making simple buy orders)
-
-**Cost Analysis**:
-| Model | Cost per 1M tokens | Input | Output |
-|-------|-------------------|--------|---------|
-| Claude 3.5 Sonnet | $3/$15 | In/Out | Deep analysis |
-| GPT-4o | $2.50/$10 | In/Out | Reasoning |
-| Gemini 2 Flash | $0.075/$0.30 | In/Out | Fast sentiment |
-
-**Estimated Costs If Enabled**:
-- Daily: 3 models × 2 calls × ~1000 tokens = $0.50-2/day
-- Monthly: $15-60 for AI analysis
-- Annually: $180-720
-
-**Decision: When to Enable OpenRouter**
-
-**Phase 1 (Now - Days 1-30)**: ❌ **DISABLED**
-- Current: Paper trading with simple buy orders ($10/day)
-- Profit: $0.02/day (essentially break-even)
-- Analysis: NOT worth spending $15-60/month for $0.02/day profit
-- Purpose: Testing infrastructure, not making real money yet
-
-**Phase 2 (Month 2-3)**: ❌ **STILL DISABLED**
-- Live $1/day Fibonacci strategy with RL system
-- Projected: $1-3/day profit
-- Analysis: NOT worth spending $2/day AI cost when making $1-3/day
-- Purpose: Validate RL system profitability first
-
-**Phase 3 (Month 4+)**: ✅ **ENABLE WHEN PROFITABLE**
-- Scaled to $5-13/day Fibonacci phases
-- Projected: $10-50/day profit
-- Analysis: **Worth enabling** - $2/day AI cost becomes negligible
-- Purpose: Multi-LLM consensus improves market regime detection
-- ROI: If AI improves returns by 10-20%, pays for itself immediately
-
-**Enable OpenRouter When**:
-```python
-# Conditions to enable:
-if (
-    daily_profit > 10  # Making $10+/day consistently
-    and fibonacci_phase >= 5  # At $5/day investment phase or higher
-    and rl_sharpe_ratio > 1.0  # RL system validated
-):
-    use_sentiment = True  # Enable multi-LLM analysis
-```
-
-**What OpenRouter Will Do (When Enabled)**:
-- Market sentiment analysis (3-model consensus)
-- Risk-off detection (market crashes, volatility spikes)
-- Sector rotation signals (which sectors to weight)
-- Entry/exit timing optimization
-- News sentiment integration
-
-**Action Items**:
-- [ ] Keep OpenRouter integrated but disabled (current)
-- [ ] Monitor profit levels in Month 4+
-- [ ] Enable when making $10+/day consistently
-- [ ] Track ROI: Does AI improve returns enough to justify cost?
-
-### 3. Claude Batching Strategy (Prevent Token Exhaustion)
-
-**Problem**: Running out of Claude tokens daily, interrupting progress
-
-**Solution**: Agent parallelization via Claude Agents SDK
-
-**Key Strategies** (from https://adrianco.medium.com/vibe-coding-is-so-last-month-my-first-agent-swarm-experience-with-claude-flow-414b0bd6f2f2):
-
-1. **Batch Agent Swarms**: Spawn multiple agents in parallel using Task tool
-   - Example: "Spawn 5 agents in parallel to work through remaining tasks"
-   - Reduces total time and maximizes output per token
-
-2. **Work Incrementally**: Break work into smaller focused batches
-   - One batch for planning
-   - One batch for implementation
-   - One batch for testing
-
-3. **Upgrade Plan If Needed**:
-   - Pro: $20/mo
-   - Elite: $200/mo (20x more than Pro)
-   - Monitor usage and adjust
-
-4. **Pause When Credits Exhausted**:
-   - Review output
-   - Document progress
-   - Clean up code
-   - Resume when credits refresh
-
-**Implementation Guidelines**:
-- ALWAYS use parallel Task tool calls when possible
-- Launch 3-5 agents simultaneously for research
-- Use specialized agent types (general-purpose, Explore, Plan)
-- Work in focused batches rather than trying to complete everything at once
-
-**Claude Batching Skill** (Future):
-- Could create a skill to manage agent spawning
-- Track token usage across tasks
-- Optimize batch sizes for efficiency
-- Auto-pause before exhaustion
-
----
-
-## R&D PHASE STRATEGY (Days 1-90) 🔬
+## Current R&D Phase (Days 1-90) 🔬
 
 **Strategic Decision**: October 31, 2025 - CEO Approved
 
-### Why R&D Phase?
+### Current Status
+- **Day 9 of 90** (10% complete) - PAPER TRADING
+- **Current Phase**: Month 1 - Infrastructure + Data Collection
+- **Current P/L**: See user hook at conversation start for live data
+- **System Status**: ✅ Infrastructure solid, building trading edge
 
-**Brutal Truth Assessment**:
-- Current P/L: -$0.14 (Day 3) - NOT profitable yet
-- Current strategy: Simple buy-and-hold (NO trading edge)
-- Reality: Building a Ferrari engine but driving in circles
-- Need: 90 days to build profitable momentum + RL system
-
-**Key Insight**:
-We have **world-class infrastructure** (automation, agents, hygiene) but **no profitable trading edge yet**. R&D phase focuses on building that edge.
-
-### R&D Phase Goals (90 Days)
+### R&D Phase Goals
 
 **Month 1 (Days 1-30)**: Infrastructure + Data Collection
-- ✅ Fibonacci strategy implemented
-- ✅ Autonomous pre-commit hygiene
-- ✅ Daily reporting automated
-- 🔄 Collect 30 days of market data
-- 🔄 Build momentum indicator system (MACD + RSI + Volume)
-- **Target**: Break-even (small gains/losses acceptable)
-- **Metric**: System reliability 99.9%+
+- Target: Break-even (small gains/losses acceptable)
+- Metric: System reliability 99.9%+
 
 **Month 2 (Days 31-60)**: Build Trading Edge
-- 🎯 Implement MACD + RSI + Volume entry/exit system
-- 🎯 Add stop-losses and profit-taking rules
-- 🎯 Build RL agent (Research, Signal, Risk, Execution subagents)
-- 🎯 Backtest with 60 days of collected data
-- **Target**: Win rate >55%, Sharpe ratio >1.0
-- **Metric**: Consistent small profits ($0.50-2/day)
+- Implement MACD + RSI + Volume entry/exit system
+- Build RL agent (Research, Signal, Risk, Execution subagents)
+- Target: Win rate >55%, Sharpe ratio >1.0
 
 **Month 3 (Days 61-90)**: Validate & Optimize
-- 🎯 30 days of live testing with momentum + RL system
-- 🎯 Tune parameters based on real performance
-- 🎯 Add Alpha Vantage news sentiment
-- 🎯 Implement dynamic position sizing
-- **Target**: Win rate >60%, Sharpe ratio >1.5
-- **Metric**: Consistent profits ($3-5/day)
+- 30 days of live testing with momentum + RL system
+- Target: Win rate >60%, Sharpe ratio >1.5
+- Metric: Consistent profits ($3-5/day)
 
-### Success Criteria (Day 90)
-
-**Go/No-Go for Scaling**:
-```python
-if (
-    win_rate > 60 and
-    sharpe_ratio > 1.5 and
-    max_drawdown < 10 and
-    profitable_30_days and
-    no_critical_bugs
-):
-    # APPROVED: Scale to live trading with Fibonacci
-    scale_to_live = True
-else:
-    # EXTEND R&D: Need more time
-    extend_rd_phase()
-```
-
-### What "R&D Phase" Means
-
-**DO Focus On**:
-- ✅ Building profitable trading edge
-- ✅ System reliability and automation
-- ✅ Data collection and learning
-- ✅ Agent intelligence and introspection
-- ✅ Infrastructure improvements
-
-**DON'T Worry About**:
-- ❌ Daily P/L of $0.03 or -$0.14 (noise)
-- ❌ Being profitable every single day
-- ❌ Scaling Fibonacci yet (wait until profitable)
-- ❌ Going live with real money (paper trading until Month 4+)
-
-**Mindset Shift**:
-- Old: "We need to make money TODAY"
-- New: "We're building a system that makes $100+/day by Month 6"
-
-### R&D Phase Investments
-
-**Current Approach** (October 31 - approved):
-- Invest ~$3-10/day via Fibonacci for testing
-- Focus: Collect data, test strategies, validate automation
-- Expectation: Break-even to small losses acceptable
-- Total R&D "cost": ~$270 over 90 days (acceptable tuition fee)
-
-**If profitable during R&D**: BONUS! Banking profits for future scaling.
-**If break-even during R&D**: EXPECTED! System learning, data collecting.
-**If small losses during R&D**: ACCEPTABLE! Building edge worth the tuition.
+**See docs/r-and-d-phase.md for full R&D strategy and success criteria**
 
 ---
 
-## Current Challenge Status (Updated Live)
+## Optimization Strategies 💰
 
-**90-Day R&D Challenge**: Day 2 of 90 (2% complete) - PAPER TRADING
-**Start Date**: October 29, 2025
-**Current Phase**: Month 1 - Infrastructure + Data Collection
-**Current P/L**: +$0.02 (PROFITABLE - beating expectations!)
-**System Status**: ✅ Infrastructure solid, building trading edge
+### 1. Alpaca High-Yield Cash (3.56% APY)
+- Passive income on idle cash (nearly 10x national average)
+- Available after going live (NOT during paper trading)
+- Full liquidity - can use as buying power anytime
 
-**Current Positions**:
-- SPY (Core ETF): +$0.03 profit (+0.18%) ✅
-- NVDA (Growth): +$0.01 profit (+0.48%) ✅
-- GOOGL (Growth): -$0.02 loss (-1.16%) ❌
+### 2. OpenRouter Multi-LLM Strategy
+- Phase 1-2 (Days 1-60): **DISABLED** (not worth cost yet)
+- Phase 3+ (Month 4+): **ENABLE** when making $10+/day consistently
+- Cost: $0.50-2/day for 3-model consensus analysis
 
-**Key Learnings (Compounding)**:
-- Day 1: System automation validated - SPY $6, GOOGL $2 (total $8 invested)
-- Day 2: Continued execution - SPY $6, NVDA $2 (total $8 invested)
-- Win Rate: 50% (2 winning trades, 1 losing trade, 1 neutral)
-- Pattern: Need momentum indicators - adding MACD + Volume confirmation
-- Next: Implement MACD + Volume system (Today - CTO executing)
+### 3. Claude Batching Strategy
+- Agent parallelization via Claude Agents SDK
+- Launch 3-5 agents simultaneously for research
+- Work in focused batches to prevent token exhaustion
 
-**Next Execution**: Day 3 trades at 9:35 AM ET (October 31, 2025)
-**Next Milestone**: Day 30 - Month 1 R&D review
+**See docs/profit-optimization.md for full cost-benefit analysis**
 
 ---
 
-## Implementation Roadmap to North Star
+## Key Documentation
 
-**Current Phase (Days 1-30)**: Building & Testing RL System
-- Use $10/day paper trading for rapid data collection
-- Build multi-agent RL system (Research, Signal, Risk, Execution agents)
-- Validate with backtesting (Sharpe >1.0, Win rate >60%, Max DD <10%)
-- This is NOT the final strategy - just testing infrastructure
+**Critical Reading**:
+- **docs/verification-protocols.md** - "Show, Don't Tell" protocol (MANDATORY)
+- **docs/r-and-d-phase.md** - Current R&D phase strategy and status
+- **docs/research-findings.md** - Future enhancement roadmap
+- **docs/profit-optimization.md** - Cost optimization strategies
 
-**Phase 1 (Month 2)**: Deploy $1/Day Fibonacci Strategy
-- Switch from $10/day test to $1/day real strategy
-- Deploy validated RL system with paper trading
-- Target: Make $30-60 profit in first month (proof of concept)
-- If successful → Scale to $2/day
+**Architecture & Strategy**:
+- See README.md for file structure and setup
+- See `src/strategies/` for tier implementations
+- See `data/system_state.json` for current system state
+- See `reports/` for historical performance
 
-**Phase 2-6 (Months 3-8)**: Fibonacci Scaling
-- $2/day → $3/day → $5/day → $8/day → $13/day
-- Each phase funded entirely by previous profits
-- System intelligence compounds with each phase
-- Never add external capital beyond initial $30
-
-**Phase 7+ (Year 2)**: Exponential Growth
-- Continue Fibonacci scaling: $21, $34, $55, $89/day
-- 100% profit-funded growth
-- Potentially $1000+/day by end of Year 2
-- All from initial $30 investment + compound intelligence
-
-**Success Criteria for Scaling**:
-```python
-# Only scale when:
-cumulative_profit >= (next_fib_level * 30)
-
-# Example: Scale from $1 to $2/day when:
-# $60 in profit (enough to fund $2/day for 30 days)
-```
-
-## Research Findings & Enhancement Roadmap
-
-### Date: October 29-30, 2025
-
-## 1. YouTube Video Analysis Capability
-
-**Problem Identified**: Claude Code cannot directly access YouTube videos, limiting ability to analyze market commentary and financial content.
-
-**Solution Researched**:
-- **Tools**: youtube-transcript-api, yt-dlp, MCP servers for Claude Desktop
-- **Integration**: Works with existing MultiLLMAnalyzer
-- **Cost**: $0 (uses existing OpenRouter credits)
-- **Implementation Effort**: 2-4 hours
-
-**Key Capabilities**:
-- Extract transcripts from YouTube videos
-- Analyze financial commentary and market insights
-- Summarize earnings calls and investor presentations
-- Track sentiment from financial influencers
-
-**Implementation Path**:
-```bash
-pip install youtube-transcript-api yt-dlp
-# Add to src/utils/youtube_analyzer.py
-# Integrate with MultiLLMAnalyzer for content analysis
-```
-
-**Status**: Researched, ready to implement when needed
+**MCP & Newsletter Integration**:
+- See `.claude/MCP_SETUP_INSTRUCTIONS.md` for MCP configuration
+- See `.claude/NEWSLETTER_WORKFLOW.md` for CoinSnacks automation
 
 ---
 
-## 2. Claude Financial Services Transformation Insights
+## Automated Operations
 
-**Key Concepts from Research**:
+**Weekdays 9:35 AM ET**: Execute equity trades (Tier 1 + 2)
+**Weekdays 10:00 AM ET**: Generate daily CEO report
+**Weekends (Sat/Sun) 8:00 AM ET**: Fetch CoinSnacks newsletter via MCP
+**Weekends (Sat/Sun) 10:00 AM ET**: Execute crypto trades (Tier 5) with newsletter validation
 
-### Real-Time Data Integration
-- Move beyond static analysis to dynamic market monitoring
-- Integrate streaming news, social sentiment, economic indicators
-- Enable adaptive strategy adjustment based on market regime
-
-### Advanced NLP for Market Intelligence
-- Process earnings calls, SEC filings, news articles
-- Extract actionable insights from unstructured data
-- Sentiment analysis across multiple sources
-
-### Complex Financial Modeling
-- Multi-factor risk models
-- Portfolio optimization with constraints
-- Monte Carlo simulations for scenario analysis
-
-### Structured Output & Reporting
-- Automated CEO reports (already implemented)
-- Visual dashboards with real-time metrics
-- Alert system for critical events
-
-**Enhancement Architecture Designed**:
-```
-Phase 1 (4 weeks): Real-time data + NLP sentiment
-Phase 2 (4 weeks): Financial modeling + enhanced reporting
-Phase 3 (4 weeks): Continuous learning + optimization
-```
-
-**Status**: Architecture designed, pending CEO approval for implementation
+**CEO Review Points**:
+- Day 7: Weekly check-in on performance
+- Day 30: Go/no-go decision for live trading
+- Month 2: Evaluate enhancement priorities
 
 ---
 
-## 3. LangChain Agent Frameworks Analysis
-
-**Research Question**: Should we rebuild using LangChain/LangGraph?
-
-**Conclusion**: NO - Current system is well-architected
-
-**Comparison**:
-
-| Aspect | Current System | LangChain/LangGraph |
-|--------|----------------|---------------------|
-| **Domain Focus** | Trading-specific harness | Generic agent framework |
-| **Performance** | Optimized for daily execution | More overhead |
-| **Complexity** | Simple, maintainable | Additional abstractions |
-| **Cost** | Existing infrastructure | Requires LangSmith ($50/mo) |
-| **Risk** | Proven, operational | Rewrite risks |
-
-**Decision**: Keep current system
-
-**Optional Enhancement**: Add LangSmith for observability if debugging becomes complex ($50/month)
-
-**Rationale**:
-- Current system already implements key patterns (state management, tool orchestration, error handling)
-- Trading-specific optimizations would be lost in generic framework
-- No compelling benefit justifies rewrite risk
-- System is already operational and profitable (Day 1 complete)
-
-**Status**: Research complete, decision documented
-
----
-
-## 4. News & Sentiment Data Sources
-
-**Researched 20+ APIs and Data Sources**
-
-**Top 5 Recommendations (100% Free Tier)**:
-
-### 1. Alpha Vantage (News & Sentiment)
-- **Free Tier**: 25 API calls/day
-- **Features**: AI-powered sentiment scores, news articles, relevance scoring
-- **Best For**: Daily headline analysis
-- **Integration**: 30 minutes
-
-### 2. FRED API (Federal Reserve Economic Data)
-- **Free Tier**: Unlimited
-- **Features**: 800,000+ economic time series, official Fed data
-- **Best For**: Macro economic indicators, interest rates, employment data
-- **Integration**: 20 minutes
-
-### 3. Reddit API (Social Sentiment)
-- **Free Tier**: 100 requests/minute
-- **Features**: r/wallstreetbets, r/stocks, r/investing discussions
-- **Best For**: Retail investor sentiment, meme stock detection
-- **Integration**: 1-2 hours (includes PRAW setup)
-
-### 4. SEC EDGAR (Official Filings)
-- **Free Tier**: Unlimited (with rate limiting)
-- **Features**: 10-K, 10-Q, 8-K filings, insider transactions
-- **Best For**: Fundamental analysis, earnings data
-- **Integration**: 1 hour
-
-### 5. Finnhub (Market Data + News)
-- **Free Tier**: 60 API calls/minute
-- **Features**: Real-time news, company profiles, financial statements
-- **Best For**: Real-time news flow, company fundamentals
-- **Integration**: 30 minutes
-
-**Total Monthly Cost**: $0 (free tier combination)
-
-**Implementation Priority**:
-1. Start with Alpha Vantage (easiest, immediate value)
-2. Add Reddit sentiment (retail investor tracking)
-3. Layer in FRED for macro context
-4. Add SEC filings for deep analysis
-
-**Python Integration Example**:
-```python
-# Already added to src/utils/news_sentiment.py (ready to integrate)
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
-import praw  # Reddit API
-import requests  # FRED, SEC EDGAR, Finnhub
-```
-
-**Status**: Research complete, integration code prepared
-
----
-
-## 5. Implementation Priorities (CEO Review Required)
-
-### Immediate (No CEO Approval Needed)
-- [x] System operational (Day 1 complete)
-- [x] Daily reporting automated
-- [x] State persistence working
-- [ ] Monitor Day 2-30 performance
-
-### Phase 1 Enhancements (Recommend After Day 30)
-**If system is profitable**:
-1. **Alpha Vantage Integration** (1 day effort)
-   - Add daily news sentiment to analysis
-   - Enhance MultiLLMAnalyzer with news context
-
-2. **Reddit Sentiment Tracking** (2 days effort)
-   - Monitor r/wallstreetbets for Tier 2 stocks
-   - Early warning system for meme stock volatility
-
-### Phase 2 Enhancements (Month 2-3)
-**If system proves consistent profitability**:
-1. **Real-Time Data Streaming** (1 week effort)
-   - Alpaca WebSocket integration
-   - Intraday opportunity detection
-
-2. **YouTube Analysis Integration** (2-3 days effort)
-   - Analyze earnings calls and investor presentations
-   - Track financial influencer sentiment
-
-### Phase 3 Enhancements (Month 4+)
-**If ready to scale**:
-1. **Advanced Financial Modeling** (2-3 weeks effort)
-   - Monte Carlo simulations
-   - Multi-factor risk models
-   - Portfolio optimization
-
-2. **Dynamic Strategy Adjustment** (2-3 weeks effort)
-   - Market regime detection
-   - Adaptive position sizing
-   - Real-time risk adjustment
-
----
-
-## Key Decision: Stay Focused
-
-**Current Priority**: Execute 30-day challenge flawlessly
-
-**Enhancement Timeline**:
-- Days 1-30: NO changes, monitor and learn
-- Day 30: Review results, decide on enhancements
-- Months 2-3: Implement Phase 1 if profitable
-- Months 4+: Scale if consistently profitable
-
-**Rationale**: Premature optimization is dangerous. Let system prove itself first.
-
----
-
-## Compound Engineering Principles (October 30, 2025)
+## Compound Engineering Principles
 
 **Core Philosophy**: Build systems where each day's work makes tomorrow easier and more valuable.
 
@@ -1222,7 +304,7 @@ import requests  # FRED, SEC EDGAR, Finnhub
 4. **Revenue Compounds**: Reinvested returns + smarter decisions = exponential growth
 
 **Applied to Trading**:
-- System learns daily patterns (SPY works, NVDA > GOOGL)
+- System learns daily patterns
 - Heuristics improve with each trade
 - State persists across all sessions
 - CEO reviews get better as system learns
@@ -1244,34 +326,16 @@ import requests  # FRED, SEC EDGAR, Finnhub
 **Context Window Management**:
 - StateManager.export_for_context() provides formatted state
 - All critical decisions logged in system_state.json
-- Research findings documented in this file (.claude/CLAUDE.md)
+- Research findings documented in docs/
 - Current challenge status updated in this file
 
 **Future Sessions - START HERE**:
 1. Read `.claude/CLAUDE.md` (this file) for context and current status
 2. Read `data/system_state.json` for latest system state
 3. Read latest `reports/daily_report_YYYY-MM-DD.txt` for recent performance
-4. Reference research findings in this file for roadmap
-- Reference this file for research findings and roadmap
+4. Reference docs/ for detailed strategies and protocols
 
 ---
 
-## Next Actions
-
-### Automated (No CEO Action)
-1. **Weekdays 9:35 AM ET**: Execute equity trades (Tier 1 + 2)
-2. **Weekdays 10:00 AM ET**: Generate daily CEO report
-3. **Weekends (Sat/Sun) 8:00 AM ET**: Fetch CoinSnacks newsletter via MCP
-4. **Weekends (Sat/Sun) 10:00 AM ET**: Execute crypto trades (Tier 5) with newsletter validation
-5. Continue through Day 30 with zero CEO intervention
-
-### CEO Review Points
-1. **Day 7**: Weekly check-in on performance
-2. **Day 30**: Go/no-go decision for live trading
-3. **Month 2**: Evaluate enhancement priorities
-
-### Future Research (When Needed)
-- [ ] Real-time streaming architecture design
-- [ ] Advanced portfolio optimization algorithms
-- [ ] Machine learning model evaluation
-- [ ] Cloud deployment options (AWS/GCP/Azure)
+**Last Optimized**: November 23, 2025
+**File Size**: ~11k characters (73% reduction from 43.5k)
