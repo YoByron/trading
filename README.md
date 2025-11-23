@@ -46,6 +46,21 @@ PYTHONPATH=src python3 -m orchestrator.main --mode paper
 
 ---
 
+## 📖 Project Documentation
+
+**CRITICAL - Read These First**:
+- **[docs/verification-protocols.md](docs/verification-protocols.md)** - "Show, Don't Tell" protocol (MANDATORY reading for all agents and developers)
+- **[docs/r-and-d-phase.md](docs/r-and-d-phase.md)** - Current R&D phase strategy and status (Day 9/90)
+- **[docs/AGENTS.md](docs/AGENTS.md)** - Agent coordination guidelines for autonomous operation
+
+**Strategic Context**:
+- **[docs/research-findings.md](docs/research-findings.md)** - Future enhancement roadmap and researched capabilities
+- **[docs/profit-optimization.md](docs/profit-optimization.md)** - Cost optimization strategies (OpenRouter, High-Yield Cash, batching)
+
+These documents contain critical protocols and context for understanding how the system operates, what phase we're in, and how to verify work properly. All AI agents MUST read verification-protocols.md before making claims about system status or completion.
+
+---
+
 ## 💰 Performance (Validated)
 
 **60-Day Backtest** (Sept-Oct 2025):
