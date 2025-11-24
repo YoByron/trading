@@ -29,10 +29,10 @@ jobs:
             
             const issueTitle = `🚨 Daily Trading Execution Failed - Run #${runNumber}`;
             const issueBody = `## Trading Execution Failure Alert
-            
-**Workflow Run**: [#${runNumber}](${runUrl})
-**Date/Time**: ${runDate} EST
-**Status**: ${run.conclusion}
+
+Workflow Run: [#${runNumber}](${runUrl})
+Date/Time: ${runDate} EST
+Status: ${run.conclusion}
 
 ### Action Required
 1. Check the workflow logs: ${runUrl}

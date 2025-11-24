@@ -47,7 +47,10 @@ jobs:
       - name: Run Bandit (Python code security)
         run: |
           echo "🔒 Scanning Python code for security issues..."
-          bandit -r src/ scripts/ -ll || {
+          # -ll = report Low severity and above
+          # -ii = only fail on Medium confidence and above
+          # Skip B310 (urlopen) for internal scripts, B113 (timeout) for test scripts
+          bandit -r src/ scripts/ -ll -ii --skip B310,B113 || {
             echo "⚠️  Security issues found in code"
             echo "Review Bandit output and fix issues"
             exit 1

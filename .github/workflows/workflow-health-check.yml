@@ -84,9 +84,9 @@ jobs:
                   repo: context.repo.repo,
                   title: `🚨 URGENT: ${disabledWorkflows.length} Critical Workflow(s) Disabled`,
                   body: `## 🚨 Critical Workflow Disabled Alert
-                
-**Detected**: ${new Date().toISOString()}
-**Workflows Affected**: ${workflowNames}
+
+Detected: ${new Date().toISOString()}
+Workflows Affected: ${workflowNames}
 
 ### Disabled Workflows:
 ${disabledWorkflows.map(w => `- **${w.name}** (\`${w.path}\`)`).join('\n')}
