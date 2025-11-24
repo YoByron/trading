@@ -129,19 +129,6 @@ async def example_report_workflow():
                     }
                 }
             },
-            {
-                "name": "update_sheets",
-                "type": "mcp_call",
-                "data": {
-                    "server": "google-sheets",
-                    "tool": "create_report",
-                    "payload": {
-                        "spreadsheet_id": "YOUR_SPREADSHEET_ID",
-                        "report_name": "Daily Report",
-                        "data": []  # Would contain actual report data
-                    }
-                }
-            }
         ]
     }
     
