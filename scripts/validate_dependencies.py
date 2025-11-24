@@ -79,14 +79,14 @@ def check_python_version():
     version = sys.version_info
     print(f"   Python version: {version.major}.{version.minor}.{version.micro}")
 
-    # Check if Python version is within supported range (3.9-3.13)
-    if version.major == 3 and 9 <= version.minor <= 13:
-        print(f"✅ Python {version.major}.{version.minor} (supported range: 3.9-3.13, CI uses 3.13)")
+    # Check if Python version is within supported range (3.9-3.14)
+    if version.major == 3 and 9 <= version.minor <= 14:
+        print(f"✅ Python {version.major}.{version.minor} (supported range: 3.9-3.14, CI uses 3.13)")
         return True
-    elif version.major == 3 and version.minor >= 14:
+    elif version.major == 3 and version.minor >= 15:
         print(f"❌ Python {version.major}.{version.minor} is NOT supported!")
-        print(f"   pandas 2.3.3 requires Python <3.14 (C API breaking changes)")
-        print(f"   Please use Python 3.13 or downgrade pandas")
+        print(f"   pandas 2.3.3 requires Python <3.15")
+        print(f"   Please use Python 3.13/3.14 or wait for pandas upgrade")
         return False
     else:
         print(f"⚠️  Python {version.major}.{version.minor} (CI uses 3.13)")
