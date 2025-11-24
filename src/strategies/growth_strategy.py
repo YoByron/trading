@@ -33,6 +33,11 @@ from src.utils.sentiment_loader import (
 )
 from src.utils.dcf_valuation import get_global_dcf_calculator, DCFValuationCalculator
 from src.utils.external_signal_loader import load_latest_signals, get_signal_for_ticker
+from src.safety.graham_buffett_safety import (
+    get_global_safety_analyzer,
+    GrahamBuffettSafety,
+    SafetyRating,
+)
 
 
 # Configure logging
@@ -361,13 +366,19 @@ class GrowthStrategy:
     ]
     PRIORITY_TICKERS = ["UBER", "LLY", "PINS"]
 
-    def __init__(self, weekly_allocation: float = 10.0, use_sentiment: bool = True):
+    def __init__(
+        self,
+        weekly_allocation: float = 10.0,
+        use_sentiment: bool = True,
+        use_intelligent_investor: bool = True,
+    ):
         """
         Initialize the Growth Strategy.
 
         Args:
             weekly_allocation: Weekly trading allocation in dollars (default $10 = 5 days * $2)
             use_sentiment: Whether to use sentiment scoring (default: True)
+            use_intelligent_investor: Whether to use Intelligent Investor principles (default: True)
         """
         self.weekly_allocation = weekly_allocation
         self.stop_loss_pct = 0.03  # 3% stop-loss
@@ -376,6 +387,7 @@ class GrowthStrategy:
         self.min_holding_weeks = 2
         self.max_holding_weeks = 4
         self.use_sentiment = use_sentiment
+        self.use_intelligent_investor = use_intelligent_investor
 
         # Initialize components
         self.llm_analyzer = MultiLLMAnalyzer()
@@ -383,6 +395,17 @@ class GrowthStrategy:
         self.risk_manager = RiskManager(max_position_size=0.15, max_daily_loss=0.05)
         self.dcf_calculator: DCFValuationCalculator = get_global_dcf_calculator()
         self.external_signals_cache: Dict[str, Dict] = {}
+
+        # Initialize Intelligent Investor safety analyzer
+        if self.use_intelligent_investor:
+            try:
+                self.safety_analyzer = get_global_safety_analyzer()
+                logger.info("Intelligent Investor safety analyzer initialized for GrowthStrategy")
+            except Exception as e:
+                logger.warning(f"Failed to initialize safety analyzer: {e}")
+                self.safety_analyzer = None
+        else:
+            self.safety_analyzer = None
 
         try:
             mos_env = float(os.getenv("DCF_MARGIN_OF_SAFETY", "0.15"))
@@ -405,7 +428,8 @@ class GrowthStrategy:
 
         logger.info(
             f"GrowthStrategy initialized with ${weekly_allocation} weekly allocation, "
-            f"sentiment={'enabled' if use_sentiment else 'disabled'}"
+            f"sentiment={'enabled' if use_sentiment else 'disabled'}, "
+            f"intelligent_investor={'enabled' if use_intelligent_investor else 'disabled'}"
         )
 
     def execute_weekly(self) -> List[Order]:
@@ -1208,6 +1232,52 @@ class GrowthStrategy:
                 )
 
                 if is_valid:
+                    # Intelligent Investor Safety Check (Graham-Buffett principles)
+                    if self.use_intelligent_investor and self.safety_analyzer:
+                        try:
+                            logger.info(f"  Running Intelligent Investor safety check for {candidate.symbol}...")
+                            should_buy, safety_analysis = self.safety_analyzer.should_buy(
+                                symbol=candidate.symbol,
+                                market_price=candidate.current_price,
+                                force_refresh=False,
+                            )
+                            
+                            if not should_buy:
+                                logger.warning(
+                                    f"  ❌ {candidate.symbol} REJECTED by Intelligent Investor principles"
+                                )
+                                logger.warning(f"     Safety Rating: {safety_analysis.safety_rating.value}")
+                                if safety_analysis.reasons:
+                                    for reason in safety_analysis.reasons[:2]:  # Show first 2 reasons
+                                        logger.warning(f"     Reason: {reason}")
+                                if safety_analysis.defensive_investor_score is not None:
+                                    logger.info(
+                                        f"     Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
+                                    )
+                                if safety_analysis.mr_market_sentiment:
+                                    logger.info(
+                                        f"     Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
+                                    )
+                                continue
+                            else:
+                                logger.info(
+                                    f"  ✅ {candidate.symbol} PASSED Intelligent Investor Safety Check"
+                                )
+                                logger.info(f"     Safety Rating: {safety_analysis.safety_rating.value}")
+                                if safety_analysis.defensive_investor_score is not None:
+                                    logger.info(
+                                        f"     Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
+                                    )
+                                if safety_analysis.mr_market_sentiment:
+                                    logger.info(
+                                        f"     Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
+                                    )
+                        except Exception as e:
+                            logger.warning(
+                                f"  Intelligent Investor safety check error for {candidate.symbol} (proceeding): {e}"
+                            )
+                            # Fail-open: continue with trade if safety check unavailable
+                    
                     if self.langchain_guard_enabled and not self._langchain_guard(candidate.symbol):
                         logger.warning(
                             "  LangChain approval gate rejected order for %s",

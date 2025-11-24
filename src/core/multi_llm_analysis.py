@@ -1049,6 +1049,536 @@ market trends, and investment strategy. Provide comprehensive, balanced market o
         logger.info("MultiLLMAnalyzer closed")
 
 
+@dataclass
+class CouncilResponse:
+    """Container for LLM Council final response."""
+
+    final_answer: str
+    confidence: float
+    individual_responses: Dict[str, str]
+    reviews: Dict[str, Dict[str, Any]]
+    rankings: Dict[str, List[str]]
+    chairman_reasoning: str
+    metadata: Dict[str, Any]
+
+
+class LLMCouncilAnalyzer:
+    """
+    LLM Council Analyzer - Multi-stage consensus system for trading decisions.
+    
+    Implements the LLM Council pattern from Karpathy's llm-council:
+    1. Stage 1: First opinions - Query all LLMs individually
+    2. Stage 2: Review - Each LLM reviews and ranks other responses (anonymized)
+    3. Stage 3: Chairman - Designated LLM compiles final response
+    
+    This provides higher quality decisions through peer review and consensus.
+    """
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        council_models: Optional[List[LLMModel]] = None,
+        chairman_model: Optional[LLMModel] = None,
+        max_retries: int = 3,
+        timeout: int = 60,
+        rate_limit_delay: float = 0.5,
+        use_async: bool = True,
+    ):
+        """
+        Initialize the LLM Council Analyzer.
+
+        Args:
+            api_key: OpenRouter API key (defaults to OPENROUTER_API_KEY env var)
+            council_models: List of models in the council (defaults to latest models)
+            chairman_model: Model to use as chairman (defaults to Gemini 3 Pro)
+            max_retries: Maximum retry attempts per request
+            timeout: Request timeout in seconds
+            rate_limit_delay: Delay between requests to avoid rate limits
+            use_async: Whether to use async client (recommended)
+        """
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "OpenRouter API key must be provided or set in OPENROUTER_API_KEY env var"
+            )
+
+        self.council_models = council_models or [
+            LLMModel.GEMINI_3_PRO,
+            LLMModel.CLAUDE_SONNET_4,
+            LLMModel.GPT4O,
+        ]
+        self.chairman_model = chairman_model or LLMModel.GEMINI_3_PRO
+        self.max_retries = max_retries
+        self.timeout = timeout
+        self.rate_limit_delay = rate_limit_delay
+        self.use_async = use_async
+
+        # Initialize OpenAI client with OpenRouter base URL
+        base_url = "https://openrouter.ai/api/v1"
+
+        if use_async:
+            self.client = AsyncOpenAI(
+                api_key=self.api_key, base_url=base_url, timeout=timeout
+            )
+        else:
+            self.sync_client = OpenAI(
+                api_key=self.api_key, base_url=base_url, timeout=timeout
+            )
+
+        logger.info(
+            f"Initialized LLMCouncilAnalyzer with council: {[m.value for m in self.council_models]}"
+        )
+        logger.info(f"Chairman model: {self.chairman_model.value}")
+
+    async def _query_llm_async(
+        self,
+        model: LLMModel,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+    ) -> LLMResponse:
+        """Query a single LLM with retry logic (reuses MultiLLMAnalyzer logic)."""
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        for attempt in range(self.max_retries):
+            try:
+                start_time = time.time()
+
+                response = await self.client.chat.completions.create(
+                    model=model.value,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+
+                latency = time.time() - start_time
+
+                content = response.choices[0].message.content
+                tokens_used = response.usage.total_tokens if response.usage else 0
+
+                logger.debug(f"Successfully queried {model.value} in {latency:.2f}s")
+
+                return LLMResponse(
+                    model=model.value,
+                    content=content,
+                    tokens_used=tokens_used,
+                    latency=latency,
+                    success=True,
+                )
+
+            except Exception as e:
+                logger.warning(
+                    f"Attempt {attempt + 1}/{self.max_retries} failed for {model.value}: {str(e)}"
+                )
+
+                if attempt == self.max_retries - 1:
+                    return LLMResponse(
+                        model=model.value,
+                        content="",
+                        tokens_used=0,
+                        latency=0,
+                        success=False,
+                        error=str(e),
+                    )
+
+                # Exponential backoff
+                await asyncio.sleep(2**attempt * self.rate_limit_delay)
+
+    async def _stage1_first_opinions(
+        self, query: str, system_prompt: Optional[str] = None
+    ) -> Dict[str, LLMResponse]:
+        """
+        Stage 1: Get first opinions from all council members.
+
+        Args:
+            query: The trading question/query
+            system_prompt: Optional system prompt
+
+        Returns:
+            Dictionary mapping model names to their responses
+        """
+        logger.info("Stage 1: Collecting first opinions from council members")
+
+        tasks = [
+            self._query_llm_async(
+                model=model,
+                prompt=query,
+                system_prompt=system_prompt,
+                temperature=0.7,
+                max_tokens=2000,
+            )
+            for model in self.council_models
+        ]
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        first_opinions = {}
+        for i, response in enumerate(responses):
+            model_name = self.council_models[i].value
+            if isinstance(response, Exception):
+                logger.error(f"Error in Stage 1 for {model_name}: {str(response)}")
+                first_opinions[model_name] = LLMResponse(
+                    model=model_name,
+                    content="",
+                    tokens_used=0,
+                    latency=0,
+                    success=False,
+                    error=str(response),
+                )
+            else:
+                first_opinions[model_name] = response
+
+        logger.info(f"Stage 1 complete: {len([r for r in first_opinions.values() if r.success])} successful responses")
+        return first_opinions
+
+    async def _stage2_review(
+        self, first_opinions: Dict[str, LLMResponse], query: str
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Stage 2: Each LLM reviews and ranks other responses (anonymized).
+
+        Args:
+            first_opinions: Dictionary of first opinions from Stage 1
+            query: Original query for context
+
+        Returns:
+            Dictionary mapping reviewer model to their review and rankings
+        """
+        logger.info("Stage 2: Council members reviewing each other's responses")
+
+        # Anonymize responses by assigning random IDs
+        import random
+        import string
+
+        anonymous_responses = {}
+        model_to_id = {}
+        id_to_model = {}
+
+        for model_name, response in first_opinions.items():
+            if response.success:
+                # Generate random anonymous ID
+                anonymous_id = "".join(
+                    random.choices(string.ascii_uppercase, k=3)
+                )  # e.g., "ABC", "XYZ"
+                anonymous_responses[anonymous_id] = response.content
+                model_to_id[model_name] = anonymous_id
+                id_to_model[anonymous_id] = model_name
+
+        if len(anonymous_responses) < 2:
+            logger.warning("Not enough responses for review stage")
+            return {}
+
+        # Build review prompt with anonymized responses
+        responses_text = "\n\n".join(
+            [
+                f"Response {anon_id}:\n{content}"
+                for anon_id, content in anonymous_responses.items()
+            ]
+        )
+
+        review_prompt = f"""You are part of an LLM Council evaluating trading decisions.
+
+Original Query:
+{query}
+
+Here are anonymous responses from other council members (identities hidden):
+
+{responses_text}
+
+Your task:
+1. Review each response for accuracy, insight, and reasoning quality
+2. Rank them from best to worst (most accurate and insightful first)
+3. Provide brief reasoning for your ranking
+
+Format your response as JSON:
+{{
+    "rankings": ["Response_ID_1", "Response_ID_2", "Response_ID_3", ...],
+    "reasoning": "Brief explanation of your ranking",
+    "strengths": {{
+        "Response_ID_1": "What makes this response strong",
+        ...
+    }},
+    "weaknesses": {{
+        "Response_ID_1": "What could be improved",
+        ...
+    }}
+}}
+"""
+
+        system_prompt_review = """You are an expert financial analyst participating in a peer review process.
+Evaluate responses objectively based on accuracy, insight, and reasoning quality.
+Be honest and critical in your assessment."""
+
+        # Each council member reviews (excluding themselves)
+        review_tasks = []
+        for model in self.council_models:
+            if model.value in first_opinions and first_opinions[model.value].success:
+                review_tasks.append(
+                    self._query_llm_async(
+                        model=model,
+                        prompt=review_prompt,
+                        system_prompt=system_prompt_review,
+                        temperature=0.5,
+                        max_tokens=2000,
+                    )
+                )
+            else:
+                review_tasks.append(None)
+
+        review_responses = await asyncio.gather(
+            *[task for task in review_tasks if task is not None],
+            return_exceptions=True,
+        )
+
+        reviews = {}
+        review_idx = 0
+        for i, model in enumerate(self.council_models):
+            if review_tasks[i] is not None:
+                if isinstance(review_responses[review_idx], Exception):
+                    logger.error(
+                        f"Review failed for {model.value}: {str(review_responses[review_idx])}"
+                    )
+                else:
+                    review_content = review_responses[review_idx].content
+                    try:
+                        # Try to parse JSON response
+                        review_data = json.loads(review_content)
+                        reviews[model.value] = {
+                            "rankings": review_data.get("rankings", []),
+                            "reasoning": review_data.get("reasoning", ""),
+                            "strengths": review_data.get("strengths", {}),
+                            "weaknesses": review_data.get("weaknesses", {}),
+                            "raw_response": review_content,
+                        }
+                    except json.JSONDecodeError:
+                        # Fallback: extract rankings from text
+                        reviews[model.value] = {
+                            "rankings": [],
+                            "reasoning": review_content,
+                            "raw_response": review_content,
+                        }
+                review_idx += 1
+
+        logger.info(f"Stage 2 complete: {len(reviews)} reviews collected")
+        return reviews
+
+    async def _stage3_chairman(
+        self,
+        query: str,
+        first_opinions: Dict[str, LLMResponse],
+        reviews: Dict[str, Dict[str, Any]],
+    ) -> str:
+        """
+        Stage 3: Chairman compiles final response from all inputs.
+
+        Args:
+            query: Original query
+            first_opinions: Stage 1 responses
+            reviews: Stage 2 reviews and rankings
+
+        Returns:
+            Final compiled response from chairman
+        """
+        logger.info("Stage 3: Chairman compiling final response")
+
+        # Build comprehensive prompt for chairman
+        opinions_text = "\n\n".join(
+            [
+                f"**{model_name}**:\n{response.content}"
+                for model_name, response in first_opinions.items()
+                if response.success
+            ]
+        )
+
+        reviews_text = "\n\n".join(
+            [
+                f"**{reviewer}** ranked responses and noted:\n{review.get('reasoning', '')}"
+                for reviewer, review in reviews.items()
+            ]
+        )
+
+        chairman_prompt = f"""You are the Chairman of an LLM Council making a final trading decision.
+
+Original Query:
+{query}
+
+**Council Member Opinions (Stage 1):**
+{opinions_text}
+
+**Peer Reviews (Stage 2):**
+{reviews_text}
+
+Your task as Chairman:
+1. Synthesize all opinions and reviews
+2. Identify consensus points and disagreements
+3. Produce a final, comprehensive answer that incorporates the best insights
+4. Clearly state your confidence level and reasoning
+
+Provide a well-structured final response that:
+- Answers the original query comprehensively
+- Incorporates the best insights from council members
+- Addresses any disagreements or uncertainties
+- Provides actionable recommendations if applicable
+"""
+
+        system_prompt_chairman = """You are the Chairman of an LLM Council, responsible for synthesizing
+multiple expert opinions into a final, high-quality decision. Your role is to:
+- Identify the strongest arguments and insights
+- Resolve disagreements through careful analysis
+- Produce a consensus-driven final answer
+- Be transparent about confidence levels and uncertainties"""
+
+        chairman_response = await self._query_llm_async(
+            model=self.chairman_model,
+            prompt=chairman_prompt,
+            system_prompt=system_prompt_chairman,
+            temperature=0.7,
+            max_tokens=3000,
+        )
+
+        if chairman_response.success:
+            logger.info("Stage 3 complete: Chairman response generated")
+            return chairman_response.content
+        else:
+            logger.error(f"Chairman failed: {chairman_response.error}")
+            # Fallback: return best-ranked response from reviews
+            return self._fallback_response(first_opinions, reviews)
+
+    def _fallback_response(
+        self,
+        first_opinions: Dict[str, LLMResponse],
+        reviews: Dict[str, Dict[str, Any]],
+    ) -> str:
+        """Fallback: Use highest-ranked response if chairman fails."""
+        # Simple fallback: use first successful response
+        for model_name, response in first_opinions.items():
+            if response.success:
+                return f"[Fallback] {model_name}:\n{response.content}"
+        return "Error: No valid responses available"
+
+    async def query_council(
+        self,
+        query: str,
+        system_prompt: Optional[str] = None,
+        include_reviews: bool = True,
+    ) -> CouncilResponse:
+        """
+        Execute full LLM Council process: First opinions → Review → Chairman.
+
+        Args:
+            query: The trading question/query to analyze
+            system_prompt: Optional system prompt for Stage 1
+            include_reviews: Whether to run Stage 2 review (adds latency but improves quality)
+
+        Returns:
+            CouncilResponse with final answer and all intermediate data
+        """
+        start_time = time.time()
+
+        # Stage 1: First opinions
+        first_opinions = await self._stage1_first_opinions(query, system_prompt)
+
+        # Stage 2: Review (optional but recommended)
+        reviews = {}
+        if include_reviews and len([r for r in first_opinions.values() if r.success]) >= 2:
+            reviews = await self._stage2_review(first_opinions, query)
+        else:
+            logger.info("Skipping Stage 2 review (not enough responses or disabled)")
+
+        # Stage 3: Chairman compiles final answer
+        final_answer = await self._stage3_chairman(query, first_opinions, reviews)
+
+        # Calculate confidence based on agreement
+        successful_responses = [r for r in first_opinions.values() if r.success]
+        confidence = len(successful_responses) / len(self.council_models) if self.council_models else 0.0
+
+        # Extract individual responses
+        individual_responses = {
+            model_name: response.content
+            for model_name, response in first_opinions.items()
+            if response.success
+        }
+
+        # Extract rankings from reviews
+        rankings = {
+            reviewer: review.get("rankings", [])
+            for reviewer, review in reviews.items()
+        }
+
+        total_time = time.time() - start_time
+
+        logger.info(f"LLM Council process complete in {total_time:.2f}s")
+
+        return CouncilResponse(
+            final_answer=final_answer,
+            confidence=confidence,
+            individual_responses=individual_responses,
+            reviews=reviews,
+            rankings=rankings,
+            chairman_reasoning=final_answer,
+            metadata={
+                "query": query,
+                "council_models": [m.value for m in self.council_models],
+                "chairman_model": self.chairman_model.value,
+                "total_time": total_time,
+                "timestamp": time.time(),
+            },
+        )
+
+    async def analyze_trading_decision(
+        self,
+        symbol: str,
+        market_data: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> CouncilResponse:
+        """
+        Analyze a trading decision using the LLM Council.
+
+        Args:
+            symbol: Stock symbol to analyze
+            market_data: Market data (price, indicators, etc.)
+            context: Additional context (portfolio, risk limits, etc.)
+
+        Returns:
+            CouncilResponse with trading recommendation
+        """
+        context_str = ""
+        if context:
+            context_str = f"\n\nAdditional Context:\n{json.dumps(context, indent=2)}"
+
+        query = f"""Analyze the following trading opportunity and provide a recommendation.
+
+Symbol: {symbol}
+
+Market Data:
+{json.dumps(market_data, indent=2)}
+{context_str}
+
+Provide:
+1. Trading recommendation (BUY/SELL/HOLD)
+2. Confidence level (0-1)
+3. Position size recommendation
+4. Risk assessment
+5. Key factors supporting your decision
+6. Potential concerns or risks
+
+Format your response clearly with reasoning."""
+        system_prompt = """You are an expert trading analyst. Provide objective, data-driven
+trading recommendations based on technical analysis, market conditions, and risk management principles."""
+
+        return await self.query_council(query, system_prompt, include_reviews=True)
+
+    def close(self):
+        """Close the client connections."""
+        if hasattr(self, "client") and self.client:
+            pass
+        logger.info("LLMCouncilAnalyzer closed")
+
+
 # Convenience functions for synchronous usage
 def create_analyzer(
     api_key: Optional[str] = None, use_async: bool = True

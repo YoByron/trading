@@ -33,6 +33,7 @@ Updated: 2025-10-28
 """
 
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -52,6 +53,19 @@ from src.utils.sentiment_loader import (
     get_market_regime,
     get_sentiment_history,
 )
+from src.safety.graham_buffett_safety import (
+    get_global_safety_analyzer,
+    GrahamBuffettSafety,
+    SafetyRating,
+)
+
+# Optional LLM Council integration
+try:
+    from src.core.llm_council_integration import TradingCouncil
+    LLM_COUNCIL_AVAILABLE = True
+except ImportError:
+    LLM_COUNCIL_AVAILABLE = False
+    TradingCouncil = None
 
 
 # Configure logging
@@ -215,6 +229,17 @@ class CoreStrategy:
             self.alpaca_trader = None
             self.risk_manager = None
 
+        # Initialize LLM Council (optional, for enhanced consensus decisions)
+        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "false").lower() == "true"
+        self._llm_council = None
+        if self.llm_council_enabled and LLM_COUNCIL_AVAILABLE and TradingCouncil:
+            try:
+                self._llm_council = TradingCouncil(enabled=True)
+                logger.info("LLM Council initialized for enhanced consensus decisions")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LLM Council: {e}")
+                self.llm_council_enabled = False
+
         logger.info(
             f"CoreStrategy initialized: daily_allocation=${daily_allocation}, "
             f"etf_universe={self.etf_universe}, stop_loss={stop_loss_pct*100}%"
@@ -303,11 +328,130 @@ class CoreStrategy:
                     logger.warning(f"Gemini 3 validation error (proceeding): {e}")
                     # Fail-open: continue with trade if Gemini 3 unavailable
 
+            # Step 4.6: LLM Council Validation (if enabled)
+            if self.llm_council_enabled and self._llm_council:
+                try:
+                    import asyncio
+                    logger.info("Validating trade with LLM Council consensus...")
+                    
+                    # Prepare market data for council
+                    market_data = {
+                        "symbol": best_etf,
+                        "price": None,  # Will be fetched in Step 5
+                        "sentiment": sentiment.value,
+                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
+                        "rsi": next((ms.rsi for ms in momentum_scores if ms.symbol == best_etf), None),
+                        "macd_histogram": next((ms.macd_histogram for ms in momentum_scores if ms.symbol == best_etf), None),
+                        "volume_ratio": next((ms.volume_ratio for ms in momentum_scores if ms.symbol == best_etf), None),
+                    }
+                    
+                    # Run async council validation
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    council_result = loop.run_until_complete(
+                        self._llm_council.validate_trade(
+                            symbol=best_etf,
+                            action="BUY",
+                            market_data=market_data,
+                            context={"daily_allocation": self.daily_allocation},
+                        )
+                    )
+                    loop.close()
+                    
+                    if not council_result.get("approved", True):
+                        logger.warning(
+                            f"LLM Council rejected trade: {council_result.get('reasoning', 'N/A')[:200]}"
+                        )
+                        logger.info(f"Council confidence: {council_result.get('confidence', 0):.2%}")
+                        logger.info("SKIPPING TRADE - LLM Council consensus rejected")
+                        return None
+                    else:
+                        logger.info(
+                            f"LLM Council approved trade (confidence: {council_result.get('confidence', 0):.2%})"
+                        )
+                        if council_result.get("council_response"):
+                            logger.debug(f"Council reasoning: {council_result['reasoning'][:300]}...")
+                except Exception as e:
+                    logger.warning(f"LLM Council validation error (proceeding): {e}")
+                    # Fail-open: continue with trade if Council unavailable
+
             # Step 5: Get current price
             current_price = self._get_current_price(best_etf)
             if current_price is None:
                 logger.error(f"Failed to get price for {best_etf}")
                 return None
+
+            # Step 5.5: Intelligent Investor Safety Check (Graham-Buffett principles)
+            if self.use_intelligent_investor and self.safety_analyzer:
+                try:
+                    logger.info("=" * 80)
+                    logger.info("Running Intelligent Investor Safety Analysis...")
+                    should_buy, safety_analysis = self.safety_analyzer.should_buy(
+                        symbol=best_etf,
+                        market_price=current_price,
+                        force_refresh=False,
+                    )
+                    
+                    if not should_buy:
+                        logger.warning(
+                            f"❌ {best_etf} REJECTED by Intelligent Investor principles"
+                        )
+                        logger.warning(f"   Safety Rating: {safety_analysis.safety_rating.value}")
+                        if safety_analysis.reasons:
+                            for reason in safety_analysis.reasons:
+                                logger.warning(f"   Reason: {reason}")
+                        if safety_analysis.warnings:
+                            for warning in safety_analysis.warnings:
+                                logger.warning(f"   Warning: {warning}")
+                        
+                        # Log Intelligent Investor metrics
+                        if safety_analysis.defensive_investor_score is not None:
+                            logger.info(
+                                f"   Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
+                            )
+                        if safety_analysis.mr_market_sentiment:
+                            logger.info(
+                                f"   Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
+                            )
+                        if safety_analysis.value_score is not None:
+                            logger.info(
+                                f"   Value Score: {safety_analysis.value_score:.1f}/100"
+                            )
+                        
+                        logger.info("SKIPPING TRADE - Intelligent Investor safety check failed")
+                        logger.info("=" * 80)
+                        return None
+                    else:
+                        logger.info(
+                            f"✅ {best_etf} PASSED Intelligent Investor Safety Check"
+                        )
+                        logger.info(f"   Safety Rating: {safety_analysis.safety_rating.value}")
+                        if safety_analysis.margin_of_safety_pct is not None:
+                            logger.info(
+                                f"   Margin of Safety: {safety_analysis.margin_of_safety_pct*100:.1f}%"
+                            )
+                        if safety_analysis.quality:
+                            logger.info(
+                                f"   Quality Score: {safety_analysis.quality.quality_score:.1f}/100"
+                            )
+                        if safety_analysis.defensive_investor_score is not None:
+                            logger.info(
+                                f"   Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
+                            )
+                        if safety_analysis.mr_market_sentiment:
+                            logger.info(
+                                f"   Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
+                            )
+                        if safety_analysis.value_score is not None:
+                            logger.info(
+                                f"   Value Score: {safety_analysis.value_score:.1f}/100"
+                            )
+                        logger.info("=" * 80)
+                except Exception as e:
+                    logger.warning(
+                        f"Intelligent Investor safety check error (proceeding): {e}"
+                    )
+                    # Fail-open: continue with trade if safety check unavailable
 
             # Step 6: Calculate quantity
             quantity = self.daily_allocation / current_price
@@ -1342,20 +1486,34 @@ class CoreStrategy:
             logger.warning(f"Trade value ${trade_value:.2f} exceeds daily allocation")
             return False
         
-        # CTO Decision: Position size limit - max 50% per symbol
-        # Prevents concentration like SPY (74% of portfolio)
+        # Intelligent Investor Diversification Rules (Graham's principles)
+        # Graham recommended: No single position > 25% of portfolio for defensive investor
+        # We use 30% as maximum (slightly more flexible for ETFs)
         total_portfolio_value = self._calculate_total_portfolio_value()
         if total_portfolio_value > 0:
             current_position_value = self.current_holdings.get(symbol, 0) * price
             new_position_value = current_position_value + trade_value
             position_pct = (new_position_value / (total_portfolio_value + trade_value)) * 100
             
-            if position_pct > 50:
+            # Graham's diversification rule: Max 30% per position (defensive investor)
+            MAX_POSITION_PCT = 30.0  # Intelligent Investor: defensive investor max 25%, we use 30% for ETFs
+            if position_pct > MAX_POSITION_PCT:
                 logger.warning(
-                    f"Position size limit exceeded: {symbol} would be {position_pct:.1f}% of portfolio "
-                    f"(max 50%). Skipping trade to maintain diversification."
+                    f"Position size limit exceeded (Graham's diversification rule): "
+                    f"{symbol} would be {position_pct:.1f}% of portfolio "
+                    f"(max {MAX_POSITION_PCT}%). Skipping trade to maintain proper diversification."
                 )
                 return False
+            
+            # Additional check: Ensure at least 3-4 positions for proper diversification
+            # Graham recommended minimum 10-30 stocks for defensive investor
+            # For ETFs, we require at least 2 different ETFs
+            current_positions_count = len([s for s in self.current_holdings.keys() if self.current_holdings[s] > 0])
+            if current_positions_count < 2 and symbol not in self.current_holdings:
+                logger.info(
+                    f"Diversification: Adding {symbol} to portfolio "
+                    f"(will have {current_positions_count + 1} positions)"
+                )
 
         # Use RiskManager if available
         if self.risk_manager:
