@@ -74,17 +74,23 @@ def check_dependency_conflicts():
 
 
 def check_python_version():
-    """Check if Python version matches CI (3.11)."""
+    """Check if Python version matches CI (3.13)."""
     print("\n🐍 Checking Python version...")
     version = sys.version_info
     print(f"   Python version: {version.major}.{version.minor}.{version.micro}")
-    
-    if version.major == 3 and version.minor == 11:
-        print("✅ Python 3.11 (matches CI)")
+
+    # Check if Python version is within supported range (3.9-3.13)
+    if version.major == 3 and 9 <= version.minor <= 13:
+        print(f"✅ Python {version.major}.{version.minor} (supported range: 3.9-3.13, CI uses 3.13)")
         return True
+    elif version.major == 3 and version.minor >= 14:
+        print(f"❌ Python {version.major}.{version.minor} is NOT supported!")
+        print(f"   pandas 2.3.3 requires Python <3.14 (C API breaking changes)")
+        print(f"   Please use Python 3.13 or downgrade pandas")
+        return False
     else:
-        print(f"⚠️  Python {version.major}.{version.minor} (CI uses 3.11)")
-        print("   This is OK for local dev, but CI will use Python 3.11")
+        print(f"⚠️  Python {version.major}.{version.minor} (CI uses 3.13)")
+        print("   This is OK for local dev, but CI will use Python 3.13")
         return True
 
 
