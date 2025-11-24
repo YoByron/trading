@@ -15,7 +15,7 @@ import time as time_module
 import asyncio
 from datetime import datetime, date, time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 import argparse
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
@@ -529,6 +529,38 @@ def execute_tier1(daily_amount, risk_manager, account):
     if not is_valid:
         print(f"❌ Tier 1 trade rejected: {error_msg}")
         return False
+    
+    # POSITION SIZE LIMIT: Check if adding this trade would exceed 30% concentration
+    MAX_POSITION_PCT = 30.0
+    try:
+        positions = api.list_positions()
+        current_position_value = 0.0
+        for pos in positions:
+            if pos.symbol == best:
+                current_position_value = float(pos.market_value)
+                break
+        
+        # Calculate new position size after this trade
+        new_position_value = current_position_value + amount
+        new_position_pct = (new_position_value / account_value * 100) if account_value > 0 else 0
+        
+        if new_position_pct > MAX_POSITION_PCT:
+            max_allowed_value = account_value * (MAX_POSITION_PCT / 100)
+            max_allowed_trade = max(0, max_allowed_value - current_position_value)
+            
+            if max_allowed_trade < amount * 0.5:  # If we can't even do 50% of planned trade
+                print(f"❌ POSITION SIZE LIMIT: {best} would be {new_position_pct:.1f}% (max: {MAX_POSITION_PCT}%)")
+                print(f"   Current: ${current_position_value:.2f} ({current_position_value/account_value*100:.1f}%)")
+                print(f"   Planned: ${amount:.2f} → Would exceed limit")
+                print(f"   💡 Skipping trade to prevent concentration")
+                return False
+            else:
+                # Reduce trade size to stay within limit
+                amount = max_allowed_trade
+                print(f"⚠️  POSITION SIZE LIMIT: Reducing trade size to ${amount:.2f} (max: {MAX_POSITION_PCT}%)")
+    except Exception as e:
+        print(f"⚠️  Error checking position size limit: {e}")
+        # Continue with trade if check fails (fail-open)
 
     # RISK MANAGER CHECK: PDT protection and daily loss limits
     account_value = float(account.equity)
@@ -582,13 +614,63 @@ def execute_tier1(daily_amount, risk_manager, account):
         return False
 
 
+def check_position_concentration(account_value: float) -> Dict[str, any]:
+    """
+    Check portfolio concentration and identify positions exceeding limits.
+    
+    Args:
+        account_value: Current account equity
+        
+    Returns:
+        Dict with concentration analysis and rebalancing recommendations
+    """
+    MAX_POSITION_PCT = 30.0  # Maximum 30% per symbol
+    
+    try:
+        positions = api.list_positions()
+        if not positions:
+            return {
+                "total_positions": 0,
+                "concentrated_positions": [],
+                "needs_rebalancing": False
+            }
+        
+        concentrated = []
+        total_positions_value = 0.0
+        
+        for pos in positions:
+            position_value = float(pos.market_value)
+            position_pct = (position_value / account_value * 100) if account_value > 0 else 0
+            total_positions_value += position_value
+            
+            if position_pct > MAX_POSITION_PCT:
+                concentrated.append({
+                    "symbol": pos.symbol,
+                    "value": position_value,
+                    "pct": position_pct,
+                    "excess_pct": position_pct - MAX_POSITION_PCT,
+                    "excess_value": position_value - (account_value * MAX_POSITION_PCT / 100)
+                })
+        
+        return {
+            "total_positions": len(positions),
+            "total_positions_value": total_positions_value,
+            "concentrated_positions": concentrated,
+            "needs_rebalancing": len(concentrated) > 0,
+            "max_position_pct": MAX_POSITION_PCT
+        }
+    except Exception as e:
+        print(f"⚠️  Error checking concentration: {e}")
+        return {"error": str(e)}
+
+
 def manage_existing_positions():
     """
     Check existing positions and close them if exit rules trigger.
     
     Exit Rules:
     - Tier 2 (NVDA, GOOGL, AMZN): Stop-loss 3%, Take-profit 10%, Max holding 4 weeks
-    - Tier 1 (SPY, QQQ, VOO): Buy-and-hold (no automatic exits)
+    - Tier 1 (SPY, QQQ, VOO): Buy-and-hold (no automatic exits) OR stop-loss -5% if enabled
     """
     try:
         positions = api.list_positions()
@@ -600,6 +682,18 @@ def manage_existing_positions():
         
         from scripts.state_manager import StateManager
         state_manager = StateManager()
+        
+        # Get account value for position size checks
+        account = api.get_account()
+        account_value = float(account.equity)
+        
+        # Check portfolio concentration
+        concentration = check_position_concentration(account_value)
+        if concentration.get("needs_rebalancing"):
+            print(f"\n⚠️  PORTFOLIO CONCENTRATION WARNING:")
+            for pos_info in concentration["concentrated_positions"]:
+                print(f"  {pos_info['symbol']}: {pos_info['pct']:.1f}% (max: {concentration['max_position_pct']:.1f}%)")
+                print(f"    Excess: {pos_info['excess_pct']:.1f}% (${pos_info['excess_value']:.2f})")
         
         for pos in positions:
             symbol = pos.symbol
@@ -645,9 +739,27 @@ def manage_existing_positions():
                 max_holding_days = 28  # 4 weeks
             else:
                 tier = 'Tier 1'
-                stop_loss_pct = None  # Buy-and-hold
+                # CTO Decision Nov 24, 2025: Add optional stop-loss to Tier 1 for risk protection
+                # Use -5% stop-loss if position is losing significantly
+                if unrealized_plpc <= -5.0:
+                    stop_loss_pct = -5.0  # Protect capital if down 5%+
+                    print(f"  🛡️  Tier 1 stop-loss enabled: -5% (position down {unrealized_plpc:.2f}%)")
+                else:
+                    stop_loss_pct = None  # Buy-and-hold for smaller losses
                 take_profit_pct = None
                 max_holding_days = None
+                
+                # Check if position exceeds concentration limit (30%)
+                position_value = float(pos.market_value)
+                position_pct = (position_value / account_value * 100) if account_value > 0 else 0
+                if position_pct > 30.0:
+                    excess_pct = position_pct - 30.0
+                    excess_value = position_value - (account_value * 0.30)
+                    print(f"  ⚠️  CONCENTRATION WARNING: {position_pct:.1f}% of portfolio (max: 30%)")
+                    print(f"     Excess: {excess_pct:.1f}% (${excess_value:.2f})")
+                    # Recommend partial rebalancing (sell excess)
+                    if unrealized_plpc < -2.0:  # Only rebalance if losing
+                        print(f"  💡 RECOMMENDATION: Consider selling {excess_pct:.1f}% to rebalance")
             
             print(f"\n{symbol} ({tier}):")
             print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
@@ -671,7 +783,7 @@ def manage_existing_positions():
             should_close = False
             close_reason = None
             
-            # Check stop-loss (Tier 2 only)
+            # Check stop-loss (Tier 2, or Tier 1 if enabled)
             if stop_loss_pct is not None:
                 print(f"  🔍 Stop-loss check:")
                 print(f"     unrealized_plpc: {unrealized_plpc:.2f}%")
@@ -903,6 +1015,39 @@ def execute_tier2(daily_amount, risk_manager, account):
     if not is_valid:
         print(f"❌ Tier 2 trade rejected: {error_msg}")
         return False
+    
+    # POSITION SIZE LIMIT: Check if adding this trade would exceed 30% concentration
+    MAX_POSITION_PCT = 30.0
+    try:
+        positions = api.list_positions()
+        account_value = float(account.equity)
+        current_position_value = 0.0
+        for pos in positions:
+            if pos.symbol == best:
+                current_position_value = float(pos.market_value)
+                break
+        
+        # Calculate new position size after this trade
+        new_position_value = current_position_value + amount
+        new_position_pct = (new_position_value / account_value * 100) if account_value > 0 else 0
+        
+        if new_position_pct > MAX_POSITION_PCT:
+            max_allowed_value = account_value * (MAX_POSITION_PCT / 100)
+            max_allowed_trade = max(0, max_allowed_value - current_position_value)
+            
+            if max_allowed_trade < amount * 0.5:  # If we can't even do 50% of planned trade
+                print(f"❌ POSITION SIZE LIMIT: {best} would be {new_position_pct:.1f}% (max: {MAX_POSITION_PCT}%)")
+                print(f"   Current: ${current_position_value:.2f} ({current_position_value/account_value*100:.1f}%)")
+                print(f"   Planned: ${amount:.2f} → Would exceed limit")
+                print(f"   💡 Skipping trade to prevent concentration")
+                return False
+            else:
+                # Reduce trade size to stay within limit
+                amount = max_allowed_trade
+                print(f"⚠️  POSITION SIZE LIMIT: Reducing trade size to ${amount:.2f} (max: {MAX_POSITION_PCT}%)")
+    except Exception as e:
+        print(f"⚠️  Error checking position size limit: {e}")
+        # Continue with trade if check fails (fail-open)
 
     # RISK MANAGER CHECK: PDT protection and daily loss limits
     account_value = float(account.equity)
