@@ -1,0 +1,93 @@
+name: Dashboard Auto-Update
+
+on:
+  schedule:
+    # Run daily at 10:00 AM ET (after trading execution at 9:35 AM)
+    # AUTOMATIC DST HANDLING: Runs at both times
+    - cron: '0 14,15 * * 1-5'   # 10:00 AM Eastern (covers both EST and EDT)
+  workflow_dispatch:
+  workflow_run:
+    # Also trigger after daily trading completes
+    workflows: ["Daily Trading Execution"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  update-dashboard:
+    name: Update Progress Dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate dashboard
+        run: |
+          echo "📊 Generating progress dashboard..."
+          python3 scripts/generate_progress_dashboard.py
+
+      - name: Update GitHub Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📝 Updating GitHub Wiki..."
+          
+          # Clone wiki repository
+          WIKI_DIR="wiki_repo"
+          if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
+            echo "✅ Wiki repository exists, updating..."
+          else
+            echo "⚠️  Wiki repository doesn't exist yet - creating..."
+            mkdir -p "$WIKI_DIR"
+            cd "$WIKI_DIR"
+            git init
+            git config user.name "GitHub Actions Bot"
+            git config user.email "actions@github.com"
+            git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
+            cd ..
+          fi
+          
+          # Copy generated dashboard
+          cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md" || true
+          if [ -f wiki/Home.md ]; then
+            cp wiki/Home.md "$WIKI_DIR/Home.md" || true
+          fi
+          
+          # Commit and push
+          cd "$WIKI_DIR"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          
+          if ! git diff --staged --quiet || [ -z "$(git log --oneline 2>/dev/null)" ]; then
+            COMMIT_MSG="📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git commit -m "$COMMIT_MSG" || echo "No changes to commit"
+            
+            # Push to wiki (try main, then master)
+            git push -u origin main 2>&1 || git push -u origin master 2>&1 || echo "⚠️  Wiki push failed (may need manual initialization)"
+          else
+            echo "📋 No changes to dashboard"
+          fi
+
+      - name: Verify update
+        run: |
+          echo "✅ Dashboard update workflow completed"
+          echo "📊 Check dashboard: https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard"
+
