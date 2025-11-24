@@ -328,53 +328,6 @@ class CoreStrategy:
                     logger.warning(f"Gemini 3 validation error (proceeding): {e}")
                     # Fail-open: continue with trade if Gemini 3 unavailable
 
-            # Step 4.6: LLM Council Validation (if enabled)
-            if self.llm_council_enabled and self._llm_council:
-                try:
-                    import asyncio
-                    logger.info("Validating trade with LLM Council consensus...")
-                    
-                    # Prepare market data for council
-                    market_data = {
-                        "symbol": best_etf,
-                        "price": None,  # Will be fetched in Step 5
-                        "sentiment": sentiment.value,
-                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
-                        "rsi": next((ms.rsi for ms in momentum_scores if ms.symbol == best_etf), None),
-                        "macd_histogram": next((ms.macd_histogram for ms in momentum_scores if ms.symbol == best_etf), None),
-                        "volume_ratio": next((ms.volume_ratio for ms in momentum_scores if ms.symbol == best_etf), None),
-                    }
-                    
-                    # Run async council validation
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    council_result = loop.run_until_complete(
-                        self._llm_council.validate_trade(
-                            symbol=best_etf,
-                            action="BUY",
-                            market_data=market_data,
-                            context={"daily_allocation": self.daily_allocation},
-                        )
-                    )
-                    loop.close()
-                    
-                    if not council_result.get("approved", True):
-                        logger.warning(
-                            f"LLM Council rejected trade: {council_result.get('reasoning', 'N/A')[:200]}"
-                        )
-                        logger.info(f"Council confidence: {council_result.get('confidence', 0):.2%}")
-                        logger.info("SKIPPING TRADE - LLM Council consensus rejected")
-                        return None
-                    else:
-                        logger.info(
-                            f"LLM Council approved trade (confidence: {council_result.get('confidence', 0):.2%})"
-                        )
-                        if council_result.get("council_response"):
-                            logger.debug(f"Council reasoning: {council_result['reasoning'][:300]}...")
-                except Exception as e:
-                    logger.warning(f"LLM Council validation error (proceeding): {e}")
-                    # Fail-open: continue with trade if Council unavailable
-
             # Step 5: Get current price
             current_price = self._get_current_price(best_etf)
             if current_price is None:
@@ -382,6 +335,7 @@ class CoreStrategy:
                 return None
 
             # Step 5.5: Intelligent Investor Safety Check (Graham-Buffett principles)
+            safety_analysis = None
             if self.use_intelligent_investor and self.safety_analyzer:
                 try:
                     logger.info("=" * 80)
