@@ -407,6 +407,79 @@ class CoreStrategy:
                     )
                     # Fail-open: continue with trade if safety check unavailable
 
+            # Step 5.6: LLM Council Validation (if enabled) - After safety checks
+            # Council incorporates Graham-Buffett principles and safety analysis
+            if self.llm_council_enabled and self._llm_council:
+                try:
+                    import asyncio
+                    logger.info("=" * 80)
+                    logger.info("Validating trade with LLM Council consensus...")
+                    
+                    # Prepare comprehensive market data for council
+                    etf_momentum = next((ms for ms in momentum_scores if ms.symbol == best_etf), None)
+                    market_data = {
+                        "symbol": best_etf,
+                        "price": current_price,
+                        "sentiment": sentiment.value,
+                        "momentum_score": etf_momentum.score if etf_momentum else None,
+                        "rsi": etf_momentum.rsi if etf_momentum else None,
+                        "macd_histogram": etf_momentum.macd_histogram if etf_momentum else None,
+                        "volume_ratio": etf_momentum.volume_ratio if etf_momentum else None,
+                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
+                    }
+                    
+                    # Include Intelligent Investor safety analysis if available
+                    context = {
+                        "daily_allocation": self.daily_allocation,
+                        "intelligent_investor_analysis": None,
+                    }
+                    
+                    if safety_analysis:
+                        context["intelligent_investor_analysis"] = {
+                            "safety_rating": safety_analysis.safety_rating.value if hasattr(safety_analysis.safety_rating, 'value') else str(safety_analysis.safety_rating),
+                            "defensive_investor_score": safety_analysis.defensive_investor_score,
+                            "value_score": safety_analysis.value_score,
+                            "margin_of_safety_pct": safety_analysis.margin_of_safety_pct,
+                            "mr_market_sentiment": safety_analysis.mr_market_sentiment,
+                            "quality_score": safety_analysis.quality.quality_score if safety_analysis.quality else None,
+                            "reasons": safety_analysis.reasons,
+                            "warnings": safety_analysis.warnings,
+                        }
+                    
+                    # Run async council validation
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    council_result = loop.run_until_complete(
+                        self._llm_council.validate_trade(
+                            symbol=best_etf,
+                            action="BUY",
+                            market_data=market_data,
+                            context=context,
+                        )
+                    )
+                    loop.close()
+                    
+                    if not council_result.get("approved", True):
+                        logger.warning(
+                            f"❌ LLM Council REJECTED trade: {best_etf}"
+                        )
+                        logger.warning(f"   Council reasoning: {council_result.get('reasoning', 'N/A')[:300]}...")
+                        logger.info(f"   Council confidence: {council_result.get('confidence', 0):.2%}")
+                        logger.info("SKIPPING TRADE - LLM Council consensus rejected")
+                        logger.info("=" * 80)
+                        return None
+                    else:
+                        logger.info(
+                            f"✅ LLM Council APPROVED trade: {best_etf}"
+                        )
+                        logger.info(f"   Council confidence: {council_result.get('confidence', 0):.2%}")
+                        if council_result.get("council_response"):
+                            logger.debug(f"   Council reasoning: {council_result['reasoning'][:300]}...")
+                        logger.info("=" * 80)
+                except Exception as e:
+                    logger.warning(f"LLM Council validation error (proceeding): {e}")
+                    # Fail-open: continue with trade if Council unavailable
+
             # Step 6: Calculate quantity
             quantity = self.daily_allocation / current_price
 

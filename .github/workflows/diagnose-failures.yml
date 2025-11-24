@@ -34,7 +34,6 @@ jobs:
               'daily-trading.yml',
               'weekend-crypto-trading.yml',
               'youtube-analysis.yml',
-              'ipo-monitor.yml',
               'notify-on-failure.yml',
               'workflow-health-check.yml',
             ];
