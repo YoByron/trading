@@ -45,6 +45,10 @@ import yfinance as yf
 
 # Import project modules
 from src.core.multi_llm_analysis import MultiLLMAnalyzer
+from src.core.multi_llm_analysis_optimized import (
+    OptimizedMultiLLMAnalyzer,
+    RequestPriority,
+)
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
 from src.utils.sentiment_loader import (
@@ -212,9 +216,21 @@ class CoreStrategy:
 
         # Initialize dependencies
         try:
-            self.llm_analyzer = (
-                MultiLLMAnalyzer(use_async=False) if use_sentiment else None
-            )
+            # Use optimized analyzer if enabled (default: True)
+            use_optimized = os.getenv("USE_OPTIMIZED_LLM", "true").lower() == "true"
+            if use_sentiment:
+                if use_optimized:
+                    self.llm_analyzer = OptimizedMultiLLMAnalyzer(
+                        use_async=False,
+                        enable_caching=True,
+                        enable_prioritization=True,
+                        cache_ttl=3600,  # 1 hour cache
+                    )
+                    logger.info("Using OptimizedMultiLLMAnalyzer with caching enabled")
+                else:
+                    self.llm_analyzer = MultiLLMAnalyzer(use_async=False)
+            else:
+                self.llm_analyzer = None
             self.alpaca_trader = AlpacaTrader(paper=True)
             self.risk_manager = RiskManager(
                 max_daily_loss_pct=2.0,
