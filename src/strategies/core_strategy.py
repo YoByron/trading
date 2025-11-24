@@ -245,8 +245,9 @@ class CoreStrategy:
             self.alpaca_trader = None
             self.risk_manager = None
 
-        # Initialize LLM Council (optional, for enhanced consensus decisions)
-        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "false").lower() == "true"
+        # Initialize LLM Council (ENABLED BY DEFAULT per CEO directive Nov 24, 2025)
+        # CEO directive: Enable all systems with $100/mo budget - move fast towards North Star
+        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "true"
         self._llm_council = None
         if self.llm_council_enabled and LLM_COUNCIL_AVAILABLE and TradingCouncil:
             try:
