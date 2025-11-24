@@ -77,38 +77,48 @@ jobs:
               );
               
               if (!hasExistingIssue) {
-                // Create issue
+                // Create issue using array join to avoid YAML parsing issues
                 const workflowNames = disabledWorkflows.map(w => w.name).join(', ');
+                const disabledWorkflowsList = disabledWorkflows.map(w => '- **' + w.name + '** (`' + w.path + '`)').join('\n');
+                const repo = context.repo.owner + '/' + context.repo.repo;
+                const firstWorkflowPath = disabledWorkflows[0].path.replace('.github/workflows/', '');
+                const workflowUrl = 'https://github.com/' + repo + '/actions/workflows/' + firstWorkflowPath;
+                const detectedTime = new Date().toISOString();
+                
+                const issueBody = [
+                  '## 🚨 Critical Workflow Disabled Alert',
+                  '',
+                  'Detected: ' + detectedTime,
+                  'Workflows Affected: ' + workflowNames,
+                  '',
+                  '### Disabled Workflows:',
+                  disabledWorkflowsList,
+                  '',
+                  '### Quick Fix (2 Minutes):',
+                  '1. Go to: ' + workflowUrl,
+                  '2. Click **"Enable workflow"** button (green button)',
+                  '3. Click **"Run workflow"** to trigger immediate execution',
+                  '',
+                  '### Why This Happened:',
+                  'GitHub automatically disables scheduled workflows after 60 days of repository inactivity. This is a GitHub security feature.',
+                  '',
+                  '### Prevention:',
+                  '- This health check runs weekly to detect disabled workflows early',
+                  '- Automated re-enable will be implemented soon',
+                  '',
+                  '### Impact:',
+                  '- ⚠️ Trading execution will NOT run until workflows are re-enabled',
+                  '- ⚠️ Scheduled trades will be missed',
+                  '',
+                  '---',
+                  '🤖 **Auto-detected by Workflow Health Check**'
+                ].join('\n');
+                
                 await github.rest.issues.create({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  title: `🚨 URGENT: ${disabledWorkflows.length} Critical Workflow(s) Disabled`,
-                  body: `## 🚨 Critical Workflow Disabled Alert
-
-Detected: ${new Date().toISOString()}
-Workflows Affected: ${workflowNames}
-
-### Disabled Workflows:
-${disabledWorkflows.map(w => `- **${w.name}** (\`${w.path}\`)`).join('\n')}
-
-### Quick Fix (2 Minutes):
-1. Go to: https://github.com/${{ github.repository }}/actions/workflows/${disabledWorkflows[0].path.replace('.github/workflows/', '')}
-2. Click **"Enable workflow"** button (green button)
-3. Click **"Run workflow"** to trigger immediate execution
-
-### Why This Happened:
-GitHub automatically disables scheduled workflows after 60 days of repository inactivity. This is a GitHub security feature.
-
-### Prevention:
-- This health check runs weekly to detect disabled workflows early
-- Automated re-enable will be implemented soon
-
-### Impact:
-- ⚠️ Trading execution will NOT run until workflows are re-enabled
-- ⚠️ Scheduled trades will be missed
-
----
-🤖 **Auto-detected by Workflow Health Check**`,
+                  title: '🚨 URGENT: ' + disabledWorkflows.length + ' Critical Workflow(s) Disabled',
+                  body: issueBody,
                   labels: ['bug', 'urgent', 'automation'],
                 });
               }

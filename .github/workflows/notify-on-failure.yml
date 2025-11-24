@@ -19,6 +19,7 @@ jobs:
       - name: Create GitHub Issue on Failure
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const run = context.payload.workflow_run;
             const runUrl = run.html_url;
@@ -27,24 +28,27 @@ jobs:
               timeZone: 'America/New_York' 
             });
             
-            const issueTitle = `🚨 Daily Trading Execution Failed - Run #${runNumber}`;
-            const issueBody = `## Trading Execution Failure Alert
-
-Workflow Run: [#${runNumber}](${runUrl})
-Date/Time: ${runDate} EST
-Status: ${run.conclusion}
-
-### Action Required
-1. Check the workflow logs: ${runUrl}
-2. Verify GitHub Secrets are configured
-3. Check Alpaca API status
-4. Run manually if needed: \`python scripts/autonomous_trader.py\`
-
-### Fallback
-LaunchAgent on Mac should execute as backup at 9:35 AM EST.
-
----
-*This issue was automatically created by the trading system.*`;
+            const issueTitle = '🚨 Daily Trading Execution Failed - Run #' + runNumber;
+            const workflowRunLink = '[' + '#' + runNumber + '](' + runUrl + ')';
+            const issueBody = [
+              '## Trading Execution Failure Alert',
+              '',
+              'Workflow Run: ' + workflowRunLink,
+              'Date/Time: ' + runDate + ' EST',
+              'Status: ' + run.conclusion,
+              '',
+              '### Action Required',
+              '1. Check the workflow logs: ' + runUrl,
+              '2. Verify GitHub Secrets are configured',
+              '3. Check Alpaca API status',
+              '4. Run manually if needed: `python scripts/autonomous_trader.py`',
+              '',
+              '### Fallback',
+              'LaunchAgent on Mac should execute as backup at 9:35 AM EST.',
+              '',
+              '---',
+              '*This issue was automatically created by the trading system.*'
+            ].join('\n');
             
             // Check if issue already exists for this run
             const issues = await github.rest.issues.listForRepo({
