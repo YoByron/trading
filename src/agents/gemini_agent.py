@@ -16,8 +16,14 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
 from src.utils.self_healing import with_retry, health_check
+
+# Try to import GenerationConfig, fallback to dict if not available
+try:
+    from google.generativeai.types import GenerationConfig
+except ImportError:
+    # Fallback: use dict format (also supported by API)
+    GenerationConfig = dict
 
 logger = logging.getLogger(__name__)
 
@@ -114,13 +120,22 @@ class GeminiAgent:
         temperature = self.THINKING_TEMPERATURES.get(thinking_level, 0.7)
         
         try:
-            # Build generation config using proper object
-            generation_config = GenerationConfig(
-                temperature=temperature,
-                top_p=0.95,
-                top_k=40,
-                max_output_tokens=4096,
-            )
+            # Build generation config
+            # Use GenerationConfig object if available, otherwise dict (both work)
+            if GenerationConfig == dict:
+                generation_config = {
+                    "temperature": temperature,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 4096,
+                }
+            else:
+                generation_config = GenerationConfig(
+                    temperature=temperature,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=4096,
+                )
             
             # Build conversation history
             # For single message, use simple string format
