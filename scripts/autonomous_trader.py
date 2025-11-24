@@ -15,6 +15,7 @@ import time as time_module
 import asyncio
 from datetime import datetime, date, time
 from pathlib import Path
+from typing import Optional
 import argparse
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
