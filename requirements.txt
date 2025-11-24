@@ -19,9 +19,10 @@ openai==1.109.1
 # Data Processing
 pandas==2.3.3
 numpy>=1.25.0,<2.0.0  # Updated: pandas 2.1.0 requires numpy >=1.25.0 (Note: Latest 2.3.5 requires pandas 2.2+)
-yfinance==0.2.66
+yfinance==0.2.12  # PINNED: 0.2.66 requires websockets>=13.0, conflicts with alpaca-trade-api (websockets<11)
 alpha-vantage==2.3.1
 # Security: numpy 2.x requires pandas 2.2+, keeping 1.x for compatibility
+# TODO: Migrate to alpaca-py (modern SDK) to resolve websockets conflict and allow yfinance upgrade
 
 # Scheduling
 schedule==1.2.2
