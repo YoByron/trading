@@ -238,6 +238,36 @@ Phase 3: $3/day  → Funded by profits from Phase 2
 
 ---
 
+## 🚀 AGENT INTEGRATIONS DIRECTIVE (Permanent - Nov 24, 2025)
+
+**CEO Directive**: "Enable ALL dormant systems NOW! We have $100/mo budget. Move towards North Star immediately!"
+
+**CRITICAL RULE**: All agent integrations MUST be enabled by default:
+- ✅ **LLM Council**: ENABLED (cost: ~$0.02-0.03/trade, well within budget)
+- ✅ **DeepAgents**: ENABLED (planning-based trading cycles)
+- ✅ **Multi-LLM Analysis**: ENABLED (already active)
+- ✅ **Intelligent Investor Safety**: ENABLED (already active)
+- ⚠️ **Go ADK**: Enable if service available (requires Go service running)
+
+**Budget Analysis**:
+- LLM Council: ~$0.40-0.60/month (20 trades × $0.02-0.03)
+- Multi-LLM: ~$15-60/month (sentiment analysis)
+- DeepAgents: Variable (planning overhead)
+- **Total**: Well within $100/mo budget ✅
+
+**Rationale**: 
+- CEO wants to move FAST towards $100+/day North Star
+- Conservative "wait until profitable" approach REJECTED
+- Enable all systems NOW, optimize costs later
+- Better decisions through multi-agent consensus > small cost savings
+
+**Implementation**: 
+- Default all integration flags to `true`
+- Remove conservative cost-benefit gates
+- Enable by default, disable only if explicitly requested
+
+---
+
 ## Optimization Strategies 💰
 
 ### 1. Alpaca High-Yield Cash (3.56% APY)
@@ -246,9 +276,9 @@ Phase 3: $3/day  → Funded by profits from Phase 2
 - Full liquidity - can use as buying power anytime
 
 ### 2. OpenRouter Multi-LLM Strategy
-- Phase 1-2 (Days 1-60): **DISABLED** (not worth cost yet)
-- Phase 3+ (Month 4+): **ENABLE** when making $10+/day consistently
+- ✅ **ENABLED** (permanent directive Nov 24, 2025)
 - Cost: $0.50-2/day for 3-model consensus analysis
+- Well within $100/mo budget
 
 ### 3. Claude Batching Strategy
 - Agent parallelization via Claude Agents SDK
