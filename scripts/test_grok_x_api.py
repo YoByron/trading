@@ -32,7 +32,9 @@ def test_grok_api():
         print("❌ GROK_API_KEY not found in environment")
         return False
     
-    print(f"✅ Found GROK_API_KEY: {grok_api_key[:20]}...")
+    # Security: Mask API key in output
+    from src.utils.security import mask_api_key
+    print(f"✅ Found GROK_API_KEY: {mask_api_key(grok_api_key)}")
     
     try:
         # Initialize Grok client
@@ -138,12 +140,14 @@ def test_x_com_api():
         print("⚠️  X_BEARER_TOKEN not found (X.com API not configured)")
         return False
     
+    # Security: Mask API keys in output
+    from src.utils.security import mask_api_key
     print(f"✅ Found X.com credentials:")
-    print(f"   Bearer Token: {bearer_token[:20]}...")
+    print(f"   Bearer Token: {mask_api_key(bearer_token)}")
     if api_key:
-        print(f"   API Key: {api_key[:10]}...")
+        print(f"   API Key: {mask_api_key(api_key)}")
     if api_secret:
-        print(f"   API Secret: {'*' * len(api_secret)}")
+        print(f"   API Secret: {mask_api_key(api_secret)}")
     
     # Note: X.com API v2 requires more complex setup
     # This is just a credential check
