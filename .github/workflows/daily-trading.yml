@@ -59,46 +59,71 @@ jobs:
           python3 tests/test_evaluation_system.py || exit 1
           echo "✅ All tests passed"
 
-      # TEMPORARILY DISABLED: ADK service not starting in GitHub Actions (Nov 19, 2025)
-      # Causing 20-minute timeout - will re-enable after debugging
-      # - name: Set up Go for ADK orchestrator
-      #   uses: actions/setup-go@v5
-      #   with:
-      #     go-version: '1.23'
-      #   env:
-      #     ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
+      - name: Set up Go for ADK orchestrator
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+        env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
+
+      - name: Install Go dependencies for ADK
+        if: env.ADK_ENABLED != '0'
+        working-directory: go/adk_trading
+        run: |
+          echo "📦 Installing Go dependencies for ADK orchestrator..."
+          go mod download
+          go mod verify
+          echo "✅ Go dependencies installed"
 
       - name: Start ADK orchestrator service (background)
+        if: env.ADK_ENABLED != '0'
         env:
           ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           ADK_PORT: '8080'
           ADK_HEALTH_ADDR: ':8091'
+          ADK_MODEL: ${{ secrets.ADK_MODEL || 'gemini-2.5-flash' }}
         run: |
-          if [ "$ADK_ENABLED" = "0" ]; then
-            echo "⚠️  ADK disabled via ADK_ENABLED=0, skipping service startup"
-            exit 0
-          fi
-
           echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
+          echo "   Model: ${ADK_MODEL}"
+          echo "   Port: ${ADK_PORT}"
+          
           cd go/adk_trading
-          nohup go run ./cmd/trading_orchestrator \
+          
+          # Build first to catch compilation errors early
+          echo "📦 Building ADK orchestrator..."
+          go build -o /tmp/trading_orchestrator ./cmd/trading_orchestrator || {
+            echo "❌ Build failed - checking logs..."
+            cat ../../logs/adk_service.log 2>/dev/null || echo "No log file"
+            echo "⚠️  Continuing with fallback to Python strategies..."
+            exit 0
+          }
+          
+          # Start service in background
+          echo "🚀 Starting ADK service..."
+          nohup /tmp/trading_orchestrator \
+            --model ${ADK_MODEL} \
             --data_dir ../../data \
             --log_path ../../logs/adk_orchestrator.jsonl \
             --app trading_orchestrator \
             web --port 8080 api --webui_address localhost:8080 > ../../logs/adk_service.log 2>&1 &
           echo $! > /tmp/adk_service.pid
+          echo "   Service PID: $(cat /tmp/adk_service.pid)"
 
-          # Wait for service to be ready (max 30 seconds)
-          echo "Waiting for ADK service to start..."
+          # Wait for service to be ready (max 60 seconds - increased for reliability)
+          echo "⏳ Waiting for ADK service to start..."
           ADK_READY=false
-          for i in {1..30}; do
-            if curl -f http://localhost:8080/api/health 2>/dev/null; then
-              echo "✅ ADK service is ready!"
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/api/health 2>/dev/null > /dev/null; then
+              echo "✅ ADK service is ready! (took ${i}s)"
               ADK_READY=true
               break
             fi
-            echo "  Attempt $i/30..."
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "   Still waiting... (${i}/60s)"
+              # Show last few lines of log for debugging
+              tail -5 ../../logs/adk_service.log 2>/dev/null || true
+            fi
             sleep 1
           done
 
@@ -106,10 +131,12 @@ jobs:
           if [ "$ADK_READY" = "false" ]; then
             echo "⚠️  WARNING: ADK service may not have started properly"
             echo "   Checking logs..."
-            tail -20 ../../logs/adk_service.log || echo "   No log file found"
+            tail -30 ../../logs/adk_service.log || echo "   No log file found"
             echo "   Continuing with fallback to Python strategies..."
+            echo "   ADK will be disabled for this run"
           else
             echo "✅ ADK service verified and ready for trading"
+            echo "   Health check: http://localhost:8080/api/health"
           fi
 
       - name: Validate watchlist exists
@@ -336,19 +363,27 @@ jobs:
 
           echo "✅ System state changes committed and pushed"
 
-      # TEMPORARILY DISABLED: Not starting ADK service (Nov 19, 2025)
-      # - name: Stop ADK service
-      #   if: always()
-      #   env:
-      #     ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
-      #   run: |
-      #     if [ "$ADK_ENABLED" != "0" ] && [ -f /tmp/adk_service.pid ]; then
-      #       PID=$(cat /tmp/adk_service.pid)
-      #       if ps -p $PID > /dev/null 2>&1; then
-      #         echo "Stopping ADK service (PID: $PID)..."
-      #         kill $PID || true
-      #       fi
-      #     fi
+      - name: Stop ADK service
+        if: always()
+        env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
+        run: |
+          if [ "$ADK_ENABLED" != "0" ] && [ -f /tmp/adk_service.pid ]; then
+            PID=$(cat /tmp/adk_service.pid)
+            if ps -p $PID > /dev/null 2>&1; then
+              echo "🛑 Stopping ADK service (PID: $PID)..."
+              kill $PID || true
+              sleep 2
+              # Force kill if still running
+              if ps -p $PID > /dev/null 2>&1; then
+                echo "   Force killing ADK service..."
+                kill -9 $PID || true
+              fi
+              echo "✅ ADK service stopped"
+            else
+              echo "⚠️  ADK service PID file exists but process not running"
+            fi
+          fi
 
       - name: Update Progress Dashboard Wiki
         if: steps.check_execution.outputs.skip != 'true'

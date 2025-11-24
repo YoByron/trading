@@ -2,10 +2,13 @@
 Gemini 3 Agent - Enhanced AI agent using Google Gemini 3 API
 
 This agent leverages Gemini 3's advanced features:
-- Adjustable thinking_level for reasoning depth control
-- Thought signatures for stateful multi-step execution
+- Temperature-based reasoning depth control
+- Conversation history for stateful multi-step execution
 - Multimodal capabilities with adjustable fidelity
 - Large context window with consistent reasoning
+
+Note: "thinking_level" and "thought_signatures" are conceptual features
+implemented via temperature adjustments and conversation history, not direct API parameters.
 """
 import os
 import json
@@ -13,6 +16,7 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 from src.utils.self_healing import with_retry, health_check
 
 logger = logging.getLogger(__name__)
@@ -23,11 +27,18 @@ class GeminiAgent:
     Gemini 3-powered agent for trading decisions.
     
     Features:
-    - Dynamic thinking_level adjustment (high for planning, low for speed)
-    - Thought signature preservation across tool calls
+    - Temperature-based reasoning control (lower = focused, higher = creative)
+    - Conversation history for stateful reasoning
     - Multimodal analysis support
     - Self-healing retry mechanisms
     """
+    
+    # Temperature mapping for "thinking levels" (conceptual, not API parameter)
+    THINKING_TEMPERATURES = {
+        "low": 0.3,      # Focused, deterministic
+        "medium": 0.7,   # Balanced
+        "high": 1.0,     # Creative, exploratory
+    }
     
     def __init__(
         self,
@@ -43,7 +54,8 @@ class GeminiAgent:
             name: Agent name
             role: Agent role/responsibility
             model: Gemini model to use
-            default_thinking_level: Default reasoning depth (low/medium/high)
+            default_thinking_level: Conceptual reasoning depth (low/medium/high)
+                                    Maps to temperature: low=0.3, medium=0.7, high=1.0
         """
         self.name = name
         self.role = role
@@ -54,16 +66,16 @@ class GeminiAgent:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             logger.warning("GOOGLE_API_KEY not found, Gemini agent will not function")
+            self.client = None
         else:
             genai.configure(api_key=api_key)
-        
-        # Initialize model
-        self.client = genai.GenerativeModel(model)
+            # Initialize model
+            self.client = genai.GenerativeModel(model)
         
         # Memory and decision tracking
         self.memory: List[Dict[str, Any]] = []
         self.decision_log: List[Dict[str, Any]] = []
-        self.thought_signatures: List[str] = []
+        self.conversation_history: List[Dict[str, Any]] = []
         
         logger.info(f"Initialized {name} with Gemini 3 ({model})")
     
@@ -80,71 +92,121 @@ class GeminiAgent:
         
         Args:
             prompt: The reasoning prompt
-            thinking_level: Reasoning depth (low/medium/high), defaults to agent's default
+            thinking_level: Conceptual reasoning depth (low/medium/high), 
+                           maps to temperature, defaults to agent's default
             tools: Optional tool definitions for function calling
-            context: Optional conversation context with thought signatures
+            context: Optional conversation context (list of message dicts)
             
         Returns:
-            Response with reasoning, decision, and thought signature
+            Response with reasoning, decision, and metadata
         """
+        if not self.client:
+            logger.error("Gemini client not initialized")
+            return {
+                "reasoning": "Error: Gemini client not initialized",
+                "decision": "NO_ACTION",
+                "confidence": 0.0,
+                "tool_calls": [],
+                "thinking_level": thinking_level or self.default_thinking_level
+            }
+        
         thinking_level = thinking_level or self.default_thinking_level
+        temperature = self.THINKING_TEMPERATURES.get(thinking_level, 0.7)
         
         try:
-            # Build generation config
-            generation_config = {
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "top_k": 40,
-                "max_output_tokens": 4096,
-            }
+            # Build generation config using proper object
+            generation_config = GenerationConfig(
+                temperature=temperature,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=4096,
+            )
             
-            # Add thinking level if supported
-            if hasattr(genai.types, "ThinkingLevel"):
-                generation_config["thinking_level"] = thinking_level
-            
-            # Build conversation history with thought signatures
-            messages = []
-            if context:
-                messages.extend(context)
-            
-            # Add current prompt
-            messages.append({"role": "user", "parts": [prompt]})
-            
-            # Generate response
-            if tools:
-                response = self.client.generate_content(
-                    messages,
-                    generation_config=generation_config,
-                    tools=tools
-                )
+            # Build conversation history
+            # For single message, use simple string format
+            # For multi-turn, use proper Content format
+            if context and len(context) > 0:
+                # Multi-turn conversation: use proper message format
+                messages = []
+                for msg in context:
+                    # Ensure proper format: {"role": "user"/"model", "parts": [{"text": "..."}]}
+                    if isinstance(msg.get("parts"), list):
+                        parts = []
+                        for part in msg["parts"]:
+                            if isinstance(part, str):
+                                parts.append({"text": part})
+                            elif isinstance(part, dict):
+                                parts.append(part)
+                        messages.append({
+                            "role": msg.get("role", "user"),
+                            "parts": parts
+                        })
+                    else:
+                        # Fallback: assume it's already in correct format
+                        messages.append(msg)
+                
+                # Add current prompt
+                messages.append({
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                })
+                
+                # Generate with conversation history
+                if tools:
+                    response = self.client.generate_content(
+                        messages,
+                        generation_config=generation_config,
+                        tools=tools
+                    )
+                else:
+                    response = self.client.generate_content(
+                        messages,
+                        generation_config=generation_config
+                    )
             else:
-                response = self.client.generate_content(
-                    messages,
-                    generation_config=generation_config
-                )
+                # Single message: use simple string format (more efficient)
+                if tools:
+                    response = self.client.generate_content(
+                        prompt,
+                        generation_config=generation_config,
+                        tools=tools
+                    )
+                else:
+                    response = self.client.generate_content(
+                        prompt,
+                        generation_config=generation_config
+                    )
             
-            # Extract thought signature if available
-            thought_signature = None
-            if hasattr(response, "thought_signature"):
-                thought_signature = response.thought_signature
-                self.thought_signatures.append(thought_signature)
+            # Store in conversation history
+            self.conversation_history.append({
+                "role": "user",
+                "parts": [{"text": prompt}]
+            })
+            self.conversation_history.append({
+                "role": "model",
+                "parts": [{"text": response.text}]
+            })
+            
+            # Keep history manageable (last 20 messages)
+            if len(self.conversation_history) > 20:
+                self.conversation_history = self.conversation_history[-20:]
             
             # Parse response
             result = {
                 "reasoning": response.text if hasattr(response, "text") else "",
                 "decision": "",
                 "confidence": 0.0,
-                "thought_signature": thought_signature,
                 "tool_calls": [],
-                "thinking_level": thinking_level
+                "thinking_level": thinking_level,
+                "temperature": temperature,
             }
             
             # Extract function calls if present
-            if hasattr(response, "function_calls"):
+            if hasattr(response, "function_calls") and response.function_calls:
                 for call in response.function_calls:
                     result["tool_calls"].append({
                         "name": call.name,
-                        "args": dict(call.args)
+                        "args": dict(call.args) if hasattr(call.args, "__dict__") else call.args
                     })
             
             return result
@@ -155,9 +217,9 @@ class GeminiAgent:
                 "reasoning": f"Error: {str(e)}",
                 "decision": "NO_ACTION",
                 "confidence": 0.0,
-                "thought_signature": None,
                 "tool_calls": [],
-                "thinking_level": thinking_level
+                "thinking_level": thinking_level,
+                "temperature": temperature,
             }
     
     def analyze_with_context(
@@ -166,23 +228,17 @@ class GeminiAgent:
         thinking_level: str = "high"
     ) -> Dict[str, Any]:
         """
-        Analyze data with full context preservation.
+        Analyze data with full context preservation using conversation history.
         
         Args:
             data: Input data for analysis
-            thinking_level: Reasoning depth for this analysis
+            thinking_level: Conceptual reasoning depth for this analysis
             
         Returns:
-            Analysis results with preserved thought signatures
+            Analysis results with preserved context
         """
-        # Build context from previous thought signatures
-        context = []
-        for i, sig in enumerate(self.thought_signatures[-5:]):  # Last 5 signatures
-            context.append({
-                "role": "model",
-                "parts": [f"[Thought Signature {i}]"],
-                "thought_signature": sig
-            })
+        # Use recent conversation history as context
+        context = self.conversation_history[-10:] if self.conversation_history else []
         
         # Build analysis prompt
         prompt = self._build_analysis_prompt(data)
@@ -220,7 +276,8 @@ Provide:
             "timestamp": datetime.now().isoformat(),
             "agent": self.name,
             "decision": decision,
-            "thought_signature": decision.get("thought_signature")
+            "thinking_level": decision.get("thinking_level"),
+            "temperature": decision.get("temperature"),
         }
         self.decision_log.append(entry)
         logger.info(f"{self.name} decision logged")
