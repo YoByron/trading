@@ -133,9 +133,6 @@ class Gemini3LangGraphAgent:
         """Research agent - gathers market data and context."""
         logger.info("Research agent: Gathering market data")
         
-        # Use high thinking level for research
-        thinking_level = "high"
-        
         prompt = f"""You are a market research agent. Analyze the following market data:
 
 {json.dumps(state.get('market_data', {}), indent=2)}
@@ -146,7 +143,7 @@ Provide:
 3. Opportunities
 4. Market regime (bullish/bearish/neutral)
 
-Use thinking_level={thinking_level} for deep analysis.
+Perform deep, thorough analysis.
 """
         
         if self.llm:
@@ -154,11 +151,6 @@ Use thinking_level={thinking_level} for deep analysis.
             messages.append(HumanMessage(content=prompt))
             
             response = self.llm.invoke(messages)
-            
-            # Extract thought signature if available
-            thought_sig = getattr(response, "thought_signature", None)
-            if thought_sig:
-                state["thought_signatures"].append(thought_sig)
             
             state["messages"].append(response)
             state["analysis"]["research"] = response.content
@@ -168,9 +160,6 @@ Use thinking_level={thinking_level} for deep analysis.
     def _analysis_agent(self, state: AgentState) -> AgentState:
         """Analysis agent - performs technical and fundamental analysis."""
         logger.info("Analysis agent: Performing analysis")
-        
-        # Use medium thinking level for analysis
-        thinking_level = "medium"
         
         prompt = f"""You are a trading analysis agent. Based on the research:
 
@@ -182,7 +171,7 @@ Perform technical and fundamental analysis:
 3. Risk assessment
 4. Position sizing recommendations
 
-Use thinking_level={thinking_level} for balanced analysis.
+Provide balanced, thorough analysis.
 """
         
         if self.llm:
@@ -190,10 +179,6 @@ Use thinking_level={thinking_level} for balanced analysis.
             messages.append(HumanMessage(content=prompt))
             
             response = self.llm.invoke(messages)
-            
-            thought_sig = getattr(response, "thought_signature", None)
-            if thought_sig:
-                state["thought_signatures"].append(thought_sig)
             
             state["messages"].append(response)
             state["analysis"]["technical"] = response.content
@@ -203,9 +188,6 @@ Use thinking_level={thinking_level} for balanced analysis.
     def _decision_agent(self, state: AgentState) -> AgentState:
         """Decision agent - makes final trading decision."""
         logger.info("Decision agent: Making trading decision")
-        
-        # Use low thinking level for quick decision
-        thinking_level = "low"
         
         prompt = f"""You are a trading decision agent. Based on research and analysis:
 
@@ -219,7 +201,6 @@ Make a final trading decision:
 4. Confidence: 0-1
 5. Reasoning: Why
 
-Use thinking_level={thinking_level} for quick decision.
 Format as JSON.
 """
         
@@ -228,10 +209,6 @@ Format as JSON.
             messages.append(HumanMessage(content=prompt))
             
             response = self.llm.invoke(messages)
-            
-            thought_sig = getattr(response, "thought_signature", None)
-            if thought_sig:
-                state["thought_signatures"].append(thought_sig)
             
             state["messages"].append(response)
             
@@ -275,7 +252,7 @@ Format as JSON.
         # Initialize state
         initial_state: AgentState = {
             "messages": [
-                SystemMessage(content=f"You are a sophisticated trading AI system. Use thinking_level={thinking_level} for reasoning depth.")
+                SystemMessage(content="You are a sophisticated trading AI system. Provide thorough, well-reasoned analysis.")
             ],
             "market_data": market_data,
             "analysis": {},
@@ -355,7 +332,7 @@ Format as JSON.
 4. Trading signals
 5. Risk assessment
 
-Use thinking_level={thinking_level} for detailed analysis.
+Provide detailed, thorough analysis.
 """
             
             # Use Gemini's multimodal capabilities

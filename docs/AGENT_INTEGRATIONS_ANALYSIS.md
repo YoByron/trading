@@ -171,31 +171,33 @@ self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "
 
 ---
 
-#### 6. **Go ADK Orchestrator** ⚠️ **DISABLED** (Per PLAN.md Decision)
+#### 6. **Go ADK Orchestrator** ✅ **ENABLED** (Per CEO Directive Nov 24, 2025)
 
-**Status**: ⚠️ **DISABLED DURING R&D PHASE** - Code exists, intentionally dormant  
+**Status**: ✅ **ENABLED** - Service starts automatically in GitHub Actions  
 **Location**: `go/adk_trading/`  
 **Integration Point**: `src/orchestration/adk_integration.py`
 
-**What It Would Do**:
+**What It Does**:
 - Multi-agent orchestrator in Go (Research, Signal, Risk, Execution agents)
 - Faster execution (Go vs Python)
 - Concurrent agent coordination
+- Uses Gemini models via Google ADK SDK
 
 **Current Status**:
 - Code exists: `go/adk_trading/cmd/trading_orchestrator/main.go`
-- Per PLAN.md (Nov 10, 2025): "Keep ADK DISABLED during R&D Phase (Days 1-90)"
-- **Rationale**: Focus on proving trading edge first, optimize performance later
+- **ENABLED** in GitHub Actions workflow (Go setup + service startup)
+- Service starts automatically before trading execution
+- Falls back gracefully to Python strategies if service unavailable
 
-**Why Disabled**:
-- Per PLAN.md: "Python is simple, reliable, and sufficient"
-- No bottleneck: Daily 9:35 AM trades don't need sub-second execution
-- Complexity cost: Go adds deployment/debugging overhead
-- **Recommendation**: Enable in Month 4+ IF Python system proves profitable AND performance becomes bottleneck
+**Why Enabled**:
+- **CEO Directive**: "Enable ALL dormant systems NOW! Move towards North Star immediately!"
+- Multi-agent coordination improves decision quality
+- Faster execution for complex analysis
+- **Rationale**: Better decisions through multi-agent system > complexity cost
 
-**Impact if Enabled**: **LOW-MEDIUM** - Performance improvement but not current constraint
+**Impact**: **MEDIUM-HIGH** - Multi-agent coordination improves decision quality
 
-**To Enable**: Start Go service + set `ADK_ENABLED=1`
+**Status**: ✅ **ENABLED** - Service starts automatically, falls back gracefully if unavailable
 
 ---
 
@@ -421,7 +423,7 @@ self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "
 | **Python Strategies** | ✅ Active | Yes | CRITICAL | ✅ Enabled |
 | **LLM Council** | ✅ Enabled | Yes | MEDIUM-HIGH | ✅ Enabled (Nov 24, 2025) |
 | **DeepAgents** | ✅ Enabled | Yes | MEDIUM | ✅ Enabled (Nov 24, 2025) |
-| **Go ADK** | ⚠️ Service-dependent | Conditional | LOW-MEDIUM | ⚠️ Enabled if service available |
+| **Go ADK** | ✅ Enabled | Yes | MEDIUM-HIGH | ✅ Enabled (auto-starts in GitHub Actions) |
 | **Langchain Agents** | ⚠️ Partial | Limited | LOW | ⚠️ Enabled (limited usage) |
 
 ---
@@ -436,7 +438,7 @@ self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "
 - Python Strategies: ✅ Enabled
 - LLM Council: ✅ Enabled (default changed from false to true)
 - DeepAgents: ✅ Enabled (already default=true)
-- Go ADK: ⚠️ Enabled if service available
+- Go ADK: ✅ Enabled (auto-starts in GitHub Actions)
 - Langchain Agents: ⚠️ Enabled (limited usage)
 
 **Verdict**: **ALL SYSTEMS ENABLED** per CEO directive. Budget: $100/mo allocated. Moving fast towards North Star ($100+/day target).
