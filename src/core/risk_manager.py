@@ -7,14 +7,19 @@ This module provides comprehensive risk management capabilities including:
 - Trade validation before execution
 - Consecutive loss tracking
 - Alert system for risk limit breaches
+- Behavioral finance integration (Jason Zweig principles)
 
 Author: Trading System
 Date: 2025-10-28
+Updated: 2025-11-24 - Added behavioral finance integration
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 from datetime import datetime
 from dataclasses import dataclass, field
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -58,6 +63,8 @@ class RiskManager:
         max_position_size_pct: float = 10.0,
         max_drawdown_pct: float = 10.0,
         max_consecutive_losses: int = 3,
+        use_behavioral_finance: bool = True,
+        data_dir: str = "data",
     ):
         """
         Initialize the Risk Manager with configurable parameters.
@@ -67,21 +74,37 @@ class RiskManager:
             max_position_size_pct: Maximum position size percentage (default: 10.0%)
             max_drawdown_pct: Maximum drawdown percentage (default: 10.0%)
             max_consecutive_losses: Maximum consecutive losses before warning (default: 3)
+            use_behavioral_finance: Enable behavioral finance checks (default: True)
+            data_dir: Directory for behavioral finance data storage
         """
         self.max_daily_loss_pct = max_daily_loss_pct
         self.max_position_size_pct = max_position_size_pct
         self.max_drawdown_pct = max_drawdown_pct
         self.max_consecutive_losses = max_consecutive_losses
+        self.use_behavioral_finance = use_behavioral_finance
 
         self.metrics = RiskMetrics()
         self.peak_account_value: float = 0.0
         self.alerts: list = []
+        
+        # Initialize behavioral finance manager if enabled
+        self.behavioral_manager = None
+        if use_behavioral_finance:
+            try:
+                from src.core.behavioral_finance import BehavioralFinanceManager
+                self.behavioral_manager = BehavioralFinanceManager(data_dir=data_dir)
+                logger.info("Behavioral finance manager initialized")
+            except ImportError as e:
+                logger.warning(f"Failed to import behavioral finance module: {e}")
+                self.behavioral_manager = None
+                self.use_behavioral_finance = False
 
         print(f"[RISK MANAGER] Initialized with parameters:")
         print(f"  - Max Daily Loss: {max_daily_loss_pct}%")
         print(f"  - Max Position Size: {max_position_size_pct}%")
         print(f"  - Max Drawdown: {max_drawdown_pct}%")
         print(f"  - Max Consecutive Losses: {max_consecutive_losses}")
+        print(f"  - Behavioral Finance: {'Enabled' if self.use_behavioral_finance else 'Disabled'}")
 
     def can_trade(
         self, 
@@ -228,12 +251,16 @@ class RiskManager:
         account_value: float,
         trade_type: str = "BUY",
         account_info: Optional[Dict[str, any]] = None,
+        expected_return_pct: Optional[float] = None,
+        confidence: Optional[float] = None,
+        pattern_type: Optional[str] = None,
     ) -> Dict[str, any]:
         """
         Validate a trade before execution.
 
         Performs comprehensive validation checks including position sizing,
-        sentiment score thresholds, risk limits, and Pattern Day Trader restrictions.
+        sentiment score thresholds, risk limits, Pattern Day Trader restrictions,
+        and behavioral finance checks (Jason Zweig principles).
 
         Args:
             symbol: Trading symbol
@@ -242,6 +269,9 @@ class RiskManager:
             account_value: Current account value
             trade_type: Type of trade (BUY/SELL)
             account_info: Optional account info dict with PDT and equity info
+            expected_return_pct: Expected return percentage (for behavioral tracking)
+            confidence: Confidence level (0-1) for behavioral checks
+            pattern_type: Type of pattern detected (for pattern bias checks)
 
         Returns:
             dict: Validation result with 'valid' flag and 'reason' for rejection
@@ -315,6 +345,31 @@ class RiskManager:
             )
             return validation_result
 
+        # Behavioral Finance Checks (Jason Zweig principles)
+        if self.use_behavioral_finance and self.behavioral_manager:
+            # Get recent losses for loss aversion check
+            recent_losses = []
+            if self.metrics.losing_trades > 0:
+                # Estimate recent losses from metrics
+                recent_losses = [-self.max_daily_loss_pct / 100]  # Placeholder
+            
+            # Check if trade should proceed based on behavioral finance
+            should_proceed, behavioral_reason = self.behavioral_manager.should_proceed_with_trade(
+                symbol=symbol,
+                expected_return=expected_return_pct or 0.0,
+                confidence=confidence or 0.5,
+                pattern_type=pattern_type,
+                recent_losses=recent_losses if recent_losses else None,
+            )
+            
+            if not should_proceed:
+                validation_result["valid"] = False
+                validation_result["reason"] = f"Behavioral finance check failed: {behavioral_reason}"
+                validation_result["warnings"].append(behavioral_reason)
+                return validation_result
+            elif behavioral_reason and "warning" in behavioral_reason.lower():
+                validation_result["warnings"].append(f"Behavioral: {behavioral_reason}")
+        
         # Validate sentiment score
         if not -1.0 <= sentiment_score <= 1.0:
             validation_result["valid"] = False
@@ -353,6 +408,66 @@ class RiskManager:
                 )
 
         return validation_result
+    
+    def record_trade_expectation(
+        self,
+        symbol: str,
+        expected_return_pct: float,
+        expected_confidence: float,
+        entry_price: float,
+    ):
+        """
+        Record trade expectation for behavioral finance tracking.
+        
+        Args:
+            symbol: Trading symbol
+            expected_return_pct: Expected return percentage
+            expected_confidence: Confidence level (0-1)
+            entry_price: Entry price
+            
+        Returns:
+            TradeExpectation object if behavioral finance is enabled, None otherwise
+        """
+        if self.use_behavioral_finance and self.behavioral_manager:
+            return self.behavioral_manager.record_trade_expectation(
+                symbol=symbol,
+                expected_return_pct=expected_return_pct,
+                expected_confidence=expected_confidence,
+                entry_price=entry_price,
+            )
+        return None
+    
+    def update_trade_outcome(
+        self,
+        expectation,
+        exit_price: float,
+        actual_return_pct: float,
+    ):
+        """
+        Update trade outcome for behavioral finance tracking.
+        
+        Args:
+            expectation: TradeExpectation object from record_trade_expectation
+            exit_price: Exit price
+            actual_return_pct: Actual return percentage
+        """
+        if self.use_behavioral_finance and self.behavioral_manager and expectation:
+            self.behavioral_manager.update_trade_outcome(
+                expectation=expectation,
+                exit_price=exit_price,
+                actual_return_pct=actual_return_pct,
+            )
+    
+    def get_behavioral_summary(self) -> Dict[str, any]:
+        """
+        Get behavioral finance summary.
+        
+        Returns:
+            Dictionary with behavioral finance metrics
+        """
+        if self.use_behavioral_finance and self.behavioral_manager:
+            return self.behavioral_manager.get_behavioral_summary()
+        return {}
 
     def check_circuit_breakers(self, account_info: Dict[str, float]) -> Dict[str, any]:
         """

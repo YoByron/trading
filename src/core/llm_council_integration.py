@@ -1,0 +1,327 @@
+"""
+LLM Council Integration for Trading Decisions
+
+This module provides easy integration of the LLM Council system into trading workflows.
+The council provides consensus-based decisions through peer review and chairman synthesis.
+"""
+
+import logging
+import json
+from typing import Dict, Any, Optional, List
+from dataclasses import asdict
+
+from src.core.multi_llm_analysis import (
+    LLMCouncilAnalyzer,
+    LLMModel,
+    CouncilResponse,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class TradingCouncil:
+    """
+    Trading-specific wrapper for LLM Council.
+    
+    Provides convenient methods for common trading decision scenarios:
+    - Trade validation (BUY/SELL/HOLD decisions)
+    - Risk assessment
+    - Position sizing recommendations
+    - Market analysis
+    """
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        council_models: Optional[List[LLMModel]] = None,
+        chairman_model: Optional[LLMModel] = None,
+        enabled: bool = True,
+    ):
+        """
+        Initialize Trading Council.
+
+        Args:
+            api_key: OpenRouter API key
+            council_models: List of models in council
+            chairman_model: Chairman model
+            enabled: Whether council is enabled (can disable for testing)
+        """
+        self.enabled = enabled
+        self.council = None
+
+        if enabled:
+            try:
+                self.council = LLMCouncilAnalyzer(
+                    api_key=api_key,
+                    council_models=council_models,
+                    chairman_model=chairman_model,
+                )
+                logger.info("Trading Council initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Trading Council: {e}")
+                self.enabled = False
+        else:
+            logger.info("Trading Council disabled")
+
+    async def validate_trade(
+        self,
+        symbol: str,
+        action: str,
+        market_data: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Validate a trading decision using LLM Council consensus.
+
+        Args:
+            symbol: Stock symbol
+            action: Proposed action (BUY/SELL/HOLD)
+            market_data: Market data (price, indicators, etc.)
+            context: Additional context (portfolio, risk limits, etc.)
+
+        Returns:
+            Dictionary with:
+                - approved: bool
+                - confidence: float (0-1)
+                - reasoning: str
+                - council_response: Full CouncilResponse object
+        """
+        if not self.enabled or not self.council:
+            logger.warning("Trading Council not available, approving by default")
+            return {
+                "approved": True,
+                "confidence": 0.5,
+                "reasoning": "Council unavailable - fail-open",
+                "council_response": None,
+            }
+
+        try:
+            query = f"""Evaluate whether we should {action} {symbol}.
+
+Proposed Action: {action}
+Symbol: {symbol}
+
+Market Data:
+{json.dumps(market_data, indent=2)}
+"""
+
+            if context:
+                query += f"\n\nContext:\n{json.dumps(context, indent=2)}"
+
+            query += """
+Provide:
+1. Recommendation: APPROVE or REJECT the {action} trade
+2. Confidence level (0-1)
+3. Key factors supporting your decision
+4. Risks or concerns
+5. Alternative recommendation if rejecting
+
+Format clearly with reasoning."""
+
+            system_prompt = """You are an expert trading risk manager. Evaluate trades objectively
+based on market conditions, technical indicators, risk management principles, and portfolio context.
+Be conservative - reject trades with high risk or low confidence."""
+
+            council_response = await self.council.query_council(
+                query, system_prompt, include_reviews=True
+            )
+
+            # Parse approval from final answer
+            final_answer_lower = council_response.final_answer.lower()
+            approved = (
+                "approve" in final_answer_lower
+                and "reject" not in final_answer_lower
+                and "decline" not in final_answer_lower
+            )
+
+            return {
+                "approved": approved,
+                "confidence": council_response.confidence,
+                "reasoning": council_response.final_answer,
+                "council_response": council_response,
+                "individual_responses": council_response.individual_responses,
+                "reviews": council_response.reviews,
+            }
+
+        except Exception as e:
+            logger.error(f"Trading Council validation error: {e}", exc_info=True)
+            return {
+                "approved": True,  # Fail-open
+                "confidence": 0.0,
+                "reasoning": f"Council error: {str(e)}",
+                "council_response": None,
+            }
+
+    async def get_trading_recommendation(
+        self,
+        symbol: str,
+        market_data: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get trading recommendation from LLM Council.
+
+        Args:
+            symbol: Stock symbol
+            market_data: Market data
+            context: Additional context
+
+        Returns:
+            Dictionary with recommendation, confidence, reasoning
+        """
+        if not self.enabled or not self.council:
+            return {
+                "action": "HOLD",
+                "confidence": 0.0,
+                "reasoning": "Council unavailable",
+            }
+
+        try:
+            council_response = await self.council.analyze_trading_decision(
+                symbol, market_data, context
+            )
+
+            # Parse action from final answer
+            final_answer_lower = council_response.final_answer.lower()
+            if "buy" in final_answer_lower and "sell" not in final_answer_lower:
+                action = "BUY"
+            elif "sell" in final_answer_lower:
+                action = "SELL"
+            else:
+                action = "HOLD"
+
+            return {
+                "action": action,
+                "confidence": council_response.confidence,
+                "reasoning": council_response.final_answer,
+                "council_response": council_response,
+                "individual_responses": council_response.individual_responses,
+            }
+
+        except Exception as e:
+            logger.error(f"Trading Council recommendation error: {e}", exc_info=True)
+            return {
+                "action": "HOLD",
+                "confidence": 0.0,
+                "reasoning": f"Council error: {str(e)}",
+            }
+
+    async def assess_risk(
+        self,
+        symbol: str,
+        position_size: float,
+        market_data: Dict[str, Any],
+        portfolio_context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Assess risk of a proposed position using LLM Council.
+
+        Args:
+            symbol: Stock symbol
+            position_size: Proposed position size (dollars)
+            market_data: Market data
+            portfolio_context: Portfolio context (current positions, etc.)
+
+        Returns:
+            Dictionary with risk assessment
+        """
+        if not self.enabled or not self.council:
+            return {
+                "risk_level": "MEDIUM",
+                "approved": True,
+                "reasoning": "Council unavailable",
+            }
+
+        query = f"""Assess the risk of opening a ${position_size:,.2f} position in {symbol}.
+
+Position Details:
+- Symbol: {symbol}
+- Position Size: ${position_size:,.2f}
+
+Market Data:
+{json.dumps(market_data, indent=2)}
+"""
+
+        if portfolio_context:
+            query += f"\n\nPortfolio Context:\n{json.dumps(portfolio_context, indent=2)}"
+
+        query += """
+Provide:
+1. Risk level: LOW/MEDIUM/HIGH
+2. Approval: APPROVE or REJECT the position
+3. Maximum recommended position size
+4. Key risk factors
+5. Risk mitigation recommendations
+
+Format clearly with reasoning."""
+
+        system_prompt = """You are an expert risk manager. Assess position risk based on:
+- Portfolio concentration
+- Market volatility
+- Position size relative to portfolio
+- Correlation with existing positions
+- Market conditions
+
+Be conservative - reject positions that exceed risk limits."""
+
+        try:
+            council_response = await self.council.query_council(
+                query, system_prompt, include_reviews=True
+            )
+
+            # Parse risk level and approval
+            final_answer_lower = council_response.final_answer.lower()
+            if "high risk" in final_answer_lower or "high-risk" in final_answer_lower:
+                risk_level = "HIGH"
+            elif "low risk" in final_answer_lower or "low-risk" in final_answer_lower:
+                risk_level = "LOW"
+            else:
+                risk_level = "MEDIUM"
+
+            approved = (
+                "approve" in final_answer_lower
+                and "reject" not in final_answer_lower
+            )
+
+            return {
+                "risk_level": risk_level,
+                "approved": approved,
+                "confidence": council_response.confidence,
+                "reasoning": council_response.final_answer,
+                "council_response": council_response,
+            }
+
+        except Exception as e:
+            logger.error(f"Trading Council risk assessment error: {e}", exc_info=True)
+            return {
+                "risk_level": "MEDIUM",
+                "approved": True,
+                "reasoning": f"Council error: {str(e)}",
+            }
+
+    def close(self):
+        """Close council connections."""
+        if self.council:
+            self.council.close()
+
+
+# Convenience function for easy integration
+def create_trading_council(
+    enabled: bool = True,
+    api_key: Optional[str] = None,
+) -> TradingCouncil:
+    """
+    Create a Trading Council instance.
+
+    Args:
+        enabled: Whether council is enabled
+        api_key: OpenRouter API key (defaults to env var)
+
+    Returns:
+        TradingCouncil instance
+    """
+    return TradingCouncil(
+        api_key=api_key,
+        enabled=enabled,
+    )
+
