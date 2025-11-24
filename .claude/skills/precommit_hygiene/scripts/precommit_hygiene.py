@@ -339,6 +339,14 @@ class PreCommitHygiene:
                 "secret": r'secret[\'"]?\s*[:=]\s*[\'"]?([a-zA-Z0-9_-]{20,})',
             }
 
+            # Patterns that could trigger CodeQL clear-text logging alerts
+            # These detect API keys being passed directly to print/log functions
+            logging_patterns = {
+                "print_api_key": r'print\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}',
+                "log_api_key": r'log(ger)?\.(info|debug|warning|error)\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}',
+                "fstring_key_direct": r'f[\'"][^\'"]*\{(api_key|bearer_token|api_secret|secret_key|grok_api_key)\}',
+            }
+
             violations = []
 
             if not files:
@@ -370,6 +378,22 @@ class PreCommitHygiene:
                                             "type": secret_type,
                                             "line": content[: match.start()].count("\n")
                                             + 1,
+                                        }
+                                    )
+
+                        # Check for API key logging patterns (CodeQL prevention)
+                        for pattern_name, pattern in logging_patterns.items():
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_content = content[: match.start()].split('\n')[-1] + content[match.start():].split('\n')[0]
+                                # Skip if mask_api_key is used properly (assigned to variable first)
+                                if 'mask_api_key' not in line_content or '(' in line_content.split('mask_api_key')[0][-20:]:
+                                    violations.append(
+                                        {
+                                            "file": filepath,
+                                            "type": f"cleartext_logging_{pattern_name}",
+                                            "line": content[: match.start()].count("\n") + 1,
+                                            "issue": "API key may be logged in cleartext. Use: masked = mask_api_key(key); print(masked)",
                                         }
                                     )
                 except Exception:

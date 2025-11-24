@@ -1,0 +1,20 @@
+name: "CodeQL Config for Trading System"
+
+# Disable default queries for paths that use our sanitizer
+paths-ignore:
+  - '**/*.md'
+  - 'venv/**'
+  - '.venv/**'
+  - 'node_modules/**'
+  - '**/__pycache__/**'
+
+query-filters:
+  # Clear-text logging: Our mask_api_key function is a sanitizer
+  # However, CodeQL doesn't support custom sanitizers in basic config
+  # This file documents our security approach
+
+# Security approach documentation:
+# 1. All API keys MUST be masked before logging using mask_api_key()
+# 2. Pattern: masked_key = mask_api_key(api_key); print(masked_key)
+# 3. Pre-commit hook checks for direct API key logging patterns
+# 4. Security workflow runs Bandit for additional Python security scanning
