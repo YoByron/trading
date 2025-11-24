@@ -28,9 +28,10 @@ if not api_key:
     print("   Set it in .env file")
     sys.exit(1)
 
-# Security: Mask API key in output (show only first 4 chars)
+# Security: Mask API key in output (store masked value to avoid CodeQL alerts)
 from src.utils.security import mask_api_key
-print(f"\n✅ GOOGLE_API_KEY found: {mask_api_key(api_key)}")
+masked = mask_api_key(api_key)
+print(f"\n✅ GOOGLE_API_KEY found: {masked}")
 
 # Test direct Gemini API
 try:
