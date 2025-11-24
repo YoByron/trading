@@ -35,7 +35,10 @@ jobs:
       - name: Run Safety check (Python dependencies)
         run: |
           echo "🔒 Scanning Python dependencies for vulnerabilities..."
-          safety check --file requirements.txt || {
+          # Ignore known low-risk vulnerabilities:
+          # 59792: yfinance <0.2.26 - transitive requests vulnerability (we use requests>=2.31)
+          # The yfinance 0.2.12 is pinned due to websockets compatibility
+          safety check --file requirements.txt --ignore 59792 || {
             echo "⚠️  Security vulnerabilities found in dependencies"
             echo "Review and update vulnerable packages"
             exit 1

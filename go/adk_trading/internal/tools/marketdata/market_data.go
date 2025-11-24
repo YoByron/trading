@@ -161,6 +161,9 @@ func loadRows(dataDir, symbol string, window int) ([]Row, error) {
 }
 
 func parseRow(rec []string) (Row, error) {
+	if len(rec) < 6 {
+		return Row{}, fmt.Errorf("insufficient fields: need 6, got %d", len(rec))
+	}
 	closeVal, err := strconv.ParseFloat(rec[1], 64)
 	if err != nil {
 		return Row{}, err

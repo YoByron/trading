@@ -117,10 +117,12 @@ GitHub automatically disables scheduled workflows after 60 days of repository in
       - name: Auto-re-enable workflows (if configured)
         if: steps.check_status.outputs.disabled_count > 0
         uses: actions/github-script@v7
+        env:
+          DISABLED_WORKFLOWS: ${{ steps.check_status.outputs.disabled_workflows }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const disabledWorkflows = JSON.parse('${{ steps.check_status.outputs.disabled_workflows }}');
+            const disabledWorkflows = JSON.parse(process.env.DISABLED_WORKFLOWS || '[]');
             
             // AUTONOMOUS MODE: Always auto-enable (no manual intervention needed)
             console.log('🔄 AUTONOMOUS MODE: Auto-enabling disabled workflows...');

@@ -139,14 +139,16 @@ func TestRiskTool_PositionSizeConstraint(t *testing.T) {
 		Symbol:         "SPY",
 		Action:         "BUY",
 		Confidence:     0.90,
-		Volatility:     0.01, // Very low volatility (would suggest huge position)
+		Volatility:     0.001, // Extremely low volatility triggers constraint (clamped to 0.01)
 		PortfolioValue: 1_000_000,
-		MaxRiskBps:     50,
+		MaxRiskBps:     500, // Higher risk budget to trigger position cap
 	}
 
 	output := testHandler(1_000_000, input)
 
 	// Position size should be capped at 10% of portfolio
+	// With vol=0.01 (min), maxRiskBps=500, riskBudget=50000
+	// positionSize = 50000 / (0.01 * 10) = 500000 > 100000 cap
 	maxAllowedPosition := input.PortfolioValue * 0.1
 	if output.PositionSize > maxAllowedPosition*1.01 { // Allow small floating point error
 		t.Errorf("Position size %f exceeds 10%% cap (%f)", output.PositionSize, maxAllowedPosition)
