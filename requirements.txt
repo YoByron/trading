@@ -1,6 +1,10 @@
 # Trading System - Minimal Production Dependencies
 # Optimized for fast CI/CD installation (<2 minutes)
-# Last updated: 2025-11-19
+# Last updated: 2025-11-23
+#
+# Python Version Requirement: >=3.9,<3.14
+# pandas 2.3.3 is compatible with Python 3.9-3.13
+# Python 3.14+ requires pandas upgrade (API changes)
 
 # Gemini 3 AI - REMOVED (not used in production code)
 # Removed 2025-11-21: Caused dependency conflicts with google-api-core
@@ -57,8 +61,10 @@ langgraph>=1.0.0
 google-api-python-client>=2.100.0  # Gmail and Google Sheets API
 google-auth-httplib2>=0.1.1
 google-auth-oauthlib>=1.1.0
-slack-sdk>=3.27.0  # Slack Web API
-gspread>=5.12.0  # Google Sheets helper library
+
+# Removed 2025-11-23: Not imported anywhere in codebase (verified via grep)
+# slack-sdk>=3.27.0  # REMOVED - unused (no imports found)
+# gspread>=5.12.0  # REMOVED - unused (use google-api-python-client instead)
 
 # Monitoring & Alerts
 # requests already included above (line 25)
