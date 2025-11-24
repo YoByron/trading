@@ -9,5 +9,4 @@ __all__ = [
     "metatrader",
     "gmail",
     "slack",
-    "google_sheets",
 ]

@@ -107,6 +107,24 @@ Market Data:
 
             if context:
                 query += f"\n\nContext:\n{json.dumps(context, indent=2)}"
+                
+                # Highlight Intelligent Investor analysis if available
+                if context.get("intelligent_investor_analysis"):
+                    ii_analysis = context["intelligent_investor_analysis"]
+                    query += f"""
+
+**Intelligent Investor Analysis (Graham-Buffett Principles):**
+- Safety Rating: {ii_analysis.get('safety_rating', 'N/A')}
+- Defensive Investor Score: {ii_analysis.get('defensive_investor_score', 'N/A')}/100
+- Value Score: {ii_analysis.get('value_score', 'N/A')}/100
+- Margin of Safety: {ii_analysis.get('margin_of_safety_pct', 0)*100 if ii_analysis.get('margin_of_safety_pct') else 0:.1f}%
+- Mr. Market Sentiment: {ii_analysis.get('mr_market_sentiment', 'N/A')}
+- Quality Score: {ii_analysis.get('quality_score', 'N/A')}/100
+"""
+                    if ii_analysis.get('reasons'):
+                        query += f"\nReasons: {', '.join(ii_analysis['reasons'])}\n"
+                    if ii_analysis.get('warnings'):
+                        query += f"\nWarnings: {', '.join(ii_analysis['warnings'])}\n"
 
             query += """
 Provide:
@@ -116,11 +134,28 @@ Provide:
 4. Risks or concerns
 5. Alternative recommendation if rejecting
 
+Consider Graham-Buffett principles:
+- Margin of safety
+- Value investing principles
+- Defensive investor criteria
+- Quality of the investment
+- Mr. Market's mood (overvaluation/undervaluation)
+
 Format clearly with reasoning."""
 
-            system_prompt = """You are an expert trading risk manager. Evaluate trades objectively
-based on market conditions, technical indicators, risk management principles, and portfolio context.
-Be conservative - reject trades with high risk or low confidence."""
+            system_prompt = """You are an expert trading risk manager following Graham-Buffett value investing principles.
+Evaluate trades objectively based on:
+- Market conditions and technical indicators
+- Graham-Buffett Intelligent Investor principles (margin of safety, value, quality)
+- Risk management principles
+- Portfolio context and diversification
+- Intelligent Investor safety analysis (if provided)
+
+Be conservative - reject trades with:
+- High risk or low confidence
+- Insufficient margin of safety
+- Poor value characteristics
+- Overvaluation concerns"""
 
             council_response = await self.council.query_council(
                 query, system_prompt, include_reviews=True
