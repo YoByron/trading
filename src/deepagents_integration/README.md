@@ -149,7 +149,7 @@ The deepagents integration works alongside existing systems:
 2. **Built-in Middleware**: Planning, filesystem, sub-agents included
 3. **Cost Optimization**: Prompt caching reduces API costs
 4. **Context Management**: Automatic handling of long conversations
-5. **Best Practices**: Implements patterns from Claude Code, Manus
+5. **Best Practices**: Implements patterns from Claude Code
 
 ## Configuration
 

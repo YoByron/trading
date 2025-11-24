@@ -664,10 +664,12 @@ class CryptoStrategy:
                 macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
                 volume_ratio = self._calculate_volume_ratio(hist)
 
-                # HARD FILTER 1: Reject bearish MACD
-                if macd_histogram < 0:
+                # HARD FILTER 1: Reject strongly bearish MACD (allow slightly negative for less conservative approach)
+                # Changed from < 0 to < -50 to allow trades when MACD is recovering from bearish
+                macd_threshold = float(os.getenv("CRYPTO_MACD_THRESHOLD", "-50.0"))
+                if macd_histogram < macd_threshold:
                     logger.warning(
-                        f"{symbol} REJECTED - Bearish MACD histogram ({macd_histogram:.4f})"
+                        f"{symbol} REJECTED - Bearish MACD histogram ({macd_histogram:.4f} < {macd_threshold})"
                     )
                     continue
 
