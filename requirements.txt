@@ -18,8 +18,8 @@ openai==1.109.1
 
 # Data Processing
 pandas==2.3.3
-numpy>=1.25.0,<2.0.0  # Updated: pandas 2.1.0 requires numpy >=1.25.0 (Note: Latest 2.3.5 requires pandas 2.2+)
-yfinance==0.2.12  # PINNED: 0.2.66 requires websockets>=13.0, conflicts with alpaca-trade-api (websockets<11)
+numpy>=1.26.4,<2.0.0  # langchain-community 0.3.x requires numpy>=1.26.4; pandas 2.3.3 compatible
+yfinance==0.2.58  # PINNED: Last version without websockets (0.2.59+ requires websockets>=13.0, conflicts with alpaca-trade-api websockets<11)
 alpha-vantage==2.3.1
 # Security: numpy 2.x requires pandas 2.2+, keeping 1.x for compatibility
 # TODO: Migrate to alpaca-py (modern SDK) to resolve websockets conflict and allow yfinance upgrade
@@ -55,7 +55,7 @@ anthropic>=0.73.0,<1.0.0  # langchain-anthropic requires >=0.73.0
 deepagents>=0.2.5
 langchain>=1.0.0
 langchain-anthropic>=1.0.0
-langchain-community>=0.4.0
+langchain-community>=0.3.25,<0.4.0  # Use 0.3.x for guaranteed numpy<2.0 support
 langgraph>=1.0.0
 
 # MCP Integrations
