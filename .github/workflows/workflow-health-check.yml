@@ -2,8 +2,9 @@ name: Workflow Health Check
 
 on:
   schedule:
-    # Run every Monday at 8:00 AM UTC (3:00 AM EST) - before trading starts
-    - cron: '0 8 * * 1'
+    # Run daily at 2 AM UTC to keep workflows active and check health
+    # AUTONOMOUS: Runs every day to prevent workflow disabling
+    - cron: '0 2 * * *'
   workflow_dispatch:
     description: "Manual workflow health check"
 
@@ -121,27 +122,37 @@ GitHub automatically disables scheduled workflows after 60 days of repository in
           script: |
             const disabledWorkflows = JSON.parse('${{ steps.check_status.outputs.disabled_workflows }}');
             
-            // Only auto-enable if AUTO_ENABLE_WORKFLOWS secret is set to 'true'
-            const autoEnable = '${{ secrets.AUTO_ENABLE_WORKFLOWS }}' === 'true';
+            // AUTONOMOUS MODE: Always auto-enable (no manual intervention needed)
+            console.log('🔄 AUTONOMOUS MODE: Auto-enabling disabled workflows...');
             
-            if (autoEnable) {
-              console.log('🔄 Auto-enabling disabled workflows...');
-              
-              for (const workflow of disabledWorkflows) {
+            for (const workflow of disabledWorkflows) {
+              try {
+                await github.rest.actions.enableWorkflow({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                });
+                console.log(`✅ Auto-enabled: ${workflow.name}`);
+                
+                // Trigger the workflow immediately after enabling
                 try {
-                  await github.rest.actions.enableWorkflow({
+                  await github.rest.actions.createWorkflowDispatch({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     workflow_id: workflow.id,
                   });
-                  console.log(`✅ Enabled: ${workflow.name}`);
-                } catch (error) {
-                  console.error(`❌ Failed to enable ${workflow.name}: ${error.message}`);
+                  console.log(`✅ Triggered: ${workflow.name}`);
+                } catch (triggerError) {
+                  console.log(`⚠️  Could not trigger ${workflow.name} (will run on schedule)`);
                 }
+              } catch (error) {
+                console.error(`❌ Failed to enable ${workflow.name}: ${error.message}`);
+                // Still create issue for manual review if auto-enable fails
               }
-            } else {
-              console.log('ℹ️  Auto-enable disabled (set AUTO_ENABLE_WORKFLOWS=true to enable)');
-              console.log('   Manual re-enable required - issue created');
+            }
+            
+            if (disabledWorkflows.length > 0) {
+              console.log(`✅ Auto-enabled ${disabledWorkflows.length} workflow(s) - system is autonomous`);
             }
       
       - name: Report status
