@@ -24,7 +24,6 @@ func TestMarketDataTool_LoadRows(t *testing.T) {
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
 	// Write CSV with metadata rows and data rows
 	writer.Write([]string{"# Metadata row 1"})
@@ -34,6 +33,8 @@ func TestMarketDataTool_LoadRows(t *testing.T) {
 	writer.Write([]string{"2025-01-01", "450.00", "452.00", "448.00", "449.00", "1000000"})
 	writer.Write([]string{"2025-01-02", "451.00", "453.00", "449.00", "450.00", "1100000"})
 	writer.Write([]string{"2025-01-03", "452.00", "454.00", "450.00", "451.00", "1200000"})
+	writer.Flush()
+	file.Close()
 
 	// Test loading rows
 	rows, err := loadRows(tempDir, "SPY", 0)
@@ -65,7 +66,6 @@ func TestMarketDataTool_LoadRowsWithWindow(t *testing.T) {
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
 	writer.Write([]string{"# Metadata"})
 	writer.Write([]string{"# Metadata"})
@@ -82,6 +82,8 @@ func TestMarketDataTool_LoadRowsWithWindow(t *testing.T) {
 			"1000000",
 		})
 	}
+	writer.Flush()
+	file.Close()
 
 	// Test with window of 5
 	rows, err := loadRows(tempDir, "SPY", 5)
