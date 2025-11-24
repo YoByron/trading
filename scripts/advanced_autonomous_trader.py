@@ -31,6 +31,7 @@ from src.agents.signal_agent import SignalAgent
 from src.agents.risk_agent import RiskAgent
 from src.agents.execution_agent import ExecutionAgent
 from src.agents.reinforcement_learning import RLPolicyLearner
+from src.agents.reinforcement_learning_optimized import OptimizedRLPolicyLearner
 
 # Setup logging
 logging.basicConfig(
@@ -132,7 +133,18 @@ def main():
     signal_agent = SignalAgent()
     risk_agent = RiskAgent()
     execution_agent = ExecutionAgent(alpaca_api=api)
-    rl_learner = RLPolicyLearner()
+    # Use optimized RL learner if enabled (default: True)
+    use_optimized_rl = os.getenv("USE_OPTIMIZED_RL", "true").lower() == "true"
+    if use_optimized_rl:
+        rl_learner = OptimizedRLPolicyLearner(
+            enable_replay=True,
+            enable_adaptive_lr=True,
+            initial_exploration_rate=0.3,
+        )
+        logger.info("Using OptimizedRLPolicyLearner with experience replay enabled")
+    else:
+        rl_learner = RLPolicyLearner()
+        logger.info("Using standard RLPolicyLearner")
     
     # Register agents with meta-agent
     meta_agent.register_agent(research_agent)
@@ -201,11 +213,15 @@ def main():
                 print(f"   Stop-Loss: {risk_assessment.get('stop_loss', 0):.2%}")
                 
                 # Use RL to potentially override
+                # Enhanced market state for OptimizedRLPolicyLearner
+                price_history = market_data.get("price_history", {})
                 market_state = {
-                    "market_regime": coordinated_decision.get("market_regime"),
-                    "rsi": market_data.get("price_history", {}).get("rsi", 50),
-                    "macd_histogram": 0.5,  # Would calculate from market_data
-                    "trend": "UPTREND"
+                    "market_regime": coordinated_decision.get("market_regime", "UNKNOWN"),
+                    "rsi": price_history.get("rsi", 50),
+                    "macd_histogram": price_history.get("macd_histogram", 0.0),
+                    "trend": price_history.get("trend", "SIDEWAYS"),
+                    "trend_strength": price_history.get("trend_strength", 0.5),
+                    "volatility": market_data.get("volatility", 0.2),
                 }
                 
                 rl_action = rl_learner.select_action(market_state, action)
