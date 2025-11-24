@@ -68,49 +68,49 @@ jobs:
       #   env:
       #     ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
 
-      # - name: Start ADK orchestrator service (background)
-      #   env:
-      #     ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
-      #     GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      #     ADK_PORT: '8080'
-      #     ADK_HEALTH_ADDR: ':8091'
-      #   run: |
-      #     if [ "$ADK_ENABLED" = "0" ]; then
-      #       echo "⚠️  ADK disabled via ADK_ENABLED=0, skipping service startup"
-      #       exit 0
-      #     fi
-      #
-      #     echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
-      #     cd go/adk_trading
-      #     nohup go run ./cmd/trading_orchestrator \
-      #       --data_dir ../../data \
-      #       --log_path ../../logs/adk_orchestrator.jsonl \
-      #       --app trading_orchestrator \
-      #       web --port 8080 api --webui_address localhost:8080 > ../../logs/adk_service.log 2>&1 &
-      #     echo $! > /tmp/adk_service.pid
-      #
-      #     # Wait for service to be ready (max 30 seconds)
-      #     echo "Waiting for ADK service to start..."
-      #     ADK_READY=false
-      #     for i in {1..30}; do
-      #       if curl -f http://localhost:8080/api/health 2>/dev/null; then
-      #         echo "✅ ADK service is ready!"
-      #         ADK_READY=true
-      #         break
-      #       fi
-      #       echo "  Attempt $i/30..."
-      #       sleep 1
-      #     done
-      #
-      #     # Verify service started
-      #     if [ "$ADK_READY" = "false" ]; then
-      #       echo "⚠️  WARNING: ADK service may not have started properly"
-      #       echo "   Checking logs..."
-      #       tail -20 ../../logs/adk_service.log || echo "   No log file found"
-      #       echo "   Continuing with fallback to Python strategies..."
-      #     else
-      #       echo "✅ ADK service verified and ready for trading"
-      #     fi
+      - name: Start ADK orchestrator service (background)
+        env:
+          ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          ADK_PORT: '8080'
+          ADK_HEALTH_ADDR: ':8091'
+        run: |
+          if [ "$ADK_ENABLED" = "0" ]; then
+            echo "⚠️  ADK disabled via ADK_ENABLED=0, skipping service startup"
+            exit 0
+          fi
+
+          echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
+          cd go/adk_trading
+          nohup go run ./cmd/trading_orchestrator \
+            --data_dir ../../data \
+            --log_path ../../logs/adk_orchestrator.jsonl \
+            --app trading_orchestrator \
+            web --port 8080 api --webui_address localhost:8080 > ../../logs/adk_service.log 2>&1 &
+          echo $! > /tmp/adk_service.pid
+
+          # Wait for service to be ready (max 30 seconds)
+          echo "Waiting for ADK service to start..."
+          ADK_READY=false
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/api/health 2>/dev/null; then
+              echo "✅ ADK service is ready!"
+              ADK_READY=true
+              break
+            fi
+            echo "  Attempt $i/30..."
+            sleep 1
+          done
+
+          # Verify service started
+          if [ "$ADK_READY" = "false" ]; then
+            echo "⚠️  WARNING: ADK service may not have started properly"
+            echo "   Checking logs..."
+            tail -20 ../../logs/adk_service.log || echo "   No log file found"
+            echo "   Continuing with fallback to Python strategies..."
+          else
+            echo "✅ ADK service verified and ready for trading"
+          fi
 
       - name: Validate watchlist exists
         id: validate_watchlist
@@ -394,19 +394,26 @@ jobs:
             fi
             
             git commit -m "$COMMIT_MSG" || echo "No changes to commit"
-            
-            # Try pushing to main branch first, then master
-            if git push -u origin main 2>&1; then
-              echo "✅ Wiki dashboard updated successfully (main branch)!"
-            elif git push -u origin master 2>&1; then
-              echo "✅ Wiki dashboard updated successfully (master branch)!"
+
+            # Push to wiki - detect current branch or use master (wiki default)
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "master")
+            echo "📌 Pushing to branch: $CURRENT_BRANCH"
+
+            # Re-authenticate for push (token may have been invalidated)
+            git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git"
+
+            if git push -u origin "$CURRENT_BRANCH" 2>&1; then
+              echo "✅ Wiki dashboard updated successfully!"
             else
-              echo "⚠️  Wiki push failed - wiki repository needs manual initialization"
-              echo "   This is normal on first run. To initialize:"
-              echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
-              echo "   2. Click 'Create the first page'"
-              echo "   3. Name it 'Home' and save (content will be auto-updated on next run)"
-              echo "   4. GitHub Actions will update it automatically after that"
+              echo "⚠️  Wiki push failed - trying force push..."
+              if git push -u origin "$CURRENT_BRANCH" --force 2>&1; then
+                echo "✅ Wiki dashboard force-pushed successfully!"
+              else
+                echo "⚠️  Wiki push failed - wiki repository may need manual initialization"
+                echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
+                echo "   2. Click 'Create the first page'"
+                echo "   3. Name it 'Home' and save"
+              fi
             fi
           fi
 
