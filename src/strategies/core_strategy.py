@@ -182,7 +182,7 @@ class CoreStrategy:
 
     def __init__(
         self,
-        daily_allocation: float = 6.0,
+        daily_allocation: float = 900.0,
         etf_universe: Optional[List[str]] = None,
         stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
         take_profit_pct: float = TAKE_PROFIT_PCT,

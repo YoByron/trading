@@ -11,7 +11,7 @@
     "current_day": 9,
     "total_days": 90,
     "status": "active",
-    "phase": "R&D Phase - Month 1 (Days 1-30)"
+    "phase": "Production Scaling - Month 2 (Days 31-60)"
   },
   "account": {
     "starting_balance": 100000.0,
@@ -277,6 +277,11 @@
     "[2025-11-17 09:00] Allocation: $0.50/day (5% of daily budget)",
     "[2025-11-17 09:00] Execution: Saturday & Sunday 10:00 AM ET",
     "[2025-11-17 09:00] Coins: BTC/USD, ETH/USD (24/7 trading capability)",
-    "[2025-11-17 09:00] Status: Active - first execution pending next weekend"
+    "[2025-11-17 09:00] Status: Active - first execution pending next weekend",
+    "[2025-11-25 15:40] SCALING DECISION: Transitioning from R&D to Production Scaling",
+    "[2025-11-25 15:40] Analysis: Win rate (62%) is strong, but profit per trade ($0.28) is too low to hit $100/day goal",
+    "[2025-11-25 15:40] Action: Increasing Daily Investment from $10 to $1,500 (150x scaling)",
+    "[2025-11-25 15:40] New Allocation: Core Strategy $900/day, Growth Strategy $1,500/week ($300/day)",
+    "[2025-11-25 15:40] Expected Outcome: ~$100/day profit if 62% win rate holds"
   ]
 }
