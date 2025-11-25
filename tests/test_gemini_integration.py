@@ -6,10 +6,19 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.agents.gemini_agent import GeminiAgent
+# Try to import GeminiAgent, skip tests if google-generativeai is not available
+try:
+    from src.agents.gemini_agent import GeminiAgent
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    GeminiAgent = None
 
 class TestGeminiIntegration(unittest.TestCase):
     def setUp(self):
+        """Set up test fixtures. Skips if google-generativeai is not available."""
+        if not GEMINI_AVAILABLE:
+            self.skipTest("google-generativeai package not available - install with: pip install google-generativeai")
         self.agent = GeminiAgent(
             name="TestGemini",
             role="Tester",
@@ -17,12 +26,14 @@ class TestGeminiIntegration(unittest.TestCase):
             default_thinking_level="low" # Low for faster tests
         )
 
+    @unittest.skipUnless(GEMINI_AVAILABLE, "google-generativeai not installed")
     def test_initialization(self):
         """Test that the agent initializes correctly."""
         self.assertEqual(self.agent.name, "TestGemini")
         self.assertEqual(self.agent.role, "Tester")
         self.assertEqual(self.agent.model, "gemini-3-pro-preview")
 
+    @unittest.skipUnless(GEMINI_AVAILABLE, "google-generativeai not installed")
     @patch('src.agents.gemini_agent.genai.GenerativeModel')
     def test_reason_mocked(self, mock_model_class):
         """Test the reason method with a mocked Gemini API."""
@@ -41,6 +52,7 @@ class TestGeminiIntegration(unittest.TestCase):
         # The mock response text parsing depends on the implementation of _parse_response
         # Assuming default parsing logic handles unstructured text or we need to mock structured output
         
+    @unittest.skipUnless(GEMINI_AVAILABLE, "google-generativeai not installed")
     def test_health_check(self):
         """Test the health check mechanism."""
         # It should return True initially as there are no errors
