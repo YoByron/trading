@@ -119,16 +119,16 @@ ACTION REQUIRED:
             "strategies": {
                 "tier1": {
                     "name": "Core ETF Strategy",
-                    "allocation": 0.6,
-                    "daily_amount": 6.0,
+                    "allocation": 0.67,
+                    "daily_amount": 10.0,
                     "trades_executed": 0,
                     "total_invested": 0.0,
                     "status": "active",
                 },
                 "tier2": {
                     "name": "Growth Stock Strategy",
-                    "allocation": 0.2,
-                    "daily_amount": 2.0,
+                    "allocation": 0.33,
+                    "daily_amount": 5.0,
                     "trades_executed": 0,
                     "total_invested": 0.0,
                     "status": "active",
@@ -505,6 +505,86 @@ ACTION REQUIRED:
             print()
 
         return evaluation
+
+    def check_trade_staleness(self) -> Dict[str, Any]:
+        """
+        Check if last trade was too long ago - detects silent automation failures.
+
+        Returns:
+            Dictionary with:
+            - status: "OK", "WARNING", or "ERROR"
+            - message: Description of the issue
+            - last_trade_date: ISO date string of last trade
+            - hours_since_last_trade: Hours since last trade
+            - recommended_action: What to do about it
+        """
+        from datetime import datetime, timedelta
+
+        # Get last trade date from performance
+        last_trade_date = None
+
+        # Check for most recent trade in notes
+        for note in reversed(self.state.get("notes", [])):
+            if "Trade executed:" in note or "order executed" in note:
+                # Extract timestamp from note format: [2025-11-07 14:01]
+                try:
+                    timestamp_str = note.split("]")[0].strip("[")
+                    last_trade_date = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
+                    break
+                except (ValueError, IndexError):
+                    continue
+
+        # If no trade found in notes, check automation metadata
+        if not last_trade_date and "automation" in self.state:
+            last_exec = self.state["automation"].get("last_successful_execution")
+            if last_exec:
+                try:
+                    last_trade_date = datetime.fromisoformat(last_exec)
+                except (ValueError, TypeError):
+                    pass
+
+        # No trades found at all
+        if not last_trade_date:
+            return {
+                "status": "WARNING",
+                "message": "No trades found in system history",
+                "last_trade_date": None,
+                "hours_since_last_trade": None,
+                "recommended_action": "Check if system has ever executed trades successfully"
+            }
+
+        # Calculate hours since last trade
+        now = datetime.now()
+        hours_since = (now - last_trade_date).total_seconds() / 3600
+
+        # Check if it's a weekday (Monday=0, Friday=4)
+        is_weekday = now.weekday() < 5
+
+        # Determine status based on time since last trade
+        if hours_since > 120:  # 5 days
+            status = "ERROR"
+            message = f"CRITICAL: No trades for {hours_since/24:.1f} days - automation likely broken"
+            action = "URGENT: Check GitHub Actions workflow and system logs immediately"
+        elif hours_since > 48:  # 2 days
+            status = "ERROR"
+            message = f"No trades for {hours_since/24:.1f} days on weekday - automation may be broken"
+            action = "Check GitHub Actions workflow status and logs"
+        elif is_weekday and hours_since > 24:
+            status = "WARNING"
+            message = f"No trades for {hours_since:.1f} hours on weekday - check automation"
+            action = "Verify GitHub Actions workflow is running daily at 9:35 AM ET"
+        else:
+            status = "OK"
+            message = f"Last trade {hours_since:.1f} hours ago - normal"
+            action = None
+
+        return {
+            "status": status,
+            "message": message,
+            "last_trade_date": last_trade_date.isoformat(),
+            "hours_since_last_trade": hours_since,
+            "recommended_action": action
+        }
 
     def export_for_context(self) -> str:
         """Export state as context for Claude memory"""

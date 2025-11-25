@@ -63,7 +63,7 @@ DAILY_INVESTMENT = float(os.getenv("DAILY_INVESTMENT", "10.0"))
 
 # Position sizing configuration
 DEFAULT_RISK_PER_TRADE_PCT = 1.0  # Risk 1% of portfolio per trade
-# Minimum per-trade notional aligned with Tier 1 daily allocation ($6 = 60% of $10)
+# Minimum per-trade notional aligned with Tier 1 daily allocation ($10 = 67% of $15)
 # This replaces the previous hard $10 minimum to allow expected Tier 1 orders.
 MIN_POSITION_SIZE = 6.0
 MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
@@ -423,8 +423,8 @@ def calculate_technical_score_wrapper(symbol):
 
 
 def execute_tier1(daily_amount, risk_manager, account):
-    """Tier 1: Core ETF Strategy - 70% using PROPER technical analysis"""
-    amount = daily_amount * 0.70
+    """Tier 1: Core ETF Strategy - 67% using PROPER technical analysis"""
+    amount = daily_amount * 0.67
 
     print("\n" + "=" * 70)
     print("🎯 TIER 1: CORE ETF STRATEGY (MACD + RSI + Volume)")
@@ -525,7 +525,7 @@ def execute_tier1(daily_amount, risk_manager, account):
                 return False
 
     # VALIDATION GATE: Check order size before execution
-    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.70, "T1_CORE")
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.67, "T1_CORE")
     if not is_valid:
         print(f"❌ Tier 1 trade rejected: {error_msg}")
         return False
@@ -603,7 +603,7 @@ def execute_tier1(daily_amount, risk_manager, account):
         # Week 1: Evaluate trade execution (self-improving RAG)
         evaluate_trade_execution(
             trade_result=trade_data,
-            expected_amount=daily_amount * 0.70,
+            expected_amount=daily_amount * 0.67,
             daily_allocation=daily_amount,
             tier="T1_CORE"
         )
@@ -867,12 +867,12 @@ def manage_existing_positions():
 
 
 def execute_tier2(daily_amount, risk_manager, account):
-    """Tier 2: Disruptive Innovation Strategy - 30% using PROPER technical analysis
+    """Tier 2: Disruptive Innovation Strategy - 33% using PROPER technical analysis
 
     Focus: NVDA (AI infrastructure) + GOOGL (Autonomous vehicles) + AMZN (OpenAI deal)
     Conservative approach - proven disruptive leaders
     """
-    amount = daily_amount * 0.30
+    amount = daily_amount * 0.33
 
     print("\n" + "=" * 70)
     print("📈 TIER 2: DISRUPTIVE INNOVATION STRATEGY (MACD + RSI + Volume)")
@@ -1011,7 +1011,7 @@ def execute_tier2(daily_amount, risk_manager, account):
 
 
     # VALIDATION GATE: Check order size before execution
-    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.30, "T2_GROWTH")
+    is_valid, error_msg = validate_order_size(amount, daily_amount * 0.33, "T2_GROWTH")
     if not is_valid:
         print(f"❌ Tier 2 trade rejected: {error_msg}")
         return False
@@ -1093,7 +1093,7 @@ def execute_tier2(daily_amount, risk_manager, account):
         # Week 1: Evaluate trade execution (self-improving RAG)
         evaluate_trade_execution(
             trade_result=trade_data,
-            expected_amount=daily_amount * 0.30,
+            expected_amount=daily_amount * 0.33,
             daily_allocation=daily_amount,
             tier="T2_GROWTH"
         )
@@ -1399,8 +1399,8 @@ def main():
             context = {
                 "mode": "paper",
                 "daily_investment": daily_investment,
-                "tier1_allocation": daily_investment * 0.70,
-                "tier2_allocation": daily_investment * 0.30,
+                "tier1_allocation": daily_investment * 0.67,
+                "tier2_allocation": daily_investment * 0.33,
                 "account_value": account_value,
                 "current_day": current_day,
                 "portfolio_equity": account_value,
@@ -1486,7 +1486,7 @@ def main():
                             # Week 1: Evaluate trade execution
                             evaluate_trade_execution(
                                 trade_result=trade_data,
-                                expected_amount=daily_investment * 0.70,
+                                expected_amount=daily_investment * 0.67,
                                 daily_allocation=daily_investment,
                                 tier="T1_CORE_ADK"
                             )
@@ -1589,7 +1589,7 @@ def main():
                             # Week 1: Evaluate trade execution
                             evaluate_trade_execution(
                                 trade_result=trade_data,
-                                expected_amount=daily_investment * 0.30,
+                                expected_amount=daily_investment * 0.33,
                                 daily_allocation=daily_investment,
                                 tier="T2_GROWTH_ADK"
                             )

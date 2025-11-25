@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-11-20T16:05:14.763499",
+    "last_updated": "2025-11-25T15:15:53.925082",
     "last_audit": "2025-11-17T09:00:00.000000",
     "audit_notes": "Day 9 - Added Tier 5 crypto tracking (BTC/ETH weekend strategy)"
   },
@@ -15,11 +15,11 @@
   },
   "account": {
     "starting_balance": 100000.0,
-    "current_equity": 99954.36,
-    "cash": 98357.79,
-    "positions_value": 1596.5664160000001,
-    "total_pl": -45.63999999999942,
-    "total_pl_pct": -0.04563999999999942
+    "current_equity": 100005.5,
+    "cash": 100005.5,
+    "positions_value": 0,
+    "total_pl": 5.5,
+    "total_pl_pct": 0.0055000000000000005
   },
   "investments": {
     "total_invested": 1621.93,
@@ -46,48 +46,21 @@
     },
     "avg_return": -3.04,
     "closed_trades": [],
-    "open_positions": [
-      {
-        "symbol": "GOOGL",
-        "tier": "unknown",
-        "amount": 415.451547,
-        "order_id": null,
-        "entry_date": "2025-11-20T16:05:14.763478",
-        "entry_price": 282.436493,
-        "current_price": 289.04,
-        "quantity": 1.437349666,
-        "unrealized_pl": 9.491548580878714,
-        "unrealized_pl_pct": 2.3380502037320072,
-        "last_updated": "2025-11-20T16:05:14.763491"
-      },
-      {
-        "symbol": "SPY",
-        "tier": "unknown",
-        "amount": 1181.114869,
-        "order_id": null,
-        "entry_date": "2025-11-20T16:05:14.763496",
-        "entry_price": 682.698584,
-        "current_price": 652.42,
-        "quantity": 1.81035969,
-        "unrealized_pl": -54.815127943879006,
-        "unrealized_pl_pct": -4.435132093374904,
-        "last_updated": "2025-11-20T16:05:14.763498"
-      }
-    ]
+    "open_positions": []
   },
   "strategies": {
     "tier1": {
       "name": "Core ETF Strategy",
-      "allocation": 0.6,
-      "daily_amount": 6.0,
+      "allocation": 0.67,
+      "daily_amount": 10.0,
       "trades_executed": 4,
       "total_invested": 1217.96,
       "status": "active"
     },
     "tier2": {
       "name": "Disruptive Innovation Strategy (NVDA, GOOGL, AMZN)",
-      "allocation": 0.2,
-      "daily_amount": 2.0,
+      "allocation": 0.33,
+      "daily_amount": 5.0,
       "trades_executed": 3,
       "total_invested": 403.97,
       "status": "active",
