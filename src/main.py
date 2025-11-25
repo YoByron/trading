@@ -172,8 +172,9 @@ class TradingOrchestrator:
         self.deepagents_adapter: Optional[any] = None
         self.skills = get_skills()  # Initialize Claude Skills
         
-        # Elite Orchestrator (planning-first multi-agent system)
-        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "false").lower() == "true"
+        # Elite Orchestrator (planning-first multi-agent system) - ENABLED BY DEFAULT
+        # Uses ALL agents: Claude Skills + Langchain + Gemini + Go ADK + MCP + ML Predictor
+        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "true").lower() == "true"
         self.elite_orchestrator: Optional[EliteOrchestrator] = None
         if elite_enabled:
             try:
@@ -181,9 +182,10 @@ class TradingOrchestrator:
                     paper=self.mode == "paper" or self.config["paper_trading"],
                     enable_planning=True
                 )
-                self.logger.info("✅ Elite Orchestrator initialized")
+                self.logger.info("✅ Elite Orchestrator initialized (ALL AGENTS ACTIVE)")
             except Exception as e:
                 self.logger.warning(f"⚠️ Elite Orchestrator unavailable: {e}")
+                self.logger.warning("⚠️ Falling back to individual agent systems")
         
         self._initialize_components()
 
