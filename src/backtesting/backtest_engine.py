@@ -22,7 +22,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import pandas as pd
 import numpy as np
-import alpaca_trade_api as tradeapi
+from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.requests import StockBarsRequest
+from alpaca.data.timeframe import TimeFrame
 
 from src.backtesting.backtest_results import BacktestResults
 
@@ -184,7 +186,7 @@ class BacktestEngine:
             logger.error("Alpaca API credentials not found. Set ALPACA_API_KEY and ALPACA_SECRET_KEY")
             return
 
-        api = tradeapi.REST(alpaca_key, alpaca_secret, "https://paper-api.alpaca.markets")
+        client = StockHistoricalDataClient(alpaca_key, alpaca_secret)
 
         etf_universe = getattr(self.strategy, "etf_universe", ["SPY", "QQQ", "VOO"])
 
@@ -192,18 +194,27 @@ class BacktestEngine:
             try:
                 # Get historical bars from Alpaca
                 # Add 200 day buffer for momentum calculations
-                start_with_buffer = (self.start_date - timedelta(days=200)).strftime("%Y-%m-%d")
-                end_with_buffer = (self.end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+                start_with_buffer = datetime.strptime(self.start_date.strftime("%Y-%m-%d"), "%Y-%m-%d") - timedelta(days=200)
+                end_with_buffer = datetime.strptime(self.end_date.strftime("%Y-%m-%d"), "%Y-%m-%d") + timedelta(days=1)
 
-                bars = api.get_bars(
-                    symbol,
-                    tradeapi.TimeFrame.Day,
+                req = StockBarsRequest(
+                    symbol_or_symbols=symbol,
+                    timeframe=TimeFrame.Day,
                     start=start_with_buffer,
                     end=end_with_buffer,
                     adjustment='all'
-                ).df
+                )
+
+                bars = client.get_stock_bars(req).df
 
                 if bars is not None and not bars.empty:
+                    # Reset index to get timestamp as column if needed, or just use it
+                    # Alpaca-py returns MultiIndex (symbol, timestamp) or just timestamp if single symbol?
+                    # Usually MultiIndex. Let's check.
+                    
+                    if 'symbol' in bars.index.names:
+                        bars = bars.droplevel('symbol')
+                    
                     # Rename columns to match yfinance format
                     bars = bars.rename(columns={
                         'open': 'Open',

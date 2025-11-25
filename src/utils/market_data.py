@@ -694,27 +694,34 @@ class MarketDataProvider:
             return None
 
         try:
-            # Alpaca API: get_bars returns BarSet, convert to DataFrame
-            barset = self._alpaca_api.get_bars(
-                symbol,
-                "1Day",
-                limit=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS,
-            )
+            from alpaca.data.requests import StockBarsRequest
+            from alpaca.data.timeframe import TimeFrame
 
-            if not barset or len(barset) == 0:
+            # Alpaca API: get_stock_bars returns BarSet
+            req = StockBarsRequest(
+                symbol_or_symbols=symbol,
+                timeframe=TimeFrame.Day,
+                limit=lookback_days + self.YFINANCE_LOOKBACK_BUFFER_DAYS
+            )
+            
+            barset = self._alpaca_api.get_stock_bars(req)
+
+            if not barset.data or symbol not in barset.data or len(barset.data[symbol]) == 0:
                 logger.warning("%s: Alpaca API returned no bars", symbol)
                 return None
 
             # Convert Alpaca bars to pandas DataFrame
             records = []
-            for bar in barset:
+            bars = barset.data[symbol]
+            
+            for bar in bars:
                 records.append(
                     {
-                        "Open": float(bar.o),
-                        "High": float(bar.h),
-                        "Low": float(bar.l),
-                        "Close": float(bar.c),
-                        "Volume": int(bar.v),
+                        "Open": float(bar.open),
+                        "High": float(bar.high),
+                        "Low": float(bar.low),
+                        "Close": float(bar.close),
+                        "Volume": int(bar.volume),
                     }
                 )
 
@@ -722,7 +729,7 @@ class MarketDataProvider:
                 return None
 
             # Create DataFrame with datetime index
-            df = pd.DataFrame(records, index=[bar.t for bar in barset])
+            df = pd.DataFrame(records, index=[bar.timestamp for bar in bars])
             df.index.name = "Date"
             df = df.sort_index()
 

@@ -27,7 +27,7 @@ import sys
 import signal
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Optional, Any
 from logging.handlers import RotatingFileHandler
@@ -46,6 +46,7 @@ from src.strategies.growth_strategy import GrowthStrategy
 from src.strategies.ipo_strategy import IPOStrategy
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
+from src.core.skills_integration import get_skills
 from src.deepagents_integration.adapter import create_analysis_agent_adapter
 from src.agent_framework import RunContext
 
@@ -168,6 +169,7 @@ class TradingOrchestrator:
         # Initialize components
         self.adk_adapter: Optional[ADKTradeAdapter] = None
         self.deepagents_adapter: Optional[any] = None
+        self.skills = get_skills()  # Initialize Claude Skills
         self._initialize_components()
 
         # Orchestrator state
@@ -287,6 +289,12 @@ class TradingOrchestrator:
                 max_drawdown_pct=self.config["max_drawdown_pct"],
             )
             self.logger.info("Risk manager initialized")
+
+            # Use Portfolio Risk Assessment skill for enhanced health checks
+            if self.skills.portfolio_risk_assessor:
+                self.logger.info("✅ Using Portfolio Risk Assessment skill")
+            else:
+                self.logger.warning("⚠️ Portfolio Risk Assessment skill not available, using RiskManager only")
 
             # Calculate strategy allocations
             daily_investment = self.config["daily_investment"]
@@ -425,6 +433,9 @@ class TradingOrchestrator:
 
         # Health check: Every hour
         schedule.every().hour.do(self._update_health_status).tag("health_check")
+        
+        # Daily performance monitoring using Performance Monitor skill
+        schedule.every().day.at("16:00").do(self._daily_performance_monitoring).tag("performance_monitoring")
         self.logger.info("Scheduled: Health check - Every hour")
 
         self.logger.info("Schedule setup complete")
@@ -654,6 +665,18 @@ Output your recommendation in JSON format for easy parsing."""
             account_value = account_info["portfolio_value"]
             daily_pl = account_value - account_info.get("last_equity", account_value)
 
+            # Use Portfolio Risk Assessment skill for enhanced health check
+            if self.skills.portfolio_risk_assessor:
+                health_result = self.skills.assess_portfolio_health()
+                if health_result.get("success") and health_result.get("data", {}).get("overall_status") == "HALTED":
+                    self.logger.warning("Trading halted by Portfolio Risk Assessment skill")
+                    self._send_alert(
+                        "Trading Halted",
+                        "Portfolio health check failed - trading halted",
+                        severity="CRITICAL",
+                    )
+                    return
+
             if not self.risk_manager.can_trade(account_value, daily_pl, account_info):
                 self.logger.warning(
                     "Trading blocked by risk manager - skipping Core Strategy execution"
@@ -683,6 +706,28 @@ Output your recommendation in JSON format for easy parsing."""
                     f"Core Strategy order executed: {order.symbol} - ${order.amount:.2f}"
                 )
                 self.last_execution["core_strategy"] = datetime.now()
+
+                # Use Anomaly Detector skill to monitor execution quality
+                if self.skills.anomaly_detector and hasattr(order, 'fill_price') and order.fill_price:
+                    anomaly_result = self.skills.detect_execution_anomalies(
+                        order_id=str(order.id) if hasattr(order, 'id') else "unknown",
+                        expected_price=order.price if hasattr(order, 'price') else order.fill_price,
+                        actual_fill_price=order.fill_price,
+                        quantity=order.quantity if hasattr(order, 'quantity') else order.amount / order.fill_price,
+                        order_type="market",
+                        timestamp=datetime.now().isoformat()
+                    )
+                    if anomaly_result.get("success"):
+                        analysis = anomaly_result.get("analysis", {})
+                        if analysis.get("anomalies_detected"):
+                            self.logger.warning(f"Execution anomalies detected: {analysis.get('warnings', [])}")
+                            self._send_alert(
+                                "Execution Anomaly",
+                                f"Anomalies detected in order execution: {analysis.get('warnings', [])}",
+                                severity="WARNING"
+                            )
+                        else:
+                            self.logger.info(f"Execution quality: {analysis.get('execution_quality', {}).get('grade', 'N/A')}")
             else:
                 self.logger.info("Core Strategy: No order placed")
 
@@ -715,6 +760,18 @@ Output your recommendation in JSON format for easy parsing."""
             account_info = self.alpaca_trader.get_account_info()
             account_value = account_info["portfolio_value"]
             daily_pl = account_value - account_info.get("last_equity", account_value)
+
+            # Use Portfolio Risk Assessment skill for enhanced health check
+            if self.skills.portfolio_risk_assessor:
+                health_result = self.skills.assess_portfolio_health()
+                if health_result.get("success") and health_result.get("data", {}).get("overall_status") == "HALTED":
+                    self.logger.warning("Trading halted by Portfolio Risk Assessment skill")
+                    self._send_alert(
+                        "Trading Halted",
+                        "Portfolio health check failed - trading halted",
+                        severity="CRITICAL",
+                    )
+                    return
 
             if not self.risk_manager.can_trade(account_value, daily_pl, account_info):
                 self.logger.warning(
@@ -819,7 +876,24 @@ Output your recommendation in JSON format for easy parsing."""
             # Get account info
             account_info = self.alpaca_trader.get_account_info()
 
-            # Get risk metrics
+            # Use Portfolio Risk Assessment skill if available
+            if self.skills.portfolio_risk_assessor:
+                health_result = self.skills.assess_portfolio_health()
+                if health_result.get("success"):
+                    health_data = health_result.get("data", {})
+                    self.health_status.update({
+                        "status": health_data.get("overall_status", "unknown").lower(),
+                        "last_check": datetime.now().isoformat(),
+                        "account_value": health_data.get("account_equity", account_info["portfolio_value"]),
+                        "buying_power": health_data.get("buying_power", account_info["buying_power"]),
+                        "daily_pl": health_data.get("daily_pl", 0),
+                        "circuit_breaker": health_data.get("circuit_breakers", {}).get("should_halt_trading", False),
+                        "risk_score": health_data.get("risk_score", 0),
+                    })
+                    self.logger.debug(f"Health check (via skill): {self.health_status['status']}")
+                    return
+
+            # Fallback to RiskManager if skill not available
             risk_metrics = self.risk_manager.get_risk_metrics()
 
             # Update health status
@@ -849,6 +923,65 @@ Output your recommendation in JSON format for easy parsing."""
             self.health_status["status"] = "unhealthy"
             self.health_status["last_error"] = str(e)
 
+    def _daily_performance_monitoring(self) -> None:
+        """Daily performance monitoring using Performance Monitor skill."""
+        self.logger.info("=" * 80)
+        self.logger.info("DAILY PERFORMANCE MONITORING")
+        self.logger.info("=" * 80)
+
+        try:
+            if not self.skills.performance_monitor:
+                self.logger.warning("Performance Monitor skill not available")
+                return
+
+            # Calculate performance metrics for last 30 days
+            end_date = datetime.now().strftime("%Y-%m-%d")
+            start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
+            perf_result = self.skills.get_performance_metrics(
+                start_date=start_date,
+                end_date=end_date,
+                benchmark_symbol="SPY"
+            )
+
+            if perf_result.get("success"):
+                metrics = perf_result
+                returns = metrics.get("returns", {})
+                risk_metrics = metrics.get("risk_metrics", {})
+                trade_stats = metrics.get("trade_statistics", {})
+
+                self.logger.info("Performance Metrics (30 days):")
+                self.logger.info(f"  Total Return: {returns.get('total_return_pct', 0):.2f}%")
+                self.logger.info(f"  Sharpe Ratio: {risk_metrics.get('sharpe_ratio', 0):.2f}")
+                self.logger.info(f"  Max Drawdown: {risk_metrics.get('max_drawdown', 0)*100:.2f}%")
+                self.logger.info(f"  Win Rate: {trade_stats.get('win_rate', 0)*100:.1f}%")
+                self.logger.info(f"  Total Trades: {trade_stats.get('total_trades', 0)}")
+
+                # Store in health status
+                self.health_status["performance_metrics"] = {
+                    "last_update": datetime.now().isoformat(),
+                    "sharpe_ratio": risk_metrics.get("sharpe_ratio", 0),
+                    "win_rate": trade_stats.get("win_rate", 0),
+                    "total_return_pct": returns.get("total_return_pct", 0),
+                }
+
+                # Alert if performance is below targets
+                if risk_metrics.get("sharpe_ratio", 0) < 1.5:
+                    self._send_alert(
+                        "Performance Below Target",
+                        f"Sharpe ratio {risk_metrics.get('sharpe_ratio', 0):.2f} below target of 1.5",
+                        severity="WARNING"
+                    )
+
+            else:
+                self.logger.warning(f"Performance monitoring failed: {perf_result.get('error', 'Unknown error')}")
+
+        except Exception as e:
+            self.logger.error(f"Error in daily performance monitoring: {e}", exc_info=True)
+
+        finally:
+            self.logger.info("=" * 80)
+
     def _send_alert(self, title: str, message: str, severity: str = "INFO") -> None:
         """
         Send alert via configured channels.
@@ -858,7 +991,6 @@ Output your recommendation in JSON format for easy parsing."""
             message: Alert message
             severity: Alert severity (INFO, WARNING, ERROR, CRITICAL)
         """
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         alert_msg = f"[{severity}] {title}: {message}"
 
         # Log the alert
