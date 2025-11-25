@@ -176,12 +176,10 @@ class MarketDataProvider:
         alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
         if alpaca_key and alpaca_secret:
             try:
-                import alpaca_trade_api as tradeapi
-                self._alpaca_api = tradeapi.REST(
-                    key_id=alpaca_key,
-                    secret_key=alpaca_secret,
-                    base_url=os.getenv("APCA_API_BASE_URL", "https://paper-api.alpaca.markets"),
-                    api_version="v2",
+                from alpaca.data.historical import StockHistoricalDataClient
+                self._alpaca_api = StockHistoricalDataClient(
+                    api_key=alpaca_key,
+                    secret_key=alpaca_secret
                 )
                 logger.info("✅ Alpaca API initialized as PRIMARY market data source (most reliable)")
             except Exception as e:
