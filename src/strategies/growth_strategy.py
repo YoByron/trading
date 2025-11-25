@@ -368,7 +368,7 @@ class GrowthStrategy:
 
     def __init__(
         self,
-        weekly_allocation: float = 10.0,
+        weekly_allocation: float = 1500.0,
         use_sentiment: bool = True,
         use_intelligent_investor: bool = True,
     ):

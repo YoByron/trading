@@ -41,6 +41,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.orchestration.adk_integration import ADKTradeAdapter, summarize_adk_decision
+from src.orchestration.elite_orchestrator import EliteOrchestrator
 from src.strategies.core_strategy import CoreStrategy
 from src.strategies.growth_strategy import GrowthStrategy
 from src.strategies.ipo_strategy import IPOStrategy
@@ -170,6 +171,20 @@ class TradingOrchestrator:
         self.adk_adapter: Optional[ADKTradeAdapter] = None
         self.deepagents_adapter: Optional[any] = None
         self.skills = get_skills()  # Initialize Claude Skills
+        
+        # Elite Orchestrator (planning-first multi-agent system)
+        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "false").lower() == "true"
+        self.elite_orchestrator: Optional[EliteOrchestrator] = None
+        if elite_enabled:
+            try:
+                self.elite_orchestrator = EliteOrchestrator(
+                    paper=self.mode == "paper" or self.config["paper_trading"],
+                    enable_planning=True
+                )
+                self.logger.info("✅ Elite Orchestrator initialized")
+            except Exception as e:
+                self.logger.warning(f"⚠️ Elite Orchestrator unavailable: {e}")
+        
         self._initialize_components()
 
         # Orchestrator state
@@ -220,7 +235,7 @@ class TradingOrchestrator:
             "openrouter_api_key": os.getenv("OPENROUTER_API_KEY"),
             # Trading Configuration
             "paper_trading": os.getenv("PAPER_TRADING", "true").lower() == "true",
-            "daily_investment": float(os.getenv("DAILY_INVESTMENT", "10.0")),
+            "daily_investment": float(os.getenv("DAILY_INVESTMENT", "1500.0")),
             # Tier Allocations
             "tier1_allocation": float(os.getenv("TIER1_ALLOCATION", "0.60")),
             "tier2_allocation": float(os.getenv("TIER2_ALLOCATION", "0.20")),
@@ -687,6 +702,19 @@ Output your recommendation in JSON format for easy parsing."""
                     severity="WARNING",
                 )
                 return
+
+            # Try Elite Orchestrator first (planning-first multi-agent system)
+            if self.elite_orchestrator:
+                try:
+                    elite_result = self.elite_orchestrator.run_trading_cycle(
+                        symbols=["SPY", "QQQ", "VOO"]
+                    )
+                    if elite_result.get("final_decision") == "TRADE_EXECUTED":
+                        self.logger.info("Core Strategy satisfied via Elite Orchestrator")
+                        self.last_execution["core_strategy"] = datetime.now()
+                        return
+                except Exception as e:
+                    self.logger.warning(f"Elite Orchestrator execution failed: {e}")
 
             # Try DeepAgents first (planning-based agent with sub-agent delegation)
             if self._execute_core_strategy_with_deepagents(account_info):
