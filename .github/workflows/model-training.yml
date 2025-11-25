@@ -95,6 +95,27 @@ jobs:
               sys.exit(0)  # Don't fail, just collect data
           PYTHON_SCRIPT
 
+      - name: Validate data quality and hygiene
+        id: data_hygiene
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          echo "🧹 Validating data quality and hygiene..."
+          
+          SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
+          
+          python3 scripts/data_hygiene_check.py validate \
+            --symbols "$SYMBOLS" \
+            --min-days 252 || {
+              echo "⚠️  Data quality issues detected - will attempt to fix"
+              echo "data_quality_issues=true" >> $GITHUB_OUTPUT
+              exit 0  # Don't fail workflow, but flag issues
+            }
+          
+          echo "data_quality_issues=false" >> $GITHUB_OUTPUT
+
       - name: Collect historical data (if needed)
         if: steps.check_data.outputs.data_available != 'true'
         env:
@@ -110,6 +131,47 @@ jobs:
             --lookback 252
           
           echo "✅ Data collection complete"
+
+      - name: Validate data quality and hygiene
+        id: data_hygiene
+        if: steps.check_data.outputs.data_available == 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          echo "🧹 Validating data quality and hygiene..."
+          
+          SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
+          
+          python3 scripts/data_hygiene_check.py validate \
+            --symbols "$SYMBOLS" \
+            --min-days 252 || {
+              echo "⚠️  Data quality issues detected - will attempt to fix"
+              echo "data_quality_issues=true" >> $GITHUB_OUTPUT
+              exit 0  # Don't fail workflow, but flag issues
+            }
+          
+          echo "data_quality_issues=false" >> $GITHUB_OUTPUT
+
+      - name: Rotate old historical data
+        if: steps.check_data.outputs.data_available == 'true'
+        run: |
+          echo "🔄 Rotating historical data older than 365 days..."
+          python3 scripts/data_hygiene_check.py rotate \
+            --max-age-days 365 \
+            --dry-run false || echo "Rotation completed (some files may not exist)"
+
+      - name: Check model staleness
+        id: model_check
+        run: |
+          echo "🔍 Checking model staleness..."
+          python3 scripts/data_hygiene_check.py check-models || {
+            echo "model_stale=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Model is stale - will retrain"
+            exit 0  # Don't fail, just flag for retraining
+          }
+          echo "model_stale=false" >> $GITHUB_OUTPUT
 
       - name: Check existing model age
         id: check_model
@@ -139,6 +201,7 @@ jobs:
         if: |
           steps.check_model.outputs.model_exists != 'true' ||
           steps.check_model.outputs.model_age_days > 7 ||
+          steps.model_check.outputs.model_stale == 'true' ||
           github.event.inputs.force_retrain == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -204,6 +267,15 @@ jobs:
               print('❌ No model found after training')
               exit(1)
           "
+
+      - name: Cleanup stale models
+        if: always()
+        run: |
+          echo "🧹 Cleaning up old model files (keeping latest)..."
+          python3 scripts/data_hygiene_check.py cleanup-models \
+            --max-age-days 60 \
+            --keep-latest \
+            --dry-run false || echo "Cleanup completed"
 
       - name: Commit trained model (if significantly improved)
         if: steps.train_model.outputs.training_success == 'true'
