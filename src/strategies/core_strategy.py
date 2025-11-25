@@ -127,12 +127,13 @@ class CoreStrategy:
     with AI sentiment overlay.
 
     This strategy:
-    - Focuses on major index ETFs (SPY, QQQ, VOO)
+    - Focuses on major index ETFs (SPY, QQQ, VOO) and bond ETF (BND)
     - Uses momentum indicators to select the best performer
     - Incorporates AI sentiment analysis for market conditions
     - Executes daily dollar-cost averaging
     - Implements risk management with trailing stop-loss
     - Performs monthly portfolio rebalancing
+    - Includes bonds for diversification per Graham's Intelligent Investor principles
 
     Attributes:
         daily_allocation (float): Dollar amount to invest daily
@@ -145,7 +146,9 @@ class CoreStrategy:
     """
 
     # Default ETF universe for Tier 1 strategy
-    DEFAULT_ETF_UNIVERSE = ["SPY", "QQQ", "VOO"]
+    # Includes equity ETFs (SPY, QQQ, VOO) and bond ETF (BND) for diversification
+    # BND: Vanguard Total Bond Market ETF - provides bond exposure per Graham's defensive investor principles
+    DEFAULT_ETF_UNIVERSE = ["SPY", "QQQ", "VOO", "BND"]
 
     # Momentum calculation periods (in days)
     LOOKBACK_PERIODS = {"1month": 21, "3month": 63, "6month": 126}
