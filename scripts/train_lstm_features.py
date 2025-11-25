@@ -48,21 +48,24 @@ logger = logging.getLogger(__name__)
 def prepare_training_data(
     hist_data: pd.DataFrame,
     seq_length: int = 60,
-    prediction_horizon: int = 5
+    prediction_horizon: int = 5,
+    min_window_size: int = 200  # Minimum data needed for feature calculation
 ) -> tuple:
     """
-    Prepare sequences for LSTM training.
+    Prepare sequences for LSTM training with proper sliding windows.
     
-    Creates sequences of historical data and labels (future returns).
+    Creates sequences where each sequence contains multiple timesteps,
+    each timestep having a feature vector. This is the correct format for LSTM.
     
     Args:
         hist_data: Historical OHLCV DataFrame
-        seq_length: Length of input sequences
+        seq_length: Length of input sequences (number of timesteps)
         prediction_horizon: Days ahead to predict (for supervised learning)
+        min_window_size: Minimum data needed for technical indicators
     
     Returns:
         Tuple of (sequences, labels) where:
-        - sequences: (n_samples, seq_length, n_features)
+        - sequences: (n_samples, seq_length, n_features) - proper 3D array
         - labels: (n_samples,) - future returns
     """
     sequences = []
@@ -70,31 +73,53 @@ def prepare_training_data(
     
     close_prices = hist_data['Close'].values
     
-    # Extract features for each timestep
-    for i in range(seq_length, len(hist_data) - prediction_horizon):
-        # Get window of data
-        window = hist_data.iloc[i-seq_length:i]
+    # Need enough data to calculate features for each timestep in sequence
+    # Each timestep needs min_window_size bars to calculate indicators
+    start_idx = min_window_size
+    end_idx = len(hist_data) - prediction_horizon
+    
+    logger.info(f"Preparing sequences: {end_idx - start_idx - seq_length} samples from {len(hist_data)} bars")
+    
+    # Create sliding window sequences
+    for i in range(start_idx, end_idx - seq_length + 1):
+        # Extract sequence: seq_length timesteps
+        sequence_features = []
         
-        # Calculate features
-        features = calculate_all_features(window)
+        # For each timestep in the sequence, calculate features using a rolling window
+        for t in range(i - seq_length, i):
+            # Use a window ending at timestep t for feature calculation
+            # Need at least min_window_size bars before t
+            window_start = max(0, t - min_window_size)
+            window_data = hist_data.iloc[window_start:t+1]
+            
+            if len(window_data) < 50:  # Minimum for basic indicators
+                # Skip this sequence if not enough data
+                break
+            
+            # Calculate features for this timestep
+            features = calculate_all_features(window_data)
+            feature_array = _features_to_array(features)
+            sequence_features.append(feature_array)
         
-        # Convert to array
-        feature_array = _features_to_array(features)
-        sequences.append(feature_array)
-        
-        # Label: future return (for supervised learning)
-        future_return = (close_prices[i + prediction_horizon] - close_prices[i]) / close_prices[i]
-        labels.append(future_return)
+        # Only add sequence if we got all timesteps
+        if len(sequence_features) == seq_length:
+            sequences.append(sequence_features)
+            
+            # Label: future return (for supervised learning)
+            future_return = (close_prices[i + prediction_horizon] - close_prices[i]) / close_prices[i]
+            labels.append(future_return)
     
     if not sequences:
         logger.warning("No sequences created from historical data")
         return np.array([]), np.array([])
     
+    # Convert to numpy array: (n_samples, seq_length, n_features)
     sequences = np.array(sequences)
     labels = np.array(labels)
     
-    logger.info(f"Created {len(sequences)} sequences of length {seq_length}")
-    logger.info(f"Feature dimension: {sequences.shape[1]}")
+    logger.info(f"Created {len(sequences)} sequences")
+    logger.info(f"Sequence shape: {sequences.shape} (samples, timesteps, features)")
+    logger.info(f"Labels shape: {labels.shape}")
     
     return sequences, labels
 
@@ -145,16 +170,18 @@ def train_lstm_model(
     
     device = torch.device(device)
     
-    # Reshape sequences for LSTM: (n_samples, seq_length, n_features)
-    # Currently sequences are (n_samples, n_features), need to add time dimension
-    # For now, treat each feature vector as a single timestep
-    # In production, use sliding windows
-    if len(sequences.shape) == 2:
-        # Add sequence dimension: treat each sample as sequence of length 1
-        sequences = sequences[:, np.newaxis, :]
+    # Verify sequence shape: should be (n_samples, seq_length, n_features)
+    if len(sequences.shape) != 3:
+        raise ValueError(
+            f"Expected 3D sequences (n_samples, seq_length, n_features), "
+            f"got shape {sequences.shape}"
+        )
     
-    seq_length = sequences.shape[1]
-    input_dim = sequences.shape[2]
+    n_samples, seq_length, input_dim = sequences.shape
+    
+    logger.info(f"Training LSTM on {n_samples} sequences")
+    logger.info(f"Sequence length: {seq_length} timesteps")
+    logger.info(f"Features per timestep: {input_dim}")
     
     logger.info(f"Training LSTM: input_dim={input_dim}, seq_length={seq_length}")
     
