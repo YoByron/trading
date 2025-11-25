@@ -1341,11 +1341,53 @@ def main():
     print("=" * 70)
     manage_existing_positions()
 
-    # DEEPAGENTS MODE: Try DeepAgents orchestrator (ENABLED BY DEFAULT)
+    # ELITE ORCHESTRATOR MODE: Try Elite Orchestrator FIRST (ALL AGENTS UNIFIED)
+    # This uses EVERYTHING: Claude Skills + Langchain + Gemini + Go ADK + MCP + ML Predictor
+    elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "true").lower() == "true"
+    elite_used = False
+    
+    if elite_enabled:
+        try:
+            print("\n" + "=" * 70)
+            print("🚀 ELITE ORCHESTRATOR MODE: ALL AGENTS UNIFIED")
+            print("=" * 70)
+            print("📋 Using Elite Orchestrator (Planning-First Multi-Agent System):")
+            print("   ✅ Claude Skills (core flows)")
+            print("   ✅ Langchain (RAG, multi-modal)")
+            print("   ✅ Gemini (research, planning)")
+            print("   ✅ Go ADK (high-speed execution)")
+            print("   ✅ MCP Orchestrator (multi-agent coordination)")
+            print("   ✅ ML Predictor (LSTM-PPO)")
+            print("   ✅ Ensemble Voting (all agents vote)")
+            print("=" * 70)
+            
+            from src.orchestration.elite_orchestrator import EliteOrchestrator
+            
+            symbols = ["SPY", "QQQ", "VOO", "NVDA", "GOOGL", "AMZN"]
+            elite_orchestrator = EliteOrchestrator(paper=True, enable_planning=True)
+            
+            elite_result = elite_orchestrator.run_trading_cycle(symbols=symbols)
+            
+            if elite_result.get("final_decision") == "TRADE_EXECUTED":
+                elite_used = True
+                print("✅ Elite Orchestrator cycle completed successfully")
+                print(f"   Plan: {elite_result.get('plan_id', 'N/A')}")
+                print(f"   Phases: {len(elite_result.get('phases', {}))} completed")
+                print(f"   Agent Results: {len(elite_result.get('agent_results', []))} agents participated")
+            else:
+                print(f"⚠️  Elite Orchestrator cycle completed: {elite_result.get('final_decision', 'NO_TRADE')}")
+                print("   Continuing with fallback strategies")
+        except Exception as e:
+            print(f"⚠️  Elite Orchestrator mode failed: {e}")
+            print("   Falling back to individual agent systems")
+            import traceback
+            traceback.print_exc()
+    
+    # DEEPAGENTS MODE: Try DeepAgents orchestrator (fallback if Elite not used)
     deepagents_enabled = os.getenv("DEEPAGENTS_ENABLED", "true").lower() == "true"
     deepagents_used = False
     
-    if deepagents_enabled:
+    if not elite_used and deepagents_enabled:
         try:
             print("\n" + "=" * 70)
             print("🧠 DEEPAGENTS MODE: Planning-Based Trading Cycle")

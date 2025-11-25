@@ -171,21 +171,32 @@
 
 ---
 
-## ADK Orchestrator (Optional)
+## Elite Orchestrator (ALL AGENTS UNIFIED)
+
+#### `ELITE_ORCHESTRATOR_ENABLED`
+- **Required**: ❌ Optional
+- **Purpose**: Enable Elite Orchestrator (unifies ALL agents: Claude Skills + Langchain + Gemini + Go ADK + MCP + ML Predictor)
+- **Values**: `"true"` or `"false"`
+- **Default**: `"true"` ✅ **ENABLED BY DEFAULT** - Uses all agent systems
+- **Impact**: **VERY HIGH** - When enabled, uses ensemble voting across all agents
+- **Note**: This is the PRIMARY execution path - unifies all agent frameworks
+
+## ADK Orchestrator (Optional - Used via Elite Orchestrator)
 
 #### `ADK_ENABLED`
 - **Required**: ❌ Optional
-- **Purpose**: Enable Go ADK orchestrator
+- **Purpose**: Enable Go ADK orchestrator (standalone mode)
 - **Values**: `"1"` or `"0"`
-- **Default**: `"0"` (disabled during R&D phase)
+- **Default**: `"0"` (disabled - use Elite Orchestrator instead)
+- **Note**: Elite Orchestrator includes ADK, so this is only for standalone ADK usage
 
 #### `ADK_BASE_URL`
-- **Required**: ⚠️ If ADK_ENABLED=1
+- **Required**: ⚠️ If ADK_ENABLED=1 (standalone mode)
 - **Purpose**: Go ADK service URL
 - **Default**: `"http://127.0.0.1:8080/api"`
 
 #### `ADK_APP_NAME`
-- **Required**: ⚠️ If ADK_ENABLED=1
+- **Required**: ⚠️ If ADK_ENABLED=1 (standalone mode)
 - **Purpose**: App name for ADK
 - **Default**: `"trading_orchestrator"`
 
