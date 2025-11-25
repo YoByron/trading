@@ -797,8 +797,8 @@ def manage_existing_positions():
                 else:
                     print(f"  ✅ Stop-loss OK: {unrealized_plpc:.2f}% > {stop_loss_pct}%")
             
-            # Check take-profit (Tier 2 only)
-            elif take_profit_pct and unrealized_plpc >= take_profit_pct:
+            # Check take-profit (Tier 2 only) - FIXED: Changed elif to if to check independently
+            if not should_close and take_profit_pct and unrealized_plpc >= take_profit_pct:
                 should_close = True
                 close_reason = f"Take-profit triggered ({unrealized_plpc:.2f}% >= {take_profit_pct}%)"
                 print(f"  ✅ TAKE-PROFIT TRIGGERED: {close_reason}")
