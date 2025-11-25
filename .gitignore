@@ -22,6 +22,15 @@ data/*.csv
 data/*.json
 logs/*.log
 
+# Cache directories (API responses, health logs, etc.) - ignore recursively
+data/cache/
+**/*.jsonl
+
+# Historical data (can be regenerated, but some may be useful to track)
+# Note: data/historical/ contains CSV files that may be committed for backtesting
+# Uncomment the next line if you want to ignore all historical data:
+# data/historical/
+
 # Docker
 *.pid
 
