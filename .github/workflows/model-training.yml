@@ -63,29 +63,37 @@ jobs:
           echo "🔍 Checking training data availability..."
           
           SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
-          python3 -c "
+          export SYMBOLS
+          
+          python3 << 'PYTHON_SCRIPT'
           import sys
+          import json
+          import os
           from pathlib import Path
-          sys.path.insert(0, str(Path.cwd()))
           
-          from .claude.skills.model_trainer.scripts.model_trainer import ModelTrainerSkill
+          # Add paths
+          project_root = Path.cwd()
+          sys.path.insert(0, str(project_root))
+          sys.path.insert(0, str(project_root / ".claude" / "skills" / "model_trainer" / "scripts"))
           
+          from model_trainer import ModelTrainerSkill
+          
+          symbols = [s.strip() for s in os.environ.get('SYMBOLS', 'SPY,QQQ,VOO').split(',')]
           skill = ModelTrainerSkill()
-          symbols = [s.strip() for s in '$SYMBOLS'.split(',')]
           result = skill.check_training_data_availability(symbols, min_days=252)
           
-          import json
           print(json.dumps(result, indent=2))
           
+          # Write to GITHUB_OUTPUT
+          github_output = os.environ.get('GITHUB_OUTPUT')
+          if github_output:
+              with open(github_output, 'a') as f:
+                  f.write(f"data_available={'true' if result['available'] else 'false'}\n")
+          
           if not result['available']:
-              print('data_available=false' >> \$GITHUB_OUTPUT)
-              sys.exit(1)
-          else:
-              print('data_available=true' >> \$GITHUB_OUTPUT)
-          " || {
-            echo "data_available=false" >> $GITHUB_OUTPUT
-            echo "⚠️  Insufficient data - will collect automatically"
-          }
+              print("⚠️  Insufficient data - will collect automatically")
+              sys.exit(0)  # Don't fail, just collect data
+          PYTHON_SCRIPT
 
       - name: Collect historical data (if needed)
         if: steps.check_data.outputs.data_available != 'true'
