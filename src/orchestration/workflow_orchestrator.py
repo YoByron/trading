@@ -174,6 +174,9 @@ class WorkflowOrchestrator:
             elif step_type == "mcp_call":
                 # Call MCP tool
                 result = await self._call_mcp_tool(step.get("data", {}))
+            elif step_type == "model_training":
+                # Train deep learning model
+                result = await self._train_model(step.get("data", {}))
             elif step_type == "delay":
                 # Wait for specified time
                 delay_seconds = step.get("data", {}).get("seconds", 0)
@@ -250,6 +253,64 @@ class WorkflowOrchestrator:
             "approval_id": approval_id,
             "approval_result": approval_result
         }
+    
+    async def _train_model(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Train deep learning model (LSTM feature extractor).
+        
+        Args:
+            data: Training configuration (symbols, epochs, etc.)
+        
+        Returns:
+            Training result
+        """
+        try:
+            # Import model trainer skill
+            import subprocess
+            import json as json_module
+            
+            symbols = data.get("symbols", ["SPY", "QQQ", "VOO"])
+            epochs = data.get("epochs", 50)
+            batch_size = data.get("batch_size", 32)
+            
+            # Call model trainer skill
+            cmd = [
+                "python",
+                ".claude/skills/model_trainer/scripts/model_trainer.py",
+                "train",
+                "--symbols", ",".join(symbols),
+                "--epochs", str(epochs),
+                "--batch-size", str(batch_size)
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(Path(__file__).parent.parent.parent)
+            )
+            
+            if result.returncode == 0:
+                training_result = json_module.loads(result.stdout)
+                return {
+                    "success": training_result.get("success", False),
+                    "model_path": training_result.get("model_path"),
+                    "training_metrics": training_result.get("training_metrics", {}),
+                    "message": "Model training completed"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": result.stderr,
+                    "message": "Model training failed"
+                }
+        
+        except Exception as e:
+            logger.error(f"Model training error: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     async def _call_mcp_tool(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
