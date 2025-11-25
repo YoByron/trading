@@ -63,15 +63,33 @@ jobs:
             );
             
             if (!existingIssue) {
-              await github.rest.issues.create({
+              const newIssue = await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: issueTitle,
-                body: issueBody,
-                labels: ['trading-failure', 'automated']
+                body: issueBody + '\n\n🤖 **Autonomous Resolution**: This issue will be automatically diagnosed and resolved by AI agents within 1 hour.',
+                labels: ['trading-failure', 'automated', 'auto-resolve']
               });
               
-              core.info(`Created issue for failed run #${runNumber}`);
+              core.info(`Created issue #${newIssue.data.number} for failed run #${runNumber}`);
+              
+              // Trigger autonomous resolution workflow immediately
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'autonomous-issue-resolution.yml',
+                  ref: 'main',
+                  inputs: {
+                    label: 'trading-failure',
+                    max_issues: '5'
+                  }
+                });
+                core.info('✅ Triggered autonomous issue resolution workflow');
+              } catch (error) {
+                core.warning(`⚠️  Could not trigger resolution workflow: ${error.message}`);
+                core.info('   Resolution will run on next scheduled run (hourly)');
+              }
             } else {
               core.info(`Issue already exists for run #${runNumber}`);
             }
