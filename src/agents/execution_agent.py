@@ -11,7 +11,9 @@ Ensures best execution
 """
 import logging
 from typing import Dict, Any, Optional
-import alpaca_trade_api as tradeapi
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -19,16 +21,16 @@ logger = logging.getLogger(__name__)
 
 class ExecutionAgent(BaseAgent):
     """
-    Execution Agent handles order execution and timing.
+    Agent responsible for executing trades efficiently.
     
     Responsibilities:
-    - Submit orders to Alpaca
-    - Optimize timing (market hours, volatility windows)
-    - Handle errors and retries
+    - Execute orders with minimal slippage
+    - Monitor order status
+    - Handle partial fills
     - Track execution quality (slippage, fill rate)
     """
     
-    def __init__(self, alpaca_api: Optional[tradeapi.REST] = None):
+    def __init__(self, alpaca_api: Optional[TradingClient] = None):
         super().__init__(
             name="ExecutionAgent",
             role="Order execution and timing optimization"
@@ -142,13 +144,13 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         """
         try:
             if action == "BUY":
-                order = self.alpaca_api.submit_order(
+                req = MarketOrderRequest(
                     symbol=symbol,
                     notional=position_size,
-                    side="buy",
-                    type="market",
-                    time_in_force="day"
+                    side=OrderSide.BUY,
+                    time_in_force=TimeInForce.DAY
                 )
+                order = self.alpaca_api.submit_order(req)
             elif action == "SELL":
                 # For sell, we'd need to know the quantity (not implemented yet)
                 return {"status": "ERROR", "message": "SELL not yet implemented"}
