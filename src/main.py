@@ -46,6 +46,8 @@ from src.strategies.growth_strategy import GrowthStrategy
 from src.strategies.ipo_strategy import IPOStrategy
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
+from src.deepagents_integration.adapter import create_analysis_agent_adapter
+from src.agent_framework import RunContext
 
 
 # Configure logging with rotation
@@ -165,6 +167,7 @@ class TradingOrchestrator:
 
         # Initialize components
         self.adk_adapter: Optional[ADKTradeAdapter] = None
+        self.deepagents_adapter: Optional[any] = None
         self._initialize_components()
 
         # Orchestrator state
@@ -338,6 +341,23 @@ class TradingOrchestrator:
             else:
                 self.logger.info("ADK orchestrator integration disabled via ADK_ENABLED=0")
 
+            # Initialize DeepAgents adapter
+            deepagents_enabled_env = os.getenv("DEEPAGENTS_ENABLED", "true").lower()
+            deepagents_enabled = deepagents_enabled_env not in {"0", "false", "off", "no"}
+            if deepagents_enabled:
+                try:
+                    self.deepagents_adapter = create_analysis_agent_adapter(
+                        agent_name="deepagents-market-analysis"
+                    )
+                    self.logger.info("DeepAgents market analysis adapter initialized")
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to initialize DeepAgents (will fall back to core strategy): {e}"
+                    )
+                    self.deepagents_adapter = None
+            else:
+                self.logger.info("DeepAgents integration disabled via DEEPAGENTS_ENABLED=false")
+
             self.logger.info("All components initialized successfully")
 
         except Exception as e:
@@ -421,6 +441,96 @@ class TradingOrchestrator:
             )
             self._send_alert("Risk Reset Error", str(e), severity="ERROR")
 
+    def _execute_core_strategy_with_deepagents(self, account_info: Dict[str, Any]) -> bool:
+        """
+        Attempt to execute the core strategy via DeepAgents planning-based agent.
+
+        Returns True when the decision loop is fully handled by DeepAgents (either
+        trade executed or intentionally skipped). Returning False indicates the
+        caller should fall back to the legacy Python strategy.
+        """
+        if not self.deepagents_adapter:
+            return False
+
+        try:
+            # Prepare context for DeepAgents
+            symbols_str = ", ".join(self.core_strategy.etf_universe)
+            query = f"""Analyze the following ETFs for today's trading opportunity: {symbols_str}
+
+Account Context:
+- Portfolio Value: ${account_info.get('portfolio_value', 0):.2f}
+- Available Cash: ${account_info.get('cash', 0):.2f}
+- Buying Power: ${account_info.get('buying_power', 0):.2f}
+- Daily Allocation: ${self.core_strategy.daily_allocation:.2f}
+
+Risk Limits:
+- Max Daily Loss: {self.config['max_daily_loss_pct']}%
+- Max Position Size: {self.config['max_position_size_pct']}%
+- Max Drawdown: {self.config['max_drawdown_pct']}%
+- Stop Loss: {self.config['stop_loss_pct']}%
+
+Instructions:
+1. Fetch market data and technical indicators for each ETF
+2. Analyze sentiment if available
+3. Identify the best trading opportunity (or recommend HOLD if none)
+4. Provide a structured trade recommendation with:
+   - Symbol and action (BUY/SELL/HOLD)
+   - Position size recommendation (not exceeding daily allocation)
+   - Entry price target
+   - Stop loss and take profit levels
+   - Conviction score (0-1)
+   - Risk assessment
+   - Supporting reasoning
+
+Output your recommendation in JSON format for easy parsing."""
+
+            # Build context for agent framework
+            context = RunContext(
+                config={
+                    "query": query,
+                    "symbols": self.core_strategy.etf_universe,
+                    "mode": self.mode,
+                    "account": account_info,
+                    "risk_limits": {
+                        "max_daily_loss_pct": self.config["max_daily_loss_pct"],
+                        "max_position_size_pct": self.config["max_position_size_pct"],
+                        "max_drawdown_pct": self.config["max_drawdown_pct"],
+                        "stop_loss_pct": self.config["stop_loss_pct"],
+                    },
+                    "daily_allocation": self.core_strategy.daily_allocation,
+                },
+                state={},
+            )
+
+            # Execute DeepAgents analysis
+            self.logger.info("Executing DeepAgents market analysis for core strategy")
+            result = self.deepagents_adapter.execute(context)
+
+            if not result.succeeded:
+                self.logger.error(f"DeepAgents analysis failed: {result.error}")
+                return False
+
+            # Parse the recommendation from DeepAgents response
+            response = result.payload.get("response", {})
+            self.logger.info(f"DeepAgents analysis complete: {response}")
+
+            # For now, log the recommendation but don't execute
+            # In a future iteration, we can parse the JSON response and execute the trade
+            # This allows the system to validate DeepAgents output before trusting it with real trades
+            self.logger.info(
+                "DeepAgents provided analysis (execution not yet implemented - falling back to core strategy)"
+            )
+            self.health_status["last_deepagents_analysis"] = datetime.now().isoformat()
+            self.health_status["deepagents_response"] = str(response)[:500]  # Store first 500 chars
+
+            # Return False to fall back to core strategy for actual execution
+            # This ensures DeepAgents is running and providing insights without risking execution bugs
+            return False
+
+        except Exception as exc:
+            self.logger.error("DeepAgents evaluation failed: %s", exc, exc_info=True)
+            return False
+
     def _execute_core_strategy_with_adk(self, account_info: Dict[str, Any]) -> bool:
         """
         Attempt to execute the core strategy via the Go ADK orchestrator.
@@ -500,6 +610,35 @@ class TradingOrchestrator:
             )
             return False
 
+    def _check_trade_staleness(self) -> None:
+        """Check for stale trades - detects silent automation failures."""
+        try:
+            # Import StateManager
+            sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+            from state_manager import StateManager
+
+            state_mgr = StateManager()
+            staleness = state_mgr.check_trade_staleness()
+
+            if staleness["status"] == "ERROR":
+                self.logger.error(f"TRADE STALENESS ERROR: {staleness['message']}")
+                if staleness["recommended_action"]:
+                    self.logger.error(f"ACTION REQUIRED: {staleness['recommended_action']}")
+                self._send_alert(
+                    "Trade Staleness Alert",
+                    f"{staleness['message']}\n\nAction: {staleness['recommended_action']}",
+                    severity="CRITICAL"
+                )
+            elif staleness["status"] == "WARNING":
+                self.logger.warning(f"TRADE STALENESS WARNING: {staleness['message']}")
+                if staleness["recommended_action"]:
+                    self.logger.warning(f"RECOMMENDED: {staleness['recommended_action']}")
+            else:
+                self.logger.info(f"Trade staleness check: {staleness['message']}")
+
+        except Exception as e:
+            self.logger.error(f"Error checking trade staleness: {e}", exc_info=True)
+
     def _execute_core_strategy(self) -> None:
         """Execute Core Strategy (Tier 1) - Daily momentum index investing."""
         self.logger.info("=" * 80)
@@ -507,6 +646,9 @@ class TradingOrchestrator:
         self.logger.info("=" * 80)
 
         try:
+            # FIRST: Check for stale trades (detects silent failures)
+            self._check_trade_staleness()
+
             # Check if trading is allowed
             account_info = self.alpaca_trader.get_account_info()
             account_value = account_info["portfolio_value"]
@@ -523,6 +665,12 @@ class TradingOrchestrator:
                 )
                 return
 
+            # Try DeepAgents first (planning-based agent with sub-agent delegation)
+            if self._execute_core_strategy_with_deepagents(account_info):
+                self.logger.info("Core Strategy satisfied via DeepAgents")
+                return
+
+            # Try ADK orchestrator next
             if self._execute_core_strategy_with_adk(account_info):
                 self.logger.info("Core Strategy satisfied via ADK orchestrator")
                 return
