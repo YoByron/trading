@@ -18,7 +18,6 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import alpaca_trade_api as tradeapi
 from anthropic import Anthropic
 from datetime import datetime
 import logging
@@ -217,9 +216,9 @@ def check_data_access() -> bool:
 
 def check_dependencies() -> bool:
     """Check Python dependencies."""
-    required = ["alpaca_trade_api", "anthropic", "pandas", "numpy"]
+    required = ["anthropic", "pandas", "numpy"]
     missing = []
-    
+
     for pkg in required:
         try:
             __import__(pkg)
