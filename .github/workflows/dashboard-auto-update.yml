@@ -45,43 +45,41 @@ jobs:
 
       - name: Update GitHub Wiki
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo "📝 Updating GitHub Wiki..."
-          
-          # Clone wiki repository
+
+          # Use PAT_TOKEN for wiki access (GITHUB_TOKEN doesn't have wiki write permissions)
+          if [ -z "$GH_TOKEN" ]; then
+            echo "⚠️ PAT_TOKEN secret not set - wiki update requires a Personal Access Token"
+            echo "📋 To fix: Create a PAT with 'repo' scope and add as PAT_TOKEN secret"
+            echo "📋 Dashboard generated locally at: wiki/Progress-Dashboard.md"
+            exit 0
+          fi
+
+          # Clone wiki repository using PAT
           WIKI_DIR="wiki_repo"
-          if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
-            echo "✅ Wiki repository exists, updating..."
-          else
-            echo "⚠️  Wiki repository doesn't exist yet - creating..."
-            mkdir -p "$WIKI_DIR"
-            cd "$WIKI_DIR"
-            git init
-            git config user.name "GitHub Actions Bot"
-            git config user.email "actions@github.com"
-            git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
-            cd ..
-          fi
-          
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/IgorGanapolsky/trading.wiki.git" "$WIKI_DIR"
+
           # Copy generated dashboard
-          cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md" || true
+          cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
           if [ -f wiki/Home.md ]; then
-            cp wiki/Home.md "$WIKI_DIR/Home.md" || true
+            cp wiki/Home.md "$WIKI_DIR/Home.md"
           fi
-          
+
           # Commit and push
           cd "$WIKI_DIR"
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add -A
-          
-          if ! git diff --staged --quiet || [ -z "$(git log --oneline 2>/dev/null)" ]; then
+
+          if ! git diff --staged --quiet; then
             COMMIT_MSG="📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-            git commit -m "$COMMIT_MSG" || echo "No changes to commit"
-            
-            # Push to wiki (try main, then master)
-            git push -u origin main 2>&1 || git push -u origin master 2>&1 || echo "⚠️  Wiki push failed (may need manual initialization)"
+            git commit -m "$COMMIT_MSG"
+
+            # Push to wiki (master branch - wiki default)
+            git push origin master
+            echo "✅ Wiki updated successfully!"
           else
             echo "📋 No changes to dashboard"
           fi
