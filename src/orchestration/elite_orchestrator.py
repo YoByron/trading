@@ -41,6 +41,7 @@ class AgentType(Enum):
     GEMINI = "gemini"
     GO_ADK = "go_adk"
     MCP = "mcp"
+    ML_MODEL = "ml_model"
 
 
 @dataclass
@@ -166,6 +167,15 @@ class EliteOrchestrator:
             logger.info("✅ Gemini Agent initialized")
         except Exception as e:
             logger.warning(f"⚠️ Gemini Agent unavailable: {e}")
+            
+        # ML Predictor (LSTM-PPO)
+        try:
+            from src.ml.inference import MLPredictor
+            self.ml_predictor = MLPredictor()
+            logger.info("✅ ML Predictor (LSTM-PPO) initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ ML Predictor unavailable: {e}")
+            self.ml_predictor = None
     
     def create_trade_plan(self, symbols: List[str], context: Optional[Dict[str, Any]] = None) -> TradePlan:
         """
@@ -219,7 +229,8 @@ class EliteOrchestrator:
                 "agents": [
                     AgentType.LANGCHAIN.value,
                     AgentType.GEMINI.value,
-                    AgentType.MCP.value
+                    AgentType.MCP.value,
+                    AgentType.ML_MODEL.value
                 ],
                 "tasks": [
                     "Technical analysis",
@@ -492,6 +503,20 @@ class EliteOrchestrator:
                     }
                 except Exception as e:
                     logger.warning(f"Gemini analysis failed for {symbol}: {e}")
+
+        # ML Predictor (LSTM-PPO)
+        if self.ml_predictor:
+            for symbol in plan.symbols:
+                try:
+                    ml_signal = self.ml_predictor.get_signal(symbol)
+                    recommendations[f"{symbol}_ml"] = {
+                        "agent": "ml_model",
+                        "recommendation": ml_signal["action"],
+                        "confidence": ml_signal["confidence"],
+                        "reasoning": f"LSTM-PPO Value Estimate: {ml_signal.get('value_estimate', 0):.2f}"
+                    }
+                except Exception as e:
+                    logger.warning(f"ML prediction failed for {symbol}: {e}")
         
         # Ensemble voting
         for symbol in plan.symbols:
