@@ -26,9 +26,13 @@ from typing import Dict, List, Optional, Union, Any
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-import alpaca_trade_api as tradeapi
-from alpaca_trade_api.rest import APIError, REST
-from alpaca_trade_api.entity import Order, Position, Account
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, GetOrdersRequest
+from alpaca.trading.enums import OrderSide, TimeInForce, OrderClass, OrderStatus
+from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.requests import StockBarsRequest
+from alpaca.data.timeframe import TimeFrame
+from alpaca.common.exceptions import APIError
 
 # Import retry decorator
 import sys
@@ -128,26 +132,22 @@ class AlpacaTrader:
                 "ALPACA_SECRET_KEY environment variables."
             )
 
-        # Set base URL based on trading mode
-        base_url = os.getenv("APCA_API_BASE_URL")
-        if not base_url:
-            base_url = (
-                "https://paper-api.alpaca.markets"
-                if paper
-                else "https://api.alpaca.markets"
+        try:
+            # Initialize Alpaca Trading Client
+            self.trading_client = TradingClient(
+                api_key=api_key,
+                secret_key=secret_key,
+                paper=paper
             )
 
-        try:
-            # Initialize Alpaca API client
-            self.api = tradeapi.REST(
-                key_id=api_key,
-                secret_key=secret_key,
-                base_url=base_url,
-                api_version="v2",
+            # Initialize Alpaca Data Client
+            self.data_client = StockHistoricalDataClient(
+                api_key=api_key,
+                secret_key=secret_key
             )
 
             # Verify connection by fetching account
-            account = self.api.get_account()
+            account = self.trading_client.get_account()
 
             logger.info(
                 f"Successfully connected to Alpaca "
@@ -155,11 +155,8 @@ class AlpacaTrader:
             )
             logger.info(f"Account status: {account.status}")
 
-        except APIError as e:
-            logger.error(f"Failed to connect to Alpaca API: {e}")
-            raise AlpacaTraderError(f"API connection failed: {e}") from e
         except Exception as e:
-            logger.error(f"Unexpected error during initialization: {e}")
+            logger.error(f"Failed to connect to Alpaca API: {e}")
             raise AlpacaTraderError(f"Initialization failed: {e}") from e
 
     def validate_order_amount(
@@ -259,11 +256,11 @@ class AlpacaTrader:
             >>> print(f"Buying power: ${account['buying_power']}")
         """
         try:
-            account: Account = self.api.get_account()
+            account = self.trading_client.get_account()
 
             account_info = {
                 "account_number": account.account_number,
-                "status": account.status,
+                "status": str(account.status),
                 "currency": account.currency,
                 "buying_power": float(account.buying_power),
                 "cash": float(account.cash),
@@ -278,13 +275,12 @@ class AlpacaTrader:
                 "trade_suspended_by_user": account.trade_suspended_by_user,
             }
             
-            # Add daytrade_count if available (Alpaca API attribute)
+            # Add daytrade_count if available
             if hasattr(account, 'daytrade_count'):
                 account_info["daytrade_count"] = account.daytrade_count
             elif hasattr(account, 'day_trade_count'):
                 account_info["daytrade_count"] = account.day_trade_count
             else:
-                # Default to 0 if not available (paper trading may not track this)
                 account_info["daytrade_count"] = 0
 
             logger.info(
@@ -292,12 +288,9 @@ class AlpacaTrader:
             )
             return account_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to retrieve account information: {e}")
             raise AccountError(f"Account retrieval failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error retrieving account info: {e}")
-            raise AccountError(f"Unexpected error: {e}") from e
 
     @retry_with_backoff(max_retries=3, initial_delay=2.0, exceptions=(APIError, ConnectionError))
     def execute_order(
