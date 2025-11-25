@@ -169,22 +169,35 @@ class TradingOrchestrator:
 
         # Initialize components
         self.adk_adapter: Optional[ADKTradeAdapter] = None
-        self.deepagents_adapter: Optional[any] = None
+        self.deepagents_adapter: Optional[Any] = None
         self.skills = get_skills()  # Initialize Claude Skills
         
-        # Elite Orchestrator (planning-first multi-agent system) - ENABLED BY DEFAULT
-        # Uses ALL agents: Claude Skills + Langchain + Gemini + Go ADK + MCP + ML Predictor
-        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "true").lower() == "true"
+        # Elite Orchestrator (planning-first multi-agent system)
+        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "false").lower() == "true"
         self.elite_orchestrator: Optional[EliteOrchestrator] = None
+        
+        # Autonomous Meta-Agents
+        self.trace_analysis_agent = None
+        self.chaos_orchestrator_agent = None
+        
         if elite_enabled:
             try:
                 self.elite_orchestrator = EliteOrchestrator(
                     paper=self.mode == "paper" or self.config["paper_trading"],
                     enable_planning=True
                 )
-                self.logger.info("✅ Elite Orchestrator initialized (ALL AGENTS ACTIVE)")
+                self.logger.info("✅ Elite Orchestrator initialized")
+                
+                # Initialize Meta-Agents
+                from src.agents.trace_analysis_agent import TraceAnalysisAgent
+                from src.agents.chaos_orchestrator_agent import ChaosOrchestratorAgent
+                
+                self.trace_analysis_agent = TraceAnalysisAgent()
+                self.chaos_orchestrator_agent = ChaosOrchestratorAgent()
+                self.logger.info("✅ Autonomous Meta-Agents initialized (TraceAnalysis, ChaosOrchestrator)")
+                
             except Exception as e:
-                self.logger.warning(f"⚠️ Elite Orchestrator unavailable: {e}")
+                self.logger.warning(f"⚠️ Elite Orchestrator/Agents unavailable: {e}")
                 self.logger.warning("⚠️ Falling back to individual agent systems")
         
         self._initialize_components()
@@ -453,6 +466,18 @@ class TradingOrchestrator:
         
         # Daily performance monitoring using Performance Monitor skill
         schedule.every().day.at("16:00").do(self._daily_performance_monitoring).tag("performance_monitoring")
+        
+        # Autonomous Meta-Agents Schedule
+        if self.trace_analysis_agent:
+            # Analyze traces daily after market close
+            schedule.every().day.at("17:00").do(self.trace_analysis_agent.analyze).tag("trace_analysis")
+            self.logger.info("Scheduled: Trace Analysis - Daily at 5:00 PM ET")
+            
+        if self.chaos_orchestrator_agent:
+            # Evaluate chaos drills weekly on Fridays
+            schedule.every().friday.at("14:00").do(self.chaos_orchestrator_agent.analyze).tag("chaos_orchestration")
+            self.logger.info("Scheduled: Chaos Orchestration - Fridays at 2:00 PM ET")
+
         self.logger.info("Scheduled: Health check - Every hour")
 
         self.logger.info("Schedule setup complete")
