@@ -28,8 +28,9 @@ from datetime import datetime, timedelta
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / ".claude" / "skills" / "model_trainer" / "scripts"))
 
-from .claude.skills.model_trainer.scripts.model_trainer import ModelTrainerSkill
+from model_trainer import ModelTrainerSkill
 from src.utils.data_collector import DataCollector
 
 logging.basicConfig(
