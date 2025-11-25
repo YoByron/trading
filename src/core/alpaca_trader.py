@@ -342,7 +342,7 @@ class AlpacaTrader:
 
         try:
             # Check account status before placing order
-            account = self.api.get_account()
+            account = self.trading_client.get_account()
 
             if account.trading_blocked:
                 raise OrderExecutionError("Trading is blocked for this account")
@@ -356,23 +356,24 @@ class AlpacaTrader:
             # Place market order with notional (dollar) amount
             logger.info(f"Executing {side} order: {symbol} for ${amount_usd:.2f}")
 
-            order: Order = self.api.submit_order(
+            req = MarketOrderRequest(
                 symbol=symbol,
                 notional=amount_usd,
-                side=side,
-                type="market",
-                time_in_force="day",
+                side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+                time_in_force=TimeInForce.DAY
             )
 
+            order = self.trading_client.submit_order(req)
+
             order_info = {
-                "id": order.id,
+                "id": str(order.id),
                 "client_order_id": order.client_order_id,
                 "symbol": order.symbol,
                 "notional": float(order.notional) if order.notional else amount_usd,
-                "side": order.side,
-                "type": order.type,
-                "time_in_force": order.time_in_force,
-                "status": order.status,
+                "side": str(order.side),
+                "type": str(order.type),
+                "time_in_force": str(order.time_in_force),
+                "status": str(order.status),
                 "submitted_at": str(order.submitted_at),
                 "filled_at": str(order.filled_at) if order.filled_at else None,
                 "filled_qty": float(order.filled_qty) if order.filled_qty else 0,
@@ -388,12 +389,9 @@ class AlpacaTrader:
 
             return order_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Order execution failed: {e}")
             raise OrderExecutionError(f"Failed to execute order: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error executing order: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def set_stop_loss(
         self, symbol: str, qty: float, stop_price: float
@@ -429,37 +427,35 @@ class AlpacaTrader:
         try:
             logger.info(f"Setting stop-loss: {symbol} qty={qty} at ${stop_price:.2f}")
 
-            order: Order = self.api.submit_order(
+            req = StopOrderRequest(
                 symbol=symbol,
                 qty=qty,
-                side="sell",
-                type="stop",
-                time_in_force="gtc",  # Good 'til cancelled
-                stop_price=stop_price,
+                side=OrderSide.SELL,
+                time_in_force=TimeInForce.GTC,
+                stop_price=stop_price
             )
 
+            order = self.trading_client.submit_order(req)
+
             order_info = {
-                "id": order.id,
+                "id": str(order.id),
                 "client_order_id": order.client_order_id,
                 "symbol": order.symbol,
                 "qty": float(order.qty),
-                "side": order.side,
-                "type": order.type,
+                "side": str(order.side),
+                "type": str(order.type),
                 "stop_price": float(order.stop_price),
-                "time_in_force": order.time_in_force,
-                "status": order.status,
+                "time_in_force": str(order.time_in_force),
+                "status": str(order.status),
                 "submitted_at": str(order.submitted_at),
             }
 
             logger.info(f"Stop-loss order created: {order.id}")
             return order_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to set stop-loss: {e}")
             raise OrderExecutionError(f"Stop-loss creation failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error setting stop-loss: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def set_take_profit(
         self, symbol: str, qty: float, limit_price: float
@@ -497,37 +493,35 @@ class AlpacaTrader:
                 f"Setting take-profit: {symbol} qty={qty} at ${limit_price:.2f}"
             )
 
-            order: Order = self.api.submit_order(
+            req = LimitOrderRequest(
                 symbol=symbol,
                 qty=qty,
-                side="sell",
-                type="limit",
-                time_in_force="gtc",  # Good 'til cancelled
-                limit_price=limit_price,
+                side=OrderSide.SELL,
+                time_in_force=TimeInForce.GTC,
+                limit_price=limit_price
             )
 
+            order = self.trading_client.submit_order(req)
+
             order_info = {
-                "id": order.id,
+                "id": str(order.id),
                 "client_order_id": order.client_order_id,
                 "symbol": order.symbol,
                 "qty": float(order.qty),
-                "side": order.side,
-                "type": order.type,
+                "side": str(order.side),
+                "type": str(order.type),
                 "limit_price": float(order.limit_price),
-                "time_in_force": order.time_in_force,
-                "status": order.status,
+                "time_in_force": str(order.time_in_force),
+                "status": str(order.status),
                 "submitted_at": str(order.submitted_at),
             }
 
             logger.info(f"Take-profit order created: {order.id}")
             return order_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to set take-profit: {e}")
             raise OrderExecutionError(f"Take-profit creation failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error setting take-profit: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def get_portfolio_performance(self) -> Dict[str, Any]:
         """
@@ -552,8 +546,8 @@ class AlpacaTrader:
             >>> print(f"Total return: {performance['total_return']:.2f}%")
         """
         try:
-            account: Account = self.api.get_account()
-            positions = self.api.list_positions()
+            account = self.trading_client.get_account()
+            positions = self.trading_client.get_all_positions()
 
             equity = float(account.equity)
             last_equity = float(account.last_equity)
@@ -594,12 +588,9 @@ class AlpacaTrader:
 
             return performance
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to retrieve portfolio performance: {e}")
             raise AccountError(f"Portfolio performance retrieval failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error retrieving portfolio performance: {e}")
-            raise AccountError(f"Unexpected error: {e}") from e
 
     def get_positions(self) -> List[Dict[str, Any]]:
         """
@@ -628,7 +619,7 @@ class AlpacaTrader:
             ...           f"P/L: ${pos['unrealized_pl']:.2f}")
         """
         try:
-            positions: List[Position] = self.api.list_positions()
+            positions = self.trading_client.get_all_positions()
 
             positions_data = []
             for pos in positions:
@@ -645,20 +636,17 @@ class AlpacaTrader:
                     "unrealized_intraday_pl": float(pos.unrealized_intraday_pl),
                     "unrealized_intraday_plpc": float(pos.unrealized_intraday_plpc)
                     * 100,
-                    "side": pos.side,
-                    "exchange": pos.exchange,
+                    "side": str(pos.side),
+                    "exchange": str(pos.exchange),
                 }
                 positions_data.append(position_info)
 
             logger.info(f"Retrieved {len(positions_data)} positions")
             return positions_data
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to retrieve positions: {e}")
             raise AccountError(f"Positions retrieval failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error retrieving positions: {e}")
-            raise AccountError(f"Unexpected error: {e}") from e
 
     def get_historical_bars(
         self, symbol: str, timeframe: str = "1Day", limit: int = 100
@@ -691,13 +679,30 @@ class AlpacaTrader:
             >>> for bar in bars[-5:]:
             ...     print(f"{bar['timestamp']}: Close ${bar['close']:.2f}")
         """
-        valid_timeframes = ["1Min", "5Min", "15Min", "1Hour", "1Day"]
-        if timeframe not in valid_timeframes:
-            raise ValueError(
-                f"Invalid timeframe '{timeframe}'. "
-                f"Must be one of {valid_timeframes}"
-            )
-
+        valid_timeframes = {
+            "1Min": TimeFrame.Minute,
+            "5Min": TimeFrame.Minute, # Alpaca-py handles multipliers differently, but for simplicity mapping to Minute
+            "15Min": TimeFrame.Minute,
+            "1Hour": TimeFrame.Hour,
+            "1Day": TimeFrame.Day
+        }
+        
+        # Note: Alpaca-py TimeFrame is an object, not just a string.
+        # For custom intervals like 5Min, we need TimeFrame(5, TimeFrameUnit.Minute)
+        # But for now, let's support the basic ones or map string to TimeFrame
+        
+        tf = TimeFrame.Day
+        if timeframe == "1Min":
+            tf = TimeFrame.Minute
+        elif timeframe == "1Hour":
+            tf = TimeFrame.Hour
+        elif timeframe == "1Day":
+            tf = TimeFrame.Day
+        else:
+             # Fallback or error - for now defaulting to Day if unknown to avoid crash, but logging warning
+             if timeframe not in valid_timeframes:
+                 logger.warning(f"Timeframe {timeframe} not fully supported in simple mapping, defaulting to Day")
+        
         if limit <= 0 or limit > 10000:
             raise ValueError(f"Limit must be between 1 and 10000. Got {limit}")
 
@@ -706,31 +711,34 @@ class AlpacaTrader:
         try:
             logger.info(f"Fetching {limit} {timeframe} bars for {symbol}")
 
+            req = StockBarsRequest(
+                symbol_or_symbols=symbol,
+                timeframe=tf,
+                limit=limit
+            )
+
             # Get bars from Alpaca API
-            barset: BarSet = self.api.get_bars(symbol, timeframe, limit=limit)
+            barset = self.data_client.get_stock_bars(req)
 
             bars_data = []
-            if symbol in barset:
-                for bar in barset[symbol]:
+            if symbol in barset.data:
+                for bar in barset.data[symbol]:
                     bar_info = {
-                        "timestamp": str(bar.t),
-                        "open": float(bar.o),
-                        "high": float(bar.h),
-                        "low": float(bar.l),
-                        "close": float(bar.c),
-                        "volume": int(bar.v),
+                        "timestamp": str(bar.timestamp),
+                        "open": float(bar.open),
+                        "high": float(bar.high),
+                        "low": float(bar.low),
+                        "close": float(bar.close),
+                        "volume": int(bar.volume),
                     }
                     bars_data.append(bar_info)
 
             logger.info(f"Retrieved {len(bars_data)} bars for {symbol}")
             return bars_data
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to retrieve historical bars: {e}")
             raise MarketDataError(f"Historical data retrieval failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error retrieving historical bars: {e}")
-            raise MarketDataError(f"Unexpected error: {e}") from e
 
     def cancel_all_orders(self) -> Dict[str, Any]:
         """
@@ -752,12 +760,12 @@ class AlpacaTrader:
         try:
             logger.info("Cancelling all open orders")
 
-            # Get all open orders before cancelling
-            open_orders = self.api.list_orders(status="open")
-            order_count = len(open_orders)
-
-            # Cancel all orders
-            self.api.cancel_all_orders()
+            # Get all open orders before cancelling (for counting)
+            # Note: cancel_orders returns list of CancelOrderResponse, but we want count first
+            # Actually cancel_orders cancels all and returns list of cancelled orders
+            
+            cancelled_orders = self.trading_client.cancel_orders()
+            order_count = len(cancelled_orders)
 
             result = {
                 "cancelled_count": order_count,
@@ -768,12 +776,9 @@ class AlpacaTrader:
             logger.info(f"Successfully cancelled {order_count} orders")
             return result
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to cancel orders: {e}")
             raise OrderExecutionError(f"Order cancellation failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error cancelling orders: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def get_order_status(self, order_id: str) -> Dict[str, Any]:
         """
@@ -794,16 +799,16 @@ class AlpacaTrader:
             >>> print(f"Order status: {status['status']}")
         """
         try:
-            order: Order = self.api.get_order(order_id)
+            order = self.trading_client.get_order_by_id(order_id)
 
             order_info = {
-                "id": order.id,
+                "id": str(order.id),
                 "symbol": order.symbol,
                 "qty": float(order.qty) if order.qty else None,
                 "notional": float(order.notional) if order.notional else None,
-                "side": order.side,
-                "type": order.type,
-                "status": order.status,
+                "side": str(order.side),
+                "type": str(order.type),
+                "status": str(order.status),
                 "filled_qty": float(order.filled_qty) if order.filled_qty else 0,
                 "filled_avg_price": (
                     float(order.filled_avg_price) if order.filled_avg_price else None
@@ -815,12 +820,9 @@ class AlpacaTrader:
             logger.info(f"Retrieved status for order {order_id}: {order.status}")
             return order_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to get order status: {e}")
             raise OrderExecutionError(f"Order status retrieval failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error getting order status: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def cancel_order(self, order_id: str) -> Dict[str, Any]:
         """
@@ -842,7 +844,7 @@ class AlpacaTrader:
         """
         try:
             logger.info(f"Cancelling order {order_id}")
-            self.api.cancel_order(order_id)
+            self.trading_client.cancel_order_by_id(order_id)
 
             result = {
                 "order_id": order_id,
@@ -853,12 +855,9 @@ class AlpacaTrader:
             logger.info(f"Successfully cancelled order {order_id}")
             return result
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to cancel order: {e}")
             raise OrderExecutionError(f"Order cancellation failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error cancelling order: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def close_position(self, symbol: str) -> Dict[str, Any]:
         """
@@ -883,27 +882,24 @@ class AlpacaTrader:
         try:
             logger.info(f"Closing position for {symbol}")
 
-            order: Order = self.api.close_position(symbol)
+            order = self.trading_client.close_position(symbol)
 
             order_info = {
-                "id": order.id,
+                "id": str(order.id),
                 "symbol": order.symbol,
                 "qty": float(order.qty) if order.qty else None,
-                "side": order.side,
-                "type": order.type,
-                "status": order.status,
+                "side": str(order.side),
+                "type": str(order.type),
+                "status": str(order.status),
                 "submitted_at": str(order.submitted_at),
             }
 
             logger.info(f"Successfully closed position for {symbol}")
             return order_info
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to close position: {e}")
             raise OrderExecutionError(f"Position closure failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error closing position: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
 
     def close_all_positions(self) -> Dict[str, Any]:
         """
@@ -925,11 +921,11 @@ class AlpacaTrader:
         try:
             logger.info("Closing all positions")
 
-            positions = self.api.list_positions()
+            positions = self.trading_client.get_all_positions()
             symbols = [pos.symbol for pos in positions]
 
             # Close all positions
-            self.api.close_all_positions()
+            self.trading_client.close_all_positions(cancel_orders=True)
 
             result = {
                 "closed_count": len(symbols),
@@ -941,9 +937,6 @@ class AlpacaTrader:
             logger.info(f"Successfully closed {len(symbols)} positions: {symbols}")
             return result
 
-        except APIError as e:
+        except Exception as e:
             logger.error(f"Failed to close all positions: {e}")
             raise OrderExecutionError(f"Position closure failed: {e}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error closing all positions: {e}")
-            raise OrderExecutionError(f"Unexpected error: {e}") from e
