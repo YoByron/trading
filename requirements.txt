@@ -45,9 +45,9 @@ anthropic>=0.73.0,<1.0.0
 google-generativeai>=0.8.0,<1.0.0  # Required for gemini_agent and gemini3_langgraph_agent
 
 # Deep Learning (Phase 1: Elite AI Trader)
-torch>=2.0.0,<3.0.0  # PyTorch for LSTM-PPO ensemble
-tensorflow>=2.15.0,<3.0.0  # TensorFlow (optional, for flexibility)
+torch>=2.0.0,<3.0.0  # PyTorch for LSTM-PPO ensemble (primary framework)
 scikit-learn>=1.3.0,<2.0.0  # Feature engineering and preprocessing
+# Note: TensorFlow optional - PyTorch is primary framework for LSTM-PPO
 
 # DeepAgents Integration
 deepagents>=0.2.5
