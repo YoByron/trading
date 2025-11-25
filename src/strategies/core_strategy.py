@@ -174,11 +174,15 @@ class CoreStrategy:
     REBALANCE_THRESHOLD = 0.15  # 15% deviation triggers rebalance
     REBALANCE_FREQUENCY_DAYS = 30  # Monthly rebalancing
 
+    # Profit-taking parameters
+    TAKE_PROFIT_PCT = 0.05  # 5% profit target (conservative for Day 9 R&D)
+
     def __init__(
         self,
         daily_allocation: float = 6.0,
         etf_universe: Optional[List[str]] = None,
         stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
+        take_profit_pct: float = TAKE_PROFIT_PCT,
         use_sentiment: bool = True,
     ):
         """
@@ -188,6 +192,7 @@ class CoreStrategy:
             daily_allocation: Daily investment amount in dollars (default: $6)
             etf_universe: List of ETF symbols to analyze (default: SPY, QQQ, VOO)
             stop_loss_pct: Trailing stop-loss percentage (default: 5%)
+            take_profit_pct: Take-profit percentage for closing positions (default: 5%)
             use_sentiment: Whether to use AI sentiment analysis (default: True)
 
         Raises:
@@ -201,6 +206,7 @@ class CoreStrategy:
         self.daily_allocation = daily_allocation
         self.etf_universe = etf_universe or self.DEFAULT_ETF_UNIVERSE
         self.stop_loss_pct = stop_loss_pct
+        self.take_profit_pct = take_profit_pct
         self.use_sentiment = use_sentiment
 
         # Strategy state
@@ -259,7 +265,8 @@ class CoreStrategy:
 
         logger.info(
             f"CoreStrategy initialized: daily_allocation=${daily_allocation}, "
-            f"etf_universe={self.etf_universe}, stop_loss={stop_loss_pct*100}%"
+            f"etf_universe={self.etf_universe}, stop_loss={stop_loss_pct*100}%, "
+            f"take_profit={take_profit_pct*100}%"
         )
 
     def execute_daily(self) -> Optional[TradeOrder]:
@@ -285,6 +292,11 @@ class CoreStrategy:
         logger.info(f"Daily allocation: ${self.daily_allocation}")
 
         try:
+            # Step 0: Manage existing positions (take-profit exits)
+            closed_positions = self.manage_positions()
+            if closed_positions:
+                logger.info(f"Closed {len(closed_positions)} positions at take-profit target")
+
             # Step 1: Get market sentiment from AI
             sentiment = self._get_market_sentiment()
             logger.info(f"Market sentiment: {sentiment.value}")
@@ -548,6 +560,108 @@ class CoreStrategy:
         except Exception as e:
             logger.error(f"Error in daily execution: {str(e)}", exc_info=True)
             raise
+
+    def manage_positions(self) -> List[TradeOrder]:
+        """
+        Manage existing positions - close winners at take-profit target.
+
+        This method:
+        1. Gets all open positions from Alpaca
+        2. Checks unrealized P/L percentage for each position
+        3. Closes positions that have reached take_profit_pct target
+        4. Logs all exits properly
+
+        Returns:
+            List of TradeOrder objects for positions closed
+        """
+        logger.info("=" * 80)
+        logger.info("Managing existing positions (take-profit exits)")
+        logger.info(f"Take-profit target: {self.take_profit_pct*100:.1f}%")
+
+        closed_positions = []
+
+        if not self.alpaca_trader:
+            logger.warning("Alpaca trader not initialized - cannot manage positions")
+            return closed_positions
+
+        try:
+            # Get all open positions from Alpaca
+            positions = self.alpaca_trader.get_positions()
+
+            if not positions:
+                logger.info("No open positions to manage")
+                return closed_positions
+
+            logger.info(f"Analyzing {len(positions)} open positions...")
+
+            for position in positions:
+                symbol = position.get("symbol")
+                qty = float(position.get("qty", 0))
+                current_price = float(position.get("current_price", 0))
+                avg_entry_price = float(position.get("avg_entry_price", 0))
+                unrealized_pl = float(position.get("unrealized_pl", 0))
+                unrealized_plpc = float(position.get("unrealized_plpc", 0))
+                market_value = float(position.get("market_value", 0))
+
+                logger.info(f"\n{symbol}:")
+                logger.info(f"  Quantity: {qty:.4f}")
+                logger.info(f"  Entry Price: ${avg_entry_price:.2f}")
+                logger.info(f"  Current Price: ${current_price:.2f}")
+                logger.info(f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)")
+
+                # Check if position has reached take-profit target
+                if unrealized_plpc >= self.take_profit_pct:
+                    logger.info(f"  🎯 TAKE-PROFIT TRIGGERED: {unrealized_plpc*100:.2f}% >= {self.take_profit_pct*100:.1f}%")
+
+                    try:
+                        # Close the position (sell 100%)
+                        logger.info(f"  Closing position: Selling {qty:.4f} shares at ${current_price:.2f}")
+
+                        executed_order = self.alpaca_trader.execute_order(
+                            symbol=symbol,
+                            amount_usd=market_value,
+                            side="sell",
+                            tier="T1_CORE"
+                        )
+
+                        logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
+                        logger.info(f"  Realized profit: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)")
+
+                        # Create TradeOrder record for the exit
+                        exit_order = TradeOrder(
+                            symbol=symbol,
+                            action="sell",
+                            quantity=qty,
+                            amount=market_value,
+                            price=current_price,
+                            order_type="market",
+                            stop_loss=None,
+                            timestamp=datetime.now(),
+                            reason=f"Take-profit exit at {unrealized_plpc*100:.2f}% profit"
+                        )
+
+                        closed_positions.append(exit_order)
+                        self.trades_executed.append(exit_order)
+
+                        # Update holdings
+                        self._update_holdings(symbol, -qty)
+
+                    except Exception as e:
+                        logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+                else:
+                    logger.info(f"  ✅ Holding position (P/L {unrealized_plpc*100:.2f}% < target {self.take_profit_pct*100:.1f}%)")
+
+            logger.info("=" * 80)
+            if closed_positions:
+                logger.info(f"Closed {len(closed_positions)} winning positions")
+            else:
+                logger.info("No positions ready for take-profit exit")
+
+            return closed_positions
+
+        except Exception as e:
+            logger.error(f"Error managing positions: {str(e)}", exc_info=True)
+            return closed_positions
 
     def calculate_momentum(self, symbol: str) -> float:
         """
