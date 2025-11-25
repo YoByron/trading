@@ -430,19 +430,19 @@ def execute_tier1(daily_amount, risk_manager, account):
     print("🎯 TIER 1: CORE ETF STRATEGY (MACD + RSI + Volume)")
     print("=" * 70)
 
-    etfs = ["SPY", "QQQ", "VOO"]
+    etfs = ["SPY", "QQQ", "VOO", "BND"]  # Added BND (bond ETF) for diversification
     scores = {}
 
     # Analyze each ETF with REAL technical indicators (using shared utility)
-    # PARALLELIZED: Fetch all symbols concurrently for 3x speed improvement
+    # PARALLELIZED: Fetch all symbols concurrently for 4x speed improvement
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     def fetch_symbol_score(symbol):
         """Fetch score for a single symbol."""
         return symbol, calculate_technical_score_wrapper(symbol)
 
-    print(f"📊 Analyzing {len(etfs)} ETFs in parallel...")
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    print(f"📊 Analyzing {len(etfs)} ETFs in parallel (including bond ETF BND)...")
+    with ThreadPoolExecutor(max_workers=4) as executor:
         future_to_symbol = {executor.submit(fetch_symbol_score, symbol): symbol for symbol in etfs}
         for future in as_completed(future_to_symbol):
             symbol, score = future.result()

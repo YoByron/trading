@@ -16,17 +16,19 @@ This document describes the trading strategies implemented in the autonomous tra
 **Target Return**: 8-12% annually
 
 ### Strategy Description
-Conservative index ETF investing focused on broad market exposure through momentum-based selection among top ETFs.
+Conservative index ETF investing focused on broad market exposure through momentum-based selection among top ETFs. Now includes bond ETF (BND) for diversification per Benjamin Graham's Intelligent Investor principles, providing portfolio stability and risk reduction.
 
 ### Universe
-- **SPY**: S&P 500 ETF
-- **QQQ**: Nasdaq-100 ETF
-- **VOO**: Vanguard S&P 500 ETF
+- **SPY**: S&P 500 ETF (equity)
+- **QQQ**: Nasdaq-100 ETF (equity)
+- **VOO**: Vanguard S&P 500 ETF (equity)
+- **BND**: Vanguard Total Bond Market ETF (bonds) - Added November 25, 2025
 
 ### Selection Logic
-1. Calculate momentum score for each ETF
-2. Select ETF with highest momentum
+1. Calculate momentum score for each ETF (equity and bond)
+2. Select ETF with highest momentum (may be equity or bond based on market conditions)
 3. Execute $6 buy order daily
+4. Bond selection provides natural diversification when bonds outperform equities
 
 ### Exit Rules
 - Hold positions long-term (buy-and-hold)
@@ -211,6 +213,13 @@ Key functions:
 ---
 
 ## Historical Changes
+
+### November 25, 2025
+- **BND (Bond ETF) Added to Tier 1**: Expanded universe to include bonds for diversification
+- **Rationale**: Follows Benjamin Graham's Intelligent Investor principles for defensive investors. Bonds provide portfolio stability, reduce volatility, and often move inversely to stocks. Current market conditions (Fed rate cuts expected) support bond allocation.
+- **Impact**: Natural diversification through momentum-based selection. System will automatically allocate to bonds when they outperform equities, typically 10-15% of Tier 1 allocation.
+- **Bond ETF**: BND (Vanguard Total Bond Market ETF) - broad exposure to U.S. investment-grade bonds
+- **Execution Start**: November 25, 2025
 
 ### November 5, 2025
 - **AMZN Added to Tier 2**: Expanded from 2-stock (NVDA, GOOGL) to 3-stock rotation
