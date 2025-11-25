@@ -1,0 +1,272 @@
+name: Autonomous Model Training
+
+on:
+  schedule:
+    # Run weekly on Sundays at 2:00 AM UTC (Saturday 9 PM EST / 10 PM EDT)
+    # This ensures models are retrained weekly with fresh data
+    - cron: '0 2 * * 0'  # Every Sunday at 2:00 AM UTC
+  workflow_dispatch:
+    inputs:
+      force_retrain:
+        description: "Force retraining even if model is fresh"
+        required: false
+        default: "false"
+      symbols:
+        description: "Comma-separated symbols to train on"
+        required: false
+        default: "SPY,QQQ,VOO"
+      epochs:
+        description: "Number of training epochs"
+        required: false
+        default: "50"
+
+permissions:
+  contents: write
+
+# Prevent multiple concurrent training runs
+concurrency:
+  group: model-training
+  cancel-in-progress: false
+
+jobs:
+  train-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # Model training can take 30-45 minutes
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Verify PyTorch installed (required for LSTM)
+          python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
+
+      - name: Check training data availability
+        id: check_data
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          echo "🔍 Checking training data availability..."
+          
+          SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
+          python3 -c "
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          
+          from .claude.skills.model_trainer.scripts.model_trainer import ModelTrainerSkill
+          
+          skill = ModelTrainerSkill()
+          symbols = [s.strip() for s in '$SYMBOLS'.split(',')]
+          result = skill.check_training_data_availability(symbols, min_days=252)
+          
+          import json
+          print(json.dumps(result, indent=2))
+          
+          if not result['available']:
+              print('data_available=false' >> \$GITHUB_OUTPUT)
+              sys.exit(1)
+          else:
+              print('data_available=true' >> \$GITHUB_OUTPUT)
+          " || {
+            echo "data_available=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Insufficient data - will collect automatically"
+          }
+
+      - name: Collect historical data (if needed)
+        if: steps.check_data.outputs.data_available != 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          echo "📊 Collecting historical data..."
+          
+          SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
+          python3 scripts/populate_historical_data.py \
+            --symbols "$SYMBOLS" \
+            --lookback 252
+          
+          echo "✅ Data collection complete"
+
+      - name: Check existing model age
+        id: check_model
+        run: |
+          echo "🔍 Checking existing model..."
+          
+          if [ -d "data/models" ]; then
+            EXISTING_MODEL=$(ls -t data/models/lstm_feature_extractor*.pt 2>/dev/null | head -1)
+            
+            if [ -n "$EXISTING_MODEL" ]; then
+              MODEL_AGE_DAYS=$(( ($(date +%s) - $(stat -c %Y "$EXISTING_MODEL")) / 86400 ))
+              echo "model_exists=true" >> $GITHUB_OUTPUT
+              echo "model_age_days=$MODEL_AGE_DAYS" >> $GITHUB_OUTPUT
+              echo "model_path=$EXISTING_MODEL" >> $GITHUB_OUTPUT
+              echo "✅ Found existing model: $(basename $EXISTING_MODEL) (age: $MODEL_AGE_DAYS days)"
+            else
+              echo "model_exists=false" >> $GITHUB_OUTPUT
+              echo "⚠️  No existing model found"
+            fi
+          else
+            echo "model_exists=false" >> $GITHUB_OUTPUT
+            mkdir -p data/models
+          fi
+
+      - name: Train LSTM model
+        id: train_model
+        if: |
+          steps.check_model.outputs.model_exists != 'true' ||
+          steps.check_model.outputs.model_age_days > 7 ||
+          github.event.inputs.force_retrain == 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          echo "🚀 Training LSTM model..."
+          echo "=========================================="
+          
+          SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
+          EPOCHS="${{ github.event.inputs.epochs || '50' }}"
+          
+          python3 scripts/autonomous_model_training.py \
+            --symbols "$SYMBOLS" \
+            --epochs "$EPOCHS" \
+            --force-retrain
+          
+          TRAINING_RESULT=$?
+          
+          if [ $TRAINING_RESULT -eq 0 ]; then
+            echo "training_success=true" >> $GITHUB_OUTPUT
+            echo "✅ Model training completed successfully"
+          else
+            echo "training_success=false" >> $GITHUB_OUTPUT
+            echo "❌ Model training failed"
+            exit 1
+          fi
+
+      - name: Skip training (model is fresh)
+        if: |
+          steps.check_model.outputs.model_exists == 'true' &&
+          steps.check_model.outputs.model_age_days <= 7 &&
+          github.event.inputs.force_retrain != 'true'
+        run: |
+          echo "⏭️  Skipping training - model is fresh (<7 days old)"
+          echo "   Model: ${{ steps.check_model.outputs.model_path }}"
+          echo "   Age: ${{ steps.check_model.outputs.model_age_days }} days"
+          echo "   Use 'force_retrain: true' to override"
+
+      - name: Validate trained model
+        if: steps.train_model.outputs.training_success == 'true'
+        run: |
+          echo "✅ Validating trained model..."
+          
+          python3 -c "
+          import torch
+          from pathlib import Path
+          
+          model_path = Path('data/models')
+          models = list(model_path.glob('lstm_feature_extractor*.pt'))
+          
+          if models:
+              latest = max(models, key=lambda p: p.stat().st_mtime)
+              print(f'✅ Found model: {latest.name}')
+              
+              # Try loading model
+              checkpoint = torch.load(latest, map_location='cpu')
+              print(f'✅ Model loaded successfully')
+              print(f'   Input dim: {checkpoint.get(\"input_dim\", \"unknown\")}')
+              print(f'   Hidden dim: {checkpoint.get(\"hidden_dim\", \"unknown\")}')
+              print(f'   Output dim: {checkpoint.get(\"output_dim\", \"unknown\")}')
+          else:
+              print('❌ No model found after training')
+              exit(1)
+          "
+
+      - name: Commit trained model (if significantly improved)
+        if: steps.train_model.outputs.training_success == 'true'
+        run: |
+          echo "💾 Committing trained model..."
+          
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          # Stage model files
+          git add data/models/lstm_feature_extractor*.pt
+          
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "📋 No model changes to commit"
+          else
+            git commit -m "🤖 Auto-train: LSTM model retrained
+
+          Weekly autonomous model training completed.
+
+          Details:
+          - Symbols: ${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}
+          - Epochs: ${{ github.event.inputs.epochs || '50' }}
+          - Workflow: model-training.yml
+          - Run ID: ${{ github.run_id }}
+          - Triggered: ${{ github.event_name }}
+
+          Model will be used by OptimizedRLPolicyLearner for deep learning features.
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+            
+            git push origin main
+            echo "✅ Model committed and pushed"
+          fi
+
+      - name: Upload model artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lstm-model-${{ github.run_id }}
+          path: |
+            data/models/lstm_feature_extractor*.pt
+          retention-days: 90  # Keep models for 90 days
+
+      - name: Upload training logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-logs-${{ github.run_id }}
+          path: |
+            logs/*.log
+          retention-days: 30
+
+      - name: Training summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "Model Training Summary"
+          echo "=========================================="
+          echo "Workflow Status: ${{ job.status }}"
+          echo "Model Existed: ${{ steps.check_model.outputs.model_exists }}"
+          if [ "${{ steps.check_model.outputs.model_exists }}" = "true" ]; then
+            echo "Model Age: ${{ steps.check_model.outputs.model_age_days }} days"
+          fi
+          echo "Training Executed: ${{ steps.train_model.outputs.training_success == 'true' }}"
+          echo "Time Completed: $(date)"
+          echo ""
+          echo "Next Steps:"
+          echo "- Model will be used by OptimizedRLPolicyLearner"
+          echo "- Next training scheduled: Next Sunday at 2:00 AM UTC"
+          echo "=========================================="
+
