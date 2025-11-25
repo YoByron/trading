@@ -42,6 +42,7 @@ python-dateutil==2.9.0.post0
 pytz==2023.3
 loguru==0.7.2
 anthropic>=0.73.0,<1.0.0
+google-generativeai>=0.8.0,<1.0.0  # Required for gemini_agent and gemini3_langgraph_agent
 
 # DeepAgents Integration
 deepagents>=0.2.5

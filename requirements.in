@@ -3,7 +3,7 @@
 # To update: pip-compile requirements.in
 
 # Trading APIs
-alpaca-trade-api>=3.2.0,<4.0.0
+alpaca-py>=0.43.2,<1.0.0
 openai>=1.0.0,<2.0.0
 
 # Data Processing
@@ -33,6 +33,9 @@ python-dateutil>=2.8.2,<3.0.0
 pytz>=2023.3
 loguru>=0.7.2,<1.0.0
 anthropic>=0.73.0,<1.0.0
+
+# Google AI (Gemini) - Optional but used in gemini_agent and tests
+google-generativeai>=0.8.0,<1.0.0
 
 # DeepAgents Integration
 deepagents>=0.2.5,<1.0.0
