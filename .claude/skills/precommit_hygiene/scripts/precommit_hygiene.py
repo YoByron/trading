@@ -406,6 +406,11 @@ class PreCommitHygiene:
                     "safe_to_commit": len(violations) == 0,
                 }
             )
+
+        except Exception as e:
+            return error_response(
+                f"Error checking secrets: {str(e)}", "SECRET_CHECK_ERROR"
+            )
     
     def check_workflow_security(self, files: List[str] = None) -> Dict[str, Any]:
         """
@@ -498,7 +503,7 @@ class PreCommitHygiene:
 
         except Exception as e:
             return error_response(
-                f"Error checking secrets: {str(e)}", "SECRET_CHECK_ERROR"
+                f"Error checking workflow security: {str(e)}", "WORKFLOW_CHECK_ERROR"
             )
 
     def organize_repository(self, dry_run: bool = True) -> Dict[str, Any]:
