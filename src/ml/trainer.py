@@ -47,13 +47,16 @@ class ModelTrainer:
                 logger.warning("   Falling back to local training only")
                 self.use_cloud_rl = False
         
-        # Hyperparameters
+        # Hyperparameters (can be overridden by hyperparameter optimization)
         self.input_dim = len(self.data_processor.feature_columns)
         self.hidden_dim = 128
         self.num_layers = 2
         self.learning_rate = 0.001
         self.batch_size = 32
         self.epochs = 50
+        
+        # Load optimized hyperparameters if available
+        self._load_optimized_hyperparameters()
         
     def train_supervised(self, symbol: str, use_cloud_rl: Optional[bool] = None) -> Dict[str, Any]:
         """
@@ -243,3 +246,19 @@ class ModelTrainer:
             
             # Fallback to local training
             return self.train_supervised(symbol, use_cloud_rl=False)
+    
+    def _load_optimized_hyperparameters(self):
+        """Load optimized hyperparameters if available."""
+        try:
+            from src.ml.hyperparameter_optimizer import HyperparameterOptimizer
+            optimizer = HyperparameterOptimizer()
+            # Try to load for a generic symbol (can be made symbol-specific)
+            best_params = optimizer.get_best_params()
+            if best_params:
+                self.hidden_dim = best_params.get('hidden_dim', self.hidden_dim)
+                self.num_layers = best_params.get('num_layers', self.num_layers)
+                self.learning_rate = best_params.get('learning_rate', self.learning_rate)
+                self.batch_size = best_params.get('batch_size', self.batch_size)
+                logger.info(f"✅ Loaded optimized hyperparameters: {best_params}")
+        except Exception as e:
+            logger.debug(f"Could not load optimized hyperparameters: {e}")
