@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-26 04:50 PM ET  
+**Last Updated**: 2025-11-26 05:15 PM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -232,9 +232,23 @@
 | Metric | Value |
 |--------|-------|
 | **Trading Days Tracked** | 34 |
-| **Rolling Sharpe (7d)** | 0.00 |
-| **Rolling Sharpe (30d)** | 0.00 |
-| **Rolling Max DD (30d)** | 0.00% |
+| **Rolling Sharpe (7d)** | -56.58 |
+| **Rolling Sharpe (30d)** | -14.80 |
+| **Rolling Max DD (30d)** | 0.06% |
+
+### Cohort Analysis
+
+**P/L by Ticker**:
+
+*No closed trades available for cohort analysis*
+
+**P/L by Time of Day** (Optimal Execution Windows):
+
+| Hour (ET) | Trades | Closed | Total P/L | Avg P/L | Win Rate |
+|-----------|--------|--------|-----------|---------|---------|
+| 08:00 | 2 | 0 | $+0.00 | $+0.00 | 0.0% |
+| 09:00 | 4 | 0 | $+0.00 | $+0.00 | 0.0% |
+| 16:00 | 2 | 0 | $+0.00 | $+0.00 | 0.0% |
 
 ---
 
