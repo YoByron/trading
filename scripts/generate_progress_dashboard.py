@@ -20,6 +20,7 @@ import sys
 import json
 from datetime import datetime, date, timedelta
 from pathlib import Path
+from collections import defaultdict
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -633,6 +634,57 @@ def generate_dashboard() -> str:
             dashboard += "\n*No closed trades available for cohort analysis*\n"
     else:
         dashboard += "\n*No closed trades available for cohort analysis*\n"
+    
+    # Add P/L by holding period
+    holding_period = world_class_metrics.get('holding_period_analysis', {})
+    by_period = holding_period.get('by_period', {})
+    
+    if by_period:
+        dashboard += """
+**P/L by Holding Period**:
+
+| Period | Trades | Total P/L | Avg P/L | Win Rate |
+|--------|--------|-----------|---------|----------|
+"""
+        # Sort periods by a logical order
+        period_order = ['Same Day', '1 Day', '2-3 Days', '4-7 Days', '8-14 Days', '15-30 Days', '30+ Days']
+        for period in period_order:
+            if period in by_period:
+                data = by_period[period]
+                dashboard += f"| {period} | {data.get('trades', 0)} | ${data.get('total_pl', 0):+.2f} | ${data.get('avg_pl', 0):+.2f} | {data.get('win_rate', 0):.1f}% |\n"
+    
+    # Add P/L by time of day
+    time_of_day = world_class_metrics.get('time_of_day_analysis', {})
+    by_hour = time_of_day.get('by_hour', {})
+    best_hours = time_of_day.get('best_hours', [])
+    
+    if by_hour:
+        dashboard += """
+**P/L by Time of Day** (Optimal Execution Windows):
+
+| Hour (ET) | Trades | Closed | Total P/L | Avg P/L | Win Rate |
+|-----------|--------|--------|-----------|---------|---------|
+"""
+        for hour in sorted(by_hour.keys()):
+            data = by_hour[hour]
+            hour_label = f"{hour:02d}:00"
+            if hour in best_hours:
+                hour_label += " ⭐"
+            dashboard += f"| {hour_label} | {data.get('trades', 0)} | {data.get('closed_trades', 0)} | ${data.get('total_pl', 0):+.2f} | ${data.get('avg_pl', 0):+.2f} | {data.get('win_rate', 0):.1f}% |\n"
+    
+    # Add strategy equity curves summary
+    strategy_curves = world_class_metrics.get('strategy_equity_curves', {})
+    if strategy_curves:
+        dashboard += """
+**Strategy Equity Curves Summary**:
+
+| Strategy | Trades | Total P/L | Equity Curve Points |
+|----------|--------|-----------|---------------------|
+"""
+        for strategy_id, curve_data in strategy_curves.items():
+            strategy_name = strategy_id.replace('_', ' ').title()
+            curve_points = len(curve_data.get('equity_curve', []))
+            dashboard += f"| {strategy_name} | {curve_data.get('trades', 0)} | ${curve_data.get('total_pl', 0):+.2f} | {curve_points} points |\n"
     
     dashboard += """
 ---
