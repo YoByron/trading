@@ -332,13 +332,19 @@ def generate_dashboard() -> str:
     else:
         dashboard += "| *No open positions* | - | - | - | - |\n"
     
+    # Extract exposure values
+    largest_position_pct = exposure.get('largest_position_pct', 0)
+    total_exposure_val = exposure.get('total_exposure', 0)
+    largest_position_pct_str = f"{largest_position_pct:.2f}"
+    total_exposure_str = f"{total_exposure_val:,.2f}"
+    
     dashboard += f"""
 ### Exposure Summary
 
 | Metric | Value |
 |--------|-------|
-| **Largest Position** | {exposure.get('largest_position_pct', 0):.2f}% of equity |
-| **Total Exposure** | ${exposure.get('total_exposure', 0):,.2f} |
+| **Largest Position** | {largest_position_pct_str}% of equity |
+| **Total Exposure** | ${total_exposure_str} |
 
 ### Asset Class Breakdown
 
@@ -377,14 +383,26 @@ def generate_dashboard() -> str:
     )
     bonds_invested = 0.0  # BND is in tier1, would need to track separately
     
+    # Calculate trades for each asset class
+    equities_trades = (
+        strategies.get('tier1', {}).get('trades_executed', 0) +
+        strategies.get('tier2', {}).get('trades_executed', 0)
+    )
+    crypto_trades = strategies.get('tier5', {}).get('trades_executed', 0)
+    
+    # Format investment values
+    equities_invested_str = f"{equities_invested:,.2f}"
+    bonds_invested_str = f"{bonds_invested:,.2f}"
+    crypto_invested_str = f"{crypto_invested:,.2f}"
+    
     dashboard += f"""
 ### Investment by Asset Class (Total Invested)
 
 | Asset Class | Total Invested | Trades Executed |
 |-------------|----------------|-----------------|
-| **Equities** | ${equities_invested:,.2f} | {strategies.get('tier1', {}).get('trades_executed', 0) + strategies.get('tier2', {}).get('trades_executed', 0)} |
-| **Bonds** | ${bonds_invested:,.2f} | 0 |
-| **Crypto** | ${crypto_invested:,.2f} | {strategies.get('tier5', {}).get('trades_executed', 0)} |
+| **Equities** | ${equities_invested_str} | {equities_trades} |
+| **Bonds** | ${bonds_invested_str} | 0 |
+| **Crypto** | ${crypto_invested_str} | {crypto_trades} |
 
 ---
 """
@@ -465,11 +483,12 @@ def generate_dashboard() -> str:
     beta_status = 'Higher Risk' if beta > 1.0 else 'Lower Risk'
     data_status = '✅ Available' if data_available else '⚠️ Limited'
     
-    dashboard += f"""| **Total Return** | {portfolio_return_str}% | {benchmark_return_str}% | {alpha_str}% |
-| **Alpha** | {alpha_str}% | - | {alpha_status} |
-| **Beta** | {beta_str} | 1.0 | {beta_status} |
-| **Data Status** | {data_status} | - | - |
-
+    dashboard += f"| **Total Return** | {portfolio_return_str}% | {benchmark_return_str}% | {alpha_str}% |\n"
+    dashboard += f"| **Alpha** | {alpha_str}% | - | {alpha_status} |\n"
+    dashboard += f"| **Beta** | {beta_str} | 1.0 | {beta_status} |\n"
+    dashboard += f"| **Data Status** | {data_status} | - | - |\n"
+    
+    dashboard += """
 ---
 
 ## 🤖 System Status & Automation
@@ -489,13 +508,12 @@ def generate_dashboard() -> str:
     execution_count = automation_status.get('execution_count', 0)
     failures = automation_status.get('failures', 0)
     
-    dashboard += f"""| **Uptime** | {uptime_str}% |
-| **Reliability Streak** | {reliability_streak} executions |
-| **Last Execution** | {basic_metrics['last_execution']} |
-| **Days Since Execution** | {days_since_execution} days |
-| **Total Executions** | {execution_count} |
-| **Failures** | {failures} |
-"""
+    dashboard += f"| **Uptime** | {uptime_str}% |\n"
+    dashboard += f"| **Reliability Streak** | {reliability_streak} executions |\n"
+    dashboard += f"| **Last Execution** | {basic_metrics['last_execution']} |\n"
+    dashboard += f"| **Days Since Execution** | {days_since_execution} days |\n"
+    dashboard += f"| **Total Executions** | {execution_count} |\n"
+    dashboard += f"| **Failures** | {failures} |\n"
     
     health_checks_emoji = '✅'
     order_validation_emoji = '✅'
@@ -565,7 +583,8 @@ def generate_dashboard() -> str:
     dashboard += f"| **Rolling Sharpe (7d)** | {rolling_sharpe_7d_str} |\n"
     dashboard += f"| **Rolling Sharpe (30d)** | {rolling_sharpe_30d_str} |\n"
     dashboard += f"| **Rolling Max DD (30d)** | {rolling_max_dd_30d_str}% |\n"
-
+    
+    dashboard += """
 ---
 
 ## 🎯 Path to North Star
@@ -607,15 +626,31 @@ def generate_dashboard() -> str:
 
 | Metric | Value |
 |--------|-------|
-| **AI Enabled** | {'✅ Yes' if ai_kpis.get('ai_enabled', False) else '❌ No'} |
-| **AI Trades** | {ai_kpis.get('ai_trades_count', 0)} / {ai_kpis.get('total_trades', 0)} |
-| **AI Usage Rate** | {ai_kpis.get('ai_usage_rate', 0):.1f}% |
-| **Prediction Accuracy** | {ai_kpis.get('prediction_accuracy', 0):.1f}% |
-| **Prediction Latency** | {ai_kpis.get('prediction_latency_ms', 0):.0f} ms |
-| **Daily AI Costs** | ${ai_kpis.get('ai_costs_daily', 0):.2f} |
-| **Outlier Detection** | {'✅ Enabled' if ai_kpis.get('outlier_detection_enabled', False) else '❌ Disabled'} |
-| **Backtest vs Live** | {ai_kpis.get('backtest_vs_live_performance', 0):+.2f}% |
-
+"""
+    
+    # Extract AI KPI values
+    ai_enabled = ai_kpis.get('ai_enabled', False)
+    ai_enabled_status = '✅ Yes' if ai_enabled else '❌ No'
+    ai_trades_count = ai_kpis.get('ai_trades_count', 0)
+    total_trades = ai_kpis.get('total_trades', 0)
+    ai_usage_rate_str = f"{ai_kpis.get('ai_usage_rate', 0):.1f}"
+    prediction_accuracy_str = f"{ai_kpis.get('prediction_accuracy', 0):.1f}"
+    prediction_latency_str = f"{ai_kpis.get('prediction_latency_ms', 0):.0f}"
+    ai_costs_daily_str = f"{ai_kpis.get('ai_costs_daily', 0):.2f}"
+    outlier_detection_enabled = ai_kpis.get('outlier_detection_enabled', False)
+    outlier_status = '✅ Enabled' if outlier_detection_enabled else '❌ Disabled'
+    backtest_vs_live_str = f"{ai_kpis.get('backtest_vs_live_performance', 0):+.2f}"
+    
+    dashboard += f"| **AI Enabled** | {ai_enabled_status} |\n"
+    dashboard += f"| **AI Trades** | {ai_trades_count} / {total_trades} |\n"
+    dashboard += f"| **AI Usage Rate** | {ai_usage_rate_str}% |\n"
+    dashboard += f"| **Prediction Accuracy** | {prediction_accuracy_str}% |\n"
+    dashboard += f"| **Prediction Latency** | {prediction_latency_str} ms |\n"
+    dashboard += f"| **Daily AI Costs** | ${ai_costs_daily_str} |\n"
+    dashboard += f"| **Outlier Detection** | {outlier_status} |\n"
+    dashboard += f"| **Backtest vs Live** | {backtest_vs_live_str}% |\n"
+    
+    dashboard += """
 ---
 
 ## 📔 Trading Journal
@@ -624,10 +659,18 @@ def generate_dashboard() -> str:
 
 | Metric | Value |
 |--------|-------|
-| **Total Entries** | {journal.get('total_entries', 0)} |
-| **Entries with Notes** | {journal.get('entries_with_notes', 0)} |
-| **Notes Rate** | {journal.get('notes_rate', 0):.1f}% |
-
+"""
+    
+    # Extract journal values
+    total_entries = journal.get('total_entries', 0)
+    entries_with_notes = journal.get('entries_with_notes', 0)
+    notes_rate_str = f"{journal.get('notes_rate', 0):.1f}"
+    
+    dashboard += f"| **Total Entries** | {total_entries} |\n"
+    dashboard += f"| **Entries with Notes** | {entries_with_notes} |\n"
+    dashboard += f"| **Notes Rate** | {notes_rate_str}% |\n"
+    
+    dashboard += """
 ### Recent Journal Entries
 
 """
@@ -643,7 +686,7 @@ def generate_dashboard() -> str:
     else:
         dashboard += "*No journal entries available*\n"
     
-    dashboard += f"""
+    dashboard += """
 ---
 
 ## 🛡️ Risk Management & Compliance
@@ -652,22 +695,49 @@ def generate_dashboard() -> str:
 
 | Metric | Current | Limit | Status |
 |--------|---------|-------|--------|
-| **Capital Usage** | {compliance.get('capital_usage_pct', 0):.1f}% | {compliance.get('capital_limit_pct', 100):.1f}% | {'✅ Compliant' if compliance.get('capital_compliant', True) else '⚠️ Over Limit'} |
-| **Max Position Size** | {compliance.get('max_position_size_pct', 0):.2f}% | {compliance.get('max_position_limit_pct', 10):.1f}% | {'✅ Compliant' if compliance.get('position_size_compliant', True) else '⚠️ Over Limit'} |
-
+"""
+    
+    # Extract compliance values
+    capital_usage_pct_str = f"{compliance.get('capital_usage_pct', 0):.1f}"
+    capital_limit_pct_str = f"{compliance.get('capital_limit_pct', 100):.1f}"
+    capital_compliant = compliance.get('capital_compliant', True)
+    capital_status = '✅ Compliant' if capital_compliant else '⚠️ Over Limit'
+    max_position_size_pct_str = f"{compliance.get('max_position_size_pct', 0):.2f}"
+    max_position_limit_pct_str = f"{compliance.get('max_position_limit_pct', 10):.1f}"
+    position_size_compliant = compliance.get('position_size_compliant', True)
+    position_status_compliance = '✅ Compliant' if position_size_compliant else '⚠️ Over Limit'
+    
+    dashboard += f"| **Capital Usage** | {capital_usage_pct_str}% | {capital_limit_pct_str}% | {capital_status} |\n"
+    dashboard += f"| **Max Position Size** | {max_position_size_pct_str}% | {max_position_limit_pct_str}% | {position_status_compliance} |\n"
+    
+    dashboard += """
 ### Stop-Loss Adherence
 
 | Metric | Value |
 |--------|-------|
-| **Trades with Stop-Loss** | {compliance.get('trades_with_stop_loss', 0)} |
-| **Stop-Loss Adherence** | {compliance.get('stop_loss_adherence_pct', 0):.1f}% |
-
+"""
+    
+    # Extract stop-loss adherence
+    trades_with_stop_loss = compliance.get('trades_with_stop_loss', 0)
+    stop_loss_adherence_pct_str = f"{compliance.get('stop_loss_adherence_pct', 0):.1f}"
+    
+    dashboard += f"| **Trades with Stop-Loss** | {trades_with_stop_loss} |\n"
+    dashboard += f"| **Stop-Loss Adherence** | {stop_loss_adherence_pct_str}% |\n"
+    
+    dashboard += """
 ### Audit Trail & Compliance
 
 | Metric | Value |
 |--------|-------|
-| **Audit Trail Entries** | {compliance.get('audit_trail_count', 0)} |
-| **Audit Trail Available** | {'✅ Yes' if compliance.get('audit_trail_available', False) else '❌ No'} |
+"""
+    
+    # Extract audit trail values
+    audit_trail_count = compliance.get('audit_trail_count', 0)
+    audit_trail_available = compliance.get('audit_trail_available', False)
+    audit_trail_status = '✅ Yes' if audit_trail_available else '❌ No'
+    
+    dashboard += f"| **Audit Trail Entries** | {audit_trail_count} |\n"
+    dashboard += f"| **Audit Trail Available** | {audit_trail_status} |\n"
 
 ---
 
@@ -697,13 +767,14 @@ def generate_dashboard() -> str:
     alpha_val = benchmark.get('alpha', 0)
     alpha_val_str = f"{alpha_val:+.2f}"
     
-    dashboard += f"""- Win Rate: {win_rate_str}% (Target: >55%) {win_rate_status}
-- Average Daily: ${avg_daily_profit_str} (Target: $100/day)
-- System Reliability: {reliability_status}
-- Sharpe Ratio: {sharpe_ratio_str} (Target: >1.0) {sharpe_status}
-- Market Regime: {regime_name} ({confidence_str} confidence)
-- Benchmark Alpha: {alpha_val_str}% vs S&P 500
-
+    dashboard += f"- Win Rate: {win_rate_str}% (Target: >55%) {win_rate_status}\n"
+    dashboard += f"- Average Daily: ${avg_daily_profit_str} (Target: $100/day)\n"
+    dashboard += f"- System Reliability: {reliability_status}\n"
+    dashboard += f"- Sharpe Ratio: {sharpe_ratio_str} (Target: >1.0) {sharpe_status}\n"
+    dashboard += f"- Market Regime: {regime_name} ({confidence_str} confidence)\n"
+    dashboard += f"- Benchmark Alpha: {alpha_val_str}% vs S&P 500\n"
+    
+    dashboard += """
 ---
 
 ## 📥 Data Export
@@ -728,7 +799,6 @@ def generate_dashboard() -> str:
 
 *This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
 *World-class metrics powered by comprehensive risk & performance analytics.*
-
 """
 
     return dashboard
