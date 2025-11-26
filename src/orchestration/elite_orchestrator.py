@@ -123,6 +123,20 @@ class EliteOrchestrator:
         # Register agent blueprints
         agent_blueprints.register_trading_agent_blueprints()
         
+        # Agent0 Co-Evolution System (optional)
+        self.agent0_enabled = os.getenv("AGENT0_ENABLED", "false").lower() == "true"
+        self.coevolution_engine = None
+        if self.agent0_enabled:
+            try:
+                from src.agent_framework.coevolution_engine import CoEvolutionEngine
+                self.coevolution_engine = CoEvolutionEngine(
+                    storage_dir=self.context_dir / "coevolution"
+                )
+                logger.info("✅ Agent0 Co-Evolution Engine initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Agent0 Co-Evolution Engine unavailable: {e}")
+                self.coevolution_engine = None
+        
         self._initialize_agents()
         
         logger.info("✅ Elite Orchestrator initialized")
@@ -209,8 +223,8 @@ class EliteOrchestrator:
         except Exception as e:
             logger.warning(f"⚠️ BogleHeads Agent unavailable: {e}")
             self.bogleheads_agent = None
-            
-        logger.info("✅ Elite Orchestrator Agents Initialized (Claude, Langchain, Gemini, MCP, ML, Gamma, BogleHeads)")
+        
+        logger.info("✅ Elite Orchestrator Agents Initialized (Claude, Langchain, Gemini, MCP, ML, Gamma, BogleHeads, Agent0)")
     
     def create_trade_plan(self, symbols: List[str], context: Optional[Dict[str, Any]] = None) -> TradePlan:
         """
@@ -789,11 +803,34 @@ class EliteOrchestrator:
         logger.info("ELITE TRADING CYCLE STARTING")
         logger.info("=" * 80)
         
+        # Optional: Run Agent0 co-evolution cycle before trading
+        agent0_result = None
+        if self.coevolution_engine:
+            try:
+                logger.info("🔄 Running Agent0 co-evolution cycle...")
+                from src.agent_framework.context import RunContext, RunMode
+                evolution_context = RunContext(
+                    mode=RunMode.PAPER if self.paper else RunMode.LIVE
+                )
+                agent0_result = self.coevolution_engine.evolve(evolution_context)
+                if agent0_result.get("status") == "success":
+                    logger.info(
+                        f"✅ Agent0 evolution cycle completed: "
+                        f"iteration={agent0_result.get('iteration')}, "
+                        f"success_rate={agent0_result.get('metrics', {}).get('success_rate', 0):.2%}"
+                    )
+            except Exception as e:
+                logger.warning(f"Agent0 evolution cycle failed: {e}")
+        
         # Step 1: Create plan
         plan = self.create_trade_plan(symbols)
         
         # Step 2: Execute plan
         results = self.execute_plan(plan)
+        
+        # Add Agent0 result if available
+        if agent0_result:
+            results["agent0_evolution"] = agent0_result
         
         logger.info("=" * 80)
         logger.info("ELITE TRADING CYCLE COMPLETE")
