@@ -279,7 +279,8 @@ def generate_world_class_dashboard() -> str:
 | **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) | TBD | {'✅' if total_pl > 0 else '⚠️'} |
 | **Win Rate** | {win_rate:.1f}% | >55% | {'✅' if win_rate >= 55 else '⚠️'} |
 
-**Progress Bar**: `{north_star_bar}` ({display_progress_pct:.2f}%)
+**Progress Toward $100/Day Goal**: `{north_star_bar}` ({display_progress_pct:.2f}%)  
+*This shows how close your average daily profit is to the $100/day target*
 
 ---
 
@@ -372,6 +373,9 @@ def generate_world_class_dashboard() -> str:
 ## 📊 90-Day R&D Challenge Progress
 
 **Current**: Day {current_day} of {total_days} ({current_day/total_days*100:.1f}% complete)
+
+**Timeline Progress**: `{'█' * int((current_day/total_days*100)/5) + '░' * (20 - int((current_day/total_days*100)/5))}` ({current_day/total_days*100:.1f}%)  
+*This shows how far through the 90-day R&D challenge timeline you are*
 
 ---
 
