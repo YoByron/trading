@@ -877,6 +877,171 @@ def generate_dashboard() -> str:
     dashboard += f"- Market Regime: {regime_name} ({confidence_str} confidence)\n"
     dashboard += f"- Benchmark Alpha: {alpha_val_str}% vs S&P 500\n"
     
+    # Add System Health & Automation Status section
+    dashboard += """
+---
+
+## 🏥 System Health & Automation
+
+### Automation Status
+"""
+    
+    automation_status = basic_metrics.get('automation_status', 'UNKNOWN')
+    automation_emoji = '✅' if automation_status == 'OPERATIONAL' else '⚠️' if automation_status == 'DEGRADED' else '❌'
+    
+    dashboard += f"| **Status** | {automation_emoji} {automation_status} |\n"
+    dashboard += f"| **Last Trade Execution** | {basic_metrics.get('last_trade_time', 'Never')} |\n"
+    dashboard += f"| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |\n"
+    
+    # Check GitHub Actions status
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["gh", "run", "list", "--workflow=daily-trading.yml", "--limit", "1", "--json", "conclusion,createdAt"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            import json
+            runs = json.loads(result.stdout)
+            if runs:
+                last_run = runs[0]
+                conclusion = last_run.get("conclusion", "unknown")
+                created_at = last_run.get("createdAt", "")
+                status_emoji = '✅' if conclusion == 'success' else '❌' if conclusion == 'failure' else '⚠️'
+                dashboard += f"| **GitHub Actions** | {status_emoji} {conclusion.title()} ({created_at[:10] if created_at else 'Unknown'}) |\n"
+    except Exception:
+        pass
+    
+    dashboard += """
+### Infrastructure Health
+"""
+    
+    # Check launchd daemons
+    try:
+        result = subprocess.run(
+            ["launchctl", "list"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            daemons = {
+                "Training Monitor": "com.trading.training_monitor" in result.stdout,
+                "Continuous Training": "com.trading.continuous_training" in result.stdout,
+                "Trading Backup": "com.trading.autonomous.backup" in result.stdout
+            }
+            for name, running in daemons.items():
+                status = '✅ Active' if running else '❌ Inactive'
+                dashboard += f"| **{name}** | {status} |\n"
+    except Exception:
+        pass
+    
+    dashboard += """
+---
+
+## 🤖 AI & ML System Status
+
+### RL Training Status
+"""
+    
+    # Load training status
+    training_status_file = DATA_DIR / "training_status.json"
+    if training_status_file.exists():
+        try:
+            training_status = load_json_file(training_status_file)
+            cloud_jobs = training_status.get("cloud_jobs", {})
+            last_training = training_status.get("last_training", {})
+            
+            active_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["submitted", "running", "in_progress"])
+            completed_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["completed", "success"])
+            
+            dashboard += f"| **Cloud RL Jobs** | {len(cloud_jobs)} total ({active_jobs} active, {completed_jobs} completed) |\n"
+            dashboard += f"| **Last Training** | {len(last_training)} symbols trained |\n"
+            
+            # Show recent training times
+            if last_training:
+                recent_symbols = list(last_training.items())[:5]
+                dashboard += f"| **Recent Training** | {', '.join([f'{s}' for s, _ in recent_symbols])} |\n"
+        except Exception:
+            dashboard += "| **Status** | ⚠️ Unable to load training status |\n"
+    else:
+        dashboard += "| **Status** | ⚠️ No training data available |\n"
+    
+    dashboard += """
+### LangSmith Monitoring
+"""
+    
+    # Check LangSmith status
+    try:
+        sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"))
+        from langsmith_monitor import LangSmithMonitor
+        
+        monitor = LangSmithMonitor()
+        health = monitor.monitor_health()
+        
+        if health.get("success"):
+            stats = monitor.get_project_stats("trading-rl-training", days=7)
+            if stats.get("success"):
+                dashboard += f"| **Status** | ✅ Healthy |\n"
+                dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
+                dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
+                dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
+                dashboard += f"| **Dashboard** | [View LangSmith →](https://smith.langchain.com) |\n"
+            else:
+                dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
+        else:
+            dashboard += f"| **Status** | ⚠️ {health.get('error', 'Unknown error')} |\n"
+    except Exception:
+        dashboard += "| **Status** | ⚠️ LangSmith monitor unavailable |\n"
+    
+    dashboard += """
+---
+
+## 📊 Recent Activity & Trends
+
+### Last 7 Days Summary
+"""
+    
+    # Load performance log for trends
+    perf_log = load_json_file(DATA_DIR / "performance_log.json")
+    if isinstance(perf_log, list) and len(perf_log) >= 7:
+        recent_perf = perf_log[-7:]
+        total_recent_pl = sum(p.get('pl', 0) for p in recent_perf)
+        avg_recent_daily = total_recent_pl / len(recent_perf) if recent_perf else 0
+        
+        dashboard += f"| **Total P/L** | ${total_recent_pl:+,.2f} |\n"
+        dashboard += f"| **Avg Daily** | ${avg_recent_daily:+,.2f} |\n"
+        dashboard += f"| **Trend** | {'📈 Improving' if avg_recent_daily > basic_metrics['avg_daily_profit'] else '📉 Declining' if avg_recent_daily < basic_metrics['avg_daily_profit'] else '➡️ Stable'} |\n"
+    else:
+        dashboard += "| **Data** | ⚠️ Insufficient data for trend analysis |\n"
+    
+    dashboard += """
+### Key Insights
+"""
+    
+    # Generate insights based on current metrics
+    insights = []
+    
+    if basic_metrics['win_rate'] == 0:
+        insights.append("⚠️ **No closed trades yet** - System is collecting data")
+    
+    if basic_metrics['total_pl'] > 0:
+        insights.append(f"✅ **Profitable** - ${basic_metrics['total_pl']:+,.2f} total P/L")
+    
+    if risk.get('sharpe_ratio', 0) < 0:
+        insights.append("⚠️ **Negative Sharpe** - Risk-adjusted returns need improvement")
+    
+    if basic_metrics['automation_status'] == 'OPERATIONAL':
+        insights.append("✅ **Automation Active** - System running smoothly")
+    
+    if not insights:
+        insights.append("📊 **System Monitoring** - Collecting baseline metrics")
+    
+    for insight in insights[:5]:  # Show top 5 insights
+        dashboard += f"- {insight}\n"
+    
     dashboard += """
 ---
 
