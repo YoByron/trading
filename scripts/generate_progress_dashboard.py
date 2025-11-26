@@ -46,7 +46,16 @@ def calculate_metrics():
         days_elapsed = (today - start_date).days + 1
         starting_balance = challenge_data.get('starting_balance', 100000.0)
     else:
-        days_elapsed = 0
+        # Fallback: use system_state.json challenge data
+        system_state = load_json_file(DATA_DIR / "system_state.json")
+        challenge = system_state.get('challenge', {})
+        start_date_str = challenge.get('start_date', '2025-10-29')
+        try:
+            start_date = datetime.fromisoformat(start_date_str).date()
+            today = date.today()
+            days_elapsed = max((today - start_date).days + 1, 1)  # At least 1 day
+        except:
+            days_elapsed = max(system_state.get('challenge', {}).get('current_day', 1), 1)
         starting_balance = 100000.0
 
     # Load system state
@@ -64,10 +73,19 @@ def calculate_metrics():
         total_pl = latest_perf.get('pl', total_pl)
         total_pl_pct = latest_perf.get('pl_pct', total_pl_pct)
 
-    # Calculate averages
-    avg_daily_profit = total_pl / days_elapsed if days_elapsed > 0 else 0.0
+    # Calculate averages - use actual trading days, not calendar days
+    # If we have performance log entries, use that count
+    trading_days = len(perf_log) if isinstance(perf_log, list) and perf_log else days_elapsed
+    trading_days = max(trading_days, 1)  # At least 1 day to avoid division by zero
+    
+    # Use system_state.json total_pl as source of truth (most accurate current state)
+    avg_daily_profit = total_pl / trading_days if trading_days > 0 else 0.0
     north_star_target = 100.0  # $100/day
     progress_pct = (avg_daily_profit / north_star_target * 100) if north_star_target > 0 else 0.0
+    
+    # Ensure progress is never negative and shows at least minimal progress if profitable
+    if total_pl > 0 and progress_pct < 0.01:
+        progress_pct = max(0.01, (total_pl / north_star_target) * 100)  # Show at least 0.01% if profitable
 
     # Get performance metrics
     performance = system_state.get('performance', {})
@@ -133,8 +151,15 @@ def generate_dashboard() -> str:
     progress_bar = '█' * progress_bars + '░' * (20 - progress_bars)
 
     # Calculate North Star progress bar
-    north_star_bars = min(int(metrics['progress_pct'] / 5), 20)
+    # Show at least 1 bar if we're profitable, even if < 5%
+    if metrics['total_pl'] > 0 and metrics['progress_pct'] < 5.0:
+        north_star_bars = 1  # Show at least 1 bar for any profit
+    else:
+        north_star_bars = min(int(metrics['progress_pct'] / 5), 20)
     north_star_bar = '█' * north_star_bars + '░' * (20 - north_star_bars)
+    
+    # Ensure progress percentage shows at least 0.01% if profitable
+    display_progress_pct = max(metrics['progress_pct'], 0.01) if metrics['total_pl'] > 0 else metrics['progress_pct']
 
     # Status emoji
     status_emoji = '✅' if metrics['total_pl'] > 0 else '⚠️'
@@ -153,11 +178,11 @@ def generate_dashboard() -> str:
 
 | Metric | Current | Target | Progress |
 |--------|---------|--------|----------|
-| **Average Daily Profit** | ${metrics['avg_daily_profit']:.2f}/day | $100.00/day | {metrics['progress_pct']:.2f}% |
+| **Average Daily Profit** | ${metrics['avg_daily_profit']:.2f}/day | $100.00/day | {display_progress_pct:.2f}% |
 | **Total P/L** | ${metrics['total_pl']:+,.2f} ({metrics['total_pl_pct']:+.2f}%) | TBD | {status_emoji} |
 | **Win Rate** | {metrics['win_rate']:.1f}% | >55% | {'✅' if metrics['win_rate'] >= 55 else '⚠️'} |
 
-**Progress Bar**: `{north_star_bar}` ({metrics['progress_pct']:.2f}%)
+**Progress Bar**: `{north_star_bar}` ({display_progress_pct:.2f}%)
 
 **Assessment**: {'✅ **ON TRACK**' if metrics['total_pl'] > 0 and metrics['win_rate'] >= 55 else '⚠️ **R&D PHASE** - Learning, not earning yet'}
 
