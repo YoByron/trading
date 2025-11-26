@@ -1,12 +1,23 @@
 """
 Agent framework scaffolding for the multi-agent trading system.
 
-Exports base interfaces, run context dataclasses, and state provider helpers.
+Exports base interfaces, run context dataclasses, state provider helpers,
+and context engineering components.
 """
 
 from .base import TradingAgent, AgentResult
 from .context import RunContext, RunMode, AgentConfig
 from .state import StateProvider, FileStateProvider
+from .context_engine import (
+    ContextEngine,
+    SemanticBlueprint,
+    ContextMessage,
+    ContextMemory,
+    ContextType,
+    ContextPriority,
+    get_context_engine
+)
+from . import agent_blueprints
 
 __all__ = [
     "TradingAgent",
@@ -16,5 +27,13 @@ __all__ = [
     "AgentConfig",
     "StateProvider",
     "FileStateProvider",
+    "ContextEngine",
+    "SemanticBlueprint",
+    "ContextMessage",
+    "ContextMemory",
+    "ContextType",
+    "ContextPriority",
+    "get_context_engine",
+    "agent_blueprints",
 ]
 

@@ -10,6 +10,7 @@ loading every tool definition into the prompt context.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -22,6 +23,11 @@ from src.agents.meta_agent import MetaAgent
 from src.agents.research_agent import ResearchAgent
 from src.agents.risk_agent import RiskAgent
 from src.agents.signal_agent import SignalAgent
+from src.agent_framework.context_engine import (
+    get_context_engine,
+    ContextType,
+    ContextMessage
+)
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +142,9 @@ class MCPTradingOrchestrator:
         self.meta_agent.register_agent(self.signal_agent)
         self.meta_agent.register_agent(self.risk_agent)
         self.meta_agent.register_agent(self.execution_agent)
+        
+        # Initialize Context Engine for structured context management
+        self.context_engine = get_context_engine()
 
     def run_once(self, *, execute_orders: bool = False) -> Dict[str, Any]:
         """
@@ -200,12 +209,28 @@ class MCPTradingOrchestrator:
             }
 
             try:
+                # Get context for research agent
+                research_context = self.context_engine.get_agent_context("research_agent")
+                
                 sentiment = openrouter_tools.detailed_sentiment(
                     market_payload, market_payload["news"]
                 )
                 result.sentiment = sentiment
                 sentiment_score = sentiment.get("score", 0.0)
                 market_payload["sentiment"] = sentiment_score
+                
+                # Store sentiment in context memory
+                self.context_engine.store_memory(
+                    agent_id="research_agent",
+                    content={
+                        "symbol": symbol,
+                        "sentiment": sentiment,
+                        "sentiment_score": sentiment_score,
+                        "timestamp": datetime.now().isoformat()
+                    },
+                    tags={symbol, "sentiment", "research"}
+                )
+                
                 logger.info(
                     f"{symbol}: OpenRouter LLM sentiment analysis complete "
                     f"(score={sentiment_score:.3f})"
@@ -219,8 +244,33 @@ class MCPTradingOrchestrator:
                 market_payload["sentiment"] = 0.0
 
             try:
+                # Validate context flow before meta-agent analysis
+                is_valid, errors = self.context_engine.validate_context_flow(
+                    from_agent="research_agent",
+                    to_agent="meta_agent",
+                    context=market_payload
+                )
+                if not is_valid:
+                    logger.warning(f"Context validation warnings for {symbol}: {errors}")
+                
+                # Get context for meta agent
+                meta_context = self.context_engine.get_agent_context("meta_agent")
+                
                 meta_decision = self.meta_agent.analyze(market_payload)
                 result.meta_decision = meta_decision
+                
+                # Send context message from research to meta agent
+                self.context_engine.send_context_message(
+                    sender="research_agent",
+                    receiver="meta_agent",
+                    payload={
+                        "symbol": symbol,
+                        "market_payload": market_payload,
+                        "sentiment": sentiment_score
+                    },
+                    context_type=ContextType.TASK_CONTEXT,
+                    metadata={"symbol": symbol}
+                )
             except Exception as exc:  # noqa: BLE001
                 error_msg = f"Meta-agent analysis failed: {exc}"
                 logger.error(error_msg)
