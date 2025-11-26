@@ -25,6 +25,10 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import traceback
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
