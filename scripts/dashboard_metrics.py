@@ -7,6 +7,11 @@ Calculates comprehensive metrics for AI trading dashboard including:
 - Strategy & Model Diagnostics (per-strategy performance, signal quality)
 - Time-Series & Cohort Analytics (equity curve, rolling metrics)
 - Operational Guardrails & Safety (risk limits, auditability)
+- Market Regime Detection & Benchmarking (S&P 500 comparison)
+- AI-Specific KPIs (model accuracy, latency, costs, outlier detection)
+- Automation Status & Uptime Tracking
+- Trading Journal Integration
+- Risk Management & Compliance Metrics
 
 This module provides the foundation for a professional quant dashboard.
 """
@@ -22,6 +27,12 @@ import statistics
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
 
 DATA_DIR = Path("data")
 
@@ -96,6 +107,12 @@ class TradingMetricsCalculator:
             ),
             'time_series': self._calculate_time_series_metrics(perf_log),
             'signal_quality': self._calculate_signal_quality(all_trades, closed_trades),
+            'market_regime': self._calculate_market_regime(perf_log),
+            'benchmark_comparison': self._calculate_benchmark_comparison(perf_log, starting_balance),
+            'ai_kpis': self._calculate_ai_kpis(system_state, all_trades),
+            'automation_status': self._calculate_automation_status(system_state, perf_log),
+            'trading_journal': self._calculate_journal_summary(),
+            'compliance': self._calculate_compliance_metrics(system_state, perf_log, all_trades),
         }
         
         return metrics
@@ -276,6 +293,12 @@ class TradingMetricsCalculator:
         largest_win = max([t.get('pl', 0) for t in closed_trades], default=0.0)
         largest_loss = min([t.get('pl', 0) for t in closed_trades], default=0.0)
         
+        # Win/Loss Ratio
+        win_loss_ratio = (len(winning_trades) / len(losing_trades)) if losing_trades else 0.0
+        
+        # Average Win/Loss Ratio (R-multiple)
+        avg_win_loss_ratio = (avg_win / avg_loss) if avg_loss > 0 else 0.0
+
         return {
             'profit_factor': profit_factor,
             'expectancy_per_trade': expectancy_per_trade,
@@ -285,6 +308,8 @@ class TradingMetricsCalculator:
             'largest_win': largest_win,
             'largest_loss': largest_loss,
             'win_rate': win_rate,
+            'win_loss_ratio': win_loss_ratio,
+            'avg_win_loss_ratio': avg_win_loss_ratio,
             'total_trades': total_trades,
             'winning_trades': len(winning_trades),
             'losing_trades': len(losing_trades),
@@ -469,6 +494,318 @@ class TradingMetricsCalculator:
             'avg_return_1d': 0.0,
             'avg_return_5d': 0.0,
             'avg_return_20d': 0.0,
+        }
+    
+    def _calculate_market_regime(self, perf_log: List[Dict]) -> Dict[str, Any]:
+        """Detect market regime (bull/bear/sideways) based on recent performance."""
+        if not perf_log or len(perf_log) < 10:
+            return {
+                'regime': 'UNKNOWN',
+                'confidence': 0.0,
+                'trend_strength': 0.0,
+                'volatility_regime': 'NORMAL',
+            }
+        
+        # Get last 20 days of returns
+        recent_equity = [e.get('equity', 0) for e in perf_log[-20:]]
+        if len(recent_equity) < 2:
+            return {
+                'regime': 'UNKNOWN',
+                'confidence': 0.0,
+                'trend_strength': 0.0,
+                'volatility_regime': 'NORMAL',
+            }
+        
+        # Calculate returns
+        returns = []
+        for i in range(1, len(recent_equity)):
+            if recent_equity[i-1] > 0:
+                ret = (recent_equity[i] - recent_equity[i-1]) / recent_equity[i-1]
+                returns.append(ret)
+        
+        if not returns:
+            return {
+                'regime': 'UNKNOWN',
+                'confidence': 0.0,
+                'trend_strength': 0.0,
+                'volatility_regime': 'NORMAL',
+            }
+        
+        # Calculate trend
+        avg_return = np.mean(returns)
+        std_return = np.std(returns) if len(returns) > 1 else 0.0
+        
+        # Determine regime
+        if avg_return > 0.001:  # >0.1% average daily return
+            regime = 'BULL'
+        elif avg_return < -0.001:  # <-0.1% average daily return
+            regime = 'BEAR'
+        else:
+            regime = 'SIDEWAYS'
+        
+        # Trend strength (0-1)
+        trend_strength = min(abs(avg_return) / 0.01, 1.0) if std_return > 0 else 0.0
+        
+        # Volatility regime
+        if std_return > 0.02:  # >2% daily volatility
+            vol_regime = 'HIGH'
+        elif std_return < 0.005:  # <0.5% daily volatility
+            vol_regime = 'LOW'
+        else:
+            vol_regime = 'NORMAL'
+        
+        # Confidence based on consistency
+        positive_days = sum(1 for r in returns if r > 0)
+        confidence = abs(positive_days / len(returns) - 0.5) * 2  # 0-1 scale
+        
+        return {
+            'regime': regime,
+            'confidence': confidence,
+            'trend_strength': trend_strength,
+            'volatility_regime': vol_regime,
+            'avg_daily_return': avg_return * 100,
+            'volatility': std_return * 100,
+        }
+    
+    def _calculate_benchmark_comparison(
+        self, perf_log: List[Dict], starting_balance: float
+    ) -> Dict[str, Any]:
+        """Compare portfolio performance to S&P 500 benchmark."""
+        if not perf_log or len(perf_log) < 2:
+            return {
+                'benchmark_symbol': 'SPY',
+                'portfolio_return': 0.0,
+                'benchmark_return': 0.0,
+                'alpha': 0.0,
+                'beta': 0.0,
+                'outperformance': 0.0,
+                'data_available': False,
+            }
+        
+        # Calculate portfolio returns
+        portfolio_returns = []
+        for i in range(1, len(perf_log)):
+            equity_prev = perf_log[i-1].get('equity', starting_balance)
+            equity_curr = perf_log[i].get('equity', starting_balance)
+            if equity_prev > 0:
+                ret = (equity_curr - equity_prev) / equity_prev
+                portfolio_returns.append(ret)
+        
+        if not portfolio_returns:
+            return {
+                'benchmark_symbol': 'SPY',
+                'portfolio_return': 0.0,
+                'benchmark_return': 0.0,
+                'alpha': 0.0,
+                'beta': 0.0,
+                'outperformance': 0.0,
+                'data_available': False,
+            }
+        
+        # Get dates for benchmark comparison
+        start_date = perf_log[0].get('date', '')
+        end_date = perf_log[-1].get('date', '')
+        
+        # Try to fetch SPY data
+        benchmark_returns = []
+        try:
+            if YFINANCE_AVAILABLE and start_date and end_date:
+                spy = yf.Ticker("SPY")
+                hist = spy.history(start=start_date, end=end_date)
+                if not hist.empty:
+                    spy_returns = hist['Close'].pct_change().dropna().tolist()
+                    # Align with portfolio returns (take last N days)
+                    benchmark_returns = spy_returns[-len(portfolio_returns):]
+        except Exception:
+            pass  # Benchmark data unavailable
+        
+        if not benchmark_returns or len(benchmark_returns) != len(portfolio_returns):
+            # Calculate simple comparison
+            portfolio_total_return = (perf_log[-1].get('equity', starting_balance) - starting_balance) / starting_balance * 100
+            return {
+                'benchmark_symbol': 'SPY',
+                'portfolio_return': portfolio_total_return,
+                'benchmark_return': 0.0,
+                'alpha': 0.0,
+                'beta': 0.0,
+                'outperformance': 0.0,
+                'data_available': False,
+            }
+        
+        # Calculate metrics
+        portfolio_total = sum(portfolio_returns) * 100
+        benchmark_total = sum(benchmark_returns) * 100
+        alpha = portfolio_total - benchmark_total
+        
+        # Beta calculation (simplified)
+        if len(portfolio_returns) > 1 and np.std(benchmark_returns) > 0:
+            covariance = np.cov(portfolio_returns, benchmark_returns)[0][1]
+            benchmark_variance = np.var(benchmark_returns)
+            beta = covariance / benchmark_variance if benchmark_variance > 0 else 1.0
+        else:
+            beta = 1.0
+        
+        return {
+            'benchmark_symbol': 'SPY',
+            'portfolio_return': portfolio_total,
+            'benchmark_return': benchmark_total,
+            'alpha': alpha,
+            'beta': beta,
+            'outperformance': alpha,
+            'data_available': True,
+        }
+    
+    def _calculate_ai_kpis(self, system_state: Dict, all_trades: List[Dict]) -> Dict[str, Any]:
+        """Calculate AI-specific KPIs."""
+        # Check if AI/LLM features are enabled
+        automation = system_state.get('automation', {})
+        video_analysis = system_state.get('video_analysis', {})
+        
+        # Estimate AI costs (if LLM features enabled)
+        ai_enabled = video_analysis.get('enabled', False)
+        
+        # Calculate prediction accuracy (if we have signal data)
+        # This is a placeholder - would need actual prediction vs outcome data
+        prediction_accuracy = 0.0
+        prediction_latency = 0.0
+        ai_costs_daily = 0.0
+        
+        # Count trades that used AI signals
+        ai_trades = 0
+        for trade in all_trades:
+            if trade.get('signal_source') == 'ai' or trade.get('llm_analysis'):
+                ai_trades += 1
+        
+        return {
+            'ai_enabled': ai_enabled,
+            'prediction_accuracy': prediction_accuracy,
+            'prediction_latency_ms': prediction_latency,
+            'ai_costs_daily': ai_costs_daily,
+            'ai_trades_count': ai_trades,
+            'total_trades': len(all_trades),
+            'ai_usage_rate': (ai_trades / len(all_trades) * 100) if all_trades else 0.0,
+            'outlier_detection_enabled': False,  # Placeholder
+            'backtest_vs_live_performance': 0.0,  # Placeholder
+        }
+    
+    def _calculate_automation_status(
+        self, system_state: Dict, perf_log: List[Dict]
+    ) -> Dict[str, Any]:
+        """Calculate automation uptime and reliability metrics."""
+        automation = system_state.get('automation', {})
+        
+        # Calculate uptime
+        workflow_status = automation.get('workflow_status', 'UNKNOWN')
+        last_execution = automation.get('last_successful_execution', 'Never')
+        execution_count = automation.get('execution_count', 0)
+        failures = automation.get('failures', 0)
+        
+        # Calculate uptime percentage
+        if execution_count + failures > 0:
+            uptime_pct = (execution_count / (execution_count + failures)) * 100
+        else:
+            uptime_pct = 100.0 if workflow_status == 'OPERATIONAL' else 0.0
+        
+        # Calculate days since last execution
+        days_since_execution = 0
+        if last_execution != 'Never':
+            try:
+                last_dt = datetime.fromisoformat(last_execution.replace('Z', '+00:00'))
+                days_since_execution = (datetime.now() - last_dt.replace(tzinfo=None)).days
+            except:
+                pass
+        
+        # Calculate reliability streak
+        reliability_streak = execution_count if failures == 0 else 0
+        
+        return {
+            'workflow_status': workflow_status,
+            'uptime_percentage': uptime_pct,
+            'execution_count': execution_count,
+            'failures': failures,
+            'reliability_streak': reliability_streak,
+            'last_execution': last_execution,
+            'days_since_execution': days_since_execution,
+            'is_operational': workflow_status == 'OPERATIONAL',
+        }
+    
+    def _calculate_journal_summary(self) -> Dict[str, Any]:
+        """Calculate trading journal summary metrics."""
+        journal_dir = DATA_DIR / "journal"
+        if not journal_dir.exists():
+            return {
+                'total_entries': 0,
+                'entries_with_notes': 0,
+                'recent_entries': [],
+            }
+        
+        # Count journal entries
+        journal_files = list(journal_dir.glob("*.json"))
+        total_entries = len(journal_files)
+        
+        # Count entries with notes
+        entries_with_notes = 0
+        recent_entries = []
+        
+        for journal_file in sorted(journal_files, key=lambda x: x.stat().st_mtime, reverse=True)[:5]:
+            try:
+                with open(journal_file, 'r') as f:
+                    entry = json.load(f)
+                    if entry.get('notes'):
+                        entries_with_notes += 1
+                    recent_entries.append({
+                        'trade_id': entry.get('trade_id', ''),
+                        'symbol': entry.get('symbol', ''),
+                        'date': entry.get('entry', {}).get('timestamp', ''),
+                        'has_notes': bool(entry.get('notes')),
+                    })
+            except:
+                pass
+        
+        return {
+            'total_entries': total_entries,
+            'entries_with_notes': entries_with_notes,
+            'notes_rate': (entries_with_notes / total_entries * 100) if total_entries > 0 else 0.0,
+            'recent_entries': recent_entries[:5],
+        }
+    
+    def _calculate_compliance_metrics(
+        self, system_state: Dict, perf_log: List[Dict], all_trades: List[Dict]
+    ) -> Dict[str, Any]:
+        """Calculate risk management and compliance metrics."""
+        account = system_state.get('account', {})
+        current_equity = account.get('current_equity', 100000.0)
+        starting_balance = account.get('starting_balance', 100000.0)
+        
+        # Capital usage
+        total_invested = sum(t.get('amount', 0) for t in all_trades)
+        capital_usage_pct = (total_invested / starting_balance * 100) if starting_balance > 0 else 0.0
+        
+        # Stop-loss adherence (check if trades have stop-losses)
+        trades_with_stop_loss = sum(1 for t in all_trades if t.get('stop_loss'))
+        stop_loss_adherence = (trades_with_stop_loss / len(all_trades) * 100) if all_trades else 0.0
+        
+        # Position size compliance
+        max_position_size = max((t.get('amount', 0) / current_equity * 100) for t in all_trades) if all_trades else 0.0
+        max_position_limit = 10.0  # 10% limit
+        position_size_compliant = max_position_size <= max_position_limit
+        
+        # Audit trail availability
+        audit_trail_dir = DATA_DIR / "audit_trail"
+        audit_files = list(audit_trail_dir.glob("*.json")) if audit_trail_dir.exists() else []
+        audit_trail_count = len(audit_files)
+        
+        return {
+            'capital_usage_pct': capital_usage_pct,
+            'capital_limit_pct': 100.0,
+            'capital_compliant': capital_usage_pct <= 100.0,
+            'stop_loss_adherence_pct': stop_loss_adherence,
+            'trades_with_stop_loss': trades_with_stop_loss,
+            'position_size_compliant': position_size_compliant,
+            'max_position_size_pct': max_position_size,
+            'max_position_limit_pct': max_position_limit,
+            'audit_trail_count': audit_trail_count,
+            'audit_trail_available': audit_trail_count > 0,
         }
 
 
