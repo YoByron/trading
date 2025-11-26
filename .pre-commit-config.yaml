@@ -34,6 +34,14 @@ repos:
         args: ['--baseline', '.secrets.baseline']
         pass_filenames: true
 
+      - id: bandit
+        name: Bandit Security Scanner
+        entry: bandit
+        language: system
+        types: [python]
+        args: ['-r', '-ll', '--skip', 'B101,B601']  # Skip assert_used and shell_injection_subprocess
+        pass_filenames: true
+
       - id: workflow-security
         name: Check Workflow Security
         entry: python3 .claude/skills/precommit_hygiene/scripts/precommit_hygiene.py check_workflow_security

@@ -38,6 +38,10 @@ query-filters:
       id: py/clear-text-logging-sensitive-data
       path: src/agents/issue_resolution_agent.py
       message: "Logs secret names only, not values - false positive"
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+      path: scripts/test_langsmith.py
+      message: "Uses mask_api_key() before logging - fixed security violation"
 
 # Security approach documentation:
 # 1. All API keys MUST be masked before logging using mask_api_key()

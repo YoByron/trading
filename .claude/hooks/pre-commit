@@ -162,15 +162,19 @@ PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
 if [ ! -z "$PYTHON_FILES" ]; then
     for file in $PYTHON_FILES; do
         # Check for clear-text logging of API keys/secrets
-        # Pattern 1: key[:20], key[:10] etc - exposing more than 4 chars
+        # Pattern 1: key[:20], key[:10] etc - exposing more than 4 chars (in f-strings or regular code)
         # Pattern 2: key[10:] - exposing end of key
+        # Pattern 3: f-string with {api_key[:N]} where N > 4
         # Require use of mask_api_key() utility instead
-        if grep -nE "(api_key|secret|token|password|bearer).*\[:([5-9]|[1-9][0-9]+)\]" "$file" 2>/dev/null ||
-           grep -nE "(api_key|secret|token|password|bearer).*\[([5-9]|[1-9][0-9]+):\]" "$file" 2>/dev/null; then
+        if grep -nE "(api_key|secret|token|password|bearer|api_secret|secret_key)\s*\[:([5-9]|[1-9][0-9]+)\]" "$file" 2>/dev/null ||
+           grep -nE "(api_key|secret|token|password|bearer|api_secret|secret_key)\s*\[([5-9]|[1-9][0-9]+):\]" "$file" 2>/dev/null ||
+           grep -nE "f[\"'].*\{[^}]*\b(api_key|secret|token|password|bearer|api_secret|secret_key)\s*\[:([5-9]|[1-9][0-9]+)\}" "$file" 2>/dev/null ||
+           grep -nE "print\s*\([^)]*\{(api_key|secret|token|password|bearer|api_secret|secret_key)\[:" "$file" 2>/dev/null; then
             echo -e "${RED}❌ SECURITY: $file exposes too many characters of sensitive data${NC}"
             echo -e "${YELLOW}   Fix: Use mask_api_key() from src.utils.security${NC}"
             echo -e "${YELLOW}   Example: from src.utils.security import mask_api_key${NC}"
-            echo -e "${YELLOW}            print(f'API key: {mask_api_key(api_key)}')${NC}"
+            echo -e "${YELLOW}            masked_key = mask_api_key(api_key)${NC}"
+            echo -e "${YELLOW}            print(f'API key: {masked_key}')${NC}"
             SECURITY_ISSUES=$((SECURITY_ISSUES + 1))
         fi
 

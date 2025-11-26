@@ -20,6 +20,9 @@ load_dotenv()
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# Import security utilities
+from src.utils.security import mask_api_key
+
 def test_langsmith_basic():
     """Test basic LangSmith integration."""
     print("=" * 70)
@@ -34,7 +37,9 @@ def test_langsmith_basic():
         print("   LANGCHAIN_API_KEY=your_api_key_here")
         return False
     
-    print(f"✅ LANGCHAIN_API_KEY found: {api_key[:10]}...")
+    # Mask API key before logging (CodeQL-safe pattern)
+    masked_key = mask_api_key(api_key)
+    print(f"✅ LANGCHAIN_API_KEY found: {masked_key}")
     
     # Set up LangSmith tracing
     os.environ['LANGCHAIN_TRACING_V2'] = 'true'
