@@ -24,8 +24,9 @@ sys.path.insert(0, str(project_root))
 try:
     import requests
     from bs4 import BeautifulSoup
+    REQUESTS_AVAILABLE = True
 except ImportError:
-    print("⚠️  Missing dependencies: pip install requests beautifulsoup4")
+    REQUESTS_AVAILABLE = False
     requests = None
     BeautifulSoup = None
 
@@ -150,7 +151,7 @@ class BogleheadsLearner:
         Returns:
             Dict with monitoring results
         """
-        if not requests or not BeautifulSoup:
+        if not REQUESTS_AVAILABLE:
             return {
                 "success": False,
                 "error": "Missing dependencies: requests, beautifulsoup4"
@@ -169,29 +170,141 @@ class BogleheadsLearner:
         topics_found = []
         
         try:
-            # Note: Bogleheads forum uses phpBB, so we'd need to:
-            # 1. Parse RSS feeds if available
-            # 2. Or scrape HTML (respecting robots.txt and rate limits)
-            # 3. Or use their API if available
+            # Check robots.txt first
+            robots_url = f"{self.forum_url}/robots.txt"
+            try:
+                self._rate_limit()
+                robots_resp = requests.get(robots_url, timeout=5)
+                if robots_resp.status_code == 200:
+                    logger.info("✅ Checked robots.txt")
+            except:
+                logger.debug("Could not check robots.txt")
             
-            # For now, we'll simulate with a placeholder
-            # In production, implement proper scraping with respect to ToS
+            # Try RSS feed first (cleaner, preferred)
+            rss_urls = [
+                f"{self.forum_url}/feed.php",
+                f"{self.forum_url}/rss.php",
+            ]
             
-            logger.info("📋 Forum monitoring (placeholder - implement proper scraping)")
+            posts_found = []
             
-            # Placeholder: In production, implement:
-            # - RSS feed parsing
-            # - HTML scraping with BeautifulSoup
-            # - Respect robots.txt
-            # - Rate limiting
-            # - Error handling
+            # Try RSS feeds
+            for rss_url in rss_urls:
+                try:
+                    self._rate_limit()
+                    rss_resp = requests.get(rss_url, headers={'User-Agent': 'TradingBot/1.0'}, timeout=10)
+                    if rss_resp.status_code == 200:
+                        # Parse RSS
+                        soup = BeautifulSoup(rss_resp.content, 'xml')
+                        items = soup.find_all('item')
+                        
+                        for item in items[:max_posts]:
+                            title = item.find('title')
+                            description = item.find('description')
+                            link = item.find('link')
+                            
+                            if title and description:
+                                title_text = title.get_text()
+                                desc_text = description.get_text()
+                                
+                                # Check if matches keywords
+                                content_lower = (title_text + " " + desc_text).lower()
+                                if any(kw.lower() in content_lower for kw in keywords):
+                                    posts_found.append({
+                                        'title': title_text,
+                                        'content': desc_text[:1000],  # Limit content
+                                        'url': link.get_text() if link else '',
+                                        'date': item.find('pubDate').get_text() if item.find('pubDate') else ''
+                                    })
+                        
+                        if posts_found:
+                            logger.info(f"✅ Found {len(posts_found)} posts via RSS")
+                            break
+                except Exception as e:
+                    logger.debug(f"RSS feed {rss_url} failed: {e}")
+                    continue
+            
+            # Fallback: HTML scraping (if RSS not available)
+            if not posts_found:
+                try:
+                    self._rate_limit()
+                    resp = requests.get(
+                        self.forum_url,
+                        headers={'User-Agent': 'TradingBot/1.0'},
+                        timeout=10
+                    )
+                    resp.raise_for_status()
+                    
+                    soup = BeautifulSoup(resp.text, 'html.parser')
+                    
+                    # Find topic links (phpBB structure)
+                    topic_links = soup.find_all('a', class_=['topictitle', 'forumtitle'], href=True)
+                    
+                    for link in topic_links[:max_posts]:
+                        title = link.get_text(strip=True)
+                        href = link.get('href', '')
+                        
+                        # Check if matches keywords
+                        if any(kw.lower() in title.lower() for kw in keywords):
+                            # Get full post content
+                            try:
+                                self._rate_limit()
+                                post_url = href if href.startswith('http') else f"{self.forum_url}/{href}"
+                                post_resp = requests.get(post_url, headers={'User-Agent': 'TradingBot/1.0'}, timeout=5)
+                                
+                                if post_resp.status_code == 200:
+                                    post_soup = BeautifulSoup(post_resp.text, 'html.parser')
+                                    content_div = post_soup.find('div', class_='content')
+                                    content = content_div.get_text(strip=True) if content_div else ''
+                                    
+                                    if len(content) > 100:  # Only if substantial content
+                                        posts_found.append({
+                                            'title': title,
+                                            'content': content[:1000],
+                                            'url': post_url,
+                                            'date': ''
+                                        })
+                            except:
+                                continue  # Skip if can't fetch post
+                            
+                            if len(posts_found) >= max_posts:
+                                break
+                    
+                    if posts_found:
+                        logger.info(f"✅ Found {len(posts_found)} posts via HTML scraping")
+                except Exception as e:
+                    logger.warning(f"HTML scraping failed: {e}")
+            
+            posts_analyzed = len(posts_found)
+            
+            # Extract insights from posts
+            if posts_found:
+                all_insights = []
+                for post in posts_found:
+                    insights = self.extract_investing_insights(
+                        post['content'],
+                        {
+                            'title': post['title'],
+                            'url': post['url'],
+                            'date': post.get('date', ''),
+                            'replies': 0  # Would need to parse from HTML
+                        }
+                    )
+                    all_insights.extend(insights)
+                
+                insights_extracted = len(all_insights)
+                
+                # Store insights in RAG
+                if all_insights:
+                    store_result = self.store_insights_to_rag(all_insights)
+                    logger.info(f"✅ Stored {store_result.get('stored_count', 0)} insights to RAG")
             
             return {
                 "success": True,
                 "posts_analyzed": posts_analyzed,
                 "insights_extracted": insights_extracted,
-                "topics_found": topics_found,
-                "message": "Forum monitoring ready (implement scraping)"
+                "topics_found": [p['title'] for p in posts_found[:10]],
+                "posts": posts_found[:5]  # Return sample posts
             }
             
         except Exception as e:
