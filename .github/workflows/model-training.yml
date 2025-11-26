@@ -63,7 +63,6 @@ jobs:
           echo "🔍 Checking training data availability..."
           
           SYMBOLS="${{ github.event.inputs.symbols || 'SPY,QQQ,VOO' }}"
-          export SYMBOLS
           
           python3 << 'PYTHON_SCRIPT'
           import sys
@@ -71,16 +70,36 @@ jobs:
           import os
           from pathlib import Path
           
-          # Add paths
+          # Add project root to path
           project_root = Path.cwd()
           sys.path.insert(0, str(project_root))
-          sys.path.insert(0, str(project_root / ".claude" / "skills" / "model_trainer" / "scripts"))
           
-          from model_trainer import ModelTrainerSkill
+          # Use DataCollector directly instead of ModelTrainerSkill
+          from src.utils.data_collector import DataCollector
           
           symbols = [s.strip() for s in os.environ.get('SYMBOLS', 'SPY,QQQ,VOO').split(',')]
-          skill = ModelTrainerSkill()
-          result = skill.check_training_data_availability(symbols, min_days=252)
+          collector = DataCollector(data_dir=str(project_root / "data" / "historical"))
+          
+          missing_symbols = []
+          data_summary = {}
+          
+          for symbol in symbols:
+              hist_data = collector.load_historical_data(symbol)
+              
+              if hist_data.empty:
+                  missing_symbols.append(symbol)
+                  data_summary[symbol] = {"available": False, "days": 0, "status": "no_data"}
+              elif len(hist_data) < 252:
+                  missing_symbols.append(symbol)
+                  data_summary[symbol] = {"available": False, "days": len(hist_data), "status": "insufficient"}
+              else:
+                  data_summary[symbol] = {"available": True, "days": len(hist_data), "status": "sufficient"}
+          
+          result = {
+              "available": len(missing_symbols) == 0,
+              "missing_symbols": missing_symbols,
+              "data_summary": data_summary
+          }
           
           print(json.dumps(result, indent=2))
           
