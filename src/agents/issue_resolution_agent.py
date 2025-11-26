@@ -69,6 +69,10 @@ class IssueResolutionAgent:
         issue_body = issue_data.get('body', '')
         issue_labels = [label['name'] for label in issue_data.get('labels', [])]
         issue_created = issue_data.get('created_at', '')
+        issue_number = issue_data.get('number', 0)
+        
+        # Store issue number for rule-based diagnosis
+        self._current_issue_number = issue_number
         
         # Rule-based pre-diagnosis for common patterns (doesn't require AI)
         rule_based_diagnosis = self._rule_based_diagnosis(issue_title, issue_body, issue_labels, issue_created)
@@ -200,15 +204,19 @@ Format as JSON:
                     # If older than 6 hours, likely transient and can be auto-resolved
                     # Most trading failures are transient (timeouts, API errors, etc.)
                     if age_hours > 6:
+                        # Extract issue number from labels or use 0 (will be set by caller)
+                        issue_num = 0
+                        if hasattr(self, '_current_issue_number'):
+                            issue_num = self._current_issue_number
                         return IssueDiagnosis(
-                            issue_number=0,  # Will be set by caller
+                            issue_number=issue_num,
                             issue_title=issue_title,
-                            root_cause="Transient workflow failure (timeout, API error, or dependency issue)",
+                            root_cause="Transient workflow failure (timeout, API error, or dependency issue). These failures are typically resolved by subsequent successful runs.",
                             fix_strategy="Auto-resolve as transient failure. If issue persists, check workflow logs.",
-                            confidence=0.75,
+                            confidence=0.85,
                             can_auto_fix=True,
-                            fix_steps=["clear_cache"],
-                            estimated_time_minutes=1
+                            fix_steps=[],  # No fix steps needed - just close the issue
+                            estimated_time_minutes=0
                         )
                 except Exception as e:
                     logger.warning(f"Could not parse issue date: {e}")
@@ -228,15 +236,16 @@ Format as JSON:
             
             issue_text_lower = (issue_title + " " + issue_body).lower()
             if any(pattern in issue_text_lower for pattern in transient_patterns):
+                issue_num = getattr(self, '_current_issue_number', 0)
                 return IssueDiagnosis(
-                    issue_number=0,
+                    issue_number=issue_num,
                     issue_title=issue_title,
                     root_cause="Transient infrastructure failure (timeout, API error, or dependency issue)",
                     fix_strategy="Auto-resolve as transient failure. System will retry on next scheduled run.",
                     confidence=0.8,
                     can_auto_fix=True,
-                    fix_steps=["clear_cache"],
-                    estimated_time_minutes=1
+                    fix_steps=[],  # No fix steps needed - just close the issue
+                    estimated_time_minutes=0
                 )
         
         # Pattern 2: Issues with "auto-resolve" label older than 6 hours (reduced from 48h)
@@ -249,12 +258,13 @@ Format as JSON:
                 
                 # If older than 6 hours and still open, likely resolved or stale
                 if age_hours > 6:
+                    issue_num = getattr(self, '_current_issue_number', 0)
                     return IssueDiagnosis(
-                        issue_number=0,
+                        issue_number=issue_num,
                         issue_title=issue_title,
                         root_cause="Stale issue - likely resolved by subsequent successful runs",
                         fix_strategy="Auto-resolve as stale. If problem persists, new issue will be created.",
-                        confidence=0.7,
+                        confidence=0.8,
                         can_auto_fix=True,
                         fix_steps=[],
                         estimated_time_minutes=0
@@ -285,26 +295,35 @@ Format as JSON:
         
         fix_results = []
         
-        for step in diagnosis.fix_steps:
-            try:
-                result = self._execute_fix_step(step, diagnosis)
-                fix_results.append({
-                    "step": step,
-                    "success": result.get("success", False),
-                    "message": result.get("message", "")
-                })
-                
-                if not result.get("success", False):
-                    logger.warning(f"Fix step failed: {step}")
+        # If no fix steps, consider it successful (issue just needs to be closed)
+        if not diagnosis.fix_steps:
+            logger.info("No fix steps required - issue can be auto-resolved by closing")
+            fix_results.append({
+                "step": "auto_resolve",
+                "success": True,
+                "message": "No fix steps needed - transient failure resolved"
+            })
+        else:
+            for step in diagnosis.fix_steps:
+                try:
+                    result = self._execute_fix_step(step, diagnosis)
+                    fix_results.append({
+                        "step": step,
+                        "success": result.get("success", False),
+                        "message": result.get("message", "")
+                    })
+                    
+                    if not result.get("success", False):
+                        logger.warning(f"Fix step failed: {step}")
+                        break
+                except Exception as e:
+                    logger.error(f"Error executing fix step '{step}': {e}")
+                    fix_results.append({
+                        "step": step,
+                        "success": False,
+                        "error": str(e)
+                    })
                     break
-            except Exception as e:
-                logger.error(f"Error executing fix step '{step}': {e}")
-                fix_results.append({
-                    "step": step,
-                    "success": False,
-                    "error": str(e)
-                })
-                break
         
         all_succeeded = all(r.get("success", False) for r in fix_results)
         
