@@ -158,17 +158,27 @@ class MultiLLMAnalyzer:
         self.rate_limit_delay = rate_limit_delay
         self.use_async = use_async
 
-        # Initialize OpenAI client with OpenRouter base URL
+        # Initialize OpenAI client with OpenRouter base URL (wrapped with LangSmith if enabled)
         base_url = "https://openrouter.ai/api/v1"
-
-        if use_async:
-            self.client = AsyncOpenAI(
-                api_key=self.api_key, base_url=base_url, timeout=timeout
-            )
-        else:
-            self.sync_client = OpenAI(
-                api_key=self.api_key, base_url=base_url, timeout=timeout
-            )
+        
+        # Use LangSmith wrapper if available
+        try:
+            from src.utils.langsmith_wrapper import get_traced_openai_client, get_traced_async_openai_client
+            
+            if use_async:
+                self.client = get_traced_async_openai_client(api_key=self.api_key, base_url=base_url)
+            else:
+                self.sync_client = get_traced_openai_client(api_key=self.api_key, base_url=base_url)
+        except ImportError:
+            # Fallback to regular client if wrapper not available
+            if use_async:
+                self.client = AsyncOpenAI(
+                    api_key=self.api_key, base_url=base_url, timeout=timeout
+                )
+            else:
+                self.sync_client = OpenAI(
+                    api_key=self.api_key, base_url=base_url, timeout=timeout
+                )
 
         logger.info(
             f"Initialized MultiLLMAnalyzer with models: {[m.value for m in self.models]}"
