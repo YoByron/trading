@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key><string>com.trading.orchestrator</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/bin/go</string>
+      <string>run</string>
+      <string>./cmd/trading_orchestrator</string>
+      <string>--data_dir</string>
+      <string>/Users/igorganapolsky/workspace/git/apps/trading/data</string>
+      <string>--log_path</string>
+      <string>/Users/igorganapolsky/workspace/git/apps/trading/logs/adk_orchestrator.jsonl</string>
+      <string>--app</string>
+      <string>trading_orchestrator</string>
+      <string>web</string>
+      <string>--port</string>
+      <string>8080</string>
+      <string>api</string>
+      <string>--webui_address</string>
+      <string>localhost:8080</string>
+    </array>
+    <key>WorkingDirectory</key><string>/Users/igorganapolsky/workspace/git/apps/trading</string>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>/Users/igorganapolsky/workspace/git/apps/trading/logs/orchestrator_stdout.log</string>
+    <key>StandardErrorPath</key><string>/Users/igorganapolsky/workspace/git/apps/trading/logs/orchestrator_stderr.log</string>
+  </dict>
+</plist>

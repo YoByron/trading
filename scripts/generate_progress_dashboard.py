@@ -182,7 +182,14 @@ def generate_dashboard() -> str:
     # Extract world-class metrics
     risk = world_class_metrics.get('risk_metrics', {})
     perf = world_class_metrics.get('performance_metrics', {})
-    strategies = world_class_metrics.get('strategy_metrics', {})
+    strategy_metrics_data = world_class_metrics.get('strategy_metrics', {})
+    # Handle both old format (dict) and new format (dict with 'by_strategy' and 'by_agent')
+    if isinstance(strategy_metrics_data, dict) and 'by_strategy' in strategy_metrics_data:
+        strategies = strategy_metrics_data.get('by_strategy', {})
+        agents = strategy_metrics_data.get('by_agent', {})
+    else:
+        strategies = strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
+        agents = {}
     exposure = world_class_metrics.get('exposure_metrics', {})
     guardrails = world_class_metrics.get('risk_guardrails', {})
     account = world_class_metrics.get('account_summary', {})
@@ -308,9 +315,21 @@ def generate_dashboard() -> str:
     # Add strategy rows
     if strategies:
         for strategy_id, strategy_data in strategies.items():
+            profit_factor = strategy_data.get('profit_factor', 0)
             dashboard += f"| {strategy_data.get('name', strategy_id)} | {strategy_data.get('trades', 0)} | ${strategy_data.get('pl', 0):+.2f} | {strategy_data.get('win_rate', 0):.1f}% | {strategy_data.get('sharpe', 0):.2f} | {strategy_data.get('max_drawdown_pct', 0):.2f}% |\n"
     else:
         dashboard += "| *No strategy data available* | - | - | - | - | - |\n"
+    
+    # Add per-agent attribution if available
+    if agents:
+        dashboard += """
+### Per-Agent Performance Attribution
+
+| Agent Type | Trades | P/L ($) | Win % |
+|------------|--------|---------|-------|
+"""
+        for agent_type, agent_data in agents.items():
+            dashboard += f"| {agent_type.replace('_', ' ').title()} | {agent_data.get('trades', 0)} | ${agent_data.get('pl', 0):+.2f} | {agent_data.get('win_rate', 0):.1f}% |\n"
     
     dashboard += f"""
 ---
@@ -583,6 +602,37 @@ def generate_dashboard() -> str:
     dashboard += f"| **Rolling Sharpe (7d)** | {rolling_sharpe_7d_str} |\n"
     dashboard += f"| **Rolling Sharpe (30d)** | {rolling_sharpe_30d_str} |\n"
     dashboard += f"| **Rolling Max DD (30d)** | {rolling_max_dd_30d_str}% |\n"
+    
+    # Add cohort analysis section
+    dashboard += """
+### Cohort Analysis
+
+**P/L by Ticker**:
+"""
+    # Calculate P/L by ticker from closed trades
+    system_state = load_json_file(DATA_DIR / "system_state.json")
+    closed_trades = system_state.get('performance', {}).get('closed_trades', [])
+    
+    if closed_trades:
+        ticker_pl = defaultdict(lambda: {'pl': 0.0, 'trades': 0, 'wins': 0})
+        for trade in closed_trades:
+            symbol = trade.get('symbol', 'UNKNOWN')
+            pl = trade.get('pl', 0.0)
+            ticker_pl[symbol]['pl'] += pl
+            ticker_pl[symbol]['trades'] += 1
+            if pl > 0:
+                ticker_pl[symbol]['wins'] += 1
+        
+        if ticker_pl:
+            dashboard += "\n| Ticker | Trades | P/L ($) | Win Rate |\n"
+            dashboard += "|--------|--------|---------|----------|\n"
+            for symbol, data in sorted(ticker_pl.items(), key=lambda x: x[1]['pl'], reverse=True):
+                win_rate = (data['wins'] / data['trades'] * 100) if data['trades'] > 0 else 0.0
+                dashboard += f"| {symbol} | {data['trades']} | ${data['pl']:+.2f} | {win_rate:.1f}% |\n"
+        else:
+            dashboard += "\n*No closed trades available for cohort analysis*\n"
+    else:
+        dashboard += "\n*No closed trades available for cohort analysis*\n"
     
     dashboard += """
 ---
