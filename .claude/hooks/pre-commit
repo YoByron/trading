@@ -100,9 +100,10 @@ for file in test_*.py *_test.py; do
     fi
 done
 
-# Move docs to docs/ (except README.md)
+# Move docs to docs/ (except README.md, LICENSE.md, and CLAUDE.md)
+# CLAUDE.md must stay at root for automatic loading by Claude Code
 for file in *.md; do
-    if [ -f "$file" ] && [ "$file" != "README.md" ] && [ "$file" != "LICENSE.md" ]; then
+    if [ -f "$file" ] && [ "$file" != "README.md" ] && [ "$file" != "LICENSE.md" ] && [ "$file" != "CLAUDE.md" ]; then
         echo "  → Moving $file to docs/"
         git mv "$file" docs/ 2>/dev/null || mv "$file" docs/
         git add "docs/$file"
