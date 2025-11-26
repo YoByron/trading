@@ -738,7 +738,8 @@ def generate_dashboard() -> str:
     
     dashboard += f"| **Audit Trail Entries** | {audit_trail_count} |\n"
     dashboard += f"| **Audit Trail Available** | {audit_trail_status} |\n"
-
+    
+    dashboard += """
 ---
 
 ## 📝 Notes
