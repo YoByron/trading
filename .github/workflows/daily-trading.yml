@@ -391,8 +391,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "📊 Generating world-class progress dashboard..."
-          python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
+          echo "📊 Generating enhanced world-class progress dashboard..."
+          python3 scripts/generate_world_class_dashboard_enhanced.py || python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
           
           echo "📝 Updating GitHub Wiki..."
           
