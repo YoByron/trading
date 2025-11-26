@@ -106,6 +106,9 @@ class TradingMetricsCalculator:
                 system_state, perf_log, current_equity
             ),
             'time_series': self._calculate_time_series_metrics(perf_log),
+            'strategy_equity_curves': self._calculate_strategy_equity_curves(perf_log, closed_trades, all_trades),
+            'holding_period_analysis': self._calculate_holding_period_analysis(closed_trades),
+            'time_of_day_analysis': self._calculate_time_of_day_analysis(all_trades, closed_trades),
             'signal_quality': self._calculate_signal_quality(all_trades, closed_trades),
             'market_regime': self._calculate_market_regime(perf_log),
             'benchmark_comparison': self._calculate_benchmark_comparison(perf_log, starting_balance),
@@ -534,7 +537,7 @@ class TradingMetricsCalculator:
         }
     
     def _calculate_time_series_metrics(self, perf_log: List[Dict]) -> Dict[str, Any]:
-        """Calculate time-series analytics."""
+        """Calculate time-series analytics with proper rolling window calculations."""
         if not perf_log or len(perf_log) < 2:
             return {
                 'equity_curve': [],
@@ -549,16 +552,267 @@ class TradingMetricsCalculator:
             for entry in perf_log
         ]
         
-        # Rolling metrics (simplified - would need proper windowing)
-        rolling_sharpe_7d = 0.0  # Placeholder
-        rolling_sharpe_30d = 0.0  # Placeholder
-        rolling_max_dd_30d = 0.0  # Placeholder
+        # Calculate daily returns
+        equity_values = [entry.get('equity', 0) for entry in perf_log]
+        daily_returns = []
+        for i in range(1, len(equity_values)):
+            if equity_values[i-1] > 0:
+                daily_return = (equity_values[i] - equity_values[i-1]) / equity_values[i-1]
+                daily_returns.append(daily_return)
+        
+        if not daily_returns:
+            return {
+                'equity_curve': equity_curve[-30:],
+                'rolling_sharpe_7d': 0.0,
+                'rolling_sharpe_30d': 0.0,
+                'rolling_max_dd_30d': 0.0,
+            }
+        
+        # Calculate rolling Sharpe (7d window)
+        rolling_sharpe_7d = 0.0
+        if len(daily_returns) >= 7:
+            recent_7d = daily_returns[-7:]
+            mean_return = np.mean(recent_7d)
+            std_return = np.std(recent_7d)
+            if std_return > 0:
+                risk_free_rate_daily = self.risk_free_rate / 252
+                rolling_sharpe_7d = (mean_return - risk_free_rate_daily) / std_return * np.sqrt(252)
+        
+        # Calculate rolling Sharpe (30d window)
+        rolling_sharpe_30d = 0.0
+        if len(daily_returns) >= 30:
+            recent_30d = daily_returns[-30:]
+            mean_return = np.mean(recent_30d)
+            std_return = np.std(recent_30d)
+            if std_return > 0:
+                risk_free_rate_daily = self.risk_free_rate / 252
+                rolling_sharpe_30d = (mean_return - risk_free_rate_daily) / std_return * np.sqrt(252)
+        
+        # Calculate rolling max drawdown (30d window)
+        rolling_max_dd_30d = 0.0
+        if len(equity_values) >= 30:
+            recent_30d_equity = equity_values[-30:]
+            peak = recent_30d_equity[0]
+            max_dd = 0.0
+            for equity in recent_30d_equity:
+                if equity > peak:
+                    peak = equity
+                drawdown_pct = ((peak - equity) / peak * 100) if peak > 0 else 0.0
+                if drawdown_pct > max_dd:
+                    max_dd = drawdown_pct
+            rolling_max_dd_30d = max_dd
         
         return {
             'equity_curve': equity_curve[-30:],  # Last 30 days
             'rolling_sharpe_7d': rolling_sharpe_7d,
             'rolling_sharpe_30d': rolling_sharpe_30d,
             'rolling_max_dd_30d': rolling_max_dd_30d,
+        }
+    
+    def _calculate_strategy_equity_curves(
+        self, perf_log: List[Dict], closed_trades: List[Dict], all_trades: List[Dict]
+    ) -> Dict[str, Any]:
+        """Calculate equity curves per strategy over time."""
+        if not closed_trades:
+            return {}
+        
+        # Group trades by strategy
+        strategy_trades = defaultdict(list)
+        for trade in closed_trades:
+            strategy_id = trade.get('strategy_id') or trade.get('tier', 'unknown')
+            # Normalize strategy_id
+            if 'T1' in str(strategy_id) or 'CORE' in str(strategy_id):
+                strategy_id = 'core_strategy'
+            elif 'T2' in str(strategy_id) or 'GROWTH' in str(strategy_id):
+                strategy_id = 'growth_strategy'
+            strategy_trades[strategy_id].append(trade)
+        
+        strategy_curves = {}
+        
+        # Build equity curve for each strategy
+        for strategy_id, trades in strategy_trades.items():
+            if not trades:
+                continue
+            
+            # Sort trades by date
+            sorted_trades = sorted(
+                trades,
+                key=lambda t: t.get('entry_date', t.get('exit_date', ''))
+            )
+            
+            # Calculate cumulative P/L over time
+            cumulative_pl = 0.0
+            curve_points = []
+            
+            for trade in sorted_trades:
+                pl = trade.get('pl', 0.0)
+                cumulative_pl += pl
+                exit_date = trade.get('exit_date', trade.get('entry_date', ''))
+                curve_points.append({
+                    'date': exit_date,
+                    'cumulative_pl': cumulative_pl,
+                    'equity': 100000.0 + cumulative_pl  # Assuming starting balance
+                })
+            
+            strategy_curves[strategy_id] = {
+                'equity_curve': curve_points[-30:],  # Last 30 points
+                'total_pl': cumulative_pl,
+                'trades': len(trades),
+            }
+        
+        return strategy_curves
+    
+    def _calculate_holding_period_analysis(
+        self, closed_trades: List[Dict]
+    ) -> Dict[str, Any]:
+        """Calculate P/L by holding period (days held)."""
+        if not closed_trades:
+            return {
+                'by_period': {},
+                'avg_pl_by_period': {},
+            }
+        
+        # Group trades by holding period
+        period_trades = defaultdict(list)
+        
+        for trade in closed_trades:
+            entry_date_str = trade.get('entry_date', '')
+            exit_date_str = trade.get('exit_date', '')
+            
+            if not entry_date_str or not exit_date_str:
+                continue
+            
+            try:
+                # Parse dates
+                if 'T' in entry_date_str:
+                    entry_date = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00'))
+                else:
+                    entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d')
+                
+                if 'T' in exit_date_str:
+                    exit_date = datetime.fromisoformat(exit_date_str.replace('Z', '+00:00'))
+                else:
+                    exit_date = datetime.strptime(exit_date_str, '%Y-%m-%d')
+                
+                # Calculate days held
+                days_held = (exit_date - entry_date).days
+                
+                # Categorize into periods
+                if days_held == 0:
+                    period = 'Same Day'
+                elif days_held <= 1:
+                    period = '1 Day'
+                elif days_held <= 3:
+                    period = '2-3 Days'
+                elif days_held <= 7:
+                    period = '4-7 Days'
+                elif days_held <= 14:
+                    period = '8-14 Days'
+                elif days_held <= 30:
+                    period = '15-30 Days'
+                else:
+                    period = '30+ Days'
+                
+                period_trades[period].append(trade)
+            except Exception:
+                continue
+        
+        # Calculate metrics per period
+        by_period = {}
+        avg_pl_by_period = {}
+        
+        for period, trades in period_trades.items():
+            total_pl = sum(t.get('pl', 0) for t in trades)
+            avg_pl = total_pl / len(trades) if trades else 0.0
+            winning = [t for t in trades if t.get('pl', 0) > 0]
+            win_rate = (len(winning) / len(trades) * 100) if trades else 0.0
+            
+            by_period[period] = {
+                'trades': len(trades),
+                'total_pl': total_pl,
+                'avg_pl': avg_pl,
+                'win_rate': win_rate,
+            }
+            avg_pl_by_period[period] = avg_pl
+        
+        return {
+            'by_period': by_period,
+            'avg_pl_by_period': avg_pl_by_period,
+        }
+    
+    def _calculate_time_of_day_analysis(
+        self, all_trades: List[Dict], closed_trades: List[Dict]
+    ) -> Dict[str, Any]:
+        """Calculate P/L by time of day to identify optimal execution windows."""
+        if not all_trades:
+            return {
+                'by_hour': {},
+                'best_hours': [],
+            }
+        
+        # Group trades by hour of execution
+        hour_trades = defaultdict(list)
+        
+        for trade in all_trades:
+            timestamp_str = trade.get('timestamp', '')
+            if not timestamp_str:
+                continue
+            
+            try:
+                # Parse timestamp
+                if 'T' in timestamp_str:
+                    timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                else:
+                    timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                
+                hour = timestamp.hour
+                
+                # Find corresponding closed trade if exists
+                order_id = trade.get('order_id', '')
+                closed_trade = None
+                if order_id:
+                    closed_trade = next(
+                        (ct for ct in closed_trades if ct.get('order_id') == order_id),
+                        None
+                    )
+                
+                hour_trades[hour].append({
+                    'trade': trade,
+                    'closed_trade': closed_trade,
+                })
+            except Exception:
+                continue
+        
+        # Calculate metrics per hour
+        by_hour = {}
+        
+        for hour, hour_data in hour_trades.items():
+            trades = [d['trade'] for d in hour_data]
+            closed = [d['closed_trade'] for d in hour_data if d['closed_trade']]
+            
+            total_pl = sum(ct.get('pl', 0) for ct in closed)
+            avg_pl = total_pl / len(closed) if closed else 0.0
+            winning = [ct for ct in closed if ct.get('pl', 0) > 0]
+            win_rate = (len(winning) / len(closed) * 100) if closed else 0.0
+            
+            by_hour[hour] = {
+                'trades': len(trades),
+                'closed_trades': len(closed),
+                'total_pl': total_pl,
+                'avg_pl': avg_pl,
+                'win_rate': win_rate,
+            }
+        
+        # Find best hours (top 3 by avg_pl)
+        best_hours = sorted(
+            [(h, data['avg_pl']) for h, data in by_hour.items() if data['closed_trades'] > 0],
+            key=lambda x: x[1],
+            reverse=True
+        )[:3]
+        
+        return {
+            'by_hour': by_hour,
+            'best_hours': [h for h, _ in best_hours],
         }
     
     def _calculate_signal_quality(
