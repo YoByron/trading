@@ -417,6 +417,12 @@ jobs:
             cp wiki/Home.md "$WIKI_DIR/Home.md"
           fi
           
+          # Copy chart images if they exist
+          if [ -d wiki/charts ]; then
+            mkdir -p "$WIKI_DIR/charts"
+            cp -r wiki/charts/* "$WIKI_DIR/charts/" 2>/dev/null || true
+          fi
+          
           # Commit and push to wiki
           cd "$WIKI_DIR"
           git config user.name "GitHub Actions Bot"
