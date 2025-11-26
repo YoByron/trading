@@ -427,5 +427,23 @@
 
 ---
 
+## 🌐 External Dashboards & Monitoring
+
+### LangSmith Observability
+- **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
+- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+- **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
+
+### Vertex AI Cloud RL
+- **[Vertex AI Console](https://console.cloud.google.com/vertex-ai?project=email-outreach-ai-460404)** - Main Vertex AI dashboard
+- **[Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)** - View RL training jobs
+- **[Models](https://console.cloud.google.com/vertex-ai/models?project=email-outreach-ai-460404)** - Trained models
+- **[Experiments](https://console.cloud.google.com/vertex-ai/experiments?project=email-outreach-ai-460404)** - Training experiments
+
+**Project**: `email-outreach-ai-460404` | **Location**: `us-central1`
+
+---
+
 *This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
 *World-class metrics powered by comprehensive risk & performance analytics.*
