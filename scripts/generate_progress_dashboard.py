@@ -991,7 +991,7 @@ def generate_dashboard() -> str:
                 dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
                 dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
                 dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
-                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/org/projects/p/trading-rl-training) |\n"
+                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
             else:
                 dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
         else:

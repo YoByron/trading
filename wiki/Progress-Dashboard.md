@@ -388,7 +388,7 @@
 | **Total Runs** (7d) | 6 |
 | **Success Rate** | 0.0% |
 | **Avg Duration** | 0.0s |
-| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/org/projects/p/trading-rl-training) |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
 
