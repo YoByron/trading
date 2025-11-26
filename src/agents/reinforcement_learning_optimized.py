@@ -352,7 +352,7 @@ class OptimizedRLPolicyLearner:
         self, trade_result: Dict[str, Any], market_state: Dict[str, Any]
     ) -> float:
         """
-        Calculate risk-adjusted reward from trade result.
+        Calculate risk-adjusted reward from trade result using world-class reward function.
 
         Args:
             trade_result: Dict with P/L, win/loss, etc.
@@ -361,6 +361,16 @@ class OptimizedRLPolicyLearner:
         Returns:
             Risk-adjusted reward value
         """
+        # Use world-class risk-adjusted reward function
+        try:
+            from src.ml.reward_functions import RiskAdjustedReward
+            reward_calculator = RiskAdjustedReward()
+            return reward_calculator.calculate_from_trade_result(trade_result, market_state)
+        except ImportError:
+            # Fallback to original implementation
+            logger.warning("⚠️  Using fallback reward function (install reward_functions module)")
+        
+        # Fallback: Original implementation
         pl = trade_result.get("pl", 0)
         pl_pct = trade_result.get("pl_pct", 0)
         holding_period = trade_result.get("holding_period_days", 1)

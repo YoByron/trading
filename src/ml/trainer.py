@@ -211,7 +211,7 @@ class ModelTrainer:
             "action_space": "discrete",
             "actions": ["BUY", "SELL", "HOLD"],
             "state_dim": self.input_dim,
-            "reward_function": "profit_based",
+            "reward_function": "risk_adjusted",  # Use world-class risk-adjusted reward
             "symbol": symbol,
             "features": self.data_processor.feature_columns
         }

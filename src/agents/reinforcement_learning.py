@@ -12,7 +12,7 @@ import logging
 import json
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -137,24 +137,28 @@ class RLPolicyLearner:
         # Save updated state
         self._save_state()
     
-    def calculate_reward(self, trade_result: Dict[str, Any]) -> float:
+    def calculate_reward(self, trade_result: Dict[str, Any], market_state: Optional[Dict[str, Any]] = None) -> float:
         """
-        Calculate reward from trade result.
+        Calculate reward from trade result using world-class risk-adjusted reward function.
         
         Args:
             trade_result: Dict with P/L, win/loss, etc.
+            market_state: Optional market state for risk adjustment
             
         Returns:
             Reward value (normalized)
         """
-        pl = trade_result.get("pl", 0)
+        # Use world-class risk-adjusted reward function if available
+        try:
+            from src.ml.reward_functions import RiskAdjustedReward
+            reward_calculator = RiskAdjustedReward()
+            return reward_calculator.calculate_from_trade_result(trade_result, market_state)
+        except ImportError:
+            # Fallback to simple reward
+            logger.debug("Using simple reward function (reward_functions module not available)")
+        
+        # Fallback: Simple P/L-based reward
         pl_pct = trade_result.get("pl_pct", 0)
-        
-        # Normalize reward to [-1, 1] range
-        # +1 for excellent trade (>5% profit)
-        # -1 for bad trade (>5% loss)
-        # 0 for breakeven
-        
         reward = np.clip(pl_pct / 0.05, -1.0, 1.0)
         
         return reward
