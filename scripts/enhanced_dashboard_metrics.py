@@ -410,8 +410,10 @@ class EnhancedMetricsCalculator(TradingMetricsCalculator):
             'leverage': leverage,
         }
     
-    def _calculate_time_of_day_analysis(self, all_trades: List[Dict]) -> Dict[str, Any]:
+    def _calculate_time_of_day_analysis(self, all_trades: List[Dict], closed_trades: List[Dict] = None) -> Dict[str, Any]:
         """Analyze performance by time of day."""
+        if closed_trades is None:
+            closed_trades = [t for t in all_trades if t.get('status') == 'closed']
         if not all_trades:
             return {
                 'best_time': 'N/A',
