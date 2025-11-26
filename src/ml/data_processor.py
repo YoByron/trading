@@ -15,7 +15,8 @@ class DataProcessor:
     def __init__(self, sequence_length: int = 60, feature_columns: List[str] = None):
         self.sequence_length = sequence_length
         self.feature_columns = feature_columns or [
-            'Close', 'Volume', 'Returns', 'RSI', 'MACD', 'Signal', 'Volatility'
+            'Close', 'Volume', 'Returns', 'RSI', 'MACD', 'Signal', 'Volatility',
+            'Bogleheads_Sentiment', 'Bogleheads_Regime', 'Bogleheads_Risk'  # Bogleheads features
         ]
         self.scalers = {}  # Store scalers per symbol if needed
         
@@ -110,6 +111,7 @@ class DataProcessor:
     def prepare_inference_data(self, symbol: str) -> Optional[torch.Tensor]:
         """
         Prepare the latest sequence for inference.
+        Includes Bogleheads features if available.
         """
         df = self.fetch_data(symbol, period="6mo") # Fetch enough for indicators + sequence
         if df.empty:
