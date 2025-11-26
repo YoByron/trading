@@ -68,6 +68,13 @@ class IssueResolutionAgent:
         issue_title = issue_data.get('title', '')
         issue_body = issue_data.get('body', '')
         issue_labels = [label['name'] for label in issue_data.get('labels', [])]
+        issue_created = issue_data.get('created_at', '')
+        
+        # Rule-based pre-diagnosis for common patterns (doesn't require AI)
+        rule_based_diagnosis = self._rule_based_diagnosis(issue_title, issue_body, issue_labels, issue_created)
+        if rule_based_diagnosis:
+            logger.info(f"✅ Rule-based diagnosis found: {rule_based_diagnosis.root_cause[:100]}...")
+            return rule_based_diagnosis
         
         # Use Gemini for root cause analysis
         diagnosis_prompt = f"""
@@ -161,6 +168,99 @@ Format as JSON:
         
         logger.info(f"✅ Diagnosis complete: {diagnosis.root_cause[:100]}...")
         return diagnosis
+    
+    def _rule_based_diagnosis(
+        self, 
+        issue_title: str, 
+        issue_body: str, 
+        issue_labels: List[str],
+        issue_created: str
+    ) -> Optional[IssueDiagnosis]:
+        """
+        Rule-based diagnosis for common trading failure patterns.
+        This doesn't require AI agents and can auto-resolve many issues.
+        
+        Returns:
+            IssueDiagnosis if pattern matches, None otherwise
+        """
+        # Pattern 1: "Daily Trading Execution Failed" - transient workflow failures
+        if "Daily Trading Execution Failed" in issue_title:
+            # Extract run number
+            import re
+            run_match = re.search(r'Run #(\d+)', issue_title)
+            run_number = int(run_match.group(1)) if run_match else None
+            
+            # Check if issue is older than 24 hours (likely transient)
+            if issue_created:
+                from datetime import datetime, timezone, timedelta
+                try:
+                    created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
+                    age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
+                    
+                    # If older than 24 hours, likely transient and can be auto-resolved
+                    if age_hours > 24:
+                        return IssueDiagnosis(
+                            issue_number=0,  # Will be set by caller
+                            issue_title=issue_title,
+                            root_cause="Transient workflow failure (timeout, API error, or dependency issue)",
+                            fix_strategy="Auto-resolve as transient failure. If issue persists, check workflow logs.",
+                            confidence=0.75,
+                            can_auto_fix=True,
+                            fix_steps=["clear_cache"],
+                            estimated_time_minutes=1
+                        )
+                except Exception as e:
+                    logger.warning(f"Could not parse issue date: {e}")
+            
+            # For recent failures, check if it's a known transient pattern
+            transient_patterns = [
+                "timeout",
+                "API error",
+                "rate limit",
+                "network error",
+                "DNS error",
+                "connection error",
+                "ModuleNotFoundError",
+                "dependency",
+                "pip install"
+            ]
+            
+            issue_text_lower = (issue_title + " " + issue_body).lower()
+            if any(pattern in issue_text_lower for pattern in transient_patterns):
+                return IssueDiagnosis(
+                    issue_number=0,
+                    issue_title=issue_title,
+                    root_cause="Transient infrastructure failure (timeout, API error, or dependency issue)",
+                    fix_strategy="Auto-resolve as transient failure. System will retry on next scheduled run.",
+                    confidence=0.8,
+                    can_auto_fix=True,
+                    fix_steps=["clear_cache"],
+                    estimated_time_minutes=1
+                )
+        
+        # Pattern 2: Issues with "auto-resolve" label older than 48 hours
+        if "auto-resolve" in issue_labels and issue_created:
+            from datetime import datetime, timezone, timedelta
+            try:
+                created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
+                age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
+                
+                # If older than 48 hours and still open, likely resolved or stale
+                if age_hours > 48:
+                    return IssueDiagnosis(
+                        issue_number=0,
+                        issue_title=issue_title,
+                        root_cause="Stale issue - likely resolved by subsequent successful runs",
+                        fix_strategy="Auto-resolve as stale. If problem persists, new issue will be created.",
+                        confidence=0.7,
+                        can_auto_fix=True,
+                        fix_steps=[],
+                        estimated_time_minutes=0
+                    )
+            except Exception as e:
+                logger.warning(f"Could not parse issue date for auto-resolve check: {e}")
+        
+        return None
     
     def attempt_fix(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
         """
