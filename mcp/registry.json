@@ -103,6 +103,16 @@
         "get_bogleheads_signal": "get_bogleheads_signal",
         "analyze_bogleheads_regime": "analyze_bogleheads_regime"
       }
+    },
+    {
+      "id": "langsmith-monitor",
+      "display_name": "LangSmith Monitor",
+      "module": "mcp.servers.langsmith_server",
+      "tools": {
+        "get_langsmith_runs": "get_langsmith_runs",
+        "get_langsmith_stats": "get_langsmith_stats",
+        "check_langsmith_health": "check_langsmith_health"
+      }
     }
   ]
 }

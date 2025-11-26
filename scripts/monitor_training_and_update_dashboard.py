@@ -39,6 +39,15 @@ except ImportError:
     logger.warning("Performance Monitor skill not available")
     PERFORMANCE_MONITOR_AVAILABLE = False
 
+# Import LangSmith Monitor
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"))
+    from langsmith_monitor import LangSmithMonitor
+    LANGSMITH_MONITOR_AVAILABLE = True
+except ImportError:
+    logger.warning("LangSmith Monitor skill not available")
+    LANGSMITH_MONITOR_AVAILABLE = False
+
 # Import training status checker
 from scripts.continuous_training import ContinuousTrainer
 
@@ -50,6 +59,7 @@ class TrainingMonitor:
         """Initialize monitor."""
         self.trainer = ContinuousTrainer()
         self.performance_monitor = None
+        self.langsmith_monitor = None
         
         if PERFORMANCE_MONITOR_AVAILABLE:
             try:
@@ -57,6 +67,13 @@ class TrainingMonitor:
                 logger.info("✅ Performance Monitor skill initialized")
             except Exception as e:
                 logger.warning(f"⚠️  Performance Monitor initialization failed: {e}")
+        
+        if LANGSMITH_MONITOR_AVAILABLE:
+            try:
+                self.langsmith_monitor = LangSmithMonitor()
+                logger.info("✅ LangSmith Monitor skill initialized")
+            except Exception as e:
+                logger.warning(f"⚠️  LangSmith Monitor initialization failed: {e}")
     
     def check_training_status(self) -> Dict[str, Any]:
         """Check current training status."""
@@ -195,6 +212,21 @@ class TrainingMonitor:
             for symbol, next_time in list(status.get("next_retrain", {}).items())[:10]:
                 training_section += f"- **{symbol}**: {next_time}\n"
             
+            # Add LangSmith monitoring section
+            if self.langsmith_monitor:
+                try:
+                    langsmith_stats = self.langsmith_monitor.get_project_stats("trading-rl-training", days=7)
+                    if langsmith_stats.get("success"):
+                        stats = langsmith_stats
+                        training_section += f"\n### LangSmith Monitoring\n\n"
+                        training_section += f"**Project**: trading-rl-training\n"
+                        training_section += f"**Total Runs** (7 days): {stats.get('total_runs', 0)}\n"
+                        training_section += f"**Success Rate**: {stats.get('success_rate', 0):.1f}%\n"
+                        training_section += f"**Average Duration**: {stats.get('average_duration_seconds', 0):.1f}s\n"
+                        training_section += f"\n**View Dashboard**: https://smith.langchain.com\n"
+                except Exception as e:
+                    logger.debug(f"Failed to add LangSmith stats: {e}")
+            
             # Append to dashboard (before final ---)
             if "---" in content:
                 parts = content.rsplit("---", 1)
@@ -245,6 +277,18 @@ class TrainingMonitor:
                 vertex_status = self.check_vertex_ai_jobs()
                 if "error" not in vertex_status:
                     logger.info(f"✅ Vertex AI jobs checked")
+                
+                # Check LangSmith status
+                if self.langsmith_monitor:
+                    langsmith_health = self.langsmith_monitor.monitor_health()
+                    if langsmith_health.get("success"):
+                        logger.info(f"✅ LangSmith health checked: {langsmith_health.get('status')}")
+                    
+                    langsmith_stats = self.langsmith_monitor.get_project_stats("trading-rl-training", days=7)
+                    if langsmith_stats.get("success"):
+                        stats = langsmith_stats
+                        logger.info(f"✅ LangSmith stats: {stats.get('total_runs', 0)} runs, "
+                                  f"{stats.get('success_rate', 0):.1f}% success rate")
                 
                 # Update dashboard
                 if self.update_dashboard():
