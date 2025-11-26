@@ -52,10 +52,10 @@ jobs:
           LABEL="${{ github.event.inputs.label || 'trading-failure' }}"
           MAX_ISSUES="${{ github.event.inputs.max_issues || '10' }}"
           
+          # Run in live mode (not dry-run)
           python3 scripts/autonomous_issue_resolver.py \
             --label "$LABEL" \
-            --max-issues "$MAX_ISSUES" \
-            --dry-run false || {
+            --max-issues "$MAX_ISSUES" || {
               echo "⚠️  Some issues could not be resolved"
               exit 0  # Don't fail workflow - some issues may need manual review
             }
