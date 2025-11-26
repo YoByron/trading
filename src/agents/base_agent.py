@@ -24,7 +24,7 @@ class BaseAgent(ABC):
     - Transparency (auditable decision logs)
     """
     
-    def __init__(self, name: str, role: str, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, name: str, role: str, model: str = "claude-3-5-sonnet-20240620"):
         self.name = name
         self.role = role
         self.model = model
