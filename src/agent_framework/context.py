@@ -24,6 +24,13 @@ class AgentConfig:
 
     def get(self, key: str, default: Optional[Any] = None) -> Any:
         return self.data.get(key, default)
+    
+    def copy_with(self, **overrides: Any) -> "AgentConfig":
+        """Return a shallow copy with updates."""
+        new_data = self.data.copy()
+        if "data" in overrides:
+            new_data.update(overrides.pop("data"))
+        return AgentConfig(data=new_data)
 
 
 @dataclass
