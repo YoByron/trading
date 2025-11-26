@@ -14,6 +14,10 @@ on:
       - 'requirements*.txt'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   check-dependencies:
     runs-on: ubuntu-latest

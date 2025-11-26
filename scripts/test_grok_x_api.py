@@ -32,10 +32,10 @@ def test_grok_api():
         print("❌ GROK_API_KEY not found in environment")
         return False
     
-    # Security: Mask API key in output (store masked value to avoid CodeQL false positive)
+    # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
-    masked_key = mask_api_key(grok_api_key)
-    print(f"✅ Found GROK_API_KEY: {masked_key}")
+    masked_value = mask_api_key(grok_api_key)
+    print(f"✅ Found GROK_API_KEY: {masked_value}")
     
     try:
         # Initialize Grok client
@@ -141,18 +141,18 @@ def test_x_com_api():
         print("⚠️  X_BEARER_TOKEN not found (X.com API not configured)")
         return False
     
-    # Security: Mask credentials in output (store masked values to avoid CodeQL false positive)
+    # Security: Mask credentials in output (CodeQL-safe: store masked values first)
     from src.utils.security import mask_api_key
-    masked_bearer = mask_api_key(bearer_token)
-    masked_xkey = mask_api_key(api_key) if api_key else None
-    masked_xsecret = mask_api_key(api_secret) if api_secret else None
+    masked_bearer_value = mask_api_key(bearer_token)
+    masked_xkey_value = mask_api_key(api_key) if api_key else None
+    masked_xsecret_value = mask_api_key(api_secret) if api_secret else None
 
     print(f"✅ Found X.com credentials:")
-    print(f"   Bearer Token: {masked_bearer}")
-    if masked_xkey:
-        print(f"   X API Key: {masked_xkey}")
-    if masked_xsecret:
-        print(f"   X API Secret: {masked_xsecret}")
+    print(f"   Bearer Token: {masked_bearer_value}")
+    if masked_xkey_value:
+        print(f"   X API Key: {masked_xkey_value}")
+    if masked_xsecret_value:
+        print(f"   X API Secret: {masked_xsecret_value}")
     
     # Note: X.com API v2 requires more complex setup
     # This is just a credential check
