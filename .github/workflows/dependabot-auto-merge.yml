@@ -8,10 +8,17 @@ permissions:
   contents: write
   pull-requests: write
 
+# SECURITY NOTE: This workflow uses pull_request_target with write permissions,
+# but it's SAFE because:
+# 1. It only runs for dependabot[bot] (verified by `if: github.actor == 'dependabot[bot]'`)
+# 2. It doesn't checkout PR code - only uses GitHub API to merge
+# 3. Dependabot is a trusted GitHub service
+# CodeQL may flag this, but it's a false positive given the actor restriction.
+
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]'  # SECURITY: Only run for trusted Dependabot bot
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
