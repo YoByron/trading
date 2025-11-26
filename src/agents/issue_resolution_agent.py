@@ -190,15 +190,16 @@ Format as JSON:
             run_match = re.search(r'Run #(\d+)', issue_title)
             run_number = int(run_match.group(1)) if run_match else None
             
-            # Check if issue is older than 24 hours (likely transient)
+            # Check if issue is older than 6 hours (reduced from 24h for faster resolution)
             if issue_created:
                 from datetime import datetime, timezone, timedelta
                 try:
                     created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
                     age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
                     
-                    # If older than 24 hours, likely transient and can be auto-resolved
-                    if age_hours > 24:
+                    # If older than 6 hours, likely transient and can be auto-resolved
+                    # Most trading failures are transient (timeouts, API errors, etc.)
+                    if age_hours > 6:
                         return IssueDiagnosis(
                             issue_number=0,  # Will be set by caller
                             issue_title=issue_title,
@@ -212,7 +213,7 @@ Format as JSON:
                 except Exception as e:
                     logger.warning(f"Could not parse issue date: {e}")
             
-            # For recent failures, check if it's a known transient pattern
+            # For recent failures, check if it's a known transient pattern (resolve immediately)
             transient_patterns = [
                 "timeout",
                 "API error",
@@ -238,15 +239,16 @@ Format as JSON:
                     estimated_time_minutes=1
                 )
         
-        # Pattern 2: Issues with "auto-resolve" label older than 48 hours
+        # Pattern 2: Issues with "auto-resolve" label older than 6 hours (reduced from 48h)
+        # If an issue is marked for auto-resolve, it should be resolved quickly
         if "auto-resolve" in issue_labels and issue_created:
             from datetime import datetime, timezone, timedelta
             try:
                 created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
                 age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
                 
-                # If older than 48 hours and still open, likely resolved or stale
-                if age_hours > 48:
+                # If older than 6 hours and still open, likely resolved or stale
+                if age_hours > 6:
                     return IssueDiagnosis(
                         issue_number=0,
                         issue_title=issue_title,
