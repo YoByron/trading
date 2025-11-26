@@ -1156,7 +1156,10 @@ class MarketDataProvider:
     def _is_valid(data: Optional[pd.DataFrame], lookback_days: int) -> bool:
         if data is None or data.empty:
             return False
-        return len(data.index.unique()) >= lookback_days
+        # Relaxed validation: Accept if we have substantial data (at least 20 rows)
+        # This allows partial data from free-tier APIs (e.g. Polygon 120 days limit)
+        # while still rejecting empty/broken responses.
+        return len(data.index.unique()) >= min(lookback_days, 20)
 
     @staticmethod
     def _prepare(data: pd.DataFrame, lookback_days: int) -> pd.DataFrame:

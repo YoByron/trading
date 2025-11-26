@@ -38,7 +38,8 @@ class DataCollector:
             try:
                 logger.info(f"Fetching data for {symbol}...")
 
-                data = self.market_data.get_daily_bars(symbol, lookback_days)
+                result = self.market_data.get_daily_bars(symbol, lookback_days)
+                data = result.data
                 if data.empty:  # pragma: no cover - defensive
                     logger.warning(f"No data returned for {symbol} after fallbacks")
                     continue
