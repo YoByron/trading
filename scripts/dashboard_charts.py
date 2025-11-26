@@ -219,7 +219,7 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
         return None
     
     rolling_sharpe = []
-    rolling_dates = dates[window:]
+    rolling_dates = []
     
     for i in range(window, len(returns)):
         window_returns = returns[i-window:i]
@@ -228,8 +228,19 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
             std_ret = np.std(window_returns)
             sharpe = (mean_ret / std_ret * np.sqrt(252)) if std_ret > 0 else 0.0
             rolling_sharpe.append(sharpe)
+            # Use the date corresponding to the end of the window
+            rolling_dates.append(dates[i])
         else:
             rolling_sharpe.append(0.0)
+            rolling_dates.append(dates[i])
+    
+    if len(rolling_dates) == 0 or len(rolling_sharpe) == 0:
+        return None
+    
+    # Ensure dates and sharpe arrays have same length
+    min_len = min(len(rolling_dates), len(rolling_sharpe))
+    rolling_dates = rolling_dates[:min_len]
+    rolling_sharpe = rolling_sharpe[:min_len]
     
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
