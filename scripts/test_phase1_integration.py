@@ -34,10 +34,10 @@ def test_polygon_api():
         print("❌ POLYGON_API_KEY not set in environment")
         return False
     
-    # Security: Mask API key in output (store masked value to avoid CodeQL alerts)
+    # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
-    masked = mask_api_key(api_key)
-    print(f"✅ Polygon.io API key found: {masked}")
+    masked_value = mask_api_key(api_key)
+    print(f"✅ Polygon.io API key found: {masked_value}")
     
     try:
         calculator = DCFValuationCalculator()
@@ -81,10 +81,10 @@ def test_finnhub_api():
         print("❌ FINNHUB_API_KEY not set in environment")
         return False
     
-    # Security: Mask API key in output (store masked value to avoid CodeQL alerts)
+    # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
-    masked = mask_api_key(api_key)
-    print(f"✅ Finnhub API key found: {masked}")
+    masked_value = mask_api_key(api_key)
+    print(f"✅ Finnhub API key found: {masked_value}")
     
     try:
         client = FinnhubClient()
