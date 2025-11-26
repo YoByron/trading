@@ -188,6 +188,17 @@ class EliteOrchestrator:
         except Exception as e:
             logger.warning(f"⚠️ Gamma Exposure Agent unavailable: {e}")
             self.gamma_agent = None
+
+        # BogleHeads Agent
+        try:
+            from src.agents.bogleheads_agent import BogleHeadsAgent
+            self.bogleheads_agent = BogleHeadsAgent()
+            logger.info("✅ BogleHeads Agent initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ BogleHeads Agent unavailable: {e}")
+            self.bogleheads_agent = None
+            
+        logger.info("✅ Elite Orchestrator Agents Initialized (Claude, Langchain, Gemini, MCP, ML, Gamma, BogleHeads)")
     
     def create_trade_plan(self, symbols: List[str], context: Optional[Dict[str, Any]] = None) -> TradePlan:
         """
@@ -244,7 +255,8 @@ class EliteOrchestrator:
                     AgentType.GEMINI.value,
                     AgentType.MCP.value,
                     AgentType.ML_MODEL.value,
-                    "gamma_agent"  # New Gamma Exposure Agent
+                    "gamma_agent",  # New Gamma Exposure Agent
+                    "bogleheads_agent" # New BogleHeads Agent
                 ],
                 "tasks": [
                     "Technical analysis",

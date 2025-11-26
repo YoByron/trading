@@ -26,7 +26,12 @@ def get_bogleheads_learner():
     
     if _bogleheads_learner is None:
         try:
-            from claude.skills.bogleheads_learner.scripts.bogleheads_learner import BogleheadsLearner
+            # Add .claude/skills to path
+            skills_path = project_root / ".claude" / "skills" / "bogleheads_learner" / "scripts"
+            if str(skills_path) not in sys.path:
+                sys.path.insert(0, str(skills_path))
+            
+            from bogleheads_learner import BogleheadsLearner
             _bogleheads_learner = BogleheadsLearner()
             logger.info("✅ Bogleheads learner initialized")
         except Exception as e:
