@@ -648,17 +648,60 @@ class EliteOrchestrator:
                 except Exception as e:
                     logger.warning(f"Gemini analysis failed for {symbol}: {e}")
 
-        # ML Predictor (LSTM-PPO)
+        # ML Predictor (LSTM-PPO or Ensemble)
         if self.ml_predictor:
             for symbol in plan.symbols:
                 try:
-                    ml_signal = self.ml_predictor.get_signal(symbol)
-                    recommendations[f"{symbol}_ml"] = {
-                        "agent": "ml_model",
-                        "recommendation": ml_signal["action"],
-                        "confidence": ml_signal["confidence"],
-                        "reasoning": f"LSTM-PPO Value Estimate: {ml_signal.get('value_estimate', 0):.2f}"
-                    }
+                    # Try to use ensemble RL if available
+                    use_ensemble = os.getenv("USE_ENSEMBLE_RL", "false").lower() == "true"
+                    
+                    if use_ensemble:
+                        try:
+                            from src.ml.ensemble_rl import EnsembleRLAgent
+                            from src.ml.data_processor import DataProcessor
+                            import torch
+                            
+                            # Get state representation
+                            data_processor = DataProcessor()
+                            df = data_processor.fetch_data(symbol, period="1y")
+                            if not df.empty:
+                                df = data_processor.add_technical_indicators(df)
+                                df = data_processor.normalize_data(df)
+                                sequences = data_processor.create_sequences(df)
+                                
+                                if len(sequences) > 0:
+                                    # Use last sequence
+                                    state = sequences[-1:].unsqueeze(0)  # Add batch dimension
+                                    
+                                    # Initialize ensemble agent
+                                    ensemble_agent = EnsembleRLAgent(
+                                        input_dim=len(data_processor.feature_columns),
+                                        device="cpu"
+                                    )
+                                    
+                                    # Get prediction
+                                    action, confidence, details = ensemble_agent.predict(state)
+                                    
+                                    action_map = {0: "HOLD", 1: "BUY", 2: "SELL"}
+                                    recommendations[f"{symbol}_ml"] = {
+                                        "agent": "ensemble_rl",
+                                        "recommendation": action_map.get(action, "HOLD"),
+                                        "confidence": confidence,
+                                        "reasoning": f"Ensemble RL (PPO+A2C+SAC): {details.get('individual_predictions', {})}"
+                                    }
+                                    logger.info(f"✅ Ensemble RL prediction for {symbol}: {action_map.get(action)} (confidence: {confidence:.2f})")
+                        except Exception as e:
+                            logger.debug(f"Ensemble RL not available, using single model: {e}")
+                    
+                    # Fallback to single model
+                    if f"{symbol}_ml" not in recommendations:
+                        ml_signal = self.ml_predictor.get_signal(symbol)
+                        recommendations[f"{symbol}_ml"] = {
+                            "agent": "ml_model",
+                            "recommendation": ml_signal["action"],
+                            "confidence": ml_signal["confidence"],
+                            "reasoning": f"LSTM-PPO Value Estimate: {ml_signal.get('value_estimate', 0):.2f}"
+                        }
                 except Exception as e:
                     logger.warning(f"ML prediction failed for {symbol}: {e}")
         

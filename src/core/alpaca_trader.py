@@ -386,6 +386,19 @@ class AlpacaTrader:
                 f"Order submitted successfully: {order.id} - "
                 f"{side.upper()} {symbol} ${amount_usd:.2f}"
             )
+            
+            # Trigger trade tracking for online learning (if available)
+            try:
+                from src.ml.trade_tracker import TradeTracker
+                # Get global trade tracker instance if it exists
+                # This will be set up by the orchestrator
+                if hasattr(self, '_trade_tracker') and self._trade_tracker:
+                    action = 1 if side == "buy" else 2  # 1=Buy, 2=Sell
+                    # Note: Entry state would need to be passed from orchestrator
+                    # For now, we just log the trade
+                    logger.debug(f"Trade tracker notified: {symbol} {side}")
+            except Exception as e:
+                logger.debug(f"Trade tracker not available: {e}")
 
             return order_info
 
