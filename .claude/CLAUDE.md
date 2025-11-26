@@ -22,12 +22,47 @@
 - `reports/daily_report_YYYY-MM-DD.txt` - Daily CEO reports
 - `.claude/CLAUDE.md` - Project memory and instructions (this file)
 - `docs/` - Detailed documentation and strategies
+- `claude-progress.txt` - Agent progress log across sessions
+- `feature_list.json` - Structured feature tracking with pass/fail status
+- `init.sh` - Environment initialization script
 
 **Memory Hierarchy** (per Anthropic guidelines):
 1. Enterprise policies (if applicable)
 2. Project-level instructions (this CLAUDE.md file)
 3. User preferences (personal settings)
 4. Local customizations (conversation-specific)
+
+---
+
+## Long-Running Agent Harness Pattern
+
+**Reference**: [Anthropic's Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+
+This system implements a two-part harness for working across multiple context windows:
+
+### Initializer Agent (First Session Only)
+
+If this is the very first agent session working on this project:
+
+1. **Set up environment**:
+   - Create `init.sh` script for environment setup
+   - Create `claude-progress.txt` file for progress tracking
+   - Create `feature_list.json` with all features marked as `"passes": false`
+   - Make initial git commit showing environment setup
+
+2. **Document foundation**:
+   - Ensure all critical files exist
+   - Verify environment is ready for coding agents
+
+### Coding Agent (All Subsequent Sessions)
+
+Every session after the first should follow the "Future Sessions - START HERE" pattern below.
+
+**Key Principles**:
+- Work on ONE feature at a time (incremental progress)
+- Test end-to-end before marking features complete
+- Leave clean state (code ready to merge)
+- Update progress files and commit after each feature
 
 ---
 
@@ -359,11 +394,41 @@ Phase 3: $3/day  → Funded by profits from Phase 2
 - Research findings documented in docs/
 - Current challenge status updated in this file
 
-**Future Sessions - START HERE**:
-1. Read `.claude/CLAUDE.md` (this file) for context and current status
-2. Read `data/system_state.json` for latest system state
-3. Read latest `reports/daily_report_YYYY-MM-DD.txt` for recent performance
-4. Reference docs/ for detailed strategies and protocols
+**Future Sessions - START HERE** (Long-Running Agent Pattern):
+
+**Session Orientation Steps** (MUST DO FIRST):
+1. **Get Bearings**:
+   - Run `pwd` to see working directory
+   - Read `claude-progress.txt` to understand recent work
+   - Read `feature_list.json` to see feature status
+   - Read git logs: `git log --oneline -20` to see recent commits
+
+2. **Verify Environment**:
+   - Run `./init.sh` to verify environment is ready
+   - Fix any bugs before starting new work
+   - Ensure system is in clean, working state
+
+3. **Choose Feature**:
+   - Select ONE feature from `feature_list.json` that has `"passes": false`
+   - Work on that feature incrementally (don't try to do everything at once)
+
+4. **Complete Feature**:
+   - Implement the feature
+   - Test end-to-end (as a human user would)
+   - Only mark `"passes": true` in `feature_list.json` after successful end-to-end verification
+   - Commit with descriptive message: `git commit -m "feat: [feature description]"`
+   - Update `claude-progress.txt` with summary of work done
+
+5. **Leave Clean State**:
+   - Ensure code is well-documented
+   - No major bugs
+   - Ready for next session to continue
+
+**Legacy Context Files** (also read for full context):
+- `.claude/CLAUDE.md` (this file) for context and current status
+- `data/system_state.json` for latest system state
+- Latest `reports/daily_report_YYYY-MM-DD.txt` for recent performance
+- `docs/` for detailed strategies and protocols
 
 ---
 

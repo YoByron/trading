@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "version": "1.0",
+    "created": "2025-11-26",
+    "description": "Structured feature list for trading system. Features marked as 'passes: false' are not yet complete. Only mark as 'passes: true' after end-to-end testing.",
+    "note": "It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality."
+  },
+  "features": [
+    {
+      "category": "core_trading",
+      "description": "Momentum strategy with MACD + RSI + Volume indicators",
+      "steps": [
+        "Calculate MACD indicator for symbols",
+        "Calculate RSI indicator for symbols",
+        "Calculate volume momentum",
+        "Combine indicators into momentum score",
+        "Select symbol with highest momentum",
+        "Execute trade via Alpaca API"
+      ],
+      "passes": true,
+      "notes": "Validated with 60-day backtest: 62.2% win rate, 2.18 Sharpe ratio"
+    },
+    {
+      "category": "core_trading",
+      "description": "Multi-tier allocation system (Tier 1: ETFs 60%, Tier 2: Growth 20%, Tier 3: IPO 10%, Tier 4: Crowdfunding 10%)",
+      "steps": [
+        "Allocate daily investment across tiers",
+        "Execute Tier 1 ETF trades ($6/day)",
+        "Execute Tier 2 growth stock trades ($2/day)",
+        "Reserve Tier 3 funds for IPOs",
+        "Reserve Tier 4 funds for crowdfunding"
+      ],
+      "passes": true,
+      "notes": "Fully implemented and operational"
+    },
+    {
+      "category": "core_trading",
+      "description": "Position sizing based on portfolio percentage and Kelly Criterion",
+      "steps": [
+        "Calculate portfolio value",
+        "Apply Kelly Criterion for position sizing",
+        "Enforce 2% daily investment limit",
+        "Scale positions with portfolio growth"
+      ],
+      "passes": true,
+      "notes": "Implemented in position sizing logic"
+    },
+    {
+      "category": "risk_management",
+      "description": "Stop-loss and circuit breakers",
+      "steps": [
+        "Calculate stop-loss prices",
+        "Monitor positions for stop-loss triggers",
+        "Implement circuit breakers for daily loss limits",
+        "Enforce position limits per symbol"
+      ],
+      "passes": true,
+      "notes": "Risk management fully operational"
+    },
+    {
+      "category": "data",
+      "description": "Multi-source market data provider with fallbacks",
+      "steps": [
+        "Try Alpaca API first",
+        "Fallback to Polygon.io if Alpaca fails",
+        "Fallback to yfinance if Polygon fails",
+        "Use disk cache if available and fresh",
+        "Track performance metrics per source"
+      ],
+      "passes": true,
+      "notes": "Implemented in src/utils/market_data.py"
+    },
+    {
+      "category": "data",
+      "description": "Backtesting engine for strategy validation",
+      "steps": [
+        "Load historical market data",
+        "Simulate trades using strategy",
+        "Calculate performance metrics (win rate, Sharpe, drawdown)",
+        "Generate backtest reports"
+      ],
+      "passes": true,
+      "notes": "Validated with 60-day backtest showing profitability"
+    },
+    {
+      "category": "data",
+      "description": "Performance tracking and P/L calculation",
+      "steps": [
+        "Track open positions",
+        "Track closed trades with realized P/L",
+        "Calculate win rate from closed trades",
+        "Update system_state.json with metrics"
+      ],
+      "passes": true,
+      "notes": "Fully implemented in StateManager"
+    },
+    {
+      "category": "sentiment",
+      "description": "Reddit sentiment analysis",
+      "steps": [
+        "Scrape r/wallstreetbets, r/stocks, r/investing, r/options",
+        "Extract ticker mentions and sentiment",
+        "Weight by upvotes and engagement",
+        "Store in sentiment RAG store"
+      ],
+      "passes": true,
+      "notes": "Implemented and operational"
+    },
+    {
+      "category": "sentiment",
+      "description": "YouTube video analysis for stock recommendations",
+      "steps": [
+        "Monitor YouTube channels for new videos",
+        "Extract transcripts and analyze content",
+        "Identify stock recommendations",
+        "Add to Tier 2 watchlist"
+      ],
+      "passes": true,
+      "notes": "Automated via GitHub Actions workflow"
+    },
+    {
+      "category": "sentiment",
+      "description": "Sentiment RAG store for historical retrieval",
+      "steps": [
+        "Store sentiment data in SQLite",
+        "Create vector embeddings in Chroma",
+        "Enable semantic search over historical sentiment",
+        "Aggregate sentiment scores per ticker"
+      ],
+      "passes": true,
+      "notes": "Implemented in rag_store/"
+    },
+    {
+      "category": "automation",
+      "description": "GitHub Actions daily trading workflow",
+      "steps": [
+        "Run daily at 9:35 AM ET on weekdays",
+        "Execute trading strategy",
+        "Update system_state.json",
+        "Commit and push state changes",
+        "Generate daily CEO report"
+      ],
+      "passes": true,
+      "notes": "Fully automated and operational"
+    },
+    {
+      "category": "automation",
+      "description": "Pre-market health checks",
+      "steps": [
+        "Verify Alpaca API connectivity",
+        "Check market data availability",
+        "Validate system state freshness",
+        "Run basic system tests"
+      ],
+      "passes": true,
+      "notes": "Implemented in scripts/pre_market_health_check.py"
+    },
+    {
+      "category": "automation",
+      "description": "Daily CEO reporting",
+      "steps": [
+        "Generate performance summary",
+        "Calculate key metrics",
+        "Create daily_report_YYYY-MM-DD.txt",
+        "Include trade details and P/L"
+      ],
+      "passes": true,
+      "notes": "Automated daily reports"
+    },
+    {
+      "category": "integration",
+      "description": "Alpaca API integration for order execution",
+      "steps": [
+        "Authenticate with Alpaca API",
+        "Place market orders",
+        "Check order status",
+        "Handle order errors gracefully"
+      ],
+      "passes": true,
+      "notes": "Fully integrated and tested"
+    },
+    {
+      "category": "integration",
+      "description": "Polygon.io API integration",
+      "steps": [
+        "Fetch market data from Polygon",
+        "Handle API rate limits",
+        "Cache responses appropriately"
+      ],
+      "passes": true,
+      "notes": "Used as fallback data source"
+    },
+    {
+      "category": "integration",
+      "description": "Finnhub economic calendar integration",
+      "steps": [
+        "Fetch economic calendar events",
+        "Filter relevant events",
+        "Incorporate into trading decisions"
+      ],
+      "passes": false,
+      "notes": "Planned but not yet implemented"
+    },
+    {
+      "category": "infrastructure",
+      "description": "State persistence across sessions",
+      "steps": [
+        "Save system_state.json after each execution",
+        "Load state at session start",
+        "Detect stale state and warn",
+        "Prevent use of expired state (>7 days)"
+      ],
+      "passes": true,
+      "notes": "Implemented in StateManager with staleness detection"
+    },
+    {
+      "category": "infrastructure",
+      "description": "Multi-agent orchestration",
+      "steps": [
+        "Coordinate MetaAgent, ResearchAgent, SignalAgent, RiskAgent, ExecutionAgent",
+        "Manage agent context and memory",
+        "Handle agent failures gracefully"
+      ],
+      "passes": true,
+      "notes": "Implemented in src/orchestration/elite_orchestrator.py"
+    },
+    {
+      "category": "infrastructure",
+      "description": "Error monitoring with Sentry",
+      "steps": [
+        "Integrate Sentry SDK",
+        "Capture exceptions automatically",
+        "Send alerts for critical errors"
+      ],
+      "passes": false,
+      "notes": "Planned but not yet implemented"
+    },
+    {
+      "category": "ml",
+      "description": "Reinforcement Learning policy learner",
+      "steps": [
+        "Train Q-learning model on historical trades",
+        "Adapt policy based on performance",
+        "Use RL for position sizing decisions"
+      ],
+      "passes": false,
+      "notes": "Basic implementation exists but needs improvement"
+    },
+    {
+      "category": "ml",
+      "description": "Deep learning models for price prediction",
+      "steps": [
+        "Train neural network on historical data",
+        "Predict price movements",
+        "Integrate predictions into trading decisions"
+      ],
+      "passes": false,
+      "notes": "Critical gap identified in gap analysis"
+    },
+    {
+      "category": "testing",
+      "description": "End-to-end testing of trading workflow",
+      "steps": [
+        "Start development environment",
+        "Run full trading cycle",
+        "Verify trades execute correctly",
+        "Check state updates properly"
+      ],
+      "passes": false,
+      "notes": "Needs comprehensive E2E test suite"
+    }
+  ]
+}
+

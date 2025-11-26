@@ -1,0 +1,27 @@
+# Claude Agent Progress Log
+
+This file tracks agent progress across multiple context windows. Each agent session should read this file first to understand recent work, then update it at the end of the session.
+
+## Format
+- Date: YYYY-MM-DD HH:MM
+- Agent: Description of what was accomplished
+- Files Changed: List of files modified
+- Next Steps: What should be done next
+
+---
+
+## Recent Progress
+
+[This file will be updated by agents after each session]
+
+---
+
+## Session Template
+
+When starting a new session, agents should:
+1. Read this file to understand recent work
+2. Read `feature_list.json` to see feature status
+3. Read git logs (`git log --oneline -20`) to see recent commits
+4. Choose ONE feature to work on
+5. Update this file at the end of the session
+
