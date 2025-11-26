@@ -118,12 +118,36 @@ class DataProcessor:
             return None
             
         df = self.add_technical_indicators(df)
+        
+        # Add Bogleheads features if available
+        try:
+            from src.utils.bogleheads_integration import get_bogleheads_signal_for_symbol, get_bogleheads_regime
+            
+            signal = get_bogleheads_signal_for_symbol(symbol)
+            regime = get_bogleheads_regime()
+            
+            # Add Bogleheads features to all rows (use current values)
+            df['Bogleheads_Sentiment'] = signal.get('score', 0.0) / 100.0  # Normalize to -1 to 1
+            df['Bogleheads_Regime'] = {'bull': 1.0, 'bear': -1.0, 'choppy': 0.0, 'uncertain': 0.0}.get(regime.get('regime', 'unknown'), 0.0)
+            df['Bogleheads_Risk'] = {'low': 0.0, 'medium': 0.5, 'high': 1.0}.get(regime.get('risk_level', 'medium'), 0.5)
+        except Exception as e:
+            logger.debug(f"Could not add Bogleheads features: {e}")
+            # Fill with zeros if unavailable
+            df['Bogleheads_Sentiment'] = 0.0
+            df['Bogleheads_Regime'] = 0.0
+            df['Bogleheads_Risk'] = 0.5
+        
         df = self.normalize_data(df)
         
         # Get the last sequence_length rows
         if len(df) < self.sequence_length:
             logger.warning(f"Not enough data for {symbol} inference")
             return None
+        
+        # Ensure all feature columns exist
+        for col in self.feature_columns:
+            if col not in df.columns:
+                df[col] = 0.0
             
         last_sequence = df[self.feature_columns].iloc[-self.sequence_length:].values
         
