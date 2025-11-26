@@ -344,16 +344,45 @@ def validate_order_size(amount: float, expected: float, tier: str) -> tuple[bool
     return True, ""
 
 
-def log_trade(trade_data):
-    """Log trade to daily record"""
+def log_trade(trade_data, strategy_id=None, agent_type=None):
+    """
+    Log trade to daily record with enhanced attribution.
+    
+    Args:
+        trade_data: Trade data dictionary
+        strategy_id: Strategy identifier (e.g., 'elite_orchestrator', 'adk', 'core_strategy', 'growth_strategy')
+        agent_type: Agent type used (e.g., 'go_adk', 'langchain', 'claude_skills', 'python_fallback')
+    """
     log_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
+
+    # Enhance trade data with attribution if provided
+    enhanced_trade = trade_data.copy()
+    if strategy_id:
+        enhanced_trade['strategy_id'] = strategy_id
+    if agent_type:
+        enhanced_trade['agent_type'] = agent_type
+    
+    # Auto-detect strategy if not provided (for backward compatibility)
+    if 'strategy_id' not in enhanced_trade:
+        # Try to infer from context
+        tier = enhanced_trade.get('tier', '')
+        if 'T1' in tier or 'CORE' in tier:
+            enhanced_trade['strategy_id'] = 'core_strategy'
+        elif 'T2' in tier or 'GROWTH' in tier:
+            enhanced_trade['strategy_id'] = 'growth_strategy'
+        else:
+            enhanced_trade['strategy_id'] = 'unknown'
+    
+    if 'agent_type' not in enhanced_trade:
+        # Default to python_fallback if not specified
+        enhanced_trade['agent_type'] = 'python_fallback'
 
     trades = []
     if log_file.exists():
         with open(log_file, "r") as f:
             trades = json.load(f)
 
-    trades.append(trade_data)
+    trades.append(enhanced_trade)
 
     with open(log_file, "w") as f:
         json.dump(trades, f, indent=2)

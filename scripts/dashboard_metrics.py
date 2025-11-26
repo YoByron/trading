@@ -318,26 +318,47 @@ class TradingMetricsCalculator:
     def _calculate_strategy_metrics(
         self, system_state: Dict, closed_trades: List[Dict], all_trades: List[Dict]
     ) -> Dict[str, Any]:
-        """Calculate per-strategy performance metrics."""
+        """Calculate per-strategy performance metrics with enhanced attribution."""
         strategies = system_state.get('strategies', {})
         strategy_performance = {}
         
-        for strategy_id, strategy_data in strategies.items():
-            strategy_name = strategy_data.get('name', strategy_id)
+        # Group trades by strategy_id (from enhanced trade logs)
+        strategy_trade_map = defaultdict(list)
+        agent_trade_map = defaultdict(list)
+        
+        # Process closed trades with attribution
+        for trade in closed_trades:
+            strategy_id = trade.get('strategy_id') or trade.get('tier', 'unknown')
+            agent_type = trade.get('agent_type', 'unknown')
             
-            # Filter trades for this strategy
-            strategy_trades = [
-                t for t in closed_trades
-                if t.get('tier', '').lower() == strategy_id.lower()
-            ]
+            # Normalize strategy_id
+            if 'T1' in str(strategy_id) or 'CORE' in str(strategy_id):
+                strategy_id = 'core_strategy'
+            elif 'T2' in str(strategy_id) or 'GROWTH' in str(strategy_id):
+                strategy_id = 'growth_strategy'
             
+            strategy_trade_map[strategy_id].append(trade)
+            agent_trade_map[agent_type].append(trade)
+        
+        # Calculate per-strategy metrics
+        for strategy_id, strategy_trades in strategy_trade_map.items():
             if not strategy_trades:
                 continue
+            
+            # Get strategy name from system state or use formatted strategy_id
+            strategy_data = strategies.get(strategy_id, {})
+            strategy_name = strategy_data.get('name', strategy_id.replace('_', ' ').title())
             
             # Calculate metrics for this strategy
             total_pl = sum(t.get('pl', 0) for t in strategy_trades)
             winning = [t for t in strategy_trades if t.get('pl', 0) > 0]
+            losing = [t for t in strategy_trades if t.get('pl', 0) < 0]
             win_rate = (len(winning) / len(strategy_trades) * 100) if strategy_trades else 0.0
+            
+            # Calculate profit factor for this strategy
+            gross_profit = sum(t.get('pl', 0) for t in winning)
+            gross_loss = abs(sum(t.get('pl', 0) for t in losing))
+            profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else 0.0
             
             # Simple Sharpe (would need daily returns per strategy for accurate)
             sharpe = 0.0  # Placeholder - would need strategy-specific equity curve
@@ -352,9 +373,31 @@ class TradingMetricsCalculator:
                 'win_rate': win_rate,
                 'sharpe': sharpe,
                 'max_drawdown_pct': max_dd,
+                'profit_factor': profit_factor,
+                'winning_trades': len(winning),
+                'losing_trades': len(losing),
             }
         
-        return strategy_performance
+        # Also calculate per-agent metrics
+        agent_performance = {}
+        for agent_type, agent_trades in agent_trade_map.items():
+            if not agent_trades:
+                continue
+            
+            total_pl = sum(t.get('pl', 0) for t in agent_trades)
+            winning = [t for t in agent_trades if t.get('pl', 0) > 0]
+            win_rate = (len(winning) / len(agent_trades) * 100) if agent_trades else 0.0
+            
+            agent_performance[agent_type] = {
+                'trades': len(agent_trades),
+                'pl': total_pl,
+                'win_rate': win_rate,
+            }
+        
+        return {
+            'by_strategy': strategy_performance,
+            'by_agent': agent_performance,
+        }
     
     def _calculate_exposure_metrics(
         self, open_positions: List[Dict], current_equity: float, all_trades: List[Dict]
