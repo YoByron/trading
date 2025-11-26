@@ -20,6 +20,12 @@ from enum import Enum
 import asyncio
 
 from src.core.skills_integration import get_skills
+from src.agent_framework.context_engine import (
+    get_context_engine,
+    ContextType,
+    ContextMessage
+)
+from src.agent_framework import agent_blueprints
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +116,12 @@ class EliteOrchestrator:
         # Audit trail
         self.audit_dir = Path("data/audit_trail")
         self.audit_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize Context Engine
+        self.context_engine = get_context_engine(storage_dir=self.context_dir)
+        
+        # Register agent blueprints
+        agent_blueprints.register_trading_agent_blueprints()
         
         self._initialize_agents()
         
@@ -427,53 +439,99 @@ class EliteOrchestrator:
         return results
     
     def _execute_data_collection(self, plan: TradePlan) -> Dict[str, Any]:
-        """Execute data collection phase with multiple agents"""
+        """Execute data collection phase with multiple agents using Context Engine"""
         results = {
             "phase": PlanningPhase.DATA_COLLECTION.value,
             "data_sources": {},
             "agent_results": []
         }
         
-        # Claude Skills: Financial Data
-        if self.skills.financial_data_fetcher:
-            for symbol in plan.symbols:
-                data_result = self.skills.get_price_data(
-                    symbols=[symbol],
-                    timeframe="1Day",
-                    limit=30
-                )
-                results["data_sources"][f"{symbol}_price"] = data_result
-        
-        # Langchain: RAG for news/sentiment
-        if self.langchain_agent:
-            for symbol in plan.symbols:
+        # Get agent contexts from Context Engine
+        for symbol in plan.symbols:
+            # Claude Skills: Financial Data
+            if self.skills.financial_data_fetcher:
                 try:
+                    # Get context for data collection
+                    context = self.context_engine.get_agent_context("research_agent")
+                    
+                    data_result = self.skills.get_price_data(
+                        symbols=[symbol],
+                        timeframe="1Day",
+                        limit=30
+                    )
+                    results["data_sources"][f"{symbol}_price"] = data_result
+                    
+                    # Store in context memory
+                    self.context_engine.store_memory(
+                        agent_id="research_agent",
+                        content={
+                            "symbol": symbol,
+                            "price_data": data_result,
+                            "timestamp": datetime.now().isoformat()
+                        },
+                        tags={symbol, "price_data", "data_collection"}
+                    )
+                except Exception as e:
+                    logger.warning(f"Price data collection failed for {symbol}: {e}")
+            
+            # Langchain: RAG for news/sentiment
+            if self.langchain_agent:
+                try:
+                    # Get context for langchain agent
+                    context = self.context_engine.get_agent_context("langchain_agent")
+                    
                     prompt = f"Analyze recent news and sentiment for {symbol}. Provide key insights."
                     langchain_result = self.langchain_agent.invoke({"input": prompt})
-                    results["data_sources"][f"{symbol}_sentiment"] = {
+                    
+                    result_data = {
                         "agent": "langchain",
                         "data": str(langchain_result)
                     }
+                    results["data_sources"][f"{symbol}_sentiment"] = result_data
+                    
+                    # Send context message
+                    self.context_engine.send_context_message(
+                        sender="langchain_agent",
+                        receiver="meta_agent",
+                        payload=result_data,
+                        context_type=ContextType.TASK_CONTEXT,
+                        metadata={"symbol": symbol, "phase": "data_collection"}
+                    )
                 except Exception as e:
                     logger.warning(f"Langchain data collection failed for {symbol}: {e}")
-        
-        # Gemini: Long-horizon research
-        if self.gemini_agent:
-            for symbol in plan.symbols:
+            
+            # Gemini: Long-horizon research
+            if self.gemini_agent:
                 try:
+                    # Get context for gemini agent
+                    context = self.context_engine.get_agent_context("gemini_agent")
+                    
                     research_prompt = f"Provide long-term research analysis for {symbol}. Consider fundamentals, trends, and portfolio fit."
                     gemini_result = self.gemini_agent.reason(prompt=research_prompt)
-                    results["data_sources"][f"{symbol}_research"] = {
+                    
+                    result_data = {
                         "agent": "gemini",
                         "data": gemini_result
                     }
+                    results["data_sources"][f"{symbol}_research"] = result_data
+                    
+                    # Store in memory
+                    self.context_engine.store_memory(
+                        agent_id="gemini_agent",
+                        content={
+                            "symbol": symbol,
+                            "research": gemini_result,
+                            "timestamp": datetime.now().isoformat()
+                        },
+                        tags={symbol, "research", "long_term"}
+                    )
                 except Exception as e:
                     logger.warning(f"Gemini research failed for {symbol}: {e}")
         
         return results
     
     def _execute_analysis(self, plan: TradePlan, data_collection_results: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Execute analysis phase with ensemble voting"""
+        """Execute analysis phase with ensemble voting using Context Engine"""
         results = {
             "phase": PlanningPhase.ANALYSIS.value,
             "agent_results": [],
@@ -486,14 +544,33 @@ class EliteOrchestrator:
         # MCP Orchestrator (multi-agent system)
         if self.mcp_orchestrator:
             try:
+                # Validate context flow before execution
+                is_valid, errors = self.context_engine.validate_context_flow(
+                    from_agent="research_agent",
+                    to_agent="signal_agent",
+                    context=data_collection_results or {}
+                )
+                if not is_valid:
+                    logger.warning(f"Context validation warnings: {errors}")
+                
                 mcp_result = self.mcp_orchestrator.run_once(execute_orders=False)
                 for symbol in plan.symbols:
                     if symbol in mcp_result.get("symbols", []):
-                        recommendations[f"{symbol}_mcp"] = {
+                        rec_data = {
                             "agent": "mcp",
                             "recommendation": mcp_result.get("symbols", {}).get(symbol, {}),
                             "confidence": 0.8
                         }
+                        recommendations[f"{symbol}_mcp"] = rec_data
+                        
+                        # Send context message
+                        self.context_engine.send_context_message(
+                            sender="mcp",
+                            receiver="meta_agent",
+                            payload=rec_data,
+                            context_type=ContextType.TASK_CONTEXT,
+                            metadata={"symbol": symbol, "phase": "analysis"}
+                        )
             except Exception as e:
                 logger.warning(f"MCP analysis failed: {e}")
         

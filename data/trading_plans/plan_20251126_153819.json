@@ -16,7 +16,7 @@
         "Check market hours",
         "Validate account status"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     "data_collection": {
       "description": "Collect market data and signals",
@@ -31,7 +31,7 @@
         "Gather social signals",
         "Load alternative data"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     "analysis": {
       "description": "Multi-agent analysis",
@@ -49,7 +49,7 @@
         "Sentiment analysis",
         "Ensemble voting"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     "risk_assessment": {
       "description": "Risk validation",
@@ -62,7 +62,7 @@
         "Stop-loss calculation",
         "Circuit breaker check"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     "execution": {
       "description": "Trade execution",
@@ -75,7 +75,7 @@
         "Execution monitoring",
         "Anomaly detection"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     "audit": {
       "description": "Post-trade audit",
@@ -87,11 +87,11 @@
         "Trade logging",
         "Git commit"
       ],
-      "status": "pending"
+      "status": "completed"
     }
   },
   "decisions": [],
   "context": {},
-  "status": "planning",
+  "status": "completed",
   "git_commit": null
 }
