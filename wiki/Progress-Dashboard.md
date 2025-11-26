@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-26 09:43 AM ET  
+**Last Updated**: 2025-11-26 09:46 AM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -34,8 +34,17 @@
 - [x] System reliability 99%+ ✅
 - [ ] Win rate >55% (0.0%)
 - [ ] 30 days of clean data (9/30 days)
+- [ ] Sharpe ratio >1.0 (-16.13)
 - [ ] Strategy validated via backtesting
-- [ ] Sharpe ratio >1.0
+
+### R&D Metrics Summary
+
+| Metric | Value |
+|--------|-------|
+| **Days Completed** | 9 |
+| **Trades Collected** | 7 |
+| **Current Sharpe (R&D)** | -16.13 |
+| **Max Drawdown (R&D)** | 0.06% |
 
 ---
 
@@ -46,9 +55,10 @@
 | Metric | Value |
 |--------|-------|
 | **Starting Balance** | $100,000.00 |
-| **Current Equity** | $100,005.48 |
-| **Total P/L** | $+5.48 (+0.01%) |
+| **Current Equity** | $100,005.50 |
+| **Total P/L** | $+5.50 (+0.01%) |
 | **Average Daily Profit** | $+0.16 |
+| **Peak Equity** | $100,013.98 |
 
 ### Trading Performance
 
@@ -59,6 +69,73 @@
 | **Losing Trades** | 0 |
 | **Win Rate** | 0.0% |
 | **Trades Today** | 0 |
+
+---
+
+## 🛡️ Risk & Performance Depth
+
+### Risk Metrics
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| **Max Drawdown** | 0.06% | <10% |
+| **Current Drawdown** | 0.01% | <5% |
+| **Sharpe Ratio** | -16.13 | >1.0 |
+| **Sortino Ratio** | -23.15 | >1.5 |
+| **Volatility (Annualized)** | 0.25% | <20% |
+| **Worst Daily Loss** | -0.03% | >-5% |
+| **VaR (95th percentile)** | -0.03% | >-3% |
+
+### Risk-Adjusted Performance
+
+| Metric | Value |
+|--------|-------|
+| **Profit Factor** | 0.00 |
+| **Expectancy per Trade** | $0.00 |
+| **Expectancy per R** | 0.00 |
+| **Average Win** | $0.00 |
+| **Average Loss** | $0.00 |
+| **Largest Win** | $0.00 |
+| **Largest Loss** | $0.00 |
+
+---
+
+## 📊 Strategy & Model Diagnostics
+
+### Per-Strategy Performance
+
+| Strategy/Agent | Trades | P/L ($) | Win % | Sharpe | Max DD % |
+|----------------|---------|---------|-------|--------|----------|
+| *No strategy data available* | - | - | - | - | - |
+
+---
+
+## 💼 Position & Exposure
+
+### Exposure Snapshot
+
+| Ticker | Position $ | % of Equity | Sector | Strategy |
+|--------|-------------|-------------|--------|----------|
+| *No open positions* | - | - | - | - |
+
+### Exposure Summary
+
+| Metric | Value |
+|--------|-------|
+| **Largest Position** | 0.00% of equity |
+| **Total Exposure** | $0.00 |
+
+---
+
+## 🚨 Risk Guardrails & Safety
+
+### Live Risk Status
+
+| Guardrail | Current | Limit | Status |
+|-----------|---------|-------|--------|
+| **Daily Loss Used** | $0.00 (0.0%) | $2,000.11 | ✅ |
+| **Max Position Size** | 0.00% | 10.0% | ✅ |
+| **Consecutive Losses** | 0 | 5 | ✅ |
 
 ---
 
@@ -84,7 +161,7 @@
 
 ---
 
-## 📊 Performance Trends
+## 📈 Time-Series & Equity Curve
 
 ### Daily Profit Trend
 
@@ -103,6 +180,14 @@
 | 2025-11-25 | $100,011.62 | $+11.62 | +1.16% |
 | 2025-11-26 | $100,005.48 | $+5.48 | +0.55% |
 
+### Equity Curve Summary
+
+| Metric | Value |
+|--------|-------|
+| **Trading Days Tracked** | 34 |
+| **Rolling Sharpe (7d)** | 0.00 |
+| **Rolling Sharpe (30d)** | 0.00 |
+| **Rolling Max DD (30d)** | 0.00% |
 
 ---
 
@@ -121,22 +206,21 @@
 
 ---
 
-## 🚀 Recent Achievements
+## 🧪 Experiments & Learnings
 
-### Today's Updates
+### Current Experiment
 
-- ✅ **TURBO MODE Enabled**: Go ADK + Langchain + Python all active
-- ✅ **Resilience Fixes**: Health checks, validation gates, graceful fallbacks
-- ✅ **Allocation Updated**: 70/30 split (Tier 1: 70%, Tier 2: 30%)
-- ✅ **GitHub Actions**: Automated daily execution with full system integration
+*No active experiment*
 
-### This Week
+### Last Experiment
 
-- ✅ Fixed GitHub Actions timeout issues
-- ✅ Added proactive health checks
-- ✅ Implemented order size validation gates
-- ✅ Enabled ADK orchestrator integration
-- ✅ Added graceful data fallback (Alpaca → yfinance → Alpha Vantage → Cache)
+*No recent experiments*
+
+### Key Insights
+
+- Strategy performance tracking enabled
+- Risk metrics now visible in dashboard
+- Per-strategy diagnostics available
 
 ---
 
@@ -151,6 +235,7 @@
 - Win Rate: 0.0% (Target: >55%) ⚠️
 - Average Daily: $+0.16 (Target: $100/day)
 - System Reliability: ✅
+- Sharpe Ratio: -16.13 (Target: >1.0) ⚠️
 
 ---
 
@@ -163,5 +248,6 @@
 
 ---
 
-*This dashboard is automatically updated daily by GitHub Actions after trading execution.*
+*This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
+*World-class metrics powered by comprehensive risk & performance analytics.*
 
