@@ -462,6 +462,89 @@ def generate_world_class_dashboard() -> str:
 
 ---
 
+## 🤖 AI & ML System Status
+
+### RL Training Status
+"""
+    
+    # Add RL training status
+    training_status_file = DATA_DIR / "training_status.json"
+    if training_status_file.exists():
+        try:
+            training_status = load_json_file(training_status_file)
+            cloud_jobs = training_status.get("cloud_jobs", {})
+            last_training = training_status.get("last_training", {})
+            
+            active_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["submitted", "running", "in_progress"])
+            completed_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["completed", "success"])
+            
+            dashboard += f"| **Cloud RL Jobs** | {len(cloud_jobs)} total ({active_jobs} active, {completed_jobs} completed) |\n"
+            dashboard += f"| **Last Training** | {len(last_training)} symbols trained |\n"
+            
+            # Show recent training times
+            if last_training:
+                recent_symbols = list(last_training.items())[:5]
+                dashboard += f"| **Recent Training** | {', '.join([f'{s}' for s, _ in recent_symbols])} |\n"
+            
+            # Add Vertex AI console link
+            dashboard += f"| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |\n"
+        except Exception as e:
+            dashboard += f"| **Status** | ⚠️ Unable to load training status ({str(e)[:50]}) |\n"
+    else:
+        dashboard += "| **Status** | ⚠️ No training data available |\n"
+        dashboard += "| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |\n"
+    
+    dashboard += """
+### LangSmith Monitoring
+"""
+    
+    # Check LangSmith status
+    try:
+        sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"))
+        from langsmith_monitor import LangSmithMonitor
+        
+        monitor = LangSmithMonitor()
+        health = monitor.monitor_health()
+        
+        if health.get("success"):
+            stats = monitor.get_project_stats("trading-rl-training", days=7)
+            if stats.get("success"):
+                dashboard += f"| **Status** | ✅ Healthy |\n"
+                dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
+                dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
+                dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
+                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+            else:
+                dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
+                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+        else:
+            dashboard += f"| **Status** | ⚠️ {health.get('error', 'Unknown error')} |\n"
+            dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+    except Exception as e:
+        dashboard += "| **Status** | ⚠️ LangSmith monitor unavailable |\n"
+        dashboard += "| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+    
+    dashboard += """
+---
+
+## 🌐 External Dashboards & Monitoring
+
+### LangSmith Observability
+- **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
+- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+- **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
+
+### Vertex AI Cloud RL
+- **[Vertex AI Console](https://console.cloud.google.com/vertex-ai?project=email-outreach-ai-460404)** - Main Vertex AI dashboard
+- **[Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)** - View RL training jobs
+- **[Models](https://console.cloud.google.com/vertex-ai/models?project=email-outreach-ai-460404)** - Trained models
+- **[Experiments](https://console.cloud.google.com/vertex-ai/experiments?project=email-outreach-ai-460404)** - Training experiments
+
+**Project**: `email-outreach-ai-460404` | **Location**: `us-central1`
+
+---
+
 *This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
 *World-class metrics powered by comprehensive risk & performance analytics.*
 """
