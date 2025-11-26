@@ -176,6 +176,18 @@ class EliteOrchestrator:
         except Exception as e:
             logger.warning(f"⚠️ ML Predictor unavailable: {e}")
             self.ml_predictor = None
+
+        # Gamma Exposure Agent
+        try:
+            from src.agents.gamma_exposure_agent import GammaExposureAgent
+            self.gamma_agent = GammaExposureAgent()
+            logger.info("✅ Gamma Exposure Agent initialized")
+        except (ImportError, ModuleNotFoundError) as e:
+            logger.warning(f"⚠️ Gamma Exposure Agent unavailable (dependencies missing): {e}")
+            self.gamma_agent = None
+        except Exception as e:
+            logger.warning(f"⚠️ Gamma Exposure Agent unavailable: {e}")
+            self.gamma_agent = None
     
     def create_trade_plan(self, symbols: List[str], context: Optional[Dict[str, Any]] = None) -> TradePlan:
         """
@@ -226,11 +238,13 @@ class EliteOrchestrator:
             },
             PlanningPhase.ANALYSIS.value: {
                 "description": "Multi-agent analysis",
+                # Analysis Phase: Agents analyze data and form opinions
                 "agents": [
                     AgentType.LANGCHAIN.value,
                     AgentType.GEMINI.value,
                     AgentType.MCP.value,
-                    AgentType.ML_MODEL.value
+                    AgentType.ML_MODEL.value,
+                    "gamma_agent"  # New Gamma Exposure Agent
                 ],
                 "tasks": [
                     "Technical analysis",
@@ -323,7 +337,7 @@ class EliteOrchestrator:
         
         # Phase 3: Analysis (ensemble voting)
         try:
-            analysis_result = self._execute_analysis(plan)
+            analysis_result = self._execute_analysis(plan, data_result) # Pass data_result to analysis
             results["phases"][PlanningPhase.ANALYSIS.value] = analysis_result
             plan.phases[PlanningPhase.ANALYSIS.value]["status"] = "completed"
             results["agent_results"].extend(analysis_result.get("agent_results", []))
@@ -446,7 +460,7 @@ class EliteOrchestrator:
         
         return results
     
-    def _execute_analysis(self, plan: TradePlan) -> Dict[str, Any]:
+    def _execute_analysis(self, plan: TradePlan, data_collection_results: Dict[str, Any] = None) -> Dict[str, Any]:
         """Execute analysis phase with ensemble voting"""
         results = {
             "phase": PlanningPhase.ANALYSIS.value,
