@@ -770,37 +770,102 @@ class CryptoStrategy:
         return max(0, min(100, momentum_score))
 
     def _get_historical_data(self, symbol: str) -> Optional[pd.DataFrame]:
-        """Fetch historical data for crypto symbol."""
+        """
+        Fetch historical data for crypto symbol.
+        
+        Tries multiple sources:
+        1. AlpacaTrader.get_historical_bars() (if trader available)
+        2. yfinance (fallback)
+        """
+        lookback_days = self.LOOKBACK_3MONTH + 30  # Extra buffer
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=lookback_days)
+        
+        # Try AlpacaTrader first (if available)
+        if self.trader:
+            try:
+                logger.info(f"Attempting to fetch {symbol} data from Alpaca...")
+                bars = self.trader.get_historical_bars(
+                    symbol=symbol,
+                    timeframe="1Day",
+                    limit=lookback_days
+                )
+                
+                if bars and len(bars) > 0:
+                    # Convert Alpaca bars to DataFrame
+                    df_data = []
+                    for bar in bars:
+                        df_data.append({
+                            "Open": bar.get("open", bar.get("o", 0)),
+                            "High": bar.get("high", bar.get("h", 0)),
+                            "Low": bar.get("low", bar.get("l", 0)),
+                            "Close": bar.get("close", bar.get("c", 0)),
+                            "Volume": bar.get("volume", bar.get("v", 0)),
+                            "Date": pd.to_datetime(bar.get("timestamp", bar.get("t", "")))
+                        })
+                    
+                    hist = pd.DataFrame(df_data)
+                    hist.set_index("Date", inplace=True)
+                    
+                    if len(hist) >= self.LOOKBACK_3MONTH * 0.7:
+                        logger.info(f"✅ Successfully fetched {len(hist)} bars from Alpaca for {symbol}")
+                        return hist
+                    else:
+                        logger.warning(f"Alpaca returned insufficient data for {symbol} ({len(hist)} bars)")
+                else:
+                    logger.warning(f"Alpaca returned empty data for {symbol}")
+            except Exception as e:
+                logger.warning(f"Alpaca data fetch failed for {symbol}: {e}, trying yfinance...")
+        
+        # Fallback to yfinance
         try:
+            logger.info(f"Fetching {symbol} data from yfinance...")
             # For Alpaca crypto symbols (BTCUSD, ETHUSD), use yfinance with conversion
             # yfinance uses BTC-USD, ETH-USD format
             yf_symbol = symbol.replace("USD", "-USD")
-
-            lookback_days = self.LOOKBACK_3MONTH + 30  # Extra buffer
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=lookback_days)
-
+            
             ticker = yf.Ticker(yf_symbol)
             hist = ticker.history(start=start_date, end=end_date)
-
+            
             if hist.empty or len(hist) < self.LOOKBACK_3MONTH * 0.7:
                 logger.warning(f"Insufficient data for {symbol} (got {len(hist)} bars)")
                 return None
-
+            
+            logger.info(f"✅ Successfully fetched {len(hist)} bars from yfinance for {symbol}")
             return hist
-
+            
         except Exception as e:
-            logger.error(f"Error fetching data for {symbol}: {e}")
+            logger.error(f"Error fetching data for {symbol} from yfinance: {e}")
             return None
 
     def _get_current_price(self, symbol: str) -> Optional[float]:
-        """Get current market price for crypto symbol."""
+        """
+        Get current market price for crypto symbol.
+        
+        Tries AlpacaTrader first, then yfinance.
+        """
+        # Try AlpacaTrader first
+        if self.trader:
+            try:
+                # Try to get latest bar
+                bars = self.trader.get_historical_bars(symbol=symbol, timeframe="1Day", limit=1)
+                if bars and len(bars) > 0:
+                    price = bars[0].get("close", bars[0].get("c", None))
+                    if price:
+                        logger.info(f"✅ Got {symbol} price ${price:.2f} from Alpaca")
+                        return float(price)
+            except Exception as e:
+                logger.debug(f"Alpaca price fetch failed for {symbol}: {e}, trying yfinance...")
+        
+        # Fallback to yfinance
         try:
             yf_symbol = symbol.replace("USD", "-USD")
             ticker = yf.Ticker(yf_symbol)
             data = ticker.history(period="1d")
             if not data.empty:
-                return float(data["Close"].iloc[-1])
+                price = float(data["Close"].iloc[-1])
+                logger.info(f"✅ Got {symbol} price ${price:.2f} from yfinance")
+                return price
             return None
         except Exception as e:
             logger.error(f"Error fetching price for {symbol}: {e}")
