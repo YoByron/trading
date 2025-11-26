@@ -3,7 +3,7 @@
 Local RL Training Script
 
 Runs RL training more frequently on your local machine.
-Recommended: Run every 1-4 hours during market hours, or daily after market close.
+Now uses unified orchestrator supporting Local, LangSmith, and GitHub Actions.
 
 Why local?
 - Faster than GitHub Actions (no CI overhead)
@@ -23,6 +23,9 @@ Usage:
 
   # Train specific RL agents
   python scripts/local_rl_training.py --agents dqn,ppo
+
+  # Enable LangSmith monitoring
+  python scripts/local_rl_training.py --use-langsmith
 """
 import os
 import sys
@@ -35,12 +38,12 @@ from typing import List, Dict, Any, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from scripts.dashboard_metrics import load_json_file
+from scripts.rl_training_orchestrator import RLTrainingOrchestrator
 
 DATA_DIR = Path("data")
 
 
-def train_q_learning_agent() -> Dict[str, Any]:
+def train_all_agents_legacy(agents: List[str], device: str = 'cpu') -> Dict[str, Any]:
     """Train Q-learning agent from experience replay buffer."""
     try:
         from src.agents.reinforcement_learning_optimized import OptimizedRLPolicyLearner
@@ -266,10 +269,17 @@ def main():
         default=10,
         help='Number of training episodes for deep RL agents (default: 10)'
     )
+    parser.add_argument(
+        '--use-langsmith',
+        action='store_true',
+        help='Enable LangSmith monitoring (requires LANGCHAIN_API_KEY)'
+    )
     
     args = parser.parse_args()
     
     agents = [a.strip() for a in args.agents.split(',')]
+    if 'all' in agents:
+        agents = ['q_learning', 'dqn']
     
     print("=" * 70)
     print("LOCAL RL TRAINING")
@@ -277,6 +287,7 @@ def main():
     print(f"Agents: {', '.join(agents)}")
     print(f"Device: {args.device}")
     print(f"Mode: {'Continuous' if args.continuous else 'Single Run'}")
+    print(f"LangSmith: {'Enabled' if args.use_langsmith else 'Disabled'}")
     if args.continuous:
         print(f"Interval: {args.interval} seconds ({args.interval/3600:.1f} hours)")
     print("=" * 70)
@@ -295,7 +306,9 @@ def main():
                 print(f"Training Iteration #{iteration} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 print(f"{'='*70}\n")
                 
-                results = train_all_agents(agents, device=args.device)
+                orchestrator = RLTrainingOrchestrator(platform='local')
+                results = orchestrator.train_all(agents, device=args.device, use_langsmith=args.use_langsmith)
+                orchestrator.save_results()
                 
                 # Print results
                 for agent_name, result in results['agents'].items():
@@ -304,22 +317,7 @@ def main():
                 
                 print(f"\n📊 Summary: {results['summary']['successful']}/{results['summary']['total']} agents trained successfully")
                 
-                # Save results
-                results_file = DATA_DIR / "rl_training_log.json"
-                if results_file.exists():
-                    with open(results_file, 'r') as f:
-                        log = json.load(f)
-                else:
-                    log = []
-                
-                log.append(results)
-                
-                # Keep only last 100 entries
-                if len(log) > 100:
-                    log = log[-100:]
-                
-                with open(results_file, 'w') as f:
-                    json.dump(log, f, indent=2)
+                # Results already saved by orchestrator
                 
                 print(f"\n⏰ Next training in {args.interval/3600:.1f} hours...")
                 time.sleep(args.interval)
@@ -327,7 +325,9 @@ def main():
             print("\n\n🛑 Training stopped by user")
     else:
         # Single run
-        results = train_all_agents(agents, device=args.device)
+        orchestrator = RLTrainingOrchestrator(platform='local')
+        results = orchestrator.train_all(agents, device=args.device, use_langsmith=args.use_langsmith)
+        orchestrator.save_results()
         
         # Print results
         print("\n📊 Training Results:")
@@ -342,23 +342,8 @@ def main():
         
         print(f"Summary: {results['summary']['successful']}/{results['summary']['total']} agents trained successfully")
         
-        # Save results
+        # Results already saved by orchestrator
         results_file = DATA_DIR / "rl_training_log.json"
-        if results_file.exists():
-            with open(results_file, 'r') as f:
-                log = json.load(f)
-        else:
-            log = []
-        
-        log.append(results)
-        
-        # Keep only last 100 entries
-        if len(log) > 100:
-            log = log[-100:]
-        
-        with open(results_file, 'w') as f:
-            json.dump(log, f, indent=2)
-        
         print(f"\n✅ Results saved to {results_file}")
 
 
