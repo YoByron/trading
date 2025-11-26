@@ -40,8 +40,8 @@ jobs:
 
       - name: Generate dashboard
         run: |
-          echo "📊 Generating progress dashboard..."
-          python3 scripts/generate_progress_dashboard.py
+          echo "📊 Generating world-class progress dashboard..."
+          python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
 
       - name: Update GitHub Wiki
         env:
