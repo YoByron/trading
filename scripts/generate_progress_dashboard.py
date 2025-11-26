@@ -183,6 +183,12 @@ def generate_dashboard() -> str:
     exposure = world_class_metrics.get('exposure_metrics', {})
     guardrails = world_class_metrics.get('risk_guardrails', {})
     account = world_class_metrics.get('account_summary', {})
+    market_regime = world_class_metrics.get('market_regime', {})
+    benchmark = world_class_metrics.get('benchmark_comparison', {})
+    ai_kpis = world_class_metrics.get('ai_kpis', {})
+    automation_status = world_class_metrics.get('automation_status', {})
+    journal = world_class_metrics.get('trading_journal', {})
+    compliance = world_class_metrics.get('compliance', {})
 
     dashboard = f"""# 📊 Progress Dashboard
 
@@ -279,6 +285,8 @@ def generate_dashboard() -> str:
 | **Profit Factor** | {perf.get('profit_factor', 0):.2f} |
 | **Expectancy per Trade** | ${perf.get('expectancy_per_trade', 0):.2f} |
 | **Expectancy per R** | {perf.get('expectancy_per_r', 0):.2f} |
+| **Win/Loss Ratio** | {perf.get('win_loss_ratio', 0):.2f} |
+| **Avg Win/Loss Ratio (R-multiple)** | {perf.get('avg_win_loss_ratio', 0):.2f} |
 | **Average Win** | ${perf.get('avg_win', 0):.2f} |
 | **Average Loss** | ${perf.get('avg_loss', 0):.2f} |
 | **Largest Win** | ${perf.get('largest_win', 0):.2f} |
@@ -343,14 +351,43 @@ def generate_dashboard() -> str:
 
 ---
 
-## 🤖 System Status
+## 📊 Market Regime & Benchmarking
 
-### Automation
+### Market Regime Detection
+
+| Metric | Value |
+|--------|-------|
+| **Current Regime** | {market_regime.get('regime', 'UNKNOWN')} |
+| **Confidence** | {market_regime.get('confidence', 0):.1f} |
+| **Trend Strength** | {market_regime.get('trend_strength', 0):.2f} |
+| **Volatility Regime** | {market_regime.get('volatility_regime', 'NORMAL')} |
+| **Avg Daily Return** | {market_regime.get('avg_daily_return', 0):+.2f}% |
+| **Volatility** | {market_regime.get('volatility', 0):.2f}% |
+
+### Benchmark Comparison (vs S&P 500)
+
+| Metric | Portfolio | Benchmark | Difference |
+|--------|-----------|-----------|------------|
+| **Total Return** | {benchmark.get('portfolio_return', 0):+.2f}% | {benchmark.get('benchmark_return', 0):+.2f}% | {benchmark.get('alpha', 0):+.2f}% |
+| **Alpha** | {benchmark.get('alpha', 0):+.2f}% | - | {'✅ Outperforming' if benchmark.get('alpha', 0) > 0 else '⚠️ Underperforming'} |
+| **Beta** | {benchmark.get('beta', 1.0):.2f} | 1.0 | {'Higher Risk' if benchmark.get('beta', 1.0) > 1.0 else 'Lower Risk'} |
+| **Data Status** | {'✅ Available' if benchmark.get('data_available', False) else '⚠️ Limited'} | - | - |
+
+---
+
+## 🤖 System Status & Automation
+
+### Automation Health
 
 | Component | Status |
 |-----------|--------|
 | **GitHub Actions** | {automation_emoji} {basic_metrics['automation_status']} |
+| **Uptime** | {automation_status.get('uptime_percentage', 0):.1f}% |
+| **Reliability Streak** | {automation_status.get('reliability_streak', 0)} executions |
 | **Last Execution** | {basic_metrics['last_execution']} |
+| **Days Since Execution** | {automation_status.get('days_since_execution', 0)} days |
+| **Total Executions** | {automation_status.get('execution_count', 0)} |
+| **Failures** | {automation_status.get('failures', 0)} |
 | **Health Checks** | ✅ Integrated |
 | **Order Validation** | ✅ Active |
 
@@ -436,6 +473,76 @@ def generate_dashboard() -> str:
 
 ---
 
+## 🤖 AI-Specific KPIs
+
+### AI Model Performance
+
+| Metric | Value |
+|--------|-------|
+| **AI Enabled** | {'✅ Yes' if ai_kpis.get('ai_enabled', False) else '❌ No'} |
+| **AI Trades** | {ai_kpis.get('ai_trades_count', 0)} / {ai_kpis.get('total_trades', 0)} |
+| **AI Usage Rate** | {ai_kpis.get('ai_usage_rate', 0):.1f}% |
+| **Prediction Accuracy** | {ai_kpis.get('prediction_accuracy', 0):.1f}% |
+| **Prediction Latency** | {ai_kpis.get('prediction_latency_ms', 0):.0f} ms |
+| **Daily AI Costs** | ${ai_kpis.get('ai_costs_daily', 0):.2f} |
+| **Outlier Detection** | {'✅ Enabled' if ai_kpis.get('outlier_detection_enabled', False) else '❌ Disabled'} |
+| **Backtest vs Live** | {ai_kpis.get('backtest_vs_live_performance', 0):+.2f}% |
+
+---
+
+## 📔 Trading Journal
+
+### Journal Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total Entries** | {journal.get('total_entries', 0)} |
+| **Entries with Notes** | {journal.get('entries_with_notes', 0)} |
+| **Notes Rate** | {journal.get('notes_rate', 0):.1f}% |
+
+### Recent Journal Entries
+
+"""
+    
+    # Add recent journal entries
+    recent_entries = journal.get('recent_entries', [])
+    if recent_entries:
+        dashboard += "| Trade ID | Symbol | Date | Has Notes |\n"
+        dashboard += "|----------|--------|------|-----------|\n"
+        for entry in recent_entries[:5]:
+            has_notes = '✅' if entry.get('has_notes', False) else '❌'
+            dashboard += f"| {entry.get('trade_id', 'N/A')} | {entry.get('symbol', 'N/A')} | {entry.get('date', 'N/A')[:10]} | {has_notes} |\n"
+    else:
+        dashboard += "*No journal entries available*\n"
+    
+    dashboard += f"""
+---
+
+## 🛡️ Risk Management & Compliance
+
+### Capital Usage & Limits
+
+| Metric | Current | Limit | Status |
+|--------|---------|-------|--------|
+| **Capital Usage** | {compliance.get('capital_usage_pct', 0):.1f}% | {compliance.get('capital_limit_pct', 100):.1f}% | {'✅ Compliant' if compliance.get('capital_compliant', True) else '⚠️ Over Limit'} |
+| **Max Position Size** | {compliance.get('max_position_size_pct', 0):.2f}% | {compliance.get('max_position_limit_pct', 10):.1f}% | {'✅ Compliant' if compliance.get('position_size_compliant', True) else '⚠️ Over Limit'} |
+
+### Stop-Loss Adherence
+
+| Metric | Value |
+|--------|-------|
+| **Trades with Stop-Loss** | {compliance.get('trades_with_stop_loss', 0)} |
+| **Stop-Loss Adherence** | {compliance.get('stop_loss_adherence_pct', 0):.1f}% |
+
+### Audit Trail & Compliance
+
+| Metric | Value |
+|--------|-------|
+| **Audit Trail Entries** | {compliance.get('audit_trail_count', 0)} |
+| **Audit Trail Available** | {'✅ Yes' if compliance.get('audit_trail_available', False) else '❌ No'} |
+
+---
+
 ## 📝 Notes
 
 **Current Strategy**: 
@@ -448,6 +555,19 @@ def generate_dashboard() -> str:
 - Average Daily: ${basic_metrics['avg_daily_profit']:+.2f} (Target: $100/day)
 - System Reliability: {'✅' if basic_metrics['automation_status'] == 'OPERATIONAL' else '❌'}
 - Sharpe Ratio: {risk.get('sharpe_ratio', 0):.2f} (Target: >1.0) {'✅' if risk.get('sharpe_ratio', 0) >= 1.0 else '⚠️'}
+- Market Regime: {market_regime.get('regime', 'UNKNOWN')} ({market_regime.get('confidence', 0):.0f} confidence)
+- Benchmark Alpha: {benchmark.get('alpha', 0):+.2f}% vs S&P 500
+
+---
+
+## 📥 Data Export
+
+**Export Options**:
+- CSV Export: Available via `scripts/export_dashboard_data.py`
+- Excel Export: Available via `scripts/export_dashboard_data.py`
+- JSON API: Available via `data/system_state.json` and `data/performance_log.json`
+
+*Note: Export scripts will be available in next update*
 
 ---
 
