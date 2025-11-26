@@ -183,8 +183,15 @@ class IPOStrategy:
 
         if openai_api_key:
             try:
-                self.openai_client = openai.OpenAI(api_key=openai_api_key)
-                logger.info("OpenAI client initialized")
+                # Use LangSmith wrapper if available
+                try:
+                    from src.utils.langsmith_wrapper import get_traced_openai_client
+                    self.openai_client = get_traced_openai_client(api_key=openai_api_key)
+                    logger.info("OpenAI client initialized with LangSmith tracing")
+                except ImportError:
+                    # Fallback to regular client
+                    self.openai_client = openai.OpenAI(api_key=openai_api_key)
+                    logger.info("OpenAI client initialized")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client: {e}")
 
