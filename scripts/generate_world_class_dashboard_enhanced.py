@@ -266,14 +266,24 @@ def generate_world_class_dashboard() -> str:
 """
     
     # Add chart images
-    if chart_paths.get('equity_curve'):
-        dashboard += f"### Equity Curve\n\n![Equity Curve]({chart_paths['equity_curve']})\n\n"
-    if chart_paths.get('drawdown'):
-        dashboard += f"### Drawdown Chart\n\n![Drawdown]({chart_paths['drawdown']})\n\n"
-    if chart_paths.get('daily_pl'):
-        dashboard += f"### Daily P/L Distribution\n\n![Daily P/L]({chart_paths['daily_pl']})\n\n"
-    if chart_paths.get('rolling_sharpe_7d'):
-        dashboard += f"### Rolling Sharpe Ratio (7-Day)\n\n![Rolling Sharpe]({chart_paths['rolling_sharpe_7d']})\n\n"
+    charts_generated = any(chart_paths.values())
+    if charts_generated:
+        if chart_paths.get('equity_curve'):
+            dashboard += f"### Equity Curve\n\n![Equity Curve]({chart_paths['equity_curve']})\n\n"
+        if chart_paths.get('drawdown'):
+            dashboard += f"### Drawdown Chart\n\n![Drawdown]({chart_paths['drawdown']})\n\n"
+        if chart_paths.get('daily_pl'):
+            dashboard += f"### Daily P/L Distribution\n\n![Daily P/L]({chart_paths['daily_pl']})\n\n"
+        if chart_paths.get('rolling_sharpe_7d'):
+            dashboard += f"### Rolling Sharpe Ratio (7-Day)\n\n![Rolling Sharpe]({chart_paths['rolling_sharpe_7d']})\n\n"
+    else:
+        # Show helpful message when charts can't be generated
+        perf_log_count = len(perf_log) if isinstance(perf_log, list) else 0
+        dashboard += f"### Equity Curve Visualization\n\n"
+        if perf_log_count < 2:
+            dashboard += f"*Insufficient data for chart (need at least 2 data points, have {perf_log_count})*\n\n"
+        else:
+            dashboard += f"*Charts will be generated when matplotlib is available in the environment. Data available: {perf_log_count} data points.*\n\n"
     
     dashboard += f"""
 ---

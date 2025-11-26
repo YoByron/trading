@@ -1,6 +1,6 @@
 # 📊 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-26 05:22 PM ET  
+**Last Updated**: 2025-11-26 05:24 PM ET  
 **Auto-Updated**: Daily via GitHub Actions  
 **Dashboard Version**: Enhanced World-Class (v2.0)
 
@@ -70,6 +70,22 @@
 ---
 
 ## 📈 Visualizations
+
+### Equity Curve
+
+![Equity Curve](charts/equity_curve.png)
+
+### Drawdown Chart
+
+![Drawdown](charts/drawdown.png)
+
+### Daily P/L Distribution
+
+![Daily P/L](charts/daily_pl.png)
+
+### Rolling Sharpe Ratio (7-Day)
+
+![Rolling Sharpe](charts/rolling_sharpe_7d.png)
 
 
 ---
@@ -245,7 +261,10 @@
 | **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
 
 ### LangSmith Monitoring
-| **Status** | ⚠️ LangSmith client not initialized |
+| **Status** | ✅ Healthy |
+| **Total Runs** (7d) | 6 |
+| **Success Rate** | 0.0% |
+| **Avg Duration** | 0.0s |
 | **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
