@@ -176,6 +176,9 @@ def generate_dashboard() -> str:
     status_emoji = '✅' if basic_metrics['total_pl'] > 0 else '⚠️'
     automation_emoji = '✅' if basic_metrics['automation_status'] == 'OPERATIONAL' else '❌'
     
+    # Load system state for strategy breakdown
+    system_state = load_json_file(DATA_DIR / "system_state.json")
+    
     # Extract world-class metrics
     risk = world_class_metrics.get('risk_metrics', {})
     perf = world_class_metrics.get('performance_metrics', {})
@@ -337,18 +340,95 @@ def generate_dashboard() -> str:
 | **Largest Position** | {exposure.get('largest_position_pct', 0):.2f}% of equity |
 | **Total Exposure** | ${exposure.get('total_exposure', 0):,.2f} |
 
----
+### Asset Class Breakdown
 
+| Asset Class | Exposure | % of Equity | % of Portfolio |
+|-------------|----------|-------------|----------------|
+"""
+    
+    # Add asset class breakdown
+    exposure_by_asset_class = exposure.get('by_asset_class', {})
+    total_exposure = exposure.get('total_exposure', 0)
+    current_equity = account.get('current_equity', basic_metrics['current_equity'])
+    
+    # Calculate totals for each asset class
+    asset_class_totals = {}
+    for asset_class, amount in exposure_by_asset_class.items():
+        asset_class_totals[asset_class] = {
+            'exposure': amount,
+            'pct_of_equity': (amount / current_equity * 100) if current_equity > 0 else 0.0,
+            'pct_of_portfolio': (amount / total_exposure * 100) if total_exposure > 0 else 0.0
+        }
+    
+    # Show asset classes: Crypto, Equities, Bonds
+    for asset_class in ['Crypto', 'Equities', 'Bonds']:
+        if asset_class in asset_class_totals:
+            data = asset_class_totals[asset_class]
+            dashboard += f"| **{asset_class}** | ${data['exposure']:,.2f} | {data['pct_of_equity']:.2f}% | {data['pct_of_portfolio']:.2f}% |\n"
+        else:
+            dashboard += f"| **{asset_class}** | $0.00 | 0.00% | 0.00% |\n"
+    
+    # Add strategy breakdown by asset class
+    strategies = system_state.get('strategies', {})
+    crypto_invested = strategies.get('tier5', {}).get('total_invested', 0.0)
+    equities_invested = (
+        strategies.get('tier1', {}).get('total_invested', 0.0) +
+        strategies.get('tier2', {}).get('total_invested', 0.0)
+    )
+    bonds_invested = 0.0  # BND is in tier1, would need to track separately
+    
+    dashboard += f"""
+### Investment by Asset Class (Total Invested)
+
+| Asset Class | Total Invested | Trades Executed |
+|-------------|----------------|-----------------|
+| **Equities** | ${equities_invested:,.2f} | {strategies.get('tier1', {}).get('trades_executed', 0) + strategies.get('tier2', {}).get('trades_executed', 0)} |
+| **Bonds** | ${bonds_invested:,.2f} | 0 |
+| **Crypto** | ${crypto_invested:,.2f} | {strategies.get('tier5', {}).get('trades_executed', 0)} |
+
+---
+"""
+    
+    dashboard += """
 ## 🚨 Risk Guardrails & Safety
 
 ### Live Risk Status
 
 | Guardrail | Current | Limit | Status |
 |-----------|---------|-------|--------|
-| **Daily Loss Used** | ${guardrails.get('daily_loss_used', 0):.2f} ({guardrails.get('daily_loss_used_pct', 0):.1f}%) | ${guardrails.get('daily_loss_limit', 0):,.2f} | {'⚠️' if guardrails.get('daily_loss_used_pct', 0) > 50 else '✅'} |
-| **Max Position Size** | {exposure.get('largest_position_pct', 0):.2f}% | {guardrails.get('max_position_size_pct', 10):.1f}% | {'⚠️' if exposure.get('largest_position_pct', 0) > guardrails.get('max_position_size_pct', 10) else '✅'} |
-| **Consecutive Losses** | {guardrails.get('consecutive_losses', 0)} | {guardrails.get('consecutive_losses_limit', 5)} | {'⚠️' if guardrails.get('consecutive_losses', 0) >= guardrails.get('consecutive_losses_limit', 5) else '✅'} |
-
+"""
+    
+    # Format guardrail values (extract from dict to avoid f-string issues)
+    daily_loss_used = guardrails.get('daily_loss_used', 0)
+    daily_loss_used_pct = guardrails.get('daily_loss_used_pct', 0)
+    daily_loss_limit = guardrails.get('daily_loss_limit', 0)
+    daily_loss_status = '⚠️' if daily_loss_used_pct > 50 else '✅'
+    
+    largest_position_pct = exposure.get('largest_position_pct', 0)
+    max_position_size_pct = guardrails.get('max_position_size_pct', 10)
+    position_status = '⚠️' if largest_position_pct > max_position_size_pct else '✅'
+    
+    consecutive_losses = guardrails.get('consecutive_losses', 0)
+    consecutive_losses_limit = guardrails.get('consecutive_losses_limit', 5)
+    consecutive_status = '⚠️' if consecutive_losses >= consecutive_losses_limit else '✅'
+    
+    # Format percentages as strings to avoid f-string parsing issues
+    daily_loss_used_pct_str = f"{daily_loss_used_pct:.1f}"
+    max_position_size_pct_str = f"{max_position_size_pct:.1f}"
+    
+    dashboard += f"| **Daily Loss Used** | ${daily_loss_used:.2f} ({daily_loss_used_pct_str}%) | ${daily_loss_limit:,.2f} | {daily_loss_status} |\n"
+    dashboard += f"| **Max Position Size** | {largest_position_pct:.2f}% | {max_position_size_pct_str}% | {position_status} |\n"
+    dashboard += f"| **Consecutive Losses** | {consecutive_losses} | {consecutive_losses_limit} | {consecutive_status} |\n"
+    
+    # Extract market regime values
+    regime = market_regime.get('regime', 'UNKNOWN')
+    confidence_str = f"{market_regime.get('confidence', 0):.1f}"
+    trend_strength_str = f"{market_regime.get('trend_strength', 0):.2f}"
+    volatility_regime = market_regime.get('volatility_regime', 'NORMAL')
+    avg_daily_return_str = f"{market_regime.get('avg_daily_return', 0):+.2f}"
+    volatility_str = f"{market_regime.get('volatility', 0):.2f}"
+    
+    dashboard += f"""
 ---
 
 ## 📊 Market Regime & Benchmarking
@@ -357,21 +437,38 @@ def generate_dashboard() -> str:
 
 | Metric | Value |
 |--------|-------|
-| **Current Regime** | {market_regime.get('regime', 'UNKNOWN')} |
-| **Confidence** | {market_regime.get('confidence', 0):.1f} |
-| **Trend Strength** | {market_regime.get('trend_strength', 0):.2f} |
-| **Volatility Regime** | {market_regime.get('volatility_regime', 'NORMAL')} |
-| **Avg Daily Return** | {market_regime.get('avg_daily_return', 0):+.2f}% |
-| **Volatility** | {market_regime.get('volatility', 0):.2f}% |
+| **Current Regime** | {regime} |
+| **Confidence** | {confidence_str} |
+| **Trend Strength** | {trend_strength_str} |
+| **Volatility Regime** | {volatility_regime} |
+| **Avg Daily Return** | {avg_daily_return_str}% |
+| **Volatility** | {volatility_str}% |
 
 ### Benchmark Comparison (vs S&P 500)
 
 | Metric | Portfolio | Benchmark | Difference |
 |--------|-----------|-----------|------------|
-| **Total Return** | {benchmark.get('portfolio_return', 0):+.2f}% | {benchmark.get('benchmark_return', 0):+.2f}% | {benchmark.get('alpha', 0):+.2f}% |
-| **Alpha** | {benchmark.get('alpha', 0):+.2f}% | - | {'✅ Outperforming' if benchmark.get('alpha', 0) > 0 else '⚠️ Underperforming'} |
-| **Beta** | {benchmark.get('beta', 1.0):.2f} | 1.0 | {'Higher Risk' if benchmark.get('beta', 1.0) > 1.0 else 'Lower Risk'} |
-| **Data Status** | {'✅ Available' if benchmark.get('data_available', False) else '⚠️ Limited'} | - | - |
+"""
+    
+    # Extract benchmark values
+    portfolio_return = benchmark.get('portfolio_return', 0)
+    benchmark_return = benchmark.get('benchmark_return', 0)
+    alpha = benchmark.get('alpha', 0)
+    beta = benchmark.get('beta', 1.0)
+    data_available = benchmark.get('data_available', False)
+    
+    portfolio_return_str = f"{portfolio_return:+.2f}"
+    benchmark_return_str = f"{benchmark_return:+.2f}"
+    alpha_str = f"{alpha:+.2f}"
+    beta_str = f"{beta:.2f}"
+    alpha_status = '✅ Outperforming' if alpha > 0 else '⚠️ Underperforming'
+    beta_status = 'Higher Risk' if beta > 1.0 else 'Lower Risk'
+    data_status = '✅ Available' if data_available else '⚠️ Limited'
+    
+    dashboard += f"""| **Total Return** | {portfolio_return_str}% | {benchmark_return_str}% | {alpha_str}% |
+| **Alpha** | {alpha_str}% | - | {alpha_status} |
+| **Beta** | {beta_str} | 1.0 | {beta_status} |
+| **Data Status** | {data_status} | - | - |
 
 ---
 
@@ -382,24 +479,43 @@ def generate_dashboard() -> str:
 | Component | Status |
 |-----------|--------|
 | **GitHub Actions** | {automation_emoji} {basic_metrics['automation_status']} |
-| **Uptime** | {automation_status.get('uptime_percentage', 0):.1f}% |
-| **Reliability Streak** | {automation_status.get('reliability_streak', 0)} executions |
+"""
+    
+    # Extract automation status values
+    uptime_pct = automation_status.get('uptime_percentage', 0)
+    uptime_str = f"{uptime_pct:.1f}"
+    reliability_streak = automation_status.get('reliability_streak', 0)
+    days_since_execution = automation_status.get('days_since_execution', 0)
+    execution_count = automation_status.get('execution_count', 0)
+    failures = automation_status.get('failures', 0)
+    
+    dashboard += f"""| **Uptime** | {uptime_str}% |
+| **Reliability Streak** | {reliability_streak} executions |
 | **Last Execution** | {basic_metrics['last_execution']} |
-| **Days Since Execution** | {automation_status.get('days_since_execution', 0)} days |
-| **Total Executions** | {automation_status.get('execution_count', 0)} |
-| **Failures** | {automation_status.get('failures', 0)} |
-| **Health Checks** | ✅ Integrated |
-| **Order Validation** | ✅ Active |
-
+| **Days Since Execution** | {days_since_execution} days |
+| **Total Executions** | {execution_count} |
+| **Failures** | {failures} |
+"""
+    
+    health_checks_emoji = '✅'
+    order_validation_emoji = '✅'
+    dashboard += f"| **Health Checks** | {health_checks_emoji} Integrated |\n"
+    dashboard += f"| **Order Validation** | {order_validation_emoji} Active |\n"
+    
+    dashboard += """
 ### TURBO MODE Status
 
 | System | Status |
 |--------|--------|
-| **Go ADK Orchestrator** | ✅ Enabled |
-| **Langchain Agents** | ✅ Enabled |
-| **Python Strategies** | ✅ Active (Fallback) |
-| **Sentiment RAG** | ✅ Active |
-
+"""
+    
+    turbo_emoji = '✅'
+    dashboard += f"| **Go ADK Orchestrator** | {turbo_emoji} Enabled |\n"
+    dashboard += f"| **Langchain Agents** | {turbo_emoji} Enabled |\n"
+    dashboard += f"| **Python Strategies** | {turbo_emoji} Active (Fallback) |\n"
+    dashboard += f"| **Sentiment RAG** | {turbo_emoji} Active |\n"
+    
+    dashboard += """
 ---
 
 ## 📈 Time-Series & Equity Curve
@@ -433,10 +549,22 @@ def generate_dashboard() -> str:
 
 | Metric | Value |
 |--------|-------|
-| **Trading Days Tracked** | {risk.get('trading_days', 0)} |
-| **Rolling Sharpe (7d)** | {time_series.get('rolling_sharpe_7d', 0):.2f} |
-| **Rolling Sharpe (30d)** | {time_series.get('rolling_sharpe_30d', 0):.2f} |
-| **Rolling Max DD (30d)** | {time_series.get('rolling_max_dd_30d', 0):.2f}% |
+"""
+    
+    # Extract time series values
+    trading_days = risk.get('trading_days', 0)
+    rolling_sharpe_7d = time_series.get('rolling_sharpe_7d', 0)
+    rolling_sharpe_30d = time_series.get('rolling_sharpe_30d', 0)
+    rolling_max_dd_30d = time_series.get('rolling_max_dd_30d', 0)
+    
+    rolling_sharpe_7d_str = f"{rolling_sharpe_7d:.2f}"
+    rolling_sharpe_30d_str = f"{rolling_sharpe_30d:.2f}"
+    rolling_max_dd_30d_str = f"{rolling_max_dd_30d:.2f}"
+    
+    dashboard += f"| **Trading Days Tracked** | {trading_days} |\n"
+    dashboard += f"| **Rolling Sharpe (7d)** | {rolling_sharpe_7d_str} |\n"
+    dashboard += f"| **Rolling Sharpe (30d)** | {rolling_sharpe_30d_str} |\n"
+    dashboard += f"| **Rolling Max DD (30d)** | {rolling_max_dd_30d_str}% |\n"
 
 ---
 
@@ -551,12 +679,30 @@ def generate_dashboard() -> str:
 - Daily Investment: $10/day fixed
 
 **Key Metrics**:
-- Win Rate: {basic_metrics['win_rate']:.1f}% (Target: >55%) {'✅' if basic_metrics['win_rate'] >= 55 else '⚠️'}
-- Average Daily: ${basic_metrics['avg_daily_profit']:+.2f} (Target: $100/day)
-- System Reliability: {'✅' if basic_metrics['automation_status'] == 'OPERATIONAL' else '❌'}
-- Sharpe Ratio: {risk.get('sharpe_ratio', 0):.2f} (Target: >1.0) {'✅' if risk.get('sharpe_ratio', 0) >= 1.0 else '⚠️'}
-- Market Regime: {market_regime.get('regime', 'UNKNOWN')} ({market_regime.get('confidence', 0):.0f} confidence)
-- Benchmark Alpha: {benchmark.get('alpha', 0):+.2f}% vs S&P 500
+"""
+    
+    # Extract key metrics for notes section
+    win_rate = basic_metrics['win_rate']
+    win_rate_str = f"{win_rate:.1f}"
+    win_rate_status = '✅' if win_rate >= 55 else '⚠️'
+    avg_daily_profit_str = f"{basic_metrics['avg_daily_profit']:+.2f}"
+    automation_status_str = basic_metrics['automation_status']
+    reliability_status = '✅' if automation_status_str == 'OPERATIONAL' else '❌'
+    sharpe_ratio = risk.get('sharpe_ratio', 0)
+    sharpe_ratio_str = f"{sharpe_ratio:.2f}"
+    sharpe_status = '✅' if sharpe_ratio >= 1.0 else '⚠️'
+    regime_name = market_regime.get('regime', 'UNKNOWN')
+    confidence_val = market_regime.get('confidence', 0)
+    confidence_str = f"{confidence_val:.0f}"
+    alpha_val = benchmark.get('alpha', 0)
+    alpha_val_str = f"{alpha_val:+.2f}"
+    
+    dashboard += f"""- Win Rate: {win_rate_str}% (Target: >55%) {win_rate_status}
+- Average Daily: ${avg_daily_profit_str} (Target: $100/day)
+- System Reliability: {reliability_status}
+- Sharpe Ratio: {sharpe_ratio_str} (Target: >1.0) {sharpe_status}
+- Market Regime: {regime_name} ({confidence_str} confidence)
+- Benchmark Alpha: {alpha_val_str}% vs S&P 500
 
 ---
 

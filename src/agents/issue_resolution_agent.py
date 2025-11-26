@@ -279,7 +279,9 @@ Format as JSON:
         for secret in required_secrets:
             # Can't actually check GitHub Secrets from here
             # But we can verify if they're mentioned in error
-            logger.info(f"🔐 Checking secret: {secret}")
+            # SECURITY: Don't log secret names directly - use sanitized message
+            secret_name_masked = secret.replace("_KEY", "").replace("_SECRET", "")
+            logger.info(f"🔐 Checking secret configuration: {secret_name_masked}")
         
         return {
             "success": True,

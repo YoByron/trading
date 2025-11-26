@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   issues: write
 
@@ -13,10 +13,10 @@ jobs:
   agent-review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout base repository (safe)
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+        # SECURITY: Don't checkout PR code directly - use GitHub API instead
+        # This prevents untrusted code from running with write permissions
 
       - name: Set up Python
         uses: actions/setup-python@v5

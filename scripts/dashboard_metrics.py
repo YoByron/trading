@@ -383,15 +383,45 @@ class TradingMetricsCalculator:
             'AMZN': 'Technology',
         }
         
-        # Asset class mapping
+        # Asset class mapping (crypto, equities, bonds)
         asset_class_map = {
-            'SPY': 'Index ETF',
-            'QQQ': 'Index ETF',
-            'VOO': 'Index ETF',
-            'NVDA': 'Single Stock',
-            'GOOGL': 'Single Stock',
-            'AMZN': 'Single Stock',
+            # Equities (ETFs)
+            'SPY': 'Equities',
+            'QQQ': 'Equities',
+            'VOO': 'Equities',
+            # Bonds
+            'BND': 'Bonds',
+            # Equities (Stocks)
+            'NVDA': 'Equities',
+            'GOOGL': 'Equities',
+            'AMZN': 'Equities',
+            # Crypto
+            'BTCUSD': 'Crypto',
+            'ETHUSD': 'Crypto',
+            'BTC-USD': 'Crypto',
+            'ETH-USD': 'Crypto',
         }
+        
+        # Helper function to determine asset class from symbol
+        def get_asset_class(symbol: str) -> str:
+            """Determine asset class from symbol."""
+            symbol_upper = symbol.upper()
+            
+            # Check explicit mapping first
+            if symbol_upper in asset_class_map:
+                return asset_class_map[symbol_upper]
+            
+            # Crypto detection
+            if 'BTC' in symbol_upper or 'ETH' in symbol_upper or 'USD' in symbol_upper:
+                if any(crypto in symbol_upper for crypto in ['BTC', 'ETH', 'CRYPTO']):
+                    return 'Crypto'
+            
+            # Bond detection
+            if 'BND' in symbol_upper or 'BOND' in symbol_upper:
+                return 'Bonds'
+            
+            # Default to Equities (stocks/ETFs)
+            return 'Equities'
         
         total_exposure = 0.0
         
@@ -401,7 +431,11 @@ class TradingMetricsCalculator:
             
             exposure_by_ticker[symbol] += amount
             exposure_by_sector[sector_map.get(symbol, 'Unknown')] += amount
-            exposure_by_asset_class[asset_class_map.get(symbol, 'Unknown')] += amount
+            
+            # Use helper function for asset class
+            asset_class = get_asset_class(symbol)
+            exposure_by_asset_class[asset_class] += amount
+            
             total_exposure += amount
         
         # Calculate percentages
