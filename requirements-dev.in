@@ -29,3 +29,4 @@ pip-tools>=7.3.0,<8.0.0
 
 # Pre-commit Hooks
 pre-commit>=3.5.0,<4.0.0
+detect-secrets>=1.5.0  # Entropy-based secret detection

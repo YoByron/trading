@@ -11,11 +11,12 @@ Implements elite-level dashboard comparable to:
 Features:
 - Predictive analytics (Monte Carlo forecasting)
 - Comprehensive risk metrics
-- Performance attribution
-- AI-generated insights
+- Performance attribution by strategy/asset
+- AI-generated insights with trade analysis
 - Strategy-level breakdown
 - Rich visualizations (ASCII charts)
 - Real-time monitoring status
+- Actionable risk alerts
 """
 
 import os
@@ -24,7 +25,8 @@ import json
 import numpy as np
 from datetime import datetime, date, timedelta
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
+from collections import defaultdict
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -51,6 +53,86 @@ def load_json_file(filepath: Path) -> dict:
     return {}
 
 
+def load_trade_data() -> List[Dict[str, Any]]:
+    """Load all trade data from trade log files."""
+    trades = []
+    
+    # Load from daily trade files
+    trade_files = sorted(DATA_DIR.glob("trades_*.json"))
+    for trade_file in trade_files:
+        try:
+            with open(trade_file, 'r') as f:
+                daily_trades = json.load(f)
+                if isinstance(daily_trades, list):
+                    trades.extend(daily_trades)
+                elif isinstance(daily_trades, dict):
+                    trades.append(daily_trades)
+        except Exception:
+            continue
+    
+    return trades
+
+
+def calculate_win_rate_from_trades(trades: List[Dict[str, Any]]) -> Tuple[float, int, int]:
+    """
+    Calculate win rate from actual trade data.
+    
+    Returns:
+        (win_rate_pct, winning_trades, total_closed_trades)
+    """
+    closed_trades = [t for t in trades if t.get('status') == 'filled' and t.get('pl') is not None]
+    
+    if not closed_trades:
+        return 0.0, 0, 0
+    
+    winning_trades = [t for t in closed_trades if t.get('pl', 0) > 0]
+    total_closed = len(closed_trades)
+    wins = len(winning_trades)
+    
+    win_rate = (wins / total_closed * 100) if total_closed > 0 else 0.0
+    
+    return win_rate, wins, total_closed
+
+
+def calculate_performance_attribution(trades: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """Calculate performance attribution by strategy and asset."""
+    attribution = defaultdict(lambda: {
+        'trades': 0,
+        'wins': 0,
+        'losses': 0,
+        'total_pl': 0.0,
+        'avg_pl': 0.0,
+        'win_rate': 0.0,
+        'symbols': defaultdict(lambda: {'trades': 0, 'pl': 0.0})
+    })
+    
+    for trade in trades:
+        if trade.get('pl') is None:
+            continue
+        
+        tier = trade.get('tier', 'UNKNOWN')
+        symbol = trade.get('symbol', 'UNKNOWN')
+        pl = trade.get('pl', 0.0)
+        
+        attribution[tier]['trades'] += 1
+        attribution[tier]['total_pl'] += pl
+        attribution[tier]['symbols'][symbol]['trades'] += 1
+        attribution[tier]['symbols'][symbol]['pl'] += pl
+        
+        if pl > 0:
+            attribution[tier]['wins'] += 1
+        else:
+            attribution[tier]['losses'] += 1
+    
+    # Calculate averages and win rates
+    for tier_data in attribution.values():
+        if tier_data['trades'] > 0:
+            tier_data['avg_pl'] = tier_data['total_pl'] / tier_data['trades']
+            tier_data['win_rate'] = (tier_data['wins'] / tier_data['trades'] * 100) if tier_data['trades'] > 0 else 0.0
+    
+    return dict(attribution)
+
+
 def generate_equity_curve_chart(equity_curve: List[float], width: int = 60, height: int = 10) -> str:
     """
     Generate ASCII equity curve chart.
@@ -64,7 +146,7 @@ def generate_equity_curve_chart(equity_curve: List[float], width: int = 60, heig
         ASCII chart string
     """
     if len(equity_curve) < 2:
-        return "  (Insufficient data)"
+        return "  (Insufficient data - need at least 2 data points)"
     
     equity_array = np.array(equity_curve)
     min_val = np.min(equity_array)
@@ -72,7 +154,7 @@ def generate_equity_curve_chart(equity_curve: List[float], width: int = 60, heig
     range_val = max_val - min_val
     
     if range_val == 0:
-        return "  (No variation)"
+        return "  (No variation in equity curve)"
     
     # Normalize to chart dimensions
     normalized = ((equity_array - min_val) / range_val) * (height - 1)
@@ -115,6 +197,40 @@ def generate_equity_curve_chart(equity_curve: List[float], width: int = 60, heig
     return result
 
 
+def generate_returns_distribution_chart(returns: List[float], width: int = 50, height: int = 10) -> str:
+    """Generate ASCII histogram of returns distribution."""
+    if len(returns) < 3:
+        return "  (Insufficient data for distribution)"
+    
+    returns_array = np.array(returns)
+    
+    # Create bins
+    min_ret = np.min(returns_array)
+    max_ret = np.max(returns_array)
+    bins = np.linspace(min_ret, max_ret, width)
+    
+    # Count frequencies
+    hist, _ = np.histogram(returns_array, bins=bins)
+    max_freq = np.max(hist) if len(hist) > 0 else 1
+    
+    # Normalize to chart height
+    normalized = (hist / max_freq * height).astype(int)
+    
+    # Create chart
+    chart_lines = []
+    for y in range(height - 1, -1, -1):
+        line = "  "
+        for freq in normalized:
+            line += '█' if freq > y else ' '
+        chart_lines.append(line)
+    
+    # Add labels
+    result = f"  {min_ret*100:.2f}% {' ' * (width - 20)} {max_ret*100:.2f}%\n"
+    result += '\n'.join(chart_lines)
+    
+    return result
+
+
 def generate_risk_heatmap(risk_metrics: Dict[str, float]) -> str:
     """
     Generate ASCII risk heatmap.
@@ -134,9 +250,109 @@ def generate_risk_heatmap(risk_metrics: Dict[str, float]) -> str:
         level = min(100, (value / threshold) * 100) if threshold > 0 else 0
         bars = int(level / 5)
         bar_char = '█' if level < 50 else '█' if level < 75 else '█'
-        result += f"  {name:20s} [{bar_char * bars:<20}] {level:.1f}%\n"
+        status = '✅' if level < 50 else '⚠️' if level < 75 else '🚨'
+        result += f"  {name:20s} [{bar_char * bars:<20}] {level:.1f}% {status}\n"
     
     return result
+
+
+def generate_risk_alerts(risk_metrics: Dict[str, float], win_rate: float, total_trades: int) -> List[str]:
+    """Generate actionable risk alerts."""
+    alerts = []
+    
+    # Drawdown alert
+    if risk_metrics.get('max_drawdown_pct', 0.0) > 5.0:
+        alerts.append(f"🚨 **Drawdown Alert**: Max drawdown is {risk_metrics.get('max_drawdown_pct', 0.0):.2f}% (threshold: 5%). Consider reducing position sizes.")
+    
+    # Win rate alert
+    if win_rate < 40.0 and total_trades >= 10:
+        alerts.append(f"⚠️ **Win Rate Alert**: Win rate is {win_rate:.1f}% (target: >55%). Review strategy logic and entry criteria.")
+    
+    # Volatility alert
+    if risk_metrics.get('volatility', 0.0) > 20.0:
+        alerts.append(f"⚠️ **Volatility Alert**: Annualized volatility is {risk_metrics.get('volatility', 0.0):.2f}% (threshold: 20%). Consider diversification.")
+    
+    # Low trade count alert
+    if total_trades < 5:
+        alerts.append(f"ℹ️ **Data Alert**: Only {total_trades} trades recorded. Metrics will become more reliable with more trade data.")
+    
+    # Sharpe ratio alert
+    if risk_metrics.get('sharpe_ratio', 0.0) < 0.5 and total_trades >= 10:
+        alerts.append(f"⚠️ **Risk-Adjusted Return Alert**: Sharpe ratio is {risk_metrics.get('sharpe_ratio', 0.0):.2f} (target: >1.0). Review risk management.")
+    
+    return alerts if alerts else ["✅ No critical risk alerts at this time"]
+
+
+def generate_ai_insights_enhanced(
+    trades: List[Dict[str, Any]],
+    win_rate: float,
+    total_trades: int,
+    attribution: Dict[str, Dict[str, Any]],
+    risk_metrics: Dict[str, float]
+) -> Dict[str, Any]:
+    """Generate enhanced AI insights with trade analysis."""
+    insights = {
+        'summary': '',
+        'key_findings': [],
+        'recommendations': [],
+        'trade_analysis': []
+    }
+    
+    if total_trades == 0:
+        insights['summary'] = "No trades executed yet. System is ready for trading."
+        insights['key_findings'] = ["Waiting for first trade execution"]
+        insights['recommendations'] = ["Monitor system for first trade opportunity"]
+        return insights
+    
+    # Analyze best/worst performing strategies
+    best_tier = max(attribution.items(), key=lambda x: x[1].get('total_pl', 0.0), default=(None, {}))
+    worst_tier = min(attribution.items(), key=lambda x: x[1].get('total_pl', 0.0), default=(None, {}))
+    
+    # Generate summary
+    if win_rate >= 55:
+        insights['summary'] = f"✅ Portfolio is performing well with {win_rate:.1f}% win rate. "
+    elif win_rate >= 40:
+        insights['summary'] = f"⚠️ Portfolio win rate is {win_rate:.1f}% - below target of 55%. "
+    else:
+        insights['summary'] = f"🚨 Portfolio win rate is {win_rate:.1f}% - significant improvement needed. "
+    
+    insights['summary'] += f"Total trades: {total_trades}. "
+    
+    if best_tier[0]:
+        insights['summary'] += f"Best performing strategy: {best_tier[0]} (${best_tier[1].get('total_pl', 0.0):+.2f})."
+    
+    # Key findings
+    if best_tier[0] and best_tier[1].get('total_pl', 0) > 0:
+        insights['key_findings'].append(f"✅ {best_tier[0]} is the top performer with ${best_tier[1].get('total_pl', 0.0):+.2f} P/L")
+    
+    if worst_tier[0] and worst_tier[1].get('total_pl', 0) < 0:
+        insights['key_findings'].append(f"⚠️ {worst_tier[0]} is underperforming with ${worst_tier[1].get('total_pl', 0.0):+.2f} P/L")
+    
+    # Win rate analysis
+    if win_rate < 55 and total_trades >= 10:
+        insights['key_findings'].append(f"⚠️ Win rate ({win_rate:.1f}%) is below target (55%)")
+    
+    # Recommendations
+    if win_rate < 40 and total_trades >= 10:
+        insights['recommendations'].append("Review entry criteria - consider tightening filters")
+        insights['recommendations'].append("Analyze losing trades to identify common patterns")
+    
+    if best_tier[0] and best_tier[1].get('win_rate', 0) > 60:
+        insights['recommendations'].append(f"Consider increasing allocation to {best_tier[0]} (win rate: {best_tier[1].get('win_rate', 0):.1f}%)")
+    
+    if risk_metrics.get('max_drawdown_pct', 0.0) > 5.0:
+        insights['recommendations'].append("Reduce position sizes to limit drawdown")
+    
+    # Trade analysis
+    recent_trades = sorted(trades, key=lambda x: x.get('timestamp', ''), reverse=True)[:5]
+    for trade in recent_trades:
+        symbol = trade.get('symbol', 'UNKNOWN')
+        tier = trade.get('tier', 'UNKNOWN')
+        pl = trade.get('pl', 0.0)
+        status = '✅' if pl > 0 else '❌'
+        insights['trade_analysis'].append(f"{status} {symbol} ({tier}): ${pl:+.2f}")
+    
+    return insights
 
 
 def generate_world_class_dashboard() -> str:
@@ -146,6 +362,7 @@ def generate_world_class_dashboard() -> str:
     system_state = load_json_file(DATA_DIR / "system_state.json")
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
     challenge_start = load_json_file(DATA_DIR / "challenge_start.json")
+    trades = load_trade_data()
     
     # Extract equity curve
     equity_curve = []
@@ -164,6 +381,12 @@ def generate_world_class_dashboard() -> str:
     total_pl = account.get('total_pl', 0.0)
     current_equity = account.get('current_equity', 100000.0)
     starting_balance = challenge_start.get('starting_balance', 100000.0)
+    
+    # Calculate win rate from actual trades
+    win_rate, winning_trades, total_closed_trades = calculate_win_rate_from_trades(trades)
+    
+    # Performance attribution
+    attribution = calculate_performance_attribution(trades)
     
     # Calculate returns for analytics
     returns = []
@@ -221,23 +444,17 @@ def generate_world_class_dashboard() -> str:
             'edge_drift_score': 0.0,
         }
     
-    # AI insights
-    briefing = None
-    strategy_health = None
-    if ai_insights:
-        metrics_dict = {
-            'total_pl': total_pl,
-            'win_rate': system_state.get('performance', {}).get('win_rate', 0.0) * 100,
-            'avg_daily_profit': total_pl / max(len(perf_log), 1) if isinstance(perf_log, list) else 0.0,
-        }
-        recent_trades = []
-        briefing = ai_insights.generate_daily_briefing(metrics_dict, recent_trades, risk_metrics_dict)
-        strategy_health = ai_insights.assess_strategy_health(metrics_dict, risk_metrics_dict, forecast_dict)
+    # Enhanced AI insights
+    enhanced_insights = generate_ai_insights_enhanced(
+        trades, win_rate, total_closed_trades, attribution, risk_metrics_dict
+    )
+    
+    # Risk alerts
+    risk_alerts = generate_risk_alerts(risk_metrics_dict, win_rate, total_closed_trades)
     
     # Performance metrics
     performance = system_state.get('performance', {})
-    win_rate = performance.get('win_rate', 0.0) * 100
-    total_trades = performance.get('total_trades', 0)
+    total_trades = performance.get('total_trades', total_closed_trades)
     
     # Calculate averages
     trading_days = len(perf_log) if isinstance(perf_log, list) and perf_log else 1
@@ -261,11 +478,21 @@ def generate_world_class_dashboard() -> str:
     north_star_bar = '█' * north_star_bars + '░' * (20 - north_star_bars)
     display_progress_pct = max(progress_pct, 0.01) if total_pl > 0 else progress_pct
     
+    # Performance attribution table
+    attribution_table = ""
+    if attribution:
+        attribution_table = "\n| Strategy | Trades | Wins | Losses | Win Rate | Total P/L | Avg P/L |\n"
+        attribution_table += "|----------|--------|------|--------|----------|-----------|----------|\n"
+        for tier, data in sorted(attribution.items(), key=lambda x: x[1].get('total_pl', 0), reverse=True):
+            attribution_table += f"| **{tier}** | {data['trades']} | {data['wins']} | {data['losses']} | {data['win_rate']:.1f}% | ${data['total_pl']:+,.2f} | ${data['avg_pl']:+,.2f} |\n"
+    else:
+        attribution_table = "  (No trade data available for attribution analysis)"
+    
     dashboard = f"""# 🌟 World-Class Trading Dashboard
 
 **Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}  
 **Auto-Updated**: Daily via GitHub Actions  
-**Dashboard Version**: World-Class Elite Analytics
+**Dashboard Version**: World-Class Elite Analytics v2.0
 
 ---
 
@@ -277,11 +504,46 @@ def generate_world_class_dashboard() -> str:
 |--------|---------|--------|----------|
 | **Average Daily Profit** | ${avg_daily_profit:.2f}/day | $100.00/day | {display_progress_pct:.2f}% |
 | **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) | TBD | {'✅' if total_pl > 0 else '⚠️'} |
-| **Win Rate** | {win_rate:.1f}% | >55% | {'✅' if win_rate >= 55 else '⚠️'} |
+| **Win Rate** | {win_rate:.1f}% ({winning_trades}/{total_closed_trades}) | >55% | {'✅' if win_rate >= 55 else '⚠️' if win_rate >= 40 else '🚨'} |
 
 **Progress Toward $100/Day Goal**: `{north_star_bar}` ({display_progress_pct:.2f}%)  
 *This shows how close your average daily profit is to the $100/day target*
 
+---
+
+## 📊 Performance Attribution
+
+### By Strategy
+
+{attribution_table}
+
+### Top Performing Assets
+
+"""
+    
+    # Add top assets
+    asset_performance = defaultdict(lambda: {'trades': 0, 'pl': 0.0, 'wins': 0})
+    for trade in trades:
+        if trade.get('pl') is None:
+            continue
+        symbol = trade.get('symbol', 'UNKNOWN')
+        asset_performance[symbol]['trades'] += 1
+        asset_performance[symbol]['pl'] += trade.get('pl', 0.0)
+        if trade.get('pl', 0) > 0:
+            asset_performance[symbol]['wins'] += 1
+    
+    if asset_performance:
+        top_assets = sorted(asset_performance.items(), key=lambda x: x[1]['pl'], reverse=True)[:5]
+        dashboard += "| Symbol | Trades | Wins | Total P/L | Avg P/L | Win Rate |\n"
+        dashboard += "|--------|--------|------|-----------|---------|----------|\n"
+        for symbol, data in top_assets:
+            win_rate_asset = (data['wins'] / data['trades'] * 100) if data['trades'] > 0 else 0.0
+            avg_pl = data['pl'] / data['trades'] if data['trades'] > 0 else 0.0
+            dashboard += f"| **{symbol}** | {data['trades']} | {data['wins']} | ${data['pl']:+,.2f} | ${avg_pl:+,.2f} | {win_rate_asset:.1f}% |\n"
+    else:
+        dashboard += "  (No asset performance data available)\n"
+    
+    dashboard += f"""
 ---
 
 ## 🔮 Predictive Analytics
@@ -302,9 +564,9 @@ def generate_world_class_dashboard() -> str:
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| **Max Drawdown** | {risk_metrics_dict.get('max_drawdown_pct', 0.0):.2f}% | {'✅' if risk_metrics_dict.get('max_drawdown_pct', 0.0) < 5.0 else '⚠️'} |
+| **Max Drawdown** | {risk_metrics_dict.get('max_drawdown_pct', 0.0):.2f}% | {'✅' if risk_metrics_dict.get('max_drawdown_pct', 0.0) < 5.0 else '⚠️' if risk_metrics_dict.get('max_drawdown_pct', 0.0) < 10.0 else '🚨'} |
 | **Ulcer Index** | {risk_metrics_dict.get('ulcer_index', 0.0):.2f} | {'✅' if risk_metrics_dict.get('ulcer_index', 0.0) < 5.0 else '⚠️'} |
-| **Sharpe Ratio** | {risk_metrics_dict.get('sharpe_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('sharpe_ratio', 0.0) > 1.0 else '⚠️'} |
+| **Sharpe Ratio** | {risk_metrics_dict.get('sharpe_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('sharpe_ratio', 0.0) > 1.0 else '⚠️' if risk_metrics_dict.get('sharpe_ratio', 0.0) > 0.5 else '🚨'} |
 | **Sortino Ratio** | {risk_metrics_dict.get('sortino_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('sortino_ratio', 0.0) > 1.0 else '⚠️'} |
 | **Calmar Ratio** | {risk_metrics_dict.get('calmar_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('calmar_ratio', 0.0) > 1.0 else '⚠️'} |
 | **VaR (95%)** | {risk_metrics_dict.get('var_95', 0.0):.2f}% | Risk level |
@@ -314,48 +576,74 @@ def generate_world_class_dashboard() -> str:
 
 ### Risk Heatmap
 
-{generate_risk_heatmap(risk_metrics_dict) if analytics else '  (Analytics unavailable)'}
+{generate_risk_heatmap(risk_metrics_dict)}
 
+### 🚨 Risk Alerts
+
+"""
+    
+    for alert in risk_alerts:
+        dashboard += f"{alert}\n\n"
+    
+    dashboard += f"""
 ---
 
 ## 🧠 AI-Generated Insights
 
 ### Daily Briefing
 
-{briefing.summary if briefing else '  (AI insights unavailable)'}
+{enhanced_insights['summary']}
 
-**Key Changes Today**:
-{briefing.key_changes[0] if briefing and briefing.key_changes else '  - No significant changes'}
-
-**Anomalies Detected**:
-{briefing.anomalies[0] if briefing and briefing.anomalies else '  - None detected'}
-
+**Key Findings**:
+"""
+    
+    for finding in enhanced_insights['key_findings'][:5]:
+        dashboard += f"- {finding}\n"
+    
+    if not enhanced_insights['key_findings']:
+        dashboard += "- No significant findings at this time\n"
+    
+    dashboard += f"""
 **Recommendations**:
-{briefing.recommendations[0] if briefing and briefing.recommendations else '  - Continue current strategy'}
-
-### Strategy Health Score
-
-{strategy_health.diagnosis if strategy_health else '  (Health assessment unavailable)'}
-
-| Component | Score | Status |
-|-----------|-------|--------|
-| **Overall Health** | {strategy_health.overall_score:.1f}/100 | {'✅' if strategy_health and strategy_health.overall_score > 75 else '⚠️' if strategy_health and strategy_health.overall_score > 50 else '❌'} |
-| **Performance** | {strategy_health.performance_score:.1f}/100 | {'✅' if strategy_health and strategy_health.performance_score > 50 else '⚠️'} |
-| **Risk Management** | {strategy_health.risk_score:.1f}/100 | {'✅' if strategy_health and strategy_health.risk_score > 50 else '⚠️'} |
-| **Consistency** | {strategy_health.consistency_score:.1f}/100 | {'✅' if strategy_health and strategy_health.consistency_score > 50 else '⚠️'} |
-| **Edge Quality** | {strategy_health.edge_score:.1f}/100 | {'✅' if strategy_health and strategy_health.edge_score > 50 else '⚠️'} |
-
-**Action Items**:
-{strategy_health.action_items[0] if strategy_health and strategy_health.action_items else '  - Monitor performance'}
-
+"""
+    
+    for rec in enhanced_insights['recommendations'][:5]:
+        dashboard += f"- {rec}\n"
+    
+    if not enhanced_insights['recommendations']:
+        dashboard += "- Continue monitoring current strategy\n"
+    
+    dashboard += f"""
+**Recent Trade Analysis**:
+"""
+    
+    for trade_analysis in enhanced_insights['trade_analysis'][:5]:
+        dashboard += f"- {trade_analysis}\n"
+    
+    if not enhanced_insights['trade_analysis']:
+        dashboard += "- No recent trades to analyze\n"
+    
+    dashboard += f"""
 ---
 
 ## 📈 Equity Curve Visualization
 
 ```
-{generate_equity_curve_chart(equity_curve) if len(equity_curve) > 1 else '  (Insufficient data for chart)'}
+{generate_equity_curve_chart(equity_curve) if len(equity_curve) > 1 else '  (Insufficient data for chart - need at least 2 data points)'}
 ```
 
+"""
+    
+    if len(returns) > 3:
+        dashboard += f"""### Returns Distribution
+
+```
+{generate_returns_distribution_chart(returns)}
+```
+
+"""
+    
+    dashboard += f"""
 ---
 
 ## 💰 Financial Performance Summary
@@ -366,6 +654,8 @@ def generate_world_class_dashboard() -> str:
 | **Current Equity** | ${current_equity:,.2f} |
 | **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) |
 | **Total Trades** | {total_trades} |
+| **Closed Trades** | {total_closed_trades} |
+| **Winning Trades** | {winning_trades} |
 | **Win Rate** | {win_rate:.1f}% |
 
 ---
@@ -384,10 +674,12 @@ def generate_world_class_dashboard() -> str:
 - [Repository](https://github.com/IgorGanapolsky/trading)
 - [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions)
 - [Latest Trades](https://github.com/IgorGanapolsky/trading/tree/main/data)
+- [Trade Logs](https://github.com/IgorGanapolsky/trading/tree/main/data/trade_logs)
 
 ---
 
-*This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*
+*This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*  
+*Dashboard improvements: Enhanced trade analysis, performance attribution, actionable risk alerts, and better visualizations.*
 
 """
     
@@ -413,4 +705,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
