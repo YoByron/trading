@@ -26,6 +26,7 @@ import requests
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.utils.external_signal_loader import ExternalSignal, save_signals
+from src.utils.bogleheads_integration import get_bogleheads_signal_for_symbol
 
 logger = logging.getLogger("external_signal_ingest")
 
@@ -251,6 +252,15 @@ def main() -> None:
     youtube_contrib = collect_youtube_signals(args.youtube_docs)
     for ticker, items in youtube_contrib.items():
         contributions[ticker].extend(items)
+    
+    # Add Bogleheads signals
+    try:
+        bogleheads_contrib = collect_bogleheads_signals(args.tickers)
+        for ticker, items in bogleheads_contrib.items():
+            contributions[ticker].extend(items)
+        logger.info("✅ Bogleheads signals collected")
+    except Exception as e:
+        logger.warning(f"⚠️  Could not collect Bogleheads signals: {e}")
 
     if not contributions:
         logger.warning("No external signals were generated - exiting")
