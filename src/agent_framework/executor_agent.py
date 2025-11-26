@@ -670,6 +670,99 @@ class ExecutorAgent(TradingAgent):
             "risk": 0.015
         }
     
+    def _learn_tool_selection(
+        self,
+        task: TradingTask,
+        tool_name: str,
+        success: bool,
+        result: Any
+    ):
+        """Learn optimal tool selection using DQN."""
+        if not self.dqn_agent:
+            return
+        
+        try:
+            import numpy as np
+            
+            # Extract state features from task
+            state = self._extract_task_features(task)
+            
+            # Map tool name to action index
+            tool_list = list(self.available_tools.keys())
+            if tool_name not in tool_list:
+                return
+            
+            action_idx = tool_list.index(tool_name)
+            
+            # Calculate reward based on success and result quality
+            reward = 1.0 if success else -0.5
+            if success and result:
+                # Additional reward based on result quality
+                if isinstance(result, dict):
+                    if result.get("quality_score", 0) > 0.7:
+                        reward += 0.3
+            
+            # Create next state (same for now, could be improved)
+            next_state = state.copy()
+            
+            # Store transition
+            self.dqn_agent.store_transition(
+                state=state,
+                action=action_idx,
+                reward=reward,
+                next_state=next_state,
+                done=False
+            )
+            
+            # Train periodically
+            if len(self.dqn_agent.base_agent.replay_buffer) > 100:
+                self.dqn_agent.train_step()
+                
+        except Exception as e:
+            logger.warning(f"Failed to learn tool selection: {e}")
+    
+    def _extract_task_features(self, task: TradingTask):
+        """Extract feature vector from task for DQN."""
+        import numpy as np
+        
+        # Feature engineering: encode task properties
+        features = []
+        
+        # Difficulty (one-hot encoded)
+        difficulty_map = {"easy": 0, "medium": 1, "hard": 2, "frontier": 3}
+        difficulty_onehot = [0.0] * 4
+        difficulty_onehot[difficulty_map.get(task.difficulty.value, 1)] = 1.0
+        features.extend(difficulty_onehot)
+        
+        # Category (one-hot encoded)
+        category_map = {
+            "market_analysis": 0, "risk_management": 1,
+            "execution_optimization": 2, "portfolio_optimization": 3,
+            "regime_detection": 4, "sentiment_integration": 5,
+            "multi_timeframe": 6, "edge_case": 7
+        }
+        category_onehot = [0.0] * 8
+        category_onehot[category_map.get(task.category.value, 0)] = 1.0
+        features.extend(category_onehot)
+        
+        # Objectives count (normalized)
+        features.append(min(len(task.objectives) / 10.0, 1.0))
+        
+        # Required tools count (normalized)
+        features.append(min(len(task.required_tools) / 5.0, 1.0))
+        
+        # Expected capabilities count (normalized)
+        features.append(min(len(task.expected_capabilities) / 5.0, 1.0))
+        
+        # Pad or truncate to fixed size
+        target_size = 20
+        if len(features) < target_size:
+            features.extend([0.0] * (target_size - len(features)))
+        else:
+            features = features[:target_size]
+        
+        return np.array(features, dtype=np.float32)
+    
     def _save_solution(self, solution: TaskSolution) -> None:
         """Save solution to disk"""
         solution_file = self.storage_dir / "solutions" / f"{solution.task_id}.json"
