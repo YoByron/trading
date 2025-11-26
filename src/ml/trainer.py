@@ -111,11 +111,12 @@ class ModelTrainer:
         
         # 2. Initialize Model (use ensemble if enabled)
         use_ensemble = os.getenv("USE_ENSEMBLE_RL", "false").lower() == "true"
+        ensemble_model = None
         
         if use_ensemble:
             try:
                 from src.ml.ensemble_rl import EnsembleRLAgent
-                model = EnsembleRLAgent(
+                ensemble_model = EnsembleRLAgent(
                     input_dim=self.input_dim,
                     hidden_dim=self.hidden_dim,
                     num_layers=self.num_layers,
@@ -124,16 +125,16 @@ class ModelTrainer:
                 logger.info("✅ Using Ensemble RL Agent (PPO + A2C + SAC)")
                 # For ensemble, we'll train each model separately
                 # Use PPO model for supervised pre-training
-                model_to_train = model.models.get('ppo')
+                model_to_train = ensemble_model.models.get('ppo')
                 if model_to_train is None:
                     raise ValueError("PPO model not available in ensemble")
             except Exception as e:
                 logger.warning(f"⚠️  Failed to initialize ensemble, falling back to single model: {e}")
                 use_ensemble = False
+                ensemble_model = None
         
         if not use_ensemble:
             model_to_train = LSTMPPO(input_dim=self.input_dim, hidden_dim=self.hidden_dim, num_layers=self.num_layers).to(self.device)
-            model = model_to_train
         
         optimizer = optim.Adam(model_to_train.parameters(), lr=self.learning_rate)
         criterion = nn.CrossEntropyLoss() # For classification (Up/Down)
@@ -142,15 +143,12 @@ class ModelTrainer:
         best_val_loss = float('inf')
         
         for epoch in range(self.epochs):
-            model.train()
+            model_to_train.train()
             optimizer.zero_grad()
             
             # Forward pass (using only Actor head for classification pre-training)
             # We ignore the Critic head for now
-            if use_ensemble:
-                action_probs, _, _ = model_to_train(X_train.to(self.device))
-            else:
-                action_probs, _, _ = model(X_train.to(self.device))
+            action_probs, _, _ = model_to_train(X_train.to(self.device))
             
             # We map 3 actions (0:Hold, 1:Buy, 2:Sell) to 2 targets (0:Down, 1:Up)
             # For pre-training, let's just use a separate linear layer or project action_probs
@@ -173,18 +171,15 @@ class ModelTrainer:
             # Validation
             model_to_train.eval()
             with torch.no_grad():
-                if use_ensemble:
-                    val_probs, _, _ = model_to_train(X_val.to(self.device))
-                else:
-                    val_probs, _, _ = model(X_val.to(self.device))
+                val_probs, _, _ = model_to_train(X_val.to(self.device))
                 val_loss = criterion(val_probs, y_val_mapped)
                 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                if use_ensemble:
-                    model.save(symbol)  # Ensemble saves all models
+                if use_ensemble and ensemble_model:
+                    ensemble_model.save(symbol)  # Ensemble saves all models
                 else:
-                    self.save_model(model, symbol)
+                    self.save_model(model_to_train, symbol)
                 
             if epoch % 10 == 0:
                 logger.info(f"Epoch {epoch}: Train Loss {loss.item():.4f}, Val Loss {val_loss.item():.4f}")
