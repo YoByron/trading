@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-26 09:50 AM ET  
+**Last Updated**: 2025-11-26 04:50 PM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -127,6 +127,22 @@
 | **Largest Position** | 0.00% of equity |
 | **Total Exposure** | $0.00 |
 
+### Asset Class Breakdown
+
+| Asset Class | Exposure | % of Equity | % of Portfolio |
+|-------------|----------|-------------|----------------|
+| **Crypto** | $0.00 | 0.00% | 0.00% |
+| **Equities** | $0.00 | 0.00% | 0.00% |
+| **Bonds** | $0.00 | 0.00% | 0.00% |
+
+### Investment by Asset Class (Total Invested)
+
+| Asset Class | Total Invested | Trades Executed |
+|-------------|----------------|-----------------|
+| **Equities** | $1,621.93 | 7 |
+| **Bonds** | $0.00 | 0 |
+| **Crypto** | $0.00 | 0 |
+
 ---
 
 ## 🚨 Risk Guardrails & Safety
@@ -171,7 +187,7 @@
 
 | Component | Status |
 |-----------|--------|
-| **GitHub Actions** | ✅ OPERATIONAL |
+| **GitHub Actions** | {automation_emoji} {basic_metrics['automation_status']} |
 | **Uptime** | 100.0% |
 | **Reliability Streak** | 1 executions |
 | **Last Execution** | 2025-11-11T21:11:00 |
@@ -233,7 +249,7 @@
 | **Phase 3: Validate** | 61-90 | Consistent profitability | $5-20 |
 | **Phase 4: Scale** | 91+ | Scale to North Star | **$100+** |
 
-**Current Phase**: Phase 1 (Day 9/30)
+**Current Phase**: Phase 1 (Day {basic_metrics['current_day']}/30)
 
 ---
 
@@ -308,7 +324,7 @@
 
 | Metric | Value |
 |--------|-------|
-| **Audit Trail Entries** | 5 |
+| **Audit Trail Entries** | 8 |
 | **Audit Trail Available** | ✅ Yes |
 
 ---
@@ -352,4 +368,3 @@
 
 *This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
 *World-class metrics powered by comprehensive risk & performance analytics.*
-
