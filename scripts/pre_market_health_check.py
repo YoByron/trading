@@ -123,14 +123,15 @@ def check_anthropic_api() -> bool:
 def check_market_status() -> bool:
     """Check if market is open."""
     try:
-        api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
-        clock = api.get_clock()
+        from src.core.alpaca_trader import AlpacaTrader
+        trader = AlpacaTrader(paper=True)
+        clock = trader.trading_client.get_clock()
         
         if clock.is_open:
             print(f"✅ Market: OPEN")
             return True
         else:
-            next_open = clock.next_open
+            next_open = clock.next_open if hasattr(clock, 'next_open') else None
             print(f"⚠️  Market: CLOSED (opens at {next_open})")
             print(f"   Trading will execute when market opens")
             return True  # Not a failure - orders will queue
@@ -233,6 +234,64 @@ def check_dependencies() -> bool:
         return True
 
 
+def check_strategy_execution() -> bool:
+    """
+    Check if strategies have executed trades when they should have.
+    
+    Flags strategies with 0 trades that are marked as 'active' and should have executed.
+    """
+    try:
+        data_dir = Path("data")
+        system_state_file = data_dir / "system_state.json"
+        
+        if not system_state_file.exists():
+            print("⚠️  Strategy Execution: Cannot check - system_state.json not found")
+            return True  # Don't fail health check for missing file
+        
+        import json
+        with open(system_state_file, 'r') as f:
+            system_state = json.load(f)
+        
+        strategies = system_state.get('strategies', {})
+        issues = []
+        
+        # Check each strategy
+        for tier_id, strategy in strategies.items():
+            status = strategy.get('status', 'unknown')
+            trades_executed = strategy.get('trades_executed', 0)
+            name = strategy.get('name', tier_id)
+            
+            # Only check 'active' strategies
+            if status == 'active':
+                # Crypto strategy (tier5) should have executed on weekends
+                if tier_id == 'tier5':
+                    # Check if it's been active for more than 1 week without trades
+                    # (weekends happen weekly, so should have at least 1-2 trades)
+                    if trades_executed == 0:
+                        issues.append(f"{name}: 0 trades executed (should execute weekends)")
+                
+                # Stock strategies (tier1, tier2) should have executed on weekdays
+                elif tier_id in ['tier1', 'tier2']:
+                    # Check if it's been active for more than 3 days without trades
+                    # (should execute daily on weekdays)
+                    if trades_executed == 0:
+                        issues.append(f"{name}: 0 trades executed (should execute daily)")
+        
+        if issues:
+            print(f"⚠️  Strategy Execution: ISSUES DETECTED")
+            for issue in issues:
+                print(f"   - {issue}")
+            print(f"   Total issues: {len(issues)}")
+            return False
+        else:
+            print(f"✅ Strategy Execution: All active strategies have executed trades")
+            return True
+            
+    except Exception as e:
+        print(f"⚠️  Strategy Execution: CHECK FAILED - {e}")
+        return True  # Don't fail health check for check errors
+
+
 def main():
     """Run all health checks."""
     # Set global 30-second timeout for entire health check
@@ -252,7 +311,8 @@ def main():
             "Market Status": check_market_status(),
             "Anthropic API": check_anthropic_api(),
             "Economic Calendar": check_economic_calendar(),
-            "Circuit Breakers": check_circuit_breakers()
+            "Circuit Breakers": check_circuit_breakers(),
+            "Strategy Execution": check_strategy_execution()
         }
 
         signal.alarm(0)  # Cancel global timeout

@@ -5,8 +5,11 @@ Runs automatically every day at market open
 Uses fixed $10/day investment (not portfolio-based)
 Focus: Momentum + Volume confirmation (MACD, RSI, Volume ratio)
 
-WEEKEND MODE: Executes Tier 5 (Crypto) on Saturdays and Sundays
-WEEKDAY MODE: Executes Tiers 1-2 (Stocks) Monday-Friday
+CRYPTO MODE: Executes Tier 5 (Crypto) on:
+  - Weekends (Saturdays and Sundays)
+  - Market holidays (when stock markets are closed)
+  - When forced with --crypto-only flag
+WEEKDAY MODE: Executes Tiers 1-2 (Stocks) Monday-Friday when markets are open
 """
 import os
 import sys
@@ -17,7 +20,6 @@ from datetime import datetime, date, time
 from pathlib import Path
 from typing import Optional, Dict, Any
 import argparse
-import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
 import requests  # For ADK health checks
 
@@ -44,6 +46,7 @@ from src.orchestration.adk_integration import ADKTradeAdapter  # TURBO MODE: ADK
 from src.evaluation.trading_evaluator import TradingSystemEvaluator  # Week 1: Self-improving RAG evaluation
 from src.evaluation.rag_storage import EvaluationRAGStorage  # Optional RAG storage
 from src.core.risk_manager import RiskManager  # Risk management with PDT protection
+from src.core.alpaca_trader import AlpacaTrader  # Use new alpaca-py SDK wrapper
 
 # Configuration
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
@@ -69,8 +72,120 @@ MIN_POSITION_SIZE = 6.0
 MAX_POSITION_SIZE_PCT = 5.0  # Maximum 5% of portfolio per trade
 MAX_ORDER_MULTIPLIER = 10.0  # Reject orders >10x expected amount (safety gate)
 
-# Initialize Alpaca
-api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
+# Initialize Alpaca using new SDK wrapper
+alpaca_trader = AlpacaTrader(paper=True)
+# Create compatibility wrapper for old API calls
+class AlpacaAPIWrapper:
+    """Compatibility wrapper for old alpaca_trade_api interface"""
+    def __init__(self, trader: AlpacaTrader):
+        self.trader = trader
+        self.trading_client = trader.trading_client
+        self.data_client = trader.data_client
+    
+    def get_account(self):
+        """Get account info - returns object with same interface as old API"""
+        account = self.trading_client.get_account()
+        # Create a simple object with the attributes we need
+        class Account:
+            def __init__(self, acc):
+                self.equity = float(acc.equity)
+                self.cash = float(acc.cash)
+                self.buying_power = float(acc.buying_power)
+                self.status = acc.status.value if hasattr(acc.status, 'value') else str(acc.status)
+                self.pattern_day_trader = getattr(acc, 'pattern_day_trader', False)
+                self.daytrade_count = getattr(acc, 'daytrade_count', 0)
+                self.day_trade_count = getattr(acc, 'daytrade_count', 0)
+                self.last_equity = getattr(acc, 'last_equity', self.equity)
+        return Account(account)
+    
+    def get_clock(self):
+        """Get market clock - returns object with same interface as old API"""
+        clock = self.trading_client.get_clock()
+        class Clock:
+            def __init__(self, clk):
+                self.is_open = clk.is_open
+                self.next_open = clk.next_open if hasattr(clk, 'next_open') else None
+        return Clock(clock)
+    
+    def submit_order(self, symbol, notional=None, qty=None, side="buy", type="market", time_in_force="day"):
+        """Submit order - compatibility wrapper"""
+        if notional:
+            # Use notional (dollar amount)
+            order_dict = self.trader.execute_order(symbol=symbol, amount_usd=notional, side=side, tier="AUTO")
+            # Return object with same interface as old API
+            class Order:
+                def __init__(self, order_dict):
+                    self.id = order_dict.get("id", "unknown")
+                    self.status = order_dict.get("status", "filled")
+                    self.symbol = order_dict.get("symbol", symbol)
+                    self.side = order_dict.get("side", side)
+            return Order(order_dict)
+        elif qty:
+            # For quantity-based orders, we need to get current price first
+            # This is a simplified approach - get latest quote and calculate notional
+            try:
+                from alpaca.data.requests import StockLatestQuoteRequest
+                quote = self.data_client.get_latest_quote(StockLatestQuoteRequest(symbol_or_symbols=[symbol]))
+                if quote and symbol in quote:
+                    latest_price = float(quote[symbol].ask_price) if hasattr(quote[symbol], 'ask_price') else float(quote[symbol].bid_price)
+                    notional = qty * latest_price
+                    order_dict = self.trader.execute_order(symbol=symbol, amount_usd=notional, side=side, tier="AUTO")
+                    class Order:
+                        def __init__(self, order_dict):
+                            self.id = order_dict.get("id", "unknown")
+                            self.status = order_dict.get("status", "filled")
+                            self.symbol = order_dict.get("symbol", symbol)
+                            self.side = order_dict.get("side", side)
+                    return Order(order_dict)
+                else:
+                    raise ValueError(f"Could not get price for {symbol}")
+            except Exception as e:
+                raise ValueError(f"Failed to execute quantity-based order: {e}")
+        else:
+            raise ValueError("Either notional or qty must be provided")
+    
+    def list_positions(self):
+        """List positions - compatibility wrapper"""
+        positions = self.trading_client.get_all_positions()
+        class Position:
+            def __init__(self, pos):
+                self.symbol = pos.symbol
+                self.qty = float(pos.qty)
+                self.avg_entry_price = float(pos.avg_entry_price)
+                self.current_price = float(pos.current_price) if hasattr(pos, 'current_price') else float(pos.avg_entry_price)
+                self.market_value = float(pos.market_value)
+                self.unrealized_pl = float(pos.unrealized_pl)
+                self.unrealized_plpc = float(pos.unrealized_plpc) if hasattr(pos, 'unrealized_plpc') else 0.0
+        return [Position(p) for p in positions]
+    
+    def close_position(self, symbol):
+        """Close position - compatibility wrapper"""
+        result = self.trader.close_position(symbol)
+        class Order:
+            def __init__(self, order_dict):
+                self.id = order_dict.get("id", f"close_{symbol}")
+                self.status = order_dict.get("status", "filled")
+                self.symbol = order_dict.get("symbol", symbol)
+        return Order(result)
+    
+    def list_orders(self, status='all', limit=100, symbols=None):
+        """List orders - compatibility wrapper"""
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import OrderStatus
+        request = GetOrdersRequest(status=status, limit=limit)
+        if symbols:
+            request.symbols = symbols
+        orders = self.trading_client.get_orders(request)
+        class Order:
+            def __init__(self, ord):
+                self.id = str(ord.id)
+                self.symbol = ord.symbol
+                self.side = ord.side.value if hasattr(ord.side, 'value') else str(ord.side)
+                self.status = ord.status.value if hasattr(ord.status, 'value') else str(ord.status)
+                self.filled_at = ord.filled_at
+        return [Order(o) for o in orders]
+
+api = AlpacaAPIWrapper(alpaca_trader)
 market_data_provider = get_market_data_provider()
 
 # Week 1: Initialize evaluation system (FREE - local processing)
@@ -163,6 +278,26 @@ def is_weekend():
         True if weekend (Sat=5, Sun=6), False otherwise
     """
     return datetime.now().weekday() in [5, 6]  # Saturday=5, Sunday=6
+
+
+def is_market_holiday():
+    """
+    Check if today is a market holiday (market closed on a weekday).
+    
+    Uses Alpaca's clock API to determine if market is closed.
+    If market is closed AND it's a weekday, it's a holiday.
+    
+    Returns:
+        True if market is closed on a weekday (holiday), False otherwise
+    """
+    try:
+        clock = api.get_clock()
+        is_weekday = datetime.now().weekday() < 5  # Monday=0, Friday=4
+        return is_weekday and not clock.is_open
+    except Exception as e:
+        # If we can't check, assume not a holiday (fail-safe)
+        print(f"⚠️  Could not check market status: {e}")
+        return False
 
 
 def calculate_daily_investment():
@@ -1284,16 +1419,23 @@ def main():
     # Fixed $10/day investment (North Star Fibonacci strategy)
     daily_investment = calculate_daily_investment()
 
-    # WEEKEND vs WEEKDAY MODE (or force crypto with --crypto-only flag)
-    weekend_mode = args.crypto_only or is_weekend()
+    # Check if we should use crypto mode (weekends, holidays, or forced)
+    is_holiday = is_market_holiday()
+    is_weekend_day = is_weekend()
+    crypto_mode = args.crypto_only or is_weekend_day or is_holiday
 
     print(f"📊 Trading Day: {current_day}")
     print(f"💰 Portfolio Value: ${account_value:,.2f}")
     print(f"📈 Daily Investment: ${daily_investment:.2f} (FIXED - not portfolio-based)")
 
-    if weekend_mode:
-        mode_source = "(FORCED via --crypto-only)" if args.crypto_only else "(Auto: Weekend)"
-        print(f"🌐 MODE: WEEKEND {mode_source} (Crypto Trading)")
+    if crypto_mode:
+        if args.crypto_only:
+            mode_source = "(FORCED via --crypto-only)"
+        elif is_holiday:
+            mode_source = "(Holiday - Market Closed)"
+        else:
+            mode_source = "(Weekend)"
+        print(f"🌐 MODE: CRYPTO {mode_source}")
         print("🎯 Strategy: Tier 5 - Cryptocurrency 24/7")
     else:
         print("📈 MODE: WEEKDAY (Stock Trading)")
@@ -1302,10 +1444,15 @@ def main():
 
     print("=" * 70)
 
-    # WEEKEND MODE: Execute crypto strategy and skip stock logic
-    if weekend_mode:
-        mode_reason = "Manual override (--crypto-only flag)" if args.crypto_only else "Stock markets closed (Sat-Sun)"
-        print(f"\n🌐 WEEKEND MODE ACTIVE - Executing Crypto Strategy")
+    # CRYPTO MODE: Execute crypto strategy (weekends, holidays, or forced)
+    if crypto_mode:
+        if args.crypto_only:
+            mode_reason = "Manual override (--crypto-only flag)"
+        elif is_holiday:
+            mode_reason = "Market holiday - stock markets closed"
+        else:
+            mode_reason = "Stock markets closed (Sat-Sun)"
+        print(f"\n🌐 CRYPTO MODE ACTIVE - Executing Crypto Strategy")
         print(f"💡 {mode_reason} - Crypto trades 24/7")
 
         crypto_success = execute_crypto_strategy(daily_investment)
@@ -1321,14 +1468,19 @@ def main():
         print(f"💵 Cash: ${perf['cash']:,.2f}")
 
         print("\n" + "=" * 70)
-        print("✅ WEEKEND EXECUTION COMPLETE")
+        print("✅ CRYPTO EXECUTION COMPLETE")
         print("=" * 70)
         print(f"Tier 5 (Crypto): {'✅' if crypto_success else '⚠️'}")
         print(f"\n📁 Logs saved to: {DATA_DIR}")
-        print("🎯 Next execution: Monday 9:35 AM ET (or tomorrow if Sunday)")
+        if is_holiday:
+            print("🎯 Next execution: Next trading day at 9:35 AM ET")
+        elif is_weekend_day:
+            print("🎯 Next execution: Monday 9:35 AM ET (or tomorrow if Sunday)")
+        else:
+            print("🎯 Next execution: Next trading day at 9:35 AM ET")
         print("=" * 70)
 
-        return  # Exit early - no stock trading on weekends
+        return  # Exit early - no stock trading on weekends/holidays
 
     # WEEKDAY MODE: Execute stock strategies (existing logic)
     # Check if market is open
