@@ -202,6 +202,33 @@ class EliteOrchestrator:
         except Exception as e:
             logger.warning(f"⚠️ ML Predictor unavailable: {e}")
             self.ml_predictor = None
+        
+        # Deep Q-Network Agent (Enhanced RL)
+        self.dqn_agent = None
+        self.use_dqn = os.getenv("USE_DQN", "false").lower() == "true"
+        if self.use_dqn:
+            try:
+                from src.ml.dqn_agent import DQNAgent
+                from src.ml.multi_step_learning import NStepDQNAgent
+                
+                # Determine state dimension (will be set based on feature extraction)
+                state_dim = 50  # Default, can be configured
+                dqn = DQNAgent(
+                    state_dim=state_dim,
+                    use_dueling=True,
+                    use_double=True,
+                    use_prioritized_replay=True,
+                    device="cpu"
+                )
+                
+                # Wrap with n-step learning
+                self.dqn_agent = NStepDQNAgent(dqn, n=3)
+                logger.info("✅ DQN Agent (with n-step learning) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ DQN Agent unavailable: {e}")
+                self.dqn_agent = None
+        else:
+            logger.info("ℹ️ DQN Agent disabled (set USE_DQN=true to enable)")
 
         # Gamma Exposure Agent
         try:
