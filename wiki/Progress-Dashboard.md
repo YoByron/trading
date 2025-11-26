@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-26 05:16 PM ET  
+**Last Updated**: 2025-11-26 05:17 PM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -381,13 +381,14 @@
 | **Cloud RL Jobs** | 8 total (8 active, 0 completed) |
 | **Last Training** | 5 symbols trained |
 | **Recent Training** | SPY, QQQ, NVDA, GOOGL, AMZN |
+| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
 
 ### LangSmith Monitoring
 | **Status** | ✅ Healthy |
 | **Total Runs** (7d) | 6 |
 | **Success Rate** | 0.0% |
 | **Avg Duration** | 0.0s |
-| **Dashboard** | [View LangSmith →](https://smith.langchain.com) |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/org/projects/p/trading-rl-training) |
 
 ---
 

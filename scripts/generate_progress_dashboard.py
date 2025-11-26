@@ -964,6 +964,9 @@ def generate_dashboard() -> str:
             if last_training:
                 recent_symbols = list(last_training.items())[:5]
                 dashboard += f"| **Recent Training** | {', '.join([f'{s}' for s, _ in recent_symbols])} |\n"
+            
+            # Add Vertex AI console link
+            dashboard += f"| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |\n"
         except Exception:
             dashboard += "| **Status** | ⚠️ Unable to load training status |\n"
     else:
@@ -988,7 +991,7 @@ def generate_dashboard() -> str:
                 dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
                 dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
                 dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
-                dashboard += f"| **Dashboard** | [View LangSmith →](https://smith.langchain.com) |\n"
+                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/org/projects/p/trading-rl-training) |\n"
             else:
                 dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
         else:
