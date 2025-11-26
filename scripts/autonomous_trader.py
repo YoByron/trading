@@ -1188,9 +1188,13 @@ def execute_crypto_strategy(daily_investment):
     print("=" * 70)
 
     try:
-        # Import risk manager for crypto strategy
+        # Import required modules
         from src.core.risk_manager import RiskManager
+        from src.core.alpaca_trader import AlpacaTrader
 
+        # Initialize AlpacaTrader instance (NOT the REST API client)
+        trader = AlpacaTrader(paper=True)
+        
         # Initialize risk manager (create placeholder if needed)
         risk_manager = RiskManager(
             max_daily_loss_pct=5.0,  # Higher risk tolerance for crypto
@@ -1198,9 +1202,9 @@ def execute_crypto_strategy(daily_investment):
             max_drawdown_pct=15.0
         )
 
-        # Initialize crypto strategy
+        # Initialize crypto strategy with proper AlpacaTrader instance
         crypto_strategy = CryptoStrategy(
-            trader=api,
+            trader=trader,  # FIXED: Use AlpacaTrader instance, not REST API
             risk_manager=risk_manager,
             daily_amount=daily_investment
         )
