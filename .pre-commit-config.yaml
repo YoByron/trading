@@ -28,7 +28,8 @@ repos:
         args: [--ignore-missing-imports]
 
       - id: detect-secrets
-        name: Detect Secrets
-        entry: python3 .claude/skills/precommit_hygiene/scripts/precommit_hygiene.py check_secrets
+        name: Detect Secrets (Entropy Analysis)
+        entry: detect-secrets-hook
         language: system
-        pass_filenames: false
+        args: ['--baseline', '.secrets.baseline']
+        pass_filenames: true
