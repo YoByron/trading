@@ -263,6 +263,10 @@ class ExecutorAgent(TradingAgent):
                 self.tool_usage_stats[tool_name] = {"success": 0, "failure": 0}
             self.tool_usage_stats[tool_name]["success"] += 1
             
+            # Learn from experience if DQN enabled
+            if self.dqn_agent:
+                self._learn_tool_selection(task, tool_name, True, result)
+            
             return ToolResult(
                 tool_name=tool_name,
                 success=True,
@@ -277,6 +281,10 @@ class ExecutorAgent(TradingAgent):
             if tool_name not in self.tool_usage_stats:
                 self.tool_usage_stats[tool_name] = {"success": 0, "failure": 0}
             self.tool_usage_stats[tool_name]["failure"] += 1
+            
+            # Learn from failure if DQN enabled
+            if self.dqn_agent:
+                self._learn_tool_selection(task, tool_name, False, None)
             
             logger.error(f"Tool {tool_name} failed: {e}")
             return ToolResult(
