@@ -7,6 +7,7 @@ on:
     # EST (Nov-Mar): UTC-5 -> 9:35 AM ET = 14:35 UTC
     # EDT (Mar-Nov): UTC-4 -> 9:35 AM ET = 13:35 UTC
     # Run: python3 scripts/get_utc_time.py 9 35 1-5
+    # NOTE: On market holidays, the script automatically switches to crypto trading mode
     - cron: '35 13,14 * * 1-5'   # 9:35 AM Eastern (covers both EST and EDT)
   workflow_dispatch:
     inputs:
