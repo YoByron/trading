@@ -33,3 +33,10 @@ repos:
         language: system
         args: ['--baseline', '.secrets.baseline']
         pass_filenames: true
+
+      - id: workflow-security
+        name: Check Workflow Security
+        entry: python3 .claude/skills/precommit_hygiene/scripts/precommit_hygiene.py check_workflow_security
+        language: system
+        types: [yaml]
+        files: '\.github/workflows/.*\.ya?ml$'

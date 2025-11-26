@@ -35,13 +35,27 @@ jobs:
       - name: Run Safety check (Python dependencies)
         run: |
           echo "🔒 Scanning Python dependencies for vulnerabilities..."
+          # Install safety-db for latest vulnerability database
+          pip install safety safety-db
           # Ignore known low-risk vulnerabilities:
           # 59792: yfinance <0.2.26 - transitive requests vulnerability (we use requests>=2.31)
-          # The yfinance 0.2.12 is pinned due to websockets compatibility
-          safety check --file requirements.txt --ignore 59792 || {
+          # The yfinance 0.2.66 is latest and compatible
+          safety check --file requirements.txt --ignore 59792 --json || {
             echo "⚠️  Security vulnerabilities found in dependencies"
             echo "Review and update vulnerable packages"
+            echo "Run: pip-audit -r requirements.txt for detailed report"
             exit 1
+          }
+          echo "✅ No critical security vulnerabilities found"
+      
+      - name: Run pip-audit (comprehensive dependency scan)
+        run: |
+          echo "🔒 Running comprehensive dependency audit..."
+          pip install pip-audit
+          pip-audit -r requirements.txt --desc --format json || {
+            echo "⚠️  Vulnerabilities detected - see output above"
+            echo "Review alerts and update packages as needed"
+            # Don't fail the build - just report
           }
       
       - name: Run Bandit (Python code security)
