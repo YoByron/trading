@@ -4,8 +4,9 @@ import torch.optim as optim
 from pathlib import Path
 import logging
 import json
+import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from src.ml.networks import LSTMPPO
 from src.ml.data_processor import DataProcessor
@@ -16,13 +17,35 @@ class ModelTrainer:
     """
     Handles training and retraining of the LSTM-PPO model.
     Implements the 'Dynamic Retraining' pipeline.
+    
+    Supports both local training and cloud RL service integration (Vertex AI RL).
     """
     
-    def __init__(self, models_dir: str = "models/ml", device: str = "cpu"):
+    def __init__(
+        self, 
+        models_dir: str = "models/ml", 
+        device: str = "cpu",
+        use_cloud_rl: bool = False,
+        rl_provider: str = "vertex_ai"
+    ):
         self.models_dir = Path(models_dir)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.device = torch.device(device)
         self.data_processor = DataProcessor()
+        
+        # Cloud RL service integration
+        self.use_cloud_rl = use_cloud_rl and os.getenv("RL_AGENT_KEY") is not None
+        self.rl_client = None
+        
+        if self.use_cloud_rl:
+            try:
+                from src.ml.rl_service_client import RLServiceClient
+                self.rl_client = RLServiceClient(provider=rl_provider)
+                logger.info(f"✅ Cloud RL service enabled ({rl_provider})")
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to initialize cloud RL service: {e}")
+                logger.warning("   Falling back to local training only")
+                self.use_cloud_rl = False
         
         # Hyperparameters
         self.input_dim = len(self.data_processor.feature_columns)
@@ -32,12 +55,24 @@ class ModelTrainer:
         self.batch_size = 32
         self.epochs = 50
         
-    def train_supervised(self, symbol: str) -> Dict[str, Any]:
+    def train_supervised(self, symbol: str, use_cloud_rl: Optional[bool] = None) -> Dict[str, Any]:
         """
         Pre-train the model using supervised learning (predicting price direction).
         This stabilizes the LSTM features before RL fine-tuning.
+        
+        Args:
+            symbol: Stock symbol to train on
+            use_cloud_rl: Override instance setting for cloud RL (None = use instance default)
+        
+        Returns:
+            Training results dictionary
         """
-        logger.info(f"Starting supervised training for {symbol}")
+        use_cloud = use_cloud_rl if use_cloud_rl is not None else self.use_cloud_rl
+        
+        if use_cloud and self.rl_client:
+            return self._train_with_cloud_rl(symbol)
+        
+        logger.info(f"Starting supervised training for {symbol} (local mode)")
         
         # 1. Prepare Data
         df = self.data_processor.fetch_data(symbol, period="5y")
@@ -156,3 +191,55 @@ class ModelTrainer:
                 logger.error(f"Failed to retrain {symbol}: {e}")
                 results[symbol] = {"success": False, "error": str(e)}
         return results
+    
+    def _train_with_cloud_rl(self, symbol: str) -> Dict[str, Any]:
+        """
+        Train model using cloud RL service (Vertex AI RL).
+        
+        Args:
+            symbol: Stock symbol to train on
+        
+        Returns:
+            Training results dictionary
+        """
+        logger.info(f"Starting cloud RL training for {symbol}")
+        
+        # Prepare environment specification for RL service
+        env_spec = {
+            "name": f"trading_env_{symbol.lower()}",
+            "state_space": "continuous",
+            "action_space": "discrete",
+            "actions": ["BUY", "SELL", "HOLD"],
+            "state_dim": self.input_dim,
+            "reward_function": "profit_based",
+            "symbol": symbol,
+            "features": self.data_processor.feature_columns
+        }
+        
+        # Submit training job to cloud RL service
+        try:
+            job_info = self.rl_client.start_training(
+                env_spec=env_spec,
+                algorithm="PPO",  # Use PPO for LSTM-PPO architecture
+                job_name=f"lstm_ppo_{symbol.lower()}"
+            )
+            
+            logger.info(f"✅ Cloud RL training job submitted: {job_info['job_id']}")
+            
+            return {
+                "success": True,
+                "symbol": symbol,
+                "training_mode": "cloud_rl",
+                "job_id": job_info["job_id"],
+                "provider": job_info.get("provider", "unknown"),
+                "status": job_info.get("status", "submitted"),
+                "timestamp": datetime.now().isoformat(),
+                "message": f"Training job submitted to {job_info.get('provider', 'cloud')} RL service"
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Cloud RL training failed: {e}")
+            logger.info("   Falling back to local training...")
+            
+            # Fallback to local training
+            return self.train_supervised(symbol, use_cloud_rl=False)
