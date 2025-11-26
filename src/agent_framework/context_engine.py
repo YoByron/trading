@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import deque
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
 from enum import Enum
@@ -42,6 +43,15 @@ class ContextPriority(Enum):
     HIGH = "high"  # Should be included
     MEDIUM = "medium"  # Include if space allows
     LOW = "low"  # Optional
+
+
+class MemoryTimescale(Enum):
+    """Memory timescales for nested learning paradigm"""
+    INTRADAY = "intraday"  # Minutes/hours - last 100 trades
+    DAILY = "daily"  # Days - last 30 days
+    WEEKLY = "weekly"  # Weeks - last 12 weeks
+    MONTHLY = "monthly"  # Months - last 12 months
+    EPISODIC = "episodic"  # Important events - no limit
 
 
 @dataclass
@@ -132,6 +142,7 @@ class ContextMemory:
     Memory storage for context persistence.
     
     Supports both short-term (session) and long-term (persistent) memory.
+    Enhanced with multi-timescale support for nested learning.
     """
     memory_id: str = field(default_factory=lambda: str(uuid4()))
     agent_id: str = ""
@@ -142,11 +153,21 @@ class ContextMemory:
     accessed_at: str = field(default_factory=lambda: datetime.now().isoformat())
     access_count: int = 0
     ttl_days: Optional[int] = None  # Time-to-live for short-term memory
+    timescale: MemoryTimescale = MemoryTimescale.DAILY  # Multi-timescale support
+    importance_score: float = 0.5  # 0.0-1.0, higher = more important (preserve longer)
+    outcome_pl: Optional[float] = None  # Profit/loss from this memory (for scoring)
     
     def is_expired(self) -> bool:
         """Check if memory has expired"""
         if self.ttl_days is None:
+            # Episodic memories never expire
+            if self.timescale == MemoryTimescale.EPISODIC:
+                return False
+            # High importance memories (>0.8) never expire
+            if self.importance_score > 0.8:
+                return False
             return False
+        
         created = datetime.fromisoformat(self.created_at)
         return datetime.now() - created > timedelta(days=self.ttl_days)
     
@@ -154,6 +175,250 @@ class ContextMemory:
         """Update access time and count"""
         self.accessed_at = datetime.now().isoformat()
         self.access_count += 1
+    
+    def update_importance(self, pl: float, max_pl: float = 1000.0) -> None:
+        """
+        Update importance score based on outcome.
+        
+        Args:
+            pl: Profit/loss from this memory
+            max_pl: Maximum expected P/L for normalization
+        """
+        self.outcome_pl = pl
+        # Normalize P/L to 0-1 range, then combine with access count
+        pl_score = min(abs(pl) / max_pl, 1.0)
+        access_score = min(self.access_count / 10.0, 1.0)
+        # Weighted combination: 70% P/L, 30% access frequency
+        self.importance_score = 0.7 * pl_score + 0.3 * access_score
+
+
+class MultiTimescaleMemory:
+    """
+    Multi-timescale memory system for nested learning paradigm.
+    
+    Implements hierarchical memory structure with different timescales:
+    - Intraday: Recent trades (minutes/hours)
+    - Daily: Daily patterns (days)
+    - Weekly: Weekly patterns (weeks)
+    - Monthly: Monthly patterns (months)
+    - Episodic: Important events (permanent)
+    
+    Inspired by Google's Nested Learning paradigm and Hope architecture.
+    """
+    
+    def __init__(self, agent_id: str):
+        """
+        Initialize multi-timescale memory for an agent.
+        
+        Args:
+            agent_id: Agent identifier
+        """
+        self.agent_id = agent_id
+        
+        # Memory stores by timescale
+        self.intraday_memory: deque = deque(maxlen=100)  # Last 100 trades/events
+        self.daily_memory: deque = deque(maxlen=30)     # Last 30 days
+        self.weekly_memory: deque = deque(maxlen=12)     # Last 12 weeks
+        self.monthly_memory: deque = deque(maxlen=12)    # Last 12 months
+        self.episodic_memory: List[ContextMemory] = []   # Important events (no limit)
+        
+        logger.debug(f"📊 MultiTimescaleMemory initialized for agent: {agent_id}")
+    
+    def store(
+        self,
+        memory: ContextMemory,
+        auto_timescale: bool = True
+    ) -> None:
+        """
+        Store memory in appropriate timescale.
+        
+        Args:
+            memory: Memory to store
+            auto_timescale: If True, automatically determine timescale from age
+        """
+        if auto_timescale and memory.timescale == MemoryTimescale.DAILY:
+            # Auto-determine timescale based on memory age
+            created = datetime.fromisoformat(memory.created_at)
+            age_days = (datetime.now() - created).days
+            
+            if age_days == 0:
+                memory.timescale = MemoryTimescale.INTRADAY
+            elif age_days < 7:
+                memory.timescale = MemoryTimescale.DAILY
+            elif age_days < 30:
+                memory.timescale = MemoryTimescale.WEEKLY
+            else:
+                memory.timescale = MemoryTimescale.MONTHLY
+        
+        # Store in appropriate timescale
+        if memory.timescale == MemoryTimescale.INTRADAY:
+            self.intraday_memory.append(memory)
+        elif memory.timescale == MemoryTimescale.DAILY:
+            self.daily_memory.append(memory)
+        elif memory.timescale == MemoryTimescale.WEEKLY:
+            self.weekly_memory.append(memory)
+        elif memory.timescale == MemoryTimescale.MONTHLY:
+            self.monthly_memory.append(memory)
+        elif memory.timescale == MemoryTimescale.EPISODIC:
+            self.episodic_memory.append(memory)
+        
+        logger.debug(f"💾 Stored memory in {memory.timescale.value} timescale: {memory.memory_id}")
+    
+    def retrieve(
+        self,
+        timescales: Optional[List[MemoryTimescale]] = None,
+        tags: Optional[Set[str]] = None,
+        min_importance: float = 0.0,
+        limit_per_timescale: int = 5
+    ) -> List[ContextMemory]:
+        """
+        Retrieve memories from specified timescales.
+        
+        Args:
+            timescales: List of timescales to retrieve from (None = all)
+            tags: Filter by tags
+            min_importance: Minimum importance score
+            limit_per_timescale: Max memories per timescale
+        
+        Returns:
+            List of memories, sorted by importance and recency
+        """
+        if timescales is None:
+            timescales = [
+                MemoryTimescale.INTRADAY,
+                MemoryTimescale.DAILY,
+                MemoryTimescale.WEEKLY,
+                MemoryTimescale.MONTHLY,
+                MemoryTimescale.EPISODIC
+            ]
+        
+        memories = []
+        
+        # Collect from each timescale
+        if MemoryTimescale.INTRADAY in timescales:
+            memories.extend(list(self.intraday_memory))
+        if MemoryTimescale.DAILY in timescales:
+            memories.extend(list(self.daily_memory))
+        if MemoryTimescale.WEEKLY in timescales:
+            memories.extend(list(self.weekly_memory))
+        if MemoryTimescale.MONTHLY in timescales:
+            memories.extend(list(self.monthly_memory))
+        if MemoryTimescale.EPISODIC in timescales:
+            memories.extend(self.episodic_memory)
+        
+        # Filter by tags
+        if tags:
+            memories = [
+                m for m in memories
+                if tags.intersection(m.tags) or not m.tags
+            ]
+        
+        # Filter by importance
+        memories = [m for m in memories if m.importance_score >= min_importance]
+        
+        # Remove expired (except episodic and high-importance)
+        memories = [m for m in memories if not m.is_expired()]
+        
+        # Sort by importance score and recency
+        memories.sort(
+            key=lambda m: (
+                m.importance_score,
+                m.access_count,
+                m.accessed_at
+            ),
+            reverse=True
+        )
+        
+        # Limit per timescale
+        timescale_counts: Dict[MemoryTimescale, int] = {}
+        filtered_memories = []
+        for memory in memories:
+            timescale = memory.timescale
+            count = timescale_counts.get(timescale, 0)
+            if count < limit_per_timescale:
+                filtered_memories.append(memory)
+                timescale_counts[timescale] = count + 1
+        
+        # Touch accessed memories
+        for memory in filtered_memories:
+            memory.touch()
+        
+        return filtered_memories
+    
+    def consolidate_patterns(self) -> List[ContextMemory]:
+        """
+        Consolidate recurring patterns from short-term to long-term memory.
+        
+        This implements memory consolidation from nested learning paradigm.
+        Identifies patterns that appear frequently and promotes them to longer timescales.
+        
+        Returns:
+            List of newly created consolidated memories
+        """
+        consolidated = []
+        
+        # Analyze daily memories for patterns
+        if len(self.daily_memory) >= 5:
+            # Group by tags/content similarity
+            pattern_groups: Dict[str, List[ContextMemory]] = {}
+            
+            for memory in self.daily_memory:
+                # Create pattern key from tags and content type
+                pattern_key = "_".join(sorted(memory.tags)) if memory.tags else "general"
+                
+                if pattern_key not in pattern_groups:
+                    pattern_groups[pattern_key] = []
+                pattern_groups[pattern_key].append(memory)
+            
+            # Find patterns that appear frequently
+            for pattern_key, group_memories in pattern_groups.items():
+                if len(group_memories) >= 3:  # Pattern appears at least 3 times
+                    # Calculate average importance and P/L
+                    avg_importance = sum(m.importance_score for m in group_memories) / len(group_memories)
+                    avg_pl = sum(m.outcome_pl or 0 for m in group_memories) / len(group_memories)
+                    
+                    # Create consolidated memory
+                    consolidated_memory = ContextMemory(
+                        agent_id=self.agent_id,
+                        content={
+                            "pattern": pattern_key,
+                            "frequency": len(group_memories),
+                            "avg_pl": avg_pl,
+                            "source_memories": [m.memory_id for m in group_memories]
+                        },
+                        tags=group_memories[0].tags,
+                        timescale=MemoryTimescale.WEEKLY,  # Promote to weekly
+                        importance_score=avg_importance,
+                        outcome_pl=avg_pl
+                    )
+                    
+                    # Store in weekly memory
+                    self.weekly_memory.append(consolidated_memory)
+                    consolidated.append(consolidated_memory)
+                    
+                    logger.info(
+                        f"🔄 Consolidated pattern '{pattern_key}' from {len(group_memories)} "
+                        f"daily memories to weekly (importance: {avg_importance:.2f})"
+                    )
+        
+        return consolidated
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get statistics about memory usage across timescales"""
+        return {
+            "intraday_count": len(self.intraday_memory),
+            "daily_count": len(self.daily_memory),
+            "weekly_count": len(self.weekly_memory),
+            "monthly_count": len(self.monthly_memory),
+            "episodic_count": len(self.episodic_memory),
+            "total_count": (
+                len(self.intraday_memory) +
+                len(self.daily_memory) +
+                len(self.weekly_memory) +
+                len(self.monthly_memory) +
+                len(self.episodic_memory)
+            )
+        }
 
 
 class ContextEngine:
@@ -168,25 +433,33 @@ class ContextEngine:
     5. Handle context errors gracefully
     """
     
-    def __init__(self, storage_dir: Optional[Path] = None):
+    def __init__(self, storage_dir: Optional[Path] = None, enable_multi_timescale: bool = True):
         """
         Initialize Context Engine
         
         Args:
             storage_dir: Directory for persistent storage (defaults to data/agent_context)
+            enable_multi_timescale: Enable multi-timescale memory (nested learning)
         """
         self.storage_dir = storage_dir or Path("data/agent_context")
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.enable_multi_timescale = enable_multi_timescale
         
         # In-memory storage
         self.blueprints: Dict[str, SemanticBlueprint] = {}
         self.memory: Dict[str, ContextMemory] = {}
         self.message_history: List[ContextMessage] = []
         
+        # Multi-timescale memory (nested learning)
+        self.multi_timescale_memory: Dict[str, MultiTimescaleMemory] = {}
+        
         # Load persisted data
         self._load_persisted_data()
         
-        logger.info(f"✅ Context Engine initialized: {len(self.blueprints)} blueprints, {len(self.memory)} memories")
+        logger.info(
+            f"✅ Context Engine initialized: {len(self.blueprints)} blueprints, "
+            f"{len(self.memory)} memories, multi-timescale: {enable_multi_timescale}"
+        )
     
     def register_blueprint(self, blueprint: SemanticBlueprint) -> None:
         """
@@ -209,13 +482,21 @@ class ContextEngine:
         """Get blueprint for an agent"""
         return self.blueprints.get(agent_id)
     
-    def get_agent_context(self, agent_id: str, max_tokens: int = 8000) -> Dict[str, Any]:
+    def get_agent_context(
+        self,
+        agent_id: str,
+        max_tokens: int = 8000,
+        use_multi_timescale: Optional[bool] = None
+    ) -> Dict[str, Any]:
         """
         Get complete context for an agent, including blueprint and relevant memories.
+        
+        Enhanced with multi-timescale memory retrieval for nested learning.
         
         Args:
             agent_id: Agent identifier
             max_tokens: Maximum context window size
+            use_multi_timescale: Override multi-timescale setting (None = use default)
             
         Returns:
             Complete context dictionary
@@ -225,27 +506,62 @@ class ContextEngine:
             logger.warning(f"⚠️ No blueprint found for agent: {agent_id}")
             return {}
         
+        use_mts = use_multi_timescale if use_multi_timescale is not None else self.enable_multi_timescale
+        
         context = {
             "blueprint": blueprint.to_context_dict(),
             "memories": [],
-            "recent_messages": []
+            "recent_messages": [],
+            "timescale_breakdown": {} if use_mts else None
         }
         
-        # Add relevant memories (prioritized by recency and access count)
-        agent_memories = [
-            m for m in self.memory.values()
-            if m.agent_id == agent_id and not m.is_expired()
-        ]
-        agent_memories.sort(key=lambda m: (m.access_count, m.accessed_at), reverse=True)
-        
-        token_count = len(json.dumps(context))
-        for memory in agent_memories[:10]:  # Limit to top 10 memories
-            memory_json = json.dumps(asdict(memory))
-            if token_count + len(memory_json) < max_tokens:
-                context["memories"].append(asdict(memory))
-                token_count += len(memory_json)
-            else:
-                break
+        # Retrieve memories using multi-timescale if enabled
+        if use_mts and agent_id in self.multi_timescale_memory:
+            mts_memory = self.multi_timescale_memory[agent_id]
+            
+            # Get memories from all timescales
+            memories = mts_memory.retrieve(
+                timescales=None,  # All timescales
+                limit_per_timescale=3  # 3 per timescale = 15 total max
+            )
+            
+            # Group by timescale for context
+            timescale_groups: Dict[str, List[Dict[str, Any]]] = {}
+            for memory in memories:
+                timescale = memory.timescale.value
+                if timescale not in timescale_groups:
+                    timescale_groups[timescale] = []
+                timescale_groups[timescale].append(asdict(memory))
+            
+            context["timescale_breakdown"] = {
+                timescale: len(mems) for timescale, mems in timescale_groups.items()
+            }
+            
+            # Add memories to context (prioritize by importance)
+            token_count = len(json.dumps(context))
+            for memory in memories:
+                memory_json = json.dumps(asdict(memory))
+                if token_count + len(memory_json) < max_tokens:
+                    context["memories"].append(asdict(memory))
+                    token_count += len(memory_json)
+                else:
+                    break
+        else:
+            # Fallback to original single-timescale retrieval
+            agent_memories = [
+                m for m in self.memory.values()
+                if m.agent_id == agent_id and not m.is_expired()
+            ]
+            agent_memories.sort(key=lambda m: (m.access_count, m.accessed_at), reverse=True)
+            
+            token_count = len(json.dumps(context))
+            for memory in agent_memories[:10]:  # Limit to top 10 memories
+                memory_json = json.dumps(asdict(memory))
+                if token_count + len(memory_json) < max_tokens:
+                    context["memories"].append(asdict(memory))
+                    token_count += len(memory_json)
+                else:
+                    break
         
         # Add recent messages involving this agent
         recent_messages = [
@@ -305,16 +621,24 @@ class ContextEngine:
         agent_id: str,
         content: Dict[str, Any],
         tags: Optional[Set[str]] = None,
-        ttl_days: Optional[int] = None
+        ttl_days: Optional[int] = None,
+        timescale: Optional[MemoryTimescale] = None,
+        importance_score: Optional[float] = None,
+        outcome_pl: Optional[float] = None
     ) -> ContextMemory:
         """
         Store context in memory for later retrieval.
+        
+        Enhanced with multi-timescale support for nested learning.
         
         Args:
             agent_id: Agent identifier
             content: Content to store
             tags: Optional tags for retrieval
             ttl_days: Time-to-live in days (None = permanent)
+            timescale: Memory timescale (None = auto-determine)
+            importance_score: Importance score 0.0-1.0 (None = default 0.5)
+            outcome_pl: Profit/loss from this memory (for importance scoring)
             
         Returns:
             Created memory object
@@ -323,34 +647,74 @@ class ContextEngine:
             agent_id=agent_id,
             content=content,
             tags=tags or set(),
-            ttl_days=ttl_days
+            ttl_days=ttl_days,
+            timescale=timescale or MemoryTimescale.DAILY,
+            importance_score=importance_score or 0.5,
+            outcome_pl=outcome_pl
         )
         
+        # Update importance if P/L provided
+        if outcome_pl is not None:
+            memory.update_importance(outcome_pl)
+        
+        # Store in traditional memory (backward compatibility)
         self.memory[memory.memory_id] = memory
+        
+        # Store in multi-timescale memory if enabled
+        if self.enable_multi_timescale:
+            if agent_id not in self.multi_timescale_memory:
+                self.multi_timescale_memory[agent_id] = MultiTimescaleMemory(agent_id)
+            
+            self.multi_timescale_memory[agent_id].store(memory, auto_timescale=True)
         
         # Persist memory
         self._persist_memory(memory)
         
-        logger.debug(f"💾 Memory stored: {agent_id} ({len(content)} keys)")
+        logger.debug(
+            f"💾 Memory stored: {agent_id} ({len(content)} keys) "
+            f"[timescale: {memory.timescale.value}, importance: {memory.importance_score:.2f}]"
+        )
         return memory
     
     def retrieve_memories(
         self,
         agent_id: Optional[str] = None,
         tags: Optional[Set[str]] = None,
-        limit: int = 10
+        limit: int = 10,
+        timescales: Optional[List[MemoryTimescale]] = None,
+        min_importance: float = 0.0,
+        use_multi_timescale: Optional[bool] = None
     ) -> List[ContextMemory]:
         """
         Retrieve memories by agent ID and/or tags.
+        
+        Enhanced with multi-timescale support for nested learning.
         
         Args:
             agent_id: Filter by agent ID
             tags: Filter by tags
             limit: Maximum number of memories to return
+            timescales: Filter by timescales (multi-timescale only)
+            min_importance: Minimum importance score (multi-timescale only)
+            use_multi_timescale: Override multi-timescale setting
             
         Returns:
             List of matching memories
         """
+        use_mts = use_multi_timescale if use_multi_timescale is not None else self.enable_multi_timescale
+        
+        # Use multi-timescale retrieval if enabled
+        if use_mts and agent_id and agent_id in self.multi_timescale_memory:
+            mts_memory = self.multi_timescale_memory[agent_id]
+            memories = mts_memory.retrieve(
+                timescales=timescales,
+                tags=tags,
+                min_importance=min_importance,
+                limit_per_timescale=max(limit // 5, 1)  # Distribute limit across timescales
+            )
+            return memories[:limit]
+        
+        # Fallback to traditional retrieval
         memories = list(self.memory.values())
         
         # Filter by agent
@@ -367,14 +731,79 @@ class ContextEngine:
         # Remove expired
         memories = [m for m in memories if not m.is_expired()]
         
-        # Sort by recency and access count
-        memories.sort(key=lambda m: (m.access_count, m.accessed_at), reverse=True)
+        # Sort by importance score (if available), then recency and access count
+        memories.sort(
+            key=lambda m: (
+                m.importance_score,
+                m.access_count,
+                m.accessed_at
+            ),
+            reverse=True
+        )
         
         # Touch accessed memories
         for memory in memories[:limit]:
             memory.touch()
         
         return memories[:limit]
+    
+    def consolidate_agent_memory(self, agent_id: str) -> List[ContextMemory]:
+        """
+        Consolidate patterns for an agent's multi-timescale memory.
+        
+        This implements memory consolidation from nested learning paradigm.
+        
+        Args:
+            agent_id: Agent identifier
+            
+        Returns:
+            List of newly consolidated memories
+        """
+        if not self.enable_multi_timescale:
+            logger.warning("Multi-timescale memory not enabled")
+            return []
+        
+        if agent_id not in self.multi_timescale_memory:
+            logger.warning(f"No multi-timescale memory found for agent: {agent_id}")
+            return []
+        
+        mts_memory = self.multi_timescale_memory[agent_id]
+        consolidated = mts_memory.consolidate_patterns()
+        
+        # Persist consolidated memories
+        for memory in consolidated:
+            self._persist_memory(memory)
+        
+        return consolidated
+    
+    def get_memory_statistics(self, agent_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get statistics about memory usage.
+        
+        Args:
+            agent_id: Agent identifier (None = all agents)
+            
+        Returns:
+            Memory statistics dictionary
+        """
+        stats = {
+            "total_memories": len(self.memory),
+            "multi_timescale_enabled": self.enable_multi_timescale
+        }
+        
+        if self.enable_multi_timescale:
+            if agent_id:
+                if agent_id in self.multi_timescale_memory:
+                    stats["agent_memory"] = {
+                        agent_id: self.multi_timescale_memory[agent_id].get_statistics()
+                    }
+            else:
+                stats["all_agents"] = {
+                    aid: mts.get_statistics()
+                    for aid, mts in self.multi_timescale_memory.items()
+                }
+        
+        return stats
     
     def validate_context_flow(
         self,
@@ -443,9 +872,18 @@ class ContextEngine:
                 try:
                     with open(memory_file, "r") as f:
                         data = json.load(f)
+                        # Handle timescale enum conversion
+                        if "timescale" in data and isinstance(data["timescale"], str):
+                            data["timescale"] = MemoryTimescale(data["timescale"])
                         memory = ContextMemory(**data)
                         memory.tags = set(memory.tags)  # Convert list back to set
                         self.memory[memory.memory_id] = memory
+                        
+                        # Load into multi-timescale memory if enabled
+                        if self.enable_multi_timescale:
+                            if memory.agent_id not in self.multi_timescale_memory:
+                                self.multi_timescale_memory[memory.agent_id] = MultiTimescaleMemory(memory.agent_id)
+                            self.multi_timescale_memory[memory.agent_id].store(memory, auto_timescale=False)
                 except Exception as e:
                     logger.warning(f"Failed to load memory {memory_file}: {e}")
     
@@ -466,6 +904,7 @@ class ContextEngine:
         memory_file = memories_dir / f"{memory.memory_id}.json"
         memory_dict = asdict(memory)
         memory_dict["tags"] = list(memory_dict["tags"])  # Convert set to list for JSON
+        memory_dict["timescale"] = memory.timescale.value  # Convert enum to string
         with open(memory_file, "w") as f:
             json.dump(memory_dict, f, indent=2, default=str)
 
