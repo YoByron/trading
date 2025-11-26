@@ -185,16 +185,8 @@ class RLTrainingOrchestrator:
             
             client = Client(api_key=langsmith_api_key)
             
-            # Start a run
-            run = client.create_run(
-                name=f'{agent_type}_training_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
-                run_type='chain',
-                project_name='trading-rl-training',
-                inputs={'agent_type': agent_type, 'platform': 'langsmith'}
-            )
-            
+            # Train the agent (LangSmith will auto-trace via wrapper)
             try:
-                # Train the agent
                 if agent_type == 'q_learning':
                     result = self.train_q_learning()
                 elif agent_type == 'dqn':
@@ -202,24 +194,9 @@ class RLTrainingOrchestrator:
                 else:
                     result = {'success': False, 'message': f'Unknown agent type: {agent_type}'}
                 
-                # Log results to LangSmith
-                client.update_run(
-                    run_id=run.id,
-                    outputs={
-                        'success': result.get('success', False),
-                        'message': result.get('message', ''),
-                        'metrics': {k: v for k, v in result.items() if k not in ['success', 'message', 'agent', 'error']}
-                    }
-                )
-                
+                # LangSmith automatically traces via wrapper - no manual run creation needed
                 return result
             except Exception as e:
-                # Log error to LangSmith
-                client.update_run(
-                    run_id=run.id,
-                    outputs={'success': False, 'error': str(e)},
-                    error=str(e)
-                )
                 raise
         except Exception as e:
             error_msg = f'LangSmith training failed: {e}'
