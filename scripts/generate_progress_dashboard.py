@@ -224,6 +224,24 @@ def generate_dashboard() -> str:
 
 ---
 
+## 🌐 External Dashboards & Monitoring
+
+### LangSmith Observability
+- **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
+- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+- **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
+
+### Vertex AI Cloud RL
+- **[Vertex AI Console](https://console.cloud.google.com/vertex-ai?project=email-outreach-ai-460404)** - Main Vertex AI dashboard
+- **[Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)** - View RL training jobs
+- **[Models](https://console.cloud.google.com/vertex-ai/models?project=email-outreach-ai-460404)** - Trained models
+- **[Experiments](https://console.cloud.google.com/vertex-ai/experiments?project=email-outreach-ai-460404)** - Training experiments
+
+**Project**: `email-outreach-ai-460404` | **Location**: `us-central1`
+
+---
+
 ## 📈 90-Day R&D Challenge Progress
 
 **Current**: Day {basic_metrics['current_day']} of {basic_metrics['total_days']} ({basic_metrics['progress_pct_challenge']:.1f}% complete)  
@@ -1065,24 +1083,8 @@ def generate_dashboard() -> str:
 - [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions)
 - [Latest Trades](https://github.com/IgorGanapolsky/trading/tree/main/data)
 - [Documentation](https://github.com/IgorGanapolsky/trading/tree/main/docs)
-
----
-
-## 🌐 External Dashboards & Monitoring
-
-### LangSmith Observability
-- **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
-- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
-  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
-- **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
-
-### Vertex AI Cloud RL
-- **[Vertex AI Console](https://console.cloud.google.com/vertex-ai?project=email-outreach-ai-460404)** - Main Vertex AI dashboard
-- **[Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)** - View RL training jobs
-- **[Models](https://console.cloud.google.com/vertex-ai/models?project=email-outreach-ai-460404)** - Trained models
-- **[Experiments](https://console.cloud.google.com/vertex-ai/experiments?project=email-outreach-ai-460404)** - Training experiments
-
-**Project**: `email-outreach-ai-460404` | **Location**: `us-central1`
+- [LangSmith RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)
+- [Vertex AI Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)
 
 ---
 
