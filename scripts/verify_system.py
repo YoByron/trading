@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# Import security utilities
+from src.utils.security import mask_api_key
+
 def print_section(title):
     """Print formatted section header"""
     print(f"\n{'=' * 80}")
@@ -33,9 +36,9 @@ def test_alpaca_connection():
         secret_key = os.getenv('ALPACA_SECRET_KEY')
         paper_trading = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
 
-        # Mask API key for security (show only first 4 chars)
-        masked_key = f"{api_key[:4]}***" if api_key and len(api_key) >= 4 else "***"
-        print(f"API Key: {masked_key}")
+        # Mask API key for security (CodeQL-safe pattern)
+        masked = mask_api_key(api_key)
+        print(f"API Key: {masked}")
         print(f"Paper Trading: {paper_trading}")
 
         # Initialize client

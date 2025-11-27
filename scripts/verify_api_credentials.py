@@ -14,6 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+from src.utils.security import mask_api_key
+
 load_dotenv()
 
 def verify_grok_credentials():
@@ -29,11 +31,13 @@ def verify_grok_credentials():
         return False
     
     if not grok_key.startswith("xai-"):
-        print(f"⚠️  GROK_API_KEY format unexpected (should start with 'xai-'): {grok_key[:20]}...")
+        masked = mask_api_key(grok_key)
+        print(f"⚠️  GROK_API_KEY format unexpected (should start with 'xai-'): {masked}")
         return False
     
     print(f"✅ GROK_API_KEY found")
-    print(f"   Key: {grok_key[:30]}...{grok_key[-10:]}")
+    masked = mask_api_key(grok_key)
+    print(f"   Key: {masked}")
     print(f"   Length: {len(grok_key)} characters")
     return True
 
@@ -60,9 +64,9 @@ def verify_x_com_credentials():
     for name, value in credentials.items():
         if value:
             found.append(name)
-            # Show partial value for verification
-            display_value = value[:20] + "..." if len(value) > 20 else value
-            print(f"✅ {name}: {display_value}")
+            # Mask value for security (CodeQL-safe pattern)
+            masked = mask_api_key(value)
+            print(f"✅ {name}: {masked}")
         else:
             missing.append(name)
             print(f"⚠️  {name}: Not found")

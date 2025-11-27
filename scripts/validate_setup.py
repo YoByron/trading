@@ -6,6 +6,12 @@ import os
 import sys
 from dotenv import load_dotenv
 
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Import security utilities
+from src.utils.security import mask_api_key
+
 # Load environment variables
 load_dotenv()
 
@@ -20,10 +26,10 @@ alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
 openrouter_key = os.getenv("OPENROUTER_API_KEY")
 
 if alpaca_key and alpaca_secret and openrouter_key:
-    # Mask API keys for security (show only first 4 chars)
-    masked_alpaca = f"{alpaca_key[:4]}***" if len(alpaca_key) >= 4 else "***"
-    masked_secret = f"{alpaca_secret[:4]}***" if len(alpaca_secret) >= 4 else "***"
-    masked_openrouter = f"{openrouter_key[:4]}***" if len(openrouter_key) >= 4 else "***"
+    # Mask API keys for security (CodeQL-safe pattern)
+    masked_alpaca = mask_api_key(alpaca_key)
+    masked_secret = mask_api_key(alpaca_secret)
+    masked_openrouter = mask_api_key(openrouter_key)
 
     print(f"   ✅ Alpaca Key: {masked_alpaca}")
     print(f"   ✅ Alpaca Secret: {masked_secret}")
