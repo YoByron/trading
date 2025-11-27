@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-27 11:49 AM ET  
+**Last Updated**: 2025-11-27 12:11 PM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -402,7 +402,11 @@
 | **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
 
 ### LangSmith Monitoring
-| **Status** | ⚠️ LangSmith client not initialized |
+| **Status** | ✅ Healthy |
+| **Total Runs** (7d) | 6 |
+| **Success Rate** | 0.0% |
+| **Avg Duration** | 0.0s |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
 
