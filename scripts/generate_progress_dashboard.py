@@ -996,26 +996,41 @@ def generate_dashboard() -> str:
     
     # Check LangSmith status
     try:
-        sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"))
-        from langsmith_monitor import LangSmithMonitor
-        
-        monitor = LangSmithMonitor()
-        health = monitor.monitor_health()
-        
-        if health.get("success"):
-            stats = monitor.get_project_stats("trading-rl-training", days=7)
-            if stats.get("success"):
-                dashboard += f"| **Status** | ✅ Healthy |\n"
-                dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
-                dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
-                dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
-                dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+        monitor_script_path = Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"
+        if monitor_script_path.exists():
+            sys.path.insert(0, str(monitor_script_path))
+            from langsmith_monitor import LangSmithMonitor
+            
+            monitor = LangSmithMonitor()
+            
+            # Check if client initialized
+            if monitor.client is None:
+                if not monitor.api_key:
+                    dashboard += "| **Status** | ⚠️ LANGCHAIN_API_KEY not configured |\n"
+                else:
+                    dashboard += "| **Status** | ⚠️ LangSmith client initialization failed |\n"
             else:
-                dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
+                health = monitor.monitor_health()
+                
+                if health.get("success"):
+                    stats = monitor.get_project_stats("trading-rl-training", days=7)
+                    if stats.get("success"):
+                        dashboard += f"| **Status** | ✅ Healthy |\n"
+                        dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
+                        dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
+                        dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
+                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+                    else:
+                        dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
+                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+                else:
+                    error_msg = health.get('error', 'Unknown error')
+                    dashboard += f"| **Status** | ⚠️ {error_msg} |\n"
+                    dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
         else:
-            dashboard += f"| **Status** | ⚠️ {health.get('error', 'Unknown error')} |\n"
-    except Exception:
-        dashboard += "| **Status** | ⚠️ LangSmith monitor unavailable |\n"
+            dashboard += "| **Status** | ⚠️ LangSmith monitor script not found |\n"
+    except Exception as e:
+        dashboard += f"| **Status** | ⚠️ LangSmith monitor error: {str(e)[:50]} |\n"
     
     dashboard += """
 ---
