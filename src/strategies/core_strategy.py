@@ -146,9 +146,10 @@ class CoreStrategy:
     """
 
     # Default ETF universe for Tier 1 strategy
-    # Includes equity ETFs (SPY, QQQ, VOO) and bond ETF (BND) for diversification
+    # Includes equity ETFs (SPY, QQQ, VOO), bond ETF (BND), and REIT ETF (VNQ) for diversification
     # BND: Vanguard Total Bond Market ETF - provides bond exposure per Graham's defensive investor principles
-    DEFAULT_ETF_UNIVERSE = ["SPY", "QQQ", "VOO", "BND"]
+    # VNQ: Vanguard Real Estate Index Fund ETF - provides real estate exposure for diversification and income
+    DEFAULT_ETF_UNIVERSE = ["SPY", "QQQ", "VOO", "BND", "VNQ"]
 
     # Momentum calculation periods (in days)
     LOOKBACK_PERIODS = {"1month": 21, "3month": 63, "6month": 126}

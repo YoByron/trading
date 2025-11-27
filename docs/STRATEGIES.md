@@ -18,19 +18,21 @@ This document describes the trading strategies implemented in the autonomous tra
 **Target Return**: 8-12% annually
 
 ### Strategy Description
-Conservative index ETF investing focused on broad market exposure through momentum-based selection among top ETFs. Now includes bond ETF (BND) for diversification per Benjamin Graham's Intelligent Investor principles, providing portfolio stability and risk reduction.
+Conservative index ETF investing focused on broad market exposure through momentum-based selection among top ETFs. Includes equity ETFs (SPY, QQQ, VOO), bond ETF (BND), and REIT ETF (VNQ) for diversification per Benjamin Graham's Intelligent Investor principles, providing portfolio stability, risk reduction, and income generation.
 
 ### Universe
 - **SPY**: S&P 500 ETF (equity)
 - **QQQ**: Nasdaq-100 ETF (equity)
 - **VOO**: Vanguard S&P 500 ETF (equity)
 - **BND**: Vanguard Total Bond Market ETF (bonds) - Added November 25, 2025
+- **VNQ**: Vanguard Real Estate Index Fund ETF (REITs) - Added November 27, 2025
 
 ### Selection Logic
-1. Calculate momentum score for each ETF (equity and bond)
-2. Select ETF with highest momentum (may be equity or bond based on market conditions)
+1. Calculate momentum score for each ETF (equity, bond, and REIT)
+2. Select ETF with highest momentum (may be equity, bond, or REIT based on market conditions)
 3. Execute $6 buy order daily
-4. Bond selection provides natural diversification when bonds outperform equities
+4. Bond and REIT selection provides natural diversification when they outperform equities
+5. REITs offer income generation through high dividend yields (~4-5%)
 
 ### Exit Rules
 - Hold positions long-term (buy-and-hold)
@@ -215,6 +217,13 @@ Key functions:
 ---
 
 ## Historical Changes
+
+### November 27, 2025
+- **VNQ (REIT ETF) Added to Tier 1**: Expanded universe to include real estate investment trusts for diversification and income
+- **Rationale**: REITs provide portfolio diversification (real estate behaves differently from stocks/bonds), high dividend yields (~4-5%), inflation hedge, and historical competitive returns (10.73% annualized 1994-2020). Follows Graham's diversification principles by adding another asset class.
+- **Impact**: Natural diversification through momentum-based selection. System will automatically allocate to REITs when they outperform other asset classes. REITs provide income generation through required 90% dividend distribution.
+- **REIT ETF**: VNQ (Vanguard Real Estate Index Fund ETF) - largest and most liquid REIT ETF, broad exposure to U.S. real estate
+- **Execution Start**: November 27, 2025
 
 ### November 25, 2025
 - **BND (Bond ETF) Added to Tier 1**: Expanded universe to include bonds for diversification
