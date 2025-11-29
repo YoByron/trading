@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TickerSentiment:
     """Sentiment data for a single ticker."""
+
     ticker: str
     score: float  # -100 to +100
     confidence: str  # low, medium, high
@@ -43,6 +44,7 @@ class TickerSentiment:
 @dataclass
 class SentimentReport:
     """Aggregated sentiment report."""
+
     meta: Dict
     sentiment_by_ticker: Dict[str, TickerSentiment]
 
@@ -56,15 +58,15 @@ class NewsSentimentAggregator:
 
     # Sentiment weights (must sum to 1.0)
     ALPHA_VANTAGE_WEIGHT = 0.30  # Reduced from 0.40
-    STOCKTWITS_WEIGHT = 0.25     # Reduced from 0.30
-    YAHOO_WEIGHT = 0.25           # Reduced from 0.30
-    GROK_TWITTER_WEIGHT = 0.20   # NEW: Real-time Twitter/X sentiment
+    STOCKTWITS_WEIGHT = 0.25  # Reduced from 0.30
+    YAHOO_WEIGHT = 0.25  # Reduced from 0.30
+    GROK_TWITTER_WEIGHT = 0.20  # NEW: Real-time Twitter/X sentiment
 
     def __init__(
         self,
         alpha_vantage_key: Optional[str] = None,
         grok_api_key: Optional[str] = None,
-        output_dir: str = "data/sentiment"
+        output_dir: str = "data/sentiment",
     ):
         """
         Initialize the sentiment aggregator.
@@ -83,7 +85,9 @@ class NewsSentimentAggregator:
         self.av_client = None
         if self.alpha_vantage_key:
             try:
-                self.av_client = TimeSeries(key=self.alpha_vantage_key, output_format='json')
+                self.av_client = TimeSeries(
+                    key=self.alpha_vantage_key, output_format="json"
+                )
                 logger.info("Alpha Vantage client initialized")
             except Exception as e:
                 logger.warning(f"Failed to initialize Alpha Vantage: {e}")
@@ -97,18 +101,19 @@ class NewsSentimentAggregator:
                 # Use LangSmith wrapper if available
                 try:
                     from src.utils.langsmith_wrapper import get_traced_openai_client
+
                     # Grok uses OpenAI-compatible API
                     self.grok_client = get_traced_openai_client(
-                        api_key=self.grok_api_key,
-                        base_url="https://api.x.ai/v1"
+                        api_key=self.grok_api_key, base_url="https://api.x.ai/v1"
                     )
                 except ImportError:
                     from src.utils.langsmith_wrapper import get_traced_openai_client
+
                     # Fallback to regular client
                     self.grok_client = get_traced_openai_client(
-    api_key=self.grok_api_key,
-    base_url="https://api.grok.com/openai/v1",
-)
+                        api_key=self.grok_api_key,
+                        base_url="https://api.grok.com/openai/v1",
+                    )
                 logger.info("✅ Grok/X.ai API client initialized for Twitter sentiment")
             except Exception as e:
                 logger.warning(f"Failed to initialize Grok client: {e}")
@@ -140,7 +145,12 @@ class NewsSentimentAggregator:
                     news = stock.get_news()
                 except:
                     logger.warning(f"Could not fetch Yahoo news for {ticker}")
-                    return {"score": 0, "articles": 0, "confidence": "low", "error": "api_unavailable"}
+                    return {
+                        "score": 0,
+                        "articles": 0,
+                        "confidence": "low",
+                        "error": "api_unavailable",
+                    }
 
             if not news or len(news) == 0:
                 logger.warning(f"No Yahoo news found for {ticker}")
@@ -148,12 +158,33 @@ class NewsSentimentAggregator:
 
             # Simple keyword-based sentiment analysis
             bullish_keywords = [
-                "surge", "rally", "gain", "bull", "upgrade", "beat", "strong",
-                "growth", "positive", "profit", "rise", "outperform", "buy"
+                "surge",
+                "rally",
+                "gain",
+                "bull",
+                "upgrade",
+                "beat",
+                "strong",
+                "growth",
+                "positive",
+                "profit",
+                "rise",
+                "outperform",
+                "buy",
             ]
             bearish_keywords = [
-                "drop", "fall", "bear", "downgrade", "miss", "weak", "decline",
-                "negative", "loss", "crash", "underperform", "sell"
+                "drop",
+                "fall",
+                "bear",
+                "downgrade",
+                "miss",
+                "weak",
+                "decline",
+                "negative",
+                "loss",
+                "crash",
+                "underperform",
+                "sell",
             ]
 
             sentiment_score = 0
@@ -180,13 +211,17 @@ class NewsSentimentAggregator:
             else:
                 normalized_score = 0
 
-            confidence = "high" if articles_analyzed >= 10 else "medium" if articles_analyzed >= 5 else "low"
+            confidence = (
+                "high"
+                if articles_analyzed >= 10
+                else "medium" if articles_analyzed >= 5 else "low"
+            )
 
             return {
                 "score": round(normalized_score, 2),
                 "articles": articles_analyzed,
                 "confidence": confidence,
-                "raw_sentiment": sentiment_score
+                "raw_sentiment": sentiment_score,
             }
 
         except Exception as e:
@@ -239,9 +274,15 @@ class NewsSentimentAggregator:
                 return {"score": 0, "messages": len(messages), "confidence": "low"}
 
             # Calculate sentiment score (-100 to +100)
-            sentiment_score = ((bullish_count - bearish_count) / total_with_sentiment) * 100
+            sentiment_score = (
+                (bullish_count - bearish_count) / total_with_sentiment
+            ) * 100
 
-            confidence = "high" if total_with_sentiment >= 20 else "medium" if total_with_sentiment >= 10 else "low"
+            confidence = (
+                "high"
+                if total_with_sentiment >= 20
+                else "medium" if total_with_sentiment >= 10 else "low"
+            )
 
             return {
                 "score": round(sentiment_score, 2),
@@ -249,15 +290,22 @@ class NewsSentimentAggregator:
                 "bullish": bullish_count,
                 "bearish": bearish_count,
                 "neutral": neutral_count,
-                "confidence": confidence
+                "confidence": confidence,
             }
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Ticker {ticker} not found on Stocktwits")
-                return {"score": 0, "messages": 0, "confidence": "low", "error": "not_found"}
+                return {
+                    "score": 0,
+                    "messages": 0,
+                    "confidence": "low",
+                    "error": "not_found",
+                }
             else:
-                logger.error(f"HTTP error getting Stocktwits sentiment for {ticker}: {e}")
+                logger.error(
+                    f"HTTP error getting Stocktwits sentiment for {ticker}: {e}"
+                )
                 return {"score": 0, "messages": 0, "confidence": "low", "error": str(e)}
         except Exception as e:
             logger.error(f"Error getting Stocktwits sentiment for {ticker}: {e}")
@@ -276,7 +324,12 @@ class NewsSentimentAggregator:
         """
         if not self.alpha_vantage_key:
             logger.warning("Alpha Vantage API key not configured")
-            return {"score": 0, "articles": 0, "confidence": "low", "error": "no_api_key"}
+            return {
+                "score": 0,
+                "articles": 0,
+                "confidence": "low",
+                "error": "no_api_key",
+            }
 
         try:
             # Use News Sentiment API
@@ -285,7 +338,7 @@ class NewsSentimentAggregator:
                 "function": "NEWS_SENTIMENT",
                 "tickers": ticker,
                 "apikey": self.alpha_vantage_key,
-                "limit": 50  # Analyze up to 50 articles
+                "limit": 50,  # Analyze up to 50 articles
             }
 
             response = requests.get(url, params=params, timeout=15)
@@ -296,11 +349,21 @@ class NewsSentimentAggregator:
             # Check for API errors
             if "Error Message" in data:
                 logger.error(f"Alpha Vantage API error: {data['Error Message']}")
-                return {"score": 0, "articles": 0, "confidence": "low", "error": data["Error Message"]}
+                return {
+                    "score": 0,
+                    "articles": 0,
+                    "confidence": "low",
+                    "error": data["Error Message"],
+                }
 
             if "Note" in data:
                 logger.warning(f"Alpha Vantage rate limit: {data['Note']}")
-                return {"score": 0, "articles": 0, "confidence": "low", "error": "rate_limit"}
+                return {
+                    "score": 0,
+                    "articles": 0,
+                    "confidence": "low",
+                    "error": "rate_limit",
+                }
 
             feed = data.get("feed", [])
 
@@ -332,13 +395,21 @@ class NewsSentimentAggregator:
             # Alpha Vantage sentiment is -1 to +1, convert to -100 to +100
             weighted_sentiment = (total_sentiment / total_relevance) * 100
 
-            confidence = "high" if articles_count >= 10 else "medium" if articles_count >= 5 else "low"
+            confidence = (
+                "high"
+                if articles_count >= 10
+                else "medium" if articles_count >= 5 else "low"
+            )
 
             return {
                 "score": round(weighted_sentiment, 2),
                 "articles": articles_count,
-                "relevance": round(total_relevance / articles_count, 3) if articles_count > 0 else 0,
-                "confidence": confidence
+                "relevance": (
+                    round(total_relevance / articles_count, 3)
+                    if articles_count > 0
+                    else 0
+                ),
+                "confidence": confidence,
             }
 
         except Exception as e:
@@ -368,7 +439,7 @@ class NewsSentimentAggregator:
                 f"2. Number of tweets analyzed, "
                 f"3. Key bullish/bearish themes, "
                 f"4. Confidence level (high/medium/low). "
-                f"Respond in JSON format: {{\"score\": <number>, \"tweets\": <count>, \"confidence\": \"<level>\", \"themes\": [\"<theme1>\", \"<theme2>\"]}}"
+                f'Respond in JSON format: {{"score": <number>, "tweets": <count>, "confidence": "<level>", "themes": ["<theme1>", "<theme2>"]}}'
             )
 
             response = self.grok_client.chat.completions.create(
@@ -376,12 +447,12 @@ class NewsSentimentAggregator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a financial sentiment analyst. Analyze Twitter/X sentiment for stocks. Always respond with valid JSON only."
+                        "content": "You are a financial sentiment analyst. Analyze Twitter/X sentiment for stocks. Always respond with valid JSON only.",
                     },
-                    {"role": "user", "content": query}
+                    {"role": "user", "content": query},
                 ],
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=500,
             )
 
             # Parse Grok response
@@ -391,7 +462,7 @@ class NewsSentimentAggregator:
             import re
 
             # Remove markdown code blocks if present
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            json_match = re.search(r"\{.*\}", content, re.DOTALL)
             if json_match:
                 content = json_match.group(0)
 
@@ -411,12 +482,17 @@ class NewsSentimentAggregator:
                 "tweets": int(tweets),
                 "confidence": confidence,
                 "themes": themes,
-                "source": "grok_twitter"
+                "source": "grok_twitter",
             }
 
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse Grok response for {ticker}: {e}")
-            return {"score": 0, "tweets": 0, "confidence": "low", "error": "parse_error"}
+            return {
+                "score": 0,
+                "tweets": 0,
+                "confidence": "low",
+                "error": "parse_error",
+            }
         except Exception as e:
             logger.warning(f"Grok Twitter sentiment failed for {ticker}: {e}")
             return {"score": 0, "tweets": 0, "confidence": "low", "error": str(e)}
@@ -437,14 +513,16 @@ class NewsSentimentAggregator:
         yahoo_data = self.get_yahoo_sentiment(ticker)
         stocktwits_data = self.get_stocktwits_sentiment(ticker)
         alpha_vantage_data = self.get_alpha_vantage_sentiment(ticker)
-        grok_twitter_data = self.get_grok_twitter_sentiment(ticker)  # NEW: Real-time Twitter sentiment
+        grok_twitter_data = self.get_grok_twitter_sentiment(
+            ticker
+        )  # NEW: Real-time Twitter sentiment
 
         # Calculate weighted average
         sources = {
             "yahoo": yahoo_data,
             "stocktwits": stocktwits_data,
             "alphavantage": alpha_vantage_data,
-            "grok_twitter": grok_twitter_data  # NEW
+            "grok_twitter": grok_twitter_data,  # NEW
         }
 
         # Calculate combined score
@@ -454,7 +532,9 @@ class NewsSentimentAggregator:
         grok_twitter_score = grok_twitter_data.get("score", 0)  # NEW
 
         # Adjust weights if Grok is unavailable (normalize remaining weights)
-        weights_sum = self.YAHOO_WEIGHT + self.STOCKTWITS_WEIGHT + self.ALPHA_VANTAGE_WEIGHT
+        weights_sum = (
+            self.YAHOO_WEIGHT + self.STOCKTWITS_WEIGHT + self.ALPHA_VANTAGE_WEIGHT
+        )
         if grok_twitter_data.get("error") == "no_api_key":
             # Grok unavailable - redistribute its weight proportionally
             grok_weight = 0
@@ -469,10 +549,10 @@ class NewsSentimentAggregator:
             alpha_vantage_weight = self.ALPHA_VANTAGE_WEIGHT
 
         combined_score = (
-            yahoo_score * yahoo_weight +
-            stocktwits_score * stocktwits_weight +
-            alpha_vantage_score * alpha_vantage_weight +
-            grok_twitter_score * grok_weight  # NEW
+            yahoo_score * yahoo_weight
+            + stocktwits_score * stocktwits_weight
+            + alpha_vantage_score * alpha_vantage_weight
+            + grok_twitter_score * grok_weight  # NEW
         )
 
         # Determine overall confidence
@@ -480,7 +560,7 @@ class NewsSentimentAggregator:
             yahoo_data.get("confidence", "low"),
             stocktwits_data.get("confidence", "low"),
             alpha_vantage_data.get("confidence", "low"),
-            grok_twitter_data.get("confidence", "low")  # NEW
+            grok_twitter_data.get("confidence", "low"),  # NEW
         ]
 
         high_count = confidences.count("high")
@@ -498,7 +578,7 @@ class NewsSentimentAggregator:
             score=round(combined_score, 2),
             confidence=overall_confidence,
             sources=sources,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
     def analyze_tickers(self, tickers: List[str]) -> SentimentReport:
@@ -523,7 +603,11 @@ class NewsSentimentAggregator:
 
                 # Track which sources returned data
                 for source_name, source_data in sentiment.sources.items():
-                    if source_data.get("score", 0) != 0 or source_data.get("articles", 0) > 0 or source_data.get("messages", 0) > 0:
+                    if (
+                        source_data.get("score", 0) != 0
+                        or source_data.get("articles", 0) > 0
+                        or source_data.get("messages", 0) > 0
+                    ):
                         sources_used.add(source_name)
 
             except Exception as e:
@@ -535,14 +619,16 @@ class NewsSentimentAggregator:
                 "date": datetime.now().strftime("%Y-%m-%d"),
                 "timestamp": datetime.now().isoformat(),
                 "sources": sorted(list(sources_used)),
-                "tickers_analyzed": len(sentiment_data)
+                "tickers_analyzed": len(sentiment_data),
             },
-            sentiment_by_ticker=sentiment_data
+            sentiment_by_ticker=sentiment_data,
         )
 
         return report
 
-    def save_report(self, report: SentimentReport, filename: Optional[str] = None) -> str:
+    def save_report(
+        self, report: SentimentReport, filename: Optional[str] = None
+    ) -> str:
         """
         Save sentiment report to JSON file.
 
@@ -565,7 +651,7 @@ class NewsSentimentAggregator:
             "sentiment_by_ticker": {
                 ticker: asdict(sentiment)
                 for ticker, sentiment in report.sentiment_by_ticker.items()
-            }
+            },
         }
 
         with open(filepath, "w") as f:
@@ -603,12 +689,12 @@ class NewsSentimentAggregator:
         Args:
             report: SentimentReport to summarize
         """
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print(f"SENTIMENT REPORT - {report.meta['date']}")
-        print("="*80)
+        print("=" * 80)
         print(f"Sources: {', '.join(report.meta['sources'])}")
         print(f"Tickers Analyzed: {report.meta['tickers_analyzed']}")
-        print("-"*80)
+        print("-" * 80)
 
         for ticker, sentiment in report.sentiment_by_ticker.items():
             score = sentiment.score
@@ -622,7 +708,9 @@ class NewsSentimentAggregator:
             else:
                 label = "NEUTRAL"
 
-            print(f"\n{ticker}: {label} ({score:+.1f}) - Confidence: {confidence.upper()}")
+            print(
+                f"\n{ticker}: {label} ({score:+.1f}) - Confidence: {confidence.upper()}"
+            )
 
             # Print source breakdown
             for source_name, source_data in sentiment.sources.items():
@@ -631,13 +719,17 @@ class NewsSentimentAggregator:
                 messages = source_data.get("messages", 0)
 
                 if articles > 0:
-                    print(f"  - {source_name.capitalize()}: {source_score:+.1f} ({articles} articles)")
+                    print(
+                        f"  - {source_name.capitalize()}: {source_score:+.1f} ({articles} articles)"
+                    )
                 elif messages > 0:
-                    print(f"  - {source_name.capitalize()}: {source_score:+.1f} ({messages} messages)")
+                    print(
+                        f"  - {source_name.capitalize()}: {source_score:+.1f} ({messages} messages)"
+                    )
                 elif source_score != 0:
                     print(f"  - {source_name.capitalize()}: {source_score:+.1f}")
 
-        print("\n" + "="*80 + "\n")
+        print("\n" + "=" * 80 + "\n")
 
 
 def main():
@@ -649,31 +741,25 @@ def main():
         "--tickers",
         type=str,
         default="SPY,QQQ,VOO,NVDA,GOOGL,AMZN",
-        help="Comma-separated list of tickers (default: SPY,QQQ,VOO,NVDA,GOOGL,AMZN)"
+        help="Comma-separated list of tickers (default: SPY,QQQ,VOO,NVDA,GOOGL,AMZN)",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="data/sentiment",
-        help="Directory to save reports (default: data/sentiment)"
+        help="Directory to save reports (default: data/sentiment)",
     )
     parser.add_argument(
-        "--load",
-        type=str,
-        help="Load and display an existing report (filename)"
+        "--load", type=str, help="Load and display an existing report (filename)"
     )
-    parser.add_argument(
-        "--test",
-        action="store_true",
-        help="Test with SPY only"
-    )
+    parser.add_argument("--test", action="store_true", help="Test with SPY only")
 
     args = parser.parse_args()
 
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Initialize aggregator
@@ -683,9 +769,9 @@ def main():
         # Load and display existing report
         report_data = aggregator.load_report(args.load)
         if report_data:
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print(f"LOADED REPORT - {report_data['meta']['date']}")
-            print("="*80)
+            print("=" * 80)
             print(json.dumps(report_data, indent=2))
 
     elif args.test:

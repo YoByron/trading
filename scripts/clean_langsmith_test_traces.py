@@ -78,20 +78,20 @@ def generate_deletion_guide(test_traces: list, project_name: str):
     """Generate a guide for manual deletion."""
     if not test_traces:
         return
-    
+
     # Find the parent trace (Sample Agent Trace)
     parent_trace = None
     for item in test_traces:
         if "sample" in item["run"].name.lower():
             parent_trace = item["run"]
             break
-    
+
     print("\n" + "=" * 70)
     print("📋 MANUAL DELETION GUIDE")
     print("=" * 70)
     print("\nLangSmith doesn't allow programmatic deletion of runs (safety feature).")
     print("Delete them manually in the UI:\n")
-    
+
     if parent_trace:
         print(f"🎯 EASIEST METHOD: Delete the parent trace")
         print(f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b")
@@ -105,7 +105,7 @@ def generate_deletion_guide(test_traces: list, project_name: str):
         print(f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b")
         print(f"   2. Find each trace listed above")
         print(f"   3. Click delete/archive for each")
-    
+
     print(f"\n💡 After deletion, your project will only show REAL trading traces!")
 
 

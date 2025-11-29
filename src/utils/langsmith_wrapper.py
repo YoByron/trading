@@ -10,6 +10,7 @@ Usage:
     client = get_traced_openai_client()
     response = client.chat.completions.create(...)
 """
+
 import os
 from typing import Optional
 from dotenv import load_dotenv
@@ -18,15 +19,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Set up LangSmith tracing if API key is available
-if os.getenv('LANGCHAIN_API_KEY'):
-    os.environ['LANGCHAIN_TRACING_V2'] = 'true'
-    os.environ['LANGCHAIN_PROJECT'] = os.getenv('LANGCHAIN_PROJECT', 'trading-rl-training')
+if os.getenv("LANGCHAIN_API_KEY"):
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = os.getenv(
+        "LANGCHAIN_PROJECT", "trading-rl-training"
+    )
     LANGSMITH_ENABLED = True
 else:
     LANGSMITH_ENABLED = False
 
 
-def get_traced_openai_client(api_key: Optional[str] = None, base_url: Optional[str] = None):
+def get_traced_openai_client(
+    api_key: Optional[str] = None, base_url: Optional[str] = None
+):
     """
     Get OpenAI client wrapped with LangSmith tracing.
 
@@ -41,11 +46,11 @@ def get_traced_openai_client(api_key: Optional[str] = None, base_url: Optional[s
 
     # Determine API key and base URL
     if not api_key:
-        api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENROUTER_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
 
     if not base_url:
         # Use OpenRouter if OPENROUTER_API_KEY is set, otherwise OpenAI
-        if os.getenv('OPENROUTER_API_KEY'):
+        if os.getenv("OPENROUTER_API_KEY"):
             base_url = "https://openrouter.ai/api/v1"
         else:
             base_url = None  # Default OpenAI URL
@@ -57,6 +62,7 @@ def get_traced_openai_client(api_key: Optional[str] = None, base_url: Optional[s
     if LANGSMITH_ENABLED:
         try:
             from langsmith import wrap_openai
+
             client = wrap_openai(client)
         except ImportError:
             # LangSmith not installed - use regular client
@@ -65,7 +71,9 @@ def get_traced_openai_client(api_key: Optional[str] = None, base_url: Optional[s
     return client
 
 
-def get_traced_async_openai_client(api_key: Optional[str] = None, base_url: Optional[str] = None):
+def get_traced_async_openai_client(
+    api_key: Optional[str] = None, base_url: Optional[str] = None
+):
     """
     Get async OpenAI client wrapped with LangSmith tracing.
 
@@ -80,11 +88,11 @@ def get_traced_async_openai_client(api_key: Optional[str] = None, base_url: Opti
 
     # Determine API key and base URL
     if not api_key:
-        api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENROUTER_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
 
     if not base_url:
         # Use OpenRouter if OPENROUTER_API_KEY is set, otherwise OpenAI
-        if os.getenv('OPENROUTER_API_KEY'):
+        if os.getenv("OPENROUTER_API_KEY"):
             base_url = "https://openrouter.ai/api/v1"
         else:
             base_url = None  # Default OpenAI URL
@@ -96,6 +104,7 @@ def get_traced_async_openai_client(api_key: Optional[str] = None, base_url: Opti
     if LANGSMITH_ENABLED:
         try:
             from langsmith import wrap_openai
+
             client = wrap_openai(client)
         except ImportError:
             # LangSmith not installed - use regular client
@@ -106,4 +115,4 @@ def get_traced_async_openai_client(api_key: Optional[str] = None, base_url: Opti
 
 def is_langsmith_enabled() -> bool:
     """Check if LangSmith tracing is enabled."""
-    return LANGSMITH_ENABLED and os.getenv('LANGCHAIN_API_KEY') is not None
+    return LANGSMITH_ENABLED and os.getenv("LANGCHAIN_API_KEY") is not None
