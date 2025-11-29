@@ -10,7 +10,7 @@ Consolidates duplicate logic from:
 - src/strategies/growth_strategy.py
 """
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 import pandas as pd
 import numpy as np
 
