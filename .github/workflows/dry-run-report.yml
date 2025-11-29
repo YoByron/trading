@@ -1,5 +1,8 @@
 name: Nightly Dry Run Report
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: '0 2 * * *'   # 02:00 UTC nightly
@@ -27,6 +30,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           set -e
           if [ -n "$OPENROUTER_API_KEY" ]; then
@@ -35,6 +39,9 @@ jobs:
           fi
           if [ -n "$ANTHROPIC_API_KEY" ]; then
             pip install anthropic
+          fi
+          if [ -n "$GOOGLE_API_KEY" ]; then
+            pip install google-generativeai
           fi
           # Gemini is only needed if enabled elsewhere; skip by default
 
@@ -46,11 +53,13 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           INCLUDE_LIST=""
           [ -n "$OPENROUTER_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST mcp"
           [ -n "$ANTHROPIC_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST langchain"
           [ -n "$GROK_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST grok_twitter"
+          [ -n "$GOOGLE_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST gemini"
 
           if [ -n "$INCLUDE_LIST" ]; then
             echo "Including agents:$INCLUDE_LIST"
@@ -142,3 +151,19 @@ jobs:
           git -C wiki add Progress-Dashboard.md || true
           git -C wiki commit -m "Update Automated Dry Run Report ($ts)" || echo "No changes to commit."
           git -C wiki push
+
+      - name: Update badge endpoint in repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Checkout repo to update badge JSON
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git clone --depth 1 "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" repo
+          cd repo
+          mkdir -p badges
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          printf '{\n  "schemaVersion": 1,\n  "label": "dry run",\n  "message": "Updated: %s",\n  "color": "blue"\n}\n' "$TS" > badges/dryrun.json
+          git add badges/dryrun.json
+          git commit -m "chore: update dry run badge timestamp (${TS})" || echo "No changes"
+          git push

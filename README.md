@@ -3,8 +3,10 @@
 ![Status](https://img.shields.io/badge/status-production_ready-brightgreen.svg)
 ![Win Rate](https://img.shields.io/badge/win_rate-62.2%25-success.svg)
 ![Sharpe Ratio](https://img.shields.io/badge/sharpe-2.18-success.svg)
+[![Progress Dashboard](https://img.shields.io/badge/Progress-Dashboard-success)](https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard)
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![Automated Dry Run](https://img.shields.io/badge/Automated%20Dry%20Run-View%20Latest-blue)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
+[![Dry Run Updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/IgorGanapolsky/trading/main/badges/dryrun.json)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
 
 **Validated profitable** automated trading system using momentum indicators (MACD + RSI + Volume) with cloud deployment via GitHub Actions.
 
