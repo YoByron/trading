@@ -45,14 +45,16 @@ def execute_crypto_trading() -> None:
         crypto_strategy = CryptoStrategy(
             trader=trader,
             risk_manager=risk_manager,
-            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50"))
+            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "10.0")),
         )
 
         # Execute crypto trading
         order = crypto_strategy.execute_daily()
 
         if order:
-            logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
+            logger.info(
+                f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}"
+            )
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
 
@@ -66,7 +68,7 @@ def main() -> None:
     parser.add_argument(
         "--crypto-only",
         action="store_true",
-        help="Execute crypto trading only (for weekends/holidays)"
+        help="Execute crypto trading only (for weekends/holidays)",
     )
     args = parser.parse_args()
 
