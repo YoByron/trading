@@ -946,7 +946,10 @@ def generate_dashboard() -> str:
         avg_fill_time_ms = execution.get("avg_fill_time_ms", 0.0)
         broker_latency_ms = execution.get("broker_latency_ms", 0.0)
 
-        dashboard += f"| **Avg Slippage** | {avg_slippage:.3f}% | <0.5% | {'✅' if avg_slippage < 0.5 else '⚠️'} |\n"
+        slippage_note = (
+            "⚠️ ESTIMATED" if not execution.get("slippage_is_real", False) else ""
+        )
+        dashboard += f"| **Avg Slippage** | {avg_slippage:.3f}% {slippage_note} | <0.5% | {'✅' if avg_slippage < 0.5 else '⚠️'} |\n"
         dashboard += f"| **Fill Quality** | {fill_quality:.1f}/100 | >90 | {'✅' if fill_quality > 90 else '⚠️'} |\n"
         dashboard += f"| **Order Success Rate** | {order_success_rate:.1f}% | >95% | {'✅' if order_success_rate > 95 else '⚠️'} |\n"
         dashboard += f"| **Order Reject Rate** | {order_reject_rate:.1f}% | <5% | {'✅' if order_reject_rate < 5 else '⚠️'} |\n"
@@ -1260,9 +1263,13 @@ def generate_dashboard() -> str:
             if monitor.client is None:
                 if not monitor.api_key:
                     dashboard += "| **Status** | ⚠️ LANGCHAIN_API_KEY not configured |\n"
+                    dashboard += "| **Action Required** | Set LANGCHAIN_API_KEY in GitHub Secrets |\n"
                 else:
                     dashboard += (
                         "| **Status** | ⚠️ LangSmith client initialization failed |\n"
+                    )
+                    dashboard += (
+                        "| **Action Required** | Check LangSmith API key validity |\n"
                     )
             else:
                 health = monitor.monitor_health()

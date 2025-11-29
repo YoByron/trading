@@ -206,7 +206,7 @@ class AlpacaTrader:
                 f"Order amount: ${amount:.2f}\n"
                 f"Expected amount: ${expected_amount:.2f} (tier: {tier_name})\n"
                 f"Maximum allowed: ${max_allowed:.2f} ({self.MAX_ORDER_MULTIPLIER}x expected)\n"
-                f"This order is {amount/expected_amount:.1f}x expected - appears to be a bug.\n"
+                f"This order is {amount / expected_amount:.1f}x expected - appears to be a bug.\n"
                 f"REFUSING to execute to prevent financial loss."
             )
             logger.error(error_msg)
@@ -220,7 +220,7 @@ class AlpacaTrader:
                 f"Symbol: {symbol}\n"
                 f"Order amount: ${amount:.2f}\n"
                 f"Expected amount: ${expected_amount:.2f} (tier: {tier_name})\n"
-                f"This order is {amount/expected_amount:.1f}x expected.\n"
+                f"This order is {amount / expected_amount:.1f}x expected.\n"
                 f"Proceeding with caution..."
             )
             logger.warning(warning_msg)
@@ -368,7 +368,13 @@ class AlpacaTrader:
             logger.info(f"Executing {side} order: {symbol} for ${amount_usd:.2f}")
 
             # Crypto orders require GTC (good-til-canceled), stocks use DAY
-            is_crypto = symbol.endswith("USD") and symbol.replace("USD", "") in ["BTC", "ETH", "LTC", "DOGE", "SOL"]
+            is_crypto = symbol.endswith("USD") and symbol.replace("USD", "") in [
+                "BTC",
+                "ETH",
+                "LTC",
+                "DOGE",
+                "SOL",
+            ]
             tif = TimeInForce.GTC if is_crypto else TimeInForce.DAY
 
             req = MarketOrderRequest(
@@ -379,6 +385,44 @@ class AlpacaTrader:
             )
 
             order = self.trading_client.submit_order(req)
+
+            # Get current price for slippage calculation
+            current_price = None
+            try:
+                from alpaca.data.historical import StockHistoricalDataClient
+                from alpaca.data.requests import StockLatestQuoteRequest
+
+                data_client = StockHistoricalDataClient(
+                    self.api_key, self.secret_key, self.base_url
+                )
+                quote = data_client.get_latest_quote(
+                    StockLatestQuoteRequest(symbol=symbol)
+                )
+                if quote:
+                    current_price = (
+                        float(quote.ask_price)
+                        if side == "buy"
+                        else float(quote.bid_price)
+                    )
+            except Exception as e:
+                logger.debug(f"Could not get current price for slippage: {e}")
+
+            filled_avg_price = (
+                float(order.filled_avg_price) if order.filled_avg_price else None
+            )
+
+            # Calculate slippage if we have both prices
+            slippage_pct = None
+            if filled_avg_price and current_price:
+                slippage_pct = (
+                    abs((filled_avg_price - current_price) / current_price) * 100
+                )
+                if side == "buy" and filled_avg_price > current_price:
+                    slippage_pct = slippage_pct  # Positive slippage (paid more)
+                elif side == "sell" and filled_avg_price < current_price:
+                    slippage_pct = slippage_pct  # Positive slippage (got less)
+                else:
+                    slippage_pct = -slippage_pct  # Negative slippage (got better price)
 
             order_info = {
                 "id": str(order.id),
@@ -392,9 +436,9 @@ class AlpacaTrader:
                 "submitted_at": str(order.submitted_at),
                 "filled_at": str(order.filled_at) if order.filled_at else None,
                 "filled_qty": float(order.filled_qty) if order.filled_qty else 0,
-                "filled_avg_price": (
-                    float(order.filled_avg_price) if order.filled_avg_price else None
-                ),
+                "filled_avg_price": filled_avg_price,
+                "intended_price": current_price,  # Price we expected
+                "slippage_pct": slippage_pct,  # Real slippage calculation
             }
 
             logger.info(
@@ -409,7 +453,6 @@ class AlpacaTrader:
                 # Get global trade tracker instance if it exists
                 # This will be set up by the orchestrator
                 if hasattr(self, "_trade_tracker") and self._trade_tracker:
-                    action = 1 if side == "buy" else 2  # 1=Buy, 2=Sell
                     # Note: Entry state would need to be passed from orchestrator
                     # For now, we just log the trade
                     logger.debug(f"Trade tracker notified: {symbol} {side}")

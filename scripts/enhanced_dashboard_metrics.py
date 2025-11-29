@@ -192,19 +192,35 @@ class EnhancedMetricsCalculator(TradingMetricsCalculator):
             (rejected_orders / total_orders * 100) if total_orders > 0 else 0.0
         )
 
-        # Estimate slippage (would need actual fill prices vs intended prices)
-        # For now, use a placeholder based on trade amounts
+        # Calculate real slippage from order data (fill price vs intended price)
         slippage_estimates = []
+        has_real_slippage = False
         for trade in all_trades:
             if trade.get("status") == "filled":
-                # Placeholder: assume minimal slippage for small orders
-                amount = trade.get("amount", 0)
-                if amount < 100:
-                    slippage_estimates.append(0.001)  # 0.1% for small orders
+                # Use real slippage if available
+                slippage_pct = trade.get("slippage_pct")
+                if slippage_pct is not None:
+                    slippage_estimates.append(abs(slippage_pct))
+                    has_real_slippage = True
+                elif trade.get("filled_avg_price") and trade.get("intended_price"):
+                    # Calculate slippage from fill vs intended
+                    filled = trade.get("filled_avg_price")
+                    intended = trade.get("intended_price")
+                    if filled and intended and intended > 0:
+                        slippage = abs((filled - intended) / intended) * 100
+                        slippage_estimates.append(slippage)
+                        has_real_slippage = True
                 else:
-                    slippage_estimates.append(0.002)  # 0.2% for larger orders
+                    # Fallback: estimate based on order size (less accurate)
+                    amount = trade.get("amount", 0)
+                    if amount < 100:
+                        slippage_estimates.append(0.1)  # 0.1% estimate
+                    else:
+                        slippage_estimates.append(0.2)  # 0.2% estimate
 
-        avg_slippage = np.mean(slippage_estimates) * 100 if slippage_estimates else 0.0
+        avg_slippage = np.mean(slippage_estimates) if slippage_estimates else None
+        if avg_slippage is None:
+            avg_slippage = 0.0  # No data available
 
         # Fill quality (inverse of slippage)
         fill_quality = max(0, 100 - (avg_slippage * 10))
@@ -219,6 +235,7 @@ class EnhancedMetricsCalculator(TradingMetricsCalculator):
             "order_reject_rate": reject_rate,
             "avg_fill_time_ms": avg_fill_time_ms,
             "broker_latency_ms": 50.0,  # Placeholder
+            "slippage_is_real": has_real_slippage,  # Flag indicating if real or estimated
             "total_orders": total_orders,
             "successful_orders": successful_orders,
             "rejected_orders": rejected_orders,
