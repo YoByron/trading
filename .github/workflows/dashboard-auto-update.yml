@@ -48,6 +48,11 @@ jobs:
           echo "📊 Generating world-class progress dashboard..."
           python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
 
+      - name: Generate RAG Knowledge Base wiki
+        run: |
+          echo "🧠 Generating RAG Knowledge Base wiki..."
+          python3 scripts/generate_rag_wiki.py || echo "⚠️ RAG wiki generation failed (non-fatal)"
+
       - name: Update GitHub Wiki
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
@@ -92,10 +97,14 @@ jobs:
             fi
           done
 
-          # Copy generated dashboard
+          # Copy generated wiki pages
           cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
           if [ -f wiki/Home.md ]; then
             cp wiki/Home.md "$WIKI_DIR/Home.md"
+          fi
+          if [ -f wiki/RAG-Knowledge-Base.md ]; then
+            cp wiki/RAG-Knowledge-Base.md "$WIKI_DIR/RAG-Knowledge-Base.md"
+            echo "✅ RAG Knowledge Base page copied"
           fi
 
           # Commit and push with retry logic
