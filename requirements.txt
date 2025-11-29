@@ -25,6 +25,7 @@ beautifulsoup4>=4.12.0
 lxml>=5.0.0
 praw==7.8.1
 feedparser==6.0.10
+PyPDF2>=3.0.0  # PDF parsing for Berkshire letters
 
 # YouTube Monitoring
 youtube-transcript-api==1.2.3

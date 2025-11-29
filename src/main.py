@@ -434,13 +434,36 @@ class TradingOrchestrator:
             )  # 10% -> $1
 
             # Initialize CoreStrategy (Tier 1)
+            # VCA Configuration
+            use_vca = os.getenv("USE_VCA", "false").lower() == "true"
+            vca_target_growth_rate = (
+                float(os.getenv("VCA_TARGET_GROWTH_RATE", "0.10"))
+                if os.getenv("VCA_TARGET_GROWTH_RATE")
+                else None
+            )
+            vca_max_adjustment = (
+                float(os.getenv("VCA_MAX_ADJUSTMENT", "2.0"))
+                if os.getenv("VCA_MAX_ADJUSTMENT")
+                else None
+            )
+            vca_min_adjustment = (
+                float(os.getenv("VCA_MIN_ADJUSTMENT", "0.3"))
+                if os.getenv("VCA_MIN_ADJUSTMENT")
+                else None
+            )
+
             self.core_strategy = CoreStrategy(
                 daily_allocation=tier1_daily,
                 stop_loss_pct=self.config["stop_loss_pct"] / 100,
                 use_sentiment=True,
+                use_vca=use_vca,
+                vca_target_growth_rate=vca_target_growth_rate,
+                vca_max_adjustment=vca_max_adjustment,
+                vca_min_adjustment=vca_min_adjustment,
             )
+            allocation_mode = "VCA" if use_vca else "DCA"
             self.logger.info(
-                f"Core strategy initialized (daily allocation: ${tier1_daily:.2f})"
+                f"Core strategy initialized ({allocation_mode} mode, daily allocation: ${tier1_daily:.2f})"
             )
 
             # Initialize GrowthStrategy (Tier 2)

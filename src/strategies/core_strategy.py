@@ -72,6 +72,16 @@ except ImportError:
     LLM_COUNCIL_AVAILABLE = False
     TradingCouncil = None
 
+# VCA Strategy integration
+try:
+    from src.strategies.vca_strategy import VCAStrategy, VCACalculation
+
+    VCA_AVAILABLE = True
+except ImportError:
+    VCA_AVAILABLE = False
+    VCAStrategy = None
+    VCACalculation = None
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -131,13 +141,15 @@ class CoreStrategy:
     - Focuses on major index ETFs (SPY, QQQ, VOO) and bond ETF (BND)
     - Uses momentum indicators to select the best performer
     - Incorporates AI sentiment analysis for market conditions
-    - Executes daily dollar-cost averaging
+    - Executes daily dollar-cost averaging (DCA) or value-cost averaging (VCA)
     - Implements risk management with trailing stop-loss
     - Performs monthly portfolio rebalancing
     - Includes bonds for diversification per Graham's Intelligent Investor principles
 
     Attributes:
-        daily_allocation (float): Dollar amount to invest daily
+        daily_allocation (float): Base dollar amount to invest daily
+        use_vca (bool): Whether to use Value Cost Averaging instead of DCA
+        vca_strategy (VCAStrategy): VCA strategy instance if enabled
         etf_universe (List[str]): List of ETFs to analyze
         lookback_periods (Dict[str, int]): Momentum calculation periods
         stop_loss_pct (float): Trailing stop-loss percentage
@@ -197,16 +209,24 @@ class CoreStrategy:
         stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
         take_profit_pct: float = TAKE_PROFIT_PCT,
         use_sentiment: bool = True,
+        use_vca: bool = False,
+        vca_target_growth_rate: Optional[float] = None,
+        vca_max_adjustment: Optional[float] = None,
+        vca_min_adjustment: Optional[float] = None,
     ):
         """
         Initialize the Core Strategy.
 
         Args:
-            daily_allocation: Daily investment amount in dollars (default: $6)
+            daily_allocation: Base daily investment amount in dollars (default: $900)
             etf_universe: List of ETF symbols to analyze (default: SPY, QQQ, VOO)
             stop_loss_pct: Trailing stop-loss percentage (default: 5%)
             take_profit_pct: Take-profit percentage for closing positions (default: 5%)
             use_sentiment: Whether to use AI sentiment analysis (default: True)
+            use_vca: Whether to use Value Cost Averaging instead of DCA (default: False)
+            vca_target_growth_rate: Annual target growth rate for VCA (default: 10%)
+            vca_max_adjustment: Maximum VCA adjustment factor (default: 2.0x)
+            vca_min_adjustment: Minimum VCA adjustment factor (default: 0.3x)
 
         Raises:
             ValueError: If daily_allocation is non-positive
@@ -221,6 +241,29 @@ class CoreStrategy:
         self.stop_loss_pct = stop_loss_pct
         self.take_profit_pct = take_profit_pct
         self.use_sentiment = use_sentiment
+        self.use_vca = use_vca and VCA_AVAILABLE
+
+        # Initialize VCA strategy if enabled
+        self.vca_strategy: Optional[VCAStrategy] = None
+        if self.use_vca:
+            try:
+                vca_config = {}
+                if vca_target_growth_rate is not None:
+                    vca_config["target_growth_rate"] = vca_target_growth_rate
+                if vca_max_adjustment is not None:
+                    vca_config["max_adjustment_factor"] = vca_max_adjustment
+                if vca_min_adjustment is not None:
+                    vca_config["min_adjustment_factor"] = vca_min_adjustment
+
+                self.vca_strategy = VCAStrategy(
+                    base_allocation=daily_allocation,
+                    **vca_config,
+                )
+                logger.info("VCA Strategy enabled - using Value Cost Averaging")
+            except Exception as e:
+                logger.warning(f"Failed to initialize VCA strategy: {e}")
+                self.use_vca = False
+                self.vca_strategy = None
 
         # Strategy state
         self.current_holdings: Dict[str, float] = {}
@@ -278,8 +321,10 @@ class CoreStrategy:
                 logger.warning(f"Failed to initialize LLM Council: {e}")
                 self.llm_council_enabled = False
 
+        allocation_mode = "VCA" if self.use_vca else "DCA"
         logger.info(
             f"CoreStrategy initialized: daily_allocation=${daily_allocation}, "
+            f"allocation_mode={allocation_mode}, "
             f"etf_universe={self.etf_universe}, stop_loss={stop_loss_pct*100}%, "
             f"take_profit={take_profit_pct*100}%"
         )
@@ -304,7 +349,9 @@ class CoreStrategy:
         logger.info("=" * 80)
         logger.info("Starting daily strategy execution")
         logger.info(f"Timestamp: {datetime.now().isoformat()}")
-        logger.info(f"Daily allocation: ${self.daily_allocation}")
+        allocation_mode = "VCA" if self.use_vca else "DCA"
+        logger.info(f"Allocation mode: {allocation_mode}")
+        logger.info(f"Base daily allocation: ${self.daily_allocation}")
 
         try:
             # Step 0: Manage existing positions (take-profit exits)
@@ -313,6 +360,39 @@ class CoreStrategy:
                 logger.info(
                     f"Closed {len(closed_positions)} positions at take-profit target"
                 )
+
+            # Step 0.5: Calculate VCA-adjusted allocation if using VCA
+            effective_allocation = self.daily_allocation
+            vca_calculation = None
+            if self.use_vca and self.vca_strategy:
+                try:
+                    current_portfolio_value = self._calculate_total_portfolio_value()
+                    vca_calculation = self.vca_strategy.calculate_investment_amount(
+                        current_portfolio_value
+                    )
+                    effective_allocation = vca_calculation.adjusted_amount
+                    logger.info(
+                        f"VCA Calculation: current=${current_portfolio_value:.2f}, "
+                        f"target=${vca_calculation.target_value:.2f}, "
+                        f"deviation={vca_calculation.deviation_pct:.2%}, "
+                        f"adjustment={vca_calculation.adjustment_factor:.2f}x"
+                    )
+                    logger.info(
+                        f"VCA-adjusted allocation: ${effective_allocation:.2f} "
+                        f"(base: ${self.daily_allocation:.2f})"
+                    )
+
+                    # Skip investment if VCA recommends not investing
+                    if not vca_calculation.should_invest:
+                        logger.info(
+                            f"VCA recommends skipping investment: {vca_calculation.reason}"
+                        )
+                        return None
+                except Exception as e:
+                    logger.warning(
+                        f"VCA calculation failed, using base allocation: {e}"
+                    )
+                    effective_allocation = self.daily_allocation
 
             # Step 1: Get market sentiment from AI
             sentiment = self._get_market_sentiment()
@@ -564,10 +644,12 @@ class CoreStrategy:
                     # Fail-open: continue with trade if Council unavailable
 
             # Step 6: Calculate diversified allocation (60% equity, 15% bonds, 15% REITs, 10% treasuries)
-            equity_amount = self.daily_allocation * self.EQUITY_ALLOCATION_PCT
-            bond_amount = self.daily_allocation * self.BOND_ALLOCATION_PCT
-            reit_amount = self.daily_allocation * self.REIT_ALLOCATION_PCT
-            treasury_amount = self.daily_allocation * self.TREASURY_ALLOCATION_PCT
+            # Use VCA-adjusted allocation if available
+            allocation_to_use = effective_allocation
+            equity_amount = allocation_to_use * self.EQUITY_ALLOCATION_PCT
+            bond_amount = allocation_to_use * self.BOND_ALLOCATION_PCT
+            reit_amount = allocation_to_use * self.REIT_ALLOCATION_PCT
+            treasury_amount = allocation_to_use * self.TREASURY_ALLOCATION_PCT
             logger.info(
                 f"Diversified: Equity=${equity_amount:.2f}, Bonds=${bond_amount:.2f}, "
                 f"REITs=${reit_amount:.2f}, Treasuries=${treasury_amount:.2f}"
@@ -1921,7 +2003,8 @@ class CoreStrategy:
         stop_loss_price = price * (1 - self.stop_loss_pct)
 
         if reason is None:
-            reason = f"Daily DCA purchase - {sentiment.value if sentiment else 'neutral'} sentiment"
+            allocation_type = "VCA" if self.use_vca else "DCA"
+            reason = f"Daily {allocation_type} purchase - {sentiment.value if sentiment else 'neutral'} sentiment"
 
         return TradeOrder(
             symbol=symbol,
