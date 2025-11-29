@@ -59,7 +59,9 @@ from src.agent_framework import RunContext  # noqa: E402
 
 
 # Helper function to save trades to daily trade files
-def save_trade_to_daily_file(trade_data: Dict[str, Any], data_dir: Path = Path("data")) -> None:
+def save_trade_to_daily_file(
+    trade_data: Dict[str, Any], data_dir: Path = Path("data")
+) -> None:
     """
     Save trade to daily trade file (trades_YYYY-MM-DD.json).
 
