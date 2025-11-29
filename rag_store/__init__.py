@@ -19,4 +19,3 @@ __all__ = [
     "SQLITE_PATH",
     "VECTOR_PATH",
 ]
-

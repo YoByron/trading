@@ -62,14 +62,14 @@ def update_pl_log():
     """Update P/L log with current values."""
     positions = get_current_positions()
     account = get_account_value()
-    
+
     if not account:
         return
-    
+
     timestamp = datetime.now().isoformat()
-    
+
     total_unrealized_pl = sum(p["unrealized_pl"] for p in positions)
-    
+
     entry = {
         "timestamp": timestamp,
         "equity": account["equity"],
@@ -78,7 +78,7 @@ def update_pl_log():
         "total_unrealized_pl": total_unrealized_pl,
         "positions": positions,
     }
-    
+
     # Load existing log
     log_file = DATA_DIR / "realtime_pl_log.json"
     if log_file.exists():
@@ -86,16 +86,16 @@ def update_pl_log():
             log = json.load(f)
     else:
         log = {"entries": []}
-    
+
     log["entries"].append(entry)
-    
+
     # Keep only last 1000 entries
     log["entries"] = log["entries"][-1000:]
-    
+
     # Save
     with open(log_file, "w") as f:
         json.dump(log, f, indent=2)
-    
+
     return entry
 
 
@@ -115,9 +115,9 @@ def main():
     print("=" * 60)
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
-    
+
     update_interval = 300  # 5 minutes
-    
+
     while True:
         try:
             if is_market_hours():
@@ -130,9 +130,9 @@ def main():
                     print()
             else:
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] Market closed - waiting...")
-            
+
             time.sleep(update_interval)
-            
+
         except KeyboardInterrupt:
             print("\n\nStopped by user")
             break
@@ -143,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

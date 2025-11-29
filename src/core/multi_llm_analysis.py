@@ -160,11 +160,11 @@ class MultiLLMAnalyzer:
 
         # Initialize OpenAI client with OpenRouter base URL (wrapped with LangSmith if enabled)
         base_url = "https://openrouter.ai/api/v1"
-        
+
         # Use LangSmith wrapper if available
         try:
             from src.utils.langsmith_wrapper import get_traced_openai_client, get_traced_async_openai_client
-            
+
             if use_async:
                 self.client = get_traced_async_openai_client(api_key=self.api_key, base_url=base_url)
             else:
@@ -1075,12 +1075,12 @@ class CouncilResponse:
 class LLMCouncilAnalyzer:
     """
     LLM Council Analyzer - Multi-stage consensus system for trading decisions.
-    
+
     Implements the LLM Council pattern from Karpathy's llm-council:
     1. Stage 1: First opinions - Query all LLMs individually
     2. Stage 2: Review - Each LLM reviews and ranks other responses (anonymized)
     3. Stage 3: Chairman - Designated LLM compiles final response
-    
+
     This provides higher quality decisions through peer review and consensus.
     """
 
@@ -1125,11 +1125,11 @@ class LLMCouncilAnalyzer:
 
         # Initialize OpenAI client with OpenRouter base URL (wrapped with LangSmith if enabled)
         base_url = "https://openrouter.ai/api/v1"
-        
+
         # Use LangSmith wrapper if available
         try:
             from src.utils.langsmith_wrapper import get_traced_openai_client, get_traced_async_openai_client
-            
+
             if use_async:
                 self.client = get_traced_async_openai_client(api_key=self.api_key, base_url=base_url)
             else:

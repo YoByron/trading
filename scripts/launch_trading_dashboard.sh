@@ -49,4 +49,3 @@ echo -e "${BLUE}Access from iPhone: http://${LOCAL_IP}:8501${NC}"
 echo -e "${BLUE}Press Ctrl+C to stop${NC}\n"
 
 streamlit run dashboard/trading_dashboard.py --server.address=0.0.0.0 --server.port=8501
-

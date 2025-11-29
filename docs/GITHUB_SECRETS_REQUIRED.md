@@ -56,7 +56,7 @@ These secrets enable full MCP functionality (Gmail, Slack, Google Sheets):
    ```bash
    # Run the setup script:
    ./scripts/setup_google_sheets_credentials.sh
-   
+
    # Or create manually: data/google_sheets_credentials.json
    {
      "installed": {
@@ -92,7 +92,7 @@ These secrets enable full MCP functionality (Gmail, Slack, Google Sheets):
    # Add these 2 secrets (Slack is OPTIONAL):
    GOOGLE_SHEETS_IPO_SPREADSHEET_ID=<your_spreadsheet_id>
    GOOGLE_SHEETS_CREDENTIALS_PATH=data/google_sheets_credentials.json
-   
+
    # Optional (for Slack alerts):
    # SLACK_BOT_TOKEN=xoxb-your-token-here
    ```
@@ -156,4 +156,3 @@ If you just want to get started quickly:
 **Slack is OPTIONAL** - IPO monitor will work fine without it (just prints to logs).
 
 Everything else is optional and can be added later!
-

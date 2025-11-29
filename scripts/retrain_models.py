@@ -21,23 +21,23 @@ logger = logging.getLogger("ModelRetraining")
 
 def main():
     logger.info("Starting ML Model Retraining...")
-    
+
     # Symbols to train
     # In a real scenario, this could be dynamic or loaded from config
     symbols = ["SPY", "QQQ", "VOO", "BND"]
-    
+
     trainer = ModelTrainer()
     results = trainer.retrain_all(symbols)
-    
+
     success_count = sum(1 for r in results.values() if r["success"])
     logger.info(f"Retraining complete. Success: {success_count}/{len(symbols)}")
-    
+
     for symbol, result in results.items():
         if result["success"]:
             logger.info(f"✅ {symbol}: Loss {result['final_val_loss']:.4f}")
         else:
             logger.error(f"❌ {symbol}: {result.get('error')}")
-            
+
     if success_count < len(symbols):
         sys.exit(1)
 

@@ -187,4 +187,3 @@ class SentimentSQLiteStore:
                 (source, snapshot_date),
             )
             return cursor.fetchall()
-

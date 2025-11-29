@@ -51,18 +51,18 @@ jobs:
         run: |
           echo "🤖 Training RL Agents..."
           echo "=========================================="
-          
+
           AGENTS="${{ github.event.inputs.agents || 'q_learning' }}"
           USE_LANGSMITH="${{ github.event.inputs.use_langsmith || 'false' }}"
-          
+
           python3 scripts/rl_training_orchestrator.py \
             --platform github \
             --agents "$AGENTS" \
             --device cpu \
             $([ "$USE_LANGSMITH" = "true" ] && echo "--use-langsmith" || echo "")
-          
+
           TRAINING_RESULT=$?
-          
+
           if [ $TRAINING_RESULT -eq 0 ]; then
             echo "✅ RL training completed successfully"
           else
@@ -90,4 +90,3 @@ jobs:
           echo "LangSmith: ${{ github.event.inputs.use_langsmith || 'false' }}"
           echo "Time Completed: $(date)"
           echo "=========================================="
-

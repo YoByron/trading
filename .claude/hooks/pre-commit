@@ -53,7 +53,7 @@ while IFS= read -r file; do
         if [[ "$file" =~ ^docs/status/ ]] || [[ "$file" == "README.md" ]] || [[ "$file" == "docs/README_COMPREHENSIVE.md" ]]; then
             continue
         fi
-        
+
         # Check if filename matches blocked patterns
         filename=$(basename "$file")
         for pattern in "${BLOCKED_PATTERNS[@]}"; do
@@ -145,7 +145,7 @@ if [ ! -z "$PYTHON_FILES" ]; then
         if grep -q "print(" "$file" 2>/dev/null && ! grep -q "scripts/" <<< "$file"; then
             echo -e "${YELLOW}⚠️  $file contains print() statements - consider using logging${NC}"
         fi
-        
+
         # Check for import *
         if grep -q "from .* import \*" "$file" 2>/dev/null; then
             echo -e "${YELLOW}⚠️  $file uses 'import *' - be more specific${NC}"
@@ -226,4 +226,3 @@ fi
 
 echo ""
 exit 0
-

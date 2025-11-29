@@ -36,7 +36,7 @@ def get_positions():
         "APCA-API-KEY-ID": ALPACA_KEY,
         "APCA-API-SECRET-KEY": ALPACA_SECRET,
     }
-    
+
     try:
         response = requests.get(f"{ALPACA_BASE_URL}/v2/positions", headers=headers)
         response.raise_for_status()
@@ -52,7 +52,7 @@ def get_existing_orders():
         "APCA-API-KEY-ID": ALPACA_KEY,
         "APCA-API-SECRET-KEY": ALPACA_SECRET,
     }
-    
+
     try:
         response = requests.get(f"{ALPACA_BASE_URL}/v2/orders", headers=headers, params={"status": "open"})
         response.raise_for_status()
@@ -68,7 +68,7 @@ def place_stop_order(symbol, qty, stop_price):
         "APCA-API-KEY-ID": ALPACA_KEY,
         "APCA-API-SECRET-KEY": ALPACA_SECRET,
     }
-    
+
     data = {
         "symbol": symbol,
         "qty": str(qty),
@@ -77,7 +77,7 @@ def place_stop_order(symbol, qty, stop_price):
         "stop_price": str(stop_price),
         "time_in_force": "gtc",
     }
-    
+
     try:
         response = requests.post(f"{ALPACA_BASE_URL}/v2/orders", headers=headers, json=data)
         response.raise_for_status()
@@ -94,44 +94,44 @@ def implement_stop_losses():
     print("=" * 80)
     print("🛡️  AUTOMATED STOP-LOSS IMPLEMENTATION")
     print("=" * 80)
-    
+
     # Get positions
     positions = get_positions()
     if not positions:
         print("No open positions found.")
         return
-    
+
     # Get existing orders
     existing_orders = get_existing_orders()
     existing_stops = {o["symbol"]: o for o in existing_orders if o["type"] == "stop"}
-    
+
     print(f"\n📊 Analyzing {len(positions)} positions...\n")
-    
+
     actions_taken = []
-    
+
     for pos in positions:
         symbol = pos["symbol"]
         qty = float(pos["qty"])
         entry_price = float(pos["avg_entry_price"])
         current_price = float(pos["current_price"])
-        
+
         unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
-        
+
         print(f"{symbol}:")
         print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
         print(f"  Quantity: {qty:.4f} shares")
         print(f"  Unrealized P/L: {unrealized_pl_pct:+.2f}%")
-        
+
         # Check if stop already exists
         if symbol in existing_stops:
             existing_stop = existing_stops[symbol]
             print(f"  ✅ Stop-loss already exists at ${float(existing_stop['stop_price']):.2f}")
             continue
-        
+
         # Decision logic based on CFO decisions
         stop_price = None
         reason = None
-        
+
         if unrealized_pl_pct < -5:
             # Critical loss - stop at -5%
             stop_price = entry_price * 0.95
@@ -148,10 +148,10 @@ def implement_stop_losses():
             # Within acceptable range - set protective stop at -2%
             stop_price = entry_price * 0.98
             reason = "Protective stop at -2%"
-        
+
         if stop_price:
             print(f"  🎯 Setting stop-loss: ${stop_price:.2f} ({reason})")
-            
+
             order = place_stop_order(symbol, qty, stop_price)
             if order:
                 actions_taken.append({
@@ -169,22 +169,22 @@ def implement_stop_losses():
                     "action": "stop_loss_failed",
                     "reason": reason,
                 })
-        
+
         print()
-    
+
     # Summary
     print("=" * 80)
     print("📋 SUMMARY")
     print("=" * 80)
     placed = [a for a in actions_taken if "placed" in a.get("action", "")]
     print(f"Stop-losses placed: {len(placed)}")
-    
+
     for action in placed:
         print(f"  ✅ {action['symbol']}: ${action['stop_price']:.2f} ({action['reason']})")
-    
+
     if not placed:
         print("  No new stop-losses needed (all positions already protected)")
-    
+
     return actions_taken
 
 
@@ -196,4 +196,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

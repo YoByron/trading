@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class DeepAgentsAdapter(TradingAgent):
     """
     Adapter that wraps a deepagent as a TradingAgent.
-    
+
     This allows deepagents to be used in the existing orchestration system
     alongside traditional TradingAgent implementations.
     """
@@ -31,7 +31,7 @@ class DeepAgentsAdapter(TradingAgent):
     ) -> None:
         """
         Initialize adapter.
-        
+
         Args:
             agent_name: Name for the agent (used in AgentResult)
             deepagent: Pre-configured deepagent instance
@@ -44,20 +44,20 @@ class DeepAgentsAdapter(TradingAgent):
     def execute(self, context: RunContext) -> AgentResult:
         """
         Execute the deepagent as a TradingAgent.
-        
+
         Args:
             context: Run context with configuration and state
-        
+
         Returns:
             AgentResult with deepagent output
         """
         try:
             # Extract query from context
             query = self._extract_query(context)
-            
+
             # Run deepagent (sync wrapper for async agent)
             result = asyncio.run(self._run_deepagent(query))
-            
+
             # Convert to AgentResult
             return AgentResult(
                 name=self.agent_name,
@@ -82,11 +82,11 @@ class DeepAgentsAdapter(TradingAgent):
         query = context.config.get("query")
         if query:
             return str(query)
-        
+
         query = context.config.get("task")
         if query:
             return str(query)
-        
+
         # Default query
         symbols = context.config.get("symbols", ["SPY"])
         symbol = symbols[0] if symbols else "SPY"
@@ -110,16 +110,16 @@ def create_research_agent_adapter(
 ) -> DeepAgentsAdapter:
     """
     Create a TradingAgent adapter for the research deepagent.
-    
+
     Args:
         agent_name: Name for the agent
         **kwargs: Additional arguments passed to create_trading_research_agent
-    
+
     Returns:
         DeepAgentsAdapter instance
     """
     from .agents import create_trading_research_agent
-    
+
     deepagent = create_trading_research_agent(**kwargs)
     return DeepAgentsAdapter(agent_name=agent_name, deepagent=deepagent)
 
@@ -130,15 +130,15 @@ def create_analysis_agent_adapter(
 ) -> DeepAgentsAdapter:
     """
     Create a TradingAgent adapter for the analysis deepagent.
-    
+
     Args:
         agent_name: Name for the agent
         **kwargs: Additional arguments passed to create_market_analysis_agent
-    
+
     Returns:
         DeepAgentsAdapter instance
     """
     from .agents import create_market_analysis_agent
-    
+
     deepagent = create_market_analysis_agent(**kwargs)
     return DeepAgentsAdapter(agent_name=agent_name, deepagent=deepagent)

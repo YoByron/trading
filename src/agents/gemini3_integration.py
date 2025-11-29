@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 class Gemini3TradingIntegration:
     """
     Integration layer for Gemini 3 in trading system.
-    
+
     Provides:
     - Market analysis with adjustable thinking depth
     - Multi-agent orchestration via LangGraph
     - Chart analysis with multimodal capabilities
     - Stateful reasoning with thought signatures
     """
-    
+
     def __init__(self):
         """Initialize Gemini 3 integration."""
         self.agent: Optional[Gemini3LangGraphAgent] = None
         self.enabled = False
-        
+
         # Check if Gemini API key is available
         if os.getenv("GOOGLE_API_KEY"):
             try:
@@ -45,7 +45,7 @@ class Gemini3TradingIntegration:
                 logger.warning(f"Failed to initialize Gemini 3: {e}")
         else:
             logger.info("GOOGLE_API_KEY not set - Gemini 3 integration disabled")
-    
+
     def analyze_market(
         self,
         symbols: list[str],
@@ -54,18 +54,18 @@ class Gemini3TradingIntegration:
     ) -> Dict[str, Any]:
         """
         Analyze market using Gemini 3 multi-agent system.
-        
+
         Args:
             symbols: List of symbols to analyze
             market_data: Market data dictionary
             thinking_level: Reasoning depth (low/medium/high)
-            
+
         Returns:
             Analysis results with trading recommendations
         """
         if not self.enabled or not self.agent:
             return {"error": "Gemini 3 not available"}
-        
+
         try:
             # Prepare market data
             analysis_data = {
@@ -73,18 +73,18 @@ class Gemini3TradingIntegration:
                 "market_data": market_data,
                 "timestamp": market_data.get("timestamp"),
             }
-            
+
             # Evaluate using multi-agent system
             result = self.agent.evaluate(
                 market_data=analysis_data,
                 thinking_level=thinking_level,
             )
-            
+
             return result
         except Exception as e:
             logger.error(f"Gemini 3 analysis error: {e}")
             return {"error": str(e)}
-    
+
     def analyze_chart(
         self,
         chart_path: str,
@@ -93,24 +93,24 @@ class Gemini3TradingIntegration:
     ) -> Dict[str, Any]:
         """
         Analyze price chart using multimodal capabilities.
-        
+
         Args:
             chart_path: Path to chart image
             symbol: Stock symbol
             thinking_level: Reasoning depth
-            
+
         Returns:
             Chart analysis results
         """
         if not self.enabled or not self.agent:
             return {"error": "Gemini 3 not available"}
-        
+
         return self.agent.analyze_chart(
             chart_image_path=chart_path,
             symbol=symbol,
             thinking_level=thinking_level,
         )
-    
+
     def get_trading_recommendation(
         self,
         symbol: str,
@@ -119,29 +119,29 @@ class Gemini3TradingIntegration:
     ) -> Dict[str, Any]:
         """
         Get trading recommendation for a symbol.
-        
+
         Args:
             symbol: Stock symbol
             market_context: Market context data
             thinking_level: Reasoning depth
-            
+
         Returns:
             Trading recommendation with reasoning
         """
         if not self.enabled or not self.agent:
             return {"error": "Gemini 3 not available"}
-        
+
         market_data = {
             "symbol": symbol,
             **market_context,
         }
-        
+
         result = self.analyze_market(
             symbols=[symbol],
             market_data=market_data,
             thinking_level=thinking_level,
         )
-        
+
         return result
 
 
@@ -155,4 +155,3 @@ def get_gemini3_integration() -> Gemini3TradingIntegration:
     if _gemini3_integration is None:
         _gemini3_integration = Gemini3TradingIntegration()
     return _gemini3_integration
-

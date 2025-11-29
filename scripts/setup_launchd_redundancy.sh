@@ -20,9 +20,9 @@ create_plist() {
     local script=$2
     local schedule=$3
     local plist_file="${LAUNCHD_DIR}/${label}.plist"
-    
+
     echo "📝 Creating ${label}.plist..."
-    
+
     cat > "${plist_file}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -30,27 +30,27 @@ create_plist() {
 <dict>
     <key>Label</key>
     <string>${label}</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${script}</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/launchd_${label}_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/launchd_${label}_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <false/>
-    
+
     <key>KeepAlive</key>
     <false/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -58,12 +58,12 @@ create_plist() {
         <key>HOME</key>
         <string>${HOME}</string>
     </dict>
-    
+
     ${schedule}
 </dict>
 </plist>
 EOF
-    
+
     echo "✅ Created ${plist_file}"
 }
 
@@ -90,28 +90,28 @@ cat > "${LAUNCHD_DIR}/com.trading.healthcheck.backup.plist" <<EOF
 <dict>
     <key>Label</key>
     <string>com.trading.healthcheck.backup</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${REPO_ROOT}/venv/bin/python3</string>
         <string>${REPO_ROOT}/scripts/health_check.py</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/launchd_com.trading.healthcheck.backup_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/launchd_com.trading.healthcheck.backup_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <false/>
-    
+
     <key>KeepAlive</key>
     <false/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -119,7 +119,7 @@ cat > "${LAUNCHD_DIR}/com.trading.healthcheck.backup.plist" <<EOF
         <key>HOME</key>
         <string>${HOME}</string>
     </dict>
-    
+
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>10</integer></dict>
@@ -143,28 +143,28 @@ cat > "${LAUNCHD_DIR}/com.trading.dashboard.backup.plist" <<EOF
 <dict>
     <key>Label</key>
     <string>com.trading.dashboard.backup</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${REPO_ROOT}/venv/bin/python3</string>
         <string>${REPO_ROOT}/scripts/generate_progress_dashboard.py</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/launchd_com.trading.dashboard.backup_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/launchd_com.trading.dashboard.backup_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <false/>
-    
+
     <key>KeepAlive</key>
     <false/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -172,7 +172,7 @@ cat > "${LAUNCHD_DIR}/com.trading.dashboard.backup.plist" <<EOF
         <key>HOME</key>
         <string>${HOME}</string>
     </dict>
-    
+
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
@@ -199,4 +199,3 @@ echo "   4. View logs:"
 echo "      tail -f ${REPO_ROOT}/logs/launchd_*.log"
 echo ""
 echo "🎯 These daemons will ONLY run if GitHub Actions didn't execute successfully!"
-

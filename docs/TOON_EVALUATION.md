@@ -1,7 +1,7 @@
 # TOON (Token-Oriented Object Notation) Evaluation
 
-**Date**: November 25, 2025  
-**Reference**: [InfoQ Article - TOON Reduces LLM Costs](https://www.infoq.com/news/2025/11/toon-reduce-llm-cost-tokens/)  
+**Date**: November 25, 2025
+**Reference**: [InfoQ Article - TOON Reduces LLM Costs](https://www.infoq.com/news/2025/11/toon-reduce-llm-cost-tokens/)
 **Status**: ⚠️ **EVALUATING** - Potential 40% token reduction
 
 ---
@@ -10,8 +10,8 @@
 
 **TOON** is a schema-aware alternative to JSON that reduces LLM token consumption by **40%** while maintaining **99.4% accuracy**. It combines YAML (for nested objects) and CSV (for uniform arrays) to optimize token usage.
 
-**Current State**: Using JSON extensively for LLM interactions  
-**Potential Benefit**: 40% token reduction = significant cost savings  
+**Current State**: Using JSON extensively for LLM interactions
+**Potential Benefit**: 40% token reduction = significant cost savings
 **Implementation Effort**: Medium (Python port needed, TypeScript reference available)
 
 ---
@@ -324,7 +324,6 @@
 
 ---
 
-**CTO Sign-Off**: Claude (AI Agent)  
-**Date**: November 25, 2025  
+**CTO Sign-Off**: Claude (AI Agent)
+**Date**: November 25, 2025
 **Status**: ⏳ **MONITORING** - Will revisit when LLM costs become significant
-

@@ -32,11 +32,11 @@ def make_request(url, method="GET", data=None):
     req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
     req.add_header("APCA-API-SECRET-KEY", ALPACA_SECRET)
     req.add_header("Content-Type", "application/json")
-    
+
     if method == "POST" and data:
         req.data = json.dumps(data).encode('utf-8')
         req.get_method = lambda: "POST"
-    
+
     with urlopen(req) as response:
         return json.loads(response.read().decode('utf-8'))
 
@@ -61,10 +61,10 @@ def place_stop_order(symbol, qty, stop_price):
     qty_rounded = round(qty, 8)  # More precision for fractional shares
     if qty_rounded <= 0:
         return None
-    
+
     # Fractional orders must use DAY, not GTC
     time_in_force = "day" if abs(qty_rounded - int(qty_rounded)) > 0.0001 else "gtc"
-    
+
     data = {
         "symbol": symbol,
         "qty": qty_rounded,
@@ -73,7 +73,7 @@ def place_stop_order(symbol, qty, stop_price):
         "stop_price": round(stop_price, 2),
         "time_in_force": time_in_force,
     }
-    
+
     try:
         req = Request(f"{ALPACA_BASE_URL}/v2/orders")
         req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
@@ -81,7 +81,7 @@ def place_stop_order(symbol, qty, stop_price):
         req.add_header("Content-Type", "application/json")
         req.data = json.dumps(data).encode('utf-8')
         req.get_method = lambda: "POST"
-        
+
         with urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
             return result
@@ -99,38 +99,38 @@ def implement_stop_losses():
     print("=" * 80)
     print("🛡️  IMPLEMENTING STOP-LOSSES")
     print("=" * 80)
-    
+
     positions = get_positions()
     if not positions:
         print("No open positions found.")
         return
-    
+
     existing_orders = get_existing_orders()
     existing_stops = {o["symbol"]: o for o in existing_orders if o.get("type") == "stop"}
-    
+
     print(f"\n📊 Analyzing {len(positions)} positions...\n")
-    
+
     actions_taken = []
-    
+
     for pos in positions:
         symbol = pos["symbol"]
         qty = float(pos["qty"])
         entry_price = float(pos["avg_entry_price"])
         current_price = float(pos["current_price"])
         unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
-        
+
         print(f"{symbol}:")
         print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
         print(f"  P/L: {unrealized_pl_pct:+.2f}%")
-        
+
         if symbol in existing_stops:
             print(f"  ✅ Stop-loss already exists")
             continue
-        
+
         # CFO Decision: Stop-loss strategy
         stop_price = None
         reason = None
-        
+
         if unrealized_pl_pct < -5:
             stop_price = entry_price * 0.95
             reason = "Critical: Loss > 5%"
@@ -143,22 +143,22 @@ def implement_stop_losses():
         else:
             stop_price = entry_price * 0.98
             reason = "Protective: -2%"
-        
+
         print(f"  🎯 Setting stop at ${stop_price:.2f} ({reason})")
         order = place_stop_order(symbol, qty, stop_price)
-        
+
         if order:
             actions_taken.append({"symbol": symbol, "stop_price": stop_price, "order_id": order.get("id")})
             print(f"  ✅ Stop-loss placed: {order.get('id')}")
         print()
-    
+
     print("=" * 80)
     print("📋 SUMMARY")
     print("=" * 80)
     print(f"Stop-losses placed: {len(actions_taken)}")
     for action in actions_taken:
         print(f"  ✅ {action['symbol']}: ${action['stop_price']:.2f}")
-    
+
     return actions_taken
 
 
@@ -170,4 +170,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

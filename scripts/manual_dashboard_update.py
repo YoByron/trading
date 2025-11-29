@@ -21,7 +21,7 @@ def main():
     print("=" * 70)
     print("📊 MANUAL DASHBOARD UPDATE")
     print("=" * 70)
-    
+
     # Step 1: Generate dashboard
     print("\n1️⃣  Generating dashboard...")
     try:
@@ -31,17 +31,17 @@ def main():
     except Exception as e:
         print(f"   ❌ Error generating dashboard: {e}")
         return 1
-    
+
     # Step 2: Check if wiki directory exists
     wiki_dir = Path("wiki")
     dashboard_file = wiki_dir / "Progress-Dashboard.md"
-    
+
     if not dashboard_file.exists():
         print(f"   ❌ Dashboard file not found: {dashboard_file}")
         return 1
-    
+
     print(f"   ✅ Dashboard file: {dashboard_file}")
-    
+
     # Step 3: Show instructions for manual wiki update
     print("\n2️⃣  Manual Wiki Update Instructions")
     print("   Since we can't push to wiki from here (needs GitHub token),")
@@ -60,7 +60,7 @@ def main():
     print("   4. Copy content from: wiki/Progress-Dashboard.md")
     print("   5. Paste and save")
     print()
-    
+
     # Step 4: Show the generated content preview
     print("3️⃣  Generated Dashboard Preview:")
     print("   " + "=" * 66)
@@ -71,12 +71,11 @@ def main():
         if len(lines) > 30:
             print(f"   ... ({len(lines) - 30} more lines)")
     print("   " + "=" * 66)
-    
+
     print("\n✅ Dashboard file ready for upload!")
     print(f"   Location: {dashboard_file.absolute()}")
-    
+
     return 0
 
 if __name__ == "__main__":
     sys.exit(main())
-

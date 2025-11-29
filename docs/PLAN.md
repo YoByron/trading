@@ -46,7 +46,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 **Architecture Status** (November 17, 2025):
 - **Status**: ✅ **CLEANED UP** - Code consolidated, systems intelligently integrated
 - **Current Execution Path**: Python strategies (main) → Langchain approval gate → ADK fallback
-- **Active Systems**: 
+- **Active Systems**:
   - ✅ Python rule-based strategy (main execution)
   - ✅ Langchain approval gate (ENABLED - sentiment filtering)
   - ⚠️ ADK orchestrator (ENABLED but service not running - falls back silently)
@@ -759,7 +759,7 @@ For the record - tools evaluated and rejected during R&D Phase:
 
 ## 💰 SERVICE STACK & ROI ANALYSIS
 
-**Decision Date**: November 12, 2025  
+**Decision Date**: November 12, 2025
 **Approach**: Phased integration (start lean, validate ROI, scale when proven)
 
 ### **Service Stack Overview**
@@ -771,7 +771,7 @@ For the record - tools evaluated and rejected during R&D Phase:
 | **Grok API** | $30/mo | Real-time Twitter sentiment | Audit/Research agents | Phase 2 |
 | **Morningstar Investor** | $35/mo | Professional research + Ratings | Risk agent | Phase 3 |
 
-**Total (Full Stack)**: $103.99/mo  
+**Total (Full Stack)**: $103.99/mo
 **Phase 1 Start**: $38.99/mo (lower risk)
 
 **Note**: Koyfin doesn't offer API access (confirmed Nov 12, 2025). Polygon.io is the best alternative.

@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 class ExecutionAgent(BaseAgent):
     """
     Agent responsible for executing trades efficiently.
-    
+
     Responsibilities:
     - Execute orders with minimal slippage
     - Monitor order status
     - Handle partial fills
     - Track execution quality (slippage, fill rate)
     """
-    
+
     def __init__(self, alpaca_api: Optional[TradingClient] = None):
         super().__init__(
             name="ExecutionAgent",
@@ -37,14 +37,14 @@ class ExecutionAgent(BaseAgent):
         )
         self.alpaca_api = alpaca_api
         self.execution_history: list = []
-    
+
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze execution timing and prepare order.
-        
+
         Args:
             data: Contains action, symbol, position_size, market conditions
-            
+
         Returns:
             Execution plan with timing recommendation
         """
@@ -52,19 +52,19 @@ class ExecutionAgent(BaseAgent):
         symbol = data.get("symbol", "UNKNOWN")
         position_size = data.get("position_size", 0)
         market_conditions = data.get("market_conditions", {})
-        
+
         if action == "HOLD":
             return {
                 "action": "NO_EXECUTION",
                 "reasoning": "HOLD recommendation - no order needed"
             }
-        
+
         # Check market status
         market_status = self._check_market_status()
-        
+
         # Build execution analysis prompt
         memory_context = self.get_memory_context(limit=3)
-        
+
         prompt = f"""You are an Execution Agent preparing to execute a {action} order for {symbol}.
 
 ORDER DETAILS:
@@ -95,29 +95,29 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
 
         # Get LLM analysis
         response = self.reason_with_llm(prompt)
-        
+
         # Parse response
         analysis = self._parse_execution_response(response["reasoning"])
         analysis["market_status"] = market_status
         analysis["full_reasoning"] = response["reasoning"]
-        
+
         # Execute if recommended
         if analysis["action"] == "EXECUTE" and self.alpaca_api:
             execution_result = self._execute_order(symbol, action, position_size)
             analysis["execution_result"] = execution_result
         else:
             analysis["execution_result"] = {"status": "NOT_EXECUTED", "reason": analysis["action"]}
-        
+
         # Log decision
         self.log_decision(analysis)
-        
+
         return analysis
-    
+
     def _check_market_status(self) -> Dict[str, Any]:
         """Check if market is open and ready for trading."""
         if not self.alpaca_api:
             return {"status": "UNKNOWN", "is_open": False}
-        
+
         try:
             clock = self.alpaca_api.get_clock()
             return {
@@ -129,16 +129,16 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         except Exception as e:
             logger.error(f"Error checking market status: {e}")
             return {"status": "ERROR", "is_open": False, "error": str(e)}
-    
+
     def _execute_order(self, symbol: str, action: str, position_size: float) -> Dict[str, Any]:
         """
         Execute order via Alpaca API.
-        
+
         Args:
             symbol: Stock symbol
             action: BUY or SELL
             position_size: Dollar amount
-            
+
         Returns:
             Execution result
         """
@@ -156,7 +156,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 return {"status": "ERROR", "message": "SELL not yet implemented"}
             else:
                 return {"status": "ERROR", "message": f"Unknown action: {action}"}
-            
+
             result = {
                 "status": "SUCCESS",
                 "order_id": order.id,
@@ -165,13 +165,13 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 "amount": position_size,
                 "order_status": order.status
             }
-            
+
             # Track execution
             self.execution_history.append(result)
             logger.info(f"Order executed: {order.id} - {symbol} {action} ${position_size}")
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Order execution error: {e}")
             return {
@@ -181,7 +181,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 "action": action,
                 "amount": position_size
             }
-    
+
     def _parse_execution_response(self, reasoning: str) -> Dict[str, Any]:
         """Parse LLM response into structured execution plan."""
         lines = reasoning.split("\n")
@@ -191,7 +191,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             "confidence": 0.8,
             "action": "EXECUTE"
         }
-        
+
         for line in lines:
             line = line.strip()
             if line.startswith("TIMING:"):
@@ -213,6 +213,5 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 rec = line.split(":")[1].strip().upper()
                 if rec in ["EXECUTE", "DELAY", "CANCEL"]:
                     analysis["action"] = rec
-        
-        return analysis
 
+        return analysis

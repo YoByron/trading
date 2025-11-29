@@ -40,7 +40,7 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
     """Generate equity curve chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
-    
+
     # Extract data
     dates = []
     equity_values = []
@@ -54,10 +54,10 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
                 equity_values.append(equity)
             except:
                 pass
-    
+
     if len(dates) < 2:
         return None
-    
+
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(dates, equity_values, linewidth=2, color='#2563eb', label='Portfolio Equity')
@@ -67,19 +67,19 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
     ax.set_title('Equity Curve', fontsize=12, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend()
-    
+
     # Format x-axis
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     # Save
     if output_path is None:
         output_path = CHARTS_DIR / "equity_curve.png"
-    
+
     plt.savefig(output_path, dpi=100, bbox_inches='tight')
     plt.close()
-    
+
     return f"charts/equity_curve.png"
 
 
@@ -87,7 +87,7 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     """Generate drawdown chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
-    
+
     # Extract data
     dates = []
     equity_values = []
@@ -101,10 +101,10 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
                 equity_values.append(equity)
             except:
                 pass
-    
+
     if len(dates) < 2:
         return None
-    
+
     # Calculate drawdown
     peak = equity_values[0]
     drawdowns = []
@@ -113,7 +113,7 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
             peak = equity
         drawdown = ((peak - equity) / peak * 100) if peak > 0 else 0.0
         drawdowns.append(drawdown)
-    
+
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.fill_between(dates, drawdowns, 0, alpha=0.5, color='#dc2626', label='Drawdown')
@@ -123,19 +123,19 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     ax.set_title('Drawdown Over Time', fontsize=12, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend()
-    
+
     # Format x-axis
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     # Save
     if output_path is None:
         output_path = CHARTS_DIR / "drawdown.png"
-    
+
     plt.savefig(output_path, dpi=100, bbox_inches='tight')
     plt.close()
-    
+
     return f"charts/drawdown.png"
 
 
@@ -143,7 +143,7 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     """Generate daily P/L bar chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
-    
+
     # Extract data
     dates = []
     pl_values = []
@@ -157,10 +157,10 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
                 pl_values.append(pl)
             except:
                 pass
-    
+
     if len(dates) < 2:
         return None
-    
+
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
     colors = ['#10b981' if pl >= 0 else '#ef4444' for pl in pl_values]
@@ -170,19 +170,19 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     ax.set_ylabel('Daily P/L ($)', fontsize=10)
     ax.set_title('Daily Profit/Loss', fontsize=12, fontweight='bold')
     ax.grid(True, alpha=0.3, axis='y')
-    
+
     # Format x-axis
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     # Save
     if output_path is None:
         output_path = CHARTS_DIR / "daily_pl.png"
-    
+
     plt.savefig(output_path, dpi=100, bbox_inches='tight')
     plt.close()
-    
+
     return f"charts/daily_pl.png"
 
 
@@ -190,7 +190,7 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     """Generate rolling Sharpe ratio chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < window + 1:
         return None
-    
+
     # Extract returns
     dates = []
     equity_values = []
@@ -204,23 +204,23 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
                 equity_values.append(equity)
             except:
                 pass
-    
+
     if len(dates) < window + 1:
         return None
-    
+
     # Calculate rolling Sharpe
     returns = []
     for i in range(1, len(equity_values)):
         if equity_values[i-1] > 0:
             ret = (equity_values[i] - equity_values[i-1]) / equity_values[i-1]
             returns.append(ret)
-    
+
     if len(returns) < window:
         return None
-    
+
     rolling_sharpe = []
     rolling_dates = []
-    
+
     for i in range(window, len(returns)):
         window_returns = returns[i-window:i]
         if len(window_returns) > 1:
@@ -233,15 +233,15 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
         else:
             rolling_sharpe.append(0.0)
             rolling_dates.append(dates[i])
-    
+
     if len(rolling_dates) == 0 or len(rolling_sharpe) == 0:
         return None
-    
+
     # Ensure dates and sharpe arrays have same length
     min_len = min(len(rolling_dates), len(rolling_sharpe))
     rolling_dates = rolling_dates[:min_len]
     rolling_sharpe = rolling_sharpe[:min_len]
-    
+
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(rolling_dates, rolling_sharpe, linewidth=2, color='#8b5cf6', label=f'Rolling Sharpe ({window}d)')
@@ -252,39 +252,39 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     ax.set_title(f'Rolling Sharpe Ratio ({window}-Day Window)', fontsize=12, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend()
-    
+
     # Format x-axis
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     # Save
     if output_path is None:
         output_path = CHARTS_DIR / f"rolling_sharpe_{window}d.png"
-    
+
     plt.savefig(output_path, dpi=100, bbox_inches='tight')
     plt.close()
-    
+
     return f"charts/rolling_sharpe_{window}d.png"
 
 
 def generate_all_charts(perf_log: List[Dict]) -> Dict[str, Optional[str]]:
     """Generate all charts and return paths."""
     charts = {}
-    
+
     charts['equity_curve'] = generate_equity_curve_chart(perf_log)
     charts['drawdown'] = generate_drawdown_chart(perf_log)
     charts['daily_pl'] = generate_daily_pl_chart(perf_log)
     charts['rolling_sharpe_7d'] = generate_rolling_sharpe_chart(perf_log, window=7)
     charts['rolling_sharpe_30d'] = generate_rolling_sharpe_chart(perf_log, window=30)
-    
+
     return charts
 
 
 if __name__ == "__main__":
     # Test chart generation
     from scripts.dashboard_metrics import load_json_file
-    
+
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
     if isinstance(perf_log, list):
         charts = generate_all_charts(perf_log)
@@ -294,4 +294,3 @@ if __name__ == "__main__":
                 print(f"  ✅ {name}: {path}")
             else:
                 print(f"  ❌ {name}: Not generated (insufficient data)")
-

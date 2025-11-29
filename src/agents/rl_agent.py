@@ -36,4 +36,3 @@ class RLFilter:
             "confidence": 0.65,
             "suggested_multiplier": 0.8,
         }
-

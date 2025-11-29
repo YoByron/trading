@@ -146,4 +146,3 @@ def ingest_news_snapshot(report: Dict) -> None:
 
     sqlite_store.bulk_upsert(sqlite_entries)
     vector_store.upsert_documents(docs)
-

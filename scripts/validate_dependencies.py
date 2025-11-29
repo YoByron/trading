@@ -19,14 +19,14 @@ def check_dependency_conflicts():
     print("=" * 70)
     print("🔍 VALIDATING DEPENDENCIES")
     print("=" * 70)
-    
+
     requirements_file = Path("requirements.txt")
     if not requirements_file.exists():
         print("❌ requirements.txt not found")
         return False
-    
+
     print(f"✅ Found requirements.txt")
-    
+
     # Try to install dependencies in dry-run mode using pip's resolver
     print("\n📦 Checking for dependency conflicts...")
     try:
@@ -38,10 +38,10 @@ def check_dependency_conflicts():
             text=True,
             timeout=120
         )
-        
+
         if result.returncode != 0:
             error_output = result.stderr or result.stdout
-            
+
             # Check for specific conflict messages
             if "ERROR: ResolutionImpossible" in error_output or "ERROR: Cannot install" in error_output:
                 print("❌ Dependency conflicts detected!")
@@ -60,7 +60,7 @@ def check_dependency_conflicts():
         else:
             print("✅ No dependency conflicts detected")
             return True
-            
+
     except subprocess.TimeoutExpired:
         print("⚠️  Dependency check timed out (this is OK for dry-run)")
         return True
@@ -100,22 +100,22 @@ def main():
     print("🚀 DEPENDENCY VALIDATION")
     print("=" * 70)
     print()
-    
+
     checks = {
         "Python Version": check_python_version(),
         "Dependency Conflicts": check_dependency_conflicts(),
     }
-    
+
     print("\n" + "=" * 70)
     print("📊 VALIDATION SUMMARY")
     print("=" * 70)
-    
+
     for check_name, passed in checks.items():
         status = "✅ PASS" if passed else "❌ FAIL"
         print(f"   {check_name}: {status}")
-    
+
     all_passed = all(checks.values())
-    
+
     if all_passed:
         print("\n🎉 All dependency checks passed!")
         return 0
@@ -130,4 +130,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

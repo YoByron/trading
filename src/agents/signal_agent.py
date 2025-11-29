@@ -21,38 +21,38 @@ logger = logging.getLogger(__name__)
 class SignalAgent(BaseAgent):
     """
     Signal Agent performs technical analysis enhanced with LLM reasoning.
-    
+
     Combines:
     - Traditional indicators (MACD, RSI, Volume)
     - Pattern recognition
     - LLM contextual analysis
     """
-    
+
     def __init__(self):
         super().__init__(
             name="SignalAgent",
             role="Technical analysis and momentum signal generation"
         )
-    
+
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate trading signals from technical analysis.
-        
+
         Args:
             data: Contains price history, volume, technical indicators
-            
+
         Returns:
             Signal analysis with action recommendation
         """
         symbol = data.get("symbol", "UNKNOWN")
         price_data = data.get("price_history", pd.DataFrame())
-        
+
         # Calculate technical indicators
         indicators = self._calculate_indicators(price_data)
-        
+
         # Build signal analysis prompt
         memory_context = self.get_memory_context(limit=3)
-        
+
         prompt = f"""You are a Signal Agent analyzing {symbol} technical indicators.
 
 TECHNICAL INDICATORS:
@@ -90,24 +90,24 @@ FACTORS: [key factors]"""
 
         # Get LLM analysis
         response = self.reason_with_llm(prompt)
-        
+
         # Parse response
         analysis = self._parse_signal_response(response["reasoning"])
         analysis["indicators"] = indicators
         analysis["full_reasoning"] = response["reasoning"]
-        
+
         # Log decision
         self.log_decision(analysis)
-        
+
         return analysis
-    
+
     def _calculate_indicators(self, price_data: pd.DataFrame) -> Dict[str, Any]:
         """
         Calculate technical indicators from price data.
-        
+
         Args:
             price_data: DataFrame with OHLCV data
-            
+
         Returns:
             Dict of calculated indicators
         """
@@ -125,32 +125,32 @@ FACTORS: [key factors]"""
                 "trend": "UNKNOWN",
                 "momentum_score": 0
             }
-        
+
         close = price_data['Close'] if 'Close' in price_data else price_data['close']
         volume = price_data['Volume'] if 'Volume' in price_data else price_data['volume']
-        
+
         # MACD
         ema_12 = close.ewm(span=12, adjust=False).mean()
         ema_26 = close.ewm(span=26, adjust=False).mean()
         macd_line = ema_12 - ema_26
         signal_line = macd_line.ewm(span=9, adjust=False).mean()
         histogram = macd_line - signal_line
-        
+
         # RSI
         delta = close.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rs = gain / loss
         rsi = 100 - (100 / (1 + rs))
-        
+
         # Moving averages
         ma_50 = close.rolling(window=50).mean()
         ma_200 = close.rolling(window=200).mean() if len(close) >= 200 else ma_50
-        
+
         # Volume ratio
         avg_volume = volume.rolling(window=20).mean()
         volume_ratio = volume.iloc[-1] / avg_volume.iloc[-1] if avg_volume.iloc[-1] > 0 else 1.0
-        
+
         # Current values
         current_price = close.iloc[-1]
         current_macd = macd_line.iloc[-1]
@@ -159,7 +159,7 @@ FACTORS: [key factors]"""
         current_rsi = rsi.iloc[-1]
         current_ma50 = ma_50.iloc[-1]
         current_ma200 = ma_200.iloc[-1]
-        
+
         # Trend determination
         if current_price > current_ma50 > current_ma200:
             trend = "STRONG_UPTREND"
@@ -171,7 +171,7 @@ FACTORS: [key factors]"""
             trend = "DOWNTREND"
         else:
             trend = "SIDEWAYS"
-        
+
         # Momentum score (0-100)
         momentum_score = 0
         if current_histogram > 0:
@@ -182,7 +182,7 @@ FACTORS: [key factors]"""
             momentum_score += 25
         if volume_ratio > 1.2:
             momentum_score += 25
-        
+
         return {
             "price": current_price,
             "macd": current_macd,
@@ -196,7 +196,7 @@ FACTORS: [key factors]"""
             "trend": trend,
             "momentum_score": momentum_score
         }
-    
+
     def _parse_signal_response(self, reasoning: str) -> Dict[str, Any]:
         """Parse LLM response into structured signal."""
         lines = reasoning.split("\n")
@@ -208,7 +208,7 @@ FACTORS: [key factors]"""
             "confidence": 0.5,
             "factors": ""
         }
-        
+
         for line in lines:
             line = line.strip()
             if line.startswith("STRENGTH:"):
@@ -236,6 +236,5 @@ FACTORS: [key factors]"""
                     pass
             elif line.startswith("FACTORS:"):
                 analysis["factors"] = line.split(":", 1)[1].strip()
-        
-        return analysis
 
+        return analysis

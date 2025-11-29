@@ -31,18 +31,18 @@ async def get_langsmith_runs_tool(arguments: Dict[str, Any]) -> List[TextContent
     """Get recent LangSmith runs."""
     try:
         from .claude.skills.langsmith_monitor.scripts.langsmith_monitor import LangSmithMonitor
-        
+
         monitor = LangSmithMonitor()
         project = arguments.get("project", "trading-rl-training")
         hours = arguments.get("hours", 24)
         limit = arguments.get("limit", 50)
-        
+
         result = monitor.get_recent_runs(
             project_name=project,
             hours=hours,
             limit=limit
         )
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(result, indent=2)
@@ -58,16 +58,16 @@ async def get_langsmith_stats_tool(arguments: Dict[str, Any]) -> List[TextConten
     """Get LangSmith project statistics."""
     try:
         from .claude.skills.langsmith_monitor.scripts.langsmith_monitor import LangSmithMonitor
-        
+
         monitor = LangSmithMonitor()
         project = arguments.get("project", "trading-rl-training")
         days = arguments.get("days", 7)
-        
+
         result = monitor.get_project_stats(
             project_name=project,
             days=days
         )
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(result, indent=2)
@@ -83,10 +83,10 @@ async def check_langsmith_health_tool(arguments: Dict[str, Any]) -> List[TextCon
     """Check LangSmith service health."""
     try:
         from .claude.skills.langsmith_monitor.scripts.langsmith_monitor import LangSmithMonitor
-        
+
         monitor = LangSmithMonitor()
         result = monitor.monitor_health()
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(result, indent=2)
@@ -101,7 +101,7 @@ async def check_langsmith_health_tool(arguments: Dict[str, Any]) -> List[TextCon
 if Server is not None:
     # Create MCP server
     server = Server("langsmith-monitor")
-    
+
     @server.list_tools()
     async def list_tools() -> List[Tool]:
         """List available tools."""
@@ -153,7 +153,7 @@ if Server is not None:
                 }
             )
         ]
-    
+
     @server.call_tool()
     async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         """Handle tool calls."""
@@ -165,7 +165,7 @@ if Server is not None:
             return await check_langsmith_health_tool(arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
-    
+
     async def main():
         """Run MCP server."""
         async with stdio_server() as (read_stream, write_stream):
@@ -174,7 +174,6 @@ if Server is not None:
                 write_stream,
                 server.create_initialization_options()
             )
-    
+
     if __name__ == "__main__":
         asyncio.run(main())
-

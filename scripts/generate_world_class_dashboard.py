@@ -558,8 +558,8 @@ def generate_world_class_dashboard() -> str:
 
     dashboard = f"""# 🌟 World-Class Trading Dashboard
 
-**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}  
-**Auto-Updated**: Daily via GitHub Actions  
+**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
+**Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
 ---
@@ -574,7 +574,7 @@ def generate_world_class_dashboard() -> str:
 | **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) | TBD | {'✅' if total_pl > 0 else '⚠️'} |
 | **Win Rate** | {win_rate:.1f}% ({winning_trades}/{total_closed_trades}) | >55% | {'✅' if win_rate >= 55 else '⚠️' if win_rate >= 40 else '🚨'} |
 
-**Progress Toward $100/Day Goal**: `{north_star_bar}` ({display_progress_pct:.2f}%)  
+**Progress Toward $100/Day Goal**: `{north_star_bar}` ({display_progress_pct:.2f}%)
 *This shows how close your average daily profit is to the $100/day target*
 
 ---
@@ -627,7 +627,7 @@ def generate_world_class_dashboard() -> str:
 | **7 Days** | ${forecast_dict.get('expected_profit_7d', 0.0):+,.2f} | ${forecast_dict.get('confidence_interval_95_lower', 0.0):+,.2f} to ${forecast_dict.get('confidence_interval_95_upper', 0.0):+,.2f} |
 | **30 Days** | ${forecast_dict.get('expected_profit_30d', 0.0):+,.2f} | See 7-day CI scaled |
 
-**Edge Drift Score**: {forecast_dict.get('edge_drift_score', 0.0):+.2f} ({'✅ Improving' if forecast_dict.get('edge_drift_score', 0.0) > 0.1 else '⚠️ Decaying' if forecast_dict.get('edge_drift_score', 0.0) < -0.1 else '➡️ Stable'})  
+**Edge Drift Score**: {forecast_dict.get('edge_drift_score', 0.0):+.2f} ({'✅ Improving' if forecast_dict.get('edge_drift_score', 0.0) > 0.1 else '⚠️ Decaying' if forecast_dict.get('edge_drift_score', 0.0) < -0.1 else '➡️ Stable'})
 **Drawdown Probability (>5%)**: {forecast_dict.get('drawdown_probability', 0.0):.1f}%
 
 ---
@@ -736,7 +736,7 @@ def generate_world_class_dashboard() -> str:
 
 **Current**: Day {current_day} of {total_days} ({current_day/total_days*100:.1f}% complete)
 
-**Timeline Progress**: `{'█' * int((current_day/total_days*100)/5) + '░' * (20 - int((current_day/total_days*100)/5))}` ({current_day/total_days*100:.1f}%)  
+**Timeline Progress**: `{'█' * int((current_day/total_days*100)/5) + '░' * (20 - int((current_day/total_days*100)/5))}` ({current_day/total_days*100:.1f}%)
 *This shows how far through the 90-day R&D challenge timeline you are*
 
 ---
@@ -750,7 +750,7 @@ def generate_world_class_dashboard() -> str:
 
 ---
 
-*This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*  
+*This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*
 *Dashboard improvements: Enhanced trade analysis, performance attribution, actionable risk alerts, and better visualizations.*
 
 """

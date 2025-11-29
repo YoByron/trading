@@ -39,7 +39,7 @@ DATA_DIR = Path("data")
 
 class RLTrainingOrchestrator:
     """Unified orchestrator for RL training across platforms."""
-    
+
     def __init__(self, platform: str = 'local'):
         self.platform = platform
         self.results = {
@@ -48,12 +48,12 @@ class RLTrainingOrchestrator:
             'agents': {},
             'errors': []
         }
-    
+
     def train_q_learning(self) -> Dict[str, Any]:
         """Train Q-learning agent."""
         try:
             from src.agents.reinforcement_learning_optimized import OptimizedRLPolicyLearner
-            
+
             rl_state_file = DATA_DIR / "rl_policy_state.json"
             if not rl_state_file.exists():
                 return {
@@ -61,19 +61,19 @@ class RLTrainingOrchestrator:
                     'message': 'No RL state file found - agent will initialize on first trade',
                     'agent': 'q_learning'
                 }
-            
+
             agent = OptimizedRLPolicyLearner()
-            
+
             if agent.enable_replay and len(agent.replay_buffer) >= agent.replay_batch_size:
                 training_iterations = min(20, len(agent.replay_buffer) // agent.replay_batch_size)
                 total_updates = 0
-                
+
                 for _ in range(training_iterations):
                     agent._train_from_replay()
                     total_updates += 1
-                
+
                 agent._save_state()
-                
+
                 return {
                     'success': True,
                     'agent': 'q_learning',
@@ -98,26 +98,26 @@ class RLTrainingOrchestrator:
                 'error': str(e),
                 'message': error_msg
             }
-    
+
     def train_dqn(self, device: str = 'cpu', episodes: int = 10) -> Dict[str, Any]:
         """Train DQN agent."""
         try:
             from src.ml.dqn_agent import DQNAgent
-            
+
             all_trades = []
             trade_files = list(DATA_DIR.glob("trades_*.json"))
             for trade_file in trade_files:
                 trades = load_json_file(trade_file)
                 if isinstance(trades, list):
                     all_trades.extend(trades)
-            
+
             if len(all_trades) < 32:
                 return {
                     'success': False,
                     'agent': 'dqn',
                     'message': f'Insufficient trade data: {len(all_trades)} trades (need 32+)'
                 }
-            
+
             model_path = DATA_DIR / "models" / "dqn_agent.pt"
             if model_path.exists():
                 agent = DQNAgent.load(str(model_path))
@@ -127,20 +127,20 @@ class RLTrainingOrchestrator:
                     'agent': 'dqn',
                     'message': 'DQN agent not initialized - need to configure input/output dimensions'
                 }
-            
+
             total_loss = 0.0
             training_steps = 0
-            
+
             for episode in range(episodes):
                 loss = agent.train_step()
                 if loss is not None:
                     total_loss += loss
                     training_steps += 1
-            
+
             if training_steps > 0:
                 agent.save(str(model_path))
                 avg_loss = total_loss / training_steps
-                
+
                 return {
                     'success': True,
                     'agent': 'dqn',
@@ -164,7 +164,7 @@ class RLTrainingOrchestrator:
                 'error': str(e),
                 'message': error_msg
             }
-    
+
     def train_with_langsmith(self, agent_type: str) -> Dict[str, Any]:
         """Train agent with LangSmith monitoring."""
         try:
@@ -176,15 +176,15 @@ class RLTrainingOrchestrator:
                     'agent': agent_type,
                     'message': 'LangSmith not configured - set LANGCHAIN_API_KEY environment variable'
                 }
-            
+
             # Set up LangSmith tracing
             os.environ['LANGCHAIN_TRACING_V2'] = 'true'
             os.environ['LANGCHAIN_PROJECT'] = 'trading-rl-training'
-            
+
             from langsmith import Client
-            
+
             client = Client(api_key=langsmith_api_key)
-            
+
             # Train the agent (LangSmith will auto-trace via wrapper)
             try:
                 if agent_type == 'q_learning':
@@ -193,7 +193,7 @@ class RLTrainingOrchestrator:
                     result = self.train_dqn()
                 else:
                     result = {'success': False, 'message': f'Unknown agent type: {agent_type}'}
-                
+
                 # LangSmith automatically traces via wrapper - no manual run creation needed
                 return result
             except Exception as e:
@@ -207,7 +207,7 @@ class RLTrainingOrchestrator:
                 'error': str(e),
                 'message': error_msg
             }
-    
+
     def train_all(self, agents: List[str], device: str = 'cpu', use_langsmith: bool = False) -> Dict[str, Any]:
         """Train all specified agents."""
         for agent in agents:
@@ -216,52 +216,52 @@ class RLTrainingOrchestrator:
                     self.results['agents']['q_learning'] = self.train_with_langsmith('q_learning')
                 else:
                     self.results['agents']['q_learning'] = self.train_q_learning()
-            
+
             elif agent == 'dqn':
                 if use_langsmith:
                     self.results['agents']['dqn'] = self.train_with_langsmith('dqn')
                 else:
                     self.results['agents']['dqn'] = self.train_dqn(device=device)
-            
+
             elif agent == 'ppo':
                 self.results['agents']['ppo'] = {
                     'success': False,
                     'agent': 'ppo',
                     'message': 'PPO training requires full environment setup - use model-training.yml workflow'
                 }
-        
+
         # Calculate summary
         successful = sum(1 for r in self.results['agents'].values() if r.get('success', False))
         total = len(self.results['agents'])
-        
+
         self.results['summary'] = {
             'successful': successful,
             'total': total,
             'success_rate': successful / total if total > 0 else 0.0,
             'platform': self.platform
         }
-        
+
         return self.results
-    
+
     def save_results(self) -> Path:
         """Save training results to file."""
         results_file = DATA_DIR / "rl_training_log.json"
-        
+
         if results_file.exists():
             with open(results_file, 'r') as f:
                 log = json.load(f)
         else:
             log = []
-        
+
         log.append(self.results)
-        
+
         # Keep only last 200 entries
         if len(log) > 200:
             log = log[-200:]
-        
+
         with open(results_file, 'w') as f:
             json.dump(log, f, indent=2)
-        
+
         return results_file
 
 
@@ -292,13 +292,13 @@ def main():
         action='store_true',
         help='Enable LangSmith monitoring (requires LANGCHAIN_API_KEY)'
     )
-    
+
     args = parser.parse_args()
-    
+
     agents = [a.strip() for a in args.agents.split(',')]
     if 'all' in agents:
         agents = ['q_learning', 'dqn']
-    
+
     print("=" * 70)
     print("RL TRAINING ORCHESTRATOR")
     print("=" * 70)
@@ -308,31 +308,30 @@ def main():
     print(f"LangSmith: {'Enabled' if args.use_langsmith else 'Disabled'}")
     print("=" * 70)
     print()
-    
+
     orchestrator = RLTrainingOrchestrator(platform=args.platform)
     results = orchestrator.train_all(agents, device=args.device, use_langsmith=args.use_langsmith)
-    
+
     # Print results
     print("\n📊 Training Results:")
     print("-" * 70)
     for agent_name, result in results['agents'].items():
         status = '✅' if result.get('success', False) else '❌'
         print(f"{status} {agent_name}: {result.get('message', 'Unknown')}")
-    
+
     if results.get('errors'):
         print("\n⚠️ Errors:")
         for error in results['errors']:
             print(f"  - {error}")
-    
+
     print(f"\n📈 Summary: {results['summary']['successful']}/{results['summary']['total']} agents trained successfully")
-    
+
     # Save results
     results_file = orchestrator.save_results()
     print(f"\n✅ Results saved to {results_file}")
-    
+
     return 0 if results['summary']['success_rate'] > 0 else 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

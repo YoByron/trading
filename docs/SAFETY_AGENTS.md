@@ -255,7 +255,7 @@ trade_analysis = orchestrator.analyze({
 if trade_analysis["overall_recommendation"] == "APPROVE":
     # 2. Execute trade
     execute_trade("SPY", 450.00)
-    
+
     # 3. Monitor quality after trade
     quality_report = orchestrator.analyze({
         "analysis_type": "quality_monitoring",
@@ -373,4 +373,3 @@ context = agent.get_memory_context(limit=10)
 ---
 
 **Remember**: These agents are designed to **protect capital** by ensuring we only invest in quality companies at attractive prices. They may reduce trading frequency, but that's by design - quality over quantity.
-

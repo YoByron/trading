@@ -57,4 +57,3 @@ jobs:
           echo "⚠️  Some alerts could not be dismissed automatically"
           echo "This is expected for new alerts that need manual review"
         }
-

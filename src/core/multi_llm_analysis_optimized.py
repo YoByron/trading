@@ -470,4 +470,3 @@ def create_optimized_analyzer(
         enable_caching=enable_caching,
         enable_prioritization=enable_prioritization,
     )
-

@@ -44,4 +44,3 @@ def get_contract_details(
 ) -> Dict[str, Any]:
     payload = {"contract": contract}
     return _client(client).call_tool(SERVER_ID, "get_contract_details", payload)
-

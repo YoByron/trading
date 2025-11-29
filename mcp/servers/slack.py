@@ -33,19 +33,19 @@ _slack_client = None
 def _get_slack_client():
     """Get Slack Web API client."""
     global _slack_client
-    
+
     if not SLACK_API_AVAILABLE:
         logger.warning("Slack SDK not installed - install slack-sdk")
         return None
-    
+
     if _slack_client is not None:
         return _slack_client
-    
+
     slack_token = os.getenv("SLACK_BOT_TOKEN")
     if not slack_token:
         logger.warning("SLACK_BOT_TOKEN not set - Slack MCP will be limited")
         return None
-    
+
     try:
         _slack_client = WebClient(token=slack_token)
         # Test connection
@@ -64,17 +64,17 @@ async def send_message_async(
 ) -> Dict[str, Any]:
     """
     Send message to Slack channel.
-    
+
     Args:
         channel: Channel ID or name (e.g., "#trading-alerts")
         message: Message text
         thread_ts: Optional thread timestamp to reply to
-        
+
     Returns:
         Send result
     """
     logger.info(f"Sending Slack message to {channel}")
-    
+
     client = _get_slack_client()
     if not client:
         return {
@@ -83,7 +83,7 @@ async def send_message_async(
             "message": message,
             "error": "Slack API client not available - check SLACK_BOT_TOKEN"
         }
-    
+
     try:
         kwargs = {
             "channel": channel,
@@ -91,9 +91,9 @@ async def send_message_async(
         }
         if thread_ts:
             kwargs["thread_ts"] = thread_ts
-        
+
         response = client.chat_postMessage(**kwargs)
-        
+
         return {
             "success": True,
             "channel": channel,
@@ -102,7 +102,7 @@ async def send_message_async(
             "timestamp": datetime.now().isoformat(),
             "message_id": response.get("message", {}).get("ts")
         }
-        
+
     except SlackApiError as e:
         logger.error(f"Slack API error: {e.response['error']}")
         return {
@@ -137,17 +137,17 @@ async def send_formatted_message_async(
 ) -> Dict[str, Any]:
     """
     Send formatted message with Slack blocks.
-    
+
     Args:
         channel: Channel ID or name
         blocks: Slack block kit blocks
         text: Fallback text
-        
+
     Returns:
         Send result
     """
     logger.info(f"Sending formatted Slack message to {channel}")
-    
+
     client = _get_slack_client()
     if not client:
         return {
@@ -156,7 +156,7 @@ async def send_formatted_message_async(
             "blocks": blocks,
             "error": "Slack API client not available - check SLACK_BOT_TOKEN"
         }
-    
+
     try:
         kwargs = {
             "channel": channel,
@@ -164,9 +164,9 @@ async def send_formatted_message_async(
         }
         if text:
             kwargs["text"] = text
-        
+
         response = client.chat_postMessage(**kwargs)
-        
+
         return {
             "success": True,
             "channel": channel,
@@ -175,7 +175,7 @@ async def send_formatted_message_async(
             "timestamp": datetime.now().isoformat(),
             "message_id": response.get("message", {}).get("ts")
         }
-        
+
     except SlackApiError as e:
         logger.error(f"Slack API error: {e.response['error']}")
         return {
@@ -209,16 +209,16 @@ async def send_dm_async(
 ) -> Dict[str, Any]:
     """
     Send direct message to user.
-    
+
     Args:
         user_id: Slack user ID
         message: Message text
-        
+
     Returns:
         Send result
     """
     logger.info(f"Sending DM to user {user_id}")
-    
+
     client = _get_slack_client()
     if not client:
         return {
@@ -227,18 +227,18 @@ async def send_dm_async(
             "message": message,
             "error": "Slack API client not available - check SLACK_BOT_TOKEN"
         }
-    
+
     try:
         # Open DM channel with user
         conversation = client.conversations_open(users=[user_id])
         channel_id = conversation["channel"]["id"]
-        
+
         # Send message to DM channel
         response = client.chat_postMessage(
             channel=channel_id,
             text=message
         )
-        
+
         return {
             "success": True,
             "user_id": user_id,
@@ -248,7 +248,7 @@ async def send_dm_async(
             "timestamp": datetime.now().isoformat(),
             "message_id": response.get("message", {}).get("ts")
         }
-        
+
     except SlackApiError as e:
         logger.error(f"Slack API error: {e.response['error']}")
         return {
@@ -278,10 +278,10 @@ def send_dm(
 def create_trade_alert_block(trade_data: Dict[str, Any]) -> list[Dict[str, Any]]:
     """
     Create Slack block kit blocks for trade alert.
-    
+
     Args:
         trade_data: Trade information
-        
+
     Returns:
         List of Slack blocks
     """
@@ -289,7 +289,7 @@ def create_trade_alert_block(trade_data: Dict[str, Any]) -> list[Dict[str, Any]]
     side = trade_data.get("side", "BUY").upper()
     quantity = trade_data.get("quantity", 0)
     price = trade_data.get("price", 0)
-    
+
     return [
         {
             "type": "header",
@@ -320,4 +320,3 @@ def create_trade_alert_block(trade_data: Dict[str, Any]) -> list[Dict[str, Any]]
             ]
         }
     ]
-

@@ -19,13 +19,13 @@ logger = logging.getLogger(__name__)
 class Agent0Integration:
     """
     Agent0 Integration: Wrapper for easy integration with trading systems
-    
+
     Provides:
     1. Simple API for running evolution cycles
     2. Integration with Elite Orchestrator
     3. Statistics and monitoring
     """
-    
+
     def __init__(
         self,
         storage_dir: Optional[Path] = None,
@@ -33,18 +33,18 @@ class Agent0Integration:
     ):
         """
         Initialize Agent0 Integration
-        
+
         Args:
             storage_dir: Directory for storing evolution state
             enabled: Whether Agent0 is enabled
         """
         self.enabled = enabled
-        
+
         if not enabled:
             logger.info("Agent0 Integration disabled")
             self.engine = None
             return
-        
+
         try:
             self.engine = CoEvolutionEngine(storage_dir=storage_dir)
             logger.info("✅ Agent0 Integration initialized")
@@ -52,7 +52,7 @@ class Agent0Integration:
             logger.error(f"❌ Failed to initialize Agent0: {e}")
             self.engine = None
             self.enabled = False
-    
+
     def run_evolution_cycle(
         self,
         category: Optional[str] = None,
@@ -60,17 +60,17 @@ class Agent0Integration:
     ) -> Optional[EvolutionCycle]:
         """
         Run a single evolution cycle
-        
+
         Args:
             category: Optional task category
             symbols: Optional symbols to use
-            
+
         Returns:
             EvolutionCycle if successful, None otherwise
         """
         if not self.enabled or not self.engine:
             return None
-        
+
         try:
             # Convert category string to enum if provided
             task_category = None
@@ -79,40 +79,40 @@ class Agent0Integration:
                     task_category = TaskCategory(category)
                 except ValueError:
                     logger.warning(f"Unknown category: {category}, using default")
-            
+
             cycle = self.engine.run_evolution_cycle(
                 category=task_category.value if task_category else None,
                 symbols=symbols
             )
-            
+
             return cycle
         except Exception as e:
             logger.error(f"Evolution cycle failed: {e}")
             return None
-    
+
     def run_evolution_loop(
         self,
         num_cycles: int = 10
     ) -> List[EvolutionCycle]:
         """
         Run multiple evolution cycles
-        
+
         Args:
             num_cycles: Number of cycles to run
-            
+
         Returns:
             List of completed cycles
         """
         if not self.enabled or not self.engine:
             return []
-        
+
         try:
             cycles = self.engine.run_evolution_loop(num_cycles=num_cycles)
             return cycles
         except Exception as e:
             logger.error(f"Evolution loop failed: {e}")
             return []
-    
+
     def get_statistics(self) -> Dict[str, Any]:
         """Get Agent0 statistics"""
         if not self.enabled or not self.engine:
@@ -120,7 +120,7 @@ class Agent0Integration:
                 "enabled": False,
                 "status": "disabled"
             }
-        
+
         try:
             stats = self.engine.get_statistics()
             stats["enabled"] = True
@@ -132,8 +132,7 @@ class Agent0Integration:
                 "status": "error",
                 "error": str(e)
             }
-    
+
     def is_ready(self) -> bool:
         """Check if Agent0 is ready to use"""
         return self.enabled and self.engine is not None
-

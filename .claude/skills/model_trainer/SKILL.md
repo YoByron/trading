@@ -1,7 +1,7 @@
 # Model Trainer Skill
 
-**skill_id**: `model_trainer`  
-**Status**: ✅ Implemented  
+**skill_id**: `model_trainer`
+**Status**: ✅ Implemented
 **Purpose**: Autonomous training of deep learning models (LSTM feature extractors)
 
 ## Overview
@@ -93,4 +93,3 @@ This skill can be triggered automatically by:
 - Workflow orchestrator (weekly retraining)
 - Performance monitor (when model performance degrades)
 - Data agent (when new historical data is collected)
-

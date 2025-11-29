@@ -21,37 +21,37 @@ def analyze_spy_loss():
     print("=" * 80)
     print("🔍 SPY POSITION ANALYSIS")
     print("=" * 80)
-    
+
     if not SYSTEM_STATE_FILE.exists():
         print("System state not found")
         return
-    
+
     with open(SYSTEM_STATE_FILE) as f:
         state = json.load(f)
-    
+
     positions = state.get("performance", {}).get("open_positions", [])
     spy_pos = next((p for p in positions if p.get("symbol") == "SPY"), None)
-    
+
     if not spy_pos:
         print("SPY position not found")
         return
-    
+
     entry_price = spy_pos.get("entry_price", 0)
     current_price = spy_pos.get("current_price", 0)
     unrealized_pl_pct = spy_pos.get("unrealized_pl_pct", 0)
-    
+
     print(f"\n📊 SPY Position Details:")
     print(f"  Entry Price:    ${entry_price:.2f}")
     print(f"  Current Price:  ${current_price:.2f}")
     print(f"  Loss:           {unrealized_pl_pct:.2f}%")
     print(f"  Dollar Loss:    ${spy_pos.get('unrealized_pl', 0):+.2f}")
-    
+
     # Analysis
     print(f"\n💡 Analysis:")
     print(f"  • SPY is down {abs(unrealized_pl_pct):.2f}% from entry")
     print(f"  • This represents a ${abs(spy_pos.get('unrealized_pl', 0)):.2f} unrealized loss")
     print(f"  • Stop-loss is set at $669.04 (will trigger if drops further)")
-    
+
     # Recommendations
     print(f"\n🎯 Recommendations:")
     if unrealized_pl_pct < -5:
@@ -62,10 +62,10 @@ def analyze_spy_loss():
         print(f"  ⚠️  WARNING: Loss exceeds 2% - Monitor closely")
         print(f"     - Stop-loss will protect further downside")
         print(f"     - Consider if this is temporary volatility")
-    
+
     print(f"  ✅ Stop-loss active: Will auto-sell if drops to $669.04")
     print(f"  📈 If SPY recovers above entry ($682.70), consider taking profits")
-    
+
     return {
         "entry": entry_price,
         "current": current_price,
@@ -79,31 +79,31 @@ def analyze_win_rate():
     print("\n" + "=" * 80)
     print("📊 WIN RATE ANALYSIS")
     print("=" * 80)
-    
+
     if not SYSTEM_STATE_FILE.exists():
         return
-    
+
     with open(SYSTEM_STATE_FILE) as f:
         state = json.load(f)
-    
+
     performance = state.get("performance", {})
     total_trades = performance.get("total_trades", 0)
     win_rate = performance.get("win_rate", 0)
-    
+
     print(f"\n📈 Current Metrics:")
     print(f"  Total Trades:    {total_trades}")
     print(f"  Win Rate:        {win_rate:.1f}%")
     print(f"  Winning Trades:  {performance.get('winning_trades', 0)}")
     print(f"  Losing Trades:   {performance.get('losing_trades', 0)}")
-    
+
     positions = state.get("performance", {}).get("open_positions", [])
     profitable = sum(1 for p in positions if p.get("unrealized_pl", 0) > 0)
     losing = len(positions) - profitable
-    
+
     print(f"\n📦 Current Positions:")
     print(f"  Profitable:       {profitable}/{len(positions)}")
     print(f"  Losing:           {losing}/{len(positions)}")
-    
+
     print(f"\n💡 Analysis:")
     if total_trades == 0:
         print(f"  • No trades executed yet - win rate will populate after trades")
@@ -111,7 +111,7 @@ def analyze_win_rate():
         print(f"  • Win rate is 0% because no positions have been closed profitably")
         print(f"  • Current positions show: {profitable} profitable, {losing} losing")
         print(f"  • Win rate will update when positions are closed")
-    
+
     print(f"\n🎯 Recommendations:")
     print(f"  • Focus on position management and exit timing")
     print(f"  • Current unrealized P/L: ${sum(p.get('unrealized_pl', 0) for p in positions):+.2f}")
@@ -124,7 +124,7 @@ def suggest_optimizations():
     print("\n" + "=" * 80)
     print("⚡ QUICK OPTIMIZATIONS")
     print("=" * 80)
-    
+
     optimizations = [
         {
             "priority": "HIGH",
@@ -157,13 +157,13 @@ def suggest_optimizations():
             "impact": "Better risk distribution",
         },
     ]
-    
+
     for opt in optimizations:
         priority_emoji = "🚨" if opt["priority"] == "HIGH" else "⚠️" if opt["priority"] == "MEDIUM" else "ℹ️"
         print(f"\n{priority_emoji} [{opt['priority']}] {opt['action']}")
         print(f"   Reason: {opt['reason']}")
         print(f"   Impact: {opt['impact']}")
-    
+
     return optimizations
 
 
@@ -173,20 +173,20 @@ def main():
     print("⚡ QUICK ACTIONS - IMMEDIATE VALUE-ADD")
     print(f"   Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
-    
+
     # Analyze SPY loss
     spy_analysis = analyze_spy_loss()
-    
+
     # Analyze win rate
     analyze_win_rate()
-    
+
     # Suggest optimizations
     optimizations = suggest_optimizations()
-    
+
     print("\n" + "=" * 80)
     print("✅ Quick Actions Complete")
     print("=" * 80)
-    
+
     return {
         "spy_analysis": spy_analysis,
         "optimizations": optimizations,
@@ -195,4 +195,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

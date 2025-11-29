@@ -161,4 +161,3 @@ rl_state["bogleheads_regime"] = signal["regime"]
 - Only analyzes publicly available posts
 - No personal information stored
 - Rate-limited to avoid overloading forum
-

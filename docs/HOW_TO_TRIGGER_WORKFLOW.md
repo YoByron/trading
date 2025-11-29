@@ -127,4 +127,3 @@ After triggering:
 ---
 
 **Need help?** Share a screenshot of what you see on the page!
-

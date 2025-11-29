@@ -33,8 +33,8 @@
 
 ### **If We Reach 10x ($13.70/day)**
 
-**Monthly Profit**: $411  
-**After Services**: $411 - $103 = **$308 net profit**  
+**Monthly Profit**: $411
+**After Services**: $411 - $103 = **$308 net profit**
 **ROI**: ($308 / $103) × 100 = **299% ROI**
 
 **Verdict**: ✅ **If we hit 10x, ROI is 299%** (almost 3x return on service cost)
@@ -63,7 +63,7 @@
 
 ### **The Key Insight**
 
-**Services improve QUALITY** (better data, timing, sentiment)  
+**Services improve QUALITY** (better data, timing, sentiment)
 **Scaling position sizes gets you to 10x** (larger positions = larger profits)
 
 ### **Timeline to 10x**
@@ -141,8 +141,8 @@
 
 ### **Risk Factors**
 
-⚠️ **If win rate doesn't improve**: Can't scale → stuck at 1.5-2x  
-⚠️ **If services don't deliver**: ROI stays low  
+⚠️ **If win rate doesn't improve**: Can't scale → stuck at 1.5-2x
+⚠️ **If services don't deliver**: ROI stays low
 ⚠️ **If market conditions worsen**: May take longer than 7 months
 
 ---
@@ -204,4 +204,3 @@
 ---
 
 *The services are the foundation, but scaling is the multiplier that gets you to 10x.*
-

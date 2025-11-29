@@ -77,11 +77,11 @@ class SentimentAnalyzer:
             for symbol in symbols:
                 try:
                     ticker_sentiment = self.news_aggregator.aggregate_sentiment(symbol)
-                    
+
                     # Convert to standard format
                     score = ticker_sentiment.score / 100.0 if ticker_sentiment.score > 1.0 else ticker_sentiment.score
                     score = (score - 0.5) * 2  # Convert 0-100 to -1 to +1 scale
-                    
+
                     sentiment_results[symbol] = {
                         "overall_score": score,
                         "label": "positive" if score > 0.3 else "negative" if score < -0.3 else "neutral",
@@ -145,7 +145,7 @@ class SentimentAnalyzer:
                 try:
                     # Get Reddit sentiment
                     reddit_data = self.reddit_sentiment.get_sentiment(symbol)
-                    
+
                     sentiment_results[symbol] = {
                         "overall_score": reddit_data.get("score", 0.5) / 100.0 if reddit_data.get("score", 0) > 1.0 else reddit_data.get("score", 0.5),
                         "label": "positive" if reddit_data.get("score", 50) > 60 else "negative" if reddit_data.get("score", 50) < 40 else "neutral",
@@ -280,13 +280,13 @@ class SentimentAnalyzer:
         try:
             # Load historical sentiment
             sentiment_data = load_latest_sentiment()
-            
+
             anomalies = []
             for symbol in symbols:
                 try:
                     current_score, confidence, _ = get_ticker_sentiment(symbol, sentiment_data)
                     current_score_norm = (current_score - 50) / 50.0  # Convert to -1 to +1
-                    
+
                     # Simple anomaly detection: rapid shift detection
                     # In production, would compare with historical data
                     if abs(current_score_norm) > 0.7:
@@ -379,4 +379,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

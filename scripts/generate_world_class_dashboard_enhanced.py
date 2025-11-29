@@ -180,8 +180,8 @@ def generate_world_class_dashboard() -> str:
     # Build dashboard
     dashboard = f"""# 📊 World-Class Trading Dashboard
 
-**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}  
-**Auto-Updated**: Daily via GitHub Actions  
+**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
+**Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: Enhanced World-Class (v2.0)
 
 ---
@@ -270,7 +270,7 @@ def generate_world_class_dashboard() -> str:
         dashboard += "| *No time-of-day data available* | - | - | - |\n"
 
     dashboard += f"""
-**Best Trading Time**: {time_analysis.get('best_time', 'N/A')}  
+**Best Trading Time**: {time_analysis.get('best_time', 'N/A')}
 **Worst Trading Time**: {time_analysis.get('worst_time', 'N/A')}
 
 ---
@@ -450,8 +450,8 @@ def generate_world_class_dashboard() -> str:
 
 ## 📈 90-Day R&D Challenge Progress
 
-**Current**: Day {basic_metrics['current_day']} of {basic_metrics['total_days']} ({basic_metrics['progress_pct_challenge']:.1f}% complete)  
-**Phase**: {basic_metrics['phase']}  
+**Current**: Day {basic_metrics['current_day']} of {basic_metrics['total_days']} ({basic_metrics['progress_pct_challenge']:.1f}% complete)
+**Phase**: {basic_metrics['phase']}
 **Days Remaining**: {basic_metrics['days_remaining']}
 
 **Progress Bar**: `{progress_bar}` ({basic_metrics['progress_pct_challenge']:.1f}%)
@@ -514,7 +514,7 @@ def generate_world_class_dashboard() -> str:
         pass
 
     dashboard += f"""
-**Current Strategy**: 
+**Current Strategy**:
 """
     if is_crypto_mode:
         dashboard += "- **MODE**: 🌐 CRYPTO (Weekend/Holiday)\n"
@@ -682,7 +682,7 @@ def generate_world_class_dashboard() -> str:
 
 ---
 
-*This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
+*This dashboard is automatically updated daily by GitHub Actions after trading execution.*
 *World-class metrics powered by comprehensive risk & performance analytics.*
 """
 

@@ -58,4 +58,3 @@ class LangChainSentimentAgent:
         cost_estimate = 0.01
 
         return {"score": score, "reason": reason, "cost": cost_estimate}
-

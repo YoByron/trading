@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class TradingCouncil:
     """
     Trading-specific wrapper for LLM Council.
-    
+
     Provides convenient methods for common trading decision scenarios:
     - Trade validation (BUY/SELL/HOLD decisions)
     - Risk assessment
@@ -107,7 +107,7 @@ Market Data:
 
             if context:
                 query += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-                
+
                 # Highlight Intelligent Investor analysis if available
                 if context.get("intelligent_investor_analysis"):
                     ii_analysis = context["intelligent_investor_analysis"]
@@ -359,4 +359,3 @@ def create_trading_council(
         api_key=api_key,
         enabled=enabled,
     )
-

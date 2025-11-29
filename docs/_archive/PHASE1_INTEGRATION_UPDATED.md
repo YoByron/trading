@@ -190,6 +190,5 @@
 
 ---
 
-*Last Updated: November 12, 2025*  
+*Last Updated: November 12, 2025*
 *Update: Koyfin doesn't offer API access, using Polygon.io instead*
-

@@ -63,7 +63,7 @@ api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets
 def get_market_data(symbol: str) -> dict:
     """
     Fetch comprehensive market data for a symbol.
-    
+
     Returns dict with:
     - price_history: OHLCV data
     - fundamentals: P/E, growth, etc.
@@ -73,15 +73,15 @@ def get_market_data(symbol: str) -> dict:
     try:
         # Get price history from Alpaca
         bars = api.get_bars(symbol, '1Day', limit=200).df
-        
+
         if bars.empty:
             logger.warning(f"No data for {symbol}")
             return {}
-        
+
         # Calculate volatility
         returns = bars['close'].pct_change()
         volatility = returns.std() * (252 ** 0.5)  # Annualized
-        
+
         # Trend strength (simple momentum)
         if len(bars) >= 50:
             ma_20 = bars['close'].rolling(20).mean().iloc[-1]
@@ -89,7 +89,7 @@ def get_market_data(symbol: str) -> dict:
             trend_strength = abs(ma_20 - ma_50) / ma_50
         else:
             trend_strength = 0.1
-        
+
         return {
             "symbol": symbol,
             "price": bars['close'].iloc[-1],
@@ -119,15 +119,15 @@ def get_market_data(symbol: str) -> dict:
 
 def main():
     """Main execution loop for advanced multi-agent trading system."""
-    
+
     print("\n" + "=" * 80)
     print("🤖 ADVANCED MULTI-AGENT TRADING SYSTEM (2025 Standard)")
     print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}")
     print("=" * 80)
-    
+
     # Initialize agents
     logger.info("Initializing multi-agent system...")
-    
+
     meta_agent = MetaAgent()
     research_agent = ResearchAgent()
     signal_agent = SignalAgent()
@@ -145,52 +145,52 @@ def main():
     else:
         rl_learner = RLPolicyLearner()
         logger.info("Using standard RLPolicyLearner")
-    
+
     # Register agents with meta-agent
     meta_agent.register_agent(research_agent)
     meta_agent.register_agent(signal_agent)
     meta_agent.register_agent(risk_agent)
     meta_agent.register_agent(execution_agent)
-    
+
     logger.info("✅ All agents initialized")
-    
+
     # Get portfolio state
     account = api.get_account()
     portfolio_value = float(account.equity)
-    
+
     print(f"\n💰 Portfolio Value: ${portfolio_value:,.2f}")
     print(f"📊 System: Multi-Agent (Meta + Research + Signal + Risk + Execution + RL)")
-    
+
     # Trading symbols
     symbols = ["SPY", "GOOGL"]  # Start with 2 symbols
-    
+
     print(f"\n🎯 Analyzing {len(symbols)} symbols...")
     print("=" * 80)
-    
+
     decisions_made = []
-    
+
     for symbol in symbols:
         print(f"\n📈 Analyzing {symbol}...")
-        
+
         # Get market data
         market_data = get_market_data(symbol)
-        
+
         if not market_data:
             print(f"❌ {symbol}: No data available")
             continue
-        
+
         # Meta-agent coordinates all agents
         coordinated_decision = meta_agent.analyze(market_data)
-        
+
         final_decision = coordinated_decision.get("coordinated_decision", {})
         action = final_decision.get("action", "HOLD")
         confidence = final_decision.get("confidence", 0)
-        
+
         print(f"\n🧠 Meta-Agent Decision for {symbol}:")
         print(f"   Market Regime: {coordinated_decision.get('market_regime')}")
         print(f"   Coordinated Action: {action}")
         print(f"   Confidence: {confidence:.2f}")
-        
+
         # If BUY, proceed with risk and execution
         if action == "BUY":
             # Risk assessment
@@ -202,16 +202,16 @@ def main():
                 "volatility": market_data.get("volatility", 0.20),
                 "historical_win_rate": 0.60  # From backtest
             }
-            
+
             risk_assessment = risk_agent.analyze(risk_data)
-            
+
             if risk_assessment.get("action") == "APPROVE":
                 position_size = risk_assessment.get("position_size", 0)
-                
+
                 print(f"\n✅ Risk Agent APPROVED")
                 print(f"   Position Size: ${position_size:.2f}")
                 print(f"   Stop-Loss: {risk_assessment.get('stop_loss', 0):.2%}")
-                
+
                 # Use RL to potentially override
                 # Enhanced market state for OptimizedRLPolicyLearner
                 price_history = market_data.get("price_history", {})
@@ -223,10 +223,10 @@ def main():
                     "trend_strength": price_history.get("trend_strength", 0.5),
                     "volatility": market_data.get("volatility", 0.2),
                 }
-                
+
                 rl_action = rl_learner.select_action(market_state, action)
                 print(f"\n🎓 RL Policy: {rl_action}")
-                
+
                 if rl_action == "BUY":
                     # Execute
                     execution_data = {
@@ -239,15 +239,15 @@ def main():
                             "volatility": market_data.get("volatility", 0)
                         }
                     }
-                    
+
                     execution_result = execution_agent.analyze(execution_data)
-                    
+
                     print(f"\n🚀 Execution Result:")
                     exec_res = execution_result.get("execution_result", {})
                     print(f"   Status: {exec_res.get('status')}")
                     if exec_res.get('status') == 'SUCCESS':
                         print(f"   Order ID: {exec_res.get('order_id')}")
-                        
+
                         decisions_made.append({
                             "symbol": symbol,
                             "action": "BUY",
@@ -262,7 +262,7 @@ def main():
                 print(f"   Reason: {risk_assessment.get('risks', 'N/A')}")
         else:
             print(f"   Action is {action} - no execution needed")
-    
+
     # Summary
     print("\n" + "=" * 80)
     print("📊 SESSION SUMMARY")
@@ -274,7 +274,7 @@ def main():
     print(f"   States Learned: {rl_stats['total_states_learned']}")
     print(f"   Action Distribution: {rl_stats['action_distribution']}")
     print("=" * 80)
-    
+
     # Save decisions
     if decisions_made:
         decisions_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
@@ -285,4 +285,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

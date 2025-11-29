@@ -12,7 +12,7 @@ The launch scripts now automatically detect your Mac's IP address:
 # Trading Control Center Dashboard
 ./scripts/launch_trading_dashboard.sh
 
-# Sentiment RAG Dashboard  
+# Sentiment RAG Dashboard
 ./launch_dashboard.sh
 ```
 
@@ -144,4 +144,3 @@ streamlit run dashboard/sentiment_dashboard.py --server.address=0.0.0.0 --server
 1. Open dashboard in Safari
 2. Tap Share button
 3. Select "Add to Home Screen"
-

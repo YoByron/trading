@@ -22,29 +22,29 @@ cat > "${LAUNCHD_DIR}/com.trading.training_monitor.plist" <<EOF
 <dict>
     <key>Label</key>
     <string>com.trading.training_monitor</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${REPO_ROOT}/venv/bin/python3</string>
         <string>${REPO_ROOT}/scripts/monitor_training_and_update_dashboard.py</string>
         <string>--once</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/launchd_training_monitor_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/launchd_training_monitor_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <false/>
-    
+
     <key>KeepAlive</key>
     <false/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -52,7 +52,7 @@ cat > "${LAUNCHD_DIR}/com.trading.training_monitor.plist" <<EOF
         <key>HOME</key>
         <string>${HOME}</string>
     </dict>
-    
+
     <key>StartCalendarInterval</key>
     <array>
         <!-- Every hour at :00 minutes -->
@@ -81,4 +81,3 @@ echo "   4. Test manually:"
 echo "      python3 ${REPO_ROOT}/scripts/monitor_training_and_update_dashboard.py --once"
 echo ""
 echo "🎯 This daemon runs hourly to monitor training and update the Progress Dashboard"
-

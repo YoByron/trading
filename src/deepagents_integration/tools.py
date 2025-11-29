@@ -37,22 +37,22 @@ def get_market_data(
 ) -> str:
     """
     Fetch historical market data (OHLCV) for a symbol.
-    
+
     Args:
         symbol: Stock ticker symbol (e.g., 'AAPL', 'SPY')
         lookback_days: Number of days of historical data to fetch (default: 60)
         timeframe: Data timeframe - '1Day', '1Hour', '5Min' (default: '1Day')
-    
+
     Returns:
         JSON string with market data including dates, open, high, low, close, volume
     """
     try:
         provider = get_market_data_provider()
         df = provider.get_daily_bars(symbol=symbol, lookback_days=lookback_days)
-        
+
         if df.empty:
             return json.dumps({"error": f"No data available for {symbol}"})
-        
+
         # Convert DataFrame to JSON-serializable format
         data = {
             "symbol": symbol,
@@ -87,12 +87,12 @@ def query_sentiment(
 ) -> str:
     """
     Search historical sentiment data using semantic search.
-    
+
     Args:
         query: Natural language query about market sentiment (e.g., "bullish momentum")
         ticker: Optional ticker symbol to filter results
         limit: Maximum number of results to return (default: 5)
-    
+
     Returns:
         JSON string with sentiment entries matching the query
     """
@@ -100,13 +100,13 @@ def query_sentiment(
         SentimentRAGStore = _get_sentiment_store()
         if SentimentRAGStore is None:
             return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
-        
+
         store = SentimentRAGStore()
         results = store.query(query=query, ticker=ticker, top_k=limit)
-        
+
         if not results:
             return json.dumps({"message": "No matching sentiment entries found"})
-        
+
         formatted = []
         for entry in results:
             metadata = entry.get("metadata", {})
@@ -122,7 +122,7 @@ def query_sentiment(
                     "sources": metadata.get("source_list"),
                 }
             )
-        
+
         return json.dumps(formatted, indent=2)
     except Exception as e:
         logger.exception(f"Error querying sentiment: {query}")
@@ -136,11 +136,11 @@ def get_sentiment_history(
 ) -> str:
     """
     Get recent sentiment history for a ticker.
-    
+
     Args:
         ticker: Stock ticker symbol (e.g., 'SPY', 'NVDA')
         limit: Number of recent entries to return (default: 5)
-    
+
     Returns:
         JSON string with recent sentiment snapshots for the ticker
     """
@@ -148,13 +148,13 @@ def get_sentiment_history(
         SentimentRAGStore = _get_sentiment_store()
         if SentimentRAGStore is None:
             return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
-        
+
         store = SentimentRAGStore()
         results = store.get_ticker_history(ticker=ticker, limit=limit)
-        
+
         if not results:
             return json.dumps({"message": f"No sentiment history found for {ticker}"})
-        
+
         formatted = []
         for entry in results:
             metadata = entry.get("metadata", {})
@@ -169,7 +169,7 @@ def get_sentiment_history(
                     "sources": metadata.get("source_list"),
                 }
             )
-        
+
         return json.dumps(formatted, indent=2)
     except Exception as e:
         logger.exception(f"Error fetching sentiment history for {ticker}")
@@ -183,11 +183,11 @@ def analyze_technical_indicators(
 ) -> str:
     """
     Calculate technical indicators for a symbol.
-    
+
     Args:
         symbol: Stock ticker symbol
         lookback_days: Number of days of data to use for calculations
-    
+
     Returns:
         JSON string with technical indicators (RSI, MACD, volume ratio, etc.)
     """
@@ -197,21 +197,21 @@ def analyze_technical_indicators(
             calculate_rsi,
             calculate_volume_ratio,
         )
-        
+
         provider = get_market_data_provider()
         df = provider.get_daily_bars(symbol=symbol, lookback_days=lookback_days)
-        
+
         if df.empty:
             return json.dumps({"error": f"No data available for {symbol}"})
-        
+
         if len(df) < 26:
             return json.dumps({"error": f"Insufficient data for {symbol} (need at least 26 bars)"})
-        
+
         # Calculate indicators
         macd_value, macd_signal, macd_histogram = calculate_macd(df["Close"])
         rsi_val = calculate_rsi(df["Close"])
         volume_ratio = calculate_volume_ratio(df)
-        
+
         indicators = {
             "symbol": symbol,
             "macd": {
@@ -224,7 +224,7 @@ def analyze_technical_indicators(
             "current_price": float(df["Close"].iloc[-1]),
             "calculation_date": datetime.now().isoformat(),
         }
-        
+
         return json.dumps(indicators, indent=2)
     except Exception as e:
         logger.exception(f"Error calculating technical indicators for {symbol}")
@@ -234,7 +234,7 @@ def analyze_technical_indicators(
 def build_trading_tools() -> List:
     """
     Build all trading-specific tools for deepagents.
-    
+
     Returns:
         List of tool objects compatible with deepagents
     """
@@ -244,4 +244,3 @@ def build_trading_tools() -> List:
         get_sentiment_history,
         analyze_technical_indicators,
     ]
-

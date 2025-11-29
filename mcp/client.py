@@ -143,4 +143,3 @@ def get_alpaca_trader(paper: bool = True) -> AlpacaTrader:
     except AlpacaTraderError:
         get_alpaca_trader.cache_clear()  # type: ignore[attr-defined]
         raise
-

@@ -127,4 +127,3 @@ python3 scripts/check_duplicate_execution.py
 # Manual dashboard update
 python3 scripts/manual_dashboard_update.py
 ```
-

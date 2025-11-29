@@ -31,8 +31,8 @@
 ## 🛡️ CI Prevention System (NEW)
 
 ### Layer 1: Pre-Commit Hook ✅
-**Location**: `.git/hooks/pre-commit`  
-**Triggers**: Every commit  
+**Location**: `.git/hooks/pre-commit`
+**Triggers**: Every commit
 **Action**: Validates dependencies if `requirements.txt` changed
 
 ```bash
@@ -43,8 +43,8 @@ git commit -m "Update requirements.txt"
 ```
 
 ### Layer 2: ACT Local CI Testing ✅
-**Location**: `scripts/test_ci_locally.sh`  
-**Triggers**: Manual (before pushing)  
+**Location**: `scripts/test_ci_locally.sh`
+**Triggers**: Manual (before pushing)
 **Action**: Run GitHub Actions workflows locally
 
 ```bash
@@ -62,8 +62,8 @@ git commit -m "Update requirements.txt"
 - Faster debugging
 
 ### Layer 3: GitHub Dependency Check ✅
-**Location**: `.github/workflows/dependency-check.yml`  
-**Triggers**: PRs that modify `requirements.txt`  
+**Location**: `.github/workflows/dependency-check.yml`
+**Triggers**: PRs that modify `requirements.txt`
 **Action**: Validates dependencies in clean Python 3.11 environment
 
 **Benefits**:
@@ -72,8 +72,8 @@ git commit -m "Update requirements.txt"
 - Prevents broken code from merging
 
 ### Layer 4: Full CI Suite ✅
-**Location**: `.github/workflows/adk-ci.yml`  
-**Triggers**: Every push/PR  
+**Location**: `.github/workflows/adk-ci.yml`
+**Triggers**: Every push/PR
 **Action**: Full test suite runs
 
 ---
@@ -193,4 +193,3 @@ git push
 - Monitor CI failure rate
 - Improve validation based on real failures
 - Add more comprehensive checks
-

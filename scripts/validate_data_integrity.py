@@ -24,9 +24,9 @@ def main():
     print("DATA INTEGRITY VALIDATION")
     print("=" * 80)
     print()
-    
+
     validator = DataValidator()
-    
+
     # 1. Check data consistency
     print("1. Checking data consistency...")
     consistency_results = validator.check_data_consistency()
@@ -37,21 +37,21 @@ def main():
         return 1
     else:
         print("   ✅ Data is consistent between sources")
-    
+
     print()
-    
+
     # 2. Validate current profit
     print("2. Validating current profit...")
     current_profit = validator.get_current_total_profit()
     print(f"   Current Total P/L: ${current_profit:+.2f}")
-    
+
     # 3. Validate yesterday's profit
     print()
     print("3. Validating yesterday's profit...")
     yesterday_profit = validator.get_yesterday_profit()
     if yesterday_profit is not None:
         print(f"   Yesterday's P/L: ${yesterday_profit:+.2f}")
-        
+
         # Test common false claims
         test_claims = [14.01, 10.00, 20.00]
         print()
@@ -64,15 +64,14 @@ def main():
                 print(f"      Error: {result.error_message}")
     else:
         print("   ⚠️  No data for yesterday")
-    
+
     print()
     print("=" * 80)
     print("✅ DATA INTEGRITY VALIDATION COMPLETE")
     print("=" * 80)
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

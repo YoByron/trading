@@ -14,24 +14,24 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Validate workflow files
         run: |
           echo "🔍 Validating workflow syntax..."
-          
+
           # Workflows with complex embedded JS templates that confuse YAML parser
           SKIP_FILES=("notify-on-failure.yml" "workflow-health-check.yml" "agent-pr-handler.yml")
-          
+
           # Check for YAML syntax errors
           for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
             if [ -f "$workflow" ] && [[ ! "$workflow" == *.disabled ]]; then
               # Extract filename from path
               filename=$(basename "$workflow")
-              
+
               # Skip files with embedded JS templates
               skip=false
               for skip_file in "${SKIP_FILES[@]}"; do
@@ -41,7 +41,7 @@ jobs:
                   break
                 fi
               done
-              
+
               if [ "$skip" == "false" ]; then
                 echo "Checking: $workflow"
                 python3 -c "
@@ -58,6 +58,5 @@ jobs:
               fi
             fi
           done
-          
-          echo "✅ All workflows have valid syntax"
 
+          echo "✅ All workflows have valid syntax"

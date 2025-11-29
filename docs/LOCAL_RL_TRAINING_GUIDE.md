@@ -25,7 +25,7 @@
 
 ### For Deep RL (DQN/PPO)
 - **Current**: DISABLED ❌
-- **Recommended**: 
+- **Recommended**:
   - **During R&D Phase**: Daily after market close
   - **During Production**: Every 4-6 hours
 - **Command**: `python scripts/local_rl_training.py --agents dqn,ppo --device cuda`
@@ -213,4 +213,3 @@ After running local training:
 2. **Monitor Results**: Check dashboard and training logs
 3. **Adjust Frequency**: Based on your system performance
 4. **Enable Deep RL**: Once you have enough trade data
-

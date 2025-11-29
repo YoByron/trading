@@ -16,7 +16,7 @@ def show_capabilities():
     print("=" * 80)
     print("🎯 CTO CAPABILITIES - WHAT I CAN DO RIGHT NOW")
     print("=" * 80)
-    
+
     capabilities = [
         {
             "category": "💰 Financial Management",
@@ -108,17 +108,17 @@ def show_capabilities():
             ],
         },
     ]
-    
+
     for cap in capabilities:
         print(f"\n{cap['category']}")
         print("-" * 80)
         for action in cap["actions"]:
             print(f"  {action}")
-    
+
     print("\n" + "=" * 80)
     print("💡 QUICK WINS AVAILABLE NOW")
     print("=" * 80)
-    
+
     quick_wins = [
         "1. Take partial profit on GOOGL (+2.34%) - Lock in gains",
         "2. Review SPY entry criteria - Improve future entries",
@@ -129,10 +129,10 @@ def show_capabilities():
         "7. Implement profit-taking rules - Auto-sell at +3%",
         "8. Add entry filters - Wait for better setups",
     ]
-    
+
     for win in quick_wins:
         print(f"  {win}")
-    
+
     print("\n" + "=" * 80)
     print("🚀 READY TO EXECUTE")
     print("=" * 80)
@@ -147,4 +147,3 @@ def show_capabilities():
 
 if __name__ == "__main__":
     show_capabilities()
-

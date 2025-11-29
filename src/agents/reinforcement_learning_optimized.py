@@ -110,7 +110,7 @@ class OptimizedRLPolicyLearner:
         self.replay_batch_size = replay_batch_size
         self.enable_adaptive_lr = enable_adaptive_lr
         self.use_multi_timescale = use_multi_timescale
-        
+
         # Multi-timescale memory support
         if use_multi_timescale and context_engine is None:
             try:
@@ -219,7 +219,7 @@ class OptimizedRLPolicyLearner:
     ) -> str:
         """
         Select action using epsilon-greedy policy with adaptive exploration.
-        
+
         Enhanced with multi-timescale memory context for nested learning.
 
         Args:
@@ -252,13 +252,13 @@ class OptimizedRLPolicyLearner:
         else:
             # Exploit: Use learned Q-values with historical bias
             q_values = self.q_table[state_key].copy()
-            
+
             # Apply historical bias from multi-timescale memory
             if historical_bias:
                 for action_name, bias in historical_bias.items():
                     if action_name in q_values:
                         q_values[action_name] += bias * 0.1  # Small bias weight
-            
+
             action = max(q_values, key=q_values.get)
             logger.debug(
                 f"RL: EXPLOIT (ε={self.exploration_rate:.3f}) - Q-values: {q_values}, "
@@ -266,7 +266,7 @@ class OptimizedRLPolicyLearner:
             )
 
         return action
-    
+
     def _get_historical_action_bias(
         self,
         market_state: Dict[str, Any],
@@ -274,20 +274,20 @@ class OptimizedRLPolicyLearner:
     ) -> Optional[Dict[str, float]]:
         """
         Get action bias from multi-timescale historical memories.
-        
+
         Analyzes past outcomes in similar market states across different timescales
         to inform current action selection.
-        
+
         Args:
             market_state: Current market state
             agent_id: Agent identifier
-            
+
         Returns:
             Dict mapping actions to bias values, or None
         """
         try:
             from src.agent_framework.context_engine import MemoryTimescale
-            
+
             # Retrieve memories from all timescales
             memories = self.context_engine.retrieve_memories(
                 agent_id=agent_id,
@@ -295,26 +295,26 @@ class OptimizedRLPolicyLearner:
                 min_importance=0.3,  # Only use important memories
                 use_multi_timescale=True
             )
-            
+
             if not memories:
                 return None
-            
+
             # Analyze outcomes by action
             action_outcomes: Dict[str, List[float]] = {
                 "BUY": [],
                 "SELL": [],
                 "HOLD": []
             }
-            
+
             current_regime = market_state.get("market_regime", "UNKNOWN")
-            
+
             for memory in memories:
                 content = memory.content
                 outcome = content.get("outcome", {})
                 decision = content.get("decision", {})
                 action = decision.get("action", "HOLD")
                 pl = memory.outcome_pl or outcome.get("pl", 0.0)
-                
+
                 # Weight by importance and timescale
                 # Episodic memories have higher weight
                 if memory.timescale == MemoryTimescale.EPISODIC:
@@ -325,13 +325,13 @@ class OptimizedRLPolicyLearner:
                     weight = 1.2
                 else:
                     weight = 1.0
-                
+
                 # Apply importance score
                 weight *= memory.importance_score
-                
+
                 if action in action_outcomes:
                     action_outcomes[action].append(pl * weight)
-            
+
             # Calculate average P/L per action (bias)
             bias: Dict[str, float] = {}
             for action, outcomes in action_outcomes.items():
@@ -341,9 +341,9 @@ class OptimizedRLPolicyLearner:
                     bias[action] = np.clip(avg_pl / 100.0, -1.0, 1.0)
                 else:
                     bias[action] = 0.0
-            
+
             return bias if any(abs(v) > 0.01 for v in bias.values()) else None
-            
+
         except Exception as e:
             logger.warning(f"Failed to get historical action bias: {e}")
             return None
@@ -369,7 +369,7 @@ class OptimizedRLPolicyLearner:
         except ImportError:
             # Fallback to original implementation
             logger.warning("⚠️  Using fallback reward function (install reward_functions module)")
-        
+
         # Fallback: Original implementation
         pl = trade_result.get("pl", 0)
         pl_pct = trade_result.get("pl_pct", 0)
@@ -654,4 +654,3 @@ class OptimizedRLPolicyLearner:
         """
         self.exploration_rate = new_rate or self.initial_exploration_rate
         logger.info(f"Exploration rate reset to {self.exploration_rate:.3f}")
-

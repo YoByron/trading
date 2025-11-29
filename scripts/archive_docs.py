@@ -62,6 +62,5 @@ if __name__ == "__main__":
             shutil.move(str(src), str(dst))
             count += 1
             print(f"📦 Archived: {file_path}")
-    
-    print(f"\n✅ Archived {count} files")
 
+    print(f"\n✅ Archived {count} files")

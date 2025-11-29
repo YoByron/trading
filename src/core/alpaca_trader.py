@@ -274,7 +274,7 @@ class AlpacaTrader:
                 "created_at": str(account.created_at),
                 "trade_suspended_by_user": account.trade_suspended_by_user,
             }
-            
+
             # Add daytrade_count if available
             if hasattr(account, 'daytrade_count'):
                 account_info["daytrade_count"] = account.daytrade_count
@@ -386,7 +386,7 @@ class AlpacaTrader:
                 f"Order submitted successfully: {order.id} - "
                 f"{side.upper()} {symbol} ${amount_usd:.2f}"
             )
-            
+
             # Trigger trade tracking for online learning (if available)
             try:
                 from src.ml.trade_tracker import TradeTracker
@@ -699,11 +699,11 @@ class AlpacaTrader:
             "1Hour": TimeFrame.Hour,
             "1Day": TimeFrame.Day
         }
-        
+
         # Note: Alpaca-py TimeFrame is an object, not just a string.
         # For custom intervals like 5Min, we need TimeFrame(5, TimeFrameUnit.Minute)
         # But for now, let's support the basic ones or map string to TimeFrame
-        
+
         tf = TimeFrame.Day
         if timeframe == "1Min":
             tf = TimeFrame.Minute
@@ -715,7 +715,7 @@ class AlpacaTrader:
              # Fallback or error - for now defaulting to Day if unknown to avoid crash, but logging warning
              if timeframe not in valid_timeframes:
                  logger.warning(f"Timeframe {timeframe} not fully supported in simple mapping, defaulting to Day")
-        
+
         if limit <= 0 or limit > 10000:
             raise ValueError(f"Limit must be between 1 and 10000. Got {limit}")
 
@@ -776,7 +776,7 @@ class AlpacaTrader:
             # Get all open orders before cancelling (for counting)
             # Note: cancel_orders returns list of CancelOrderResponse, but we want count first
             # Actually cancel_orders cancels all and returns list of cancelled orders
-            
+
             cancelled_orders = self.trading_client.cancel_orders()
             order_count = len(cancelled_orders)
 

@@ -93,7 +93,7 @@ jobs:
               print(f'❌ Unexpected error checking staleness: {e}')
               sys.exit(1)
           PYTHON_SCRIPT
-          
+
           # If Python script exits with non-zero, mark as stale
           if [ $? -ne 0 ]; then
             echo "staleness_detected=true" >> $GITHUB_OUTPUT

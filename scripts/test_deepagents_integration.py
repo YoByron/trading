@@ -37,22 +37,22 @@ def test_tools():
     print("\nTesting tool building...")
     try:
         from deepagents_integration import build_trading_tools, build_mcp_tools_for_deepagents
-        
+
         trading_tools = build_trading_tools()
         mcp_tools = build_mcp_tools_for_deepagents()
-        
+
         print(f"✓ Built {len(trading_tools)} trading tools")
         print(f"✓ Built {len(mcp_tools)} MCP tools")
-        
+
         # List tool names
         print("\nTrading tools:")
         for tool in trading_tools:
             print(f"  - {tool.name}")
-        
+
         print("\nMCP tools:")
         for tool in mcp_tools:
             print(f"  - {tool.name}")
-        
+
         return True
     except Exception as e:
         print(f"✗ Tool building failed: {e}")
@@ -64,18 +64,18 @@ def test_tools():
 def test_agent_creation():
     """Test that agents can be created."""
     print("\nTesting agent creation...")
-    
+
     if not os.getenv("ANTHROPIC_API_KEY"):
         print("⚠ ANTHROPIC_API_KEY not set, skipping agent creation test")
         print("  Set ANTHROPIC_API_KEY to test full agent functionality")
         return True
-    
+
     try:
         from deepagents_integration import (
             create_market_analysis_agent,
             create_trading_research_agent,
         )
-        
+
         # Test research agent creation
         research_agent = create_trading_research_agent(
             model="anthropic:claude-sonnet-4-5-20250929",
@@ -83,7 +83,7 @@ def test_agent_creation():
             temperature=0.3,
         )
         print("✓ Trading research agent created successfully")
-        
+
         # Test market analysis agent creation
         analysis_agent = create_market_analysis_agent(
             model="anthropic:claude-sonnet-4-5-20250929",
@@ -91,7 +91,7 @@ def test_agent_creation():
             temperature=0.2,
         )
         print("✓ Market analysis agent created successfully")
-        
+
         return True
     except Exception as e:
         print(f"✗ Agent creation failed: {e}")
@@ -103,29 +103,29 @@ def test_agent_creation():
 async def test_simple_query():
     """Test a simple query to the agent."""
     print("\nTesting simple agent query...")
-    
+
     if not os.getenv("ANTHROPIC_API_KEY"):
         print("⚠ ANTHROPIC_API_KEY not set, skipping query test")
         return True
-    
+
     try:
         from deepagents_integration import create_trading_research_agent
-        
+
         agent = create_trading_research_agent(
             include_mcp_tools=False,
             temperature=0.3,
         )
-        
+
         # Simple test query
         test_query = "What is the current price of SPY? Use get_market_data tool."
-        
+
         print(f"Query: {test_query}")
         print("Processing...")
-        
+
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": test_query}]}
         )
-        
+
         if "messages" in result:
             print("✓ Agent responded successfully")
             # Print last message
@@ -138,7 +138,7 @@ async def test_simple_query():
         else:
             print("✗ Unexpected result format")
             return False
-            
+
     except Exception as e:
         print(f"✗ Query test failed: {e}")
         import traceback
@@ -151,7 +151,7 @@ def check_python_version():
     print("Checking Python version...")
     version = sys.version_info
     print(f"Python {version.major}.{version.minor}.{version.micro}")
-    
+
     if version.major == 3 and version.minor == 14:
         print("⚠ Python 3.14 detected - known compatibility issues with langchain-core")
         print("  Recommendation: Use Python 3.11, 3.12, or 3.13")
@@ -169,22 +169,22 @@ def main():
     print("=" * 80)
     print("DeepAgents Integration Test Suite")
     print("=" * 80)
-    
+
     results = []
-    
+
     # Check Python version
     python_ok = check_python_version()
     results.append(("Python Version", python_ok))
-    
+
     # Test imports
     results.append(("Imports", test_imports()))
-    
+
     # Test tools
     results.append(("Tool Building", test_tools()))
-    
+
     # Test agent creation
     results.append(("Agent Creation", test_agent_creation()))
-    
+
     # Test simple query (async)
     if python_ok:
         try:
@@ -193,12 +193,12 @@ def main():
         except Exception as e:
             print(f"\n⚠ Query test skipped due to: {e}")
             results.append(("Simple Query", None))
-    
+
     # Summary
     print("\n" + "=" * 80)
     print("Test Summary")
     print("=" * 80)
-    
+
     for test_name, result in results:
         if result is True:
             status = "✓ PASS"
@@ -207,12 +207,12 @@ def main():
         else:
             status = "⚠ SKIP"
         print(f"{test_name:20} {status}")
-    
+
     passed = sum(1 for _, r in results if r is True)
     total = sum(1 for _, r in results if r is not None)
-    
+
     print(f"\nPassed: {passed}/{total}")
-    
+
     if passed == total:
         print("\n✓ All tests passed!")
         return 0
@@ -223,4 +223,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

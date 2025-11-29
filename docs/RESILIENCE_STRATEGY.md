@@ -1,7 +1,7 @@
 # 🛡️ RESILIENCE STRATEGY - Why We Have Daily Crises
 
-**Date**: November 12, 2025  
-**Status**: CRITICAL - System lacks resilience engineering  
+**Date**: November 12, 2025
+**Status**: CRITICAL - System lacks resilience engineering
 **Goal**: Zero-downtime, self-healing trading system
 
 ---
@@ -23,8 +23,8 @@
 ## ❌ ROOT CAUSES IDENTIFIED
 
 ### 1. **No Proactive Health Checks**
-**Problem**: System only discovers issues when they cause failures  
-**Evidence**: 
+**Problem**: System only discovers issues when they cause failures
+**Evidence**:
 - `pre_market_health_check.py` exists but **not integrated** into GitHub Actions
 - No pre-flight validation before trading
 - Issues discovered reactively, not proactively
@@ -34,7 +34,7 @@
 ---
 
 ### 2. **Brittle Data Dependencies**
-**Problem**: Single points of failure in data fetching  
+**Problem**: Single points of failure in data fetching
 **Evidence**:
 - yfinance fails → Alpha Vantage fallback → Rate limits → Timeout → Complete failure
 - No graceful degradation when data sources fail
@@ -45,7 +45,7 @@
 ---
 
 ### 3. **No Graceful Degradation**
-**Problem**: System fails hard instead of degrading gracefully  
+**Problem**: System fails hard instead of degrading gracefully
 **Evidence**:
 - When market data fails → entire strategy fails
 - When GitHub Actions times out → no trades executed
@@ -56,7 +56,7 @@
 ---
 
 ### 4. **No Automated Testing**
-**Problem**: Issues discovered in production  
+**Problem**: Issues discovered in production
 **Evidence**:
 - No integration tests for GitHub Actions workflows
 - No validation of order sizes before execution
@@ -67,7 +67,7 @@
 ---
 
 ### 5. **Poor Observability**
-**Problem**: Can't see what's happening until it breaks  
+**Problem**: Can't see what's happening until it breaks
 **Evidence**:
 - No real-time monitoring dashboard
 - No alerts before failures
@@ -78,7 +78,7 @@
 ---
 
 ### 6. **Fragile Automation**
-**Problem**: Automation must run exclusively via GitHub Actions  
+**Problem**: Automation must run exclusively via GitHub Actions
 **Evidence**:
 - Historical reliance on a local macOS scheduler created conflicting sources of truth
 - GitHub Actions was timing out with zero-duration runs
@@ -89,7 +89,7 @@
 ---
 
 ### 7. **No Validation Gates**
-**Problem**: Invalid operations slip through  
+**Problem**: Invalid operations slip through
 **Evidence**:
 - $1,600 order passed validation (should have been rejected)
 - No pre-execution order size validation
@@ -100,7 +100,7 @@
 ---
 
 ### 8. **Reactive Fixes**
-**Problem**: Band-aids instead of prevention  
+**Problem**: Band-aids instead of prevention
 **Evidence**:
 - Each crisis gets a quick fix
 - No systemic improvements
@@ -154,21 +154,21 @@ def get_market_data_with_fallback(symbol: str):
     # Try Alpaca first (fastest, most reliable)
     data = fetch_alpaca(symbol)
     if data: return data
-    
+
     # Try yfinance (free, sometimes unreliable)
     data = fetch_yfinance(symbol)
     if data: return data
-    
+
     # Try Alpha Vantage (slow, rate-limited)
     data = fetch_alpha_vantage(symbol)
     if data: return data
-    
+
     # Use cached data (stale but better than nothing)
     data = load_cached_data(symbol)
     if data and not is_stale(data, max_age_hours=24):
         logger.warning(f"Using cached data for {symbol}")
         return data
-    
+
     # Last resort: skip trading for this symbol
     logger.error(f"All data sources failed for {symbol} - skipping")
     return None
@@ -305,4 +305,3 @@ Build a system that **never surprises you** - it either works perfectly or fails
 ---
 
 **Next Steps**: Implement Phase 1 fixes this week, then iterate based on results.
-

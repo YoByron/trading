@@ -31,21 +31,21 @@ logger = logging.getLogger(__name__)
 class GeminiAgent:
     """
     Gemini 3-powered agent for trading decisions.
-    
+
     Features:
     - Temperature-based reasoning control (lower = focused, higher = creative)
     - Conversation history for stateful reasoning
     - Multimodal analysis support
     - Self-healing retry mechanisms
     """
-    
+
     # Temperature mapping for "thinking levels" (conceptual, not API parameter)
     THINKING_TEMPERATURES = {
         "low": 0.3,      # Focused, deterministic
         "medium": 0.7,   # Balanced
         "high": 1.0,     # Creative, exploratory
     }
-    
+
     def __init__(
         self,
         name: str,
@@ -55,7 +55,7 @@ class GeminiAgent:
     ):
         """
         Initialize Gemini 3 agent.
-        
+
         Args:
             name: Agent name
             role: Agent role/responsibility
@@ -67,7 +67,7 @@ class GeminiAgent:
         self.role = role
         self.model = model
         self.default_thinking_level = default_thinking_level
-        
+
         # Configure Gemini API
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -77,14 +77,14 @@ class GeminiAgent:
             genai.configure(api_key=api_key)
             # Initialize model
             self.client = genai.GenerativeModel(model)
-        
+
         # Memory and decision tracking
         self.memory: List[Dict[str, Any]] = []
         self.decision_log: List[Dict[str, Any]] = []
         self.conversation_history: List[Dict[str, Any]] = []
-        
+
         logger.info(f"Initialized {name} with Gemini 3 ({model})")
-    
+
     @with_retry(max_attempts=3, backoff=2.0)
     def reason(
         self,
@@ -95,14 +95,14 @@ class GeminiAgent:
     ) -> Dict[str, Any]:
         """
         Use Gemini 3 reasoning to make decisions.
-        
+
         Args:
             prompt: The reasoning prompt
-            thinking_level: Conceptual reasoning depth (low/medium/high), 
+            thinking_level: Conceptual reasoning depth (low/medium/high),
                            maps to temperature, defaults to agent's default
             tools: Optional tool definitions for function calling
             context: Optional conversation context (list of message dicts)
-            
+
         Returns:
             Response with reasoning, decision, and metadata
         """
@@ -115,10 +115,10 @@ class GeminiAgent:
                 "tool_calls": [],
                 "thinking_level": thinking_level or self.default_thinking_level
             }
-        
+
         thinking_level = thinking_level or self.default_thinking_level
         temperature = self.THINKING_TEMPERATURES.get(thinking_level, 0.7)
-        
+
         try:
             # Build generation config
             # Use GenerationConfig object if available, otherwise dict (both work)
@@ -136,7 +136,7 @@ class GeminiAgent:
                     top_k=40,
                     max_output_tokens=4096,
                 )
-            
+
             # Build conversation history
             # For single message, use simple string format
             # For multi-turn, use proper Content format
@@ -159,13 +159,13 @@ class GeminiAgent:
                     else:
                         # Fallback: assume it's already in correct format
                         messages.append(msg)
-                
+
                 # Add current prompt
                 messages.append({
                     "role": "user",
                     "parts": [{"text": prompt}]
                 })
-                
+
                 # Generate with conversation history
                 if tools:
                     response = self.client.generate_content(
@@ -191,7 +191,7 @@ class GeminiAgent:
                         prompt,
                         generation_config=generation_config
                     )
-            
+
             # Store in conversation history
             self.conversation_history.append({
                 "role": "user",
@@ -201,11 +201,11 @@ class GeminiAgent:
                 "role": "model",
                 "parts": [{"text": response.text}]
             })
-            
+
             # Keep history manageable (last 20 messages)
             if len(self.conversation_history) > 20:
                 self.conversation_history = self.conversation_history[-20:]
-            
+
             # Parse response
             result = {
                 "reasoning": response.text if hasattr(response, "text") else "",
@@ -215,7 +215,7 @@ class GeminiAgent:
                 "thinking_level": thinking_level,
                 "temperature": temperature,
             }
-            
+
             # Extract function calls if present
             if hasattr(response, "function_calls") and response.function_calls:
                 for call in response.function_calls:
@@ -223,9 +223,9 @@ class GeminiAgent:
                         "name": call.name,
                         "args": dict(call.args) if hasattr(call.args, "__dict__") else call.args
                     })
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"{self.name} Gemini reasoning error: {e}")
             return {
@@ -236,7 +236,7 @@ class GeminiAgent:
                 "thinking_level": thinking_level,
                 "temperature": temperature,
             }
-    
+
     def analyze_with_context(
         self,
         data: Dict[str, Any],
@@ -244,32 +244,32 @@ class GeminiAgent:
     ) -> Dict[str, Any]:
         """
         Analyze data with full context preservation using conversation history.
-        
+
         Args:
             data: Input data for analysis
             thinking_level: Conceptual reasoning depth for this analysis
-            
+
         Returns:
             Analysis results with preserved context
         """
         # Use recent conversation history as context
         context = self.conversation_history[-10:] if self.conversation_history else []
-        
+
         # Build analysis prompt
         prompt = self._build_analysis_prompt(data)
-        
+
         # Reason with context
         result = self.reason(
             prompt=prompt,
             thinking_level=thinking_level,
             context=context
         )
-        
+
         # Log decision
         self.log_decision(result)
-        
+
         return result
-    
+
     def _build_analysis_prompt(self, data: Dict[str, Any]) -> str:
         """Build analysis prompt from data."""
         return f"""You are {self.name}, responsible for: {self.role}
@@ -284,7 +284,7 @@ Provide:
 3. Confidence level (0-1)
 4. Key factors influencing your decision
 """
-    
+
     def log_decision(self, decision: Dict[str, Any]) -> None:
         """Log a decision for audit trail."""
         entry = {
@@ -296,20 +296,20 @@ Provide:
         }
         self.decision_log.append(entry)
         logger.info(f"{self.name} decision logged")
-    
+
     def get_memory_context(self, limit: int = 10) -> str:
         """Get recent memory context for reasoning."""
         recent_memories = self.memory[-limit:]
         if not recent_memories:
             return "No previous experience."
-        
+
         context = "Recent experience:\n"
         for mem in recent_memories:
             outcome = mem.get("outcome", {})
             context += f"- {mem['timestamp']}: {outcome.get('result', 'N/A')}\n"
-        
+
         return context
-    
+
     def health_check(self) -> bool:
         """Run health check on agent."""
         return health_check(threshold=5, window_seconds=3600)

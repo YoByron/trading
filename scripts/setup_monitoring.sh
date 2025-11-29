@@ -48,4 +48,3 @@ echo "   - Add Telegram credentials to .env"
 echo "   - Test with: python3 scripts/health_check.py"
 echo "   - Schedule health checks: Add to GitHub Actions or cron"
 echo ""
-

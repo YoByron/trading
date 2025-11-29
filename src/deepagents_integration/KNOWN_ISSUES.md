@@ -14,4 +14,3 @@ There is a known compatibility issue between Python 3.14 and `langchain-core` re
 - `clickhouse-connect` requires `urllib3>=1.26`
 
 These are non-blocking warnings and the system should function correctly with `urllib3==1.24.3`.
-

@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 class MetaAgent(BaseAgent):
     """
     Meta-Agent coordinates all other agents based on market conditions.
-    
+
     Inspired by Hi-DARTS hierarchical framework:
     - Detects market volatility
     - Activates appropriate specialist agents
     - Balances exploration vs exploitation
     """
-    
+
     def __init__(self):
         super().__init__(
             name="MetaAgent",
@@ -31,26 +31,26 @@ class MetaAgent(BaseAgent):
         )
         self.agents: Dict[str, BaseAgent] = {}
         self.market_regime = "UNKNOWN"  # LOW_VOL, HIGH_VOL, TRENDING, RANGING
-        
+
     def register_agent(self, agent: BaseAgent) -> None:
         """Register a specialist agent."""
         self.agents[agent.name] = agent
         logger.info(f"MetaAgent registered: {agent.name}")
-    
+
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Coordinate all agents to make trading decision.
-        
+
         Args:
             data: Market data, news, portfolio state
-            
+
         Returns:
             Coordinated trading decision
         """
         # Step 1: Detect market regime
         regime = self._detect_market_regime(data)
         self.market_regime = regime
-        
+
         # Step 2: Build coordination prompt with memory
         memory_context = self.get_memory_context(limit=5)
         prompt = f"""You are the Meta-Agent coordinating a multi-agent trading system.
@@ -77,7 +77,7 @@ Provide your reasoning and agent activation strategy."""
 
         # Step 3: Use LLM reasoning to coordinate
         response = self.reason_with_llm(prompt)
-        
+
         # Step 4: Execute coordinated analysis
         decision = {
             "meta_agent_reasoning": response["reasoning"],
@@ -85,7 +85,7 @@ Provide your reasoning and agent activation strategy."""
             "agent_activations": self._parse_activations(response["reasoning"]),
             "coordinated_decision": None
         }
-        
+
         # Step 5: Collect agent recommendations
         recommendations = {}
         for agent_name, weight in decision["agent_activations"].items():
@@ -96,26 +96,26 @@ Provide your reasoning and agent activation strategy."""
                     "recommendation": rec,
                     "weight": weight
                 }
-        
+
         # Step 6: Synthesize final decision
         final_decision = self._synthesize_decision(recommendations)
         decision["coordinated_decision"] = final_decision
-        
+
         # Log decision
         self.log_decision(decision)
-        
+
         return decision
-    
+
     def _detect_market_regime(self, data: Dict[str, Any]) -> str:
         """
         Detect current market regime using volatility and trend indicators.
-        
+
         Returns:
             Market regime string
         """
         volatility = data.get("volatility", 0.0)
         trend_strength = data.get("trend_strength", 0.0)
-        
+
         # Simple regime classification (can be enhanced with ML)
         if volatility < 0.15:
             return "LOW_VOL"
@@ -125,18 +125,18 @@ Provide your reasoning and agent activation strategy."""
             return "TRENDING"
         else:
             return "RANGING"
-    
+
     def _parse_activations(self, reasoning: str) -> Dict[str, float]:
         """
         Parse agent activations from LLM reasoning.
-        
+
         For now, use simple heuristics. Can be enhanced with structured output.
-        
+
         Returns:
             Dict mapping agent names to activation weights
         """
         activations = {}
-        
+
         # Default activations based on market regime
         if self.market_regime == "LOW_VOL":
             activations = {
@@ -166,16 +166,16 @@ Provide your reasoning and agent activation strategy."""
                 "RiskAgent": 0.3,
                 "ExecutionAgent": 0.1
             }
-        
+
         return activations
-    
+
     def _synthesize_decision(self, recommendations: Dict[str, Dict]) -> Dict[str, Any]:
         """
         Synthesize final decision from weighted agent recommendations.
-        
+
         Args:
             recommendations: Dict of agent recommendations with weights
-            
+
         Returns:
             Final trading decision
         """
@@ -183,22 +183,22 @@ Provide your reasoning and agent activation strategy."""
         total_buy_weight = 0.0
         total_sell_weight = 0.0
         total_hold_weight = 0.0
-        
+
         for agent_name, rec_data in recommendations.items():
             rec = rec_data["recommendation"]
             weight = rec_data["weight"]
             action = rec.get("action", "HOLD")
-            
+
             if action == "BUY":
                 total_buy_weight += weight
             elif action == "SELL":
                 total_sell_weight += weight
             else:
                 total_hold_weight += weight
-        
+
         # Decide based on weighted votes
         max_weight = max(total_buy_weight, total_sell_weight, total_hold_weight)
-        
+
         if max_weight == total_buy_weight and total_buy_weight > 0.5:
             action = "BUY"
             confidence = total_buy_weight
@@ -208,7 +208,7 @@ Provide your reasoning and agent activation strategy."""
         else:
             action = "HOLD"
             confidence = total_hold_weight
-        
+
         return {
             "action": action,
             "confidence": confidence,
@@ -217,4 +217,3 @@ Provide your reasoning and agent activation strategy."""
             "hold_weight": total_hold_weight,
             "agent_recommendations": recommendations
         }
-

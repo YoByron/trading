@@ -56,4 +56,3 @@ def position_size(
         "risk_dollars": risk_dollars,
     }
     return _client(client).call_tool(SERVER_ID, "position_size", payload)
-

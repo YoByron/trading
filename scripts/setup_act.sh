@@ -9,7 +9,7 @@ echo "================================================"
 # Check if ACT is installed
 if ! command -v act &> /dev/null; then
     echo "📦 Installing ACT..."
-    
+
     # macOS
     if [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v brew &> /dev/null; then
@@ -64,4 +64,3 @@ echo ""
 echo "   # List available workflows:"
 echo "   act -l"
 echo ""
-

@@ -28,4 +28,3 @@ def analyze_ipo(company_data: Mapping[str, Any]) -> Dict[str, Any]:
     """
 
     return run_sync(analyze_ipo_async(company_data))
-

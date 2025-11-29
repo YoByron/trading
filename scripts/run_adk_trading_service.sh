@@ -20,4 +20,3 @@ exec go run ./cmd/trading_orchestrator \
   --log_path "${LOG_PATH}" \
   --app "trading_orchestrator" \
   web --port "${PORT}" api --webui_address "${WEBUI_ORIGIN}"
-

@@ -40,27 +40,27 @@ jobs:
           import os
           import json
           from src.agents.pr_agent import PRAgent
-          
+
           def main():
               agent = PRAgent()
-              
+
               # Mock file list for now (in real usage, fetch via GitHub API)
-              files = ["requirements.txt"] 
-              
+              files = ["requirements.txt"]
+
               data = {
                   "title": os.environ.get("PR_TITLE", ""),
                   "body": os.environ.get("PR_BODY", ""),
                   "files": files
               }
-              
+
               result = agent.analyze(data)
               print(json.dumps(result, indent=2))
-              
+
               # In a real scenario, we would use PyGithub to post the comment
               # For now, just print to stdout for logs
-              
+
           if __name__ == "__main__":
               main()
           EOF
-          
+
           python run_agent.py

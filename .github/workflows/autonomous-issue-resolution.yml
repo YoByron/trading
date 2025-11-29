@@ -48,10 +48,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           echo "🤖 Starting autonomous issue resolution..."
-          
+
           LABEL="${{ github.event.inputs.label || 'trading-failure' }}"
           MAX_ISSUES="${{ github.event.inputs.max_issues || '10' }}"
-          
+
           # Run in live mode (not dry-run)
           python3 scripts/autonomous_issue_resolver.py \
             --label "$LABEL" \
@@ -59,7 +59,7 @@ jobs:
               echo "⚠️  Some issues could not be resolved"
               exit 0  # Don't fail workflow - some issues may need manual review
             }
-          
+
           echo "✅ Issue resolution complete"
 
       - name: Summary
@@ -70,4 +70,3 @@ jobs:
           echo "Issues processed and resolved automatically using AI agents." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Agents Used**: Elite Orchestrator (Claude Skills + Langchain + Gemini + ML Predictor)" >> $GITHUB_STEP_SUMMARY
-

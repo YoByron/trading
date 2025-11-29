@@ -12,7 +12,7 @@ def test_alpaca():
     print("\nTesting Alpaca API...")
     key = os.getenv("ALPACA_API_KEY")
     secret = os.getenv("ALPACA_SECRET_KEY")
-    
+
     if not key or not secret:
         print("❌ ALPACA_API_KEY or ALPACA_SECRET_KEY missing")
         return
@@ -21,20 +21,20 @@ def test_alpaca():
         api = tradeapi.REST(key, secret, "https://paper-api.alpaca.markets")
         account = api.get_account()
         print(f"✅ Alpaca Connection Successful. Status: {account.status}")
-        
+
         # Try fetching bars
         symbol = "AMZN"
         start = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
         end = datetime.now().strftime('%Y-%m-%d')
         print(f"   Fetching {symbol} bars from {start} to {end}...")
-        
+
         bars = api.get_bars(symbol, "1Day", start=start, end=end).df
         if not bars.empty:
             print(f"✅ Fetched {len(bars)} bars for {symbol}")
             print(bars.head())
         else:
             print(f"⚠️  Fetched 0 bars for {symbol}")
-            
+
     except Exception as e:
         print(f"❌ Alpaca Error: {e}")
 
@@ -48,9 +48,9 @@ def test_polygon():
     symbol = "AMZN"
     start = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
     end = datetime.now().strftime('%Y-%m-%d')
-    
+
     url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day/{start}/{end}?adjusted=true&sort=asc&limit=120&apiKey={key}"
-    
+
     try:
         resp = requests.get(url)
         if resp.status_code == 200:

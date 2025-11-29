@@ -38,4 +38,3 @@ echo "🔄 Merging PR #8 (Dependabot)..."
 gh pr merge 8 --squash --auto || echo "⚠️  PR merge may require manual approval"
 
 echo "🎉 All tasks completed!"
-

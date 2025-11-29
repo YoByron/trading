@@ -1,7 +1,7 @@
 # 🏗️ Architecture: Go ADK + Langchain + Python Integration
 
-**Last Updated**: November 12, 2025  
-**Status**: ADK Currently DISABLED (R&D Phase)  
+**Last Updated**: November 12, 2025
+**Status**: ADK Currently DISABLED (R&D Phase)
 **Integration**: Complete but dormant
 
 ---
@@ -199,8 +199,8 @@ mcp_tool_call(
 
 ### Why ADK is Disabled
 From `docs/PLAN.md`:
-> **Decision**: Keep ADK DISABLED during R&D Phase (Days 1-90)  
-> **Rationale**: Focus on proving trading edge with simple, reliable Python execution first  
+> **Decision**: Keep ADK DISABLED during R&D Phase (Days 1-90)
+> **Rationale**: Focus on proving trading edge with simple, reliable Python execution first
 > **Future**: Enable in Month 4+ IF Python system proves profitable
 
 ---
@@ -424,4 +424,3 @@ return self._execute_rule_based()
 - `docs/ADK_DEPLOYMENT_PLAYBOOK.md` - How to deploy ADK
 - `docs/ADK_TRADING_QUICKSTART.md` - Quick start guide
 - `docs/CLAUDE_AGENT_SDK_LOOP.md` - Agent SDK patterns
-

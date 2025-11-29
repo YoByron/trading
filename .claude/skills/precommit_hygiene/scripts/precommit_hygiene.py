@@ -411,41 +411,41 @@ class PreCommitHygiene:
             return error_response(
                 f"Error checking secrets: {str(e)}", "SECRET_CHECK_ERROR"
             )
-    
+
     def check_workflow_security(self, files: List[str] = None) -> Dict[str, Any]:
         """
         Check GitHub Actions workflows for security issues
-        
+
         Args:
             files: Workflow files to scan (defaults to all .github/workflows/*.yml)
-            
+
         Returns:
             Dict with workflow security scan results
         """
         try:
             import yaml
             import re
-            
+
             violations = []
-            
+
             if not files:
                 workflow_dir = self.project_root / ".github" / "workflows"
                 if workflow_dir.exists():
                     files = list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml"))
                     files = [str(f) for f in files if not f.name.endswith(".disabled")]
-            
+
             for filepath in files:
                 if not filepath or not os.path.exists(filepath):
                     continue
-                    
+
                 try:
                     with open(filepath, "r") as f:
                         content = f.read()
                         workflow = yaml.safe_load(content)
-                        
+
                     if not workflow:
                         continue
-                    
+
                     # Check for pull_request_target with unsafe checkout
                     if workflow.get("on", {}).get("pull_request_target"):
                         # Check if checkout uses PR head SHA (unsafe)
@@ -456,7 +456,7 @@ class PreCommitHygiene:
                                 "line": content[:content.find("github.event.pull_request.head.sha")].count("\n") + 1,
                                 "issue": "CRITICAL: pull_request_target with checkout from PR head SHA allows untrusted code execution. Use GitHub API instead of checking out PR code directly."
                             })
-                        
+
                         # Check if permissions include write access
                         permissions = workflow.get("permissions", {})
                         if permissions.get("contents") == "write" or permissions.get("contents") is True:
@@ -466,7 +466,7 @@ class PreCommitHygiene:
                                 "line": 1,
                                 "issue": "WARNING: pull_request_target with write permissions is dangerous. Use read-only permissions and GitHub API for PR operations."
                             })
-                    
+
                     # Check for hardcoded secrets in workflows
                     secret_patterns = [
                         r'(api[_-]?key|secret|token|password)\s*[:=]\s*["\']([a-zA-Z0-9_-]{20,})["\']',
@@ -483,7 +483,7 @@ class PreCommitHygiene:
                                 "line": content[:match.start()].count("\n") + 1,
                                 "issue": f"Hardcoded secret detected. Use GitHub Secrets: ${{{{ secrets.SECRET_NAME }}}}"
                             })
-                            
+
                 except yaml.YAMLError as e:
                     # Skip YAML errors in JavaScript code blocks (e.g., ${now} in github-script)
                     # These are false positives - the YAML is valid, JS templates confuse the parser
@@ -499,7 +499,7 @@ class PreCommitHygiene:
                 except Exception as e:
                     # Skip files that can't be parsed
                     pass
-            
+
             return success_response({
                 "workflow_issues": len(violations),
                 "violations": violations,

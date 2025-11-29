@@ -251,4 +251,3 @@ func TestClamp(t *testing.T) {
 		})
 	}
 }
-

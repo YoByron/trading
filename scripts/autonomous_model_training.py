@@ -65,62 +65,62 @@ def main():
         default=50,
         help="Training epochs (default: 50)"
     )
-    
+
     args = parser.parse_args()
-    
+
     print("=" * 70)
     print("Autonomous Model Training Orchestrator")
     print("=" * 70)
     print(f"Symbols: {args.symbols}")
     print(f"Mode: {'CHECK ONLY' if args.check_only else 'TRAIN'}")
     print("=" * 70)
-    
+
     skill = ModelTrainerSkill()
     symbols = [s.strip() for s in args.symbols.split(",")]
-    
+
     # Step 1: Check data availability
     print("\n[Step 1] Checking training data availability...")
     data_check = skill.check_training_data_availability(symbols, min_days=252)
-    
+
     if not data_check["available"]:
         print(f"\n❌ Insufficient data for training:")
         print(f"   Missing symbols: {data_check['missing_symbols']}")
         print(f"\n   Collecting data automatically...")
-        
+
         # Automatically collect data
         collector = DataCollector(data_dir="data/historical")
         collector.collect_daily_data(symbols, lookback_days=252)
-        
+
         # Re-check
         data_check = skill.check_training_data_availability(symbols, min_days=252)
         if not data_check["available"]:
             print(f"\n❌ Still insufficient data after collection")
             print(f"   Please ensure API keys are configured")
             sys.exit(1)
-    
+
     print(f"✅ Data available for all symbols")
     for symbol, info in data_check["data_summary"].items():
         print(f"   {symbol}: {info['days']} days")
-    
+
     if args.check_only:
         print("\n✅ Data check complete (--check-only mode)")
         return
-    
+
     # Step 2: Check if model exists
     models_dir = project_root / "data" / "models"
     existing_model = list(models_dir.glob("lstm_feature_extractor*.pt"))
-    
+
     if existing_model and not args.force_retrain:
         model_age = datetime.now() - datetime.fromtimestamp(existing_model[0].stat().st_mtime)
         print(f"\n[Step 2] Existing model found: {existing_model[0].name}")
         print(f"   Age: {model_age.days} days")
-        
+
         # Only retrain if model is >7 days old
         if model_age.days < 7:
             print(f"   ✅ Model is fresh (<7 days old), skipping retraining")
             print(f"   Use --force-retrain to override")
             return
-    
+
     # Step 3: Train model
     print(f"\n[Step 3] Training LSTM model...")
     result = skill.train_lstm_model(
@@ -130,7 +130,7 @@ def main():
         learning_rate=0.001,
         device="cpu"
     )
-    
+
     if result["success"]:
         print(f"\n✅ Model training complete!")
         print(f"   Model saved to: {result['model_path']}")
@@ -146,4 +146,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

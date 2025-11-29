@@ -83,4 +83,3 @@ def load_registry(path: Optional[os.PathLike] = None) -> MCPRegistry:
         servers=servers,
         generated_at=raw.get("generated_at"),
     )
-

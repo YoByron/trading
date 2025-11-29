@@ -49,4 +49,3 @@ if grep -q "Error" /tmp/act-test.log; then
 else
     echo "✅ Workflow test completed!"
 fi
-

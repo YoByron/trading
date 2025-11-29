@@ -90,7 +90,7 @@ import asyncio
 
 async def main():
     council = TradingCouncil(enabled=True)
-    
+
     # Validate a trade
     result = await council.validate_trade(
         symbol="SPY",
@@ -102,7 +102,7 @@ async def main():
         },
         context={"portfolio_value": 100000},
     )
-    
+
     if result["approved"]:
         print(f"Trade approved with {result['confidence']:.2%} confidence")
     else:
@@ -275,4 +275,3 @@ The LLM Council uses multiple LLM calls:
 - [ ] Cost optimization (skip Stage 2 for low-value trades)
 - [ ] Historical performance tracking
 - [ ] Confidence calibration based on past performance
-

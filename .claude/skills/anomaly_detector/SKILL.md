@@ -332,4 +332,3 @@ python scripts/anomaly_detector.py monitor_spread_conditions --symbols AAPL MSFT
 python scripts/anomaly_detector.py detect_volume_anomalies \
     --symbol AAPL --current-volume 5500000
 ```
-

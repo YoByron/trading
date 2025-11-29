@@ -21,4 +21,3 @@ __all__ = [
     "submit_market_order",
     "set_stop_loss",
 ]
-

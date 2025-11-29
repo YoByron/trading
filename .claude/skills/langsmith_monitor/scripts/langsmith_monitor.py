@@ -33,12 +33,12 @@ def success_response(data: Any) -> Dict[str, Any]:
 
 class LangSmithMonitor:
     """Monitor LangSmith traces, runs, and performance metrics."""
-    
+
     def __init__(self):
         """Initialize LangSmith monitor."""
         self.api_key = os.getenv("LANGCHAIN_API_KEY")
         self.client = None
-        
+
         if self.api_key:
             try:
                 from langsmith import Client
@@ -50,7 +50,7 @@ class LangSmithMonitor:
                 logger.warning(f"⚠️  Failed to initialize LangSmith client: {e}")
         else:
             logger.warning("⚠️  LANGCHAIN_API_KEY not configured")
-    
+
     def get_recent_runs(
         self,
         project_name: str = "trading-rl-training",
@@ -59,39 +59,39 @@ class LangSmithMonitor:
     ) -> Dict[str, Any]:
         """
         Get recent LangSmith runs.
-        
+
         Args:
             project_name: Project name to query
             limit: Maximum number of runs to return
             hours: Hours of history to query
-        
+
         Returns:
             Dict with recent runs and statistics
         """
         if not self.client:
             return error_response("LangSmith client not initialized")
-        
+
         try:
             # Calculate start time
             start_time = datetime.now() - timedelta(hours=hours)
-            
+
             # Query runs
             runs = list(self.client.list_runs(
                 project_name=project_name,
                 start_time=start_time,
                 limit=limit
             ))
-            
+
             # Analyze runs
             total_runs = len(runs)
             successful_runs = sum(1 for r in runs if r.status == "success")
             failed_runs = sum(1 for r in runs if r.status == "error")
             total_tokens = sum(
-                getattr(r, 'total_tokens', 0) or 0 
-                for r in runs 
+                getattr(r, 'total_tokens', 0) or 0
+                for r in runs
                 if hasattr(r, 'total_tokens')
             )
-            
+
             # Group by run type
             run_types = {}
             for run in runs:
@@ -99,7 +99,7 @@ class LangSmithMonitor:
                 if run_type not in run_types:
                     run_types[run_type] = 0
                 run_types[run_type] += 1
-            
+
             return success_response({
                 "project": project_name,
                 "period_hours": hours,
@@ -122,11 +122,11 @@ class LangSmithMonitor:
                     for run in runs[:20]  # Return top 20
                 ]
             })
-            
+
         except Exception as e:
             logger.error(f"Failed to get recent runs: {e}")
             return error_response(str(e))
-    
+
     def get_project_stats(
         self,
         project_name: str = "trading-rl-training",
@@ -134,26 +134,26 @@ class LangSmithMonitor:
     ) -> Dict[str, Any]:
         """
         Get project statistics.
-        
+
         Args:
             project_name: Project name
             days: Days of history
-        
+
         Returns:
             Project statistics
         """
         if not self.client:
             return error_response("LangSmith client not initialized")
-        
+
         try:
             start_time = datetime.now() - timedelta(days=days)
-            
+
             runs = list(self.client.list_runs(
                 project_name=project_name,
                 start_time=start_time,
                 limit=1000
             ))
-            
+
             if not runs:
                 return success_response({
                     "project": project_name,
@@ -161,21 +161,21 @@ class LangSmithMonitor:
                     "total_runs": 0,
                     "message": "No runs found in this period"
                 })
-            
+
             # Calculate statistics
             total_runs = len(runs)
             successful = sum(1 for r in runs if r.status == "success")
             failed = sum(1 for r in runs if r.status == "error")
-            
+
             # Calculate average duration
             durations = []
             for run in runs:
                 if run.start_time and run.end_time:
                     duration = (run.end_time - run.start_time).total_seconds()
                     durations.append(duration)
-            
+
             avg_duration = sum(durations) / len(durations) if durations else 0
-            
+
             # Group by day
             daily_stats = {}
             for run in runs:
@@ -188,7 +188,7 @@ class LangSmithMonitor:
                         daily_stats[day]["success"] += 1
                     elif run.status == "error":
                         daily_stats[day]["failed"] += 1
-            
+
             return success_response({
                 "project": project_name,
                 "period_days": days,
@@ -199,27 +199,27 @@ class LangSmithMonitor:
                 "average_duration_seconds": avg_duration,
                 "daily_stats": daily_stats
             })
-            
+
         except Exception as e:
             logger.error(f"Failed to get project stats: {e}")
             return error_response(str(e))
-    
+
     def get_trace_details(self, run_id: str) -> Dict[str, Any]:
         """
         Get detailed trace information for a specific run.
-        
+
         Args:
             run_id: LangSmith run ID
-        
+
         Returns:
             Detailed trace information
         """
         if not self.client:
             return error_response("LangSmith client not initialized")
-        
+
         try:
             run = self.client.read_run(run_id)
-            
+
             return success_response({
                 "id": str(run.id),
                 "name": run.name,
@@ -232,28 +232,28 @@ class LangSmithMonitor:
                 "error": run.error if hasattr(run, 'error') else None,
                 "total_tokens": getattr(run, 'total_tokens', 0)
             })
-            
+
         except Exception as e:
             logger.error(f"Failed to get trace details: {e}")
             return error_response(str(e))
-    
+
     def monitor_health(self) -> Dict[str, Any]:
         """
         Monitor LangSmith service health and connectivity.
-        
+
         Returns:
             Health status
         """
         if not self.api_key:
             return error_response("LANGCHAIN_API_KEY not configured")
-        
+
         if not self.client:
             return error_response("LangSmith client not initialized")
-        
+
         try:
             # Try to list projects as health check
             projects = list(self.client.list_projects(limit=1))
-            
+
             return success_response({
                 "status": "healthy",
                 "api_key_configured": True,
@@ -261,7 +261,7 @@ class LangSmithMonitor:
                 "projects_accessible": True,
                 "timestamp": datetime.now().isoformat()
             })
-            
+
         except Exception as e:
             return error_response(f"Health check failed: {e}")
 
@@ -269,7 +269,7 @@ class LangSmithMonitor:
 def main():
     """CLI entry point for testing."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="LangSmith Monitor Skill")
     parser.add_argument(
         "--project",
@@ -292,11 +292,11 @@ def main():
         action="store_true",
         help="Get project statistics"
     )
-    
+
     args = parser.parse_args()
-    
+
     monitor = LangSmithMonitor()
-    
+
     if args.health:
         result = monitor.monitor_health()
         print(json.dumps(result, indent=2))
@@ -306,10 +306,9 @@ def main():
     else:
         result = monitor.get_recent_runs(args.project, hours=args.hours)
         print(json.dumps(result, indent=2))
-    
+
     return 0 if result.get("success") else 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -349,4 +349,3 @@ python scripts/position_sizer.py calculate_portfolio_heat \
 python scripts/position_sizer.py calculate_kelly_fraction \
     --win-rate 0.55 --avg-win-loss-ratio 1.8
 ```
-

@@ -65,10 +65,10 @@ act -W .github/workflows/adk-ci.yml --verbose
 
 ## Benefits
 
-✅ **Catch CI failures before pushing**  
-✅ **Faster feedback loop** (no need to push and wait)  
-✅ **Test with real secrets** (local secrets file)  
-✅ **Debug workflow issues** locally  
+✅ **Catch CI failures before pushing**
+✅ **Faster feedback loop** (no need to push and wait)
+✅ **Test with real secrets** (local secrets file)
+✅ **Debug workflow issues** locally
 ✅ **Save GitHub Actions minutes**
 
 ## Workflow
@@ -106,4 +106,3 @@ act -l
 ## Integration with Pre-commit
 
 The pre-commit hook automatically validates dependencies when `requirements.txt` changes, but you can also test full CI workflows with ACT.
-

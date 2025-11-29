@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 def register_trading_agent_blueprints():
     """
     Register semantic blueprints for all trading agents.
-    
+
     This function should be called during system initialization to ensure
     all agents have structured context definitions.
     """
     engine = get_context_engine()
-    
+
     # Research Agent Blueprint
     research_blueprint = SemanticBlueprint(
         agent_id="research_agent",
@@ -96,7 +96,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.HIGH
     )
     engine.register_blueprint(research_blueprint)
-    
+
     # Signal Agent Blueprint
     signal_blueprint = SemanticBlueprint(
         agent_id="signal_agent",
@@ -163,7 +163,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.CRITICAL
     )
     engine.register_blueprint(signal_blueprint)
-    
+
     # Risk Agent Blueprint
     risk_blueprint = SemanticBlueprint(
         agent_id="risk_agent",
@@ -236,7 +236,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.CRITICAL
     )
     engine.register_blueprint(risk_blueprint)
-    
+
     # Execution Agent Blueprint
     execution_blueprint = SemanticBlueprint(
         agent_id="execution_agent",
@@ -308,7 +308,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.HIGH
     )
     engine.register_blueprint(execution_blueprint)
-    
+
     # Meta Agent Blueprint
     meta_blueprint = SemanticBlueprint(
         agent_id="meta_agent",
@@ -370,7 +370,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.CRITICAL
     )
     engine.register_blueprint(meta_blueprint)
-    
+
     # Gemini Agent Blueprint
     gemini_blueprint = SemanticBlueprint(
         agent_id="gemini_agent",
@@ -433,7 +433,7 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.HIGH
     )
     engine.register_blueprint(gemini_blueprint)
-    
+
     # Langchain Agent Blueprint
     langchain_blueprint = SemanticBlueprint(
         agent_id="langchain_agent",
@@ -486,6 +486,5 @@ def register_trading_agent_blueprints():
         priority=ContextPriority.MEDIUM
     )
     engine.register_blueprint(langchain_blueprint)
-    
-    logger.info("✅ Registered semantic blueprints for all trading agents")
 
+    logger.info("✅ Registered semantic blueprints for all trading agents")

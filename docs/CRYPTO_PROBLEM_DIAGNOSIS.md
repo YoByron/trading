@@ -70,7 +70,7 @@
 1. ❌ **Data Fetching**: Cannot get crypto market data
    - Alpaca returns 0 bars for BTCUSD/ETHUSD
    - yfinance API is failing
-   
+
 2. ❌ **No Trades**: Because no data, no opportunities are found
 
 3. ❌ **Safety Checks Never Run**: Because no opportunities, safety checks never execute
@@ -134,7 +134,6 @@ The safety check will automatically run when:
 
 ---
 
-**Status**: 🔧 **IN PROGRESS** - Data fetching issue blocking execution  
-**Priority**: HIGH - Need to fix data source to enable crypto trading  
+**Status**: 🔧 **IN PROGRESS** - Data fetching issue blocking execution
+**Priority**: HIGH - Need to fix data source to enable crypto trading
 **Next Action**: Verify Alpaca crypto access or add alternative data source
-

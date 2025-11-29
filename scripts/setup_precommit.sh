@@ -53,4 +53,3 @@ pre-commit run --all-files || {
     echo "⚠️  Some hooks failed (this is OK for first run)"
     echo "   Fix issues and hooks will pass on next commit"
 }
-

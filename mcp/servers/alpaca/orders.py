@@ -61,4 +61,3 @@ def set_stop_loss(
 
     trader = _get_trader(paper)
     return trader.set_stop_loss(symbol=symbol, qty=qty, stop_price=stop_price)
-

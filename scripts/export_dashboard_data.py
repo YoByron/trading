@@ -31,32 +31,32 @@ def export_performance_log_csv():
     if not perf_log_file.exists():
         print("⚠️  Performance log not found")
         return None
-    
+
     with open(perf_log_file, 'r') as f:
         perf_log = json.load(f)
-    
+
     if not perf_log:
         print("⚠️  Performance log is empty")
         return None
-    
+
     # Convert to DataFrame
     df = pd.DataFrame(perf_log)
-    
+
     # Export to CSV
     csv_file = EXPORT_DIR / f"performance_log_{datetime.now().strftime('%Y%m%d')}.csv"
     df.to_csv(csv_file, index=False)
     print(f"✅ Exported performance log to: {csv_file}")
-    
+
     return csv_file
 
 
 def export_trades_csv():
     """Export all trades to CSV."""
     all_trades = []
-    
+
     # Find all trade files
     trade_files = list(DATA_DIR.glob("trades_*.json"))
-    
+
     for trade_file in trade_files:
         with open(trade_file, 'r') as f:
             trades = json.load(f)
@@ -64,19 +64,19 @@ def export_trades_csv():
                 for trade in trades:
                     trade['trade_date'] = trade_file.stem.replace('trades_', '')
                     all_trades.append(trade)
-    
+
     if not all_trades:
         print("⚠️  No trades found")
         return None
-    
+
     # Convert to DataFrame
     df = pd.DataFrame(all_trades)
-    
+
     # Export to CSV
     csv_file = EXPORT_DIR / f"trades_{datetime.now().strftime('%Y%m%d')}.csv"
     df.to_csv(csv_file, index=False)
     print(f"✅ Exported trades to: {csv_file}")
-    
+
     return csv_file
 
 
@@ -84,10 +84,10 @@ def export_metrics_summary_csv():
     """Export metrics summary to CSV."""
     calculator = TradingMetricsCalculator(DATA_DIR)
     metrics = calculator.calculate_all_metrics()
-    
+
     # Flatten metrics for CSV export
     summary_data = []
-    
+
     # Account Summary
     account = metrics.get('account_summary', {})
     summary_data.append({
@@ -114,7 +114,7 @@ def export_metrics_summary_csv():
         'Value': account.get('total_pl_pct', 0),
         'Unit': '%'
     })
-    
+
     # Risk Metrics
     risk = metrics.get('risk_metrics', {})
     summary_data.append({
@@ -141,7 +141,7 @@ def export_metrics_summary_csv():
         'Value': risk.get('volatility_annualized', 0),
         'Unit': '%'
     })
-    
+
     # Performance Metrics
     perf = metrics.get('performance_metrics', {})
     summary_data.append({
@@ -162,7 +162,7 @@ def export_metrics_summary_csv():
         'Value': perf.get('expectancy_per_trade', 0),
         'Unit': 'USD'
     })
-    
+
     # Benchmark
     benchmark = metrics.get('benchmark_comparison', {})
     summary_data.append({
@@ -183,22 +183,22 @@ def export_metrics_summary_csv():
         'Value': benchmark.get('alpha', 0),
         'Unit': '%'
     })
-    
+
     # Convert to DataFrame
     df = pd.DataFrame(summary_data)
-    
+
     # Export to CSV
     csv_file = EXPORT_DIR / f"metrics_summary_{datetime.now().strftime('%Y%m%d')}.csv"
     df.to_csv(csv_file, index=False)
     print(f"✅ Exported metrics summary to: {csv_file}")
-    
+
     return csv_file
 
 
 def export_to_excel():
     """Export all data to Excel workbook with multiple sheets."""
     excel_file = EXPORT_DIR / f"dashboard_export_{datetime.now().strftime('%Y%m%d')}.xlsx"
-    
+
     with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
         # Performance Log Sheet
         perf_log_file = DATA_DIR / "performance_log.json"
@@ -208,7 +208,7 @@ def export_to_excel():
             if perf_log:
                 df_perf = pd.DataFrame(perf_log)
                 df_perf.to_excel(writer, sheet_name='Performance Log', index=False)
-        
+
         # Trades Sheet
         all_trades = []
         trade_files = list(DATA_DIR.glob("trades_*.json"))
@@ -222,11 +222,11 @@ def export_to_excel():
         if all_trades:
             df_trades = pd.DataFrame(all_trades)
             df_trades.to_excel(writer, sheet_name='Trades', index=False)
-        
+
         # Metrics Summary Sheet
         calculator = TradingMetricsCalculator(DATA_DIR)
         metrics = calculator.calculate_all_metrics()
-        
+
         # Flatten metrics
         summary_data = []
         for category, category_data in metrics.items():
@@ -238,11 +238,11 @@ def export_to_excel():
                             'Metric': key,
                             'Value': value
                         })
-        
+
         if summary_data:
             df_summary = pd.DataFrame(summary_data)
             df_summary.to_excel(writer, sheet_name='Metrics Summary', index=False)
-    
+
     print(f"✅ Exported all data to Excel: {excel_file}")
     return excel_file
 
@@ -253,26 +253,25 @@ def main():
     print("DASHBOARD DATA EXPORT")
     print("=" * 70)
     print()
-    
+
     # Export CSV files
     print("Exporting CSV files...")
     export_performance_log_csv()
     export_trades_csv()
     export_metrics_summary_csv()
-    
+
     print()
     print("Exporting Excel workbook...")
     export_to_excel()
-    
+
     print()
     print("=" * 70)
     print("✅ Export complete!")
     print(f"📁 Files saved to: {EXPORT_DIR}")
     print("=" * 70)
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

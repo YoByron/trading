@@ -32,24 +32,24 @@ def main():
     print("=" * 70)
     print("Historical Data Collection for Backtesting")
     print("=" * 70)
-    
+
     # Get symbols from core strategy default universe
     symbols = CoreStrategy.DEFAULT_ETF_UNIVERSE
     print(f"\nCollecting data for symbols: {', '.join(symbols)}")
     print("Lookback period: 252 days (1 year of trading data)")
     print("\nNote: This requires API keys to be configured.")
     print("See docs/ENVIRONMENT_VARIABLES.md for setup instructions.\n")
-    
+
     # Initialize collector
     collector = DataCollector(data_dir="data/historical")
-    
+
     # Collect data (252 days = ~1 year of trading days)
     try:
         collector.collect_daily_data(symbols, lookback_days=252)
         print("\n" + "=" * 70)
         print("Data collection complete!")
         print("=" * 70)
-        
+
         # Show summary
         print("\nCollected files:")
         for symbol in symbols:
@@ -63,10 +63,10 @@ def main():
                     print(f"  {symbol}: No data collected (check API keys)")
             else:
                 print(f"  {symbol}: No files found (check API keys)")
-        
+
         print("\nTo verify data quality:")
         print("  python src/utils/data_collector.py --load SPY")
-        
+
     except Exception as e:
         print(f"\nError during data collection: {e}")
         print("\nTroubleshooting:")
@@ -78,4 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

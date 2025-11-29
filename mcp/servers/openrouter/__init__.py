@@ -28,4 +28,3 @@ __all__ = [
     "analyze_stock",
     "analyze_stock_async",
 ]
-

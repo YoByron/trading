@@ -66,7 +66,7 @@ echo ""
 echo "📊 Checking system state..."
 if [ -f "data/system_state.json" ]; then
     echo "✅ system_state.json exists"
-    
+
     # Check if state is stale
     if command -v python3 &> /dev/null; then
         python3 -c "
@@ -104,7 +104,7 @@ echo "📝 Checking git status..."
 if command -v git &> /dev/null; then
     git status --short || echo "⚠️  Not a git repository or git not available"
     echo ""
-    
+
     echo "📜 Recent commits:"
     git log --oneline -5 || echo "⚠️  Could not read git log"
 else
@@ -128,4 +128,3 @@ else
 fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-

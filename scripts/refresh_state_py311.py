@@ -38,25 +38,25 @@ def get_account_data():
         "APCA-API-KEY-ID": ALPACA_KEY,
         "APCA-API-SECRET-KEY": ALPACA_SECRET,
     }
-    
+
     try:
         # Get account
         response = requests.get(f"{ALPACA_BASE_URL}/v2/account", headers=headers)
         response.raise_for_status()
         account = response.json()
-        
+
         # Get positions
         positions_response = requests.get(f"{ALPACA_BASE_URL}/v2/positions", headers=headers)
         positions_response.raise_for_status()
         positions = positions_response.json()
-        
+
         equity = float(account["equity"])
         cash = float(account["cash"])
         buying_power = float(account["buying_power"])
-        
+
         # Calculate positions value
         positions_value = sum(float(p["market_value"]) for p in positions)
-        
+
         return {
             "equity": equity,
             "cash": cash,
@@ -79,10 +79,10 @@ def get_positions_summary(positions):
         current_price = float(pos.get("current_price", 0))
         qty = float(pos.get("qty", 0))
         market_value = float(pos.get("market_value", 0))
-        
+
         unrealized_pl = (current_price - entry_price) * qty
         unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
-        
+
         summary.append({
             "symbol": pos["symbol"],
             "quantity": qty,
@@ -92,7 +92,7 @@ def get_positions_summary(positions):
             "unrealized_pl": unrealized_pl,
             "unrealized_pl_pct": unrealized_pl_pct,
         })
-    
+
     return summary
 
 
@@ -101,7 +101,7 @@ def update_system_state():
     print("=" * 80)
     print("🔄 REFRESHING SYSTEM STATE")
     print("=" * 80)
-    
+
     # Load existing state
     if SYSTEM_STATE_FILE.exists():
         with open(SYSTEM_STATE_FILE, "r") as f:
@@ -109,19 +109,19 @@ def update_system_state():
     else:
         print("ERROR: system_state.json not found. Run daily_checkin.py first.")
         return False
-    
+
     # Get current account data
     print("\n📊 Fetching current account data...")
     account_data = get_account_data()
     positions = account_data.pop("positions", [])
-    
+
     # Update account section
     state["account"]["current_equity"] = account_data["equity"]
     state["account"]["cash"] = account_data["cash"]
     state["account"]["positions_value"] = account_data["positions_value"]
     state["account"]["total_pl"] = account_data["pl"]
     state["account"]["total_pl_pct"] = account_data["pl_pct"]
-    
+
     # Update positions
     positions_summary = get_positions_summary(positions)
     state["performance"]["open_positions"] = [
@@ -140,19 +140,19 @@ def update_system_state():
         }
         for p in positions_summary
     ]
-    
+
     # Update meta
     state["meta"]["last_updated"] = datetime.now().isoformat()
-    
+
     # Save state
     with open(SYSTEM_STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
-    
+
     print("\n✅ System state refreshed successfully!")
     print(f"   Equity: ${account_data['equity']:,.2f}")
     print(f"   P/L: ${account_data['pl']:+,.2f} ({account_data['pl_pct']:+.4f}%)")
     print(f"   Positions: {len(positions_summary)}")
-    
+
     return True
 
 
@@ -165,4 +165,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-

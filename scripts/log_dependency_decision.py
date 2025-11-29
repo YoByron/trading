@@ -49,21 +49,21 @@ def load_history() -> Dict:
                 "strategy_success_rate": {}
             }
         }
-    
+
     with open(HISTORY_FILE, 'r') as f:
         return json.load(f)
 
 def save_history(history: Dict):
     """Save dependency history to JSON file"""
     HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(HISTORY_FILE, 'w') as f:
         json.dump(history, f, indent=2)
 
 def add_decision(args):
     """Add a new dependency decision to history"""
     history = load_history()
-    
+
     decision = {
         "timestamp": datetime.now().isoformat(),
         "package": args.package,
@@ -76,25 +76,25 @@ def add_decision(args):
         "strategy": args.strategy,
         "notes": args.notes
     }
-    
+
     history["decisions"].append(decision)
-    
+
     # Update statistics
     stats = history["statistics"]
     stats["total_decisions"] += 1
-    
+
     if args.outcome == "success":
         stats["successful_resolutions"] += 1
     elif args.outcome == "failure":
         stats["failed_resolutions"] += 1
     elif args.outcome == "rollback":
         stats["rollbacks"] += 1
-    
+
     # Track conflicts by package
     if args.trigger == "conflict":
         pkg_conflicts = stats["conflicts_by_package"].get(args.package, 0)
         stats["conflicts_by_package"][args.package] = pkg_conflicts + 1
-    
+
     # Track strategy success rate
     if args.strategy:
         strategy_stats = stats["strategy_success_rate"].get(args.strategy, {"success": 0, "failure": 0})
@@ -103,9 +103,9 @@ def add_decision(args):
         elif args.outcome == "failure":
             strategy_stats["failure"] += 1
         stats["strategy_success_rate"][args.strategy] = strategy_stats
-    
+
     save_history(history)
-    
+
     print(f"✅ Decision logged for {args.package}")
     print(f"   Change: {args.version_before or 'new'} → {args.version_after}")
     print(f"   Outcome: {args.outcome}")
@@ -113,15 +113,15 @@ def add_decision(args):
 def query_package(args):
     """Query decision history for a specific package"""
     history = load_history()
-    
+
     package_decisions = [d for d in history["decisions"] if d["package"] == args.package]
-    
+
     if not package_decisions:
         print(f"📋 No decisions found for {args.package}")
         return
-    
+
     print(f"📋 Decision History for {args.package} ({len(package_decisions)} decisions)\n")
-    
+
     for i, decision in enumerate(package_decisions, 1):
         print(f"{i}. {decision['timestamp'][:10]}")
         print(f"   Change: {decision['version_before'] or 'new'} → {decision['version_after']}")
@@ -136,23 +136,23 @@ def generate_report(args):
     """Generate comprehensive dependency decision report"""
     history = load_history()
     stats = history["statistics"]
-    
+
     print("=" * 70)
     print("📊 DEPENDENCY DECISION REPORT")
     print("=" * 70)
     print()
-    
+
     print(f"Total Decisions: {stats['total_decisions']}")
     print(f"Successful: {stats['successful_resolutions']} ✅")
     print(f"Failed: {stats['failed_resolutions']} ❌")
     print(f"Rollbacks: {stats['rollbacks']} ⏪")
-    
+
     if stats["total_decisions"] > 0:
         success_rate = (stats["successful_resolutions"] / stats["total_decisions"]) * 100
         print(f"Success Rate: {success_rate:.1f}%")
-    
+
     print()
-    
+
     # Top conflict packages
     if stats["conflicts_by_package"]:
         print("🔥 Top Conflict Packages:")
@@ -160,7 +160,7 @@ def generate_report(args):
         for pkg, count in conflicts[:5]:
             print(f"   {pkg}: {count} conflicts")
         print()
-    
+
     # Strategy success rates
     if stats["strategy_success_rate"]:
         print("📈 Strategy Success Rates:")
@@ -169,38 +169,38 @@ def generate_report(args):
             rate = (data["success"] / total * 100) if total > 0 else 0
             print(f"   {strategy}: {rate:.1f}% ({data['success']}/{total})")
         print()
-    
+
     print("=" * 70)
 
 def recommend_strategy(args):
     """Recommend resolution strategy based on historical patterns"""
     history = load_history()
-    
+
     package_decisions = [d for d in history["decisions"] if d["package"] == args.package]
-    
+
     if not package_decisions:
         print(f"ℹ️  No historical data for {args.package}")
         print("   Recommended: Start with dependency upgrade (most common)")
         return
-    
+
     # Find most successful strategy for this package
     strategies = {}
     for decision in package_decisions:
         if decision.get("strategy") and decision["outcome"] == "success":
             strategies[decision["strategy"]] = strategies.get(decision["strategy"], 0) + 1
-    
+
     if strategies:
         best_strategy = max(strategies.items(), key=lambda x: x[1])
         print(f"🎯 Recommended strategy for {args.package}: {best_strategy[0]}")
         print(f"   (succeeded {best_strategy[1]} times in past)")
     else:
         print(f"ℹ️  No successful strategies recorded for {args.package}")
-    
+
     # Show common triggers
     triggers = {}
     for decision in package_decisions:
         triggers[decision["trigger"]] = triggers.get(decision["trigger"], 0) + 1
-    
+
     if triggers:
         print(f"\n📊 Common triggers:")
         for trigger, count in sorted(triggers.items(), key=lambda x: x[1], reverse=True):
@@ -209,7 +209,7 @@ def recommend_strategy(args):
 def main():
     parser = argparse.ArgumentParser(description="Dependency Decision Logger")
     subparsers = parser.add_subparsers(dest="command", help="Commands")
-    
+
     # Add decision
     add_parser = subparsers.add_parser("add", help="Add a decision")
     add_parser.add_argument("--package", required=True)
@@ -221,21 +221,21 @@ def main():
     add_parser.add_argument("--outcome", required=True, choices=["success", "failure", "rollback", "pending"])
     add_parser.add_argument("--strategy", default=None)
     add_parser.add_argument("--notes", default=None)
-    
+
     # Query package
     query_parser = subparsers.add_parser("query", help="Query package history")
     query_parser.add_argument("--package", required=True)
-    
+
     # Generate report
     report_parser = subparsers.add_parser("report", help="Generate report")
     report_parser.add_argument("--format", default="text", choices=["text", "markdown", "json"])
-    
+
     # Get recommendations
     recommend_parser = subparsers.add_parser("recommend", help="Get strategy recommendations")
     recommend_parser.add_argument("--package", required=True)
-    
+
     args = parser.parse_args()
-    
+
     if args.command == "add":
         add_decision(args)
     elif args.command == "query":

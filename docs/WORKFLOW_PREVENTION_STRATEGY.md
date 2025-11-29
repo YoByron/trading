@@ -88,8 +88,8 @@ gh api repos/IgorGanapolsky/trading --jq '.pushed_at'
 **Implementation**:
 ```javascript
 // Check for existing issues before creating
-const hasExistingIssue = existingIssues.some(issue => 
-  issue.title.toLowerCase().includes('workflow') && 
+const hasExistingIssue = existingIssues.some(issue =>
+  issue.title.toLowerCase().includes('workflow') &&
   issue.title.toLowerCase().includes('disabled')
 );
 ```
@@ -286,4 +286,3 @@ gh run list --workflow=workflow-health-check.yml
 **Status**: ✅ Active Prevention System Implemented
 
 **Next Review**: February 2025
-

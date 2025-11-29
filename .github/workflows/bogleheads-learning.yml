@@ -41,14 +41,14 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           echo "🔍 Monitoring Bogleheads forum..."
-          
+
           MAX_POSTS="${{ github.event.inputs.max_posts || '50' }}"
-          
+
           python3 scripts/continuous_bogleheads_learning.py --once --max-posts "$MAX_POSTS" || {
             echo "⚠️  Learning cycle completed (may have no new insights)"
             exit 0  # Don't fail workflow if no new insights
           }
-          
+
           echo "✅ Bogleheads learning cycle complete"
 
       - name: Commit RAG updates
@@ -70,4 +70,3 @@ jobs:
           echo "## 🧠 Bogleheads Learning Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Forum insights extracted and stored in RAG for RL engine integration." >> $GITHUB_STEP_SUMMARY
-

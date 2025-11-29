@@ -41,10 +41,10 @@ def get_today_evaluations():
     """Get today's evaluations."""
     today = date.today().isoformat()
     eval_file = EVAL_DIR / f"evaluations_{today}.json"
-    
+
     if not eval_file.exists():
         return []
-    
+
     with open(eval_file, 'r') as f:
         return json.load(f)
 
@@ -53,16 +53,16 @@ def calculate_reliability(perf_log):
     """Calculate system reliability."""
     if not perf_log:
         return 0.0, 0, 0
-    
+
     dates = [entry.get("date") for entry in perf_log if entry.get("date")]
     dates.sort()
-    
+
     if not dates:
         return 0.0, 0, 0
-    
+
     first_date = datetime.fromisoformat(dates[0]).date()
     last_date = datetime.fromisoformat(dates[-1]).date()
-    
+
     # Calculate expected trading days (weekdays only)
     expected_dates = []
     current = first_date
@@ -70,12 +70,12 @@ def calculate_reliability(perf_log):
         if current.weekday() < 5:  # Monday = 0, Friday = 4
             expected_dates.append(current.isoformat())
         current += timedelta(days=1)
-    
+
     trading_days = len(dates)
     total_expected = len(expected_dates)
     gaps = total_expected - trading_days
     reliability = (trading_days / total_expected * 100) if total_expected > 0 else 0
-    
+
     return reliability, trading_days, gaps
 
 
@@ -86,12 +86,12 @@ def main():
     print("=" * 70)
     print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
-    
+
     # Load data
     perf_log = load_performance_log()
     system_state = load_system_state()
     today_evaluations = get_today_evaluations()
-    
+
     # Today's performance
     today = date.today().isoformat()
     today_entry = None
@@ -99,7 +99,7 @@ def main():
         if entry.get("date") == today:
             today_entry = entry
             break
-    
+
     print("📊 TODAY'S PERFORMANCE:")
     if today_entry:
         equity = today_entry.get("equity", 0)
@@ -110,20 +110,20 @@ def main():
     else:
         print("   ⚠️  No trades executed today")
     print()
-    
+
     # Overall performance
     if perf_log:
         latest = perf_log[-1]
         starting_balance = system_state.get("account", {}).get("starting_balance", 100000)
         total_pl = latest.get("equity", 0) - starting_balance
         total_pl_pct = (total_pl / starting_balance * 100) if starting_balance > 0 else 0
-        
+
         print("📈 OVERALL PERFORMANCE:")
         print(f"   Starting Balance: ${starting_balance:,.2f}")
         print(f"   Current Equity: ${latest.get('equity', 0):,.2f}")
         print(f"   Total P/L: ${total_pl:+,.2f} ({total_pl_pct:+.2f}%)")
         print()
-    
+
     # System reliability
     reliability, trading_days, gaps = calculate_reliability(perf_log)
     print("🔧 SYSTEM RELIABILITY:")
@@ -131,7 +131,7 @@ def main():
     print(f"   Trading Days: {trading_days}")
     print(f"   Data Gaps: {gaps}")
     print()
-    
+
     # Evaluations
     print("✅ EVALUATIONS:")
     print(f"   Today's Evaluations: {len(today_evaluations)}")
@@ -143,7 +143,7 @@ def main():
     else:
         print("   ⚠️  No evaluations today")
     print()
-    
+
     # System state
     last_updated = system_state.get("meta", {}).get("last_updated", "Unknown")
     print("📊 SYSTEM STATE:")
@@ -158,7 +158,7 @@ def main():
     except:
         pass
     print()
-    
+
     print("=" * 70)
     print("💡 TIP: Run this script daily to track performance")
     print("=" * 70)
@@ -166,4 +166,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

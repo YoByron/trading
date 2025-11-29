@@ -62,4 +62,3 @@ jobs:
           name: ipo-tracking-${{ github.run_id }}
           path: data/ipo_tracking.json
           retention-days: 30
-

@@ -29,29 +29,29 @@ logger = logging.getLogger(__name__)
 def train_model_with_params(params: dict, symbol: str) -> LSTMPPO:
     """
     Train model with given hyperparameters.
-    
+
     Args:
         params: Hyperparameter dictionary
         symbol: Symbol to train on
-    
+
     Returns:
         Trained model
     """
     # Create trainer with custom hyperparameters
     trainer = ModelTrainer(device="cpu")
-    
+
     # Override hyperparameters
     trainer.hidden_dim = params.get('hidden_dim', 128)
     trainer.num_layers = params.get('num_layers', 2)
     trainer.learning_rate = params.get('learning_rate', 0.001)
     trainer.batch_size = params.get('batch_size', 32)
-    
+
     # Train model
     result = trainer.train_supervised(symbol, use_cloud_rl=False)
-    
+
     if not result.get('success'):
         raise ValueError(f"Training failed: {result.get('error')}")
-    
+
     # Load trained model
     model = trainer.load_model(symbol)
     return model
@@ -60,54 +60,54 @@ def train_model_with_params(params: dict, symbol: str) -> LSTMPPO:
 def evaluate_model(model: LSTMPPO, symbol: str) -> dict:
     """
     Evaluate model and return metrics.
-    
+
     Args:
         model: Trained model
         symbol: Symbol to evaluate on
-    
+
     Returns:
         Dictionary with metrics (sharpe_ratio, win_rate, total_return)
     """
     # For now, use simple evaluation based on validation loss
     # In production, this would use backtesting or walk-forward analysis
-    
+
     trainer = ModelTrainer(device="cpu")
     data_processor = DataProcessor()
-    
+
     # Fetch and prepare data
     df = data_processor.fetch_data(symbol, period="2y")
     if df.empty:
         return {'sharpe_ratio': -1.0, 'win_rate': 0.0, 'total_return': -1.0}
-    
+
     df = data_processor.add_technical_indicators(df)
     df = data_processor.normalize_data(df)
-    
+
     # Create sequences
     X_tensor = data_processor.create_sequences(df)
     targets = (df['Returns'].shift(-1) > 0).astype(int).values
     y_tensor = torch.LongTensor(
         targets[data_processor.sequence_length : data_processor.sequence_length + len(X_tensor)]
     )
-    
+
     # Split for validation
     val_size = int(0.2 * len(X_tensor))
     X_val = X_tensor[-val_size:]
     y_val = y_tensor[-val_size:]
-    
+
     # Evaluate
     model.eval()
     with torch.no_grad():
         action_probs, _, _ = model(X_val)
         predictions = torch.argmax(action_probs, dim=-1)
-        
+
         # Calculate metrics
         correct = (predictions == y_val).float()
         win_rate = correct.mean().item()
-        
+
         # Simple Sharpe approximation (would need actual returns for real Sharpe)
         # For now, use win rate as proxy
         sharpe_ratio = (win_rate - 0.5) * 2.0  # Normalize to [-1, 1] range, then scale
-    
+
     return {
         'sharpe_ratio': sharpe_ratio,
         'win_rate': win_rate,
@@ -143,9 +143,9 @@ def main():
         choices=['random', 'grid'],
         help='Search method (default: random)'
     )
-    
+
     args = parser.parse_args()
-    
+
     print("=" * 70)
     print("HYPERPARAMETER OPTIMIZATION")
     print("=" * 70)
@@ -155,13 +155,13 @@ def main():
     print(f"Method: {args.method}")
     print("=" * 70)
     print()
-    
+
     # Initialize optimizer
     optimizer = HyperparameterOptimizer(
         optimization_metric=args.metric,
         n_trials=args.n_trials
     )
-    
+
     # Run optimization
     if args.method == 'random':
         results = optimizer.random_search(
@@ -175,7 +175,7 @@ def main():
             evaluate_fn=evaluate_model,
             symbol=args.symbol
         )
-    
+
     # Print results
     print("\n" + "=" * 70)
     print("OPTIMIZATION RESULTS")
@@ -186,10 +186,9 @@ def main():
         print(f"  {key}: {value}")
     print(f"\nTotal trials: {results['total_trials']}")
     print("=" * 70)
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

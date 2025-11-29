@@ -22,23 +22,23 @@ def generate_action_plan():
     print("🎯 CTO ACTION PLAN - WHAT I CAN DO RIGHT NOW")
     print(f"   Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
-    
+
     if not SYSTEM_STATE_FILE.exists():
         print("System state not found")
         return
-    
+
     with open(SYSTEM_STATE_FILE) as f:
         state = json.load(f)
-    
+
     positions = state.get("performance", {}).get("open_positions", [])
     account = state.get("account", {})
-    
+
     # Immediate Actions
     print("\n🚨 IMMEDIATE ACTIONS (Can Do Now)")
     print("-" * 80)
-    
+
     actions = []
-    
+
     # 1. SPY Position Management
     spy_pos = next((p for p in positions if p.get("symbol") == "SPY"), None)
     if spy_pos and spy_pos.get("unrealized_pl_pct", 0) < -4:
@@ -49,7 +49,7 @@ def generate_action_plan():
             "impact": "Prevent further losses, learn from entry timing",
             "can_do": "✅ Analyze entry timing, recommend exit strategy",
         })
-    
+
     # 2. GOOGL Profit Taking
     googl_pos = next((p for p in positions if p.get("symbol") == "GOOGL"), None)
     if googl_pos and googl_pos.get("unrealized_pl_pct", 0) > 2:
@@ -60,7 +60,7 @@ def generate_action_plan():
             "impact": "Lock in $9.49 profit, reduce risk",
             "can_do": "✅ Execute partial profit-taking order",
         })
-    
+
     # 3. Strategy Optimization
     if len(positions) > 0:
         actions.append({
@@ -70,7 +70,7 @@ def generate_action_plan():
             "impact": "Prevent bad entries, improve win rate",
             "can_do": "✅ Already implemented MA filter - monitor effectiveness",
         })
-    
+
     # 4. Performance Monitoring
     actions.append({
         "priority": "MEDIUM",
@@ -79,7 +79,7 @@ def generate_action_plan():
         "impact": "Faster response to problems",
         "can_do": "✅ Create alert system for critical thresholds",
     })
-    
+
     # 5. Position Diversification
     total_value = sum(p.get("amount", 0) for p in positions)
     if spy_pos:
@@ -92,7 +92,7 @@ def generate_action_plan():
                 "impact": "Better risk distribution",
                 "can_do": "✅ Position limits already implemented - will prevent future concentration",
             })
-    
+
     # Display actions
     for i, act in enumerate(actions, 1):
         priority_emoji = "🚨" if act["priority"] == "CRITICAL" else "⚠️" if act["priority"] == "HIGH" else "ℹ️"
@@ -100,12 +100,12 @@ def generate_action_plan():
         print(f"   Reason: {act['reason']}")
         print(f"   Impact: {act['impact']}")
         print(f"   {act['can_do']}")
-    
+
     # What I Can Do Right Now
     print("\n" + "=" * 80)
     print("💡 WHAT I CAN DO RIGHT NOW")
     print("=" * 80)
-    
+
     capabilities = [
         "✅ Analyze SPY loss and provide exit strategy",
         "✅ Execute partial profit-taking on GOOGL (+2.34%)",
@@ -123,15 +123,15 @@ def generate_action_plan():
         "✅ Set up Gemini 3 monitoring",
         "✅ Create trading journal automation",
     ]
-    
+
     for cap in capabilities:
         print(f"  {cap}")
-    
+
     # Recommendations
     print("\n" + "=" * 80)
     print("🎯 TOP RECOMMENDATIONS")
     print("=" * 80)
-    
+
     recommendations = [
         {
             "title": "Take Partial Profit on GOOGL",
@@ -152,13 +152,13 @@ def generate_action_plan():
             "impact": "Faster response to issues",
         },
     ]
-    
+
     for i, rec in enumerate(recommendations, 1):
         print(f"\n{i}. {rec['title']}")
         print(f"   Why: {rec['why']}")
         print(f"   Action: {rec['action']}")
         print(f"   Impact: {rec['impact']}")
-    
+
     print("\n" + "=" * 80)
     print("✅ Action Plan Complete")
     print("=" * 80)
@@ -167,4 +167,3 @@ def generate_action_plan():
 
 if __name__ == "__main__":
     generate_action_plan()
-

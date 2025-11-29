@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SafetyAnalysisAgent(BaseAgent):
     """
     Safety Analysis Agent implements Graham-Buffett investment safety principles.
-    
+
     Key functions:
     - Margin of Safety analysis (intrinsic value vs market price)
     - Quality company screening (fundamentals, debt, earnings)
@@ -45,17 +45,17 @@ class SafetyAnalysisAgent(BaseAgent):
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze investment opportunity using Graham-Buffett principles.
-        
+
         Args:
             data: Contains symbol, market_price, and optional context
-            
+
         Returns:
             Safety analysis with rating, margin of safety, quality score, and recommendation
         """
         symbol = data.get("symbol", "UNKNOWN")
         market_price = data.get("market_price", 0.0)
         force_refresh = data.get("force_refresh", False)
-        
+
         if market_price <= 0:
             return {
                 "action": "REJECT",
@@ -63,7 +63,7 @@ class SafetyAnalysisAgent(BaseAgent):
                 "safety_rating": SafetyRating.REJECT.value,
                 "confidence": 0.0,
             }
-        
+
         # Perform safety analysis
         try:
             safety_analysis = self.safety_analyzer.analyze_safety(
@@ -71,24 +71,24 @@ class SafetyAnalysisAgent(BaseAgent):
                 market_price=market_price,
                 force_refresh=force_refresh,
             )
-            
+
             # Get memory context for LLM reasoning
             memory_context = self.get_memory_context(limit=5)
-            
+
             # Build comprehensive prompt for LLM reasoning
             prompt = self._build_analysis_prompt(safety_analysis, memory_context)
-            
+
             # Get LLM analysis for additional insights
             llm_response = self.reason_with_llm(prompt)
-            
+
             # Combine safety analysis with LLM insights
             analysis = self._combine_analysis(safety_analysis, llm_response)
-            
+
             # Log decision
             self.log_decision(analysis)
-            
+
             return analysis
-            
+
         except Exception as e:
             logger.error(f"Safety analysis error for {symbol}: {e}")
             return {
@@ -97,12 +97,12 @@ class SafetyAnalysisAgent(BaseAgent):
                 "safety_rating": SafetyRating.REJECT.value,
                 "confidence": 0.0,
             }
-    
+
     def _build_analysis_prompt(
         self, safety_analysis: Any, memory_context: str
     ) -> str:
         """Build LLM prompt for safety analysis reasoning."""
-        
+
         margin_info = ""
         if safety_analysis.margin_of_safety_pct is not None:
             margin_info = f"""
@@ -113,7 +113,7 @@ MARGIN OF SAFETY: {safety_analysis.margin_of_safety_pct*100:.1f}%
 """
         else:
             margin_info = "MARGIN OF SAFETY: Unable to calculate (DCF unavailable)"
-        
+
         quality_info = ""
         if safety_analysis.quality:
             q = safety_analysis.quality
@@ -130,7 +130,7 @@ QUALITY METRICS:
 """
         else:
             quality_info = "QUALITY METRICS: Unable to calculate"
-        
+
         prompt = f"""You are a Safety Analysis Agent evaluating {safety_analysis.symbol} using Graham-Buffett investment principles.
 
 {safety_analysis.symbol} SAFETY ANALYSIS:
@@ -166,26 +166,26 @@ CONFIDENCE: [0-1]
 SAFETY_FACTORS: [key safety factors]
 RISK_FACTORS: [risk factors]
 THESIS: [investment thesis]"""
-        
+
         return prompt
-    
+
     def _combine_analysis(
         self, safety_analysis: Any, llm_response: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Combine safety analysis with LLM insights."""
-        
+
         # Parse LLM response
         llm_analysis = self._parse_llm_response(llm_response.get("reasoning", ""))
-        
+
         # Determine action based on safety rating
         should_approve = safety_analysis.safety_rating in [
             SafetyRating.EXCELLENT,
             SafetyRating.GOOD,
             SafetyRating.ACCEPTABLE,
         ]
-        
+
         action = "APPROVE" if should_approve else "REJECT"
-        
+
         # Combine into comprehensive analysis
         analysis = {
             "symbol": safety_analysis.symbol,
@@ -211,9 +211,9 @@ THESIS: [investment thesis]"""
             "full_reasoning": llm_response.get("reasoning", ""),
             "timestamp": safety_analysis.timestamp.isoformat(),
         }
-        
+
         return analysis
-    
+
     def _parse_llm_response(self, reasoning: str) -> Dict[str, Any]:
         """Parse LLM response into structured format."""
         lines = reasoning.split("\n")
@@ -227,7 +227,7 @@ THESIS: [investment thesis]"""
             "risk_factors": "",
             "thesis": "",
         }
-        
+
         for line in lines:
             line = line.strip()
             if line.startswith("SAFETY_SCORE:"):
@@ -258,6 +258,5 @@ THESIS: [investment thesis]"""
                 analysis["risk_factors"] = line.split(":", 1)[1].strip()
             elif line.startswith("THESIS:"):
                 analysis["thesis"] = line.split(":", 1)[1].strip()
-        
-        return analysis
 
+        return analysis

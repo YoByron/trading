@@ -79,7 +79,6 @@ The system is being **patient** and waiting for the right opportunity. This is t
 
 ---
 
-**Status**: ✅ System working as designed  
-**Action**: No action needed - system is protecting capital correctly  
+**Status**: ✅ System working as designed
+**Action**: No action needed - system is protecting capital correctly
 **Next**: Wait for bullish MACD signal to execute trades
-

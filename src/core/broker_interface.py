@@ -43,24 +43,24 @@ class AccountInfo:
 class BrokerInterface(ABC):
     """
     Abstract interface for broker implementations.
-    
+
     All broker implementations must inherit from this class and implement
     all abstract methods to ensure compatibility with trading system.
     """
-    
+
     @abstractmethod
     def get_account_info(self) -> AccountInfo:
         """
         Retrieve account information.
-        
+
         Returns:
             AccountInfo with account details
-            
+
         Raises:
             BrokerError: If account retrieval fails
         """
         pass
-    
+
     @abstractmethod
     def execute_order(
         self,
@@ -71,26 +71,26 @@ class BrokerInterface(ABC):
     ) -> OrderResult:
         """
         Execute a market order.
-        
+
         Args:
             symbol: Stock/ETF symbol
             amount_usd: Dollar amount to trade
             side: 'buy' or 'sell'
             **kwargs: Additional broker-specific parameters
-            
+
         Returns:
             OrderResult with order details
-            
+
         Raises:
             BrokerError: If order execution fails
         """
         pass
-    
+
     @abstractmethod
     def get_positions(self) -> List[Dict[str, Any]]:
         """
         Get current positions.
-        
+
         Returns:
             List of position dictionaries with keys:
             - symbol: Stock symbol
@@ -100,46 +100,46 @@ class BrokerInterface(ABC):
             - unrealized_pl: Unrealized profit/loss
         """
         pass
-    
+
     @abstractmethod
     def get_orders(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Get order history.
-        
+
         Args:
             status: Filter by order status (optional)
-            
+
         Returns:
             List of order dictionaries
         """
         pass
-    
+
     @abstractmethod
     def cancel_order(self, order_id: str) -> bool:
         """
         Cancel an order.
-        
+
         Args:
             order_id: Order ID to cancel
-            
+
         Returns:
             True if cancellation successful
-            
+
         Raises:
             BrokerError: If cancellation fails
         """
         pass
-    
+
     @abstractmethod
     def is_market_open(self) -> bool:
         """
         Check if market is currently open.
-        
+
         Returns:
             True if market is open, False otherwise
         """
         pass
-    
+
     @abstractmethod
     def get_historical_bars(
         self,
@@ -149,12 +149,12 @@ class BrokerInterface(ABC):
     ) -> List[Dict[str, Any]]:
         """
         Get historical price bars.
-        
+
         Args:
             symbol: Stock symbol
             timeframe: Bar timeframe (e.g., '1Day', '1Hour')
             limit: Number of bars to retrieve
-            
+
         Returns:
             List of bar dictionaries with keys:
             - timestamp: Bar timestamp
@@ -185,4 +185,3 @@ class AccountError(BrokerError):
 class MarketDataError(BrokerError):
     """Exception raised when market data retrieval fails."""
     pass
-

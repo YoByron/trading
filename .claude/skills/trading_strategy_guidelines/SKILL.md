@@ -70,4 +70,3 @@ These guidelines are enforced in:
 - `src/strategies/core_strategy.py`
 - `src/strategies/growth_strategy.py`
 - `src/utils/market_data.py`
-

@@ -51,4 +51,3 @@ Use `--payload path/to/file.json` for larger request bodies, and `--output resul
 - Capture CLI stdout/stderr with your logging pipeline to audit MCP activity.
 
 Following this pattern keeps MCP usage code-driven and context-efficient, letting agents load only the tools they need while preserving full control over credentials and execution flow [source](https://www.anthropic.com/engineering/code-execution-with-mcp?utm_source=openai).
-
