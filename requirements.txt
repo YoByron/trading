@@ -66,3 +66,9 @@ matplotlib>=3.7.0  # Chart generation for world-class dashboard
 
 # Security & Pre-commit
 detect-secrets>=1.5.0  # Entropy-based secret detection for pre-commit hooks
+
+black==24.2.0
+flake8==7.0.0
+bandit==1.7.7
+pre-commit
+sentence-transformers>=2.2.0
