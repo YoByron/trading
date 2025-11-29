@@ -14,10 +14,19 @@ from typing import List, Optional
 
 from langchain_core.tools import tool
 
-from src.rag.sentiment_store import SentimentRAGStore
 from src.utils.market_data import get_market_data_provider
 
 logger = logging.getLogger(__name__)
+
+# Lazy import to avoid breaking crypto trading when RAG dependencies aren't installed
+def _get_sentiment_store():
+    """Lazy import of SentimentRAGStore."""
+    try:
+        from src.rag.sentiment_store import SentimentRAGStore
+        return SentimentRAGStore
+    except ImportError as e:
+        logger.warning(f"SentimentRAGStore not available: {e}")
+        return None
 
 
 @tool
@@ -88,6 +97,10 @@ def query_sentiment(
         JSON string with sentiment entries matching the query
     """
     try:
+        SentimentRAGStore = _get_sentiment_store()
+        if SentimentRAGStore is None:
+            return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
+        
         store = SentimentRAGStore()
         results = store.query(query=query, ticker=ticker, top_k=limit)
         
@@ -132,6 +145,10 @@ def get_sentiment_history(
         JSON string with recent sentiment snapshots for the ticker
     """
     try:
+        SentimentRAGStore = _get_sentiment_store()
+        if SentimentRAGStore is None:
+            return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
+        
         store = SentimentRAGStore()
         results = store.get_ticker_history(ticker=ticker, limit=limit)
         
