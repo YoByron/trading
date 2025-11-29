@@ -120,9 +120,23 @@ def dry_run(symbols: List[str], args) -> int:
                 lines.append("## Bogleheads Snapshot (Latest)")
                 md = bh[0]
                 meta = md.get("metadata", {})
+                # Try to parse TL;DR from document JSON if available
+                tldr = None
+                try:
+                    import json as _J
+
+                    doc = md.get("document", "")
+                    parsed = (
+                        _J.loads(doc) if doc and doc.strip().startswith("{") else {}
+                    )
+                    tldr = parsed.get("tl_dr")
+                except Exception:
+                    tldr = None
                 lines.append(
                     f"- Date: `{meta.get('snapshot_date', 'n/a')}` | Regime: `{meta.get('market_regime', 'unknown')}` | Confidence: `{meta.get('confidence', 'n/a')}`"
                 )
+                if tldr:
+                    lines.append(f"- TL;DR: {tldr}")
                 lines.append("")
             else:
                 # Fallback: query agent directly if store empty
@@ -135,6 +149,10 @@ def dry_run(symbols: List[str], args) -> int:
                     lines.append(
                         f"- Decision: `{(res.get('signal') or 'HOLD')}` | Confidence: `{res.get('confidence', 0.5)}`"
                     )
+                    # Short TL;DR from agent
+                    r = (res.get("reasoning") or "").strip()
+                    if r:
+                        lines.append(f"- TL;DR: {r[:160]}...")
                     lines.append("")
                 except Exception:
                     pass
@@ -148,10 +166,14 @@ def dry_run(symbols: List[str], args) -> int:
                 if fp.exists():
                     data = _J.loads(fp.read_text(encoding="utf-8"))
                     meta = data.get("metadata", {})
+                    snap = data.get("snapshot", {})
+                    tldr = snap.get("tl_dr")
                     lines.append("## Bogleheads Snapshot (Latest, JSON Fallback)")
                     lines.append(
                         f"- Date: `{meta.get('published_date', 'n/a')}` | Regime: `{meta.get('market_regime', 'unknown')}` | Confidence: `{meta.get('confidence', 'n/a')}`"
                     )
+                    if tldr:
+                        lines.append(f"- TL;DR: {tldr}")
                     lines.append("")
             except Exception:
                 pass
