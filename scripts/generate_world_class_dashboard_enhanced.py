@@ -25,6 +25,11 @@ from scripts.enhanced_dashboard_metrics import EnhancedMetricsCalculator, load_j
 from scripts.dashboard_charts import generate_all_charts
 from scripts.ai_insights_generator import AIInsightsGenerator
 
+try:
+    from src.utils.tax_optimization import TaxOptimizer
+except ImportError:
+    TaxOptimizer = None
+
 DATA_DIR = Path("data")
 
 
@@ -162,6 +167,91 @@ def generate_world_class_dashboard() -> str:
         perf_log = []
 
     all_trades = calculator._load_all_trades()
+
+    # Calculate tax optimization metrics
+    tax_metrics = {}
+    tax_recommendations = []
+    pdt_status = {}
+    system_state = load_json_file(DATA_DIR / "system_state.json")
+    current_equity = basic_metrics.get("current_equity", 100000.0)
+
+    if TaxOptimizer and all_trades:
+        try:
+            tax_optimizer = TaxOptimizer()
+
+            # Process trades for tax tracking
+            from datetime import datetime as dt
+
+            for trade in all_trades:
+                if (
+                    trade.get("entry_date")
+                    and trade.get("exit_date")
+                    and trade.get("pl") is not None
+                ):
+                    try:
+                        entry_date = dt.fromisoformat(
+                            trade["entry_date"].replace("Z", "+00:00")
+                        )
+                        exit_date = dt.fromisoformat(
+                            trade["exit_date"].replace("Z", "+00:00")
+                        )
+                        entry_price = trade.get("entry_price", 0.0)
+                        exit_price = trade.get("exit_price", 0.0)
+                        quantity = trade.get("quantity", 0.0)
+                        trade_id = trade.get(
+                            "trade_id",
+                            f"{trade.get('symbol', 'UNKNOWN')}_{entry_date.isoformat()}",
+                        )
+
+                        # Record entry
+                        tax_optimizer.record_trade_entry(
+                            trade.get("symbol", "UNKNOWN"),
+                            quantity,
+                            entry_price,
+                            entry_date,
+                            trade_id,
+                        )
+
+                        # Record exit
+                        tax_optimizer.record_trade_exit(
+                            trade.get("symbol", "UNKNOWN"),
+                            quantity,
+                            exit_price,
+                            exit_date,
+                            trade_id,
+                        )
+                    except Exception as e:
+                        pass  # Skip trades that can't be processed
+
+            # Get tax summary
+            tax_metrics = tax_optimizer.get_tax_summary()
+
+            # Check PDT status
+            pdt_status = tax_optimizer.check_pdt_status(current_equity)
+
+            # Get recommendations
+            open_positions = system_state.get("performance", {}).get(
+                "open_positions", []
+            )
+            tax_recommendations = tax_optimizer.get_tax_optimization_recommendations(
+                current_equity, open_positions
+            )
+        except Exception as e:
+            tax_metrics = {
+                "total_trades": 0,
+                "estimated_tax": 0.0,
+                "after_tax_return": 0.0,
+                "day_trade_count": 0,
+            }
+            pdt_status = {"status": "⚠️ Unable to calculate", "warnings": []}
+    else:
+        tax_metrics = {
+            "total_trades": 0,
+            "estimated_tax": 0.0,
+            "after_tax_return": basic_metrics.get("total_pl", 0.0),
+            "day_trade_count": 0,
+        }
+        pdt_status = {"status": "⚠️ No closed trades yet", "warnings": []}
 
     # Generate charts
     chart_paths = generate_all_charts(perf_log)
@@ -709,9 +799,75 @@ def generate_world_class_dashboard() -> str:
             f"| **Project Dashboard** | [trading-rl-training →]({project_url}) |\n"
         )
 
-    dashboard += r"""
+    dashboard += f"""
 ---
 
+## 💰 Tax Optimization & Compliance
+
+**⚠️ CRITICAL FOR LIVE TRADING**: Tax implications can significantly impact net returns. This section tracks capital gains, day trading rules, and tax optimization opportunities.
+
+### Pattern Day Trader (PDT) Rule Status
+
+{pdt_status.get('status', '⚠️ Unable to calculate')}
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Day Trades (Last 5 Days)** | {pdt_status.get('day_trades_count', 0)} | {'🚨' if pdt_status.get('is_pdt', False) and not pdt_status.get('meets_equity_requirement', False) else '⚠️' if pdt_status.get('day_trades_count', 0) >= 2 else '✅'} |
+| **PDT Threshold** | 4+ day trades in 5 days | {'🚨 VIOLATION RISK' if pdt_status.get('is_pdt', False) and not pdt_status.get('meets_equity_requirement', False) else '⚠️ APPROACHING' if pdt_status.get('day_trades_count', 0) >= 2 else '✅ SAFE'} |
+| **Minimum Equity Required** | $25,000 | {'🚨' if pdt_status.get('is_pdt', False) and not pdt_status.get('meets_equity_requirement', False) else '✅'} |
+| **Current Equity** | ${{current_equity:,.2f}} | {'🚨' if pdt_status.get('is_pdt', False) and current_equity < 25000 else '✅'} |
+
+**PDT Rule Explanation**: If you make 4+ day trades (same-day entry/exit) in 5 business days, you must maintain $25,000 minimum equity. Violations can result in account restrictions.
+
+### Tax Impact Analysis
+
+| Metric | Value |
+|--------|-------|
+| **Total Closed Trades** | {tax_metrics.get('total_trades', 0)} |
+| **Day Trades** | {tax_metrics.get('day_trade_count', 0)} |
+| **Short-Term Trades** | {tax_metrics.get('short_term_count', 0)} |
+| **Long-Term Trades** | {tax_metrics.get('long_term_count', 0)} |
+| **Wash Sales** | {tax_metrics.get('wash_sale_count', 0)} |
+| **Gross Return** | ${tax_metrics.get('net_gain_loss', basic_metrics.get('total_pl', 0)):+,.2f} |
+| **Estimated Tax Liability** | ${tax_metrics.get('estimated_tax', 0.0):+,.2f} |
+| **After-Tax Return** | ${tax_metrics.get('after_tax_return', basic_metrics.get('total_pl', 0)):+,.2f} |
+| **Tax Efficiency** | {tax_metrics.get('tax_efficiency', 1.0) * 100:.1f}% |
+
+**Tax Rates**:
+- **Short-Term Capital Gains** (< 1 year): {tax_metrics.get('short_term_tax_rate', 0.37) * 100:.0f}% (taxed as ordinary income)
+- **Long-Term Capital Gains** (≥ 1 year): {tax_metrics.get('long_term_tax_rate', 0.20) * 100:.0f}% (preferred rate)
+
+**Key Tax Strategies**:
+1. **Hold positions >1 year** for long-term capital gains rate (20% vs 37%)
+2. **Avoid wash sales**: Don't repurchase same security within 30 days of selling at a loss
+3. **Tax-loss harvesting**: Realize losses to offset gains before year-end
+4. **Mark-to-Market Election (Section 475(f))**: Consider for active traders (treats trading as business income, exempts wash sale rule)
+
+### Tax Optimization Recommendations
+
+"""
+
+    if tax_recommendations:
+        for rec in tax_recommendations[:5]:
+            dashboard += f"{rec}\n\n"
+    else:
+        dashboard += "✅ **No immediate tax optimization recommendations**\n\n"
+
+    dashboard += """
+**Important Notes**:
+- **Paper Trading**: Tax calculations are estimates. Actual tax liability depends on your tax bracket and state.
+- **Wash Sale Rule**: Losses cannot be deducted if you repurchase the same security within 30 days before or after the sale.
+- **Capital Loss Deduction**: Maximum $3,000 capital loss deduction per year (excess carries forward).
+- **Day Trading**: Frequent day trading may trigger Pattern Day Trader (PDT) rules requiring $25k minimum equity.
+- **Consult Tax Professional**: This is not tax advice. Consult a qualified tax professional before live trading.
+
+**Integration with RL Pipeline**: Tax-aware reward function penalizes short-term gains and rewards long-term holdings to optimize after-tax returns.
+
+---
+
+"""
+
+    dashboard += r"""
 ## 🌐 External Dashboards & Monitoring
 
 ### LangSmith Observability
