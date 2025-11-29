@@ -41,15 +41,35 @@ except ImportError:
 
 DATA_DIR = Path("data")
 
-# Statistical significance thresholds
+# Statistical significance thresholds (investor-grade)
 STAT_THRESHOLDS = {
-    "sharpe_sortino": 30,  # Need 30+ closed trades
-    "win_rate": 30,  # Need 30+ closed trades
-    "profit_factor": 30,  # Need 30+ closed trades
+    "sharpe_sortino": 30,  # Need 30+ closed trades for Sharpe/Sortino
+    "win_rate": 10,  # Need 10+ closed trades for meaningful win rate
+    "profit_factor": 20,  # Need 20+ closed trades for profit factor
     "per_strategy": 10,  # Need 10+ trades per strategy
     "cohort_analysis": 20,  # Need 20+ trades per cohort
-    "alpha": 50,  # Need 50+ closed trades
+    "alpha": 50,  # Need 50+ closed trades for alpha
     "capital_efficiency": 20,  # Need 20+ closed trades
+    "monte_carlo": 10,  # Need 10+ returns for Monte Carlo
+    "distribution": 5,  # Need 5+ days for distribution analysis
+}
+
+# Phase 1 investor view: only show these sections when data thresholds met
+INVESTOR_VIEW_GATES = {
+    "show_sharpe_sortino": lambda trades: len(
+        [t for t in trades if t.get("pl") is not None]
+    )
+    >= 30,
+    "show_profit_factor": lambda trades: len(
+        [t for t in trades if t.get("pl") is not None]
+    )
+    >= 20,
+    "show_per_strategy": lambda trades, strategy: len(
+        [t for t in trades if t.get("tier") == strategy and t.get("pl") is not None]
+    )
+    >= 10,
+    "show_alpha": lambda trades: len([t for t in trades if t.get("pl") is not None])
+    >= 50,
 }
 
 
@@ -62,6 +82,123 @@ def load_json_file(filepath: Path) -> dict:
         except Exception:
             return {}
     return {}
+
+
+def calculate_unified_system_health() -> Dict[str, Any]:
+    """
+    Calculate unified system health status.
+    Returns single authoritative status instead of mixed signals.
+
+    Health levels:
+    - OPERATIONAL: All systems working
+    - DEGRADED: Some systems have issues
+    - CRITICAL: Major systems failing
+    """
+    health = {
+        "status": "OPERATIONAL",
+        "emoji": "✅",
+        "issues": [],
+        "components": {
+            "automation": {"status": "unknown", "detail": ""},
+            "langsmith": {"status": "unknown", "detail": ""},
+            "github_actions": {"status": "unknown", "detail": ""},
+            "data_freshness": {"status": "unknown", "detail": ""},
+        },
+    }
+
+    # Check LangSmith initialization
+    try:
+        import os
+
+        langsmith_key = os.getenv("LANGCHAIN_API_KEY", "")
+        if langsmith_key:
+            health["components"]["langsmith"] = {
+                "status": "ok",
+                "detail": "API key configured",
+            }
+        else:
+            health["components"]["langsmith"] = {
+                "status": "warning",
+                "detail": "API key not set",
+            }
+            health["issues"].append("LangSmith API key not configured")
+    except Exception as e:
+        health["components"]["langsmith"] = {"status": "error", "detail": str(e)}
+        health["issues"].append(f"LangSmith check failed: {e}")
+
+    # Check data freshness
+    try:
+        system_state_file = DATA_DIR / "system_state.json"
+        if system_state_file.exists():
+            import time
+
+            file_age_hours = (time.time() - system_state_file.stat().st_mtime) / 3600
+            if file_age_hours < 24:
+                health["components"]["data_freshness"] = {
+                    "status": "ok",
+                    "detail": f"Updated {file_age_hours:.1f}h ago",
+                }
+            elif file_age_hours < 72:
+                health["components"]["data_freshness"] = {
+                    "status": "warning",
+                    "detail": f"Updated {file_age_hours:.1f}h ago",
+                }
+                health["issues"].append(
+                    f"Data may be stale ({file_age_hours:.1f}h old)"
+                )
+            else:
+                health["components"]["data_freshness"] = {
+                    "status": "error",
+                    "detail": f"Updated {file_age_hours:.1f}h ago",
+                }
+                health["issues"].append(f"Data is stale ({file_age_hours:.1f}h old)")
+        else:
+            health["components"]["data_freshness"] = {
+                "status": "error",
+                "detail": "system_state.json not found",
+            }
+            health["issues"].append("system_state.json not found")
+    except Exception as e:
+        health["components"]["data_freshness"] = {"status": "error", "detail": str(e)}
+
+    # Determine overall status
+    error_count = sum(
+        1 for c in health["components"].values() if c["status"] == "error"
+    )
+    warning_count = sum(
+        1 for c in health["components"].values() if c["status"] == "warning"
+    )
+
+    if error_count >= 2:
+        health["status"] = "CRITICAL"
+        health["emoji"] = "🚨"
+    elif error_count >= 1 or warning_count >= 2:
+        health["status"] = "DEGRADED"
+        health["emoji"] = "⚠️"
+    else:
+        health["status"] = "OPERATIONAL"
+        health["emoji"] = "✅"
+
+    return health
+
+
+def format_gated_metric(
+    value: float,
+    threshold: int,
+    current_count: int,
+    format_str: str = "{:.2f}",
+    metric_name: str = "metric",
+) -> str:
+    """
+    Format metric with investor-grade gating.
+
+    If below threshold: shows "Waiting for ≥N trades"
+    If at threshold: shows actual value
+    """
+    if current_count >= threshold:
+        return format_str.format(value)
+    else:
+        return f"*Waiting for ≥{threshold} trades*"
 
 
 def load_trade_data() -> List[Dict[str, Any]]:
@@ -143,12 +280,14 @@ def calculate_ai_attribution_enhanced(trades: List[Dict[str, Any]]) -> Dict[str,
     """
     Calculate per-agent P&L attribution with enhanced metadata.
 
-    Groups trades by decision maker:
-    - RL Policy
-    - Heuristic/Rule-based
-    - Fallback Strategy
-    - LLM Analyst
-    - Meta Agent
+    Groups trades by decision maker (investor-grade attribution):
+    - RL Policy: Reinforcement learning agent decisions
+    - Momentum Heuristic: Rule-based momentum strategy
+    - LLM Analyst: Claude/GPT-based analysis
+    - Fallback Strategy: Default Python strategy when AI unavailable
+    - Unknown: Trades without attribution metadata
+
+    This answers: "Who made the call?" for each trade.
     """
     agent_attribution = defaultdict(
         lambda: {
@@ -165,8 +304,19 @@ def calculate_ai_attribution_enhanced(trades: List[Dict[str, Any]]) -> Dict[str,
             "langsmith_traces": 0,
             "vertex_jobs": 0,
             "estimated_cost": 0.0,
+            "display_name": "",  # Human-readable name
+            "decision_type": "",  # AI or Rules
         }
     )
+
+    # Human-readable names for agents
+    agent_display_names = {
+        "rl_policy": ("🤖 RL Policy", "AI"),
+        "llm_analyst": ("🧠 LLM Analyst", "AI"),
+        "momentum_heuristic": ("📊 Momentum Rules", "Rules"),
+        "fallback": ("⚙️ Fallback Strategy", "Rules"),
+        "unknown": ("❓ Unknown", "Unattributed"),
+    }
 
     for trade in trades:
         # Determine agent type from trade metadata
@@ -205,6 +355,11 @@ def calculate_ai_attribution_enhanced(trades: List[Dict[str, Any]]) -> Dict[str,
 
         agent_data = agent_attribution[agent_type]
         agent_data["trades"] += 1
+
+        # Set display name and decision type
+        if agent_type in agent_display_names:
+            agent_data["display_name"] = agent_display_names[agent_type][0]
+            agent_data["decision_type"] = agent_display_names[agent_type][1]
 
         # Only count closed trades for P&L
         if trade.get("pl") is not None:
@@ -502,10 +657,12 @@ def calculate_market_regime() -> Dict[str, Any]:
             }
 
         # Calculate 20-day SPY return
-        spy_return_20d = ((spy_data['Close'].iloc[-1] / spy_data['Close'].iloc[-20]) - 1) * 100
+        spy_return_20d = (
+            (spy_data["Close"].iloc[-1] / spy_data["Close"].iloc[-20]) - 1
+        ) * 100
 
         # Get current VIX level
-        vix_level = vix_data['Close'].iloc[-1]
+        vix_level = vix_data["Close"].iloc[-1]
 
         # Classify regime
         if spy_return_20d > 2.0:
@@ -527,7 +684,9 @@ def calculate_market_regime() -> Dict[str, Any]:
         # Select emoji and edge notes
         if trend_regime == "Bull" and vol_regime == "Low Vol":
             emoji = "🟢"
-            edge_notes = "Optimal conditions for momentum strategies. Focus on breakout entries."
+            edge_notes = (
+                "Optimal conditions for momentum strategies. Focus on breakout entries."
+            )
         elif trend_regime == "Bull" and vol_regime == "High Vol":
             emoji = "🟡"
             edge_notes = "Volatile rally - use wider stops and smaller positions. Watch for whipsaws."
@@ -539,10 +698,14 @@ def calculate_market_regime() -> Dict[str, Any]:
             edge_notes = "High-risk environment - reduce exposure significantly. Wait for stabilization."
         elif trend_regime == "Sideways" and vol_regime == "Low Vol":
             emoji = "⚪"
-            edge_notes = "Range-bound market - focus on mean reversion and quick profits."
+            edge_notes = (
+                "Range-bound market - focus on mean reversion and quick profits."
+            )
         else:  # Sideways + High Vol
             emoji = "🟣"
-            edge_notes = "Choppy conditions - difficult environment. Reduce trade frequency."
+            edge_notes = (
+                "Choppy conditions - difficult environment. Reduce trade frequency."
+            )
 
         return {
             "regime": trend_regime,
@@ -573,8 +736,6 @@ def calculate_market_regime() -> Dict[str, Any]:
         }
 
 
-
-
 def calculate_strategy_level_insights(
     trades: List[Dict[str, Any]], attribution: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
@@ -600,15 +761,17 @@ def calculate_strategy_level_insights(
     }
 
     # Calculate metrics per tier from trades
-    tier_metrics = defaultdict(lambda: {
-        "trades": [],
-        "total_pl": 0.0,
-        "wins": 0,
-        "losses": 0,
-        "total_duration_hours": 0.0,
-        "total_risk": 0.0,
-        "total_return": 0.0,
-    })
+    tier_metrics = defaultdict(
+        lambda: {
+            "trades": [],
+            "total_pl": 0.0,
+            "wins": 0,
+            "losses": 0,
+            "total_duration_hours": 0.0,
+            "total_risk": 0.0,
+            "total_return": 0.0,
+        }
+    )
 
     for trade in trades:
         if trade.get("pl") is None:
@@ -631,6 +794,7 @@ def calculate_strategy_level_insights(
         if trade.get("entry_date") and trade.get("exit_date"):
             try:
                 from datetime import datetime as dt
+
                 entry = dt.fromisoformat(trade["entry_date"].replace("Z", "+00:00"))
                 exit_dt = dt.fromisoformat(trade["exit_date"].replace("Z", "+00:00"))
                 duration_hours = (exit_dt - entry).total_seconds() / 3600
@@ -701,6 +865,7 @@ def calculate_strategy_level_insights(
                 }
 
     return strategy_insights
+
 
 def generate_ai_insights_enhanced(
     trades: List[Dict[str, Any]],
@@ -842,14 +1007,6 @@ def generate_world_class_dashboard() -> str:
     attribution = calculate_performance_attribution(trades)
 
     # Enhanced AI attribution
-    # AI attribution (if available)
-    try:
-        from scripts.generate_ai_focused_dashboard import calculate_ai_attribution
-
-        ai_attribution = calculate_ai_attribution(trades)
-    except ImportError:
-        ai_attribution = {}
-
     # Enhanced trade-level attribution with gate/agent breakdown
     trade_level_attribution = {}
     if analytics and trades:
@@ -1051,13 +1208,32 @@ def generate_world_class_dashboard() -> str:
     else:
         attribution_table = "  (No trade data available for attribution analysis)"
 
+    # Calculate unified system health
+    system_health = calculate_unified_system_health()
+
     dashboard = f"""# 🌟 World-Class Trading Dashboard
 
 **Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
----
+"""
+
+    # Add unified health banner (investor-grade: single source of truth)
+    if system_health["status"] != "OPERATIONAL":
+        dashboard += f"""
+> {system_health['emoji']} **SYSTEM STATUS: {system_health['status']}**
+>
+"""
+        for issue in system_health["issues"][:3]:  # Show top 3 issues
+            dashboard += f"> - {issue}\n"
+        dashboard += "\n"
+    else:
+        dashboard += f"""> {system_health['emoji']} **SYSTEM STATUS: OPERATIONAL** - All monitoring systems active
+
+"""
+
+    dashboard += f"""---
 
 ## 📅 Today's Performance
 
@@ -1068,7 +1244,7 @@ def generate_world_class_dashboard() -> str:
 | **Equity** | ${today_equity:,.2f} |
 | **P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
 | **Trades Today** | {today_trade_count} |
-| **Status** | {'✅ Active' if today_trade_count > 0 or abs(today_pl) > 0.01 else '⏸️ No activity yet'} |
+| **Status** | {system_health['emoji']} {system_health['status']} |
 
 ---
 
@@ -1168,35 +1344,79 @@ def generate_world_class_dashboard() -> str:
 
 """
 
-    # Add AI attribution section
-    if ai_attribution:
-        dashboard += "| Agent/Decision Maker | Trades | Closed | Win Rate | Total P/L | Avg P/L | Profit Factor | Capital Efficiency | Cost |\n"
-        dashboard += "|---------------------|--------|-------|---------|-----------|---------|---------------|-------------------|------|\n"
+    # Add AI attribution section (investor-grade: "Who made the call?")
+    # Calculate enhanced AI attribution with display names
+    enhanced_ai_attribution = calculate_ai_attribution_enhanced(trades)
+
+    if enhanced_ai_attribution:
+        # Summary of AI vs Rules usage
+        ai_trades = sum(
+            d["trades"]
+            for d in enhanced_ai_attribution.values()
+            if d.get("decision_type") == "AI"
+        )
+        rules_trades = sum(
+            d["trades"]
+            for d in enhanced_ai_attribution.values()
+            if d.get("decision_type") == "Rules"
+        )
+        unattributed_trades = sum(
+            d["trades"]
+            for d in enhanced_ai_attribution.values()
+            if d.get("decision_type") == "Unattributed"
+        )
+        total_attr_trades = ai_trades + rules_trades + unattributed_trades
+
+        if total_attr_trades > 0:
+            ai_pct = (
+                (ai_trades / total_attr_trades * 100) if total_attr_trades > 0 else 0
+            )
+            rules_pct = (
+                (rules_trades / total_attr_trades * 100) if total_attr_trades > 0 else 0
+            )
+            dashboard += f"**Decision Breakdown**: 🤖 AI: {ai_trades} ({ai_pct:.0f}%) | 📊 Rules: {rules_trades} ({rules_pct:.0f}%) | ❓ Unattributed: {unattributed_trades}\n\n"
+
+        dashboard += "| Decision Maker | Type | Trades | Closed | Win Rate | Total P/L | Avg P/L | Cost |\n"
+        dashboard += "|----------------|------|--------|--------|----------|-----------|---------|------|\n"
 
         for agent_type, data in sorted(
-            ai_attribution.items(),
-            key=lambda x: x[1].get("total_pl", 0),
+            enhanced_ai_attribution.items(),
+            key=lambda x: x[1].get("trades", 0),
             reverse=True,
         ):
-            agent_name = agent_type.replace("_", " ").title()
-            win_rate_display = (
-                f"{data['win_rate']:.1f}%" if data["closed_trades"] > 0 else "N/A"
+            # Use enhanced display name if available, otherwise format the key
+            agent_name = (
+                data.get("display_name") or agent_type.replace("_", " ").title()
             )
-            profit_factor_display = (
-                f"{data['profit_factor']:.2f}" if data["closed_trades"] > 0 else "N/A"
-            )
+            decision_type = data.get("decision_type") or "Unknown"
 
-            dashboard += f"| **{agent_name}** | {data['trades']} | {data['closed_trades']} | {win_rate_display} | ${data['total_pl']:+,.2f} | ${data['avg_pl']:+,.2f} | {profit_factor_display} | ${data['capital_efficiency']:,.0f}/$ | ${data['estimated_cost']:.2f} |\n"
+            # Gate win rate and P/L metrics until sufficient data
+            if data["closed_trades"] >= STAT_THRESHOLDS.get("win_rate", 10):
+                win_rate_display = f"{data['win_rate']:.1f}%"
+            elif data["closed_trades"] > 0:
+                win_rate_display = (
+                    f"{data['win_rate']:.1f}%*"  # Asterisk = low confidence
+                )
+            else:
+                win_rate_display = "N/A"
+
+            dashboard += f"| {agent_name} | {decision_type} | {data['trades']} | {data['closed_trades']} | {win_rate_display} | ${data['total_pl']:+,.2f} | ${data['avg_pl']:+,.2f} | ${data['estimated_cost']:.2f} |\n"
+
+        dashboard += (
+            "\n*Win rates marked with * have low confidence (< 10 closed trades)*\n"
+        )
 
         dashboard += "\n**Observability**:\n"
         total_traces = sum(
-            a.get("langsmith_traces", 0) for a in ai_attribution.values()
+            a.get("langsmith_traces", 0) for a in enhanced_ai_attribution.values()
         )
-        total_jobs = sum(a.get("vertex_jobs", 0) for a in ai_attribution.values())
+        total_jobs = sum(
+            a.get("vertex_jobs", 0) for a in enhanced_ai_attribution.values()
+        )
         dashboard += f"- LangSmith Traces: {total_traces}\n"
         dashboard += f"- Vertex AI Jobs: {total_jobs}\n"
     else:
-        dashboard += "⚠️ **No AI attribution data available** - Trades may not have attribution metadata\n\n"
+        dashboard += "⚠️ **No trade data available** - Attribution will populate once trades are executed\n\n"
 
     dashboard += """
 
@@ -1310,7 +1530,7 @@ def generate_world_class_dashboard() -> str:
             risk_reward_val = insights.get("risk_reward_ratio")
             trade_count = insights.get("trade_count", 0)
             is_backtest = insights.get("is_backtest", False)
-            
+
             # Format values with fallback for None
             if win_rate_val is not None:
                 win_rate_str = f"{win_rate_val:.1f}%"
@@ -1318,31 +1538,31 @@ def generate_world_class_dashboard() -> str:
                     win_rate_str += " (backtest)"
             else:
                 win_rate_str = "Pending"
-            
+
             if expectancy_val is not None:
                 expectancy_str = f"${expectancy_val:+.2f}"
                 if is_backtest:
                     expectancy_str += " (est)"
             else:
                 expectancy_str = "Pending"
-            
+
             if avg_duration_val is not None and avg_duration_val > 0:
                 if avg_duration_val < 48:
                     duration_str = f"{avg_duration_val:.1f}h"
                 else:
-                    duration_str = f"{avg_duration_val/24:.1f}d"
+                    duration_str = f"{avg_duration_val / 24:.1f}d"
                 if is_backtest:
                     duration_str += " (est)"
             else:
                 duration_str = "Pending"
-            
+
             if risk_reward_val is not None and risk_reward_val > 0:
                 risk_reward_str = f"{risk_reward_val:.2f}"
                 if is_backtest:
                     risk_reward_str += " (est)"
             else:
                 risk_reward_str = "Pending"
-            
+
             dashboard += f"| **{strategy_name}** | {win_rate_str} | {expectancy_str} | {duration_str} | {risk_reward_str} | {trade_count} |\n"
 
     dashboard += """
@@ -1357,7 +1577,9 @@ def generate_world_class_dashboard() -> str:
     # Calculate distribution metrics from performance log
     if isinstance(perf_log, list) and len(perf_log) > 1:
         # Extract daily P/L values
-        daily_pls = [entry.get("pl", 0.0) for entry in perf_log if entry.get("pl") is not None]
+        daily_pls = [
+            entry.get("pl", 0.0) for entry in perf_log if entry.get("pl") is not None
+        ]
 
         if len(daily_pls) > 0:
             daily_pls_array = np.array(daily_pls)
@@ -1373,16 +1595,29 @@ def generate_world_class_dashboard() -> str:
             total_dist = len(daily_pls)
 
             # Win/Loss skew ratio
-            avg_win = np.mean([pl for pl in daily_pls if pl > 0]) if wins_dist > 0 else 0.0
-            avg_loss = np.mean([abs(pl) for pl in daily_pls if pl < 0]) if losses_dist > 0 else 0.0
+            avg_win = (
+                np.mean([pl for pl in daily_pls if pl > 0]) if wins_dist > 0 else 0.0
+            )
+            avg_loss = (
+                np.mean([abs(pl) for pl in daily_pls if pl < 0])
+                if losses_dist > 0
+                else 0.0
+            )
             skew_ratio = avg_win / avg_loss if avg_loss > 0 else 0.0
 
             # Kurtosis (tail heaviness) - simplified indicator
             # Kurtosis > 3 = heavy tails, < 3 = light tails
             try:
                 from scipy import stats
-                kurtosis_val = stats.kurtosis(daily_pls_array, fisher=False)  # Pearson kurtosis
-                tail_type = "Heavy tails" if kurtosis_val > 3 else "Light tails" if kurtosis_val < 3 else "Normal tails"
+
+                kurtosis_val = stats.kurtosis(
+                    daily_pls_array, fisher=False
+                )  # Pearson kurtosis
+                tail_type = (
+                    "Heavy tails"
+                    if kurtosis_val > 3
+                    else "Light tails" if kurtosis_val < 3 else "Normal tails"
+                )
             except (ImportError, Exception):
                 kurtosis_val = 0.0
                 tail_type = "Insufficient data"
@@ -1403,8 +1638,10 @@ def generate_world_class_dashboard() -> str:
                     normalized_hist = (hist / max_freq * 8).astype(int)
 
                     # Create ASCII histogram using block characters
-                    hist_chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
-                    ascii_hist = ''.join([hist_chars[min(val, 7)] for val in normalized_hist])
+                    hist_chars = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+                    ascii_hist = "".join(
+                        [hist_chars[min(val, 7)] for val in normalized_hist]
+                    )
 
                     dashboard += f"""**P/L Distribution**: {ascii_hist}
 
@@ -1415,8 +1652,8 @@ def generate_world_class_dashboard() -> str:
 | **Std Dev** | ${std_pl:.2f} |
 | **Win/Loss Skew** | {skew_ratio:.2f}x {'(wins larger)' if skew_ratio > 1 else '(losses larger)' if skew_ratio < 1 else '(balanced)'} |
 | **Tail Characteristics** | {tail_type} (κ={kurtosis_val:.2f}) |
-| **Win Days** | {wins_dist}/{total_dist} ({wins_dist/total_dist*100:.1f}%) |
-| **Loss Days** | {losses_dist}/{total_dist} ({losses_dist/total_dist*100:.1f}%) |
+| **Win Days** | {wins_dist}/{total_dist} ({wins_dist / total_dist * 100:.1f}%) |
+| **Loss Days** | {losses_dist}/{total_dist} ({losses_dist / total_dist * 100:.1f}%) |
 
 **Interpretation**:
 - **Win/Loss Skew {skew_ratio:.2f}x**: {'✅ Average wins are larger than losses' if skew_ratio > 1.2 else '⚠️ Average losses are larger than wins' if skew_ratio < 0.8 else '➡️ Wins and losses are balanced'}
@@ -1426,7 +1663,9 @@ def generate_world_class_dashboard() -> str:
                 else:
                     dashboard += "  (Insufficient variation in P/L data for distribution analysis)\n\n"
             else:
-                dashboard += "  (Collecting data... need 5+ days for distribution analysis)\n\n"
+                dashboard += (
+                    "  (Collecting data... need 5+ days for distribution analysis)\n\n"
+                )
         else:
             dashboard += "  (Collecting data... no P/L values available yet)\n\n"
     else:
@@ -1449,7 +1688,7 @@ def generate_world_class_dashboard() -> str:
     if isinstance(perf_log, list) and len(perf_log) > 1:
         # Calculate streaks from daily P/L changes
         for i in range(1, len(perf_log)):
-            prev_equity = perf_log[i-1].get("equity", 100000.0)
+            prev_equity = perf_log[i - 1].get("equity", 100000.0)
             curr_equity = perf_log[i].get("equity", 100000.0)
             daily_change = curr_equity - prev_equity
 
@@ -1525,7 +1764,7 @@ def generate_world_class_dashboard() -> str:
         total_loss = 0.0
 
         for i in range(1, len(recent_entries)):
-            prev_equity = recent_entries[i-1].get("equity", 100000.0)
+            prev_equity = recent_entries[i - 1].get("equity", 100000.0)
             curr_equity = recent_entries[i].get("equity", 100000.0)
             daily_change = curr_equity - prev_equity
 
@@ -1551,14 +1790,6 @@ def generate_world_class_dashboard() -> str:
     else:
         streak_display = "0 (Starting)" if total_closed_trades == 0 else "0 (Neutral)"
         streak_status = "➡️"
-
-    # Max streaks display
-    if max_winning_streak > 0 or max_losing_streak > 0:
-        max_streaks = f"Win: {max_winning_streak} / Loss: {max_losing_streak}"
-        max_streak_status = "✅" if max_winning_streak >= max_losing_streak else "⚠️"
-    else:
-        max_streaks = "Building history..."
-        max_streak_status = "➡️"
 
     dashboard += f"""| Indicator | Value | Status |
 |-----------|-------|--------|
