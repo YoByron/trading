@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 04:44 PM ET
+**Last Updated**: 2025-11-29 04:45 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -75,8 +75,8 @@
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+0.54 | $-157.44 to $+170.09 |
-| **30 Days** | $+6.18 | See 7-day CI scaled |
+| **7 Days** | $+1.37 | $-158.13 to $+166.13 |
+| **30 Days** | $+4.58 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%
@@ -89,8 +89,8 @@
 |--------|-------|--------|
 | **Max Drawdown** | 0.06% | ✅ |
 | **Ulcer Index** | 0.03 | ✅ |
-| **Sharpe Ratio** | -16.60 | 🚨 |
-| **Sortino Ratio** | -1.46 | ⚠️ |
+| **Sharpe Ratio** | ⚠️ Insufficient data (need ≥30, have 0) |  |
+| **Sortino Ratio** | ⚠️ Insufficient data (need ≥30, have 0) |  |
 | **Calmar Ratio** | 0.68 | ⚠️ |
 | **VaR (95%)** | 0.03% | Risk level |
 | **VaR (99%)** | 0.03% | Extreme risk |
