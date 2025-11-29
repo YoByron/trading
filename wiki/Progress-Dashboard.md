@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-29 03:11 PM ET  
+**Last Updated**: 2025-11-29 03:39 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -25,8 +25,9 @@
 
 ### LangSmith Observability
 - **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
-- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
+- **[Trading RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces
   *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+  *Note: Project may display as "default" in LangSmith UI - this is the correct project*
 - **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
 
 ### Vertex AI Cloud RL
@@ -41,8 +42,8 @@
 
 ## 📈 90-Day R&D Challenge Progress
 
-**Current**: Day 9 of 90 (10.0% complete)  
-**Phase**: Production Scaling - Month 2 (Days 31-60)  
+**Current**: Day 9 of 90 (10.0% complete)
+**Phase**: Production Scaling - Month 2 (Days 31-60)
 **Days Remaining**: 81
 
 **Progress Bar**: `██░░░░░░░░░░░░░░░░░░` (10.0%)
@@ -67,6 +68,19 @@
 ---
 
 ## 💰 Financial Performance
+
+### 📅 Today's Performance
+
+**Date**: 2025-11-29 (Saturday)
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | $100,005.48 |
+| **P/L** | $+0.00 (+0.00%) |
+| **Trades Today** | 0 |
+| **Status** | ⏸️ No activity yet |
+
+---
 
 ### Account Summary
 
@@ -363,7 +377,7 @@
 
 ## 📝 Notes
 
-**Current Strategy**: 
+**Current Strategy**:
 - TURBO MODE: ADK orchestrator tries first, falls back to rule-based (MACD + RSI + Volume)
 - Allocation: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)
 - Daily Investment: $10/day fixed
@@ -438,10 +452,10 @@
 - [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions)
 - [Latest Trades](https://github.com/IgorGanapolsky/trading/tree/main/data)
 - [Documentation](https://github.com/IgorGanapolsky/trading/tree/main/docs)
-- [LangSmith RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)
+- [LangSmith RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) *(Note: Project may show as "default" in LangSmith UI - this is correct)*
 - [Vertex AI Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)
 
 ---
 
-*This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
+*This dashboard is automatically updated daily by GitHub Actions after trading execution.*
 *World-class metrics powered by comprehensive risk & performance analytics.*

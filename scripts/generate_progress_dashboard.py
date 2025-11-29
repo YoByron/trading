@@ -229,6 +229,9 @@ def generate_dashboard() -> str:
     world_class_metrics = calculator.calculate_all_metrics()
 
     now = datetime.now()
+    
+    # Get today's date string for display
+    today_display = date.today().strftime('%Y-%m-%d (%A)')
 
     # Calculate progress bar
     progress_bars = int(basic_metrics["progress_pct_challenge"] / 5)
@@ -354,6 +357,19 @@ def generate_dashboard() -> str:
 ---
 
 ## 💰 Financial Performance
+
+### 📅 Today's Performance
+
+**Date**: {today_display}
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | ${basic_metrics.get('today_equity', account.get('current_equity', basic_metrics['current_equity'])):,.2f} |
+| **P/L** | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
+| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |
+| **Status** | {'✅ Active' if basic_metrics.get('today_trade_count', 0) > 0 or abs(basic_metrics.get('today_pl', 0)) > 0.01 else '⏸️ No activity yet'} |
+
+---
 
 ### Account Summary
 
