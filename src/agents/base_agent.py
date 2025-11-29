@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from anthropic import Anthropic
-from src.utils.self_healing import with_retry, health_check
+from src.utils.self_healing import with_retry, health_check, get_anthropic_api_key
 from src.agent_framework.context_engine import (
     get_context_engine,
     MemoryTimescale,
@@ -40,7 +40,7 @@ class BaseAgent(ABC):
         self.name = name
         self.role = role
         self.model = model
-        self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = Anthropic(api_key=get_anthropic_api_key())
         self.memory: List[Dict[str, Any]] = []  # Legacy memory (backward compatibility)
         self.decision_log: List[Dict[str, Any]] = []
         self.use_context_engine = use_context_engine
