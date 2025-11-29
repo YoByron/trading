@@ -186,5 +186,6 @@ jobs:
             BR="automation/badges-$(date -u +%Y%m%d%H%M%S)"
             git checkout -b "$BR"
             git push -u origin "$BR"
+            export GH_TOKEN="$GITHUB_TOKEN"
             gh pr create -t "chore: update badges (${TS})" -b "Automated nightly update of dry run and dashboard badges." -H "$BR" -B main || true
           fi
