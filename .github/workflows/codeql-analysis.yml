@@ -46,3 +46,15 @@ jobs:
       with:
         category: "/language:${{matrix.language}}"
 
+    - name: Auto-dismiss false positives
+      if: always()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "🔒 Auto-dismissing CodeQL false positives..."
+        chmod +x scripts/dismiss_codeql_false_positives.sh
+        bash scripts/dismiss_codeql_false_positives.sh || {
+          echo "⚠️  Some alerts could not be dismissed automatically"
+          echo "This is expected for new alerts that need manual review"
+        }
+

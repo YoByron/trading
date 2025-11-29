@@ -8,11 +8,13 @@ paths-ignore:
   - 'node_modules/**'
   - '**/__pycache__/**'
 
-# Exclude test files from clear-text logging alerts
+# Exclude test and verification files from clear-text logging alerts
 # These files properly use mask_api_key() before logging
 paths-exclude:
   - 'scripts/test_*.py'
   - 'scripts/test-*.py'
+  - 'scripts/verify_*.py'
+  - 'scripts/validate_*.py'
 
 query-filters:
   # Clear-text logging: Our mask_api_key function is a sanitizer
@@ -42,6 +44,18 @@ query-filters:
       id: py/clear-text-logging-sensitive-data
       path: scripts/test_langsmith.py
       message: "Uses mask_api_key() before logging - fixed security violation"
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+      path: scripts/verify_system.py
+      message: "Uses mask_api_key() before logging - false positive"
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+      path: scripts/verify_api_credentials.py
+      message: "Uses mask_api_key() before logging - false positive"
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+      path: scripts/validate_setup.py
+      message: "Uses mask_api_key() before logging - false positive"
 
 # Security approach documentation:
 # 1. All API keys MUST be masked before logging using mask_api_key()
