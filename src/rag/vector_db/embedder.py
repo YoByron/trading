@@ -4,12 +4,29 @@ Embedding Pipeline for Trading RAG System
 Uses sentence-transformers for local, FREE text embeddings.
 """
 
-from sentence_transformers import SentenceTransformer
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# Lazy import to avoid breaking crypto trading when RAG dependencies aren't installed
+_SentenceTransformer: Optional[type] = None
+
+def _get_sentence_transformer():
+    """Lazy import of SentenceTransformer."""
+    global _SentenceTransformer
+    if _SentenceTransformer is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            _SentenceTransformer = SentenceTransformer
+        except ImportError:
+            logger.warning("sentence-transformers not installed - RAG features disabled")
+            raise ImportError(
+                "sentence-transformers is required for RAG features. "
+                "Install with: pip install -r requirements-rag.txt"
+            )
+    return _SentenceTransformer
 
 
 class NewsEmbedder:
@@ -34,9 +51,13 @@ class NewsEmbedder:
         logger.info(f"Loading embedding model: {model_name}")
 
         try:
+            SentenceTransformer = _get_sentence_transformer()
             self.model = SentenceTransformer(model_name)
             logger.info(f"Embedding model loaded successfully (dimensions: {self.model.get_sentence_embedding_dimension()})")
 
+        except ImportError as e:
+            logger.error(f"Failed to import sentence-transformers: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise
