@@ -4,6 +4,8 @@ from src.rag.collectors.orchestrator import get_orchestrator, NewsOrchestrator
 from src.rag.collectors.yahoo_collector import YahooFinanceCollector
 from src.rag.collectors.reddit_collector import RedditCollector
 from src.rag.collectors.alphavantage_collector import AlphaVantageCollector
+from src.rag.collectors.tiktok_collector import TikTokCollector
+from src.rag.collectors.linkedin_collector import LinkedInCollector
 
 __all__ = [
     "get_orchestrator",
@@ -11,4 +13,6 @@ __all__ = [
     "YahooFinanceCollector",
     "RedditCollector",
     "AlphaVantageCollector",
+    "TikTokCollector",
+    "LinkedInCollector",
 ]
