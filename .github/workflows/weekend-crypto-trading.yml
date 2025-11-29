@@ -215,7 +215,7 @@ jobs:
           echo "📊 Generating progress dashboard..."
           set -e  # Exit on error for critical steps
 
-          python3 scripts/generate_progress_dashboard.py
+          python3 scripts/generate_world_class_dashboard_enhanced.py || python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
 
           # Verify dashboard file exists
           if [ ! -f "wiki/Progress-Dashboard.md" ]; then
