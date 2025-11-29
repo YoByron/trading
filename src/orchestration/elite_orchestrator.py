@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-import asyncio
+import asyncio  # noqa: F401
 
 from src.core.skills_integration import get_skills
 from src.agent_framework.context_engine import (
@@ -614,7 +614,7 @@ class EliteOrchestrator:
             if self.langchain_agent:
                 try:
                     # Get context for langchain agent
-                    context = self.context_engine.get_agent_context("langchain_agent")
+                    context = self.context_engine.get_agent_context("langchain_agent")  # noqa: F841
 
                     prompt = f"Analyze recent news and sentiment for {symbol}. Provide key insights."
                     langchain_result = self.langchain_agent.invoke({"input": prompt})
@@ -674,6 +674,33 @@ class EliteOrchestrator:
 
         # Collect recommendations from all agents
         recommendations = {}
+
+        # Optional: derive Bogleheads weight multiplier from latest RAG snapshot (market regime)
+        bogleheads_multiplier = 1.0
+        try:
+            from src.rag.sentiment_store import SentimentRAGStore
+
+            store = SentimentRAGStore()
+            bh = store.get_ticker_history("MARKET", limit=1)
+            if bh:
+                regime = (
+                    (bh[0].get("metadata", {}) or {})
+                    .get("market_regime", "unknown")
+                    .lower()
+                )
+                boost_map = {
+                    "bull": float(os.getenv("ENSEMBLE_BOGLEHEADS_BOOST_BULL", "1.0")),
+                    "bear": float(os.getenv("ENSEMBLE_BOGLEHEADS_BOOST_BEAR", "1.2")),
+                    "choppy": float(
+                        os.getenv("ENSEMBLE_BOGLEHEADS_BOOST_CHOPPY", "1.0")
+                    ),
+                    "unknown": float(
+                        os.getenv("ENSEMBLE_BOGLEHEADS_BOOST_UNKNOWN", "1.0")
+                    ),
+                }
+                bogleheads_multiplier = boost_map.get(regime, boost_map["unknown"])
+        except Exception:
+            pass
 
         # MCP Orchestrator (multi-agent system)
         if self.mcp_orchestrator and self._agent_enabled("mcp"):
@@ -760,7 +787,7 @@ class EliteOrchestrator:
                         try:
                             from src.ml.ensemble_rl import EnsembleRLAgent
                             from src.ml.data_processor import DataProcessor
-                            import torch
+                            import torch  # noqa: F401
 
                             # Get state representation
                             data_processor = DataProcessor()
@@ -886,6 +913,8 @@ class EliteOrchestrator:
                     else:
                         wkey = agent_id
                     w = self.ensemble_weights.get(wkey, 0.1)
+                    if wkey == "bogleheads":
+                        w = w * bogleheads_multiplier
                     conf = float(rec.get("confidence", 0.5))
                     action = (rec.get("recommendation") or "HOLD").upper()
                     val = (
