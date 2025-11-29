@@ -132,7 +132,7 @@ class SeekingAlphaCollector(BaseNewsCollector):
             Path to cache file
         """
         # Use hash to avoid filesystem issues with special characters
-        ticker_hash = hashlib.md5(ticker.encode()).hexdigest()
+        ticker_hash = hashlib.md5(ticker.encode()).hexdigest()  # nosec B324
         return self.CACHE_DIR / f"{ticker}_{ticker_hash}.json"
 
     def _is_cache_valid(self, cache_path: Path) -> bool:
@@ -560,31 +560,31 @@ def main():
     if args.summary:
         # Get summary
         summary = collector.get_ticker_summary(args.ticker, days_back=args.days)
-        print(f"\n{'='*80}")
+        print("\n" + "=" * 80)
         print(f"SEEKING ALPHA SUMMARY - {args.ticker}")
-        print(f"{'='*80}")
+        print("=" * 80)
         print(f"Sentiment Score: {summary['sentiment_score']:+.3f}")
         print(f"Article Count: {summary['article_count']}")
         print(f"Avg Rating: {summary['avg_rating']:+.3f}")
-        print(f"\nRatings Breakdown:")
+        print("\nRatings Breakdown:")
         for rating, count in summary["ratings_breakdown"].items():
             print(f"  - {rating}: {count}")
-        print(f"\nRecent Articles:")
+        print("\nRecent Articles:")
         for article in summary["recent_articles"]:
             print(f"  - {article['title']}")
             print(
                 f"    Sentiment: {article['sentiment']:+.3f}, Rating: {article['rating']}"
             )
             print(f"    {article['url']}")
-        print(f"{'='*80}\n")
+        print("=" * 80 + "\n")
     else:
         # Get full articles
         articles = collector.collect_ticker_news(args.ticker, days_back=args.days)
-        print(f"\n{'='*80}")
+        print("\n" + "=" * 80)
         print(f"SEEKING ALPHA ARTICLES - {args.ticker}")
-        print(f"{'='*80}")
+        print("=" * 80)
         print(f"Found {len(articles)} articles")
-        print(f"{'='*80}\n")
+        print("=" * 80 + "\n")
 
         for i, article in enumerate(articles, 1):
             print(f"{i}. {article['title']}")
