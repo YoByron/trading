@@ -24,13 +24,13 @@ from pathlib import Path
 from collections import defaultdict
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from scripts.dashboard_metrics import TradingMetricsCalculator
 from src.utils.data_validator import DataValidator
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
@@ -40,7 +40,7 @@ def load_json_file(filepath: Path) -> dict:
     """Load JSON file, return empty dict if not found."""
     if filepath.exists():
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 return json.load(f)
         except Exception:
             return {}
@@ -53,69 +53,77 @@ def calculate_metrics():
     challenge_file = DATA_DIR / "challenge_start.json"
     if challenge_file.exists():
         challenge_data = load_json_file(challenge_file)
-        start_date = datetime.fromisoformat(challenge_data['start_date']).date()
+        start_date = datetime.fromisoformat(challenge_data["start_date"]).date()
         today = date.today()
         days_elapsed = (today - start_date).days + 1
-        starting_balance = challenge_data.get('starting_balance', 100000.0)
+        starting_balance = challenge_data.get("starting_balance", 100000.0)
     else:
         # Fallback: use system_state.json challenge data
         system_state = load_json_file(DATA_DIR / "system_state.json")
-        challenge = system_state.get('challenge', {})
-        start_date_str = challenge.get('start_date', '2025-10-29')
+        challenge = system_state.get("challenge", {})
+        start_date_str = challenge.get("start_date", "2025-10-29")
         try:
             start_date = datetime.fromisoformat(start_date_str).date()
             today = date.today()
             days_elapsed = max((today - start_date).days + 1, 1)  # At least 1 day
         except:
-            days_elapsed = max(system_state.get('challenge', {}).get('current_day', 1), 1)
+            days_elapsed = max(
+                system_state.get("challenge", {}).get("current_day", 1), 1
+            )
         starting_balance = 100000.0
 
     # Load system state
     system_state = load_json_file(DATA_DIR / "system_state.json")
-    account = system_state.get('account', {})
-    current_equity = account.get('current_equity', starting_balance)
-    total_pl = account.get('total_pl', 0.0)
-    total_pl_pct = account.get('total_pl_pct', 0.0)
+    account = system_state.get("account", {})
+    current_equity = account.get("current_equity", starting_balance)
+    total_pl = account.get("total_pl", 0.0)
+    total_pl_pct = account.get("total_pl_pct", 0.0)
 
     # Load performance log
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
     if isinstance(perf_log, list) and perf_log:
         latest_perf = perf_log[-1]
-        current_equity = latest_perf.get('equity', current_equity)
-        total_pl = latest_perf.get('pl', total_pl)
-        total_pl_pct = latest_perf.get('pl_pct', total_pl_pct)
+        current_equity = latest_perf.get("equity", current_equity)
+        total_pl = latest_perf.get("pl", total_pl)
+        total_pl_pct = latest_perf.get("pl_pct", total_pl_pct)
 
     # Calculate averages - use actual trading days, not calendar days
     # If we have performance log entries, use that count
-    trading_days = len(perf_log) if isinstance(perf_log, list) and perf_log else days_elapsed
+    trading_days = (
+        len(perf_log) if isinstance(perf_log, list) and perf_log else days_elapsed
+    )
     trading_days = max(trading_days, 1)  # At least 1 day to avoid division by zero
-    
+
     # Use system_state.json total_pl as source of truth (most accurate current state)
     avg_daily_profit = total_pl / trading_days if trading_days > 0 else 0.0
     north_star_target = 100.0  # $100/day
-    progress_pct = (avg_daily_profit / north_star_target * 100) if north_star_target > 0 else 0.0
-    
+    progress_pct = (
+        (avg_daily_profit / north_star_target * 100) if north_star_target > 0 else 0.0
+    )
+
     # Ensure progress is never negative and shows at least minimal progress if profitable
     if total_pl > 0 and progress_pct < 0.01:
-        progress_pct = max(0.01, (total_pl / north_star_target) * 100)  # Show at least 0.01% if profitable
+        progress_pct = max(
+            0.01, (total_pl / north_star_target) * 100
+        )  # Show at least 0.01% if profitable
 
     # Get performance metrics
-    performance = system_state.get('performance', {})
-    win_rate = performance.get('win_rate', 0.0) * 100
-    total_trades = performance.get('total_trades', 0)
-    winning_trades = performance.get('winning_trades', 0)
-    losing_trades = performance.get('losing_trades', 0)
+    performance = system_state.get("performance", {})
+    win_rate = performance.get("win_rate", 0.0) * 100
+    total_trades = performance.get("total_trades", 0)
+    winning_trades = performance.get("winning_trades", 0)
+    losing_trades = performance.get("losing_trades", 0)
 
     # Get challenge info
-    challenge = system_state.get('challenge', {})
-    current_day = challenge.get('current_day', days_elapsed)
-    total_days = challenge.get('total_days', 90)
-    phase = challenge.get('phase', 'R&D Phase - Month 1 (Days 1-30)')
+    challenge = system_state.get("challenge", {})
+    current_day = challenge.get("current_day", days_elapsed)
+    total_days = challenge.get("total_days", 90)
+    phase = challenge.get("phase", "R&D Phase - Month 1 (Days 1-30)")
 
     # Get automation status
-    automation = system_state.get('automation', {})
-    automation_status = automation.get('workflow_status', 'UNKNOWN')
-    last_execution = automation.get('last_successful_execution', 'Never')
+    automation = system_state.get("automation", {})
+    automation_status = automation.get("workflow_status", "UNKNOWN")
+    last_execution = automation.get("last_successful_execution", "Never")
 
     # Get recent trades
     today_trades_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
@@ -131,54 +139,56 @@ def calculate_metrics():
     today_equity = current_equity
     today_pl = 0.0
     today_pl_pct = 0.0
-    
+
     if isinstance(perf_log, list) and perf_log:
         # Find today's entry in performance log
         for entry in reversed(perf_log):
-            if entry.get('date') == today_str:
+            if entry.get("date") == today_str:
                 today_perf = entry
-                today_equity = entry.get('equity', current_equity)
-                today_pl = entry.get('pl', 0.0)
-                today_pl_pct = entry.get('pl_pct', 0.0) * 100  # Convert to percentage
+                today_equity = entry.get("equity", current_equity)
+                today_pl = entry.get("pl", 0.0)
+                today_pl_pct = entry.get("pl_pct", 0.0) * 100  # Convert to percentage
                 break
-        
+
         # If no entry for today, calculate from yesterday
         if today_perf is None and len(perf_log) > 0:
             yesterday_perf = perf_log[-1]
-            yesterday_equity = yesterday_perf.get('equity', starting_balance)
+            yesterday_equity = yesterday_perf.get("equity", starting_balance)
             today_equity = current_equity
             today_pl = current_equity - yesterday_equity
-            today_pl_pct = ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
+            today_pl_pct = (
+                ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
+            )
 
     # Calculate days remaining
     days_remaining = total_days - current_day
     progress_pct_challenge = (current_day / total_days * 100) if total_days > 0 else 0.0
 
     return {
-        'days_elapsed': days_elapsed,
-        'current_day': current_day,
-        'total_days': total_days,
-        'days_remaining': days_remaining,
-        'progress_pct_challenge': progress_pct_challenge,
-        'phase': phase,
-        'starting_balance': starting_balance,
-        'current_equity': current_equity,
-        'total_pl': total_pl,
-        'total_pl_pct': total_pl_pct,
-        'avg_daily_profit': avg_daily_profit,
-        'north_star_target': north_star_target,
-        'progress_pct': progress_pct,
-        'win_rate': win_rate,
-        'total_trades': total_trades,
-        'winning_trades': winning_trades,
-        'losing_trades': losing_trades,
-        'automation_status': automation_status,
-        'last_execution': last_execution,
-        'today_trade_count': today_trade_count,
-        'today_equity': today_equity,
-        'today_pl': today_pl,
-        'today_pl_pct': today_pl_pct,
-        'today_perf_available': today_perf is not None,
+        "days_elapsed": days_elapsed,
+        "current_day": current_day,
+        "total_days": total_days,
+        "days_remaining": days_remaining,
+        "progress_pct_challenge": progress_pct_challenge,
+        "phase": phase,
+        "starting_balance": starting_balance,
+        "current_equity": current_equity,
+        "total_pl": total_pl,
+        "total_pl_pct": total_pl_pct,
+        "avg_daily_profit": avg_daily_profit,
+        "north_star_target": north_star_target,
+        "progress_pct": progress_pct,
+        "win_rate": win_rate,
+        "total_trades": total_trades,
+        "winning_trades": winning_trades,
+        "losing_trades": losing_trades,
+        "automation_status": automation_status,
+        "last_execution": last_execution,
+        "today_trade_count": today_trade_count,
+        "today_equity": today_equity,
+        "today_pl": today_pl,
+        "today_pl_pct": today_pl_pct,
+        "today_perf_available": today_perf is not None,
     }
 
 
@@ -186,80 +196,93 @@ def generate_dashboard() -> str:
     """Generate the world-class progress dashboard markdown."""
     # Initialize data validator
     validator = DataValidator()
-    
+
     # Validate data consistency before generating dashboard
     consistency_results = validator.check_data_consistency()
     if consistency_results:
         logger.warning("Data consistency issues found:")
         for result in consistency_results:
             logger.warning(f"  {result.error_message}")
-    
+
     # Get basic metrics
     basic_metrics = calculate_metrics()
-    
+
     # Validate calculated metrics against actual data
-    calculated_total_pl = basic_metrics.get('total_pl', 0.0)
+    calculated_total_pl = basic_metrics.get("total_pl", 0.0)
     actual_total_pl = validator.get_current_total_profit()
-    
+
     if abs(calculated_total_pl - actual_total_pl) >= 0.01:
         logger.error(f"CRITICAL: Dashboard metric mismatch!")
         logger.error(f"  Calculated total P/L: ${calculated_total_pl:.2f}")
         logger.error(f"  Actual total P/L: ${actual_total_pl:.2f}")
         logger.error(f"  Difference: ${abs(calculated_total_pl - actual_total_pl):.2f}")
         # Use actual value to prevent false claims
-        basic_metrics['total_pl'] = actual_total_pl
+        basic_metrics["total_pl"] = actual_total_pl
         # Recalculate percentage
-        starting_balance = basic_metrics.get('starting_balance', 100000.0)
-        basic_metrics['total_pl_pct'] = (actual_total_pl / starting_balance * 100) if starting_balance > 0 else 0.0
-    
+        starting_balance = basic_metrics.get("starting_balance", 100000.0)
+        basic_metrics["total_pl_pct"] = (
+            (actual_total_pl / starting_balance * 100) if starting_balance > 0 else 0.0
+        )
+
     # Get comprehensive world-class metrics
     calculator = TradingMetricsCalculator(DATA_DIR)
     world_class_metrics = calculator.calculate_all_metrics()
-    
+
     now = datetime.now()
 
     # Calculate progress bar
-    progress_bars = int(basic_metrics['progress_pct_challenge'] / 5)
-    progress_bar = '█' * progress_bars + '░' * (20 - progress_bars)
+    progress_bars = int(basic_metrics["progress_pct_challenge"] / 5)
+    progress_bar = "█" * progress_bars + "░" * (20 - progress_bars)
 
     # Calculate North Star progress bar
     # Show at least 1 bar if we're profitable, even if < 5%
-    if basic_metrics['total_pl'] > 0 and basic_metrics['progress_pct'] < 5.0:
+    if basic_metrics["total_pl"] > 0 and basic_metrics["progress_pct"] < 5.0:
         north_star_bars = 1  # Show at least 1 bar for any profit
     else:
-        north_star_bars = min(int(basic_metrics['progress_pct'] / 5), 20)
-    north_star_bar = '█' * north_star_bars + '░' * (20 - north_star_bars)
-    
+        north_star_bars = min(int(basic_metrics["progress_pct"] / 5), 20)
+    north_star_bar = "█" * north_star_bars + "░" * (20 - north_star_bars)
+
     # Ensure progress percentage shows at least 0.01% if profitable
-    display_progress_pct = max(basic_metrics['progress_pct'], 0.01) if basic_metrics['total_pl'] > 0 else basic_metrics['progress_pct']
+    display_progress_pct = (
+        max(basic_metrics["progress_pct"], 0.01)
+        if basic_metrics["total_pl"] > 0
+        else basic_metrics["progress_pct"]
+    )
 
     # Status emoji
-    status_emoji = '✅' if basic_metrics['total_pl'] > 0 else '⚠️'
-    automation_emoji = '✅' if basic_metrics['automation_status'] == 'OPERATIONAL' else '❌'
-    
+    status_emoji = "✅" if basic_metrics["total_pl"] > 0 else "⚠️"
+    automation_emoji = (
+        "✅" if basic_metrics["automation_status"] == "OPERATIONAL" else "❌"
+    )
+
     # Load system state for strategy breakdown
     system_state = load_json_file(DATA_DIR / "system_state.json")
-    
+
     # Extract world-class metrics
-    risk = world_class_metrics.get('risk_metrics', {})
-    perf = world_class_metrics.get('performance_metrics', {})
-    strategy_metrics_data = world_class_metrics.get('strategy_metrics', {})
+    risk = world_class_metrics.get("risk_metrics", {})
+    perf = world_class_metrics.get("performance_metrics", {})
+    strategy_metrics_data = world_class_metrics.get("strategy_metrics", {})
     # Handle both old format (dict) and new format (dict with 'by_strategy' and 'by_agent')
-    if isinstance(strategy_metrics_data, dict) and 'by_strategy' in strategy_metrics_data:
-        strategies = strategy_metrics_data.get('by_strategy', {})
-        agents = strategy_metrics_data.get('by_agent', {})
+    if (
+        isinstance(strategy_metrics_data, dict)
+        and "by_strategy" in strategy_metrics_data
+    ):
+        strategies = strategy_metrics_data.get("by_strategy", {})
+        agents = strategy_metrics_data.get("by_agent", {})
     else:
-        strategies = strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
+        strategies = (
+            strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
+        )
         agents = {}
-    exposure = world_class_metrics.get('exposure_metrics', {})
-    guardrails = world_class_metrics.get('risk_guardrails', {})
-    account = world_class_metrics.get('account_summary', {})
-    market_regime = world_class_metrics.get('market_regime', {})
-    benchmark = world_class_metrics.get('benchmark_comparison', {})
-    ai_kpis = world_class_metrics.get('ai_kpis', {})
-    automation_status = world_class_metrics.get('automation_status', {})
-    journal = world_class_metrics.get('trading_journal', {})
-    compliance = world_class_metrics.get('compliance', {})
+    exposure = world_class_metrics.get("exposure_metrics", {})
+    guardrails = world_class_metrics.get("risk_guardrails", {})
+    account = world_class_metrics.get("account_summary", {})
+    market_regime = world_class_metrics.get("market_regime", {})
+    benchmark = world_class_metrics.get("benchmark_comparison", {})
+    ai_kpis = world_class_metrics.get("ai_kpis", {})
+    automation_status = world_class_metrics.get("automation_status", {})
+    journal = world_class_metrics.get("trading_journal", {})
+    compliance = world_class_metrics.get("compliance", {})
 
     dashboard = f"""# 📊 Progress Dashboard
 
@@ -288,8 +311,9 @@ def generate_dashboard() -> str:
 
 ### LangSmith Observability
 - **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
-- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
-  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+- **[Trading RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*  
+  *Note: Project may display as "default" in LangSmith UI - this is the correct project*
 - **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
 
 ### Vertex AI Cloud RL
@@ -390,15 +414,15 @@ def generate_dashboard() -> str:
 | Strategy/Agent | Trades | P/L ($) | Win % | Sharpe | Max DD % |
 |----------------|---------|---------|-------|--------|----------|
 """
-    
+
     # Add strategy rows
     if strategies:
         for strategy_id, strategy_data in strategies.items():
-            profit_factor = strategy_data.get('profit_factor', 0)
+            profit_factor = strategy_data.get("profit_factor", 0)
             dashboard += f"| {strategy_data.get('name', strategy_id)} | {strategy_data.get('trades', 0)} | ${strategy_data.get('pl', 0):+.2f} | {strategy_data.get('win_rate', 0):.1f}% | {strategy_data.get('sharpe', 0):.2f} | {strategy_data.get('max_drawdown_pct', 0):.2f}% |\n"
     else:
         dashboard += "| *No strategy data available* | - | - | - | - | - |\n"
-    
+
     # Add per-agent attribution if available
     if agents:
         dashboard += """
@@ -409,7 +433,7 @@ def generate_dashboard() -> str:
 """
         for agent_type, agent_data in agents.items():
             dashboard += f"| {agent_type.replace('_', ' ').title()} | {agent_data.get('trades', 0)} | ${agent_data.get('pl', 0):+.2f} | {agent_data.get('win_rate', 0):.1f}% |\n"
-    
+
     dashboard += f"""
 ---
 
@@ -420,22 +444,26 @@ def generate_dashboard() -> str:
 | Ticker | Position $ | % of Equity | Sector | Strategy |
 |--------|-------------|-------------|--------|----------|
 """
-    
+
     # Add exposure rows
-    exposure_by_ticker = exposure.get('by_ticker', {})
+    exposure_by_ticker = exposure.get("by_ticker", {})
     if exposure_by_ticker:
-        for ticker, pct in sorted(exposure_by_ticker.items(), key=lambda x: x[1], reverse=True):
-            position_value = (pct / 100) * account.get('current_equity', 0)
-            dashboard += f"| {ticker} | ${position_value:,.2f} | {pct:.2f}% | *TBD* | *TBD* |\n"
+        for ticker, pct in sorted(
+            exposure_by_ticker.items(), key=lambda x: x[1], reverse=True
+        ):
+            position_value = (pct / 100) * account.get("current_equity", 0)
+            dashboard += (
+                f"| {ticker} | ${position_value:,.2f} | {pct:.2f}% | *TBD* | *TBD* |\n"
+            )
     else:
         dashboard += "| *No open positions* | - | - | - | - |\n"
-    
+
     # Extract exposure values
-    largest_position_pct = exposure.get('largest_position_pct', 0)
-    total_exposure_val = exposure.get('total_exposure', 0)
+    largest_position_pct = exposure.get("largest_position_pct", 0)
+    total_exposure_val = exposure.get("total_exposure", 0)
     largest_position_pct_str = f"{largest_position_pct:.2f}"
     total_exposure_str = f"{total_exposure_val:,.2f}"
-    
+
     dashboard += f"""
 ### Exposure Summary
 
@@ -449,50 +477,52 @@ def generate_dashboard() -> str:
 | Asset Class | Exposure | % of Equity | % of Portfolio |
 |-------------|----------|-------------|----------------|
 """
-    
+
     # Add asset class breakdown
-    exposure_by_asset_class = exposure.get('by_asset_class', {})
-    total_exposure = exposure.get('total_exposure', 0)
-    current_equity = account.get('current_equity', basic_metrics['current_equity'])
-    
+    exposure_by_asset_class = exposure.get("by_asset_class", {})
+    total_exposure = exposure.get("total_exposure", 0)
+    current_equity = account.get("current_equity", basic_metrics["current_equity"])
+
     # Calculate totals for each asset class
     asset_class_totals = {}
     for asset_class, amount in exposure_by_asset_class.items():
         asset_class_totals[asset_class] = {
-            'exposure': amount,
-            'pct_of_equity': (amount / current_equity * 100) if current_equity > 0 else 0.0,
-            'pct_of_portfolio': (amount / total_exposure * 100) if total_exposure > 0 else 0.0
+            "exposure": amount,
+            "pct_of_equity": (
+                (amount / current_equity * 100) if current_equity > 0 else 0.0
+            ),
+            "pct_of_portfolio": (
+                (amount / total_exposure * 100) if total_exposure > 0 else 0.0
+            ),
         }
-    
+
     # Show asset classes: Crypto, Equities, Bonds
-    for asset_class in ['Crypto', 'Equities', 'Bonds']:
+    for asset_class in ["Crypto", "Equities", "Bonds"]:
         if asset_class in asset_class_totals:
             data = asset_class_totals[asset_class]
             dashboard += f"| **{asset_class}** | ${data['exposure']:,.2f} | {data['pct_of_equity']:.2f}% | {data['pct_of_portfolio']:.2f}% |\n"
         else:
             dashboard += f"| **{asset_class}** | $0.00 | 0.00% | 0.00% |\n"
-    
+
     # Add strategy breakdown by asset class
-    strategies = system_state.get('strategies', {})
-    crypto_invested = strategies.get('tier5', {}).get('total_invested', 0.0)
-    equities_invested = (
-        strategies.get('tier1', {}).get('total_invested', 0.0) +
-        strategies.get('tier2', {}).get('total_invested', 0.0)
-    )
+    strategies = system_state.get("strategies", {})
+    crypto_invested = strategies.get("tier5", {}).get("total_invested", 0.0)
+    equities_invested = strategies.get("tier1", {}).get(
+        "total_invested", 0.0
+    ) + strategies.get("tier2", {}).get("total_invested", 0.0)
     bonds_invested = 0.0  # BND is in tier1, would need to track separately
-    
+
     # Calculate trades for each asset class
-    equities_trades = (
-        strategies.get('tier1', {}).get('trades_executed', 0) +
-        strategies.get('tier2', {}).get('trades_executed', 0)
-    )
-    crypto_trades = strategies.get('tier5', {}).get('trades_executed', 0)
-    
+    equities_trades = strategies.get("tier1", {}).get(
+        "trades_executed", 0
+    ) + strategies.get("tier2", {}).get("trades_executed", 0)
+    crypto_trades = strategies.get("tier5", {}).get("trades_executed", 0)
+
     # Format investment values
     equities_invested_str = f"{equities_invested:,.2f}"
     bonds_invested_str = f"{bonds_invested:,.2f}"
     crypto_invested_str = f"{crypto_invested:,.2f}"
-    
+
     dashboard += f"""
 ### Investment by Asset Class (Total Invested)
 
@@ -504,7 +534,7 @@ def generate_dashboard() -> str:
 
 ---
 """
-    
+
     dashboard += """
 ## 🚨 Risk Guardrails & Safety
 
@@ -513,37 +543,37 @@ def generate_dashboard() -> str:
 | Guardrail | Current | Limit | Status |
 |-----------|---------|-------|--------|
 """
-    
+
     # Format guardrail values (extract from dict to avoid f-string issues)
-    daily_loss_used = guardrails.get('daily_loss_used', 0)
-    daily_loss_used_pct = guardrails.get('daily_loss_used_pct', 0)
-    daily_loss_limit = guardrails.get('daily_loss_limit', 0)
-    daily_loss_status = '⚠️' if daily_loss_used_pct > 50 else '✅'
-    
-    largest_position_pct = exposure.get('largest_position_pct', 0)
-    max_position_size_pct = guardrails.get('max_position_size_pct', 10)
-    position_status = '⚠️' if largest_position_pct > max_position_size_pct else '✅'
-    
-    consecutive_losses = guardrails.get('consecutive_losses', 0)
-    consecutive_losses_limit = guardrails.get('consecutive_losses_limit', 5)
-    consecutive_status = '⚠️' if consecutive_losses >= consecutive_losses_limit else '✅'
-    
+    daily_loss_used = guardrails.get("daily_loss_used", 0)
+    daily_loss_used_pct = guardrails.get("daily_loss_used_pct", 0)
+    daily_loss_limit = guardrails.get("daily_loss_limit", 0)
+    daily_loss_status = "⚠️" if daily_loss_used_pct > 50 else "✅"
+
+    largest_position_pct = exposure.get("largest_position_pct", 0)
+    max_position_size_pct = guardrails.get("max_position_size_pct", 10)
+    position_status = "⚠️" if largest_position_pct > max_position_size_pct else "✅"
+
+    consecutive_losses = guardrails.get("consecutive_losses", 0)
+    consecutive_losses_limit = guardrails.get("consecutive_losses_limit", 5)
+    consecutive_status = "⚠️" if consecutive_losses >= consecutive_losses_limit else "✅"
+
     # Format percentages as strings to avoid f-string parsing issues
     daily_loss_used_pct_str = f"{daily_loss_used_pct:.1f}"
     max_position_size_pct_str = f"{max_position_size_pct:.1f}"
-    
+
     dashboard += f"| **Daily Loss Used** | ${daily_loss_used:.2f} ({daily_loss_used_pct_str}%) | ${daily_loss_limit:,.2f} | {daily_loss_status} |\n"
     dashboard += f"| **Max Position Size** | {largest_position_pct:.2f}% | {max_position_size_pct_str}% | {position_status} |\n"
     dashboard += f"| **Consecutive Losses** | {consecutive_losses} | {consecutive_losses_limit} | {consecutive_status} |\n"
-    
+
     # Extract market regime values
-    regime = market_regime.get('regime', 'UNKNOWN')
+    regime = market_regime.get("regime", "UNKNOWN")
     confidence_str = f"{market_regime.get('confidence', 0):.1f}"
     trend_strength_str = f"{market_regime.get('trend_strength', 0):.2f}"
-    volatility_regime = market_regime.get('volatility_regime', 'NORMAL')
+    volatility_regime = market_regime.get("volatility_regime", "NORMAL")
     avg_daily_return_str = f"{market_regime.get('avg_daily_return', 0):+.2f}"
     volatility_str = f"{market_regime.get('volatility', 0):.2f}"
-    
+
     dashboard += f"""
 ---
 
@@ -565,27 +595,27 @@ def generate_dashboard() -> str:
 | Metric | Portfolio | Benchmark | Difference |
 |--------|-----------|-----------|------------|
 """
-    
+
     # Extract benchmark values
-    portfolio_return = benchmark.get('portfolio_return', 0)
-    benchmark_return = benchmark.get('benchmark_return', 0)
-    alpha = benchmark.get('alpha', 0)
-    beta = benchmark.get('beta', 1.0)
-    data_available = benchmark.get('data_available', False)
-    
+    portfolio_return = benchmark.get("portfolio_return", 0)
+    benchmark_return = benchmark.get("benchmark_return", 0)
+    alpha = benchmark.get("alpha", 0)
+    beta = benchmark.get("beta", 1.0)
+    data_available = benchmark.get("data_available", False)
+
     portfolio_return_str = f"{portfolio_return:+.2f}"
     benchmark_return_str = f"{benchmark_return:+.2f}"
     alpha_str = f"{alpha:+.2f}"
     beta_str = f"{beta:.2f}"
-    alpha_status = '✅ Outperforming' if alpha > 0 else '⚠️ Underperforming'
-    beta_status = 'Higher Risk' if beta > 1.0 else 'Lower Risk'
-    data_status = '✅ Available' if data_available else '⚠️ Limited'
-    
+    alpha_status = "✅ Outperforming" if alpha > 0 else "⚠️ Underperforming"
+    beta_status = "Higher Risk" if beta > 1.0 else "Lower Risk"
+    data_status = "✅ Available" if data_available else "⚠️ Limited"
+
     dashboard += f"| **Total Return** | {portfolio_return_str}% | {benchmark_return_str}% | {alpha_str}% |\n"
     dashboard += f"| **Alpha** | {alpha_str}% | - | {alpha_status} |\n"
     dashboard += f"| **Beta** | {beta_str} | 1.0 | {beta_status} |\n"
     dashboard += f"| **Data Status** | {data_status} | - | - |\n"
-    
+
     dashboard += """
 ---
 
@@ -597,40 +627,40 @@ def generate_dashboard() -> str:
 |-----------|--------|
 | **GitHub Actions** | {automation_emoji} {basic_metrics['automation_status']} |
 """
-    
+
     # Extract automation status values
-    uptime_pct = automation_status.get('uptime_percentage', 0)
+    uptime_pct = automation_status.get("uptime_percentage", 0)
     uptime_str = f"{uptime_pct:.1f}"
-    reliability_streak = automation_status.get('reliability_streak', 0)
-    days_since_execution = automation_status.get('days_since_execution', 0)
-    execution_count = automation_status.get('execution_count', 0)
-    failures = automation_status.get('failures', 0)
-    
+    reliability_streak = automation_status.get("reliability_streak", 0)
+    days_since_execution = automation_status.get("days_since_execution", 0)
+    execution_count = automation_status.get("execution_count", 0)
+    failures = automation_status.get("failures", 0)
+
     dashboard += f"| **Uptime** | {uptime_str}% |\n"
     dashboard += f"| **Reliability Streak** | {reliability_streak} executions |\n"
     dashboard += f"| **Last Execution** | {basic_metrics['last_execution']} |\n"
     dashboard += f"| **Days Since Execution** | {days_since_execution} days |\n"
     dashboard += f"| **Total Executions** | {execution_count} |\n"
     dashboard += f"| **Failures** | {failures} |\n"
-    
-    health_checks_emoji = '✅'
-    order_validation_emoji = '✅'
+
+    health_checks_emoji = "✅"
+    order_validation_emoji = "✅"
     dashboard += f"| **Health Checks** | {health_checks_emoji} Integrated |\n"
     dashboard += f"| **Order Validation** | {order_validation_emoji} Active |\n"
-    
+
     dashboard += """
 ### TURBO MODE Status
 
 | System | Status |
 |--------|--------|
 """
-    
-    turbo_emoji = '✅'
+
+    turbo_emoji = "✅"
     dashboard += f"| **Go ADK Orchestrator** | {turbo_emoji} Enabled |\n"
     dashboard += f"| **Langchain Agents** | {turbo_emoji} Enabled |\n"
     dashboard += f"| **Python Strategies** | {turbo_emoji} Active (Fallback) |\n"
     dashboard += f"| **Sentiment RAG** | {turbo_emoji} Active |\n"
-    
+
     dashboard += """
 ---
 
@@ -648,40 +678,42 @@ def generate_dashboard() -> str:
         dashboard += "\n| Date | Equity | P/L | P/L % |\n"
         dashboard += "|------|--------|-----|-------|\n"
         for entry in recent:
-            entry_date = entry.get('date', 'N/A')
-            equity = entry.get('equity', 0)
-            pl = entry.get('pl', 0)
-            pl_pct = entry.get('pl_pct', 0) * 100
-            dashboard += f"| {entry_date} | ${equity:,.2f} | ${pl:+,.2f} | {pl_pct:+.2f}% |\n"
+            entry_date = entry.get("date", "N/A")
+            equity = entry.get("equity", 0)
+            pl = entry.get("pl", 0)
+            pl_pct = entry.get("pl_pct", 0) * 100
+            dashboard += (
+                f"| {entry_date} | ${equity:,.2f} | ${pl:+,.2f} | {pl_pct:+.2f}% |\n"
+            )
     else:
         dashboard += "\n*No performance data available yet*\n"
-    
+
     # Equity curve data (last 30 days)
-    time_series = world_class_metrics.get('time_series', {})
-    equity_curve = time_series.get('equity_curve', [])
-    
+    time_series = world_class_metrics.get("time_series", {})
+    equity_curve = time_series.get("equity_curve", [])
+
     dashboard += f"""
 ### Equity Curve Summary
 
 | Metric | Value |
 |--------|-------|
 """
-    
+
     # Extract time series values
-    trading_days = risk.get('trading_days', 0)
-    rolling_sharpe_7d = time_series.get('rolling_sharpe_7d', 0)
-    rolling_sharpe_30d = time_series.get('rolling_sharpe_30d', 0)
-    rolling_max_dd_30d = time_series.get('rolling_max_dd_30d', 0)
-    
+    trading_days = risk.get("trading_days", 0)
+    rolling_sharpe_7d = time_series.get("rolling_sharpe_7d", 0)
+    rolling_sharpe_30d = time_series.get("rolling_sharpe_30d", 0)
+    rolling_max_dd_30d = time_series.get("rolling_max_dd_30d", 0)
+
     rolling_sharpe_7d_str = f"{rolling_sharpe_7d:.2f}"
     rolling_sharpe_30d_str = f"{rolling_sharpe_30d:.2f}"
     rolling_max_dd_30d_str = f"{rolling_max_dd_30d:.2f}"
-    
+
     dashboard += f"| **Trading Days Tracked** | {trading_days} |\n"
     dashboard += f"| **Rolling Sharpe (7d)** | {rolling_sharpe_7d_str} |\n"
     dashboard += f"| **Rolling Sharpe (30d)** | {rolling_sharpe_30d_str} |\n"
     dashboard += f"| **Rolling Max DD (30d)** | {rolling_max_dd_30d_str}% |\n"
-    
+
     # Add cohort analysis section
     dashboard += """
 ### Cohort Analysis
@@ -690,33 +722,37 @@ def generate_dashboard() -> str:
 """
     # Calculate P/L by ticker from closed trades
     system_state = load_json_file(DATA_DIR / "system_state.json")
-    closed_trades = system_state.get('performance', {}).get('closed_trades', [])
-    
+    closed_trades = system_state.get("performance", {}).get("closed_trades", [])
+
     if closed_trades:
-        ticker_pl = defaultdict(lambda: {'pl': 0.0, 'trades': 0, 'wins': 0})
+        ticker_pl = defaultdict(lambda: {"pl": 0.0, "trades": 0, "wins": 0})
         for trade in closed_trades:
-            symbol = trade.get('symbol', 'UNKNOWN')
-            pl = trade.get('pl', 0.0)
-            ticker_pl[symbol]['pl'] += pl
-            ticker_pl[symbol]['trades'] += 1
+            symbol = trade.get("symbol", "UNKNOWN")
+            pl = trade.get("pl", 0.0)
+            ticker_pl[symbol]["pl"] += pl
+            ticker_pl[symbol]["trades"] += 1
             if pl > 0:
-                ticker_pl[symbol]['wins'] += 1
-        
+                ticker_pl[symbol]["wins"] += 1
+
         if ticker_pl:
             dashboard += "\n| Ticker | Trades | P/L ($) | Win Rate |\n"
             dashboard += "|--------|--------|---------|----------|\n"
-            for symbol, data in sorted(ticker_pl.items(), key=lambda x: x[1]['pl'], reverse=True):
-                win_rate = (data['wins'] / data['trades'] * 100) if data['trades'] > 0 else 0.0
+            for symbol, data in sorted(
+                ticker_pl.items(), key=lambda x: x[1]["pl"], reverse=True
+            ):
+                win_rate = (
+                    (data["wins"] / data["trades"] * 100) if data["trades"] > 0 else 0.0
+                )
                 dashboard += f"| {symbol} | {data['trades']} | ${data['pl']:+.2f} | {win_rate:.1f}% |\n"
         else:
             dashboard += "\n*No closed trades available for cohort analysis*\n"
     else:
         dashboard += "\n*No closed trades available for cohort analysis*\n"
-    
+
     # Add P/L by holding period
-    holding_period = world_class_metrics.get('holding_period_analysis', {})
-    by_period = holding_period.get('by_period', {})
-    
+    holding_period = world_class_metrics.get("holding_period_analysis", {})
+    by_period = holding_period.get("by_period", {})
+
     if by_period:
         dashboard += """
 **P/L by Holding Period**:
@@ -725,17 +761,25 @@ def generate_dashboard() -> str:
 |--------|--------|-----------|---------|----------|
 """
         # Sort periods by a logical order
-        period_order = ['Same Day', '1 Day', '2-3 Days', '4-7 Days', '8-14 Days', '15-30 Days', '30+ Days']
+        period_order = [
+            "Same Day",
+            "1 Day",
+            "2-3 Days",
+            "4-7 Days",
+            "8-14 Days",
+            "15-30 Days",
+            "30+ Days",
+        ]
         for period in period_order:
             if period in by_period:
                 data = by_period[period]
                 dashboard += f"| {period} | {data.get('trades', 0)} | ${data.get('total_pl', 0):+.2f} | ${data.get('avg_pl', 0):+.2f} | {data.get('win_rate', 0):.1f}% |\n"
-    
+
     # Add P/L by time of day
-    time_of_day = world_class_metrics.get('time_of_day_analysis', {})
-    by_hour = time_of_day.get('by_hour', {})
-    best_hours = time_of_day.get('best_hours', [])
-    
+    time_of_day = world_class_metrics.get("time_of_day_analysis", {})
+    by_hour = time_of_day.get("by_hour", {})
+    best_hours = time_of_day.get("best_hours", [])
+
     if by_hour:
         dashboard += """
 **P/L by Time of Day** (Optimal Execution Windows):
@@ -749,9 +793,9 @@ def generate_dashboard() -> str:
             if hour in best_hours:
                 hour_label += " ⭐"
             dashboard += f"| {hour_label} | {data.get('trades', 0)} | {data.get('closed_trades', 0)} | ${data.get('total_pl', 0):+.2f} | ${data.get('avg_pl', 0):+.2f} | {data.get('win_rate', 0):.1f}% |\n"
-    
+
     # Add strategy equity curves summary
-    strategy_curves = world_class_metrics.get('strategy_equity_curves', {})
+    strategy_curves = world_class_metrics.get("strategy_equity_curves", {})
     if strategy_curves:
         dashboard += """
 **Strategy Equity Curves Summary**:
@@ -760,10 +804,10 @@ def generate_dashboard() -> str:
 |----------|--------|-----------|---------------------|
 """
         for strategy_id, curve_data in strategy_curves.items():
-            strategy_name = strategy_id.replace('_', ' ').title()
-            curve_points = len(curve_data.get('equity_curve', []))
+            strategy_name = strategy_id.replace("_", " ").title()
+            curve_points = len(curve_data.get("equity_curve", []))
             dashboard += f"| {strategy_name} | {curve_data.get('trades', 0)} | ${curve_data.get('total_pl', 0):+.2f} | {curve_points} points |\n"
-    
+
     dashboard += """
 ---
 
@@ -807,20 +851,20 @@ def generate_dashboard() -> str:
 | Metric | Value |
 |--------|-------|
 """
-    
+
     # Extract AI KPI values
-    ai_enabled = ai_kpis.get('ai_enabled', False)
-    ai_enabled_status = '✅ Yes' if ai_enabled else '❌ No'
-    ai_trades_count = ai_kpis.get('ai_trades_count', 0)
-    total_trades = ai_kpis.get('total_trades', 0)
+    ai_enabled = ai_kpis.get("ai_enabled", False)
+    ai_enabled_status = "✅ Yes" if ai_enabled else "❌ No"
+    ai_trades_count = ai_kpis.get("ai_trades_count", 0)
+    total_trades = ai_kpis.get("total_trades", 0)
     ai_usage_rate_str = f"{ai_kpis.get('ai_usage_rate', 0):.1f}"
     prediction_accuracy_str = f"{ai_kpis.get('prediction_accuracy', 0):.1f}"
     prediction_latency_str = f"{ai_kpis.get('prediction_latency_ms', 0):.0f}"
     ai_costs_daily_str = f"{ai_kpis.get('ai_costs_daily', 0):.2f}"
-    outlier_detection_enabled = ai_kpis.get('outlier_detection_enabled', False)
-    outlier_status = '✅ Enabled' if outlier_detection_enabled else '❌ Disabled'
+    outlier_detection_enabled = ai_kpis.get("outlier_detection_enabled", False)
+    outlier_status = "✅ Enabled" if outlier_detection_enabled else "❌ Disabled"
     backtest_vs_live_str = f"{ai_kpis.get('backtest_vs_live_performance', 0):+.2f}"
-    
+
     dashboard += f"| **AI Enabled** | {ai_enabled_status} |\n"
     dashboard += f"| **AI Trades** | {ai_trades_count} / {total_trades} |\n"
     dashboard += f"| **AI Usage Rate** | {ai_usage_rate_str}% |\n"
@@ -829,7 +873,7 @@ def generate_dashboard() -> str:
     dashboard += f"| **Daily AI Costs** | ${ai_costs_daily_str} |\n"
     dashboard += f"| **Outlier Detection** | {outlier_status} |\n"
     dashboard += f"| **Backtest vs Live** | {backtest_vs_live_str}% |\n"
-    
+
     dashboard += """
 ---
 
@@ -840,32 +884,32 @@ def generate_dashboard() -> str:
 | Metric | Value |
 |--------|-------|
 """
-    
+
     # Extract journal values
-    total_entries = journal.get('total_entries', 0)
-    entries_with_notes = journal.get('entries_with_notes', 0)
+    total_entries = journal.get("total_entries", 0)
+    entries_with_notes = journal.get("entries_with_notes", 0)
     notes_rate_str = f"{journal.get('notes_rate', 0):.1f}"
-    
+
     dashboard += f"| **Total Entries** | {total_entries} |\n"
     dashboard += f"| **Entries with Notes** | {entries_with_notes} |\n"
     dashboard += f"| **Notes Rate** | {notes_rate_str}% |\n"
-    
+
     dashboard += """
 ### Recent Journal Entries
 
 """
-    
+
     # Add recent journal entries
-    recent_entries = journal.get('recent_entries', [])
+    recent_entries = journal.get("recent_entries", [])
     if recent_entries:
         dashboard += "| Trade ID | Symbol | Date | Has Notes |\n"
         dashboard += "|----------|--------|------|-----------|\n"
         for entry in recent_entries[:5]:
-            has_notes = '✅' if entry.get('has_notes', False) else '❌'
+            has_notes = "✅" if entry.get("has_notes", False) else "❌"
             dashboard += f"| {entry.get('trade_id', 'N/A')} | {entry.get('symbol', 'N/A')} | {entry.get('date', 'N/A')[:10]} | {has_notes} |\n"
     else:
         dashboard += "*No journal entries available*\n"
-    
+
     dashboard += """
 ---
 
@@ -876,49 +920,51 @@ def generate_dashboard() -> str:
 | Metric | Current | Limit | Status |
 |--------|---------|-------|--------|
 """
-    
+
     # Extract compliance values
     capital_usage_pct_str = f"{compliance.get('capital_usage_pct', 0):.1f}"
     capital_limit_pct_str = f"{compliance.get('capital_limit_pct', 100):.1f}"
-    capital_compliant = compliance.get('capital_compliant', True)
-    capital_status = '✅ Compliant' if capital_compliant else '⚠️ Over Limit'
+    capital_compliant = compliance.get("capital_compliant", True)
+    capital_status = "✅ Compliant" if capital_compliant else "⚠️ Over Limit"
     max_position_size_pct_str = f"{compliance.get('max_position_size_pct', 0):.2f}"
     max_position_limit_pct_str = f"{compliance.get('max_position_limit_pct', 10):.1f}"
-    position_size_compliant = compliance.get('position_size_compliant', True)
-    position_status_compliance = '✅ Compliant' if position_size_compliant else '⚠️ Over Limit'
-    
+    position_size_compliant = compliance.get("position_size_compliant", True)
+    position_status_compliance = (
+        "✅ Compliant" if position_size_compliant else "⚠️ Over Limit"
+    )
+
     dashboard += f"| **Capital Usage** | {capital_usage_pct_str}% | {capital_limit_pct_str}% | {capital_status} |\n"
     dashboard += f"| **Max Position Size** | {max_position_size_pct_str}% | {max_position_limit_pct_str}% | {position_status_compliance} |\n"
-    
+
     dashboard += """
 ### Stop-Loss Adherence
 
 | Metric | Value |
 |--------|-------|
 """
-    
+
     # Extract stop-loss adherence
-    trades_with_stop_loss = compliance.get('trades_with_stop_loss', 0)
+    trades_with_stop_loss = compliance.get("trades_with_stop_loss", 0)
     stop_loss_adherence_pct_str = f"{compliance.get('stop_loss_adherence_pct', 0):.1f}"
-    
+
     dashboard += f"| **Trades with Stop-Loss** | {trades_with_stop_loss} |\n"
     dashboard += f"| **Stop-Loss Adherence** | {stop_loss_adherence_pct_str}% |\n"
-    
+
     dashboard += """
 ### Audit Trail & Compliance
 
 | Metric | Value |
 |--------|-------|
 """
-    
+
     # Extract audit trail values
-    audit_trail_count = compliance.get('audit_trail_count', 0)
-    audit_trail_available = compliance.get('audit_trail_available', False)
-    audit_trail_status = '✅ Yes' if audit_trail_available else '❌ No'
-    
+    audit_trail_count = compliance.get("audit_trail_count", 0)
+    audit_trail_available = compliance.get("audit_trail_available", False)
+    audit_trail_status = "✅ Yes" if audit_trail_available else "❌ No"
+
     dashboard += f"| **Audit Trail Entries** | {audit_trail_count} |\n"
     dashboard += f"| **Audit Trail Available** | {audit_trail_status} |\n"
-    
+
     dashboard += """
 ---
 
@@ -931,30 +977,30 @@ def generate_dashboard() -> str:
 
 **Key Metrics**:
 """
-    
+
     # Extract key metrics for notes section
-    win_rate = basic_metrics['win_rate']
+    win_rate = basic_metrics["win_rate"]
     win_rate_str = f"{win_rate:.1f}"
-    win_rate_status = '✅' if win_rate >= 55 else '⚠️'
+    win_rate_status = "✅" if win_rate >= 55 else "⚠️"
     avg_daily_profit_str = f"{basic_metrics['avg_daily_profit']:+.2f}"
-    automation_status_str = basic_metrics['automation_status']
-    reliability_status = '✅' if automation_status_str == 'OPERATIONAL' else '❌'
-    sharpe_ratio = risk.get('sharpe_ratio', 0)
+    automation_status_str = basic_metrics["automation_status"]
+    reliability_status = "✅" if automation_status_str == "OPERATIONAL" else "❌"
+    sharpe_ratio = risk.get("sharpe_ratio", 0)
     sharpe_ratio_str = f"{sharpe_ratio:.2f}"
-    sharpe_status = '✅' if sharpe_ratio >= 1.0 else '⚠️'
-    regime_name = market_regime.get('regime', 'UNKNOWN')
-    confidence_val = market_regime.get('confidence', 0)
+    sharpe_status = "✅" if sharpe_ratio >= 1.0 else "⚠️"
+    regime_name = market_regime.get("regime", "UNKNOWN")
+    confidence_val = market_regime.get("confidence", 0)
     confidence_str = f"{confidence_val:.0f}"
-    alpha_val = benchmark.get('alpha', 0)
+    alpha_val = benchmark.get("alpha", 0)
     alpha_val_str = f"{alpha_val:+.2f}"
-    
+
     dashboard += f"- Win Rate: {win_rate_str}% (Target: >55%) {win_rate_status}\n"
     dashboard += f"- Average Daily: ${avg_daily_profit_str} (Target: $100/day)\n"
     dashboard += f"- System Reliability: {reliability_status}\n"
     dashboard += f"- Sharpe Ratio: {sharpe_ratio_str} (Target: >1.0) {sharpe_status}\n"
     dashboard += f"- Market Regime: {regime_name} ({confidence_str} confidence)\n"
     dashboard += f"- Benchmark Alpha: {alpha_val_str}% vs S&P 500\n"
-    
+
     # Add System Health & Automation Status section
     dashboard += """
 ---
@@ -963,59 +1009,76 @@ def generate_dashboard() -> str:
 
 ### Automation Status
 """
-    
-    automation_status = basic_metrics.get('automation_status', 'UNKNOWN')
-    automation_emoji = '✅' if automation_status == 'OPERATIONAL' else '⚠️' if automation_status == 'DEGRADED' else '❌'
-    
+
+    automation_status = basic_metrics.get("automation_status", "UNKNOWN")
+    automation_emoji = (
+        "✅"
+        if automation_status == "OPERATIONAL"
+        else "⚠️" if automation_status == "DEGRADED" else "❌"
+    )
+
     dashboard += f"| **Status** | {automation_emoji} {automation_status} |\n"
     dashboard += f"| **Last Trade Execution** | {basic_metrics.get('last_trade_time', 'Never')} |\n"
     dashboard += f"| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |\n"
-    
+
     # Check GitHub Actions status
     try:
         import subprocess
+
         result = subprocess.run(
-            ["gh", "run", "list", "--workflow=daily-trading.yml", "--limit", "1", "--json", "conclusion,createdAt"],
+            [
+                "gh",
+                "run",
+                "list",
+                "--workflow=daily-trading.yml",
+                "--limit",
+                "1",
+                "--json",
+                "conclusion,createdAt",
+            ],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         if result.returncode == 0:
             import json
+
             runs = json.loads(result.stdout)
             if runs:
                 last_run = runs[0]
                 conclusion = last_run.get("conclusion", "unknown")
                 created_at = last_run.get("createdAt", "")
-                status_emoji = '✅' if conclusion == 'success' else '❌' if conclusion == 'failure' else '⚠️'
+                status_emoji = (
+                    "✅"
+                    if conclusion == "success"
+                    else "❌" if conclusion == "failure" else "⚠️"
+                )
                 dashboard += f"| **GitHub Actions** | {status_emoji} {conclusion.title()} ({created_at[:10] if created_at else 'Unknown'}) |\n"
     except Exception:
         pass
-    
+
     dashboard += """
 ### Infrastructure Health
 """
-    
+
     # Check launchd daemons
     try:
         result = subprocess.run(
-            ["launchctl", "list"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["launchctl", "list"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             daemons = {
                 "Training Monitor": "com.trading.training_monitor" in result.stdout,
-                "Continuous Training": "com.trading.continuous_training" in result.stdout,
-                "Trading Backup": "com.trading.autonomous.backup" in result.stdout
+                "Continuous Training": "com.trading.continuous_training"
+                in result.stdout,
+                "Trading Backup": "com.trading.autonomous.backup" in result.stdout,
             }
             for name, running in daemons.items():
-                status = '✅ Active' if running else '❌ Inactive'
+                status = "✅ Active" if running else "❌ Inactive"
                 dashboard += f"| **{name}** | {status} |\n"
     except Exception:
         pass
-    
+
     dashboard += """
 ---
 
@@ -1023,7 +1086,7 @@ def generate_dashboard() -> str:
 
 ### RL Training Status
 """
-    
+
     # Load training status
     training_status_file = DATA_DIR / "training_status.json"
     if training_status_file.exists():
@@ -1031,67 +1094,89 @@ def generate_dashboard() -> str:
             training_status = load_json_file(training_status_file)
             cloud_jobs = training_status.get("cloud_jobs", {})
             last_training = training_status.get("last_training", {})
-            
-            active_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["submitted", "running", "in_progress"])
-            completed_jobs = sum(1 for j in cloud_jobs.values() if j.get("status") in ["completed", "success"])
-            
+
+            active_jobs = sum(
+                1
+                for j in cloud_jobs.values()
+                if j.get("status") in ["submitted", "running", "in_progress"]
+            )
+            completed_jobs = sum(
+                1
+                for j in cloud_jobs.values()
+                if j.get("status") in ["completed", "success"]
+            )
+
             dashboard += f"| **Cloud RL Jobs** | {len(cloud_jobs)} total ({active_jobs} active, {completed_jobs} completed) |\n"
-            dashboard += f"| **Last Training** | {len(last_training)} symbols trained |\n"
-            
+            dashboard += (
+                f"| **Last Training** | {len(last_training)} symbols trained |\n"
+            )
+
             # Show recent training times
             if last_training:
                 recent_symbols = list(last_training.items())[:5]
                 dashboard += f"| **Recent Training** | {', '.join([f'{s}' for s, _ in recent_symbols])} |\n"
-            
+
             # Add Vertex AI console link
             dashboard += f"| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |\n"
         except Exception:
             dashboard += "| **Status** | ⚠️ Unable to load training status |\n"
     else:
         dashboard += "| **Status** | ⚠️ No training data available |\n"
-    
+
     dashboard += """
 ### LangSmith Monitoring
 """
-    
+
     # Check LangSmith status
     try:
-        monitor_script_path = Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"
+        monitor_script_path = (
+            Path(__file__).parent.parent
+            / ".claude"
+            / "skills"
+            / "langsmith_monitor"
+            / "scripts"
+        )
         if monitor_script_path.exists():
             sys.path.insert(0, str(monitor_script_path))
             from langsmith_monitor import LangSmithMonitor
-            
+
             monitor = LangSmithMonitor()
-            
+
             # Check if client initialized
             if monitor.client is None:
                 if not monitor.api_key:
                     dashboard += "| **Status** | ⚠️ LANGCHAIN_API_KEY not configured |\n"
                 else:
-                    dashboard += "| **Status** | ⚠️ LangSmith client initialization failed |\n"
+                    dashboard += (
+                        "| **Status** | ⚠️ LangSmith client initialization failed |\n"
+                    )
             else:
                 health = monitor.monitor_health()
-                
+
                 if health.get("success"):
                     stats = monitor.get_project_stats("trading-rl-training", days=7)
                     if stats.get("success"):
                         dashboard += f"| **Status** | ✅ Healthy |\n"
-                        dashboard += f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
+                        dashboard += (
+                            f"| **Total Runs** (7d) | {stats.get('total_runs', 0)} |\n"
+                        )
                         dashboard += f"| **Success Rate** | {stats.get('success_rate', 0):.1f}% |\n"
                         dashboard += f"| **Avg Duration** | {stats.get('average_duration_seconds', 0):.1f}s |\n"
-                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
                     else:
-                        dashboard += f"| **Status** | ✅ Healthy (no stats available) |\n"
-                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+                        dashboard += (
+                            f"| **Status** | ✅ Healthy (no stats available) |\n"
+                        )
+                        dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
                 else:
-                    error_msg = health.get('error', 'Unknown error')
+                    error_msg = health.get("error", "Unknown error")
                     dashboard += f"| **Status** | ⚠️ {error_msg} |\n"
-                    dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
+                    dashboard += f"| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |\n"
         else:
             dashboard += "| **Status** | ⚠️ LangSmith monitor script not found |\n"
     except Exception as e:
         dashboard += f"| **Status** | ⚠️ LangSmith monitor error: {str(e)[:50]} |\n"
-    
+
     dashboard += """
 ---
 
@@ -1099,45 +1184,49 @@ def generate_dashboard() -> str:
 
 ### Last 7 Days Summary
 """
-    
+
     # Load performance log for trends
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
     if isinstance(perf_log, list) and len(perf_log) >= 7:
         recent_perf = perf_log[-7:]
-        total_recent_pl = sum(p.get('pl', 0) for p in recent_perf)
+        total_recent_pl = sum(p.get("pl", 0) for p in recent_perf)
         avg_recent_daily = total_recent_pl / len(recent_perf) if recent_perf else 0
-        
+
         dashboard += f"| **Total P/L** | ${total_recent_pl:+,.2f} |\n"
         dashboard += f"| **Avg Daily** | ${avg_recent_daily:+,.2f} |\n"
         dashboard += f"| **Trend** | {'📈 Improving' if avg_recent_daily > basic_metrics['avg_daily_profit'] else '📉 Declining' if avg_recent_daily < basic_metrics['avg_daily_profit'] else '➡️ Stable'} |\n"
     else:
         dashboard += "| **Data** | ⚠️ Insufficient data for trend analysis |\n"
-    
+
     dashboard += """
 ### Key Insights
 """
-    
+
     # Generate insights based on current metrics
     insights = []
-    
-    if basic_metrics['win_rate'] == 0:
+
+    if basic_metrics["win_rate"] == 0:
         insights.append("⚠️ **No closed trades yet** - System is collecting data")
-    
-    if basic_metrics['total_pl'] > 0:
-        insights.append(f"✅ **Profitable** - ${basic_metrics['total_pl']:+,.2f} total P/L")
-    
-    if risk.get('sharpe_ratio', 0) < 0:
-        insights.append("⚠️ **Negative Sharpe** - Risk-adjusted returns need improvement")
-    
-    if basic_metrics['automation_status'] == 'OPERATIONAL':
+
+    if basic_metrics["total_pl"] > 0:
+        insights.append(
+            f"✅ **Profitable** - ${basic_metrics['total_pl']:+,.2f} total P/L"
+        )
+
+    if risk.get("sharpe_ratio", 0) < 0:
+        insights.append(
+            "⚠️ **Negative Sharpe** - Risk-adjusted returns need improvement"
+        )
+
+    if basic_metrics["automation_status"] == "OPERATIONAL":
         insights.append("✅ **Automation Active** - System running smoothly")
-    
+
     if not insights:
         insights.append("📊 **System Monitoring** - Collecting baseline metrics")
-    
+
     for insight in insights[:5]:  # Show top 5 insights
         dashboard += f"- {insight}\n"
-    
+
     dashboard += """
 ---
 
@@ -1158,7 +1247,7 @@ def generate_dashboard() -> str:
 - [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions)
 - [Latest Trades](https://github.com/IgorGanapolsky/trading/tree/main/data)
 - [Documentation](https://github.com/IgorGanapolsky/trading/tree/main/docs)
-- [LangSmith RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)
+- [LangSmith RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) *(Note: Project may show as "default" in LangSmith UI - this is correct)*
 - [Vertex AI Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)
 
 ---
@@ -1173,22 +1262,21 @@ def generate_dashboard() -> str:
 def main():
     """Generate and save dashboard."""
     dashboard = generate_dashboard()
-    
+
     # Save to file (will be committed to wiki repo)
     output_file = Path("wiki/Progress-Dashboard.md")
     output_file.parent.mkdir(exist_ok=True)
-    
-    with open(output_file, 'w') as f:
+
+    with open(output_file, "w") as f:
         f.write(dashboard)
-    
+
     print("✅ World-class progress dashboard generated successfully!")
     print(f"📄 Saved to: {output_file}")
     print(f"📊 Metrics calculated for Day {calculate_metrics()['current_day']} of 90")
     print("🎯 World-class metrics: Risk, Performance, Strategy Diagnostics, Guardrails")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
