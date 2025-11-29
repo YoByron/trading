@@ -13,7 +13,6 @@ Run with: python3 tests/test_yaml_validation_smoke.py
 
 import os
 import sys
-import tempfile
 import yaml
 from pathlib import Path
 
@@ -92,9 +91,16 @@ def test_github_actions_workflow():
             workflow = yaml.safe_load(f)
 
         # Check required fields
-        assert "name" in workflow, "Workflow missing 'name'"
-        assert "on" in workflow, "Workflow missing 'on'"
-        assert "jobs" in workflow, "Workflow missing 'jobs'"
+        assert (
+            "name" in workflow
+        ), f"Workflow missing 'name'. Keys: {list(workflow.keys())}"
+        # 'on' is a YAML boolean keyword, so it gets parsed as True
+        assert (
+            True in workflow or "on" in workflow
+        ), f"Workflow missing 'on'. Keys: {list(workflow.keys())}"
+        assert (
+            "jobs" in workflow
+        ), f"Workflow missing 'jobs'. Keys: {list(workflow.keys())}"
 
         print(f"   ✅ Workflow '{workflow_path.name}' is valid")
         return True
