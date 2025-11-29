@@ -45,7 +45,9 @@ def is_market_holiday() -> bool:
         return not clock.is_open  # Market closed on weekday = holiday
     except Exception as e:
         logger = setup_logging()
-        logger.warning(f"Could not check market holiday status: {e}. Assuming not a holiday.")
+        logger.warning(
+            f"Could not check market holiday status: {e}. Assuming not a holiday."
+        )
         return False  # Fail safe: assume not a holiday if check fails
 
 
