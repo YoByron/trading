@@ -37,14 +37,18 @@ logger = logging.getLogger(__name__)
 # Newsletter integration (optional)
 try:
     from src.utils.newsletter_analyzer import NewsletterAnalyzer
+
     NEWSLETTER_AVAILABLE = True
 except ImportError:
     NEWSLETTER_AVAILABLE = False
-    logger.info("NewsletterAnalyzer not available - crypto trades will use algo-only signals")
+    logger.info(
+        "NewsletterAnalyzer not available - crypto trades will use algo-only signals"
+    )
 
 
 class CryptoSentiment(Enum):
     """Crypto market sentiment classification."""
+
     VERY_BULLISH = "very_bullish"
     BULLISH = "bullish"
     NEUTRAL = "neutral"
@@ -55,6 +59,7 @@ class CryptoSentiment(Enum):
 @dataclass
 class CryptoScore:
     """Data class for crypto momentum analysis."""
+
     symbol: str
     score: float
     returns_1w: float
@@ -73,6 +78,7 @@ class CryptoScore:
 @dataclass
 class CryptoOrder:
     """Data class for crypto trade order details."""
+
     symbol: str
     action: str  # 'buy' or 'sell'
     quantity: float
@@ -129,7 +135,7 @@ class CryptoStrategy:
 
     # Momentum weights
     MOMENTUM_WEIGHTS = {
-        "1week": 0.5,   # 50% weight to very recent (crypto moves fast)
+        "1week": 0.5,  # 50% weight to very recent (crypto moves fast)
         "1month": 0.3,  # 30% weight to medium-term
         "3month": 0.2,  # 20% weight to long-term
     }
@@ -157,7 +163,7 @@ class CryptoStrategy:
         """
         # Get daily amount from env var or use default
         if daily_amount is None:
-            daily_amount = float(os.getenv('CRYPTO_DAILY_AMOUNT', '0.50'))
+            daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50"))
 
         if daily_amount <= 0:
             raise ValueError(f"daily_amount must be positive, got {daily_amount}")
@@ -181,7 +187,8 @@ class CryptoStrategy:
             self.trader = trader or AlpacaTrader(paper=True)
             self.risk_manager = risk_manager or RiskManager(
                 max_daily_loss_pct=2.0,
-                max_position_size_pct=self.MAX_POSITION_PCT * 100,  # Convert to percentage
+                max_position_size_pct=self.MAX_POSITION_PCT
+                * 100,  # Convert to percentage
                 max_drawdown_pct=15.0,  # Higher for crypto
                 max_consecutive_losses=3,
             )
@@ -196,7 +203,9 @@ class CryptoStrategy:
         if NEWSLETTER_AVAILABLE:
             try:
                 self.newsletter = NewsletterAnalyzer()
-                logger.info("NewsletterAnalyzer initialized - will validate trades against CoinSnacks")
+                logger.info(
+                    "NewsletterAnalyzer initialized - will validate trades against CoinSnacks"
+                )
             except Exception as e:
                 logger.warning(f"Failed to initialize NewsletterAnalyzer: {e}")
                 self.newsletter = None
@@ -234,18 +243,15 @@ class CryptoStrategy:
                 return {
                     "success": False,
                     "reason": "no_valid_trades",
-                    "message": "No valid crypto opportunities today"
+                    "message": "No valid crypto opportunities today",
                 }
 
         except Exception as e:
             logger.error(f"Crypto strategy execution failed: {e}")
             import traceback
+
             traceback.print_exc()
-            return {
-                "success": False,
-                "reason": "error",
-                "error": str(e)
-            }
+            return {"success": False, "reason": "error", "error": str(e)}
 
     def execute_daily(self) -> Optional[CryptoOrder]:
         """
@@ -288,14 +294,14 @@ class CryptoStrategy:
             # Step 2.5: Validate against CoinSnacks newsletter
             validation = self.get_newsletter_validation(best_coin)
 
-            if validation['available']:
+            if validation["available"]:
                 logger.info(
                     f"Newsletter Validation: Our pick={best_coin}, "
                     f"CoinSnacks pick={validation['newsletter_pick']}, "
                     f"Agreement={validation['agreement']}"
                 )
 
-                if not validation['agreement']:
+                if not validation["agreement"]:
                     logger.warning(
                         f"CONFLICT: Our algorithm picked {best_coin} but CoinSnacks recommends "
                         f"{validation['newsletter_pick']}. Reasoning: {validation['reasoning']}"
@@ -308,7 +314,9 @@ class CryptoStrategy:
                         f"Confidence boost: +{validation['confidence_boost']}"
                     )
             else:
-                logger.info(f"Newsletter validation not available: {validation['reasoning']}")
+                logger.info(
+                    f"Newsletter validation not available: {validation['reasoning']}"
+                )
 
             # Step 3: Get current price
             current_price = self._get_current_price(best_coin)
@@ -338,16 +346,14 @@ class CryptoStrategy:
                         symbol=best_coin,
                         amount_usd=self.daily_amount,
                         side="buy",
-                        tier="CRYPTO"
+                        tier="CRYPTO",
                     )
                     logger.info(f"Alpaca order executed: {executed_order['id']}")
 
                     # Set stop-loss order
                     if order.stop_loss:
                         self.trader.set_stop_loss(
-                            symbol=best_coin,
-                            qty=quantity,
-                            stop_price=order.stop_loss
+                            symbol=best_coin, qty=quantity, stop_price=order.stop_loss
                         )
                         logger.info(f"Stop-loss set at ${order.stop_loss:.2f}")
                 except Exception as e:
@@ -385,52 +391,54 @@ class CryptoStrategy:
         """
         if not self.newsletter:
             return {
-                'newsletter_pick': None,
-                'agreement': None,
-                'confidence_boost': 0,
-                'reasoning': 'Newsletter analyzer not available',
-                'available': False
+                "newsletter_pick": None,
+                "agreement": None,
+                "confidence_boost": 0,
+                "reasoning": "Newsletter analyzer not available",
+                "available": False,
             }
 
         try:
             # Get latest signals from CoinSnacks
             signals = self.newsletter.get_latest_signals()
 
-            if not signals or 'recommended_coin' not in signals:
+            if not signals or "recommended_coin" not in signals:
                 logger.warning("No CoinSnacks signals available")
                 return {
-                    'newsletter_pick': None,
-                    'agreement': None,
-                    'confidence_boost': 0,
-                    'reasoning': 'No CoinSnacks data available',
-                    'available': False
+                    "newsletter_pick": None,
+                    "agreement": None,
+                    "confidence_boost": 0,
+                    "reasoning": "No CoinSnacks data available",
+                    "available": False,
                 }
 
-            newsletter_pick = signals.get('recommended_coin')
+            newsletter_pick = signals.get("recommended_coin")
 
             # Compare picks (handle different formats: BTCUSD vs BTC)
-            our_coin = our_pick.replace('USD', '')  # BTCUSD -> BTC
-            newsletter_coin = newsletter_pick.replace('USD', '') if newsletter_pick else None
+            our_coin = our_pick.replace("USD", "")  # BTCUSD -> BTC
+            newsletter_coin = (
+                newsletter_pick.replace("USD", "") if newsletter_pick else None
+            )
 
             agreement = (our_coin == newsletter_coin) if newsletter_coin else False
             boost = 10 if agreement else -10
 
             return {
-                'newsletter_pick': newsletter_pick,
-                'agreement': agreement,
-                'confidence_boost': boost,
-                'reasoning': signals.get('reasoning', 'No reasoning provided'),
-                'available': True
+                "newsletter_pick": newsletter_pick,
+                "agreement": agreement,
+                "confidence_boost": boost,
+                "reasoning": signals.get("reasoning", "No reasoning provided"),
+                "available": True,
             }
 
         except Exception as e:
             logger.error(f"Error validating against newsletter: {e}")
             return {
-                'newsletter_pick': None,
-                'agreement': None,
-                'confidence_boost': 0,
-                'reasoning': f'Error: {str(e)}',
-                'available': False
+                "newsletter_pick": None,
+                "agreement": None,
+                "confidence_boost": 0,
+                "reasoning": f"Error: {str(e)}",
+                "available": False,
             }
 
     def select_crypto(self) -> Optional[str]:
@@ -464,7 +472,9 @@ class CryptoStrategy:
             )
 
         best_crypto = scores[0].symbol
-        logger.info(f"Best crypto selected: {best_crypto} with score {scores[0].score:.2f}")
+        logger.info(
+            f"Best crypto selected: {best_crypto} with score {scores[0].score:.2f}"
+        )
 
         return best_crypto
 
@@ -505,7 +515,9 @@ class CryptoStrategy:
             sharpe_ratio = excess_return / volatility if volatility > 0 else 0
 
             rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
-            macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+            macd_value, macd_signal, macd_histogram = self._calculate_macd(
+                hist["Close"]
+            )
             volume_ratio = self._calculate_volume_ratio(hist)
 
             # Calculate composite score
@@ -525,7 +537,11 @@ class CryptoStrategy:
                 "momentum": "bullish" if returns_1m > 0 else "bearish",
                 "rsi": self._classify_rsi(rsi),
                 "macd": "bullish" if macd_histogram > 0 else "bearish",
-                "volume": "high" if volume_ratio > 1.2 else "normal" if volume_ratio > 0.8 else "low",
+                "volume": (
+                    "high"
+                    if volume_ratio > 1.2
+                    else "normal" if volume_ratio > 0.8 else "low"
+                ),
             }
 
             # Build metrics
@@ -661,7 +677,9 @@ class CryptoStrategy:
                 sharpe_ratio = excess_return / volatility if volatility > 0 else 0
 
                 rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
-                macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+                macd_value, macd_signal, macd_histogram = self._calculate_macd(
+                    hist["Close"]
+                )
                 volume_ratio = self._calculate_volume_ratio(hist)
 
                 # HARD FILTER 1: Reject strongly bearish MACD (allow slightly negative for less conservative approach)
@@ -746,7 +764,9 @@ class CryptoStrategy:
         )
 
         # Adjust for volatility (penalize high volatility)
-        volatility_penalty = volatility * 5  # Lower penalty than stocks (crypto is volatile)
+        volatility_penalty = (
+            volatility * 5
+        )  # Lower penalty than stocks (crypto is volatile)
         momentum_score -= volatility_penalty
 
         # Adjust for Sharpe ratio
@@ -787,36 +807,44 @@ class CryptoStrategy:
             try:
                 logger.info(f"Attempting to fetch {symbol} data from Alpaca...")
                 bars = self.trader.get_historical_bars(
-                    symbol=symbol,
-                    timeframe="1Day",
-                    limit=lookback_days
+                    symbol=symbol, timeframe="1Day", limit=lookback_days
                 )
 
                 if bars and len(bars) > 0:
                     # Convert Alpaca bars to DataFrame
                     df_data = []
                     for bar in bars:
-                        df_data.append({
-                            "Open": bar.get("open", bar.get("o", 0)),
-                            "High": bar.get("high", bar.get("h", 0)),
-                            "Low": bar.get("low", bar.get("l", 0)),
-                            "Close": bar.get("close", bar.get("c", 0)),
-                            "Volume": bar.get("volume", bar.get("v", 0)),
-                            "Date": pd.to_datetime(bar.get("timestamp", bar.get("t", "")))
-                        })
+                        df_data.append(
+                            {
+                                "Open": bar.get("open", bar.get("o", 0)),
+                                "High": bar.get("high", bar.get("h", 0)),
+                                "Low": bar.get("low", bar.get("l", 0)),
+                                "Close": bar.get("close", bar.get("c", 0)),
+                                "Volume": bar.get("volume", bar.get("v", 0)),
+                                "Date": pd.to_datetime(
+                                    bar.get("timestamp", bar.get("t", ""))
+                                ),
+                            }
+                        )
 
                     hist = pd.DataFrame(df_data)
                     hist.set_index("Date", inplace=True)
 
                     if len(hist) >= self.LOOKBACK_3MONTH * 0.7:
-                        logger.info(f"✅ Successfully fetched {len(hist)} bars from Alpaca for {symbol}")
+                        logger.info(
+                            f"✅ Successfully fetched {len(hist)} bars from Alpaca for {symbol}"
+                        )
                         return hist
                     else:
-                        logger.warning(f"Alpaca returned insufficient data for {symbol} ({len(hist)} bars)")
+                        logger.warning(
+                            f"Alpaca returned insufficient data for {symbol} ({len(hist)} bars)"
+                        )
                 else:
                     logger.warning(f"Alpaca returned empty data for {symbol}")
             except Exception as e:
-                logger.warning(f"Alpaca data fetch failed for {symbol}: {e}, trying yfinance...")
+                logger.warning(
+                    f"Alpaca data fetch failed for {symbol}: {e}, trying yfinance..."
+                )
 
         # Fallback to yfinance
         try:
@@ -832,7 +860,9 @@ class CryptoStrategy:
                 logger.warning(f"Insufficient data for {symbol} (got {len(hist)} bars)")
                 return None
 
-            logger.info(f"✅ Successfully fetched {len(hist)} bars from yfinance for {symbol}")
+            logger.info(
+                f"✅ Successfully fetched {len(hist)} bars from yfinance for {symbol}"
+            )
             return hist
 
         except Exception as e:
@@ -849,14 +879,18 @@ class CryptoStrategy:
         if self.trader:
             try:
                 # Try to get latest bar
-                bars = self.trader.get_historical_bars(symbol=symbol, timeframe="1Day", limit=1)
+                bars = self.trader.get_historical_bars(
+                    symbol=symbol, timeframe="1Day", limit=1
+                )
                 if bars and len(bars) > 0:
                     price = bars[0].get("close", bars[0].get("c", None))
                     if price:
                         logger.info(f"✅ Got {symbol} price ${price:.2f} from Alpaca")
                         return float(price)
             except Exception as e:
-                logger.debug(f"Alpaca price fetch failed for {symbol}: {e}, trying yfinance...")
+                logger.debug(
+                    f"Alpaca price fetch failed for {symbol}: {e}, trying yfinance..."
+                )
 
         # Fallback to yfinance
         try:
@@ -934,7 +968,9 @@ class CryptoStrategy:
         # Use RiskManager if available
         if self.risk_manager:
             try:
-                account_value = self._calculate_total_portfolio_value() + self.total_invested
+                account_value = (
+                    self._calculate_total_portfolio_value() + self.total_invested
+                )
                 if account_value == 0:
                     account_value = 10000.0  # Default
 
@@ -947,7 +983,9 @@ class CryptoStrategy:
                 )
 
                 if not validation["valid"]:
-                    logger.warning(f"Risk manager rejected trade: {validation['reason']}")
+                    logger.warning(
+                        f"Risk manager rejected trade: {validation['reason']}"
+                    )
                     return False
 
                 if validation["warnings"]:
