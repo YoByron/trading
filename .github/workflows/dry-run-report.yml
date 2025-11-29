@@ -42,3 +42,42 @@ jobs:
             dryrun.json
             dryrun.md
 
+  publish-wiki:
+    needs: dry-run
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dry-run-report
+          path: .
+
+      - name: Publish latest report to Wiki
+        env:
+          WIKI_PAT: ${{ secrets.WIKI_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$WIKI_PAT" ]; then
+            echo "WIKI_PAT secret not set; skipping wiki publish." >&2
+            exit 0
+          fi
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git clone "https://x-access-token:${WIKI_PAT}@github.com/${REPO}.wiki.git" wiki
+          ts=$(date -u +"%Y-%m-%d %H:%M UTC")
+          page="wiki/Automated-Dry-Run.md"
+          echo "# Automated Dry Run Report" > "$page"
+          echo "" >> "$page"
+          echo "Updated: $ts" >> "$page"
+          echo "" >> "$page"
+          if [ -f dryrun.md ]; then
+            cat dryrun.md >> "$page"
+          else
+            echo "_No dry run markdown available for this run._" >> "$page"
+          fi
+          git -C wiki add Automated-Dry-Run.md
+          git -C wiki commit -m "Update Automated Dry Run Report ($ts)" || echo "No changes to commit."
+          git -C wiki push
