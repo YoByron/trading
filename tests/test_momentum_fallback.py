@@ -21,7 +21,7 @@ def test_empty_momentum_scores_fallback():
 
     # Simulate scenario: empty momentum scores (all symbols rejected by filters)
     try:
-        result = strategy.select_best_etf(momentum_scores=[])
+        strategy.select_best_etf(momentum_scores=[])
         assert False, "Expected ValueError to be raised, but got result: {result}"
     except ValueError as e:
         assert "No valid trading opportunities" in str(e)

@@ -17,8 +17,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import yfinance as yf
-import pandas as pd
-from datetime import datetime, timedelta
 
 # Import strategies
 from src.strategies.core_strategy import CoreStrategy
@@ -41,7 +39,7 @@ def test_macd_calculation():
         hist["Close"]
     )
 
-    print(f"\nSPY MACD Indicators:")
+    print("\nSPY MACD Indicators:")
     print(f"  MACD Line:      {macd_value:.4f}")
     print(f"  Signal Line:    {macd_signal:.4f}")
     print(f"  Histogram:      {macd_histogram:.4f}")
@@ -90,7 +88,7 @@ def test_macd_in_growth_strategy():
     # Test MACD calculation
     macd_value, macd_signal, macd_histogram = growth_strategy._calculate_macd(hist)
 
-    print(f"\nNVDA MACD Indicators:")
+    print("\nNVDA MACD Indicators:")
     print(f"  MACD Line:      {macd_value:.4f}")
     print(f"  Signal Line:    {macd_signal:.4f}")
     print(f"  Histogram:      {macd_histogram:.4f}")

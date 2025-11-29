@@ -62,12 +62,12 @@ def test_macd_calculation_bullish():
         hist["Close"]
     )
 
-    print(f"\nBullish Trend MACD:")
+    print("\nBullish Trend MACD:")
     print(f"  MACD Line:      {macd_value:.4f}")
     print(f"  Signal Line:    {macd_signal:.4f}")
     print(f"  Histogram:      {macd_histogram:.4f}")
-    print(f"  Expected:       Positive histogram (bullish)")
-    print(f"  Actual:         {'BULLISH ✓' if macd_histogram > 0 else 'BEARISH ✗'}")
+    print("  Expected:       Positive histogram (bullish)")
+    print("  Actual:         {'BULLISH ✓' if macd_histogram > 0 else 'BEARISH ✗'}")
 
     # In a bullish trend, MACD should eventually go positive
     assert macd_value is not None, "MACD value should be calculated"
@@ -87,11 +87,11 @@ def test_macd_calculation_bearish():
     growth_strategy = GrowthStrategy(weekly_allocation=10.0)
     macd_value, macd_signal, macd_histogram = growth_strategy._calculate_macd(hist)
 
-    print(f"\nBearish Trend MACD:")
+    print("\nBearish Trend MACD:")
     print(f"  MACD Line:      {macd_value:.4f}")
     print(f"  Signal Line:    {macd_signal:.4f}")
     print(f"  Histogram:      {macd_histogram:.4f}")
-    print(f"  Expected:       Negative histogram (bearish)")
+    print("  Expected:       Negative histogram (bearish)")
     print(f"  Actual:         {'BEARISH ✓' if macd_histogram < 0 else 'BULLISH ✗'}")
 
     # In a bearish trend, MACD should eventually go negative
@@ -115,12 +115,12 @@ def test_macd_parameters():
     # Test with explicit parameters (12, 26, 9)
     macd_explicit = growth_strategy._calculate_macd(hist, fast=12, slow=26, signal=9)
 
-    print(f"\nDefault Parameters:")
+    print("\nDefault Parameters:")
     print(
         f"  MACD: {macd_default[0]:.4f}, Signal: {macd_default[1]:.4f}, Histogram: {macd_default[2]:.4f}"
     )
 
-    print(f"\nExplicit (12, 26, 9) Parameters:")
+    print("\nExplicit (12, 26, 9) Parameters:")
     print(
         f"  MACD: {macd_explicit[0]:.4f}, Signal: {macd_explicit[1]:.4f}, Histogram: {macd_explicit[2]:.4f}"
     )

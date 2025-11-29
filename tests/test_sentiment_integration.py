@@ -144,7 +144,7 @@ def create_mock_sentiment_data():
     with open(news_file, "w") as f:
         json.dump(news_data, f, indent=2)
 
-    logger.info(f"Created mock sentiment data:")
+    logger.info("Created mock sentiment data:")
     logger.info(f"  {reddit_file}")
     logger.info(f"  {news_file}")
 
@@ -190,7 +190,7 @@ def test_core_strategy_integration(sentiment_data):
     from src.strategies.core_strategy import CoreStrategy, MarketSentiment
 
     # Initialize strategy with sentiment enabled
-    strategy = CoreStrategy(daily_allocation=6.0, use_sentiment=True)
+    CoreStrategy(daily_allocation=6.0, use_sentiment=True)
 
     # Test sentiment conversion
     spy_score, _, _ = get_ticker_sentiment("SPY", sentiment_data)

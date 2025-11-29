@@ -180,6 +180,10 @@ class TradingMetricsCalculator:
                 "volatility_annualized": 0.0,
                 "worst_daily_loss": 0.0,
                 "var_95": 0.0,
+                "var_99": 0.0,
+                "cvar_95": 0.0,
+                "ulcer_index": 0.0,
+                "calmar_ratio": 0.0,
                 "peak_equity": current_equity,
             }
 
@@ -205,6 +209,10 @@ class TradingMetricsCalculator:
                 "volatility_annualized": 0.0,
                 "worst_daily_loss": 0.0,
                 "var_95": 0.0,
+                "var_99": 0.0,
+                "cvar_95": 0.0,
+                "ulcer_index": 0.0,
+                "calmar_ratio": 0.0,
                 "peak_equity": current_equity,
             }
 
@@ -258,6 +266,29 @@ class TradingMetricsCalculator:
 
         # VaR (95th percentile)
         var_95 = np.percentile(daily_returns, 5) * 100 if daily_returns else 0.0
+        
+        # VaR (99th percentile)
+        var_99 = np.percentile(daily_returns, 1) * 100 if daily_returns else 0.0
+        
+        # Conditional VaR (CVaR) - Expected loss beyond VaR
+        cvar_95 = 0.0
+        if daily_returns:
+            var_95_threshold = np.percentile(daily_returns, 5)
+            tail_returns = [r for r in daily_returns if r <= var_95_threshold]
+            cvar_95 = np.mean(tail_returns) * 100 if tail_returns else 0.0
+        
+        # Ulcer Index (square root of average squared drawdown)
+        # Calculate drawdowns for ulcer index
+        cumulative = np.array(equity_values)
+        running_max = np.maximum.accumulate(cumulative)
+        drawdowns = (cumulative - running_max) / running_max
+        drawdowns_squared = drawdowns**2
+        ulcer_index = np.sqrt(np.mean(drawdowns_squared)) * 100 if len(drawdowns_squared) > 0 else 0.0
+        
+        # Calmar Ratio (annualized return / max drawdown)
+        annualized_return = mean_return * 252 * 100  # Convert to percentage
+        max_dd_decimal = max_drawdown_pct / 100  # Convert percentage to decimal
+        calmar_ratio = (annualized_return / max_dd_decimal) if max_dd_decimal > 0 else 0.0
 
         return {
             "max_drawdown_pct": max_drawdown_pct,
@@ -267,6 +298,10 @@ class TradingMetricsCalculator:
             "volatility_annualized": volatility_annualized,
             "worst_daily_loss": worst_daily_loss,
             "var_95": var_95,
+            "var_99": var_99,
+            "cvar_95": abs(cvar_95),  # CVaR should be positive (expected loss)
+            "ulcer_index": ulcer_index,
+            "calmar_ratio": calmar_ratio,
             "peak_equity": peak_equity,
             "trading_days": len(daily_returns),
         }

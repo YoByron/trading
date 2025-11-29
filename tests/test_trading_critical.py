@@ -9,13 +9,12 @@ import unittest
 import sys
 import os
 from pathlib import Path
-from datetime import datetime, date
-from unittest.mock import Mock, patch
+from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.evaluation.trading_evaluator import TradingSystemEvaluator, TradeEvaluation
+from src.evaluation.trading_evaluator import TradingSystemEvaluator
 
 
 class TestOrderValidation(unittest.TestCase):

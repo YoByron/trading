@@ -168,4 +168,10 @@ jobs:
           git add badges/dryrun.json
           git add badges/progress.json
           git commit -m "chore: update dry run badge timestamp (${TS})" || echo "No changes"
-          git push
+          # Try direct push; if blocked by rules, create a PR from a temp branch
+          if ! git push; then
+            BR="automation/badges-$(date -u +%Y%m%d%H%M%S)"
+            git checkout -b "$BR"
+            git push -u origin "$BR"
+            gh pr create -t "chore: update badges (${TS})" -b "Automated nightly update of dry run and dashboard badges." -H "$BR" -B main || true
+          fi

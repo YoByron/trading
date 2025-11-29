@@ -9,12 +9,25 @@ Strategy Parameters:
     - Target Delta: ~0.30 (30% probability of assignment)
     - Expiration: 30-45 days (optimal Theta decay)
     - Minimum Premium: > 0.5% of stock price (annualized > 6%)
+
+AI Integration:
+    - Gemini Agent: Fundamental research and long-term outlook
+    - LangChain Agent: News sentiment and price action analysis
 """
 
 import logging
+import os
+import sys
 from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional, Any
 import math
+
+# Add project root to path for imports if needed
+from pathlib import Path
+
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from src.core.options_client import AlpacaOptionsClient
 from src.core.alpaca_trader import AlpacaTrader
@@ -29,6 +42,10 @@ logger = logging.getLogger(__name__)
 class OptionsStrategy:
     """
     Automated Options Strategy for Yield Generation.
+
+    Integrates AI Agents for smarter decision making:
+    1. Gemini Agent: Research & Fundamentals
+    2. LangChain Agent: News & Sentiment
     """
 
     def __init__(self, paper: bool = True):
@@ -48,13 +65,110 @@ class OptionsStrategy:
         self.max_days_to_expire = 50
         self.min_annualized_return = 0.06  # 6% annualized yield minimum
 
+        # Initialize AI Agents
+        self.gemini_agent = None
+        self.langchain_agent = None
+        self._initialize_agents()
+
+    def _initialize_agents(self):
+        """Initialize AI agents for analysis."""
+        try:
+            from src.agents.gemini_agent import GeminiAgent
+
+            self.gemini_agent = GeminiAgent(
+                name="OptionsResearcher",
+                role="Analyze stocks for covered call suitability (yield vs growth trade-off)",
+                model="gemini-3-pro-preview",
+            )
+            logger.info("✅ Gemini Agent initialized for Options Strategy")
+        except Exception as e:
+            logger.warning(f"⚠️ Gemini Agent unavailable: {e}")
+
+        try:
+            from langchain_agents.agents import build_price_action_agent
+
+            self.langchain_agent = build_price_action_agent()
+            logger.info("✅ LangChain Agent initialized for Options Strategy")
+        except Exception as e:
+            logger.warning(f"⚠️ LangChain Agent unavailable: {e}")
+
+    def _analyze_sentiment(self, symbol: str) -> Dict[str, Any]:
+        """
+        Analyze sentiment using AI agents.
+
+        Returns:
+            Dict with 'sentiment' (BULLISH/BEARISH/NEUTRAL) and 'reasoning'.
+        """
+        sentiment_score = 0  # -1 to 1
+        reasons = []
+
+        # 1. Gemini Analysis (Fundamentals & Outlook)
+        if self.gemini_agent:
+            try:
+                prompt = f"""Analyze {symbol} for a Covered Call strategy.
+                We own 100 shares and want to sell a Call option (capping upside).
+
+                Is this stock likely to have a massive breakout soon? (If yes, we should NOT sell).
+                Or is it stable/slightly bullish/bearish? (If yes, selling is good).
+
+                Provide a verdict: SELL_CALL (Stable/Neutral/Bearish) or HOLD_SHARES (Strong Bullish Breakout likely).
+                """
+                result = self.gemini_agent.reason(prompt, thinking_level="low")
+                decision = result.get("decision", "")
+                reasoning = result.get("reasoning", "")
+
+                reasons.append(f"Gemini: {reasoning[:100]}...")
+
+                if "HOLD_SHARES" in decision or "Strong Bullish" in reasoning:
+                    sentiment_score += 1  # Bullish (Don't sell call)
+                elif "SELL_CALL" in decision:
+                    sentiment_score -= 0.5  # Neutral/Bearish (Sell call)
+
+            except Exception as e:
+                logger.warning(f"Gemini analysis failed: {e}")
+
+        # 2. LangChain Analysis (News & Sentiment)
+        if self.langchain_agent:
+            try:
+                prompt = f"What is the current news sentiment for {symbol}? Is there a major catalyst (earnings, FDA approval, merger) this week? Answer YES or NO with reason."
+                response = self.langchain_agent.invoke({"input": prompt})
+                output = str(response.get("output", ""))
+
+                reasons.append(f"LangChain: {output[:100]}...")
+
+                if "YES" in output.upper() and (
+                    "earnings" in output.lower() or "merger" in output.lower()
+                ):
+                    sentiment_score += (
+                        1  # Volatility event likely (Don't sell call or be careful)
+                    )
+
+            except Exception as e:
+                logger.warning(f"LangChain analysis failed: {e}")
+
+        # Final Decision
+        # If score > 0.5, it means Strong Bullish or Volatility Event -> Don't Sell Call
+        if sentiment_score > 0.5:
+            return {
+                "action": "SKIP",
+                "sentiment": "BULLISH/VOLATILE",
+                "reasoning": "; ".join(reasons),
+            }
+        else:
+            return {
+                "action": "PROCEED",
+                "sentiment": "NEUTRAL/BEARISH",
+                "reasoning": "; ".join(reasons),
+            }
+
     def execute_daily(self) -> List[Dict[str, Any]]:
         """
         Execute the daily options routine.
 
         1. Scan portfolio for eligible positions (>= 100 shares).
         2. For each eligible position, check if we already have a covered call.
-        3. If not, find and execute a new covered call.
+        3. Analyze sentiment via AI Agents.
+        4. If sentiment allows, find and execute a new covered call.
         """
         logger.info("Starting Daily Options Strategy Execution...")
         results = []
@@ -83,12 +197,23 @@ class OptionsStrategy:
                 )
 
                 # Check if we already have an open short call for this symbol
-                # (Simplified check: simplistic portfolio scan for option symbols matching underlying)
-                # In a real system, we'd map option_symbol -> underlying.
-                # For now, we'll assume we don't have one if we are just testing logic.
-                # TODO: Implement robust check for existing covered calls.
+                if self._has_open_covered_call(symbol, positions):
+                    logger.info(f"Skipping {symbol}: Already has an open covered call.")
+                    continue
 
-                # 3. Find Best Covered Call
+                # 3. AI Sentiment Analysis
+                analysis = self._analyze_sentiment(symbol)
+                logger.info(
+                    f"AI Analysis for {symbol}: {analysis['sentiment']} - {analysis['action']}"
+                )
+
+                if analysis["action"] == "SKIP":
+                    logger.info(
+                        f"Skipping {symbol} due to AI analysis: {analysis['reasoning']}"
+                    )
+                    continue
+
+                # 4. Find Best Covered Call
                 contract = self.find_covered_call_contract(symbol, current_price)
 
                 if contract:
@@ -98,7 +223,7 @@ class OptionsStrategy:
                         f"Premium: ${contract['price']:.2f})"
                     )
 
-                    # 4. Execute Trade (Sell to Open)
+                    # 5. Execute Trade (Sell to Open)
                     # Note: Actual execution requires permission and careful order construction.
                     # For Phase 2 prototype, we will just LOG the opportunity.
                     trade_result = {
@@ -110,6 +235,7 @@ class OptionsStrategy:
                         "premium": contract["price"],
                         "delta": contract["delta"],
                         "contracts": math.floor(qty / 100),
+                        "ai_analysis": analysis,
                     }
                     results.append(trade_result)
                 else:
@@ -120,6 +246,30 @@ class OptionsStrategy:
         except Exception as e:
             logger.error(f"Error in options strategy execution: {e}")
             return []
+
+    def _has_open_covered_call(
+        self, underlying_symbol: str, positions: List[Dict[str, Any]]
+    ) -> bool:
+        """
+        Check if there is an existing short call position for the underlying symbol.
+        """
+        for pos in positions:
+            # Filter for short positions
+            if pos.get("side") != "short":
+                continue
+
+            sym = pos.get("symbol", "")
+            # Check if it looks like an option for this underlying
+            # Heuristic: Starts with underlying, is longer than underlying, contains digits
+            if (
+                sym.startswith(underlying_symbol)
+                and len(sym) > len(underlying_symbol)
+                and any(c.isdigit() for c in sym)
+            ):
+                # Ideally, we should parse the OCC symbol to confirm it's a Call ('C')
+                # but checking for *any* short option on this underlying is a safe conservative baseline.
+                return True
+        return False
 
     def find_covered_call_contract(
         self, symbol: str, current_price: float

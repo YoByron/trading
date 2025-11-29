@@ -13,8 +13,7 @@ Tests end-to-end orchestration behavior:
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
+from unittest.mock import patch
 
 # Add project root to path
 project_root = Path(__file__).parent.parent

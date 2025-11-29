@@ -324,7 +324,8 @@ def generate_attribution_bar_chart(
         height = bar.get_height()
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
-            height + (0.01 * max(pl_values) if max(pl_values) > 0 else -0.01 * min(pl_values)),
+            height
+            + (0.01 * max(pl_values) if max(pl_values) > 0 else -0.01 * min(pl_values)),
             f"${height:.2f}",
             ha="center",
             va="bottom" if height >= 0 else "top",
@@ -401,10 +402,12 @@ def generate_regime_timeline_chart(
 
     # Create chart
     fig, ax = plt.subplots(figsize=(14, 6))
-    
+
     # Plot equity curve
-    ax.plot(dates, equity_values, linewidth=2, color="#2563eb", alpha=0.3, label="Equity")
-    
+    ax.plot(
+        dates, equity_values, linewidth=2, color="#2563eb", alpha=0.3, label="Equity"
+    )
+
     # Color background by regime
     for i, (date, regime) in enumerate(zip(regime_dates, regimes)):
         if i < len(regime_dates) - 1:
@@ -414,6 +417,7 @@ def generate_regime_timeline_chart(
 
     # Add regime legend
     from matplotlib.patches import Patch
+
     legend_elements = [
         Patch(facecolor=color, alpha=0.3, label=regime)
         for regime, color in regime_colors.items()
@@ -451,11 +455,11 @@ def generate_all_charts(
     charts["daily_pl"] = generate_daily_pl_chart(perf_log)
     charts["rolling_sharpe_7d"] = generate_rolling_sharpe_chart(perf_log, window=7)
     charts["rolling_sharpe_30d"] = generate_rolling_sharpe_chart(perf_log, window=30)
-    
+
     # Attribution chart (requires strategy data)
     if strategy_data:
         charts["attribution_bar"] = generate_attribution_bar_chart(strategy_data)
-    
+
     # Regime timeline
     charts["regime_timeline"] = generate_regime_timeline_chart(perf_log)
 

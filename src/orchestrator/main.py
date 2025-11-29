@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import List
 
 from src.agents.momentum_agent import MomentumAgent
@@ -11,6 +10,7 @@ from src.agents.rl_agent import RLFilter
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.budget import BudgetController
+from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.risk_manager import RiskManager
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ class TradingOrchestrator:
         self.risk_manager = RiskManager()
         self.executor = AlpacaExecutor(paper=paper)
         self.executor.sync_portfolio_state()
+        self.telemetry = OrchestratorTelemetry()
 
     def run(self) -> None:
         logger.info("Running hybrid funnel for tickers: %s", ", ".join(self.tickers))
@@ -51,9 +52,19 @@ class TradingOrchestrator:
         momentum_signal = self.momentum_agent.analyze(ticker)
         if not momentum_signal.is_buy:
             logger.info("Gate 1 (%s): REJECTED by momentum filter.", ticker)
+            self.telemetry.gate_reject(
+                "momentum",
+                ticker,
+                {"strength": momentum_signal.strength, "indicators": momentum_signal.indicators},
+            )
             return
         logger.info(
             "Gate 1 (%s): PASSED (strength=%.2f)", ticker, momentum_signal.strength
+        )
+        self.telemetry.gate_pass(
+            "momentum",
+            ticker,
+            {"strength": momentum_signal.strength, "indicators": momentum_signal.indicators},
         )
 
         # Gate 2: RL inference
@@ -64,6 +75,11 @@ class TradingOrchestrator:
                 ticker,
                 rl_decision.get("confidence", 0.0),
             )
+            self.telemetry.gate_reject(
+                "rl_filter",
+                ticker,
+                rl_decision,
+            )
             return
         logger.info(
             "Gate 2 (%s): PASSED (action=%s, confidence=%.2f).",
@@ -71,10 +87,12 @@ class TradingOrchestrator:
             rl_decision.get("action"),
             rl_decision.get("confidence", 0.0),
         )
+        self.telemetry.gate_pass("rl_filter", ticker, rl_decision)
 
         # Gate 3: LLM sentiment (budget-aware)
         sentiment_score = 0.0
-        if self.budget_controller.can_afford_execution():
+        llm_model = getattr(self.llm_agent, "model_name", None)
+        if self.budget_controller.can_afford_execution(model=llm_model):
             try:
                 llm_result = self.llm_agent.analyze_news(
                     ticker, momentum_signal.indicators
@@ -88,18 +106,38 @@ class TradingOrchestrator:
                         sentiment_score,
                         llm_result.get("reason", "N/A"),
                     )
+                    self.telemetry.gate_reject(
+                        "llm",
+                        ticker,
+                        {**llm_result, "trigger": "negative_sentiment"},
+                    )
                     return
                 logger.info(
                     "Gate 3 (%s): PASSED (sentiment=%.2f).", ticker, sentiment_score
                 )
+                self.telemetry.gate_pass("llm", ticker, llm_result)
             except Exception as exc:  # noqa: BLE001 - fallback to RL decision
                 logger.warning(
                     "Gate 3 (%s): Error calling LLM (%s). Falling back to RL output.",
                     ticker,
                     exc,
                 )
+                self.telemetry.gate_reject(
+                    "llm",
+                    ticker,
+                    {"error": str(exc)},
+                )
         else:
             logger.info("Gate 3 (%s): Skipped to protect budget.", ticker)
+            self.telemetry.record(
+                event_type="gate.llm",
+                ticker=ticker,
+                status="skipped",
+                payload={
+                    "remaining_budget": self.budget_controller.remaining_budget,
+                    "model": llm_model,
+                },
+            )
 
         # Gate 4: Risk sizing and execution
         order_size = self.risk_manager.calculate_size(
@@ -112,71 +150,24 @@ class TradingOrchestrator:
         )
 
         if order_size <= 0:
-            logger.info(
-                "Gate 4 (%s): REJECTED (position size calculated as 0).", ticker
+            logger.info("Gate 4 (%s): REJECTED (position size calculated as 0).", ticker)
+            self.telemetry.gate_reject(
+                "risk",
+                ticker,
+                {"order_size": order_size, "account_equity": self.executor.account_equity},
             )
             return
 
         logger.info("Executing BUY %s for $%.2f", ticker, order_size)
-
-        # Capture attribution metadata for performance analysis
-        attribution_metadata = {
-            "gate1_momentum": {
-                "passed": True,
-                "strength": momentum_signal.strength,
-                "indicators": (
-                    momentum_signal.indicators
-                    if hasattr(momentum_signal, "indicators")
-                    else {}
-                ),
-            },
-            "gate2_rl": {
-                "passed": True,
-                "confidence": rl_decision.get("confidence", 0.0),
-                "action": rl_decision.get("action"),
-                "multiplier": rl_decision.get("suggested_multiplier", 1.0),
-            },
-            "gate3_llm": {
-                "passed": (
-                    sentiment_score >= -0.2
-                    if self.budget_controller.can_afford_execution()
-                    else None
-                ),
-                "sentiment_score": sentiment_score,
-                "skipped": not self.budget_controller.can_afford_execution(),
-            },
-            "gate4_risk": {
-                "passed": order_size > 0,
-                "calculated_size": order_size,
-                "account_equity": self.executor.account_equity,
-            },
-            "timestamp": datetime.now().isoformat(),
-        }
-
-        order_result = self.executor.place_order(
+        order = self.executor.place_order(
             ticker,
             order_size,
             side="buy",
-            attribution_metadata=attribution_metadata,
         )
+        self.telemetry.gate_pass(
+            "risk",
+            ticker,
+            {"order_size": order_size, "account_equity": self.executor.account_equity},
+        )
+        self.telemetry.order_event(ticker, {"order": order, "rl": rl_decision})
 
-        # Record trade with attribution metadata for performance analysis
-        if order_result and order_result.get("id"):
-            try:
-                from scripts.state_manager import StateManager
-
-                state_manager = StateManager()
-                # Determine tier based on ticker (simplified - could be enhanced)
-                tier = "tier1" if ticker in ["SPY", "QQQ", "VOO"] else "tier2"
-                state_manager.record_trade(
-                    tier=tier,
-                    symbol=ticker,
-                    amount=order_size,
-                    order_id=str(order_result.get("id")),
-                    attribution_metadata=attribution_metadata,
-                )
-                logger.info(f"✅ Trade recorded with attribution metadata: {ticker}")
-            except Exception as e:
-                logger.warning(f"⚠️  Failed to record trade with attribution: {e}")
-
-        return order_result

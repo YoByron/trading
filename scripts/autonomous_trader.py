@@ -50,16 +50,14 @@ def execute_crypto_trading() -> None:
         crypto_strategy = CryptoStrategy(
             trader=trader,
             risk_manager=risk_manager,
-            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50")),
+            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50"))
         )
 
         # Execute crypto trading
         order = crypto_strategy.execute_daily()
 
         if order:
-            logger.info(
-                f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}"
-            )
+            logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
 
@@ -86,14 +84,10 @@ def main() -> None:
     logger = setup_logging()
 
     crypto_allowed = crypto_enabled()
-    should_run_crypto = (
-        not args.skip_crypto and crypto_allowed and (args.crypto_only or is_weekend())
-    )
+    should_run_crypto = not args.skip_crypto and crypto_allowed and (args.crypto_only or is_weekend())
 
     if args.crypto_only and not crypto_allowed:
-        logger.warning(
-            "Crypto-only requested but ENABLE_CRYPTO_AGENT is not true. Skipping crypto branch."
-        )
+        logger.warning("Crypto-only requested but ENABLE_CRYPTO_AGENT is not true. Skipping crypto branch.")
 
     if should_run_crypto:
         logger.info("Crypto branch enabled - executing crypto trading.")
@@ -102,9 +96,7 @@ def main() -> None:
         if args.crypto_only:
             return
     elif is_weekend() and not args.skip_crypto:
-        logger.info(
-            "Weekend detected but crypto branch disabled. Proceeding with hybrid funnel."
-        )
+        logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
 
     # Normal stock trading - import only when needed
     from src.orchestrator.main import TradingOrchestrator
@@ -115,19 +107,6 @@ def main() -> None:
     orchestrator = TradingOrchestrator(tickers=tickers)
     orchestrator.run()
     logger.info("Trading session completed.")
-
-    # Options strategy - covered calls on positions with 100+ shares
-    try:
-        from src.strategies.options_strategy import OptionsStrategy
-        logger.info("Checking for covered call opportunities...")
-        options = OptionsStrategy(paper=True)
-        options_result = options.scan_and_execute()
-        if options_result:
-            logger.info(f"Options strategy executed: {options_result}")
-        else:
-            logger.info("No covered call opportunities (need 100+ shares)")
-    except Exception as e:
-        logger.warning(f"Options strategy skipped: {e}")
 
 
 if __name__ == "__main__":

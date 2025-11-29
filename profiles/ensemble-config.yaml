@@ -9,4 +9,3 @@ weights:
 thresholds:
   buy: 0.12
   sell: -0.12
-

@@ -74,24 +74,24 @@ def test_scenario(name: str, hours_old: float, should_fail: bool = False):
     # Try to load state
     try:
         sm = StateManager()
-        print(f"\n✅ StateManager loaded successfully")
+        print("\n✅ StateManager loaded successfully")
         print(f"Status: {sm.state['meta']['staleness_status']}")
         print(
             f"Confidence: {sm.state['meta']['self_evaluation']['confidence_in_state'] * 100:.0f}%"
         )
 
         if should_fail:
-            print(f"\n❌ FAILED: Should have raised ValueError for EXPIRED state")
+            print("\n❌ FAILED: Should have raised ValueError for EXPIRED state")
             return False
 
         return True
     except ValueError as e:
         if should_fail:
-            print(f"\n✅ Correctly blocked EXPIRED state")
+            print("\n✅ Correctly blocked EXPIRED state")
             print(f"Error message:\n{str(e)[:200]}...")
             return True
         else:
-            print(f"\n❌ FAILED: Should NOT have raised ValueError")
+            print("\n❌ FAILED: Should NOT have raised ValueError")
             print(f"Error: {e}")
             return False
 
