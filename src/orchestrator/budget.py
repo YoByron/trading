@@ -59,5 +59,3 @@ class BudgetController:
     @property
     def remaining_budget(self) -> float:
         return max(0.0, self.max_run_spend - self.current_spend)
-
-

@@ -63,7 +63,7 @@ func main() {
 	}
 
 	launcher := full.NewLauncher()
-	
+
 	args := flag.Args()
 	if len(args) == 0 {
 		// Default to running the server if no args are provided

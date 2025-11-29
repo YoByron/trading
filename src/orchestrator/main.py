@@ -55,7 +55,10 @@ class TradingOrchestrator:
             self.telemetry.gate_reject(
                 "momentum",
                 ticker,
-                {"strength": momentum_signal.strength, "indicators": momentum_signal.indicators},
+                {
+                    "strength": momentum_signal.strength,
+                    "indicators": momentum_signal.indicators,
+                },
             )
             return
         logger.info(
@@ -64,7 +67,10 @@ class TradingOrchestrator:
         self.telemetry.gate_pass(
             "momentum",
             ticker,
-            {"strength": momentum_signal.strength, "indicators": momentum_signal.indicators},
+            {
+                "strength": momentum_signal.strength,
+                "indicators": momentum_signal.indicators,
+            },
         )
 
         # Gate 2: RL inference
@@ -150,11 +156,16 @@ class TradingOrchestrator:
         )
 
         if order_size <= 0:
-            logger.info("Gate 4 (%s): REJECTED (position size calculated as 0).", ticker)
+            logger.info(
+                "Gate 4 (%s): REJECTED (position size calculated as 0).", ticker
+            )
             self.telemetry.gate_reject(
                 "risk",
                 ticker,
-                {"order_size": order_size, "account_equity": self.executor.account_equity},
+                {
+                    "order_size": order_size,
+                    "account_equity": self.executor.account_equity,
+                },
             )
             return
 
@@ -170,4 +181,3 @@ class TradingOrchestrator:
             {"order_size": order_size, "account_equity": self.executor.account_equity},
         )
         self.telemetry.order_event(ticker, {"order": order, "rl": rl_decision})
-

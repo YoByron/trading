@@ -437,7 +437,11 @@ def generate_world_class_dashboard() -> str:
     # Extract equity curve
     equity_curve = []
     if isinstance(perf_log, list) and len(perf_log) > 0:
-        equity_curve = [entry.get("equity", 100000.0) for entry in perf_log if entry.get("equity") is not None]
+        equity_curve = [
+            entry.get("equity", 100000.0)
+            for entry in perf_log
+            if entry.get("equity") is not None
+        ]
 
     # Fallback: if no equity curve data, try to get from system state
     if not equity_curve:

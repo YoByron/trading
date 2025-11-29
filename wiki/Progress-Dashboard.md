@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 04:36 PM ET
+**Last Updated**: 2025-11-29 04:37 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -52,8 +52,8 @@
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+1.29 | $-155.44 to $+164.05 |
-| **30 Days** | $+3.99 | See 7-day CI scaled |
+| **7 Days** | $+1.32 | $-157.95 to $+163.89 |
+| **30 Days** | $+5.91 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%
@@ -111,32 +111,32 @@ No trades executed yet. System is ready for trading.
 
 ```
   $99,957 ┤                                        ┤ $100,014
-     │              █                                             
-     │            ██ █                                    ██      
-     │   █                                  ██████████████  ████  
-     │███ █           █     █                                     
-     │     █              ██                                      
-     │                 █       █           █                      
-     │      █████               █                                 
-     │           █      █     █  ███     █                        
-     │                       █      █████ █                       
-     │                   █                                        
+     │              █
+     │            ██ █                                    ██
+     │   █                                  ██████████████  ████
+     │███ █           █     █
+     │     █              ██
+     │                 █       █           █
+     │      █████               █
+     │           █      █     █  ███     █
+     │                       █      █████ █
+     │                   █
 ```
 
 ### Returns Distribution
 
 ```
   -0.03%                                0.04%
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-                       █                           
-  █        █       █ █ █ █                         
+                       █
+                       █
+                       █
+                       █
+                       █
+                       █
+                       █
+                       █
+                       █
+  █        █       █ █ █ █
 ```
 
 
@@ -176,4 +176,3 @@ No trades executed yet. System is ready for trading.
 
 *This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*
 *Dashboard improvements: Enhanced trade analysis, performance attribution, actionable risk alerts, and better visualizations.*
-

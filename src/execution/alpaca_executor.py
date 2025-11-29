@@ -57,15 +57,26 @@ class AlpacaExecutor:
     @property
     def account_equity(self) -> float:
         if not self.account_snapshot:
-            return float(os.getenv("SIMULATED_EQUITY", "100000")) if self.simulated else 0.0
+            return (
+                float(os.getenv("SIMULATED_EQUITY", "100000"))
+                if self.simulated
+                else 0.0
+            )
         return float(
             self.account_snapshot.get("equity")
             or self.account_snapshot.get("portfolio_value")
             or 0.0
         )
 
-    def place_order(self, symbol: str, notional: float, side: str = "buy") -> Dict[str, Any]:
-        logger.debug("Submitting %s order via AlpacaExecutor: %s for $%.2f", side, symbol, notional)
+    def place_order(
+        self, symbol: str, notional: float, side: str = "buy"
+    ) -> Dict[str, Any]:
+        logger.debug(
+            "Submitting %s order via AlpacaExecutor: %s for $%.2f",
+            side,
+            symbol,
+            notional,
+        )
         if self.simulated:
             order = {
                 "id": str(uuid.uuid4()),
@@ -86,5 +97,3 @@ class AlpacaExecutor:
             tier="T1_CORE",
         )
         return order
-
-
