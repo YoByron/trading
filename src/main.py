@@ -784,6 +784,25 @@ Output your recommendation in JSON format for easy parsing."""
             self.health_status["last_core_execution"] = datetime.now().isoformat()
             self.health_status["adk_summary"] = summary
             self.last_execution["core_strategy"] = datetime.now()
+
+            # Save trade to daily file
+            try:
+                trade_data = {
+                    "symbol": decision.symbol,
+                    "side": side,
+                    "amount": trade_amount,
+                    "order_id": executed.get("id"),
+                    "tier": "T1_CORE_ADK",
+                    "timestamp": datetime.now().isoformat(),
+                    "filled_at": executed.get("filled_at"),
+                    "filled_avg_price": executed.get("filled_avg_price"),
+                    "filled_qty": executed.get("filled_qty"),
+                    "status": executed.get("status"),
+                }
+                save_trade_to_daily_file(trade_data)
+            except Exception as e:
+                self.logger.warning(f"Failed to save ADK trade to daily file: {e}")
+
             return True
         except Exception as exc:
             self.logger.error("ADK order execution failed: %s", exc, exc_info=True)
@@ -935,6 +954,21 @@ Output your recommendation in JSON format for easy parsing."""
                     f"Core Strategy order executed: {order.symbol} - ${order.amount:.2f}"
                 )
                 self.last_execution["core_strategy"] = datetime.now()
+
+                # Save trade to daily file
+                try:
+                    trade_data = {
+                        "symbol": order.symbol,
+                        "side": "buy",
+                        "amount": order.amount,
+                        "tier": "T1_CORE",
+                        "timestamp": datetime.now().isoformat(),
+                        "price": getattr(order, "fill_price", None),
+                        "quantity": getattr(order, "quantity", None),
+                    }
+                    save_trade_to_daily_file(trade_data)
+                except Exception as e:
+                    self.logger.warning(f"Failed to save trade to daily file: {e}")
 
                 # Send trade notification
                 if self.notification_agent:
@@ -1107,6 +1141,31 @@ Output your recommendation in JSON format for easy parsing."""
                     self.logger.info(
                         f"  {order.action.upper()} {order.symbol} x{order.quantity}"
                     )
+                    # Save trade to daily file
+                    try:
+                        trade_data = {
+                            "symbol": order.symbol,
+                            "side": (
+                                order.action.lower()
+                                if hasattr(order, "action")
+                                else "buy"
+                            ),
+                            "amount": getattr(
+                                order,
+                                "amount",
+                                getattr(order, "quantity", 0)
+                                * getattr(order, "price", 0),
+                            ),
+                            "tier": "T2_GROWTH",
+                            "timestamp": datetime.now().isoformat(),
+                            "price": getattr(order, "price", None),
+                            "quantity": getattr(order, "quantity", None),
+                        }
+                        save_trade_to_daily_file(trade_data)
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to save growth trade to daily file: {e}"
+                        )
                 self.last_execution["growth_strategy"] = datetime.now()
             else:
                 self.logger.info("Growth Strategy: No orders generated")
