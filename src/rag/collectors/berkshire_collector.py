@@ -13,14 +13,12 @@ Features:
 - Multi-year cross-referencing
 """
 
-import os
 import re
 import json
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
-import hashlib
 
 import requests
 from bs4 import BeautifulSoup
@@ -136,8 +134,16 @@ class BerkshireLettersCollector(BaseNewsCollector):
         """
         logger.info("Fetching Berkshire letters index page...")
 
+        # Use proper headers to avoid 403 Forbidden
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Connection": "keep-alive",
+        }
+
         try:
-            response = requests.get(self.LETTERS_URL, timeout=30)
+            response = requests.get(self.LETTERS_URL, headers=headers, timeout=30)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
 
@@ -203,7 +209,14 @@ class BerkshireLettersCollector(BaseNewsCollector):
 
         try:
             logger.info(f"Downloading {year} letter from {url}")
-            response = requests.get(url, timeout=30)
+
+            # Use proper headers to avoid 403 Forbidden
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            }
+
+            response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
 
             # Determine file type

@@ -6,7 +6,6 @@ This script demonstrates the collector without relying on package imports
 that may have dependency issues.
 """
 
-import os
 import re
 import json
 import logging
@@ -23,8 +22,7 @@ except ImportError:
     PyPDF2 = None
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -57,7 +55,7 @@ class SimpleBerkshireCollector:
         """Load the letters index from disk."""
         if self.index_file.exists():
             try:
-                with open(self.index_file, 'r') as f:
+                with open(self.index_file, "r") as f:
                     return json.load(f)
             except Exception as e:
                 logger.error(f"Error loading index: {e}")
@@ -67,7 +65,7 @@ class SimpleBerkshireCollector:
     def _save_index(self):
         """Save the letters index to disk."""
         try:
-            with open(self.index_file, 'w') as f:
+            with open(self.index_file, "w") as f:
                 json.dump(self.index, f, indent=2)
             logger.info(f"Saved index with {len(self.index)} letters")
         except Exception as e:
@@ -88,14 +86,18 @@ class SimpleBerkshireCollector:
         try:
             response = requests.get(self.LETTERS_URL, timeout=30)
             response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
 
             # Find all letter links
             letter_links = []
-            for link in soup.find_all('a', href=True):
-                href = link['href']
-                if '/letters/' in href and any(str(year) in href for year in range(1977, 2025)):
-                    full_url = href if href.startswith('http') else f"{self.BASE_URL}{href}"
+            for link in soup.find_all("a", href=True):
+                href = link["href"]
+                if "/letters/" in href and any(
+                    str(year) in href for year in range(1977, 2025)
+                ):
+                    full_url = (
+                        href if href.startswith("http") else f"{self.BASE_URL}{href}"
+                    )
                     letter_links.append(full_url)
 
             # Deduplicate and sort
@@ -120,7 +122,7 @@ class SimpleBerkshireCollector:
 
     def _extract_year(self, url: str) -> Optional[int]:
         """Extract year from letter URL."""
-        match = re.search(r'(19|20)\d{2}', url)
+        match = re.search(r"(19|20)\d{2}", url)
         if match:
             year = int(match.group(0))
             if 1977 <= year <= 2024:
@@ -135,14 +137,14 @@ class SimpleBerkshireCollector:
             response.raise_for_status()
 
             # Determine file type
-            content_type = response.headers.get('Content-Type', '').lower()
-            is_pdf = 'pdf' in content_type or url.endswith('.pdf')
+            content_type = response.headers.get("Content-Type", "").lower()
+            is_pdf = "pdf" in content_type or url.endswith(".pdf")
 
             # Save raw file
-            ext = 'pdf' if is_pdf else 'html'
+            ext = "pdf" if is_pdf else "html"
             raw_file = self.raw_dir / f"{year}.{ext}"
 
-            with open(raw_file, 'wb') as f:
+            with open(raw_file, "wb") as f:
                 f.write(response.content)
 
             # Parse content
@@ -157,7 +159,7 @@ class SimpleBerkshireCollector:
 
             # Save parsed text
             parsed_file = self.parsed_dir / f"{year}.txt"
-            with open(parsed_file, 'w', encoding='utf-8') as f:
+            with open(parsed_file, "w", encoding="utf-8") as f:
                 f.write(text)
 
             # Update index
@@ -169,7 +171,7 @@ class SimpleBerkshireCollector:
                 "file_type": ext,
                 "downloaded_at": datetime.now().isoformat(),
                 "char_count": len(text),
-                "word_count": len(text.split())
+                "word_count": len(text.split()),
             }
 
             logger.info(f"✓ Downloaded and parsed {year} letter ({len(text)} chars)")
@@ -187,7 +189,7 @@ class SimpleBerkshireCollector:
 
         try:
             text_parts = []
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 pdf_reader = PyPDF2.PdfReader(f)
                 for page in pdf_reader.pages:
                     text_parts.append(page.extract_text())
@@ -201,7 +203,7 @@ class SimpleBerkshireCollector:
     def _parse_html(self, html_content: str) -> str:
         """Parse HTML to text."""
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Remove script and style elements
             for script in soup(["script", "style"]):
@@ -213,7 +215,7 @@ class SimpleBerkshireCollector:
             # Clean up whitespace
             lines = (line.strip() for line in text.splitlines())
             chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = '\n'.join(chunk for chunk in chunks if chunk)
+            text = "\n".join(chunk for chunk in chunks if chunk)
 
             return text
 
@@ -241,7 +243,7 @@ class SimpleBerkshireCollector:
                 "relevant_excerpts": [],
                 "years_referenced": [],
                 "sentiment": "No data available",
-                "source": "berkshire_letters"
+                "source": "berkshire_letters",
             }
 
         # Search each letter
@@ -253,7 +255,7 @@ class SimpleBerkshireCollector:
                 continue
 
             # Load text
-            with open(parsed_file, 'r', encoding='utf-8') as f:
+            with open(parsed_file, "r", encoding="utf-8") as f:
                 text = f.read()
 
             # Simple keyword search
@@ -262,12 +264,14 @@ class SimpleBerkshireCollector:
             if relevance_score > 0:
                 excerpts = self._extract_excerpts(query, text, max_excerpts=2)
 
-                results.append({
-                    "year": int(year_str),
-                    "relevance_score": relevance_score,
-                    "excerpts": excerpts,
-                    "url": letter_info["url"]
-                })
+                results.append(
+                    {
+                        "year": int(year_str),
+                        "relevance_score": relevance_score,
+                        "excerpts": excerpts,
+                        "url": letter_info["url"],
+                    }
+                )
 
         # Sort by relevance
         results.sort(key=lambda x: x["relevance_score"], reverse=True)
@@ -280,8 +284,12 @@ class SimpleBerkshireCollector:
                 for r in results
             ],
             "years_referenced": [r["year"] for r in results],
-            "sentiment": results[0]["excerpts"][0][:300] + "..." if results and results[0]["excerpts"] else "No relevant excerpts found",
-            "source": "berkshire_letters"
+            "sentiment": (
+                results[0]["excerpts"][0][:300] + "..."
+                if results and results[0]["excerpts"]
+                else "No relevant excerpts found"
+            ),
+            "source": "berkshire_letters",
         }
 
     def _calculate_relevance(self, query: str, text: str) -> float:
@@ -290,8 +298,27 @@ class SimpleBerkshireCollector:
         text_lower = text.lower()
 
         # Extract query keywords (ignore common words)
-        stop_words = {"the", "a", "an", "and", "or", "but", "is", "are", "was", "were",
-                     "in", "on", "at", "to", "for", "of", "with", "by", "from"}
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "is",
+            "are",
+            "was",
+            "were",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+        }
         query_words = [w for w in query_lower.split() if w not in stop_words]
 
         if not query_words:
@@ -302,18 +329,41 @@ class SimpleBerkshireCollector:
 
         # Normalize by text length
         text_word_count = len(text_lower.split())
-        normalized_score = (total_matches / len(query_words)) * (1000 / max(text_word_count, 1000))
+        normalized_score = (total_matches / len(query_words)) * (
+            1000 / max(text_word_count, 1000)
+        )
 
         return normalized_score
 
-    def _extract_excerpts(self, query: str, text: str, max_excerpts: int = 2) -> List[str]:
+    def _extract_excerpts(
+        self, query: str, text: str, max_excerpts: int = 2
+    ) -> List[str]:
         """Extract relevant excerpts from text containing query keywords."""
         query_lower = query.lower()
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
 
         # Find sentences containing query keywords
-        stop_words = {"the", "a", "an", "and", "or", "but", "is", "are", "was", "were",
-                     "in", "on", "at", "to", "for", "of", "with", "by", "from"}
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "is",
+            "are",
+            "was",
+            "were",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+        }
         query_words = [w for w in query_lower.split() if w not in stop_words]
 
         relevant_sentences = []
@@ -366,9 +416,9 @@ def main():
         print(f"\nBuffett's view (excerpt): {results['sentiment'][:250]}...")
         print()
 
-        for i, excerpt in enumerate(results['relevant_excerpts'], 1):
+        for i, excerpt in enumerate(results["relevant_excerpts"], 1):
             print(f"{i}. Year {excerpt['year']}:")
-            for j, text in enumerate(excerpt['excerpts'][:1], 1):
+            for j, text in enumerate(excerpt["excerpts"][:1], 1):
                 print(f"   {text[:200]}...")
         print()
 
