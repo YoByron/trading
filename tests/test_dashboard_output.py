@@ -119,7 +119,9 @@ def test_world_class_dashboard():
             os.chdir(tmpdir_path)
 
             # Import and generate dashboard
-            from scripts.generate_world_class_dashboard import generate_world_class_dashboard
+            from scripts.generate_world_class_dashboard import (
+                generate_world_class_dashboard,
+            )
 
             dashboard = generate_world_class_dashboard()
 
@@ -234,4 +236,3 @@ def run_tests():
 
 if __name__ == "__main__":
     sys.exit(run_tests())
-

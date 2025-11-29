@@ -15,6 +15,9 @@ services:
     ports:
       - "8080:8080"
       - "8091:8091"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
     restart: unless-stopped
     networks:
       - trading-network

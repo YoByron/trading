@@ -73,3 +73,13 @@ repos:
         files: '(scripts/generate.*dashboard.*\.py)'
         pass_filenames: false
         verbose: true
+
+      - id: smoke-tests
+        name: Smoke Tests - Critical Path Verification
+        entry: python3 tests/test_smoke.py
+        language: system
+        types: [python]
+        files: '(scripts/|src/|tests/)'
+        pass_filenames: false
+        verbose: true
+        stages: [pre-commit]
