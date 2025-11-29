@@ -11,7 +11,9 @@ from mcp.client import get_multi_llm_analyzer
 from mcp.utils import ensure_env_var, run_sync
 
 
-def _normalize_news(news: Optional[Iterable[Mapping[str, Any]]]) -> List[Dict[str, Any]]:
+def _normalize_news(
+    news: Optional[Iterable[Mapping[str, Any]]]
+) -> List[Dict[str, Any]]:
     if not news:
         return []
     normalized = []

@@ -23,7 +23,7 @@ import os
 import sys
 import json
 import numpy as np
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 from collections import defaultdict
@@ -54,7 +54,7 @@ def load_json_file(filepath: Path) -> dict:
 
 
 def load_trade_data() -> List[Dict[str, Any]]:
-    """Load all trade data from trade log files."""
+    """Load all trade data from trade log files and system_state."""
     trades = []
 
     # Load from daily trade files
@@ -69,6 +69,22 @@ def load_trade_data() -> List[Dict[str, Any]]:
                     trades.append(daily_trades)
         except Exception:
             continue
+
+    # Load closed trades from system_state.json (these have attribution metadata)
+    system_state = load_json_file(DATA_DIR / "system_state.json")
+    if system_state:
+        performance = system_state.get("performance", {})
+        closed_trades = performance.get("closed_trades", [])
+        # Add closed trades that aren't already in the list
+        existing_symbols_dates = {
+            (t.get("symbol"), t.get("entry_date"))
+            for t in trades
+            if t.get("symbol") and t.get("entry_date")
+        }
+        for closed_trade in closed_trades:
+            key = (closed_trade.get("symbol"), closed_trade.get("entry_date"))
+            if key not in existing_symbols_dates:
+                trades.append(closed_trade)
 
     return trades
 
@@ -241,7 +257,7 @@ def generate_returns_distribution_chart(
         chart_lines.append(line)
 
     # Add labels
-    result = f"  {min_ret*100:.2f}% {' ' * (width - 20)} {max_ret*100:.2f}%\n"
+    result = f"  {min_ret * 100:.2f}% {' ' * (width - 20)} {max_ret * 100:.2f}%\n"
     result += "\n".join(chart_lines)
 
     return result
@@ -428,7 +444,6 @@ def generate_world_class_dashboard() -> str:
 
     # Initialize analytics
     analytics = WorldClassAnalytics() if WorldClassAnalytics else None
-    ai_insights = AIInsightGenerator() if AIInsightGenerator else None
 
     # Calculate basic metrics
     account = system_state.get("account", {})
@@ -441,8 +456,21 @@ def generate_world_class_dashboard() -> str:
         trades
     )
 
-    # Performance attribution
+    # Performance attribution - use both strategy-level and trade-level attribution
     attribution = calculate_performance_attribution(trades)
+
+    # Enhanced trade-level attribution with gate/agent breakdown
+    trade_level_attribution = {}
+    if analytics and trades:
+        closed_trades_with_attribution = [
+            t
+            for t in trades
+            if t.get("pl") is not None and t.get("attribution_metadata")
+        ]
+        if closed_trades_with_attribution:
+            trade_level_attribution = analytics.calculate_trade_level_attribution(
+                closed_trades_with_attribution
+            )
 
     # Calculate returns for analytics
     returns = []
@@ -553,6 +581,38 @@ def generate_world_class_dashboard() -> str:
             attribution.items(), key=lambda x: x[1].get("total_pl", 0), reverse=True
         ):
             attribution_table += f"| **{tier}** | {data['trades']} | {data['wins']} | {data['losses']} | {data['win_rate']:.1f}% | ${data['total_pl']:+,.2f} | ${data['avg_pl']:+,.2f} |\n"
+
+        # Add gate-level attribution if available
+        if trade_level_attribution:
+            by_gate = trade_level_attribution.get("by_gate", {})
+            if by_gate:
+                attribution_table += "\n### By Gate/Agent\n\n"
+                attribution_table += (
+                    "| Gate/Agent | Total P/L | Trades | Avg Metric |\n"
+                )
+                attribution_table += (
+                    "|------------|-----------|--------|------------|\n"
+                )
+                for gate, data in sorted(
+                    by_gate.items(), key=lambda x: x[1].get("total_pl", 0), reverse=True
+                ):
+                    gate_name = (
+                        gate.replace("gate1_momentum", "Gate 1: Momentum")
+                        .replace("gate2_rl", "Gate 2: RL Agent")
+                        .replace("gate3_llm", "Gate 3: LLM Analyst")
+                        .replace("gate4_risk", "Gate 4: Risk Manager")
+                    )
+                    attribution_table += f"| {gate_name} | ${data.get('total_pl', 0):+,.2f} | {data.get('trades', 0)} | {data.get('avg_metric', 0):.2f} |\n"
+
+                # Add entry/exit/sizing breakdown
+                entry_exit = trade_level_attribution.get("entry_exit_sizing", {})
+                if entry_exit:
+                    attribution_table += "\n### Entry/Exit/Sizing Contribution\n\n"
+                    attribution_table += "| Factor | Contribution % | P/L Impact |\n"
+                    attribution_table += "|--------|---------------|------------|\n"
+                    attribution_table += f"| Entry Signal Quality | {entry_exit.get('entry_signal_contribution_pct', 0):.1f}% | ${entry_exit.get('entry_pl', 0):+,.2f} |\n"
+                    attribution_table += f"| Exit Timing | {entry_exit.get('exit_signal_contribution_pct', 0):.1f}% | ${entry_exit.get('exit_pl', 0):+,.2f} |\n"
+                    attribution_table += f"| Position Sizing | {entry_exit.get('position_sizing_contribution_pct', 0):.1f}% | ${entry_exit.get('sizing_pl', 0):+,.2f} |\n"
     else:
         attribution_table = "  (No trade data available for attribution analysis)"
 
@@ -571,7 +631,7 @@ def generate_world_class_dashboard() -> str:
 | Metric | Current | Target | Progress |
 |--------|---------|--------|----------|
 | **Average Daily Profit** | ${avg_daily_profit:.2f}/day | $100.00/day | {display_progress_pct:.2f}% |
-| **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) | TBD | {'✅' if total_pl > 0 else '⚠️'} |
+| **Total P/L** | ${total_pl:+,.2f} ({total_pl / starting_balance * 100:+.2f}%) | TBD | {'✅' if total_pl > 0 else '⚠️'} |
 | **Win Rate** | {win_rate:.1f}% ({winning_trades}/{total_closed_trades}) | >55% | {'✅' if win_rate >= 55 else '⚠️' if win_rate >= 40 else '🚨'} |
 
 **Progress Toward $100/Day Goal**: `{north_star_bar}` ({display_progress_pct:.2f}%)
@@ -675,7 +735,7 @@ def generate_world_class_dashboard() -> str:
     if not enhanced_insights["key_findings"]:
         dashboard += "- No significant findings at this time\n"
 
-    dashboard += f"""
+    dashboard += """
 **Recommendations**:
 """
 
@@ -685,7 +745,7 @@ def generate_world_class_dashboard() -> str:
     if not enhanced_insights["recommendations"]:
         dashboard += "- Continue monitoring current strategy\n"
 
-    dashboard += f"""
+    dashboard += """
 **Recent Trade Analysis**:
 """
 
@@ -724,7 +784,7 @@ def generate_world_class_dashboard() -> str:
 |--------|-------|
 | **Starting Balance** | ${starting_balance:,.2f} |
 | **Current Equity** | ${current_equity:,.2f} |
-| **Total P/L** | ${total_pl:+,.2f} ({total_pl/starting_balance*100:+.2f}%) |
+| **Total P/L** | ${total_pl:+,.2f} ({total_pl / starting_balance * 100:+.2f}%) |
 | **Total Trades** | {total_trades} |
 | **Closed Trades** | {total_closed_trades} |
 | **Winning Trades** | {winning_trades} |
@@ -734,9 +794,9 @@ def generate_world_class_dashboard() -> str:
 
 ## 📊 90-Day R&D Challenge Progress
 
-**Current**: Day {current_day} of {total_days} ({current_day/total_days*100:.1f}% complete)
+**Current**: Day {current_day} of {total_days} ({current_day / total_days * 100:.1f}% complete)
 
-**Timeline Progress**: `{'█' * int((current_day/total_days*100)/5) + '░' * (20 - int((current_day/total_days*100)/5))}` ({current_day/total_days*100:.1f}%)
+**Timeline Progress**: `{'█' * int((current_day / total_days * 100) / 5) + '░' * (20 - int((current_day / total_days * 100) / 5))}` ({current_day / total_days * 100:.1f}%)
 *This shows how far through the 90-day R&D challenge timeline you are*
 
 ---

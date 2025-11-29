@@ -89,7 +89,9 @@ def evaluate_signals(signals: Dict[str, Dict], horizon_days: int) -> Dict:
 
     avg_return = sum(item["return"] for item in results) / len(results)
     alignment = sum(
-        1 for item in results if (item["signal_score"] >= 0 and item["return"] >= 0)
+        1
+        for item in results
+        if (item["signal_score"] >= 0 and item["return"] >= 0)
         or (item["signal_score"] < 0 and item["return"] < 0)
     ) / len(results)
 
@@ -134,7 +136,11 @@ def main() -> None:
             indent=2,
         )
 
-    logger.info("Saved evaluation with %d results to %s", len(evaluation["results"]), output_path)
+    logger.info(
+        "Saved evaluation with %d results to %s",
+        len(evaluation["results"]),
+        output_path,
+    )
     logger.info("Summary: %s", evaluation["summary"])
 
 

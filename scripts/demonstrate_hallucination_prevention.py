@@ -17,24 +17,27 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from state_manager import StateManager, STATE_FILE
 
+
 def backup_state():
     """Backup current state"""
     if STATE_FILE.exists():
-        backup_file = STATE_FILE.with_suffix('.json.backup')
-        with open(STATE_FILE, 'r') as src, open(backup_file, 'w') as dst:
+        backup_file = STATE_FILE.with_suffix(".json.backup")
+        with open(STATE_FILE, "r") as src, open(backup_file, "w") as dst:
             dst.write(src.read())
         return True
     return False
 
+
 def restore_state():
     """Restore state from backup"""
-    backup_file = STATE_FILE.with_suffix('.json.backup')
+    backup_file = STATE_FILE.with_suffix(".json.backup")
     if backup_file.exists():
-        with open(backup_file, 'r') as src, open(STATE_FILE, 'w') as dst:
+        with open(backup_file, "r") as src, open(STATE_FILE, "w") as dst:
             dst.write(src.read())
         backup_file.unlink()
         return True
     return False
+
 
 def simulate_oct_30_state():
     """Create state as it was on Oct 30, 2025"""
@@ -42,7 +45,7 @@ def simulate_oct_30_state():
         print(f"❌ State file not found: {STATE_FILE}")
         return False
 
-    with open(STATE_FILE, 'r') as f:
+    with open(STATE_FILE, "r") as f:
         state = json.load(f)
 
     # Set state to look like Oct 30, 2025 at 10:00 AM
@@ -62,19 +65,20 @@ def simulate_oct_30_state():
     state["performance"]["total_trades"] = 2
     state["performance"]["winning_trades"] = 2
 
-    with open(STATE_FILE, 'w') as f:
+    with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
     print(f"✅ Simulated Oct 30 state (Day 2 data)")
     return True
 
+
 def main():
-    print("="*70)
+    print("=" * 70)
     print("HALLUCINATION PREVENTION DEMONSTRATION")
-    print("="*70)
+    print("=" * 70)
     print("\nScenario: CTO tries to read 5-day-old state on Nov 4, 2025")
     print("Expected: System BLOCKS load and forces data refresh")
-    print("="*70)
+    print("=" * 70)
 
     # Backup current state
     if not backup_state():
@@ -95,13 +99,15 @@ def main():
         try:
             sm = StateManager()
             print("\n❌ FAILURE: State loaded without blocking!")
-            print("This would cause hallucination: reporting Day 2 when it's actually Day 7")
+            print(
+                "This would cause hallucination: reporting Day 2 when it's actually Day 7"
+            )
 
         except ValueError as e:
             print("✅ SUCCESS: Staleness detection BLOCKED the load!")
-            print("\n" + "="*70)
+            print("\n" + "=" * 70)
             print("ERROR MESSAGE SHOWN TO CTO:")
-            print("="*70)
+            print("=" * 70)
             print(str(e))
             print("\n✅ This prevents hallucination!")
             print("✅ CTO is forced to refresh data before proceeding")
@@ -110,8 +116,9 @@ def main():
     finally:
         # Restore original state
         restore_state()
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ Original state restored")
+
 
 if __name__ == "__main__":
     main()

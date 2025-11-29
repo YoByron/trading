@@ -17,13 +17,10 @@ Features:
 """
 
 import numpy as np
-import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 from pathlib import Path
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RiskMetrics:
     """Comprehensive risk analytics"""
+
     max_drawdown: float = 0.0
     max_drawdown_pct: float = 0.0
     ulcer_index: float = 0.0
@@ -48,6 +46,7 @@ class RiskMetrics:
 @dataclass
 class PredictiveForecast:
     """Monte Carlo forecasting results"""
+
     expected_profit_7d: Tuple[float, float] = (0.0, 0.0)  # (mean, std)
     expected_profit_30d: Tuple[float, float] = (0.0, 0.0)
     confidence_interval_95: Tuple[float, float] = (0.0, 0.0)
@@ -58,6 +57,7 @@ class PredictiveForecast:
 @dataclass
 class PerformanceAttribution:
     """Performance attribution analysis"""
+
     alpha: float = 0.0  # Excess return vs benchmark
     beta: float = 0.0  # Market correlation
     momentum_factor: float = 0.0
@@ -71,6 +71,7 @@ class PerformanceAttribution:
 @dataclass
 class CapitalEfficiency:
     """Capital efficiency metrics"""
+
     portfolio_leverage: float = 1.0
     margin_usage_pct: float = 0.0
     return_on_risk: float = 0.0
@@ -82,6 +83,7 @@ class CapitalEfficiency:
 @dataclass
 class StrategyBreakdown:
     """Strategy-level performance breakdown"""
+
     strategy_id: str = ""
     symbol: str = ""
     trades: int = 0
@@ -131,7 +133,7 @@ class WorldClassAnalytics:
         max_dd_pct = max_dd * 100
 
         # Ulcer Index (square root of average squared drawdown)
-        drawdown_squared = drawdown ** 2
+        drawdown_squared = drawdown**2
         ulcer_index = np.sqrt(np.mean(drawdown_squared)) * 100
 
         # Volatility (annualized)
@@ -139,15 +141,27 @@ class WorldClassAnalytics:
 
         # Downside Deviation (only negative returns)
         downside_returns = returns[returns < 0]
-        downside_dev = np.std(downside_returns) * np.sqrt(252) * 100 if len(downside_returns) > 0 else 0.0
+        downside_dev = (
+            np.std(downside_returns) * np.sqrt(252) * 100
+            if len(downside_returns) > 0
+            else 0.0
+        )
 
         # Sharpe Ratio
         mean_return = np.mean(returns)
         risk_free_daily = self.risk_free_rate / 252
-        sharpe = ((mean_return - risk_free_daily) / np.std(returns) * np.sqrt(252)) if np.std(returns) > 0 else 0.0
+        sharpe = (
+            ((mean_return - risk_free_daily) / np.std(returns) * np.sqrt(252))
+            if np.std(returns) > 0
+            else 0.0
+        )
 
         # Sortino Ratio (downside risk-adjusted)
-        sortino = ((mean_return - risk_free_daily) / (downside_dev / 100 / np.sqrt(252))) if downside_dev > 0 else 0.0
+        sortino = (
+            ((mean_return - risk_free_daily) / (downside_dev / 100 / np.sqrt(252)))
+            if downside_dev > 0
+            else 0.0
+        )
 
         # Calmar Ratio (return / max drawdown)
         annualized_return = mean_return * 252
@@ -158,8 +172,16 @@ class WorldClassAnalytics:
         var_99 = np.percentile(returns, 1) * 100  # 1st percentile
 
         # Conditional VaR (CVaR) - Expected loss beyond VaR
-        cvar_95 = np.mean(returns[returns <= np.percentile(returns, 5)]) * 100 if len(returns) > 0 else 0.0
-        cvar_99 = np.mean(returns[returns <= np.percentile(returns, 1)]) * 100 if len(returns) > 0 else 0.0
+        cvar_95 = (
+            np.mean(returns[returns <= np.percentile(returns, 5)]) * 100
+            if len(returns) > 0
+            else 0.0
+        )
+        cvar_99 = (
+            np.mean(returns[returns <= np.percentile(returns, 1)]) * 100
+            if len(returns) > 0
+            else 0.0
+        )
 
         return RiskMetrics(
             max_drawdown=max_dd * equity_array[0],
@@ -173,14 +195,11 @@ class WorldClassAnalytics:
             cvar_99=abs(cvar_99),
             volatility=volatility,
             downside_deviation=downside_dev,
-            calmar_ratio=calmar
+            calmar_ratio=calmar,
         )
 
     def monte_carlo_forecast(
-        self,
-        returns: List[float],
-        days_ahead: int = 30,
-        simulations: int = 10000
+        self, returns: List[float], days_ahead: int = 30, simulations: int = 10000
     ) -> PredictiveForecast:
         """
         Monte Carlo simulation for profit forecasting.
@@ -240,14 +259,14 @@ class WorldClassAnalytics:
             expected_profit_30d=(profit_30d, std_30d),
             confidence_interval_95=(ci_lower, ci_upper),
             drawdown_probability=drawdown_prob,
-            edge_drift_score=edge_drift
+            edge_drift_score=edge_drift,
         )
 
     def calculate_performance_attribution(
         self,
         portfolio_returns: List[float],
         benchmark_returns: List[float],
-        factor_returns: Optional[Dict[str, List[float]]] = None
+        factor_returns: Optional[Dict[str, List[float]]] = None,
     ) -> PerformanceAttribution:
         """
         Calculate performance attribution vs benchmark and factors.
@@ -283,39 +302,48 @@ class WorldClassAnalytics:
         sentiment_factor = 0.0
 
         if factor_returns:
-            if 'momentum' in factor_returns:
-                mom_ret = np.array(factor_returns['momentum'][:min_len])
-                momentum_factor = np.corrcoef(port_ret, mom_ret)[0, 1] if len(mom_ret) == len(port_ret) else 0.0
+            if "momentum" in factor_returns:
+                mom_ret = np.array(factor_returns["momentum"][:min_len])
+                momentum_factor = (
+                    np.corrcoef(port_ret, mom_ret)[0, 1]
+                    if len(mom_ret) == len(port_ret)
+                    else 0.0
+                )
 
-            if 'volatility' in factor_returns:
-                vol_ret = np.array(factor_returns['volatility'][:min_len])
-                volatility_factor = np.corrcoef(port_ret, vol_ret)[0, 1] if len(vol_ret) == len(port_ret) else 0.0
+            if "volatility" in factor_returns:
+                vol_ret = np.array(factor_returns["volatility"][:min_len])
+                volatility_factor = (
+                    np.corrcoef(port_ret, vol_ret)[0, 1]
+                    if len(vol_ret) == len(port_ret)
+                    else 0.0
+                )
 
-            if 'sentiment' in factor_returns:
-                sent_ret = np.array(factor_returns['sentiment'][:min_len])
-                sentiment_factor = np.corrcoef(port_ret, sent_ret)[0, 1] if len(sent_ret) == len(port_ret) else 0.0
+            if "sentiment" in factor_returns:
+                sent_ret = np.array(factor_returns["sentiment"][:min_len])
+                sentiment_factor = (
+                    np.corrcoef(port_ret, sent_ret)[0, 1]
+                    if len(sent_ret) == len(port_ret)
+                    else 0.0
+                )
 
-        # Attribution (simplified - would need trade-level data for full attribution)
-        entry_contribution = 0.5  # Placeholder
-        exit_contribution = 0.3
-        sizing_contribution = 0.2
-
+        # Attribution will be calculated from trade-level data separately
+        # See calculate_trade_level_attribution() method
         return PerformanceAttribution(
             alpha=alpha * 100,
             beta=beta,
             momentum_factor=momentum_factor,
             volatility_factor=volatility_factor,
             sentiment_factor=sentiment_factor,
-            entry_signal_contribution=entry_contribution * 100,
-            exit_signal_contribution=exit_contribution * 100,
-            position_sizing_contribution=sizing_contribution * 100
+            entry_signal_contribution=0.0,  # Calculated from trade-level data
+            exit_signal_contribution=0.0,  # Calculated from trade-level data
+            position_sizing_contribution=0.0,  # Calculated from trade-level data
         )
 
     def calculate_capital_efficiency(
         self,
         equity_curve: List[float],
         positions: List[Dict[str, Any]],
-        trades: List[Dict[str, Any]]
+        trades: List[Dict[str, Any]],
     ) -> CapitalEfficiency:
         """
         Calculate capital efficiency metrics.
@@ -334,11 +362,15 @@ class WorldClassAnalytics:
         current_equity = equity_curve[-1]
 
         # Portfolio leverage (simplified - would need margin data)
-        total_position_value = sum(p.get('value', 0) for p in positions)
+        total_position_value = sum(p.get("value", 0) for p in positions)
         leverage = total_position_value / current_equity if current_equity > 0 else 1.0
 
         # Margin usage (simplified)
-        margin_usage = (total_position_value / (current_equity * 2)) * 100 if current_equity > 0 else 0.0
+        margin_usage = (
+            (total_position_value / (current_equity * 2)) * 100
+            if current_equity > 0
+            else 0.0
+        )
 
         # Return on Risk (annualized return / volatility)
         returns = np.diff(equity_curve) / equity_curve[:-1]
@@ -361,13 +393,11 @@ class WorldClassAnalytics:
             return_on_risk=ror,
             time_in_market_pct=time_in_market,
             avg_slippage_pct=avg_slippage,
-            liquidity_score=liquidity_score
+            liquidity_score=liquidity_score,
         )
 
     def classify_market_regime(
-        self,
-        prices: List[float],
-        volumes: Optional[List[float]] = None
+        self, prices: List[float], volumes: Optional[List[float]] = None
     ) -> str:
         """
         Classify current market regime.
@@ -382,7 +412,9 @@ class WorldClassAnalytics:
         returns = np.diff(prices_array) / prices_array[:-1]
 
         # Trend strength (autocorrelation)
-        autocorr = np.corrcoef(returns[:-1], returns[1:])[0, 1] if len(returns) > 1 else 0.0
+        autocorr = (
+            np.corrcoef(returns[:-1], returns[1:])[0, 1] if len(returns) > 1 else 0.0
+        )
 
         # Volatility
         volatility = np.std(returns) * 100
@@ -397,9 +429,7 @@ class WorldClassAnalytics:
             return "News-driven"
 
     def generate_strategy_breakdown(
-        self,
-        trades: List[Dict[str, Any]],
-        equity_by_strategy: Dict[str, List[float]]
+        self, trades: List[Dict[str, Any]], equity_by_strategy: Dict[str, List[float]]
     ) -> List[StrategyBreakdown]:
         """
         Generate strategy-level performance breakdown.
@@ -416,8 +446,8 @@ class WorldClassAnalytics:
         # Group trades by strategy
         strategy_trades = {}
         for trade in trades:
-            strategy_id = trade.get('strategy', 'unknown')
-            symbol = trade.get('symbol', 'UNKNOWN')
+            strategy_id = trade.get("strategy", "unknown")
+            symbol = trade.get("symbol", "UNKNOWN")
             key = f"{strategy_id}_{symbol}"
 
             if key not in strategy_trades:
@@ -430,20 +460,28 @@ class WorldClassAnalytics:
                 continue
 
             # Extract strategy and symbol
-            parts = key.split('_', 1)
-            strategy_id = parts[0] if len(parts) > 0 else 'unknown'
-            symbol = parts[1] if len(parts) > 1 else 'UNKNOWN'
+            parts = key.split("_", 1)
+            strategy_id = parts[0] if len(parts) > 0 else "unknown"
+            symbol = parts[1] if len(parts) > 1 else "UNKNOWN"
 
             # Calculate win rate
-            profitable = sum(1 for t in strategy_trade_list if t.get('pl', 0) > 0)
-            win_rate = (profitable / len(strategy_trade_list) * 100) if strategy_trade_list else 0.0
+            profitable = sum(1 for t in strategy_trade_list if t.get("pl", 0) > 0)
+            win_rate = (
+                (profitable / len(strategy_trade_list) * 100)
+                if strategy_trade_list
+                else 0.0
+            )
 
             # Total profit
-            total_profit = sum(t.get('pl', 0) for t in strategy_trade_list)
+            total_profit = sum(t.get("pl", 0) for t in strategy_trade_list)
 
             # Calculate Sharpe (simplified)
-            profits = [t.get('pl', 0) for t in strategy_trade_list]
-            sharpe = (np.mean(profits) / (np.std(profits) + 1e-6)) if len(profits) > 1 else 0.0
+            profits = [t.get("pl", 0) for t in strategy_trade_list]
+            sharpe = (
+                (np.mean(profits) / (np.std(profits) + 1e-6))
+                if len(profits) > 1
+                else 0.0
+            )
 
             # Max drawdown (if equity curve available)
             max_dd = 0.0
@@ -459,22 +497,24 @@ class WorldClassAnalytics:
             avg_holding = 24.0  # Placeholder hours
 
             # Setup type (extract from trade metadata)
-            setup_type = strategy_trade_list[0].get('setup_type', 'Unknown')
+            setup_type = strategy_trade_list[0].get("setup_type", "Unknown")
 
             # Regime
             regime = "Unknown"
 
-            breakdowns.append(StrategyBreakdown(
-                strategy_id=strategy_id,
-                symbol=symbol,
-                trades=len(strategy_trade_list),
-                win_rate=win_rate,
-                profit=total_profit,
-                sharpe=sharpe,
-                max_dd=max_dd,
-                avg_holding_time_hours=avg_holding,
-                setup_type=setup_type,
-                regime=regime
-            ))
+            breakdowns.append(
+                StrategyBreakdown(
+                    strategy_id=strategy_id,
+                    symbol=symbol,
+                    trades=len(strategy_trade_list),
+                    win_rate=win_rate,
+                    profit=total_profit,
+                    sharpe=sharpe,
+                    max_dd=max_dd,
+                    avg_holding_time_hours=avg_holding,
+                    setup_type=setup_type,
+                    regime=regime,
+                )
+            )
 
         return breakdowns

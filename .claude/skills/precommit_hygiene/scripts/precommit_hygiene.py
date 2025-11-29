@@ -342,8 +342,8 @@ class PreCommitHygiene:
             # Patterns that could trigger CodeQL clear-text logging alerts
             # These detect API keys being passed directly to print/log functions
             logging_patterns = {
-                "print_api_key": r'print\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}',
-                "log_api_key": r'log(ger)?\.(info|debug|warning|error)\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}',
+                "print_api_key": r"print\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}",
+                "log_api_key": r"log(ger)?\.(info|debug|warning|error)\s*\([^)]*\{[^}]*(api_key|bearer_token|api_secret|secret_key)[^}]*\}",
                 "fstring_key_direct": r'f[\'"][^\'"]*\{(api_key|bearer_token|api_secret|secret_key|grok_api_key)\}',
             }
 
@@ -385,14 +385,22 @@ class PreCommitHygiene:
                         for pattern_name, pattern in logging_patterns.items():
                             matches = re.finditer(pattern, content, re.IGNORECASE)
                             for match in matches:
-                                line_content = content[: match.start()].split('\n')[-1] + content[match.start():].split('\n')[0]
+                                line_content = (
+                                    content[: match.start()].split("\n")[-1]
+                                    + content[match.start() :].split("\n")[0]
+                                )
                                 # Skip if mask_api_key is used properly (assigned to variable first)
-                                if 'mask_api_key' not in line_content or '(' in line_content.split('mask_api_key')[0][-20:]:
+                                if (
+                                    "mask_api_key" not in line_content
+                                    or "("
+                                    in line_content.split("mask_api_key")[0][-20:]
+                                ):
                                     violations.append(
                                         {
                                             "file": filepath,
                                             "type": f"cleartext_logging_{pattern_name}",
-                                            "line": content[: match.start()].count("\n") + 1,
+                                            "line": content[: match.start()].count("\n")
+                                            + 1,
                                             "issue": "API key may be logged in cleartext. Use: masked = mask_api_key(key); print(masked)",
                                         }
                                     )
@@ -431,7 +439,9 @@ class PreCommitHygiene:
             if not files:
                 workflow_dir = self.project_root / ".github" / "workflows"
                 if workflow_dir.exists():
-                    files = list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml"))
+                    files = list(workflow_dir.glob("*.yml")) + list(
+                        workflow_dir.glob("*.yaml")
+                    )
                     files = [str(f) for f in files if not f.name.endswith(".disabled")]
 
             for filepath in files:
@@ -449,23 +459,39 @@ class PreCommitHygiene:
                     # Check for pull_request_target with unsafe checkout
                     if workflow.get("on", {}).get("pull_request_target"):
                         # Check if checkout uses PR head SHA (unsafe)
-                        if re.search(r'checkout.*ref.*github\.event\.pull_request\.head\.sha', content, re.IGNORECASE):
-                            violations.append({
-                                "file": filepath,
-                                "type": "unsafe_pr_checkout",
-                                "line": content[:content.find("github.event.pull_request.head.sha")].count("\n") + 1,
-                                "issue": "CRITICAL: pull_request_target with checkout from PR head SHA allows untrusted code execution. Use GitHub API instead of checking out PR code directly."
-                            })
+                        if re.search(
+                            r"checkout.*ref.*github\.event\.pull_request\.head\.sha",
+                            content,
+                            re.IGNORECASE,
+                        ):
+                            violations.append(
+                                {
+                                    "file": filepath,
+                                    "type": "unsafe_pr_checkout",
+                                    "line": content[
+                                        : content.find(
+                                            "github.event.pull_request.head.sha"
+                                        )
+                                    ].count("\n")
+                                    + 1,
+                                    "issue": "CRITICAL: pull_request_target with checkout from PR head SHA allows untrusted code execution. Use GitHub API instead of checking out PR code directly.",
+                                }
+                            )
 
                         # Check if permissions include write access
                         permissions = workflow.get("permissions", {})
-                        if permissions.get("contents") == "write" or permissions.get("contents") is True:
-                            violations.append({
-                                "file": filepath,
-                                "type": "unsafe_pr_permissions",
-                                "line": 1,
-                                "issue": "WARNING: pull_request_target with write permissions is dangerous. Use read-only permissions and GitHub API for PR operations."
-                            })
+                        if (
+                            permissions.get("contents") == "write"
+                            or permissions.get("contents") is True
+                        ):
+                            violations.append(
+                                {
+                                    "file": filepath,
+                                    "type": "unsafe_pr_permissions",
+                                    "line": 1,
+                                    "issue": "WARNING: pull_request_target with write permissions is dangerous. Use read-only permissions and GitHub API for PR operations.",
+                                }
+                            )
 
                     # Check for hardcoded secrets in workflows
                     secret_patterns = [
@@ -477,12 +503,14 @@ class PreCommitHygiene:
                             # Skip if it's a GitHub secret reference
                             if "${{" in match.group(0) or "secrets." in match.group(0):
                                 continue
-                            violations.append({
-                                "file": filepath,
-                                "type": "hardcoded_secret",
-                                "line": content[:match.start()].count("\n") + 1,
-                                "issue": f"Hardcoded secret detected. Use GitHub Secrets: ${{{{ secrets.SECRET_NAME }}}}"
-                            })
+                            violations.append(
+                                {
+                                    "file": filepath,
+                                    "type": "hardcoded_secret",
+                                    "line": content[: match.start()].count("\n") + 1,
+                                    "issue": f"Hardcoded secret detected. Use GitHub Secrets: ${{{{ secrets.SECRET_NAME }}}}",
+                                }
+                            )
 
                 except yaml.YAMLError as e:
                     # Skip YAML errors in JavaScript code blocks (e.g., ${now} in github-script)
@@ -490,21 +518,25 @@ class PreCommitHygiene:
                     if "github-script" in content or "actions/github-script" in content:
                         # This is likely a false positive from JS template strings
                         continue
-                    violations.append({
-                        "file": filepath,
-                        "type": "yaml_error",
-                        "line": 1,
-                        "issue": f"YAML parsing error: {e}"
-                    })
+                    violations.append(
+                        {
+                            "file": filepath,
+                            "type": "yaml_error",
+                            "line": 1,
+                            "issue": f"YAML parsing error: {e}",
+                        }
+                    )
                 except Exception as e:
                     # Skip files that can't be parsed
                     pass
 
-            return success_response({
-                "workflow_issues": len(violations),
-                "violations": violations,
-                "safe_to_commit": len(violations) == 0,
-            })
+            return success_response(
+                {
+                    "workflow_issues": len(violations),
+                    "violations": violations,
+                    "safe_to_commit": len(violations) == 0,
+                }
+            )
 
         except Exception as e:
             return error_response(
@@ -637,7 +669,9 @@ def main():
     secrets_parser.add_argument("--files", nargs="+", help="Files to scan")
 
     # check_workflow_security
-    workflow_parser = subparsers.add_parser("check_workflow_security", help="Check workflow security")
+    workflow_parser = subparsers.add_parser(
+        "check_workflow_security", help="Check workflow security"
+    )
     workflow_parser.add_argument("--files", nargs="+", help="Workflow files to scan")
 
     # organize_repository

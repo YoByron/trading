@@ -101,7 +101,9 @@ def example_run_with_deepagents():
 
         if result.succeeded and result.payload:
             if "analysis" in result.payload:
-                logger.info(f"  Analysis preview: {result.payload['analysis'][:200]}...")
+                logger.info(
+                    f"  Analysis preview: {result.payload['analysis'][:200]}..."
+                )
         elif result.error:
             logger.error(f"  Error: {result.error}")
 
@@ -135,9 +137,7 @@ def example_standalone_deepagents():
         logger.info("Agent processing...\n")
 
         # Invoke agent
-        result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": query}]}
-        )
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": query}]})
 
         # Display result
         if "messages" in result:

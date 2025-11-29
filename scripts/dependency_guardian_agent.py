@@ -27,9 +27,11 @@ from typing import Dict, List, Optional, Tuple
 import urllib.request
 import urllib.error
 
+
 @dataclass
 class PackageInfo:
     """Information about a package from PyPI"""
+
     name: str
     current_version: str
     latest_version: str
@@ -40,9 +42,11 @@ class PackageInfo:
     is_outdated: bool = False
     pypi_url: str = ""
 
+
 @dataclass
 class GuardianReport:
     """Complete dependency health report"""
+
     timestamp: str
     python_version: str
     total_packages: int
@@ -51,10 +55,12 @@ class GuardianReport:
     deprecated: List[PackageInfo] = field(default_factory=list)
     conflicts: List[str] = field(default_factory=list)
 
+
 KNOWN_DEPRECATED = {
     "alpaca-trade-api": "Migrate to alpaca-py (modern SDK)",
     "flask-cors": "Use flask.cors built-in instead",
 }
+
 
 def fetch_pypi_info(package_name: str, timeout: int = 10) -> Optional[Dict]:
     """Fetch package info from PyPI JSON API"""
@@ -66,33 +72,35 @@ def fetch_pypi_info(package_name: str, timeout: int = 10) -> Optional[Dict]:
         print(f"⚠️  Failed to fetch {package_name}: {e}")
         return None
 
+
 def parse_requirements(req_file: Path) -> List[Tuple[str, str]]:
     """Parse requirements.txt and extract package names with versions"""
     packages = []
 
-    with open(req_file, 'r') as f:
+    with open(req_file, "r") as f:
         for line in f:
             line = line.strip()
 
             # Skip comments and empty lines
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             # Extract package name and version
-            if '==' in line:
-                pkg, ver = line.split('==', 1)
+            if "==" in line:
+                pkg, ver = line.split("==", 1)
                 pkg = pkg.strip()
-                ver = ver.split('#')[0].strip()  # Remove inline comments
+                ver = ver.split("#")[0].strip()  # Remove inline comments
                 packages.append((pkg, ver))
-            elif '>=' in line or '<=' in line or '>' in line or '<' in line:
+            elif ">=" in line or "<=" in line or ">" in line or "<" in line:
                 # Handle version constraints
-                for sep in ['>=', '<=', '>', '<', '!=']:
+                for sep in [">=", "<=", ">", "<", "!="]:
                     if sep in line:
                         pkg = line.split(sep)[0].strip()
                         packages.append((pkg, "constrained"))
                         break
 
     return packages
+
 
 def check_package(name: str, current_version: str) -> PackageInfo:
     """Check single package against PyPI"""
@@ -105,12 +113,12 @@ def check_package(name: str, current_version: str) -> PackageInfo:
             name=name,
             current_version=current_version,
             latest_version="unknown",
-            pypi_url=f"https://pypi.org/project/{name}/"
+            pypi_url=f"https://pypi.org/project/{name}/",
         )
 
-    info = pypi_data.get('info', {})
-    latest_version = info.get('version', current_version)
-    requires_python = info.get('requires_python', None)
+    info = pypi_data.get("info", {})
+    latest_version = info.get("version", current_version)
+    requires_python = info.get("requires_python", None)
 
     # Check for deprecation
     is_deprecated = False
@@ -119,18 +127,18 @@ def check_package(name: str, current_version: str) -> PackageInfo:
     if name in KNOWN_DEPRECATED:
         is_deprecated = True
         deprecation_reason = KNOWN_DEPRECATED[name]
-    elif 'deprecated' in info.get('description', '').lower():
+    elif "deprecated" in info.get("description", "").lower():
         is_deprecated = True
         deprecation_reason = "Package description mentions: deprecated"
 
     # Check if outdated
-    is_outdated = (current_version != latest_version and current_version != "constrained")
+    is_outdated = current_version != latest_version and current_version != "constrained"
 
     # Get latest release date
-    releases = pypi_data.get('releases', {})
+    releases = pypi_data.get("releases", {})
     release_date = None
     if latest_version in releases and releases[latest_version]:
-        release_date = releases[latest_version][0].get('upload_time_iso_8601', None)
+        release_date = releases[latest_version][0].get("upload_time_iso_8601", None)
 
     pkg_info = PackageInfo(
         name=name,
@@ -141,7 +149,7 @@ def check_package(name: str, current_version: str) -> PackageInfo:
         is_deprecated=is_deprecated,
         deprecation_reason=deprecation_reason,
         is_outdated=is_outdated,
-        pypi_url=f"https://pypi.org/project/{name}/"
+        pypi_url=f"https://pypi.org/project/{name}/",
     )
 
     if is_deprecated:
@@ -153,6 +161,7 @@ def check_package(name: str, current_version: str) -> PackageInfo:
 
     return pkg_info
 
+
 def test_dependency_resolution(req_file: Path) -> List[str]:
     """Test if dependencies can be resolved without conflicts"""
     print("\n🔍 Testing dependency resolution...")
@@ -161,19 +170,22 @@ def test_dependency_resolution(req_file: Path) -> List[str]:
 
     try:
         result = subprocess.run(
-            ['python3', '-m', 'pip', 'install', '--dry-run', '-r', str(req_file)],
+            ["python3", "-m", "pip", "install", "--dry-run", "-r", str(req_file)],
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
         )
 
         if result.returncode != 0:
             error_output = result.stderr or result.stdout
 
-            if "ResolutionImpossible" in error_output or "Cannot install" in error_output:
+            if (
+                "ResolutionImpossible" in error_output
+                or "Cannot install" in error_output
+            ):
                 # Extract conflict details
-                for line in error_output.split('\n'):
-                    if 'ERROR:' in line or 'Cannot install' in line:
+                for line in error_output.split("\n"):
+                    if "ERROR:" in line or "Cannot install" in line:
                         conflicts.append(line.strip())
                 print("   ❌ Dependency conflicts detected")
             else:
@@ -190,6 +202,7 @@ def test_dependency_resolution(req_file: Path) -> List[str]:
 
     return conflicts
 
+
 def generate_markdown_report(report: GuardianReport, output_dir: Path) -> Path:
     """Generate comprehensive markdown report"""
     timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -197,7 +210,7 @@ def generate_markdown_report(report: GuardianReport, output_dir: Path) -> Path:
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write(f"# 🤖 Dependency Guardian Report\n\n")
         f.write(f"**Generated**: {report.timestamp}\n")
         f.write(f"**Python Version**: {report.python_version}\n\n")
@@ -209,15 +222,21 @@ def generate_markdown_report(report: GuardianReport, output_dir: Path) -> Path:
         f.write(f"| Healthy | {len(report.healthy)} | ✅ |\n")
         f.write(f"| Outdated | {len(report.outdated)} | 📦 |\n")
         f.write(f"| Deprecated | {len(report.deprecated)} | 🚨 |\n")
-        f.write(f"| Conflicts | {len(report.conflicts)} | {'❌' if report.conflicts else '✅'} |\n\n")
+        f.write(
+            f"| Conflicts | {len(report.conflicts)} | {'❌' if report.conflicts else '✅'} |\n\n"
+        )
 
         # Recommendations
         f.write("## 🎯 Recommendations\n\n")
 
         if report.deprecated:
-            f.write("### 🚨 **CRITICAL**: Deprecated Packages (Immediate Action Required)\n\n")
+            f.write(
+                "### 🚨 **CRITICAL**: Deprecated Packages (Immediate Action Required)\n\n"
+            )
             for pkg in report.deprecated:
-                f.write(f"- **{pkg.name}** ({pkg.current_version}): {pkg.deprecation_reason}\n")
+                f.write(
+                    f"- **{pkg.name}** ({pkg.current_version}): {pkg.deprecation_reason}\n"
+                )
                 f.write(f"  - [PyPI]({pkg.pypi_url})\n")
             f.write("\n")
 
@@ -228,12 +247,16 @@ def generate_markdown_report(report: GuardianReport, output_dir: Path) -> Path:
             f.write("\n")
 
         if report.outdated:
-            f.write(f"### 📦 **MEDIUM**: {len(report.outdated)} Packages Have Updates Available\n\n")
+            f.write(
+                f"### 📦 **MEDIUM**: {len(report.outdated)} Packages Have Updates Available\n\n"
+            )
             f.write("| Package | Current | Latest | Released |\n")
             f.write("|---------|---------|--------|----------|\n")
             for pkg in report.outdated[:10]:  # Show top 10
                 release_date = pkg.release_date[:10] if pkg.release_date else "unknown"
-                f.write(f"| [{pkg.name}]({pkg.pypi_url}) | {pkg.current_version} | {pkg.latest_version} | {release_date} |\n")
+                f.write(
+                    f"| [{pkg.name}]({pkg.pypi_url}) | {pkg.current_version} | {pkg.latest_version} | {release_date} |\n"
+                )
             f.write("\n")
 
         if report.healthy:
@@ -244,9 +267,12 @@ def generate_markdown_report(report: GuardianReport, output_dir: Path) -> Path:
             f.write("\n</details>\n\n")
 
         f.write("---\n\n")
-        f.write("*Generated by Dependency Guardian Agent - Autonomous Dependency Management*\n")
+        f.write(
+            "*Generated by Dependency Guardian Agent - Autonomous Dependency Management*\n"
+        )
 
     return report_file
+
 
 def main():
     """Main entry point"""
@@ -263,7 +289,9 @@ def main():
     print(f"📋 Requirements file: {req_file}")
 
     # Get Python version
-    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    python_version = (
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     print(f"🐍 Python version: {python_version}")
 
     # Parse requirements
@@ -274,7 +302,7 @@ def main():
     report = GuardianReport(
         timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
         python_version=python_version,
-        total_packages=len(packages)
+        total_packages=len(packages),
     )
 
     for name, version in packages:
@@ -304,7 +332,9 @@ def main():
     print()
     print(f"🎯 Recommendations:")
     if report.deprecated:
-        print(f"   🚨 **CRITICAL**: {len(report.deprecated)} deprecated packages require immediate migration")
+        print(
+            f"   🚨 **CRITICAL**: {len(report.deprecated)} deprecated packages require immediate migration"
+        )
     if report.conflicts:
         print(f"   ⚠️  **HIGH**: {len(report.conflicts)} dependency conflicts detected")
     if report.outdated:
@@ -321,6 +351,7 @@ def main():
     else:
         return 0  # All healthy
 
+
 if __name__ == "__main__":
     try:
         sys.exit(main())
@@ -330,5 +361,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Critical error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(2)

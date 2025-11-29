@@ -42,6 +42,7 @@ class LangSmithMonitor:
         if self.api_key:
             try:
                 from langsmith import Client
+
                 self.client = Client(api_key=self.api_key)
                 logger.info("✅ LangSmith client initialized")
             except ImportError:
@@ -55,7 +56,7 @@ class LangSmithMonitor:
         self,
         project_name: str = "trading-rl-training",
         limit: int = 50,
-        hours: int = 24
+        hours: int = 24,
     ) -> Dict[str, Any]:
         """
         Get recent LangSmith runs.
@@ -76,61 +77,67 @@ class LangSmithMonitor:
             start_time = datetime.now() - timedelta(hours=hours)
 
             # Query runs
-            runs = list(self.client.list_runs(
-                project_name=project_name,
-                start_time=start_time,
-                limit=limit
-            ))
+            runs = list(
+                self.client.list_runs(
+                    project_name=project_name, start_time=start_time, limit=limit
+                )
+            )
 
             # Analyze runs
             total_runs = len(runs)
             successful_runs = sum(1 for r in runs if r.status == "success")
             failed_runs = sum(1 for r in runs if r.status == "error")
             total_tokens = sum(
-                getattr(r, 'total_tokens', 0) or 0
+                getattr(r, "total_tokens", 0) or 0
                 for r in runs
-                if hasattr(r, 'total_tokens')
+                if hasattr(r, "total_tokens")
             )
 
             # Group by run type
             run_types = {}
             for run in runs:
-                run_type = getattr(run, 'run_type', 'unknown')
+                run_type = getattr(run, "run_type", "unknown")
                 if run_type not in run_types:
                     run_types[run_type] = 0
                 run_types[run_type] += 1
 
-            return success_response({
-                "project": project_name,
-                "period_hours": hours,
-                "total_runs": total_runs,
-                "successful_runs": successful_runs,
-                "failed_runs": failed_runs,
-                "success_rate": (successful_runs / total_runs * 100) if total_runs > 0 else 0,
-                "total_tokens": total_tokens,
-                "run_types": run_types,
-                "recent_runs": [
-                    {
-                        "id": str(run.id),
-                        "name": run.name,
-                        "status": run.status,
-                        "run_type": getattr(run, 'run_type', 'unknown'),
-                        "start_time": run.start_time.isoformat() if run.start_time else None,
-                        "end_time": run.end_time.isoformat() if run.end_time else None,
-                        "error": run.error if hasattr(run, 'error') else None
-                    }
-                    for run in runs[:20]  # Return top 20
-                ]
-            })
+            return success_response(
+                {
+                    "project": project_name,
+                    "period_hours": hours,
+                    "total_runs": total_runs,
+                    "successful_runs": successful_runs,
+                    "failed_runs": failed_runs,
+                    "success_rate": (
+                        (successful_runs / total_runs * 100) if total_runs > 0 else 0
+                    ),
+                    "total_tokens": total_tokens,
+                    "run_types": run_types,
+                    "recent_runs": [
+                        {
+                            "id": str(run.id),
+                            "name": run.name,
+                            "status": run.status,
+                            "run_type": getattr(run, "run_type", "unknown"),
+                            "start_time": (
+                                run.start_time.isoformat() if run.start_time else None
+                            ),
+                            "end_time": (
+                                run.end_time.isoformat() if run.end_time else None
+                            ),
+                            "error": run.error if hasattr(run, "error") else None,
+                        }
+                        for run in runs[:20]  # Return top 20
+                    ],
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to get recent runs: {e}")
             return error_response(str(e))
 
     def get_project_stats(
-        self,
-        project_name: str = "trading-rl-training",
-        days: int = 7
+        self, project_name: str = "trading-rl-training", days: int = 7
     ) -> Dict[str, Any]:
         """
         Get project statistics.
@@ -148,19 +155,21 @@ class LangSmithMonitor:
         try:
             start_time = datetime.now() - timedelta(days=days)
 
-            runs = list(self.client.list_runs(
-                project_name=project_name,
-                start_time=start_time,
-                limit=1000
-            ))
+            runs = list(
+                self.client.list_runs(
+                    project_name=project_name, start_time=start_time, limit=1000
+                )
+            )
 
             if not runs:
-                return success_response({
-                    "project": project_name,
-                    "period_days": days,
-                    "total_runs": 0,
-                    "message": "No runs found in this period"
-                })
+                return success_response(
+                    {
+                        "project": project_name,
+                        "period_days": days,
+                        "total_runs": 0,
+                        "message": "No runs found in this period",
+                    }
+                )
 
             # Calculate statistics
             total_runs = len(runs)
@@ -189,16 +198,20 @@ class LangSmithMonitor:
                     elif run.status == "error":
                         daily_stats[day]["failed"] += 1
 
-            return success_response({
-                "project": project_name,
-                "period_days": days,
-                "total_runs": total_runs,
-                "successful_runs": successful,
-                "failed_runs": failed,
-                "success_rate": (successful / total_runs * 100) if total_runs > 0 else 0,
-                "average_duration_seconds": avg_duration,
-                "daily_stats": daily_stats
-            })
+            return success_response(
+                {
+                    "project": project_name,
+                    "period_days": days,
+                    "total_runs": total_runs,
+                    "successful_runs": successful,
+                    "failed_runs": failed,
+                    "success_rate": (
+                        (successful / total_runs * 100) if total_runs > 0 else 0
+                    ),
+                    "average_duration_seconds": avg_duration,
+                    "daily_stats": daily_stats,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to get project stats: {e}")
@@ -220,18 +233,22 @@ class LangSmithMonitor:
         try:
             run = self.client.read_run(run_id)
 
-            return success_response({
-                "id": str(run.id),
-                "name": run.name,
-                "status": run.status,
-                "run_type": getattr(run, 'run_type', 'unknown'),
-                "start_time": run.start_time.isoformat() if run.start_time else None,
-                "end_time": run.end_time.isoformat() if run.end_time else None,
-                "inputs": run.inputs if hasattr(run, 'inputs') else {},
-                "outputs": run.outputs if hasattr(run, 'outputs') else {},
-                "error": run.error if hasattr(run, 'error') else None,
-                "total_tokens": getattr(run, 'total_tokens', 0)
-            })
+            return success_response(
+                {
+                    "id": str(run.id),
+                    "name": run.name,
+                    "status": run.status,
+                    "run_type": getattr(run, "run_type", "unknown"),
+                    "start_time": (
+                        run.start_time.isoformat() if run.start_time else None
+                    ),
+                    "end_time": run.end_time.isoformat() if run.end_time else None,
+                    "inputs": run.inputs if hasattr(run, "inputs") else {},
+                    "outputs": run.outputs if hasattr(run, "outputs") else {},
+                    "error": run.error if hasattr(run, "error") else None,
+                    "total_tokens": getattr(run, "total_tokens", 0),
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to get trace details: {e}")
@@ -254,13 +271,15 @@ class LangSmithMonitor:
             # Try to list projects as health check
             projects = list(self.client.list_projects(limit=1))
 
-            return success_response({
-                "status": "healthy",
-                "api_key_configured": True,
-                "client_initialized": True,
-                "projects_accessible": True,
-                "timestamp": datetime.now().isoformat()
-            })
+            return success_response(
+                {
+                    "status": "healthy",
+                    "api_key_configured": True,
+                    "client_initialized": True,
+                    "projects_accessible": True,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
             return error_response(f"Health check failed: {e}")
@@ -274,24 +293,13 @@ def main():
     parser.add_argument(
         "--project",
         default="trading-rl-training",
-        help="Project name (default: trading-rl-training)"
+        help="Project name (default: trading-rl-training)",
     )
     parser.add_argument(
-        "--hours",
-        type=int,
-        default=24,
-        help="Hours of history (default: 24)"
+        "--hours", type=int, default=24, help="Hours of history (default: 24)"
     )
-    parser.add_argument(
-        "--health",
-        action="store_true",
-        help="Check health status"
-    )
-    parser.add_argument(
-        "--stats",
-        action="store_true",
-        help="Get project statistics"
-    )
+    parser.add_argument("--health", action="store_true", help="Check health status")
+    parser.add_argument("--stats", action="store_true", help="Get project statistics")
 
     args = parser.parse_args()
 

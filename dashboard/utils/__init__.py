@@ -2,4 +2,4 @@
 
 from .chart_builders import *
 
-__all__ = ['chart_builders']
+__all__ = ["chart_builders"]

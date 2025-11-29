@@ -143,6 +143,37 @@ class EliteOrchestrator:
         logger.info(f"   Planning: {'Enabled' if enable_planning else 'Disabled'}")
         logger.info(f"   Mode: {'PAPER' if paper else 'LIVE'}")
 
+        # Ensemble voting configuration and agent filters
+        self.ensemble_weights = self._load_ensemble_weights()
+        self.ensemble_buy_threshold = float(os.getenv("ENSEMBLE_BUY_THRESHOLD", "0.15"))
+        self.ensemble_sell_threshold = float(os.getenv("ENSEMBLE_SELL_THRESHOLD", "-0.15"))
+        # Optional analysis agent filter (can be set by CLI/scripts)
+        self._analysis_agent_filter = None
+
+    def _load_ensemble_weights(self) -> Dict[str, float]:
+        """Load ensemble weights from environment with defaults."""
+        return {
+            "mcp": float(os.getenv("ENSEMBLE_WEIGHT_MCP", "0.35")),
+            "langchain": float(os.getenv("ENSEMBLE_WEIGHT_LANGCHAIN", "0.15")),
+            "gemini": float(os.getenv("ENSEMBLE_WEIGHT_GEMINI", "0.15")),
+            "ml": float(os.getenv("ENSEMBLE_WEIGHT_ML", "0.25")),
+            "ensemble_rl": float(os.getenv("ENSEMBLE_WEIGHT_ENSEMBLE_RL", "0.25")),
+            "grok": float(os.getenv("ENSEMBLE_WEIGHT_GROK", "0.10")),
+        }
+
+    def _agent_enabled(self, agent_name: str) -> bool:
+        """Check if an agent is enabled given include/exclude filters."""
+        filt = self._analysis_agent_filter
+        if not filt:
+            return True
+        include = filt.get("include") or set()
+        exclude = filt.get("exclude") or set()
+        if include and agent_name not in include:
+            return False
+        if exclude and agent_name in exclude:
+            return False
+        return True
+
     def _initialize_agents(self):
         """Initialize all agent frameworks"""
         # MCP Orchestrator (multi-agent system) - Lazy import
@@ -583,7 +614,7 @@ class EliteOrchestrator:
         recommendations = {}
 
         # MCP Orchestrator (multi-agent system)
-        if self.mcp_orchestrator:
+        if self.mcp_orchestrator and self._agent_enabled("mcp"):
             try:
                 # Validate context flow before execution
                 is_valid, errors = self.context_engine.validate_context_flow(
@@ -616,7 +647,7 @@ class EliteOrchestrator:
                 logger.warning(f"MCP analysis failed: {e}")
 
         # Langchain Agent
-        if self.langchain_agent:
+        if self.langchain_agent and self._agent_enabled("langchain"):
             for symbol in plan.symbols:
                 try:
                     prompt = f"Should we trade {symbol}? Provide recommendation with reasoning."
@@ -633,7 +664,7 @@ class EliteOrchestrator:
                     logger.warning(f"Langchain analysis failed for {symbol}: {e}")
 
         # Gemini Agent
-        if self.gemini_agent:
+        if self.gemini_agent and self._agent_enabled("gemini"):
             for symbol in plan.symbols:
                 try:
                     gemini_prompt = f"Analyze {symbol} for trading. Consider long-term portfolio fit and risk."
@@ -649,7 +680,7 @@ class EliteOrchestrator:
                     logger.warning(f"Gemini analysis failed for {symbol}: {e}")
 
         # ML Predictor (LSTM-PPO or Ensemble)
-        if self.ml_predictor:
+        if self.ml_predictor and (self._agent_enabled("ml_model") or self._agent_enabled("ensemble_rl")):
             for symbol in plan.symbols:
                 try:
                     # Try to use ensemble RL if available
@@ -705,17 +736,76 @@ class EliteOrchestrator:
                 except Exception as e:
                     logger.warning(f"ML prediction failed for {symbol}: {e}")
 
-        # Ensemble voting
+        # Social sentiment (Grok) from context memory, if enabled
+        if self._agent_enabled("grok_twitter"):
+            try:
+                for symbol in plan.symbols:
+                    memories = self.context_engine.retrieve_memories(
+                        agent_id="research_agent",
+                        tags={symbol, "grok_twitter", "sentiment"},
+                        limit=1,
+                    )
+                    if memories:
+                        grok_data = memories[0].content.get("grok_twitter", {})
+                        score = grok_data.get("score")
+                        if score is not None:
+                            action = "HOLD"
+                            if score >= 20:
+                                action = "BUY"
+                            elif score <= -20:
+                                action = "SELL"
+                            confidence = min(1.0, max(0.0, abs(score) / 100.0)) * 0.6
+                            recommendations[f"{symbol}_grok"] = {
+                                "agent": "grok_twitter",
+                                "recommendation": action,
+                                "confidence": round(confidence, 2),
+                                "reasoning": f"Twitter sentiment score={score}",
+                            }
+            except Exception as e:
+                logger.debug(f"Grok/X sentiment integration in analysis unavailable: {e}")
+
+        # Ensemble voting (weighted)
         for symbol in plan.symbols:
             symbol_recs = {k: v for k, v in recommendations.items() if symbol in k}
             if symbol_recs:
-                buy_votes = sum(1 for r in symbol_recs.values() if r.get("recommendation") == "BUY")
-                total_votes = len(symbol_recs)
+                score = 0.0
+                contributions = []
+                for rec in symbol_recs.values():
+                    agent_id = (rec.get("agent") or "").lower()
+                    # Normalize agent id to weight key
+                    if agent_id in ("ml_model", "ml"):
+                        wkey = "ml"
+                    elif agent_id == "grok_twitter":
+                        wkey = "grok"
+                    else:
+                        wkey = agent_id
+                    w = self.ensemble_weights.get(wkey, 0.1)
+                    conf = float(rec.get("confidence", 0.5))
+                    action = (rec.get("recommendation") or "HOLD").upper()
+                    val = conf if action == "BUY" else (-conf if action == "SELL" else 0.0)
+                    contrib = w * val
+                    score += contrib
+                    contributions.append({
+                        "agent": agent_id,
+                        "weight": w,
+                        "confidence": conf,
+                        "action": action,
+                        "contrib": round(contrib, 4),
+                    })
+
+                consensus = "HOLD"
+                if score >= self.ensemble_buy_threshold:
+                    consensus = "BUY"
+                elif score <= self.ensemble_sell_threshold:
+                    consensus = "SELL"
+
                 results["ensemble_vote"][symbol] = {
-                    "buy_votes": buy_votes,
-                    "total_votes": total_votes,
-                    "consensus": "BUY" if buy_votes >= total_votes * 0.6 else "HOLD",
-                    "recommendations": symbol_recs
+                    "weighted_score": round(score, 4),
+                    "buy_threshold": self.ensemble_buy_threshold,
+                    "sell_threshold": self.ensemble_sell_threshold,
+                    "consensus": consensus,
+                    "recommendations": symbol_recs,
+                    "contributions": contributions,
                 }
 
         results["agent_results"] = list(recommendations.values())

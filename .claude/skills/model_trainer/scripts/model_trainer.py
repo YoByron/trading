@@ -28,13 +28,12 @@ from src.utils.data_collector import DataCollector
 from scripts.train_lstm_features import (
     prepare_training_data,
     train_lstm_model,
-    _features_to_array
+    _features_to_array,
 )
 import numpy as np
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -49,9 +48,7 @@ class ModelTrainerSkill:
         self.collector = DataCollector(data_dir=str(self.data_dir))
 
     def check_training_data_availability(
-        self,
-        symbols: List[str],
-        min_days: int = 252
+        self, symbols: List[str], min_days: int = 252
     ) -> Dict[str, Any]:
         """
         Check if sufficient historical data exists for training.
@@ -74,7 +71,7 @@ class ModelTrainerSkill:
                 data_summary[symbol] = {
                     "available": False,
                     "days": 0,
-                    "status": "no_data"
+                    "status": "no_data",
                 }
             elif len(hist_data) < min_days:
                 missing_symbols.append(symbol)
@@ -82,7 +79,7 @@ class ModelTrainerSkill:
                     "available": False,
                     "days": len(hist_data),
                     "status": "insufficient",
-                    "needed": min_days
+                    "needed": min_days,
                 }
             else:
                 data_summary[symbol] = {
@@ -90,9 +87,17 @@ class ModelTrainerSkill:
                     "days": len(hist_data),
                     "status": "sufficient",
                     "date_range": {
-                        "start": hist_data.index[0].isoformat() if not hist_data.empty else None,
-                        "end": hist_data.index[-1].isoformat() if not hist_data.empty else None
-                    }
+                        "start": (
+                            hist_data.index[0].isoformat()
+                            if not hist_data.empty
+                            else None
+                        ),
+                        "end": (
+                            hist_data.index[-1].isoformat()
+                            if not hist_data.empty
+                            else None
+                        ),
+                    },
                 }
 
         available = len(missing_symbols) == 0
@@ -101,7 +106,7 @@ class ModelTrainerSkill:
             "available": available,
             "missing_symbols": missing_symbols,
             "data_summary": data_summary,
-            "checked_at": datetime.now().isoformat()
+            "checked_at": datetime.now().isoformat(),
         }
 
     def train_lstm_model(
@@ -112,7 +117,7 @@ class ModelTrainerSkill:
         learning_rate: float = 0.001,
         seq_length: int = 60,
         output_path: Optional[str] = None,
-        device: str = "cpu"
+        device: str = "cpu",
     ) -> Dict[str, Any]:
         """
         Train LSTM feature extractor.
@@ -131,18 +136,22 @@ class ModelTrainerSkill:
         """
         if output_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = str(self.models_dir / f"lstm_feature_extractor_{timestamp}.pt")
+            output_path = str(
+                self.models_dir / f"lstm_feature_extractor_{timestamp}.pt"
+            )
 
         logger.info(f"Starting LSTM training for symbols: {symbols}")
 
         # Check data availability
-        data_check = self.check_training_data_availability(symbols, min_days=seq_length + 200)
+        data_check = self.check_training_data_availability(
+            symbols, min_days=seq_length + 200
+        )
         if not data_check["available"]:
             return {
                 "success": False,
                 "error": "Insufficient training data",
                 "missing_symbols": data_check["missing_symbols"],
-                "data_summary": data_check["data_summary"]
+                "data_summary": data_check["data_summary"],
             }
 
         # Collect training data
@@ -159,9 +168,7 @@ class ModelTrainerSkill:
 
             # Prepare training data
             sequences, labels = prepare_training_data(
-                hist_data,
-                seq_length=seq_length,
-                prediction_horizon=5
+                hist_data, seq_length=seq_length, prediction_horizon=5
             )
 
             if len(sequences) > 0:
@@ -170,10 +177,7 @@ class ModelTrainerSkill:
                 logger.info(f"{symbol}: {len(sequences)} sequences")
 
         if not all_sequences:
-            return {
-                "success": False,
-                "error": "No training sequences created"
-            }
+            return {"success": False, "error": "No training sequences created"}
 
         # Combine all symbols
         combined_sequences = np.concatenate(all_sequences, axis=0)
@@ -189,11 +193,12 @@ class ModelTrainerSkill:
                 epochs=epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
-                device=device
+                device=device,
             )
 
             # Save model
             from src.agents.lstm_feature_extractor import LSTMPPOWrapper
+
             wrapper = LSTMPPOWrapper()
             wrapper.feature_extractor = model
             wrapper.save_model(output_path)
@@ -205,24 +210,21 @@ class ModelTrainerSkill:
                     "epochs": epochs,
                     "samples": len(combined_sequences),
                     "batch_size": batch_size,
-                    "learning_rate": learning_rate
+                    "learning_rate": learning_rate,
                 },
                 "symbols_trained": symbols,
-                "trained_at": datetime.now().isoformat()
+                "trained_at": datetime.now().isoformat(),
             }
 
         except Exception as e:
             logger.error(f"Training failed: {e}", exc_info=True)
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def schedule_retraining(
         self,
         check_interval_days: int = 7,
         performance_threshold: float = 0.9,
-        auto_retrain: bool = True
+        auto_retrain: bool = True,
     ) -> Dict[str, Any]:
         """
         Schedule automatic model retraining.
@@ -245,7 +247,7 @@ class ModelTrainerSkill:
             "check_interval_days": check_interval_days,
             "next_check": next_check.isoformat(),
             "auto_retrain": auto_retrain,
-            "performance_threshold": performance_threshold
+            "performance_threshold": performance_threshold,
         }
 
 
@@ -256,13 +258,16 @@ def main():
 
     # Train command
     train_parser = subparsers.add_parser("train", help="Train LSTM model")
-    train_parser.add_argument("--symbols", type=str, default="SPY,QQQ,VOO",
-                              help="Comma-separated symbols")
+    train_parser.add_argument(
+        "--symbols", type=str, default="SPY,QQQ,VOO", help="Comma-separated symbols"
+    )
     train_parser.add_argument("--epochs", type=int, default=50)
     train_parser.add_argument("--batch-size", type=int, default=32)
     train_parser.add_argument("--learning-rate", type=float, default=0.001)
     train_parser.add_argument("--output", type=str, default=None)
-    train_parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
+    train_parser.add_argument(
+        "--device", type=str, default="cpu", choices=["cpu", "cuda"]
+    )
 
     # Check data command
     check_parser = subparsers.add_parser("check-data", help="Check data availability")
@@ -270,7 +275,9 @@ def main():
     check_parser.add_argument("--min-days", type=int, default=252)
 
     # Schedule command
-    schedule_parser = subparsers.add_parser("schedule-retraining", help="Schedule retraining")
+    schedule_parser = subparsers.add_parser(
+        "schedule-retraining", help="Schedule retraining"
+    )
     schedule_parser.add_argument("--interval-days", type=int, default=7)
     schedule_parser.add_argument("--auto-retrain", action="store_true", default=True)
 
@@ -286,7 +293,7 @@ def main():
             batch_size=args.batch_size,
             learning_rate=args.learning_rate,
             output_path=args.output,
-            device=args.device
+            device=args.device,
         )
         print(json.dumps(result, indent=2))
 
@@ -297,8 +304,7 @@ def main():
 
     elif args.command == "schedule-retraining":
         result = skill.schedule_retraining(
-            check_interval_days=args.interval_days,
-            auto_retrain=args.auto_retrain
+            check_interval_days=args.interval_days, auto_retrain=args.auto_retrain
         )
         print(json.dumps(result, indent=2))
 

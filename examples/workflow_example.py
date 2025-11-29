@@ -6,6 +6,7 @@ Demonstrates AgentKit-style workflow automation:
 2. Report generation with approval
 3. Multi-step trading workflow
 """
+
 import asyncio
 from src.orchestration.workflow_orchestrator import WorkflowOrchestrator
 
@@ -26,9 +27,9 @@ async def example_email_workflow():
                     "tool": "monitor_emails",
                     "payload": {
                         "query": "is:unread from:client@example.com has:attachment",
-                        "max_results": 5
-                    }
-                }
+                        "max_results": 5,
+                    },
+                },
             },
             {
                 "name": "process_attachment",
@@ -39,15 +40,15 @@ async def example_email_workflow():
                     "payload": {
                         "message_id": "{previous_step.message_id}",
                         "attachment_id": "{previous_step.attachment_id}",
-                        "save_path": "data/reports/client_report.csv"
-                    }
+                        "save_path": "data/reports/client_report.csv",
+                    },
                 },
                 "requires_approval": True,
                 "approval": {
                     "type": "manual",
                     "priority": "medium",
-                    "timeout_seconds": 900
-                }
+                    "timeout_seconds": 900,
+                },
             },
             {
                 "name": "update_dashboard",
@@ -55,8 +56,8 @@ async def example_email_workflow():
                 "data": {
                     "type": "file_processing",
                     "file_path": "data/reports/client_report.csv",
-                    "file_type": "csv"
-                }
+                    "file_type": "csv",
+                },
             },
             {
                 "name": "send_confirmation",
@@ -64,10 +65,10 @@ async def example_email_workflow():
                 "data": {
                     "message": "Client report processed and dashboard updated",
                     "channels": ["email", "slack"],
-                    "priority": "low"
-                }
-            }
-        ]
+                    "priority": "low",
+                },
+            },
+        ],
     }
 
     result = await orchestrator.execute_workflow(workflow)
@@ -89,8 +90,8 @@ async def example_report_workflow():
                 "data": {
                     "server": "alpaca-trading",
                     "tool": "get_account",
-                    "payload": {}
-                }
+                    "payload": {},
+                },
             },
             {
                 "name": "generate_report",
@@ -98,8 +99,8 @@ async def example_report_workflow():
                 "data": {
                     "type": "report_generation",
                     "report_type": "daily",
-                    "recipients": ["trader@example.com"]
-                }
+                    "recipients": ["trader@example.com"],
+                },
             },
             {
                 "name": "approve_report",
@@ -107,13 +108,10 @@ async def example_report_workflow():
                 "data": {
                     "approval_type": "report_review",
                     "priority": "high",
-                    "timeout_seconds": 1800
+                    "timeout_seconds": 1800,
                 },
                 "requires_approval": True,
-                "approval": {
-                    "type": "manual",
-                    "priority": "high"
-                }
+                "approval": {"type": "manual", "priority": "high"},
             },
             {
                 "name": "send_report",
@@ -125,11 +123,11 @@ async def example_report_workflow():
                         "to": ["trader@example.com"],
                         "subject": "Daily Trading Report",
                         "body": "Please find attached the daily trading report.",
-                        "attachments": ["{previous_step.report_path}"]
-                    }
-                }
+                        "attachments": ["{previous_step.report_path}"],
+                    },
+                },
             },
-        ]
+        ],
     }
 
     result = await orchestrator.execute_workflow(workflow)
@@ -151,11 +149,8 @@ async def example_trading_workflow():
                 "data": {
                     "server": "openrouter",
                     "tool": "detailed_sentiment",
-                    "payload": {
-                        "market_data": {"symbol": "SPY"},
-                        "news": []
-                    }
-                }
+                    "payload": {"market_data": {"symbol": "SPY"}, "news": []},
+                },
             },
             {
                 "name": "request_approval",
@@ -165,16 +160,16 @@ async def example_trading_workflow():
                     "context": {
                         "symbol": "SPY",
                         "trade_value": 5000.0,
-                        "action": "BUY"
+                        "action": "BUY",
                     },
-                    "priority": "high"
+                    "priority": "high",
                 },
                 "requires_approval": True,
                 "approval": {
                     "type": "manual",
                     "priority": "high",
-                    "timeout_seconds": 600
-                }
+                    "timeout_seconds": 600,
+                },
             },
             {
                 "name": "execute_trade",
@@ -186,9 +181,9 @@ async def example_trading_workflow():
                         "symbol": "SPY",
                         "qty": 10,
                         "side": "buy",
-                        "type": "market"
-                    }
-                }
+                        "type": "market",
+                    },
+                },
             },
             {
                 "name": "notify_execution",
@@ -198,14 +193,10 @@ async def example_trading_workflow():
                     "channels": ["slack", "email"],
                     "priority": "medium",
                     "type": "trade",
-                    "context": {
-                        "symbol": "SPY",
-                        "side": "BUY",
-                        "quantity": 10
-                    }
-                }
-            }
-        ]
+                    "context": {"symbol": "SPY", "side": "BUY", "quantity": 10},
+                },
+            },
+        ],
     }
 
     result = await orchestrator.execute_workflow(workflow)
