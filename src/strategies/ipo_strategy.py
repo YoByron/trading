@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import anthropic
-import openai
+from src.utils.langsmith_wrapper import get_traced_openai_client
 
 
 # Configure logging
@@ -183,15 +183,9 @@ class IPOStrategy:
 
         if openai_api_key:
             try:
-                # Use LangSmith wrapper if available
-                try:
-                    from src.utils.langsmith_wrapper import get_traced_openai_client
-                    self.openai_client = get_traced_openai_client(api_key=openai_api_key)
-                    logger.info("OpenAI client initialized with LangSmith tracing")
-                except ImportError:
-                    # Fallback to regular client
-                    self.openai_client = openai.OpenAI(api_key=openai_api_key)
-                    logger.info("OpenAI client initialized")
+                # Use LangSmith wrapper
+                self.openai_client = get_traced_openai_client(api_key=openai_api_key)
+                logger.info("OpenAI client initialized with LangSmith tracing")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client: {e}")
 
