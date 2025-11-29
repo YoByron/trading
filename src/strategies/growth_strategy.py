@@ -1043,11 +1043,18 @@ class GrowthStrategy:
         if len(hist) < 20:
             return 0.0
 
-        current_price = hist["Close"].iloc[-1]
-        price_20d_ago = hist["Close"].iloc[-20]
+        closes = hist["Close"]
+        if isinstance(closes, pd.DataFrame):
+            closes = closes.iloc[:, 0]  # Take first column if duplicate
+
+        current_price = float(closes.iloc[-1])
+        price_20d_ago = float(closes.iloc[-20])
+
+        if price_20d_ago == 0:
+            return 0.0
 
         momentum = (current_price - price_20d_ago) / price_20d_ago
-        return momentum
+        return float(momentum)
 
     def _calculate_rsi(self, hist: pd.DataFrame, period: int = 14) -> float:
         """Calculate Relative Strength Index."""
@@ -1055,6 +1062,9 @@ class GrowthStrategy:
             return 50.0
 
         closes = hist["Close"]
+        if isinstance(closes, pd.DataFrame):
+            closes = closes.iloc[:, 0]
+
         deltas = closes.diff()
 
         gains = deltas.where(deltas > 0, 0.0)
@@ -1066,7 +1076,7 @@ class GrowthStrategy:
         rs = avg_gains / avg_losses
         rsi = 100 - (100 / (1 + rs))
 
-        return rsi.iloc[-1]
+        return float(rsi.iloc[-1])
 
     def _calculate_macd(
         self, hist: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9
@@ -1100,6 +1110,8 @@ class GrowthStrategy:
             return (0.0, 0.0, 0.0)
 
         closes = hist["Close"]
+        if isinstance(closes, pd.DataFrame):
+            closes = closes.iloc[:, 0]
 
         # Calculate exponential moving averages
         ema_fast = closes.ewm(span=fast, adjust=False).mean()
@@ -1114,11 +1126,17 @@ class GrowthStrategy:
         # MACD histogram = MACD line - Signal line
         histogram = macd_line - signal_line
 
+        # Helper to safely get scalar float
+        def get_scalar(val):
+            if isinstance(val, pd.Series):
+                val = val.iloc[0]
+            return float(val) if not pd.isna(val) else 0.0
+
         # Return most recent values
         return (
-            float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
-            float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
-            float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+            get_scalar(macd_line.iloc[-1]),
+            get_scalar(signal_line.iloc[-1]),
+            get_scalar(histogram.iloc[-1]),
         )
 
     def _calculate_volume_ratio(self, hist: pd.DataFrame) -> float:
@@ -1126,8 +1144,12 @@ class GrowthStrategy:
         if len(hist) < 20:
             return 1.0
 
-        current_volume = hist["Volume"].iloc[-1]
-        avg_volume = hist["Volume"].iloc[-20:].mean()
+        volumes = hist["Volume"]
+        if isinstance(volumes, pd.DataFrame):
+            volumes = volumes.iloc[:, 0]
+
+        current_volume = float(volumes.iloc[-1])
+        avg_volume = float(volumes.iloc[-20:].mean())
 
         if avg_volume == 0:
             return 1.0
@@ -1140,12 +1162,15 @@ class GrowthStrategy:
             return 0.0
 
         closes = hist["Close"]
+        if isinstance(closes, pd.DataFrame):
+            closes = closes.iloc[:, 0]
+
         ma20 = closes.rolling(window=20).mean()
         ma50 = closes.rolling(window=50).mean()
 
-        current_price = closes.iloc[-1]
-        current_ma20 = ma20.iloc[-1]
-        current_ma50 = ma50.iloc[-1]
+        current_price = float(closes.iloc[-1])
+        current_ma20 = float(ma20.iloc[-1])
+        current_ma50 = float(ma50.iloc[-1])
 
         score = 0.0
 

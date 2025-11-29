@@ -68,11 +68,17 @@ def calculate_macd(
     # MACD histogram = MACD line - Signal line
     histogram = macd_line - signal_line
 
+    # Helper to safely get scalar float
+    def get_scalar(val):
+        if isinstance(val, pd.Series):
+            val = val.iloc[0]
+        return float(val) if not pd.isna(val) else 0.0
+
     # Return most recent values
     return (
-        float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
-        float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
-        float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+        get_scalar(macd_line.iloc[-1]),
+        get_scalar(signal_line.iloc[-1]),
+        get_scalar(histogram.iloc[-1]),
     )
 
 
@@ -121,6 +127,9 @@ def calculate_rsi(prices: pd.Series, period: int = 14) -> float:
 
     # Return most recent value
     rsi_value = rsi.iloc[-1]
+    if isinstance(rsi_value, pd.Series):
+        rsi_value = rsi_value.iloc[0]
+
     if pd.isna(rsi_value):
         return 50.0  # Neutral RSI
 
@@ -293,6 +302,9 @@ def calculate_atr(
     
     # Return most recent value
     atr_value = atr.iloc[-1]
+    if isinstance(atr_value, pd.Series):
+        atr_value = atr_value.iloc[0]
+
     if pd.isna(atr_value) or atr_value <= 0:
         return 0.0
     
@@ -387,11 +399,21 @@ def calculate_bollinger_bands(
     upper_band = middle_band + (num_std * std)
     lower_band = middle_band - (num_std * std)
     
+    # Helper to safely get scalar float
+    def get_scalar(val, default):
+        if isinstance(val, pd.Series):
+            val = val.iloc[0]
+        return float(val) if not pd.isna(val) else float(default)
+
     # Return most recent values
+    current_price = prices.iloc[-1]
+    if isinstance(current_price, pd.Series):
+        current_price = current_price.iloc[0]
+
     return (
-        float(upper_band.iloc[-1]) if not pd.isna(upper_band.iloc[-1]) else float(prices.iloc[-1]),
-        float(middle_band.iloc[-1]) if not pd.isna(middle_band.iloc[-1]) else float(prices.iloc[-1]),
-        float(lower_band.iloc[-1]) if not pd.isna(lower_band.iloc[-1]) else float(prices.iloc[-1]),
+        get_scalar(upper_band.iloc[-1], current_price),
+        get_scalar(middle_band.iloc[-1], current_price),
+        get_scalar(lower_band.iloc[-1], current_price),
     )
 
 
@@ -459,11 +481,17 @@ def calculate_adx(
     # Calculate ADX as smoothed average of DX
     adx = dx.ewm(alpha=1/period, adjust=False).mean()
     
+    # Helper to safely get scalar float
+    def get_scalar(val):
+        if isinstance(val, pd.Series):
+            val = val.iloc[0]
+        return float(val) if not pd.isna(val) else 0.0
+
     # Return most recent values
     return (
-        float(adx.iloc[-1]) if not pd.isna(adx.iloc[-1]) else 0.0,
-        float(plus_di.iloc[-1]) if not pd.isna(plus_di.iloc[-1]) else 0.0,
-        float(minus_di.iloc[-1]) if not pd.isna(minus_di.iloc[-1]) else 0.0,
+        get_scalar(adx.iloc[-1]),
+        get_scalar(plus_di.iloc[-1]),
+        get_scalar(minus_di.iloc[-1]),
     )
 
 
