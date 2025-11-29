@@ -2,7 +2,7 @@
   "version": "1.0",
   "last_updated": "2025-11-05",
   "description": "YouTube channel monitoring configuration for autonomous stock pick discovery",
-  "use_llm_analysis": false,
+  "use_llm_analysis": true,
   "lookback_hours": 24,
   "channels": [
     {
