@@ -38,3 +38,11 @@ repos:
         language: system
         pass_filenames: false
         verbose: true
+
+      - id: test-crypto-imports
+        name: Test Crypto Trading Imports (No RAG)
+        entry: bash scripts/pre_commit_test_crypto_imports.sh
+        language: system
+        types: [python]
+        files: '(src/rag/|src/deepagents_integration/|src/strategies/crypto_strategy\.py|scripts/autonomous_trader\.py)'
+        pass_filenames: false
