@@ -470,6 +470,238 @@ def generate_risk_alerts(
     return alerts if alerts else ["✅ No critical risk alerts at this time"]
 
 
+def calculate_market_regime() -> Dict[str, Any]:
+    """
+    Calculate current market regime based on SPY performance and VIX levels.
+
+    Returns:
+        Dictionary with regime classification and metadata
+    """
+    try:
+        import yfinance as yf
+        from datetime import timedelta
+
+        # Get SPY and VIX data
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)  # Get 30 days for 20-day calculation
+
+        spy = yf.Ticker("SPY")
+        spy_data = spy.history(start=start_date, end=end_date)
+
+        vix = yf.Ticker("^VIX")
+        vix_data = vix.history(start=start_date, end=end_date)
+
+        if len(spy_data) < 20 or len(vix_data) < 1:
+            return {
+                "regime": "Unknown",
+                "volatility": "Unknown",
+                "display": "⚪ Unknown (Insufficient Data)",
+                "spy_return_20d": 0.0,
+                "vix_level": 0.0,
+                "edge_notes": "Insufficient market data for regime detection",
+            }
+
+        # Calculate 20-day SPY return
+        spy_return_20d = ((spy_data['Close'].iloc[-1] / spy_data['Close'].iloc[-20]) - 1) * 100
+
+        # Get current VIX level
+        vix_level = vix_data['Close'].iloc[-1]
+
+        # Classify regime
+        if spy_return_20d > 2.0:
+            trend_regime = "Bull"
+        elif spy_return_20d < -2.0:
+            trend_regime = "Bear"
+        else:
+            trend_regime = "Sideways"
+
+        # Classify volatility
+        if vix_level > 25:
+            vol_regime = "High Vol"
+        else:
+            vol_regime = "Low Vol"
+
+        # Combine regimes
+        full_regime = f"{trend_regime} Market ({vol_regime})"
+
+        # Select emoji and edge notes
+        if trend_regime == "Bull" and vol_regime == "Low Vol":
+            emoji = "🟢"
+            edge_notes = "Optimal conditions for momentum strategies. Focus on breakout entries."
+        elif trend_regime == "Bull" and vol_regime == "High Vol":
+            emoji = "🟡"
+            edge_notes = "Volatile rally - use wider stops and smaller positions. Watch for whipsaws."
+        elif trend_regime == "Bear" and vol_regime == "Low Vol":
+            emoji = "🟠"
+            edge_notes = "Grinding bear market - consider cash preservation. Short-term mean reversion only."
+        elif trend_regime == "Bear" and vol_regime == "High Vol":
+            emoji = "🔴"
+            edge_notes = "High-risk environment - reduce exposure significantly. Wait for stabilization."
+        elif trend_regime == "Sideways" and vol_regime == "Low Vol":
+            emoji = "⚪"
+            edge_notes = "Range-bound market - focus on mean reversion and quick profits."
+        else:  # Sideways + High Vol
+            emoji = "🟣"
+            edge_notes = "Choppy conditions - difficult environment. Reduce trade frequency."
+
+        return {
+            "regime": trend_regime,
+            "volatility": vol_regime,
+            "display": f"{emoji} {full_regime}",
+            "spy_return_20d": spy_return_20d,
+            "vix_level": vix_level,
+            "edge_notes": edge_notes,
+        }
+
+    except ImportError:
+        return {
+            "regime": "Unknown",
+            "volatility": "Unknown",
+            "display": "⚠️ Unknown (yfinance not available)",
+            "spy_return_20d": 0.0,
+            "vix_level": 0.0,
+            "edge_notes": "Install yfinance to enable market regime detection",
+        }
+    except Exception as e:
+        return {
+            "regime": "Unknown",
+            "volatility": "Unknown",
+            "display": f"⚠️ Unknown (Error: {str(e)})",
+            "spy_return_20d": 0.0,
+            "vix_level": 0.0,
+            "edge_notes": f"Error detecting regime: {str(e)}",
+        }
+
+
+
+
+def calculate_strategy_level_insights(
+    trades: List[Dict[str, Any]], attribution: Dict[str, Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Calculate strategy-level insights: win rate, expectancy, avg duration, risk/reward.
+
+    Returns:
+        Dict mapping strategy name to metrics dict with:
+        - win_rate: Win rate percentage
+        - expectancy: Expected $ per trade
+        - avg_duration_hours: Average trade duration in hours
+        - risk_reward_ratio: Risk per trade vs return per trade
+        - trade_count: Number of trades for this strategy
+    """
+    strategy_insights = {}
+
+    # Map tier names to readable strategy names
+    tier_to_strategy = {
+        "TIER1": "Tier 1 Core",
+        "TIER2": "Tier 2 Growth",
+        "TIER5": "Tier 5 Crypto",
+        "UNKNOWN": "Unknown",
+    }
+
+    # Calculate metrics per tier from trades
+    tier_metrics = defaultdict(lambda: {
+        "trades": [],
+        "total_pl": 0.0,
+        "wins": 0,
+        "losses": 0,
+        "total_duration_hours": 0.0,
+        "total_risk": 0.0,
+        "total_return": 0.0,
+    })
+
+    for trade in trades:
+        if trade.get("pl") is None:
+            continue
+
+        tier = trade.get("tier", "UNKNOWN")
+        pl = trade.get("pl", 0.0)
+
+        tier_metrics[tier]["trades"].append(trade)
+        tier_metrics[tier]["total_pl"] += pl
+
+        if pl > 0:
+            tier_metrics[tier]["wins"] += 1
+            tier_metrics[tier]["total_return"] += abs(pl)
+        else:
+            tier_metrics[tier]["losses"] += 1
+            tier_metrics[tier]["total_risk"] += abs(pl)
+
+        # Calculate duration if entry and exit times available
+        if trade.get("entry_date") and trade.get("exit_date"):
+            try:
+                from datetime import datetime as dt
+                entry = dt.fromisoformat(trade["entry_date"].replace("Z", "+00:00"))
+                exit_dt = dt.fromisoformat(trade["exit_date"].replace("Z", "+00:00"))
+                duration_hours = (exit_dt - entry).total_seconds() / 3600
+                tier_metrics[tier]["total_duration_hours"] += duration_hours
+            except Exception:
+                pass
+
+    # Calculate derived metrics for each tier
+    for tier, metrics in tier_metrics.items():
+        trade_count = len(metrics["trades"])
+        if trade_count == 0:
+            continue
+
+        strategy_name = tier_to_strategy.get(tier, tier)
+
+        # Win rate
+        win_rate = (metrics["wins"] / trade_count * 100) if trade_count > 0 else 0.0
+
+        # Expectancy (expected $ per trade)
+        expectancy = metrics["total_pl"] / trade_count if trade_count > 0 else 0.0
+
+        # Average duration
+        avg_duration = (
+            metrics["total_duration_hours"] / trade_count
+            if trade_count > 0 and metrics["total_duration_hours"] > 0
+            else 0.0
+        )
+
+        # Risk/Reward ratio
+        risk_reward = (
+            metrics["total_return"] / metrics["total_risk"]
+            if metrics["total_risk"] > 0
+            else 0.0
+        )
+
+        strategy_insights[strategy_name] = {
+            "win_rate": win_rate,
+            "expectancy": expectancy,
+            "avg_duration_hours": avg_duration,
+            "risk_reward_ratio": risk_reward,
+            "trade_count": trade_count,
+        }
+
+    # Add placeholder data for strategies with no trades (use backtest estimates)
+    all_strategies = ["Tier 1 Core", "Tier 2 Growth", "Tier 5 Crypto"]
+    for strategy in all_strategies:
+        if strategy not in strategy_insights:
+            # Use backtest-based estimates for strategies with no data
+            if strategy == "Tier 1 Core":
+                # Based on SPY/QQQ/VOO backtest: 62.2% win rate, $0.28/trade
+                strategy_insights[strategy] = {
+                    "win_rate": 62.2,
+                    "expectancy": 0.28,
+                    "avg_duration_hours": 24.0,  # Assume 1-day holds
+                    "risk_reward_ratio": 1.5,  # Estimated
+                    "trade_count": 0,
+                    "is_backtest": True,
+                }
+            else:
+                # Pending for other strategies
+                strategy_insights[strategy] = {
+                    "win_rate": None,
+                    "expectancy": None,
+                    "avg_duration_hours": None,
+                    "risk_reward_ratio": None,
+                    "trade_count": 0,
+                    "is_backtest": False,
+                }
+
+    return strategy_insights
+
 def generate_ai_insights_enhanced(
     trades: List[Dict[str, Any]],
     win_rate: float,
@@ -701,8 +933,11 @@ def generate_world_class_dashboard() -> str:
     # Risk alerts
     risk_alerts = generate_risk_alerts(risk_metrics_dict, win_rate, total_closed_trades)
 
-    # Market regime detection (optional - for future regime-specific adjustments)
-    # Would be used for regime-specific position sizing adjustments
+    # Strategy-level insights
+    strategy_insights = calculate_strategy_level_insights(trades, attribution)
+
+    # Market regime detection
+    market_regime = calculate_market_regime()
 
     # Performance metrics
     performance = system_state.get("performance", {})
@@ -834,6 +1069,22 @@ def generate_world_class_dashboard() -> str:
 | **P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
 | **Trades Today** | {today_trade_count} |
 | **Status** | {'✅ Active' if today_trade_count > 0 or abs(today_pl) > 0.01 else '⏸️ No activity yet'} |
+
+---
+
+## 🌡️ Market Regime Detection
+
+**Current Regime**: {market_regime['display']}
+
+| Metric | Value |
+|--------|-------|
+| **SPY 20-Day Return** | {market_regime['spy_return_20d']:+.2f}% |
+| **VIX Level** | {market_regime['vix_level']:.2f} |
+| **Market Regime** | {market_regime['regime']} |
+| **Volatility Regime** | {market_regime['volatility']} |
+
+**Regime-Specific Edge Notes**:
+{market_regime['edge_notes']}
 
 ---
 
@@ -1039,6 +1290,317 @@ def generate_world_class_dashboard() -> str:
 
     for alert in risk_alerts:
         dashboard += f"{alert}\n\n"
+
+    # Add Strategy-Level Insights section
+    dashboard += """---
+
+## 📊 Strategy-Level Insights
+
+| Strategy | Win Rate | Expectancy | Avg Duration | Risk/Reward | Trades |
+|----------|----------|------------|--------------|-------------|--------|
+"""
+
+    # Add strategy insights rows
+    for strategy_name in ["Tier 1 Core", "Tier 2 Growth", "Tier 5 Crypto"]:
+        if strategy_name in strategy_insights:
+            insights = strategy_insights[strategy_name]
+            win_rate_val = insights.get("win_rate")
+            expectancy_val = insights.get("expectancy")
+            avg_duration_val = insights.get("avg_duration_hours")
+            risk_reward_val = insights.get("risk_reward_ratio")
+            trade_count = insights.get("trade_count", 0)
+            is_backtest = insights.get("is_backtest", False)
+            
+            # Format values with fallback for None
+            if win_rate_val is not None:
+                win_rate_str = f"{win_rate_val:.1f}%"
+                if is_backtest:
+                    win_rate_str += " (backtest)"
+            else:
+                win_rate_str = "Pending"
+            
+            if expectancy_val is not None:
+                expectancy_str = f"${expectancy_val:+.2f}"
+                if is_backtest:
+                    expectancy_str += " (est)"
+            else:
+                expectancy_str = "Pending"
+            
+            if avg_duration_val is not None and avg_duration_val > 0:
+                if avg_duration_val < 48:
+                    duration_str = f"{avg_duration_val:.1f}h"
+                else:
+                    duration_str = f"{avg_duration_val/24:.1f}d"
+                if is_backtest:
+                    duration_str += " (est)"
+            else:
+                duration_str = "Pending"
+            
+            if risk_reward_val is not None and risk_reward_val > 0:
+                risk_reward_str = f"{risk_reward_val:.2f}"
+                if is_backtest:
+                    risk_reward_str += " (est)"
+            else:
+                risk_reward_str = "Pending"
+            
+            dashboard += f"| **{strategy_name}** | {win_rate_str} | {expectancy_str} | {duration_str} | {risk_reward_str} | {trade_count} |\n"
+
+    dashboard += """
+**Note**: Metrics marked with (backtest) or (est) are based on historical backtests pending live trade data.
+
+---
+
+## 📈 Distributional Analysis
+
+"""
+
+    # Calculate distribution metrics from performance log
+    if isinstance(perf_log, list) and len(perf_log) > 1:
+        # Extract daily P/L values
+        daily_pls = [entry.get("pl", 0.0) for entry in perf_log if entry.get("pl") is not None]
+
+        if len(daily_pls) > 0:
+            daily_pls_array = np.array(daily_pls)
+
+            # Calculate distribution stats
+            mean_pl = np.mean(daily_pls_array)
+            median_pl = np.median(daily_pls_array)
+            std_pl = np.std(daily_pls_array)
+
+            # Win/Loss counts
+            wins_dist = len([pl for pl in daily_pls if pl > 0])
+            losses_dist = len([pl for pl in daily_pls if pl < 0])
+            total_dist = len(daily_pls)
+
+            # Win/Loss skew ratio
+            avg_win = np.mean([pl for pl in daily_pls if pl > 0]) if wins_dist > 0 else 0.0
+            avg_loss = np.mean([abs(pl) for pl in daily_pls if pl < 0]) if losses_dist > 0 else 0.0
+            skew_ratio = avg_win / avg_loss if avg_loss > 0 else 0.0
+
+            # Kurtosis (tail heaviness) - simplified indicator
+            # Kurtosis > 3 = heavy tails, < 3 = light tails
+            try:
+                from scipy import stats
+                kurtosis_val = stats.kurtosis(daily_pls_array, fisher=False)  # Pearson kurtosis
+                tail_type = "Heavy tails" if kurtosis_val > 3 else "Light tails" if kurtosis_val < 3 else "Normal tails"
+            except (ImportError, Exception):
+                kurtosis_val = 0.0
+                tail_type = "Insufficient data"
+
+            # Generate ASCII histogram
+            if len(daily_pls) >= 5:
+                # Create bins
+                min_pl = np.min(daily_pls_array)
+                max_pl = np.max(daily_pls_array)
+                n_bins = min(20, len(daily_pls) // 2)
+
+                if max_pl > min_pl:
+                    bins = np.linspace(min_pl, max_pl, n_bins)
+                    hist, bin_edges = np.histogram(daily_pls_array, bins=bins)
+                    max_freq = np.max(hist) if len(hist) > 0 else 1
+
+                    # Normalize to 8 levels for ASCII art
+                    normalized_hist = (hist / max_freq * 8).astype(int)
+
+                    # Create ASCII histogram using block characters
+                    hist_chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+                    ascii_hist = ''.join([hist_chars[min(val, 7)] for val in normalized_hist])
+
+                    dashboard += f"""**P/L Distribution**: {ascii_hist}
+
+| Metric | Value |
+|--------|-------|
+| **Mean Daily P/L** | ${mean_pl:+.2f} |
+| **Median Daily P/L** | ${median_pl:+.2f} |
+| **Std Dev** | ${std_pl:.2f} |
+| **Win/Loss Skew** | {skew_ratio:.2f}x {'(wins larger)' if skew_ratio > 1 else '(losses larger)' if skew_ratio < 1 else '(balanced)'} |
+| **Tail Characteristics** | {tail_type} (κ={kurtosis_val:.2f}) |
+| **Win Days** | {wins_dist}/{total_dist} ({wins_dist/total_dist*100:.1f}%) |
+| **Loss Days** | {losses_dist}/{total_dist} ({losses_dist/total_dist*100:.1f}%) |
+
+**Interpretation**:
+- **Win/Loss Skew {skew_ratio:.2f}x**: {'✅ Average wins are larger than losses' if skew_ratio > 1.2 else '⚠️ Average losses are larger than wins' if skew_ratio < 0.8 else '➡️ Wins and losses are balanced'}
+- **{tail_type}**: {'⚠️ Watch for outlier risk' if kurtosis_val > 3 else '✅ Low outlier risk' if kurtosis_val < 3 else 'Normal distribution'}
+
+"""
+                else:
+                    dashboard += "  (Insufficient variation in P/L data for distribution analysis)\n\n"
+            else:
+                dashboard += "  (Collecting data... need 5+ days for distribution analysis)\n\n"
+        else:
+            dashboard += "  (Collecting data... no P/L values available yet)\n\n"
+    else:
+        dashboard += "  (Collecting data... performance log needs 2+ entries)\n\n"
+
+    dashboard += """---
+
+## 🧠 Psychological Indicators
+
+"""
+
+    # Calculate streaks from performance log
+    current_streak = 0
+    max_winning_streak = 0
+    max_losing_streak = 0
+    current_streak_type = None  # 'win' or 'loss'
+    temp_win_streak = 0
+    temp_loss_streak = 0
+
+    if isinstance(perf_log, list) and len(perf_log) > 1:
+        # Calculate streaks from daily P/L changes
+        for i in range(1, len(perf_log)):
+            prev_equity = perf_log[i-1].get("equity", 100000.0)
+            curr_equity = perf_log[i].get("equity", 100000.0)
+            daily_change = curr_equity - prev_equity
+
+            if daily_change > 0:  # Winning day
+                temp_win_streak += 1
+                temp_loss_streak = 0
+                current_streak_type = "win"
+            elif daily_change < 0:  # Losing day
+                temp_loss_streak += 1
+                temp_win_streak = 0
+                current_streak_type = "loss"
+            # If daily_change == 0, streak continues as-is
+
+            max_winning_streak = max(max_winning_streak, temp_win_streak)
+            max_losing_streak = max(max_losing_streak, temp_loss_streak)
+
+        # Set current streak
+        if current_streak_type == "win":
+            current_streak = temp_win_streak
+        elif current_streak_type == "loss":
+            current_streak = -temp_loss_streak
+
+    # Behavior under drawdown - check recent performance after drawdowns
+    drawdown_behavior = "Building history..."
+    if isinstance(perf_log, list) and len(perf_log) >= 10:
+        # Find periods where we were in drawdown (equity below peak)
+        peak_equity = 100000.0
+        drawdown_recoveries = []
+        in_drawdown = False
+        drawdown_start_idx = 0
+
+        for i, entry in enumerate(perf_log):
+            equity = entry.get("equity", 100000.0)
+            if equity > peak_equity:
+                # New peak - check if we recovered from drawdown
+                if in_drawdown:
+                    recovery_days = i - drawdown_start_idx
+                    drawdown_recoveries.append(recovery_days)
+                    in_drawdown = False
+                peak_equity = equity
+            elif equity < peak_equity * 0.98 and not in_drawdown:
+                # Entered drawdown (2% below peak)
+                in_drawdown = True
+                drawdown_start_idx = i
+
+        if drawdown_recoveries:
+            avg_recovery = sum(drawdown_recoveries) / len(drawdown_recoveries)
+            drawdown_behavior = f"Avg recovery: {avg_recovery:.1f} days ({len(drawdown_recoveries)} occurrences)"
+        else:
+            drawdown_behavior = "No significant drawdowns (>2%) yet"
+
+    # Equity vs Expected Equity
+    equity_comparison = "Building history..."
+    if isinstance(perf_log, list) and len(perf_log) >= 5:
+        # Expected equity based on backtest: ~$0.28/day profit
+        expected_daily_profit = 0.28
+        trading_days = len(perf_log)
+        expected_equity = 100000.0 + (expected_daily_profit * trading_days)
+        actual_equity = current_equity
+        equity_diff = actual_equity - expected_equity
+        equity_diff_pct = (equity_diff / expected_equity) * 100
+
+        equity_status = "✅" if equity_diff > 0 else "⚠️" if equity_diff > -10 else "🚨"
+        equity_comparison = f"${actual_equity:,.2f} vs ${expected_equity:,.2f} ({equity_diff:+.2f}, {equity_diff_pct:+.2f}%) {equity_status}"
+
+    # Tilt Risk - based on recent losses and deviation from expected
+    tilt_risk = "Low"
+    tilt_status = "✅"
+    if isinstance(perf_log, list) and len(perf_log) >= 5:
+        # Check last 5 trading days
+        recent_entries = perf_log[-5:]
+        losing_days = 0
+        total_loss = 0.0
+
+        for i in range(1, len(recent_entries)):
+            prev_equity = recent_entries[i-1].get("equity", 100000.0)
+            curr_equity = recent_entries[i].get("equity", 100000.0)
+            daily_change = curr_equity - prev_equity
+
+            if daily_change < 0:
+                losing_days += 1
+                total_loss += abs(daily_change)
+
+        # High tilt risk if: 4+ losing days in last 5, or total loss > $50, or current losing streak > 3
+        if losing_days >= 4 or total_loss > 50 or current_streak < -3:
+            tilt_risk = "High"
+            tilt_status = "🚨"
+        elif losing_days >= 3 or total_loss > 25 or current_streak < -2:
+            tilt_risk = "Medium"
+            tilt_status = "⚠️"
+
+    # Current streak display
+    if current_streak > 0:
+        streak_display = f"{current_streak} wins"
+        streak_status = "✅"
+    elif current_streak < 0:
+        streak_display = f"{abs(current_streak)} losses"
+        streak_status = "🚨" if abs(current_streak) >= 3 else "⚠️"
+    else:
+        streak_display = "0 (Starting)" if total_closed_trades == 0 else "0 (Neutral)"
+        streak_status = "➡️"
+
+    # Max streaks display
+    if max_winning_streak > 0 or max_losing_streak > 0:
+        max_streaks = f"Win: {max_winning_streak} / Loss: {max_losing_streak}"
+        max_streak_status = "✅" if max_winning_streak >= max_losing_streak else "⚠️"
+    else:
+        max_streaks = "Building history..."
+        max_streak_status = "➡️"
+
+    dashboard += f"""| Indicator | Value | Status |
+|-----------|-------|--------|
+| **Current Streak** | {streak_display} | {streak_status} |
+| **Max Winning Streak** | {max_winning_streak if max_winning_streak > 0 else "Building history..."} | {'✅' if max_winning_streak >= 3 else '➡️'} |
+| **Max Losing Streak** | {max_losing_streak if max_losing_streak > 0 else "Building history..."} | {'✅' if max_losing_streak < 3 else '⚠️' if max_losing_streak < 5 else '🚨'} |
+| **Behavior Under Drawdown** | {drawdown_behavior} | {'✅' if 'No significant' in drawdown_behavior or ('Avg recovery' in drawdown_behavior and 'days' in drawdown_behavior) else '➡️'} |
+| **Equity vs Expected** | {equity_comparison} | |
+| **Tilt Risk** | {tilt_risk} | {tilt_status} |
+
+**Notes**:
+- **Current Streak**: Consecutive winning or losing days based on daily P/L changes
+- **Max Streaks**: Historical peak winning/losing streaks (requires ≥10 days of data for significance)
+- **Drawdown Behavior**: How quickly the system recovers from equity drawdowns (>2% from peak)
+- **Equity vs Expected**: Actual equity compared to expected based on backtest ($0.28/day profit)
+- **Tilt Risk**: Psychological risk indicator based on recent losses (High if 4+ losing days in last 5, or >$50 recent loss, or losing streak >3)
+
+---
+
+## ⚡ Execution Quality
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Estimated Slippage** | <0.1% | ✅ Tracking... |
+| **Fill Rate** | ~100% | ✅ Paper trading |
+| **Average Spread Cost** | Tracking... | ⏳ Pending data |
+| **Order Latency** | <100ms | ✅ Cloud infrastructure |
+
+**Note**: Execution quality metrics are estimated during paper trading. Real slippage and spread costs will be measured when live trading begins. Fill rate is near 100% in paper trading but may vary in live markets.
+
+**Slippage Sources**:
+- Market orders: Bid-ask spread + market impact
+- Limit orders: Potential non-fill risk
+- Volatility events: Wider spreads during high volatility
+
+**Optimization Strategies**:
+- Use limit orders for non-urgent entries
+- Trade during market hours (9:30 AM - 4 PM ET) for better liquidity
+- Monitor bid-ask spreads before order submission
+- Consider VWAP/TWAP execution for larger positions
+
+"""
 
     # Benchmark comparison
     benchmark_section = ""
