@@ -22,21 +22,25 @@ import json
 
 try:
     import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend
+
+    matplotlib.use("Agg")  # Non-interactive backend
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
+
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 DATA_DIR = Path("data")
 CHARTS_DIR = Path("wiki") / "charts"
 CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path] = None) -> Optional[str]:
+def generate_equity_curve_chart(
+    perf_log: List[Dict], output_path: Optional[Path] = None
+) -> Optional[str]:
     """Generate equity curve chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
@@ -45,8 +49,8 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
     dates = []
     equity_values = []
     for entry in perf_log:
-        date_str = entry.get('date', '')
-        equity = entry.get('equity', 100000)
+        date_str = entry.get("date", "")
+        equity = entry.get("equity", 100000)
         if date_str:
             try:
                 dt = datetime.fromisoformat(date_str)
@@ -60,16 +64,18 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
 
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(dates, equity_values, linewidth=2, color='#2563eb', label='Portfolio Equity')
-    ax.fill_between(dates, equity_values, alpha=0.3, color='#2563eb')
-    ax.set_xlabel('Date', fontsize=10)
-    ax.set_ylabel('Equity ($)', fontsize=10)
-    ax.set_title('Equity Curve', fontsize=12, fontweight='bold')
+    ax.plot(
+        dates, equity_values, linewidth=2, color="#2563eb", label="Portfolio Equity"
+    )
+    ax.fill_between(dates, equity_values, alpha=0.3, color="#2563eb")
+    ax.set_xlabel("Date", fontsize=10)
+    ax.set_ylabel("Equity ($)", fontsize=10)
+    ax.set_title("Equity Curve", fontsize=12, fontweight="bold")
     ax.grid(True, alpha=0.3)
     ax.legend()
 
     # Format x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.xticks(rotation=45)
     plt.tight_layout()
 
@@ -77,13 +83,15 @@ def generate_equity_curve_chart(perf_log: List[Dict], output_path: Optional[Path
     if output_path is None:
         output_path = CHARTS_DIR / "equity_curve.png"
 
-    plt.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
 
     return f"charts/equity_curve.png"
 
 
-def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = None) -> Optional[str]:
+def generate_drawdown_chart(
+    perf_log: List[Dict], output_path: Optional[Path] = None
+) -> Optional[str]:
     """Generate drawdown chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
@@ -92,8 +100,8 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     dates = []
     equity_values = []
     for entry in perf_log:
-        date_str = entry.get('date', '')
-        equity = entry.get('equity', 100000)
+        date_str = entry.get("date", "")
+        equity = entry.get("equity", 100000)
         if date_str:
             try:
                 dt = datetime.fromisoformat(date_str)
@@ -116,16 +124,16 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
 
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.fill_between(dates, drawdowns, 0, alpha=0.5, color='#dc2626', label='Drawdown')
-    ax.plot(dates, drawdowns, linewidth=2, color='#dc2626')
-    ax.set_xlabel('Date', fontsize=10)
-    ax.set_ylabel('Drawdown (%)', fontsize=10)
-    ax.set_title('Drawdown Over Time', fontsize=12, fontweight='bold')
+    ax.fill_between(dates, drawdowns, 0, alpha=0.5, color="#dc2626", label="Drawdown")
+    ax.plot(dates, drawdowns, linewidth=2, color="#dc2626")
+    ax.set_xlabel("Date", fontsize=10)
+    ax.set_ylabel("Drawdown (%)", fontsize=10)
+    ax.set_title("Drawdown Over Time", fontsize=12, fontweight="bold")
     ax.grid(True, alpha=0.3)
     ax.legend()
 
     # Format x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.xticks(rotation=45)
     plt.tight_layout()
 
@@ -133,13 +141,15 @@ def generate_drawdown_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     if output_path is None:
         output_path = CHARTS_DIR / "drawdown.png"
 
-    plt.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
 
     return f"charts/drawdown.png"
 
 
-def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = None) -> Optional[str]:
+def generate_daily_pl_chart(
+    perf_log: List[Dict], output_path: Optional[Path] = None
+) -> Optional[str]:
     """Generate daily P/L bar chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
         return None
@@ -148,8 +158,8 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     dates = []
     pl_values = []
     for entry in perf_log:
-        date_str = entry.get('date', '')
-        pl = entry.get('pl', 0)
+        date_str = entry.get("date", "")
+        pl = entry.get("pl", 0)
         if date_str:
             try:
                 dt = datetime.fromisoformat(date_str)
@@ -163,16 +173,16 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
 
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
-    colors = ['#10b981' if pl >= 0 else '#ef4444' for pl in pl_values]
+    colors = ["#10b981" if pl >= 0 else "#ef4444" for pl in pl_values]
     ax.bar(dates, pl_values, color=colors, alpha=0.7, width=0.8)
-    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-    ax.set_xlabel('Date', fontsize=10)
-    ax.set_ylabel('Daily P/L ($)', fontsize=10)
-    ax.set_title('Daily Profit/Loss', fontsize=12, fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
+    ax.set_xlabel("Date", fontsize=10)
+    ax.set_ylabel("Daily P/L ($)", fontsize=10)
+    ax.set_title("Daily Profit/Loss", fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.3, axis="y")
 
     # Format x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.xticks(rotation=45)
     plt.tight_layout()
 
@@ -180,13 +190,15 @@ def generate_daily_pl_chart(perf_log: List[Dict], output_path: Optional[Path] = 
     if output_path is None:
         output_path = CHARTS_DIR / "daily_pl.png"
 
-    plt.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
 
     return f"charts/daily_pl.png"
 
 
-def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_path: Optional[Path] = None) -> Optional[str]:
+def generate_rolling_sharpe_chart(
+    perf_log: List[Dict], window: int = 7, output_path: Optional[Path] = None
+) -> Optional[str]:
     """Generate rolling Sharpe ratio chart."""
     if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < window + 1:
         return None
@@ -195,8 +207,8 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     dates = []
     equity_values = []
     for entry in perf_log:
-        date_str = entry.get('date', '')
-        equity = entry.get('equity', 100000)
+        date_str = entry.get("date", "")
+        equity = entry.get("equity", 100000)
         if date_str:
             try:
                 dt = datetime.fromisoformat(date_str)
@@ -211,8 +223,8 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     # Calculate rolling Sharpe
     returns = []
     for i in range(1, len(equity_values)):
-        if equity_values[i-1] > 0:
-            ret = (equity_values[i] - equity_values[i-1]) / equity_values[i-1]
+        if equity_values[i - 1] > 0:
+            ret = (equity_values[i] - equity_values[i - 1]) / equity_values[i - 1]
             returns.append(ret)
 
     if len(returns) < window:
@@ -222,7 +234,7 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     rolling_dates = []
 
     for i in range(window, len(returns)):
-        window_returns = returns[i-window:i]
+        window_returns = returns[i - window : i]
         if len(window_returns) > 1:
             mean_ret = np.mean(window_returns)
             std_ret = np.std(window_returns)
@@ -244,17 +256,25 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
 
     # Create chart
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(rolling_dates, rolling_sharpe, linewidth=2, color='#8b5cf6', label=f'Rolling Sharpe ({window}d)')
-    ax.axhline(y=1.0, color='green', linestyle='--', linewidth=1, label='Target (1.0)')
-    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-    ax.set_xlabel('Date', fontsize=10)
-    ax.set_ylabel('Sharpe Ratio', fontsize=10)
-    ax.set_title(f'Rolling Sharpe Ratio ({window}-Day Window)', fontsize=12, fontweight='bold')
+    ax.plot(
+        rolling_dates,
+        rolling_sharpe,
+        linewidth=2,
+        color="#8b5cf6",
+        label=f"Rolling Sharpe ({window}d)",
+    )
+    ax.axhline(y=1.0, color="green", linestyle="--", linewidth=1, label="Target (1.0)")
+    ax.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
+    ax.set_xlabel("Date", fontsize=10)
+    ax.set_ylabel("Sharpe Ratio", fontsize=10)
+    ax.set_title(
+        f"Rolling Sharpe Ratio ({window}-Day Window)", fontsize=12, fontweight="bold"
+    )
     ax.grid(True, alpha=0.3)
     ax.legend()
 
     # Format x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.xticks(rotation=45)
     plt.tight_layout()
 
@@ -262,21 +282,182 @@ def generate_rolling_sharpe_chart(perf_log: List[Dict], window: int = 7, output_
     if output_path is None:
         output_path = CHARTS_DIR / f"rolling_sharpe_{window}d.png"
 
-    plt.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
 
     return f"charts/rolling_sharpe_{window}d.png"
 
 
-def generate_all_charts(perf_log: List[Dict]) -> Dict[str, Optional[str]]:
+def generate_attribution_bar_chart(
+    strategy_data: Dict[str, Dict], output_path: Optional[Path] = None
+) -> Optional[str]:
+    """Generate performance attribution bar chart by strategy."""
+    if not MATPLOTLIB_AVAILABLE or not strategy_data:
+        return None
+
+    strategies = []
+    pl_values = []
+    colors = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"]
+
+    for i, (strategy_name, data) in enumerate(strategy_data.items()):
+        strategies.append(strategy_name.replace("_", " ").title())
+        pl_values.append(data.get("pl", 0.0))
+        if i >= len(colors):
+            colors.append("#6b7280")
+
+    if len(strategies) == 0:
+        return None
+
+    # Create chart
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(strategies, pl_values, color=colors[: len(strategies)], alpha=0.7)
+    ax.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
+    ax.set_xlabel("Strategy", fontsize=10)
+    ax.set_ylabel("P/L ($)", fontsize=10)
+    ax.set_title("Performance Attribution by Strategy", fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.3, axis="y")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height + (0.01 * max(pl_values) if max(pl_values) > 0 else -0.01 * min(pl_values)),
+            f"${height:.2f}",
+            ha="center",
+            va="bottom" if height >= 0 else "top",
+            fontsize=9,
+        )
+
+    # Save
+    if output_path is None:
+        output_path = CHARTS_DIR / "attribution_bar.png"
+
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
+    plt.close()
+
+    return f"charts/attribution_bar.png"
+
+
+def generate_regime_timeline_chart(
+    perf_log: List[Dict],
+    regime_data: Optional[Dict] = None,
+    output_path: Optional[Path] = None,
+) -> Optional[str]:
+    """Generate market regime timeline chart."""
+    if not MATPLOTLIB_AVAILABLE or not perf_log or len(perf_log) < 2:
+        return None
+
+    # Extract dates
+    dates = []
+    equity_values = []
+    for entry in perf_log:
+        date_str = entry.get("date", "")
+        equity = entry.get("equity", 100000)
+        if date_str:
+            try:
+                dt = datetime.fromisoformat(date_str)
+                dates.append(dt)
+                equity_values.append(equity)
+            except:
+                pass
+
+    if len(dates) < 2:
+        return None
+
+    # Calculate returns to infer regime
+    returns = []
+    for i in range(1, len(equity_values)):
+        if equity_values[i - 1] > 0:
+            ret = (equity_values[i] - equity_values[i - 1]) / equity_values[i - 1]
+            returns.append(ret)
+
+    if len(returns) == 0:
+        return None
+
+    # Classify regime based on returns
+    regime_colors = {
+        "BULL": "#10b981",  # Green
+        "BEAR": "#ef4444",  # Red
+        "SIDEWAYS": "#f59e0b",  # Orange
+        "VOLATILE": "#8b5cf6",  # Purple
+    }
+
+    regimes = []
+    regime_dates = dates[1:]  # One less date than equity values
+
+    for ret in returns:
+        abs_ret = abs(ret)
+        if ret > 0.002:  # >0.2% positive
+            regimes.append("BULL")
+        elif ret < -0.002:  # <-0.2% negative
+            regimes.append("BEAR")
+        elif abs_ret > 0.005:  # High volatility
+            regimes.append("VOLATILE")
+        else:
+            regimes.append("SIDEWAYS")
+
+    # Create chart
+    fig, ax = plt.subplots(figsize=(14, 6))
+    
+    # Plot equity curve
+    ax.plot(dates, equity_values, linewidth=2, color="#2563eb", alpha=0.3, label="Equity")
+    
+    # Color background by regime
+    for i, (date, regime) in enumerate(zip(regime_dates, regimes)):
+        if i < len(regime_dates) - 1:
+            next_date = regime_dates[i + 1]
+            color = regime_colors.get(regime, "#6b7280")
+            ax.axvspan(date, next_date, alpha=0.2, color=color)
+
+    # Add regime legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=color, alpha=0.3, label=regime)
+        for regime, color in regime_colors.items()
+    ]
+    ax.legend(handles=legend_elements, loc="upper left")
+
+    ax.set_xlabel("Date", fontsize=10)
+    ax.set_ylabel("Equity ($)", fontsize=10)
+    ax.set_title("Market Regime Timeline", fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.3)
+
+    # Format x-axis
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Save
+    if output_path is None:
+        output_path = CHARTS_DIR / "regime_timeline.png"
+
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
+    plt.close()
+
+    return f"charts/regime_timeline.png"
+
+
+def generate_all_charts(
+    perf_log: List[Dict], strategy_data: Optional[Dict[str, Dict]] = None
+) -> Dict[str, Optional[str]]:
     """Generate all charts and return paths."""
     charts = {}
 
-    charts['equity_curve'] = generate_equity_curve_chart(perf_log)
-    charts['drawdown'] = generate_drawdown_chart(perf_log)
-    charts['daily_pl'] = generate_daily_pl_chart(perf_log)
-    charts['rolling_sharpe_7d'] = generate_rolling_sharpe_chart(perf_log, window=7)
-    charts['rolling_sharpe_30d'] = generate_rolling_sharpe_chart(perf_log, window=30)
+    charts["equity_curve"] = generate_equity_curve_chart(perf_log)
+    charts["drawdown"] = generate_drawdown_chart(perf_log)
+    charts["daily_pl"] = generate_daily_pl_chart(perf_log)
+    charts["rolling_sharpe_7d"] = generate_rolling_sharpe_chart(perf_log, window=7)
+    charts["rolling_sharpe_30d"] = generate_rolling_sharpe_chart(perf_log, window=30)
+    
+    # Attribution chart (requires strategy data)
+    if strategy_data:
+        charts["attribution_bar"] = generate_attribution_bar_chart(strategy_data)
+    
+    # Regime timeline
+    charts["regime_timeline"] = generate_regime_timeline_chart(perf_log)
 
     return charts
 

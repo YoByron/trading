@@ -228,10 +228,30 @@ def generate_dashboard() -> str:
     calculator = TradingMetricsCalculator(DATA_DIR)
     world_class_metrics = calculator.calculate_all_metrics()
 
+    # Generate charts (PNG images)
+    try:
+        from scripts.dashboard_charts import generate_all_charts
+        
+        perf_log = load_json_file(DATA_DIR / "performance_log.json")
+        if not isinstance(perf_log, list):
+            perf_log = []
+        
+        # Get strategy data for attribution chart
+        strategy_metrics_data = world_class_metrics.get("strategy_metrics", {})
+        if isinstance(strategy_metrics_data, dict) and "by_strategy" in strategy_metrics_data:
+            strategy_data = strategy_metrics_data.get("by_strategy", {})
+        else:
+            strategy_data = strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
+        
+        chart_paths = generate_all_charts(perf_log, strategy_data if strategy_data else None)
+    except Exception as e:
+        logger.warning(f"Chart generation failed: {e}")
+        chart_paths = {}
+
     now = datetime.now()
 
     # Get today's date string for display
-    today_display = date.today().strftime('%Y-%m-%d (%A)')
+    today_display = date.today().strftime("%Y-%m-%d (%A)")
 
     # Calculate progress bar
     progress_bars = int(basic_metrics["progress_pct_challenge"] / 5)
@@ -427,12 +447,22 @@ def generate_dashboard() -> str:
 
 ### Per-Strategy Performance
 
+"""
+    
+    # Add conditional logic for trade volume thresholds
+    total_trades = basic_metrics.get("total_trades", 0)
+    min_trades_for_attribution = 10
+    
+    if total_trades < min_trades_for_attribution:
+        dashboard += f"*Performance attribution analysis requires at least {min_trades_for_attribution} trades (currently have {total_trades}).*\n\n"
+    else:
+        dashboard += """
 | Strategy/Agent | Trades | P/L ($) | Win % | Sharpe | Max DD % |
 |----------------|---------|---------|-------|--------|----------|
 """
 
     # Add strategy rows
-    if strategies:
+    if strategies and total_trades >= min_trades_for_attribution:
         for strategy_id, strategy_data in strategies.items():
             profit_factor = strategy_data.get("profit_factor", 0)
             dashboard += f"| {strategy_data.get('name', strategy_id)} | {strategy_data.get('trades', 0)} | ${strategy_data.get('pl', 0):+.2f} | {strategy_data.get('win_rate', 0):.1f}% | {strategy_data.get('sharpe', 0):.2f} | {strategy_data.get('max_drawdown_pct', 0):.2f}% |\n"
@@ -682,13 +712,37 @@ def generate_dashboard() -> str:
 
 ## 📈 Time-Series & Equity Curve
 
+### Visual Charts
+
+"""
+    
+    # Add chart images if generated
+    charts_generated = any(chart_paths.values()) if chart_paths else False
+    if charts_generated:
+        if chart_paths.get("equity_curve"):
+            dashboard += f"![Equity Curve]({chart_paths['equity_curve']})\n\n"
+        if chart_paths.get("daily_pl"):
+            dashboard += f"![Daily P/L]({chart_paths['daily_pl']})\n\n"
+        if chart_paths.get("rolling_sharpe_7d"):
+            dashboard += f"![Rolling Sharpe 7-Day]({chart_paths['rolling_sharpe_7d']})\n\n"
+        if chart_paths.get("attribution_bar"):
+            dashboard += f"![Performance Attribution]({chart_paths['attribution_bar']})\n\n"
+        if chart_paths.get("regime_timeline"):
+            dashboard += f"![Market Regime Timeline]({chart_paths['regime_timeline']})\n\n"
+    else:
+        perf_log_count = len(perf_log) if isinstance(perf_log, list) else 0
+        if perf_log_count < 2:
+            dashboard += f"*Charts require at least 2 data points (currently have {perf_log_count}). Charts will appear automatically as data accumulates.*\n\n"
+        else:
+            dashboard += "*Charts will be generated when matplotlib is available in the environment.*\n\n"
+
+    dashboard += """
 ### Daily Profit Trend
 
 **Last 10 Days**:
 """
 
-    # Add recent performance data
-    perf_log = load_json_file(DATA_DIR / "performance_log.json")
+    # Add recent performance data (perf_log already loaded above)
     if isinstance(perf_log, list) and len(perf_log) > 0:
         recent = perf_log[-10:]  # Last 10 entries
         dashboard += "\n| Date | Equity | P/L | P/L % |\n"
@@ -859,6 +913,38 @@ def generate_dashboard() -> str:
 
 ---
 
+## ⚡ Execution Quality Metrics
+
+"""
+    
+    # Execution quality metrics (only show if we have trades)
+    if total_trades >= 5:  # Show execution metrics after 5 trades
+        execution = world_class_metrics.get("execution_metrics", {})
+        dashboard += """
+### Execution Performance
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+"""
+        avg_slippage = execution.get("avg_slippage", 0.0)
+        fill_quality = execution.get("fill_quality", 0.0)
+        order_success_rate = execution.get("order_success_rate", 0.0)
+        order_reject_rate = execution.get("order_reject_rate", 0.0)
+        avg_fill_time_ms = execution.get("avg_fill_time_ms", 0.0)
+        broker_latency_ms = execution.get("broker_latency_ms", 0.0)
+        
+        dashboard += f"| **Avg Slippage** | {avg_slippage:.3f}% | <0.5% | {'✅' if avg_slippage < 0.5 else '⚠️'} |\n"
+        dashboard += f"| **Fill Quality** | {fill_quality:.1f}/100 | >90 | {'✅' if fill_quality > 90 else '⚠️'} |\n"
+        dashboard += f"| **Order Success Rate** | {order_success_rate:.1f}% | >95% | {'✅' if order_success_rate > 95 else '⚠️'} |\n"
+        dashboard += f"| **Order Reject Rate** | {order_reject_rate:.1f}% | <5% | {'✅' if order_reject_rate < 5 else '⚠️'} |\n"
+        dashboard += f"| **Avg Fill Time** | {avg_fill_time_ms:.0f} ms | <200ms | {'✅' if avg_fill_time_ms < 200 else '⚠️'} |\n"
+        dashboard += f"| **Broker Latency** | {broker_latency_ms:.0f} ms | <100ms | {'✅' if broker_latency_ms < 100 else '⚠️'} |\n"
+    else:
+        dashboard += f"*Execution quality metrics require at least 5 trades (currently have {total_trades}). Framework is ready and will activate automatically once trades start.*\n"
+
+    dashboard += """
+---
+
 ## 🤖 AI-Specific KPIs
 
 ### AI Model Performance
@@ -871,7 +957,7 @@ def generate_dashboard() -> str:
     ai_enabled = ai_kpis.get("ai_enabled", False)
     ai_enabled_status = "✅ Yes" if ai_enabled else "❌ No"
     ai_trades_count = ai_kpis.get("ai_trades_count", 0)
-    total_trades = ai_kpis.get("total_trades", 0)
+    total_trades_ai = ai_kpis.get("total_trades", 0)
     ai_usage_rate_str = f"{ai_kpis.get('ai_usage_rate', 0):.1f}"
     prediction_accuracy_str = f"{ai_kpis.get('prediction_accuracy', 0):.1f}"
     prediction_latency_str = f"{ai_kpis.get('prediction_latency_ms', 0):.0f}"
@@ -881,7 +967,7 @@ def generate_dashboard() -> str:
     backtest_vs_live_str = f"{ai_kpis.get('backtest_vs_live_performance', 0):+.2f}"
 
     dashboard += f"| **AI Enabled** | {ai_enabled_status} |\n"
-    dashboard += f"| **AI Trades** | {ai_trades_count} / {total_trades} |\n"
+    dashboard += f"| **AI Trades** | {ai_trades_count} / {total_trades_ai} |\n"
     dashboard += f"| **AI Usage Rate** | {ai_usage_rate_str}% |\n"
     dashboard += f"| **Prediction Accuracy** | {prediction_accuracy_str}% |\n"
     dashboard += f"| **Prediction Latency** | {prediction_latency_str} ms |\n"
