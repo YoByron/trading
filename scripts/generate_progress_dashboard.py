@@ -286,7 +286,7 @@ def generate_dashboard() -> str:
 
     dashboard = f"""# 📊 Progress Dashboard
 
-**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}  
+**Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -311,8 +311,8 @@ def generate_dashboard() -> str:
 
 ### LangSmith Observability
 - **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
-- **[Trading RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces  
-  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*  
+- **[Trading RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
   *Note: Project may display as "default" in LangSmith UI - this is the correct project*
 - **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
 
@@ -328,8 +328,8 @@ def generate_dashboard() -> str:
 
 ## 📈 90-Day R&D Challenge Progress
 
-**Current**: Day {basic_metrics['current_day']} of {basic_metrics['total_days']} ({basic_metrics['progress_pct_challenge']:.1f}% complete)  
-**Phase**: {basic_metrics['phase']}  
+**Current**: Day {basic_metrics['current_day']} of {basic_metrics['total_days']} ({basic_metrics['progress_pct_challenge']:.1f}% complete)
+**Phase**: {basic_metrics['phase']}
 **Days Remaining**: {basic_metrics['days_remaining']}
 
 **Progress Bar**: `{progress_bar}` ({basic_metrics['progress_pct_challenge']:.1f}%)
@@ -690,7 +690,6 @@ def generate_dashboard() -> str:
 
     # Equity curve data (last 30 days)
     time_series = world_class_metrics.get("time_series", {})
-    equity_curve = time_series.get("equity_curve", [])
 
     dashboard += f"""
 ### Equity Curve Summary
@@ -970,7 +969,7 @@ def generate_dashboard() -> str:
 
 ## 📝 Notes
 
-**Current Strategy**: 
+**Current Strategy**:
 - TURBO MODE: ADK orchestrator tries first, falls back to rule-based (MACD + RSI + Volume)
 - Allocation: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)
 - Daily Investment: $10/day fixed
@@ -1252,7 +1251,7 @@ def generate_dashboard() -> str:
 
 ---
 
-*This dashboard is automatically updated daily by GitHub Actions after trading execution.*  
+*This dashboard is automatically updated daily by GitHub Actions after trading execution.*
 *World-class metrics powered by comprehensive risk & performance analytics.*
 """
 
