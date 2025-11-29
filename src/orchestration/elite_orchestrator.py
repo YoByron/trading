@@ -173,6 +173,7 @@ class EliteOrchestrator:
             "ml": float(os.getenv("ENSEMBLE_WEIGHT_ML", "0.25")),
             "ensemble_rl": float(os.getenv("ENSEMBLE_WEIGHT_ENSEMBLE_RL", "0.25")),
             "grok": float(os.getenv("ENSEMBLE_WEIGHT_GROK", "0.10")),
+            "bogleheads": float(os.getenv("ENSEMBLE_WEIGHT_BOGLEHEADS", "0.10")),
         }
         # YAML override
         config_path = os.getenv("ENSEMBLE_CONFIG_PATH", "profiles/ensemble-config.yaml")
@@ -846,6 +847,22 @@ class EliteOrchestrator:
                     f"Grok/X sentiment integration in analysis unavailable: {e}"
                 )
 
+        # BogleHeads Agent (long-term sanity check / sentiment)
+        if getattr(self, "bogleheads_agent", None) and self._agent_enabled("bogleheads"):
+            for symbol in plan.symbols:
+                try:
+                    analysis = self.bogleheads_agent.analyze({"symbol": symbol})
+                    decision = (analysis.get("signal") or analysis.get("decision") or "HOLD").upper()
+                    confidence = float(analysis.get("confidence", 0.5))
+                    recommendations[f"{symbol}_bogleheads"] = {
+                        "agent": "bogleheads_agent",
+                        "recommendation": decision if decision in {"BUY", "SELL"} else "HOLD",
+                        "confidence": max(0.0, min(1.0, confidence)),
+                        "reasoning": (analysis.get("reasoning") or "")[:200],
+                    }
+                except Exception as e:
+                    logger.debug(f"BogleHeads analysis failed for {symbol}: {e}")
+
         # Ensemble voting (weighted)
         for symbol in plan.symbols:
             symbol_recs = {k: v for k, v in recommendations.items() if symbol in k}
@@ -859,6 +876,8 @@ class EliteOrchestrator:
                         wkey = "ml"
                     elif agent_id == "grok_twitter":
                         wkey = "grok"
+                    elif agent_id == "bogleheads_agent":
+                        wkey = "bogleheads"
                     else:
                         wkey = agent_id
                     w = self.ensemble_weights.get(wkey, 0.1)
