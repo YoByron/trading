@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 05:06 PM ET
+**Last Updated**: 2025-11-29 05:44 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -97,8 +97,8 @@ Install yfinance to enable market regime detection
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+1.01 | $-157.09 to $+165.55 |
-| **30 Days** | $+5.43 | See 7-day CI scaled |
+| **7 Days** | $+0.71 | $-156.69 to $+168.70 |
+| **30 Days** | $+5.55 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%
@@ -209,6 +209,63 @@ Install yfinance to enable market regime detection
 - Trade during market hours (9:30 AM - 4 PM ET) for better liquidity
 - Monitor bid-ask spreads before order submission
 - Consider VWAP/TWAP execution for larger positions
+
+---
+
+## 💰 Tax Optimization & Compliance
+
+**⚠️ CRITICAL FOR LIVE TRADING**: Tax implications can significantly impact net returns. This section tracks capital gains, day trading rules, and tax optimization opportunities.
+
+### Pattern Day Trader (PDT) Rule Status
+
+✅ Compliant
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Day Trades (Last 5 Days)** | 0 | ✅ |
+| **PDT Threshold** | 4+ day trades in 5 days | ✅ SAFE |
+| **Minimum Equity Required** | $25,000 | ✅ |
+| **Current Equity** | $100,005.50 | ✅ |
+
+**PDT Rule Explanation**: If you make 4+ day trades (same-day entry/exit) in 5 business days, you must maintain $25,000 minimum equity. Violations can result in account restrictions.
+
+### Tax Impact Analysis
+
+| Metric | Value |
+|--------|-------|
+| **Total Closed Trades** | 0 |
+| **Day Trades** | 0 |
+| **Short-Term Trades** | 0 |
+| **Long-Term Trades** | 0 |
+| **Wash Sales** | 0 |
+| **Gross Return** | $+0.00 |
+| **Estimated Tax Liability** | $+0.00 |
+| **After-Tax Return** | $+0.00 |
+| **Tax Efficiency** | 100.0% |
+
+**Tax Rates**:
+- **Short-Term Capital Gains** (< 1 year): 37% (taxed as ordinary income)
+- **Long-Term Capital Gains** (≥ 1 year): 20% (preferred rate)
+
+**Key Tax Strategies**:
+1. **Hold positions >1 year** for long-term capital gains rate (20% vs 37%)
+2. **Avoid wash sales**: Don't repurchase same security within 30 days of selling at a loss
+3. **Tax-loss harvesting**: Realize losses to offset gains before year-end
+4. **Mark-to-Market Election (Section 475(f))**: Consider for active traders (treats trading as business income, exempts wash sale rule)
+
+### Tax Optimization Recommendations
+
+✅ **No immediate tax optimization recommendations**
+
+
+**Important Notes**:
+- **Paper Trading**: Tax calculations are estimates. Actual tax liability depends on your tax bracket and state.
+- **Wash Sale Rule**: Losses cannot be deducted if you repurchase the same security within 30 days before or after the sale.
+- **Capital Loss Deduction**: Maximum $3,000 capital loss deduction per year (excess carries forward).
+- **Day Trading**: Frequent day trading may trigger Pattern Day Trader (PDT) rules requiring $25k minimum equity.
+- **Consult Tax Professional**: This is not tax advice. Consult a qualified tax professional before live trading.
+
+**Integration with RL Pipeline**: Tax-aware reward function penalizes short-term gains and rewards long-term holdings to optimize after-tax returns.
 
 
 ## 📊 Benchmark Comparison
