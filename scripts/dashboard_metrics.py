@@ -19,11 +19,10 @@ import os
 import sys
 import json
 import numpy as np
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Any
 from collections import defaultdict
-import statistics
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -189,7 +188,6 @@ class TradingMetricsCalculator:
 
         # Extract equity curve
         equity_values = [entry.get("equity", starting_balance) for entry in perf_log]
-        dates = [entry.get("date", "") for entry in perf_log]
 
         # Calculate daily returns
         daily_returns = []
@@ -266,29 +264,36 @@ class TradingMetricsCalculator:
 
         # VaR (95th percentile)
         var_95 = np.percentile(daily_returns, 5) * 100 if daily_returns else 0.0
-        
+
         # VaR (99th percentile)
         var_99 = np.percentile(daily_returns, 1) * 100 if daily_returns else 0.0
-        
+
         # Conditional VaR (CVaR) - Expected loss beyond VaR
         cvar_95 = 0.0
         if daily_returns:
             var_95_threshold = np.percentile(daily_returns, 5)
             tail_returns = [r for r in daily_returns if r <= var_95_threshold]
             cvar_95 = np.mean(tail_returns) * 100 if tail_returns else 0.0
-        
+
         # Ulcer Index (square root of average squared drawdown)
         # Calculate drawdowns for ulcer index
         cumulative = np.array(equity_values)
         running_max = np.maximum.accumulate(cumulative)
         drawdowns = (cumulative - running_max) / running_max
         drawdowns_squared = drawdowns**2
-        ulcer_index = np.sqrt(np.mean(drawdowns_squared)) * 100 if len(drawdowns_squared) > 0 else 0.0
-        
+        ulcer_index = (
+            np.sqrt(np.mean(drawdowns_squared)) * 100
+            if len(drawdowns_squared) > 0
+            else 0.0
+        )
+
         # Calmar Ratio (annualized return / max drawdown)
-        annualized_return = mean_return * 252 * 100  # Convert to percentage
+        # Both should be in same units (decimal, not percentage)
+        annualized_return = mean_return * 252  # Annualized return as decimal
         max_dd_decimal = max_drawdown_pct / 100  # Convert percentage to decimal
-        calmar_ratio = (annualized_return / max_dd_decimal) if max_dd_decimal > 0 else 0.0
+        calmar_ratio = (
+            (annualized_return / max_dd_decimal) if max_dd_decimal > 0 else 0.0
+        )
 
         return {
             "max_drawdown_pct": max_drawdown_pct,
@@ -1087,7 +1092,6 @@ class TradingMetricsCalculator:
     ) -> Dict[str, Any]:
         """Calculate AI-specific KPIs."""
         # Check if AI/LLM features are enabled
-        automation = system_state.get("automation", {})
         video_analysis = system_state.get("video_analysis", {})
 
         # Estimate AI costs (if LLM features enabled)
@@ -1143,7 +1147,7 @@ class TradingMetricsCalculator:
                 days_since_execution = (
                     datetime.now() - last_dt.replace(tzinfo=None)
                 ).days
-            except:
+            except Exception:
                 pass
 
         # Calculate reliability streak
@@ -1194,7 +1198,7 @@ class TradingMetricsCalculator:
                             "has_notes": bool(entry.get("notes")),
                         }
                     )
-            except:
+            except Exception:
                 pass
 
         return {
@@ -1210,12 +1214,12 @@ class TradingMetricsCalculator:
         """Calculate execution quality metrics (slippage, latency, fill quality)."""
         if not all_trades:
             return {
-                'avg_slippage': 0.0,
-                'fill_quality': 0.0,
-                'order_success_rate': 0.0,
-                'order_reject_rate': 0.0,
-                'avg_fill_time_ms': 0.0,
-                'broker_latency_ms': 0.0,
+                "avg_slippage": 0.0,
+                "fill_quality": 0.0,
+                "order_success_rate": 0.0,
+                "order_reject_rate": 0.0,
+                "avg_fill_time_ms": 0.0,
+                "broker_latency_ms": 0.0,
             }
 
         # Calculate order success/reject rates
@@ -1223,24 +1227,34 @@ class TradingMetricsCalculator:
         successful_orders = sum(
             1
             for t in all_trades
-            if t.get('status') == 'filled' or t.get('status') == 'accepted' or t.get('status') == 'executed'
+            if t.get("status") == "filled"
+            or t.get("status") == "accepted"
+            or t.get("status") == "executed"
         )
         rejected_orders = sum(
             1
             for t in all_trades
-            if t.get('status') == 'rejected' or t.get('status') == 'canceled' or t.get('status') == 'cancelled'
+            if t.get("status") == "rejected"
+            or t.get("status") == "canceled"
+            or t.get("status") == "cancelled"
         )
 
-        success_rate = (successful_orders / total_orders * 100) if total_orders > 0 else 0.0
-        reject_rate = (rejected_orders / total_orders * 100) if total_orders > 0 else 0.0
+        success_rate = (
+            (successful_orders / total_orders * 100) if total_orders > 0 else 0.0
+        )
+        reject_rate = (
+            (rejected_orders / total_orders * 100) if total_orders > 0 else 0.0
+        )
 
         # Estimate slippage (would need actual fill prices vs intended prices)
         # For now, use placeholder based on trade amounts
         slippage_estimates = []
         for trade in all_trades:
-            if trade.get('status') in ['filled', 'executed']:
+            if trade.get("status") in ["filled", "executed"]:
                 # Placeholder: assume minimal slippage for small orders
-                amount = trade.get('amount', 0) or trade.get('qty', 0) * trade.get('price', 0)
+                amount = trade.get("amount", 0) or trade.get("qty", 0) * trade.get(
+                    "price", 0
+                )
                 if amount < 100:
                     slippage_estimates.append(0.001)  # 0.1% for small orders
                 elif amount < 1000:
@@ -1259,12 +1273,12 @@ class TradingMetricsCalculator:
         broker_latency_ms = 50.0  # Placeholder: broker latency
 
         return {
-            'avg_slippage': avg_slippage,
-            'fill_quality': fill_quality,
-            'order_success_rate': success_rate,
-            'order_reject_rate': reject_rate,
-            'avg_fill_time_ms': avg_fill_time_ms,
-            'broker_latency_ms': broker_latency_ms,
+            "avg_slippage": avg_slippage,
+            "fill_quality": fill_quality,
+            "order_success_rate": success_rate,
+            "order_reject_rate": reject_rate,
+            "avg_fill_time_ms": avg_fill_time_ms,
+            "broker_latency_ms": broker_latency_ms,
         }
 
     def _calculate_compliance_metrics(
