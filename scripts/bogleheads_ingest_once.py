@@ -9,8 +9,14 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Dict
+
+# Add project root to sys.path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 from src.rag.sentiment_store import SentimentRAGStore, SentimentDocument
 
@@ -22,9 +28,18 @@ logger = logging.getLogger("bogleheads_ingest")
 
 def _try_learner() -> Dict:
     try:
-        from claude.skills.bogleheads_learner.scripts.bogleheads_learner import (
-            BogleheadsLearner,
-        )
+        # Try to import from .claude/skills first, fall back to direct path
+        try:
+            from claude.skills.bogleheads_learner.scripts.bogleheads_learner import (
+                BogleheadsLearner,
+            )
+        except ModuleNotFoundError:
+            # In CI/CD environment, use absolute path
+            skills_path = (
+                project_root / ".claude" / "skills" / "bogleheads_learner" / "scripts"
+            )
+            sys.path.insert(0, str(skills_path))
+            from bogleheads_learner import BogleheadsLearner
 
         learner = BogleheadsLearner()
         return learner.monitor_bogleheads_forum(

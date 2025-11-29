@@ -145,8 +145,8 @@ class BacktestEngine:
                 # Log progress every 10 days
                 if (i + 1) % 10 == 0 or i == len(trading_dates) - 1:
                     logger.info(
-                        f"Progress: {i+1}/{len(trading_dates)} days "
-                        f"({(i+1)/len(trading_dates)*100:.1f}%) - "
+                        f"Progress: {i + 1}/{len(trading_dates)} days "
+                        f"({(i + 1) / len(trading_dates) * 100:.1f}%) - "
                         f"Portfolio: ${self.portfolio_value:,.2f}"
                     )
 
@@ -318,10 +318,40 @@ class BacktestEngine:
                 logger.debug(f"{date_str}: No price available for {best_etf}")
                 return
 
-            # Execute trade if we have capital
+            # Calculate effective allocation (VCA-adjusted if enabled)
             daily_allocation = self.strategy.daily_allocation
-            if self.current_capital >= daily_allocation:
-                quantity = daily_allocation / price
+            effective_allocation = daily_allocation
+            allocation_type = "DCA"
+
+            if self.strategy.use_vca and self.strategy.vca_strategy:
+                try:
+                    # Calculate current portfolio value
+                    current_portfolio_value = self.portfolio_value
+                    vca_calc = self.strategy.vca_strategy.calculate_investment_amount(
+                        current_portfolio_value, date
+                    )
+                    effective_allocation = vca_calc.adjusted_amount
+                    allocation_type = "VCA"
+
+                    # Skip if VCA recommends not investing
+                    if not vca_calc.should_invest:
+                        logger.debug(
+                            f"{date_str}: VCA recommends skipping investment: {vca_calc.reason}"
+                        )
+                        # Still record equity curve
+                        self._update_portfolio_value(date)
+                        self.equity_curve.append(self.portfolio_value)
+                        self.dates.append(date_str)
+                        return
+                except Exception as e:
+                    logger.warning(
+                        f"{date_str}: VCA calculation failed, using base: {e}"
+                    )
+                    effective_allocation = daily_allocation
+
+            # Execute trade if we have capital
+            if self.current_capital >= effective_allocation:
+                quantity = effective_allocation / price
 
                 # Record trade
                 trade = {
@@ -330,17 +360,17 @@ class BacktestEngine:
                     "action": "buy",
                     "quantity": quantity,
                     "price": price,
-                    "amount": daily_allocation,
-                    "reason": "Daily DCA purchase",
+                    "amount": effective_allocation,
+                    "reason": f"Daily {allocation_type} purchase",
                 }
                 self.trades.append(trade)
 
                 # Update positions
                 self.positions[best_etf] = self.positions.get(best_etf, 0.0) + quantity
                 self.position_costs[best_etf] = (
-                    self.position_costs.get(best_etf, 0.0) + daily_allocation
+                    self.position_costs.get(best_etf, 0.0) + effective_allocation
                 )
-                self.current_capital -= daily_allocation
+                self.current_capital -= effective_allocation
 
                 logger.debug(
                     f"{date_str}: BUY {quantity:.4f} {best_etf} @ ${price:.2f}"

@@ -26,6 +26,29 @@ def is_weekend() -> bool:
     return datetime.now().weekday() in [5, 6]  # Saturday=5, Sunday=6
 
 
+def is_market_holiday() -> bool:
+    """
+    Check if today is a market holiday (market closed on a weekday).
+
+    Uses Alpaca's clock API to determine if market is closed.
+    If market is closed AND it's a weekday, it's a holiday.
+    """
+    try:
+        from src.core.alpaca_trader import AlpacaTrader
+
+        is_weekday = datetime.now().weekday() < 5  # Monday=0, Friday=4
+        if not is_weekday:
+            return False  # Weekends are not holidays, they're weekends
+
+        trader = AlpacaTrader(paper=True)
+        clock = trader.trading_client.get_clock()
+        return not clock.is_open  # Market closed on weekday = holiday
+    except Exception as e:
+        logger = setup_logging()
+        logger.warning(f"Could not check market holiday status: {e}. Assuming not a holiday.")
+        return False  # Fail safe: assume not a holiday if check fails
+
+
 def crypto_enabled() -> bool:
     """Feature flag for the legacy crypto branch."""
     return os.getenv("ENABLE_CRYPTO_AGENT", "false").lower() in {"1", "true", "yes"}
@@ -86,8 +109,12 @@ def main() -> None:
     logger = setup_logging()
 
     crypto_allowed = crypto_enabled()
+    is_holiday = is_market_holiday()
+    is_weekend_day = is_weekend()
     should_run_crypto = (
-        not args.skip_crypto and crypto_allowed and (args.crypto_only or is_weekend())
+        not args.skip_crypto
+        and crypto_allowed
+        and (args.crypto_only or is_weekend_day or is_holiday)
     )
 
     if args.crypto_only and not crypto_allowed:
@@ -96,12 +123,21 @@ def main() -> None:
         )
 
     if should_run_crypto:
-        logger.info("Crypto branch enabled - executing crypto trading.")
+        reason = []
+        if args.crypto_only:
+            reason.append("--crypto-only flag")
+        if is_weekend_day:
+            reason.append("weekend")
+        if is_holiday:
+            reason.append("market holiday")
+        logger.info(
+            f"Crypto branch enabled ({', '.join(reason)}) - executing crypto trading."
+        )
         execute_crypto_trading()
         logger.info("Crypto trading session completed.")
-        if args.crypto_only:
+        if args.crypto_only or is_weekend_day or is_holiday:
             return
-    elif is_weekend() and not args.skip_crypto:
+    elif (is_weekend_day or is_holiday) and not args.skip_crypto:
         logger.info(
             "Weekend detected but crypto branch disabled. Proceeding with hybrid funnel."
         )

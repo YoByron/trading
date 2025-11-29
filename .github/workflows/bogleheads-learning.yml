@@ -44,10 +44,8 @@ jobs:
 
           MAX_POSTS="${{ github.event.inputs.max_posts || '50' }}"
 
-          python3 scripts/continuous_bogleheads_learning.py --once --max-posts "$MAX_POSTS" || {
-            echo "⚠️  Learning cycle completed (may have no new insights)"
-            exit 0  # Don't fail workflow if no new insights
-          }
+          # Run the learning script - FAIL if errors occur
+          python3 scripts/continuous_bogleheads_learning.py --once --max-posts "$MAX_POSTS"
 
           echo "✅ Bogleheads learning cycle complete"
 
