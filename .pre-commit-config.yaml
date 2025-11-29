@@ -5,6 +5,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        args: ['--unsafe']  # Allow custom tags but still validate syntax strictly
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: debug-statements
@@ -46,3 +47,29 @@ repos:
         types: [python]
         files: '(src/rag/|src/deepagents_integration/|src/strategies/crypto_strategy\.py|scripts/autonomous_trader\.py)'
         pass_filenames: false
+
+      - id: test-dashboard-metrics
+        name: Test Dashboard Metrics Completeness
+        entry: python3 tests/test_dashboard_metrics.py
+        language: system
+        types: [python]
+        files: '(scripts/dashboard_metrics\.py|scripts/enhanced_dashboard_metrics\.py|scripts/generate_world_class_dashboard.*\.py)'
+        pass_filenames: false
+        verbose: true
+
+      - id: validate-yaml-strict
+        name: Strict YAML Validation
+        entry: bash scripts/validate_yaml_before_commit.sh
+        language: system
+        types: [yaml]
+        pass_filenames: false
+        verbose: true
+
+      - id: test-dashboard-output
+        name: Test Dashboard Output Completeness
+        entry: python3 tests/test_dashboard_output.py
+        language: system
+        types: [python]
+        files: '(scripts/generate.*dashboard.*\.py)'
+        pass_filenames: false
+        verbose: true
