@@ -94,11 +94,24 @@ def main() -> None:
         "days_old": 0,
     }
 
-    store = SentimentRAGStore()
-    count = store.upsert_documents(
-        [SentimentDocument(document_id=doc_id, text=text, metadata=metadata)]
-    )
-    logger.info("Upserted %d Bogleheads snapshot into RAG", count)
+    try:
+        store = SentimentRAGStore()
+        count = store.upsert_documents(
+            [SentimentDocument(document_id=doc_id, text=text, metadata=metadata)]
+        )
+        logger.info("Upserted %d Bogleheads snapshot into RAG", count)
+    except Exception as e:
+        logger.warning(f"RAG upsert failed (will write JSON fallback): {e}")
+        try:
+            fallback_dir = Path("data/rag")
+            fallback_dir.mkdir(parents=True, exist_ok=True)
+            (fallback_dir / "bogleheads_latest.json").write_text(
+                json.dumps({"snapshot": snapshot, "metadata": metadata}, indent=2),
+                encoding="utf-8",
+            )
+            logger.info("Wrote fallback snapshot to data/rag/bogleheads_latest.json")
+        except Exception as e2:
+            logger.error(f"Failed to write fallback JSON: {e2}")
 
 
 if __name__ == "__main__":
