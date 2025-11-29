@@ -204,29 +204,61 @@ jobs:
           echo "✅ System state changes committed and pushed"
 
       - name: Update Progress Dashboard Wiki
-        if: steps.check_execution.outputs.skip != 'true'
+        # Always update dashboard, even if trading was skipped
+        # This ensures dashboard shows latest data regardless of trading execution
         env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "📊 Generating progress dashboard..."
+          set -e  # Exit on error for critical steps
+          
           python3 scripts/generate_progress_dashboard.py
+          
+          # Verify dashboard file exists
+          if [ ! -f "wiki/Progress-Dashboard.md" ]; then
+            echo "❌ ERROR: Dashboard file not found at wiki/Progress-Dashboard.md"
+            exit 1
+          fi
 
           echo "📝 Updating GitHub Wiki..."
 
-          # Clone wiki repository (create if doesn't exist)
-          WIKI_DIR="wiki_repo"
-          if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
-            echo "✅ Wiki repository exists, updating..."
-          else
-            echo "⚠️  Wiki repository doesn't exist yet - will create on first push"
-            mkdir -p "$WIKI_DIR"
-            cd "$WIKI_DIR"
-            git init
-            git config user.name "GitHub Actions Bot"
-            git config user.email "actions@github.com"
-            git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
-            cd ..
+          # Use PAT_TOKEN if available (has wiki write permissions), fallback to GITHUB_TOKEN
+          WIKI_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN}}"
+          if [ -z "$WIKI_TOKEN" ]; then
+            echo "⚠️  No authentication token available - skipping wiki update"
+            echo "📋 Dashboard generated locally at: wiki/Progress-Dashboard.md"
+            exit 0
           fi
+
+          # Clone wiki repository with retry logic
+          WIKI_DIR="wiki_repo"
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if git clone "https://x-access-token:${WIKI_TOKEN}@github.com/IgorGanapolsky/trading.wiki.git" "$WIKI_DIR" 2>/dev/null; then
+              echo "✅ Wiki repository exists, updating..."
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️  Clone failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 5
+                rm -rf "$WIKI_DIR"
+              else
+                echo "⚠️  Wiki repository doesn't exist yet - will create on first push"
+                mkdir -p "$WIKI_DIR"
+                cd "$WIKI_DIR"
+                git init
+                git config user.name "GitHub Actions Bot"
+                git config user.email "actions@github.com"
+                git remote add origin "https://x-access-token:${WIKI_TOKEN}@github.com/IgorGanapolsky/trading.wiki.git"
+                cd ..
+                break
+              fi
+            fi
+          done
 
           # Copy generated dashboard and home page to wiki
           cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
@@ -234,15 +266,13 @@ jobs:
             cp wiki/Home.md "$WIKI_DIR/Home.md"
           fi
 
-          # Commit and push to wiki
+          # Commit and push to wiki with retry logic
           cd "$WIKI_DIR"
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add -A
 
-          if git diff --staged --quiet && [ -n "$(git log --oneline 2>/dev/null)" ]; then
-            echo "📋 No changes to dashboard"
-          else
+          if ! git diff --staged --quiet || [ -z "$(git log --oneline 2>/dev/null)" ]; then
             if [ -z "$(git log --oneline 2>/dev/null)" ]; then
               COMMIT_MSG="🎉 Initial wiki setup - Progress Dashboard and Home page"
             else
@@ -251,19 +281,35 @@ jobs:
 
             git commit -m "$COMMIT_MSG" || echo "No changes to commit"
 
-            # Try pushing to main branch first, then master
-            if git push -u origin main 2>&1; then
-              echo "✅ Wiki dashboard updated successfully (main branch)!"
-            elif git push -u origin master 2>&1; then
-              echo "✅ Wiki dashboard updated successfully (master branch)!"
-            else
-              echo "⚠️  Wiki push failed - wiki repository needs manual initialization"
-              echo "   This is normal on first run. To initialize:"
-              echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
-              echo "   2. Click 'Create the first page'"
-              echo "   3. Name it 'Home' and save (content will be auto-updated on next run)"
-              echo "   4. GitHub Actions will update it automatically after that"
-            fi
+            # Try pushing with retry logic
+            RETRY_COUNT=0
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              # Try pushing to master branch first (wiki default), then main
+              if git push -u origin master 2>&1; then
+                echo "✅ Wiki dashboard updated successfully (master branch)!"
+                break
+              elif git push -u origin main 2>&1; then
+                echo "✅ Wiki dashboard updated successfully (main branch)!"
+                break
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⚠️  Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                  sleep 5
+                  git pull --rebase origin master 2>/dev/null || git pull --rebase origin main 2>/dev/null || true
+                else
+                  echo "⚠️  Wiki push failed after $MAX_RETRIES attempts"
+                  echo "📋 Dashboard file available at: wiki/Progress-Dashboard.md"
+                  echo "   Wiki repository may need manual initialization:"
+                  echo "   1. Visit: https://github.com/IgorGanapolsky/trading/wiki"
+                  echo "   2. Click 'Create the first page'"
+                  echo "   3. Name it 'Home' and save"
+                  exit 1
+                fi
+              fi
+            done
+          else
+            echo "📋 No changes to dashboard (already up-to-date)"
           fi
 
       - name: Upload execution logs
