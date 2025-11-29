@@ -68,7 +68,9 @@ def fetch_pypi_latest(package_name: str, timeout: int = 10) -> Optional[str]:
         return None
 
 
-def parse_vulnerable_range(vulnerable_range: str) -> Tuple[Optional[str], Optional[str]]:
+def parse_vulnerable_range(
+    vulnerable_range: str,
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Parse vulnerable range like ">= 0, < 24.3.0" or ">= 1.0.0, < 1.2.0"
     Returns: (min_version, max_version_exclusive)
@@ -291,9 +293,7 @@ def fix_security_alert(
         # Revert change
         print("   ⚠️  Test failed, reverting change...")
         # Could implement git checkout here, but for now just report
-        return FixResult(
-            alert=alert, success=False, message=f"Test failed: {test_msg}"
-        )
+        return FixResult(alert=alert, success=False, message=f"Test failed: {test_msg}")
 
     print(f"   ✅ Test passed: {test_msg}")
 
@@ -453,4 +453,3 @@ if __name__ == "__main__":
 
         traceback.print_exc()
         sys.exit(2)
-
