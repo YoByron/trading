@@ -16,10 +16,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from openai import OpenAI
 from src.utils.news_sentiment import NewsSentimentAggregator
+
 
 def test_grok_api():
     """Test Grok API connection and sentiment analysis."""
@@ -34,15 +36,13 @@ def test_grok_api():
 
     # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
+
     masked_value = mask_api_key(grok_api_key)
     print(f"✅ Found GROK_API_KEY: {masked_value}")
 
     try:
         # Initialize Grok client
-        grok_client = OpenAI(
-            api_key=grok_api_key,
-            base_url="https://api.x.ai/v1"
-        )
+        grok_client = OpenAI(api_key=grok_api_key, base_url="https://api.x.ai/v1")
         print("✅ Grok client initialized")
 
         # Test API call
@@ -52,15 +52,15 @@ def test_grok_api():
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant. Respond with valid JSON only."
+                    "content": "You are a helpful assistant. Respond with valid JSON only.",
                 },
                 {
                     "role": "user",
-                    "content": "Analyze Twitter/X sentiment for $NVDA stock. Provide JSON: {\"score\": <number>, \"tweets\": <count>, \"confidence\": \"<level>\", \"themes\": [\"<theme>\"]}"
-                }
+                    "content": 'Analyze Twitter/X sentiment for $NVDA stock. Provide JSON: {"score": <number>, "tweets": <count>, "confidence": "<level>", "themes": ["<theme>"]}',
+                },
             ],
             temperature=0.3,
-            max_tokens=500
+            max_tokens=500,
         )
 
         content = response.choices[0].message.content
@@ -70,7 +70,8 @@ def test_grok_api():
 
         # Try to parse JSON
         import re
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+
+        json_match = re.search(r"\{.*\}", content, re.DOTALL)
         if json_match:
             parsed = json.loads(json_match.group(0))
             print(f"✅ Successfully parsed JSON response:")
@@ -85,6 +86,7 @@ def test_grok_api():
     except Exception as e:
         print(f"❌ Grok API test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -99,7 +101,9 @@ def test_sentiment_aggregator():
         aggregator = NewsSentimentAggregator()
 
         if not aggregator.grok_client:
-            print("⚠️  Grok client not initialized (no API key or initialization failed)")
+            print(
+                "⚠️  Grok client not initialized (no API key or initialization failed)"
+            )
             return False
 
         print("✅ NewsSentimentAggregator initialized with Grok support")
@@ -114,7 +118,7 @@ def test_sentiment_aggregator():
         print(f"   Confidence: {result.get('confidence', 'N/A')}")
         print(f"   Source: {result.get('source', 'N/A')}")
 
-        if result.get('error'):
+        if result.get("error"):
             print(f"   ⚠️  Error: {result.get('error')}")
             return False
 
@@ -123,6 +127,7 @@ def test_sentiment_aggregator():
     except Exception as e:
         print(f"❌ Sentiment aggregator test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -143,6 +148,7 @@ def test_x_com_api():
 
     # Security: Mask credentials in output (CodeQL-safe: store masked values first)
     from src.utils.security import mask_api_key
+
     masked_bearer_value = mask_api_key(bearer_token)
     masked_xkey_value = mask_api_key(api_key) if api_key else None
     masked_xsecret_value = mask_api_key(api_secret) if api_secret else None

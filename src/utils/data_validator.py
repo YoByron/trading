@@ -4,6 +4,7 @@ Data Validator - Prevents false claims in reports and dashboards
 This module validates all financial claims against actual data sources
 to ensure accuracy and prevent false reporting.
 """
+
 import json
 import logging
 from datetime import datetime, timedelta
@@ -21,6 +22,7 @@ SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 @dataclass
 class ValidationResult:
     """Result of data validation."""
+
     is_valid: bool
     claim: str
     actual_value: float
@@ -51,7 +53,7 @@ class DataValidator:
             return []
 
         try:
-            with open(PERF_LOG_FILE, 'r') as f:
+            with open(PERF_LOG_FILE, "r") as f:
                 data = json.load(f)
                 return data if isinstance(data, list) else []
         except Exception as e:
@@ -65,7 +67,7 @@ class DataValidator:
             return {}
 
         try:
-            with open(SYSTEM_STATE_FILE, 'r') as f:
+            with open(SYSTEM_STATE_FILE, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error loading system state: {e}")
@@ -75,7 +77,7 @@ class DataValidator:
         self,
         claimed_profit: float,
         date: Optional[str] = None,
-        description: str = "profit"
+        description: str = "profit",
     ) -> ValidationResult:
         """
         Validate a profit claim against actual data.
@@ -98,7 +100,7 @@ class DataValidator:
                     actual_value=0.0,
                     claimed_value=claimed_profit,
                     error_message=f"No data found for date {date}",
-                    source="performance_log.json"
+                    source="performance_log.json",
                 )
         else:
             # Validate current total profit
@@ -112,8 +114,12 @@ class DataValidator:
             claim=description,
             actual_value=actual_profit,
             claimed_value=claimed_profit,
-            error_message=None if is_valid else f"Claimed {claimed_profit:.2f} but actual is {actual_profit:.2f}",
-            source="performance_log.json"
+            error_message=(
+                None
+                if is_valid
+                else f"Claimed {claimed_profit:.2f} but actual is {actual_profit:.2f}"
+            ),
+            source="performance_log.json",
         )
 
     def validate_yesterday_profit(self, claimed_profit: float) -> ValidationResult:
@@ -122,7 +128,7 @@ class DataValidator:
         return self.validate_profit_claim(
             claimed_profit=claimed_profit,
             date=yesterday,
-            description="yesterday's profit"
+            description="yesterday's profit",
         )
 
     def get_profit_for_date(self, date: str) -> Optional[float]:
@@ -131,24 +137,24 @@ class DataValidator:
             return None
 
         # Find entries for the date
-        date_entries = [entry for entry in self.perf_log if entry.get('date') == date]
+        date_entries = [entry for entry in self.perf_log if entry.get("date") == date]
 
         if not date_entries:
             return None
 
         # Return the latest entry's P/L for that date
-        latest_entry = max(date_entries, key=lambda x: x.get('timestamp', ''))
-        return latest_entry.get('pl', 0.0)
+        latest_entry = max(date_entries, key=lambda x: x.get("timestamp", ""))
+        return latest_entry.get("pl", 0.0)
 
     def get_current_total_profit(self) -> float:
         """Get current total profit from latest entry."""
         if not self.perf_log:
             # Fallback to system_state.json
-            account = self.system_state.get('account', {})
-            return account.get('total_pl', 0.0)
+            account = self.system_state.get("account", {})
+            return account.get("total_pl", 0.0)
 
         latest = self.perf_log[-1]
-        return latest.get('pl', 0.0)
+        return latest.get("pl", 0.0)
 
     def get_yesterday_profit(self) -> Optional[float]:
         """Get yesterday's profit."""
@@ -156,9 +162,7 @@ class DataValidator:
         return self.get_profit_for_date(yesterday)
 
     def validate_daily_profit_claim(
-        self,
-        claimed_daily_profit: float,
-        date: Optional[str] = None
+        self, claimed_daily_profit: float, date: Optional[str] = None
     ) -> ValidationResult:
         """
         Validate a daily profit claim (change from previous day).
@@ -184,7 +188,7 @@ class DataValidator:
                 actual_value=0.0,
                 claimed_value=claimed_daily_profit,
                 error_message=f"No data found for date {target_date}",
-                source="performance_log.json"
+                source="performance_log.json",
             )
 
         # Get previous day
@@ -200,7 +204,7 @@ class DataValidator:
                 actual_value=0.0,
                 claimed_value=claimed_daily_profit,
                 error_message=f"No data found for previous day {prev_date}",
-                source="performance_log.json"
+                source="performance_log.json",
             )
 
         actual_daily_change = target_profit - prev_profit
@@ -213,8 +217,12 @@ class DataValidator:
             claim=f"daily profit change on {target_date}",
             actual_value=actual_daily_change,
             claimed_value=claimed_daily_profit,
-            error_message=None if is_valid else f"Claimed {claimed_daily_profit:.2f} but actual change is {actual_daily_change:.2f}",
-            source="performance_log.json"
+            error_message=(
+                None
+                if is_valid
+                else f"Claimed {claimed_daily_profit:.2f} but actual change is {actual_daily_change:.2f}"
+            ),
+            source="performance_log.json",
         )
 
     def validate_all_claims(self, claims: Dict[str, float]) -> List[ValidationResult]:
@@ -253,19 +261,21 @@ class DataValidator:
         # Get total P/L from both sources
         perf_log_pl = self.get_current_total_profit()
 
-        account = self.system_state.get('account', {})
-        system_state_pl = account.get('total_pl', 0.0)
+        account = self.system_state.get("account", {})
+        system_state_pl = account.get("total_pl", 0.0)
 
         # Allow small differences (0.01)
         if abs(perf_log_pl - system_state_pl) >= 0.01:
-            results.append(ValidationResult(
-                is_valid=False,
-                claim="Total P/L consistency",
-                actual_value=perf_log_pl,
-                claimed_value=system_state_pl,
-                error_message=f"performance_log.json shows {perf_log_pl:.2f} but system_state.json shows {system_state_pl:.2f}",
-                source="Both files"
-            ))
+            results.append(
+                ValidationResult(
+                    is_valid=False,
+                    claim="Total P/L consistency",
+                    actual_value=perf_log_pl,
+                    claimed_value=system_state_pl,
+                    error_message=f"performance_log.json shows {perf_log_pl:.2f} but system_state.json shows {system_state_pl:.2f}",
+                    source="Both files",
+                )
+            )
 
         return results
 
@@ -289,7 +299,7 @@ def validate_report_claims(report_text: str) -> List[ValidationResult]:
     import re
 
     # Pattern: "$+14.01 yesterday" or "+$14.01 yesterday"
-    yesterday_pattern = r'[\+\$]?(\d+\.\d+).*yesterday'
+    yesterday_pattern = r"[\+\$]?(\d+\.\d+).*yesterday"
     matches = re.findall(yesterday_pattern, report_text, re.IGNORECASE)
 
     for match in matches:
@@ -298,12 +308,14 @@ def validate_report_claims(report_text: str) -> List[ValidationResult]:
         results.append(result)
 
     # Pattern: "profit of $X" or "P/L: $X"
-    profit_pattern = r'(?:profit|P/L|P&L).*?[\+\$]?(\d+\.\d+)'
+    profit_pattern = r"(?:profit|P/L|P&L).*?[\+\$]?(\d+\.\d+)"
     matches = re.findall(profit_pattern, report_text, re.IGNORECASE)
 
     for match in matches:
         claimed_value = float(match)
-        result = validator.validate_profit_claim(claimed_value, description="profit claim")
+        result = validator.validate_profit_claim(
+            claimed_value, description="profit claim"
+        )
         results.append(result)
 
     return results

@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 class AgentState(TypedDict):
     """State for multi-agent trading system."""
+
     messages: Annotated[List, add_messages]
     market_data: Dict[str, Any]
     analysis: Dict[str, Any]
@@ -252,7 +253,9 @@ Format as JSON.
         # Initialize state
         initial_state: AgentState = {
             "messages": [
-                SystemMessage(content="You are a sophisticated trading AI system. Provide thorough, well-reasoned analysis.")
+                SystemMessage(
+                    content="You are a sophisticated trading AI system. Provide thorough, well-reasoned analysis."
+                )
             ],
             "market_data": market_data,
             "analysis": {},

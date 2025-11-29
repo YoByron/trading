@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class ContextType(Enum):
     """Types of context in the system"""
+
     SEMANTIC_BLUEPRINT = "semantic_blueprint"  # Agent role/capability definition
     TASK_CONTEXT = "task_context"  # Specific task information
     MEMORY_CONTEXT = "memory_context"  # Historical context
@@ -39,6 +40,7 @@ class ContextType(Enum):
 
 class ContextPriority(Enum):
     """Priority levels for context"""
+
     CRITICAL = "critical"  # Must be included
     HIGH = "high"  # Should be included
     MEDIUM = "medium"  # Include if space allows
@@ -47,6 +49,7 @@ class ContextPriority(Enum):
 
 class MemoryTimescale(Enum):
     """Memory timescales for nested learning paradigm"""
+
     INTRADAY = "intraday"  # Minutes/hours - last 100 trades
     DAILY = "daily"  # Days - last 30 days
     WEEKLY = "weekly"  # Weeks - last 12 weeks
@@ -66,6 +69,7 @@ class SemanticBlueprint:
     - What it produces (outputs)
     - How it communicates (protocol)
     """
+
     agent_id: str
     agent_name: str
     role: str
@@ -74,7 +78,9 @@ class SemanticBlueprint:
     inputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # Input schema
     outputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # Output schema
     communication_protocol: Dict[str, Any] = field(default_factory=dict)
-    dependencies: List[str] = field(default_factory=list)  # Other agents this depends on
+    dependencies: List[str] = field(
+        default_factory=list
+    )  # Other agents this depends on
     context_window_size: int = 8000  # Estimated tokens needed
     priority: ContextPriority = ContextPriority.HIGH
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -90,7 +96,7 @@ class SemanticBlueprint:
             "input_schema": self.inputs,
             "output_schema": self.outputs,
             "communication_protocol": self.communication_protocol,
-            "dependencies": self.dependencies
+            "dependencies": self.dependencies,
         }
 
 
@@ -101,6 +107,7 @@ class ContextMessage:
 
     Ensures context is passed reliably without information loss.
     """
+
     message_id: str = field(default_factory=lambda: str(uuid4()))
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     sender_agent: str = ""
@@ -132,7 +139,7 @@ class ContextMessage:
             "to": self.receiver_agent,
             "type": self.context_type.value,
             "data": self.payload,
-            "meta": self.metadata
+            "meta": self.metadata,
         }
 
 
@@ -144,6 +151,7 @@ class ContextMemory:
     Supports both short-term (session) and long-term (persistent) memory.
     Enhanced with multi-timescale support for nested learning.
     """
+
     memory_id: str = field(default_factory=lambda: str(uuid4()))
     agent_id: str = ""
     context_type: ContextType = ContextType.MEMORY_CONTEXT
@@ -217,18 +225,14 @@ class MultiTimescaleMemory:
 
         # Memory stores by timescale
         self.intraday_memory: deque = deque(maxlen=100)  # Last 100 trades/events
-        self.daily_memory: deque = deque(maxlen=30)     # Last 30 days
-        self.weekly_memory: deque = deque(maxlen=12)     # Last 12 weeks
-        self.monthly_memory: deque = deque(maxlen=12)    # Last 12 months
-        self.episodic_memory: List[ContextMemory] = []   # Important events (no limit)
+        self.daily_memory: deque = deque(maxlen=30)  # Last 30 days
+        self.weekly_memory: deque = deque(maxlen=12)  # Last 12 weeks
+        self.monthly_memory: deque = deque(maxlen=12)  # Last 12 months
+        self.episodic_memory: List[ContextMemory] = []  # Important events (no limit)
 
         logger.debug(f"📊 MultiTimescaleMemory initialized for agent: {agent_id}")
 
-    def store(
-        self,
-        memory: ContextMemory,
-        auto_timescale: bool = True
-    ) -> None:
+    def store(self, memory: ContextMemory, auto_timescale: bool = True) -> None:
         """
         Store memory in appropriate timescale.
 
@@ -262,14 +266,16 @@ class MultiTimescaleMemory:
         elif memory.timescale == MemoryTimescale.EPISODIC:
             self.episodic_memory.append(memory)
 
-        logger.debug(f"💾 Stored memory in {memory.timescale.value} timescale: {memory.memory_id}")
+        logger.debug(
+            f"💾 Stored memory in {memory.timescale.value} timescale: {memory.memory_id}"
+        )
 
     def retrieve(
         self,
         timescales: Optional[List[MemoryTimescale]] = None,
         tags: Optional[Set[str]] = None,
         min_importance: float = 0.0,
-        limit_per_timescale: int = 5
+        limit_per_timescale: int = 5,
     ) -> List[ContextMemory]:
         """
         Retrieve memories from specified timescales.
@@ -289,7 +295,7 @@ class MultiTimescaleMemory:
                 MemoryTimescale.DAILY,
                 MemoryTimescale.WEEKLY,
                 MemoryTimescale.MONTHLY,
-                MemoryTimescale.EPISODIC
+                MemoryTimescale.EPISODIC,
             ]
 
         memories = []
@@ -308,10 +314,7 @@ class MultiTimescaleMemory:
 
         # Filter by tags
         if tags:
-            memories = [
-                m for m in memories
-                if tags.intersection(m.tags) or not m.tags
-            ]
+            memories = [m for m in memories if tags.intersection(m.tags) or not m.tags]
 
         # Filter by importance
         memories = [m for m in memories if m.importance_score >= min_importance]
@@ -321,12 +324,8 @@ class MultiTimescaleMemory:
 
         # Sort by importance score and recency
         memories.sort(
-            key=lambda m: (
-                m.importance_score,
-                m.access_count,
-                m.accessed_at
-            ),
-            reverse=True
+            key=lambda m: (m.importance_score, m.access_count, m.accessed_at),
+            reverse=True,
         )
 
         # Limit per timescale
@@ -364,7 +363,9 @@ class MultiTimescaleMemory:
 
             for memory in self.daily_memory:
                 # Create pattern key from tags and content type
-                pattern_key = "_".join(sorted(memory.tags)) if memory.tags else "general"
+                pattern_key = (
+                    "_".join(sorted(memory.tags)) if memory.tags else "general"
+                )
 
                 if pattern_key not in pattern_groups:
                     pattern_groups[pattern_key] = []
@@ -374,8 +375,12 @@ class MultiTimescaleMemory:
             for pattern_key, group_memories in pattern_groups.items():
                 if len(group_memories) >= 3:  # Pattern appears at least 3 times
                     # Calculate average importance and P/L
-                    avg_importance = sum(m.importance_score for m in group_memories) / len(group_memories)
-                    avg_pl = sum(m.outcome_pl or 0 for m in group_memories) / len(group_memories)
+                    avg_importance = sum(
+                        m.importance_score for m in group_memories
+                    ) / len(group_memories)
+                    avg_pl = sum(m.outcome_pl or 0 for m in group_memories) / len(
+                        group_memories
+                    )
 
                     # Create consolidated memory
                     consolidated_memory = ContextMemory(
@@ -384,12 +389,12 @@ class MultiTimescaleMemory:
                             "pattern": pattern_key,
                             "frequency": len(group_memories),
                             "avg_pl": avg_pl,
-                            "source_memories": [m.memory_id for m in group_memories]
+                            "source_memories": [m.memory_id for m in group_memories],
                         },
                         tags=group_memories[0].tags,
                         timescale=MemoryTimescale.WEEKLY,  # Promote to weekly
                         importance_score=avg_importance,
-                        outcome_pl=avg_pl
+                        outcome_pl=avg_pl,
                     )
 
                     # Store in weekly memory
@@ -412,12 +417,12 @@ class MultiTimescaleMemory:
             "monthly_count": len(self.monthly_memory),
             "episodic_count": len(self.episodic_memory),
             "total_count": (
-                len(self.intraday_memory) +
-                len(self.daily_memory) +
-                len(self.weekly_memory) +
-                len(self.monthly_memory) +
-                len(self.episodic_memory)
-            )
+                len(self.intraday_memory)
+                + len(self.daily_memory)
+                + len(self.weekly_memory)
+                + len(self.monthly_memory)
+                + len(self.episodic_memory)
+            ),
         }
 
 
@@ -433,7 +438,9 @@ class ContextEngine:
     5. Handle context errors gracefully
     """
 
-    def __init__(self, storage_dir: Optional[Path] = None, enable_multi_timescale: bool = True):
+    def __init__(
+        self, storage_dir: Optional[Path] = None, enable_multi_timescale: bool = True
+    ):
         """
         Initialize Context Engine
 
@@ -476,7 +483,9 @@ class ContextEngine:
         with open(blueprint_file, "w") as f:
             json.dump(asdict(blueprint), f, indent=2, default=str)
 
-        logger.info(f"📋 Registered blueprint: {blueprint.agent_id} ({blueprint.agent_name})")
+        logger.info(
+            f"📋 Registered blueprint: {blueprint.agent_id} ({blueprint.agent_name})"
+        )
 
     def get_blueprint(self, agent_id: str) -> Optional[SemanticBlueprint]:
         """Get blueprint for an agent"""
@@ -486,7 +495,7 @@ class ContextEngine:
         self,
         agent_id: str,
         max_tokens: int = 8000,
-        use_multi_timescale: Optional[bool] = None
+        use_multi_timescale: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Get complete context for an agent, including blueprint and relevant memories.
@@ -506,13 +515,17 @@ class ContextEngine:
             logger.warning(f"⚠️ No blueprint found for agent: {agent_id}")
             return {}
 
-        use_mts = use_multi_timescale if use_multi_timescale is not None else self.enable_multi_timescale
+        use_mts = (
+            use_multi_timescale
+            if use_multi_timescale is not None
+            else self.enable_multi_timescale
+        )
 
         context = {
             "blueprint": blueprint.to_context_dict(),
             "memories": [],
             "recent_messages": [],
-            "timescale_breakdown": {} if use_mts else None
+            "timescale_breakdown": {} if use_mts else None,
         }
 
         # Retrieve memories using multi-timescale if enabled
@@ -522,7 +535,7 @@ class ContextEngine:
             # Get memories from all timescales
             memories = mts_memory.retrieve(
                 timescales=None,  # All timescales
-                limit_per_timescale=3  # 3 per timescale = 15 total max
+                limit_per_timescale=3,  # 3 per timescale = 15 total max
             )
 
             # Group by timescale for context
@@ -549,10 +562,13 @@ class ContextEngine:
         else:
             # Fallback to original single-timescale retrieval
             agent_memories = [
-                m for m in self.memory.values()
+                m
+                for m in self.memory.values()
                 if m.agent_id == agent_id and not m.is_expired()
             ]
-            agent_memories.sort(key=lambda m: (m.access_count, m.accessed_at), reverse=True)
+            agent_memories.sort(
+                key=lambda m: (m.access_count, m.accessed_at), reverse=True
+            )
 
             token_count = len(json.dumps(context))
             for memory in agent_memories[:10]:  # Limit to top 10 memories
@@ -565,10 +581,13 @@ class ContextEngine:
 
         # Add recent messages involving this agent
         recent_messages = [
-            msg for msg in self.message_history[-20:]
+            msg
+            for msg in self.message_history[-20:]
             if msg.sender_agent == agent_id or msg.receiver_agent == agent_id
         ]
-        context["recent_messages"] = [msg.to_mcp_format() for msg in recent_messages[-5:]]
+        context["recent_messages"] = [
+            msg.to_mcp_format() for msg in recent_messages[-5:]
+        ]
 
         return context
 
@@ -578,7 +597,7 @@ class ContextEngine:
         receiver: str,
         payload: Dict[str, Any],
         context_type: ContextType = ContextType.COMMUNICATION_CONTEXT,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> ContextMessage:
         """
         Send a structured context message between agents.
@@ -598,7 +617,7 @@ class ContextEngine:
             receiver_agent=receiver,
             context_type=context_type,
             payload=payload,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Validate message
@@ -624,7 +643,7 @@ class ContextEngine:
         ttl_days: Optional[int] = None,
         timescale: Optional[MemoryTimescale] = None,
         importance_score: Optional[float] = None,
-        outcome_pl: Optional[float] = None
+        outcome_pl: Optional[float] = None,
     ) -> ContextMemory:
         """
         Store context in memory for later retrieval.
@@ -650,7 +669,7 @@ class ContextEngine:
             ttl_days=ttl_days,
             timescale=timescale or MemoryTimescale.DAILY,
             importance_score=importance_score or 0.5,
-            outcome_pl=outcome_pl
+            outcome_pl=outcome_pl,
         )
 
         # Update importance if P/L provided
@@ -683,7 +702,7 @@ class ContextEngine:
         limit: int = 10,
         timescales: Optional[List[MemoryTimescale]] = None,
         min_importance: float = 0.0,
-        use_multi_timescale: Optional[bool] = None
+        use_multi_timescale: Optional[bool] = None,
     ) -> List[ContextMemory]:
         """
         Retrieve memories by agent ID and/or tags.
@@ -701,7 +720,11 @@ class ContextEngine:
         Returns:
             List of matching memories
         """
-        use_mts = use_multi_timescale if use_multi_timescale is not None else self.enable_multi_timescale
+        use_mts = (
+            use_multi_timescale
+            if use_multi_timescale is not None
+            else self.enable_multi_timescale
+        )
 
         # Use multi-timescale retrieval if enabled
         if use_mts and agent_id and agent_id in self.multi_timescale_memory:
@@ -710,7 +733,9 @@ class ContextEngine:
                 timescales=timescales,
                 tags=tags,
                 min_importance=min_importance,
-                limit_per_timescale=max(limit // 5, 1)  # Distribute limit across timescales
+                limit_per_timescale=max(
+                    limit // 5, 1
+                ),  # Distribute limit across timescales
             )
             return memories[:limit]
 
@@ -723,22 +748,15 @@ class ContextEngine:
 
         # Filter by tags
         if tags:
-            memories = [
-                m for m in memories
-                if tags.intersection(m.tags)
-            ]
+            memories = [m for m in memories if tags.intersection(m.tags)]
 
         # Remove expired
         memories = [m for m in memories if not m.is_expired()]
 
         # Sort by importance score (if available), then recency and access count
         memories.sort(
-            key=lambda m: (
-                m.importance_score,
-                m.access_count,
-                m.accessed_at
-            ),
-            reverse=True
+            key=lambda m: (m.importance_score, m.access_count, m.accessed_at),
+            reverse=True,
         )
 
         # Touch accessed memories
@@ -788,7 +806,7 @@ class ContextEngine:
         """
         stats = {
             "total_memories": len(self.memory),
-            "multi_timescale_enabled": self.enable_multi_timescale
+            "multi_timescale_enabled": self.enable_multi_timescale,
         }
 
         if self.enable_multi_timescale:
@@ -806,10 +824,7 @@ class ContextEngine:
         return stats
 
     def validate_context_flow(
-        self,
-        from_agent: str,
-        to_agent: str,
-        context: Dict[str, Any]
+        self, from_agent: str, to_agent: str, context: Dict[str, Any]
     ) -> Tuple[bool, List[str]]:
         """
         Validate that context can flow correctly between agents.
@@ -847,7 +862,9 @@ class ContextEngine:
             for input_key, input_spec in receiver_blueprint.inputs.items():
                 if input_spec.get("required", False):
                     if input_key not in context:
-                        errors.append(f"Missing required input '{input_key}' for {to_agent}")
+                        errors.append(
+                            f"Missing required input '{input_key}' for {to_agent}"
+                        )
 
         return len(errors) == 0, errors
 
@@ -882,8 +899,12 @@ class ContextEngine:
                         # Load into multi-timescale memory if enabled
                         if self.enable_multi_timescale:
                             if memory.agent_id not in self.multi_timescale_memory:
-                                self.multi_timescale_memory[memory.agent_id] = MultiTimescaleMemory(memory.agent_id)
-                            self.multi_timescale_memory[memory.agent_id].store(memory, auto_timescale=False)
+                                self.multi_timescale_memory[memory.agent_id] = (
+                                    MultiTimescaleMemory(memory.agent_id)
+                                )
+                            self.multi_timescale_memory[memory.agent_id].store(
+                                memory, auto_timescale=False
+                            )
                 except Exception as e:
                     logger.warning(f"Failed to load memory {memory_file}: {e}")
 

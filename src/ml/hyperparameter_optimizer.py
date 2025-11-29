@@ -2,6 +2,7 @@
 Hyperparameter Optimization Framework for RL Trading
 Automated hyperparameter search using Bayesian optimization.
 """
+
 import numpy as np
 from typing import Dict, Any, List, Optional, Callable
 import logging
@@ -26,7 +27,7 @@ class HyperparameterOptimizer:
         search_space: Optional[Dict[str, List[Any]]] = None,
         optimization_metric: str = "sharpe_ratio",
         n_trials: int = 50,
-        save_dir: str = "models/ml/hyperopt"
+        save_dir: str = "models/ml/hyperopt",
     ):
         """
         Initialize hyperparameter optimizer.
@@ -47,20 +48,22 @@ class HyperparameterOptimizer:
         self.best_params = None
         self.best_score = -np.inf
 
-        logger.info(f"✅ Hyperparameter Optimizer initialized ({n_trials} trials, metric: {optimization_metric})")
+        logger.info(
+            f"✅ Hyperparameter Optimizer initialized ({n_trials} trials, metric: {optimization_metric})"
+        )
 
     def _default_search_space(self) -> Dict[str, List[Any]]:
         """Default hyperparameter search space."""
         return {
-            'learning_rate': [0.0001, 0.001, 0.01],
-            'hidden_dim': [64, 128, 256],
-            'num_layers': [1, 2, 3],
-            'batch_size': [16, 32, 64],
-            'gamma': [0.9, 0.95, 0.99],  # Discount factor
-            'epsilon': [0.1, 0.2, 0.3],  # Exploration rate
-            'ppo_clip': [0.1, 0.2, 0.3],  # PPO clip epsilon
-            'value_coef': [0.5, 1.0, 2.0],  # Value loss coefficient
-            'entropy_coef': [0.01, 0.05, 0.1]  # Entropy bonus coefficient
+            "learning_rate": [0.0001, 0.001, 0.01],
+            "hidden_dim": [64, 128, 256],
+            "num_layers": [1, 2, 3],
+            "batch_size": [16, 32, 64],
+            "gamma": [0.9, 0.95, 0.99],  # Discount factor
+            "epsilon": [0.1, 0.2, 0.3],  # Exploration rate
+            "ppo_clip": [0.1, 0.2, 0.3],  # PPO clip epsilon
+            "value_coef": [0.5, 1.0, 2.0],  # Value loss coefficient
+            "entropy_coef": [0.01, 0.05, 0.1],  # Entropy bonus coefficient
         }
 
     def grid_search(
@@ -68,7 +71,7 @@ class HyperparameterOptimizer:
         train_fn: Callable,
         evaluate_fn: Callable,
         symbol: str,
-        max_combinations: int = 100
+        max_combinations: int = 100,
     ) -> Dict[str, Any]:
         """
         Perform grid search over hyperparameter space.
@@ -91,7 +94,9 @@ class HyperparameterOptimizer:
         # Limit combinations if too many
         total_combinations = np.prod([len(v) for v in param_values])
         if total_combinations > max_combinations:
-            logger.warning(f"⚠️  Too many combinations ({total_combinations}), limiting to {max_combinations}")
+            logger.warning(
+                f"⚠️  Too many combinations ({total_combinations}), limiting to {max_combinations}"
+            )
             # Use random sampling instead
             return self.random_search(train_fn, evaluate_fn, symbol)
 
@@ -114,11 +119,11 @@ class HyperparameterOptimizer:
 
                 # Record trial
                 trial_result = {
-                    'params': params,
-                    'metrics': metrics,
-                    'score': score,
-                    'trial': i + 1,
-                    'timestamp': datetime.now().isoformat()
+                    "params": params,
+                    "metrics": metrics,
+                    "score": score,
+                    "trial": i + 1,
+                    "timestamp": datetime.now().isoformat(),
                 }
                 self.trials.append(trial_result)
 
@@ -136,17 +141,14 @@ class HyperparameterOptimizer:
         self._save_results(symbol)
 
         return {
-            'best_params': self.best_params,
-            'best_score': self.best_score,
-            'total_trials': len(self.trials),
-            'all_trials': self.trials
+            "best_params": self.best_params,
+            "best_score": self.best_score,
+            "total_trials": len(self.trials),
+            "all_trials": self.trials,
         }
 
     def random_search(
-        self,
-        train_fn: Callable,
-        evaluate_fn: Callable,
-        symbol: str
+        self, train_fn: Callable, evaluate_fn: Callable, symbol: str
     ) -> Dict[str, Any]:
         """
         Perform random search over hyperparameter space.
@@ -159,7 +161,9 @@ class HyperparameterOptimizer:
         Returns:
             Best hyperparameters and results
         """
-        logger.info(f"🔍 Starting random search for {symbol} ({self.n_trials} trials)...")
+        logger.info(
+            f"🔍 Starting random search for {symbol} ({self.n_trials} trials)..."
+        )
 
         param_names = list(self.search_space.keys())
 
@@ -182,11 +186,11 @@ class HyperparameterOptimizer:
 
                 # Record trial
                 trial_result = {
-                    'params': params,
-                    'metrics': metrics,
-                    'score': score,
-                    'trial': i + 1,
-                    'timestamp': datetime.now().isoformat()
+                    "params": params,
+                    "metrics": metrics,
+                    "score": score,
+                    "trial": i + 1,
+                    "timestamp": datetime.now().isoformat(),
                 }
                 self.trials.append(trial_result)
 
@@ -204,10 +208,10 @@ class HyperparameterOptimizer:
         self._save_results(symbol)
 
         return {
-            'best_params': self.best_params,
-            'best_score': self.best_score,
-            'total_trials': len(self.trials),
-            'all_trials': self.trials
+            "best_params": self.best_params,
+            "best_score": self.best_score,
+            "total_trials": len(self.trials),
+            "all_trials": self.trials,
         }
 
     def _save_results(self, symbol: str):
@@ -215,16 +219,16 @@ class HyperparameterOptimizer:
         results_path = self.save_dir / f"{symbol}_hyperopt_results.json"
 
         results = {
-            'symbol': symbol,
-            'optimization_metric': self.optimization_metric,
-            'best_params': self.best_params,
-            'best_score': self.best_score,
-            'total_trials': len(self.trials),
-            'trials': self.trials[-50:],  # Save last 50 trials
-            'timestamp': datetime.now().isoformat()
+            "symbol": symbol,
+            "optimization_metric": self.optimization_metric,
+            "best_params": self.best_params,
+            "best_score": self.best_score,
+            "total_trials": len(self.trials),
+            "trials": self.trials[-50:],  # Save last 50 trials
+            "timestamp": datetime.now().isoformat(),
         }
 
-        with open(results_path, 'w') as f:
+        with open(results_path, "w") as f:
             json.dump(results, f, indent=2)
 
         logger.info(f"💾 Saved optimization results to {results_path}")
@@ -234,10 +238,10 @@ class HyperparameterOptimizer:
         results_path = self.save_dir / f"{symbol}_hyperopt_results.json"
 
         if results_path.exists():
-            with open(results_path, 'r') as f:
+            with open(results_path, "r") as f:
                 results = json.load(f)
-                self.best_params = results.get('best_params')
-                self.best_score = results.get('best_score', -np.inf)
+                self.best_params = results.get("best_params")
+                self.best_score = results.get("best_score", -np.inf)
                 logger.info(f"📂 Loaded optimization results for {symbol}")
                 return results
 
@@ -255,7 +259,7 @@ def optimize_hyperparameters(
     evaluate_fn: Callable,
     search_space: Optional[Dict[str, List[Any]]] = None,
     n_trials: int = 50,
-    metric: str = "sharpe_ratio"
+    metric: str = "sharpe_ratio",
 ) -> Dict[str, Any]:
     """
     Quick hyperparameter optimization.
@@ -272,9 +276,7 @@ def optimize_hyperparameters(
         Best hyperparameters
     """
     optimizer = HyperparameterOptimizer(
-        search_space=search_space,
-        optimization_metric=metric,
-        n_trials=n_trials
+        search_space=search_space, optimization_metric=metric, n_trials=n_trials
     )
 
     return optimizer.random_search(train_fn, evaluate_fn, symbol)

@@ -1,7 +1,20 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-29 03:39 PM ET
+**Last Updated**: 2025-11-29 03:55 PM ET
 **Auto-Updated**: Daily via GitHub Actions
+
+---
+
+## 📅 Today's Performance
+
+**Date**: 2025-11-29 (Saturday)
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | $100,005.48 |
+| **P/L** | $+0.00 (+0.00%) |
+| **Trades Today** | 0 |
+| **Status** | ⏸️ No activity yet |
 
 ---
 
@@ -69,19 +82,6 @@
 
 ## 💰 Financial Performance
 
-### 📅 Today's Performance
-
-**Date**: 2025-11-29 (Saturday)
-
-| Metric | Value |
-|--------|-------|
-| **Equity** | $100,005.48 |
-| **P/L** | $+0.00 (+0.00%) |
-| **Trades Today** | 0 |
-| **Status** | ⏸️ No activity yet |
-
----
-
 ### Account Summary
 
 | Metric | Overall | Today |
@@ -138,8 +138,8 @@
 
 ### Per-Strategy Performance
 
-| Strategy/Agent | Trades | P/L ($) | Win % | Sharpe | Max DD % |
-|----------------|---------|---------|-------|--------|----------|
+*Performance attribution analysis requires at least 10 trades (currently have 7).*
+
 | *No strategy data available* | - | - | - | - | - |
 
 ---
@@ -242,6 +242,11 @@
 
 ## 📈 Time-Series & Equity Curve
 
+### Visual Charts
+
+*Charts will be generated when matplotlib is available in the environment.*
+
+
 ### Daily Profit Trend
 
 **Last 10 Days**:
@@ -314,6 +319,22 @@
 - Strategy performance tracking enabled
 - Risk metrics now visible in dashboard
 - Per-strategy diagnostics available
+
+---
+
+## ⚡ Execution Quality Metrics
+
+
+### Execution Performance
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| **Avg Slippage** | 0.000% | <0.5% | ✅ |
+| **Fill Quality** | 0.0/100 | >90 | ⚠️ |
+| **Order Success Rate** | 0.0% | >95% | ⚠️ |
+| **Order Reject Rate** | 0.0% | <5% | ✅ |
+| **Avg Fill Time** | 0 ms | <200ms | ✅ |
+| **Broker Latency** | 0 ms | <100ms | ✅ |
 
 ---
 

@@ -13,13 +13,15 @@ DATA_DIR.mkdir(exist_ok=True)
 
 # Load from .env or environment
 from dotenv import load_dotenv
+
 load_dotenv()
 
 api = tradeapi.REST(
     os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
     os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
-    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
-    api_version="v2"
+    os.getenv("APCA_API_BASE_URL")
+    or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    api_version="v2",
 )
 
 
@@ -41,51 +43,61 @@ def check_position_risks():
 
             # Alert: Large loss
             if unrealized_plpc <= -5:
-                alerts.append({
-                    "level": "CRITICAL",
-                    "type": "large_loss",
-                    "symbol": symbol,
-                    "message": f"{symbol} down {unrealized_plpc:.2f}% (${unrealized_pl:,.2f})",
-                    "unrealized_plpc": unrealized_plpc,
-                    "unrealized_pl": unrealized_pl,
-                })
+                alerts.append(
+                    {
+                        "level": "CRITICAL",
+                        "type": "large_loss",
+                        "symbol": symbol,
+                        "message": f"{symbol} down {unrealized_plpc:.2f}% (${unrealized_pl:,.2f})",
+                        "unrealized_plpc": unrealized_plpc,
+                        "unrealized_pl": unrealized_pl,
+                    }
+                )
 
             # Alert: Approaching stop-loss (Tier 2)
-            elif symbol in ['NVDA', 'GOOGL', 'AMZN'] and unrealized_plpc <= -2.5:
-                alerts.append({
-                    "level": "WARNING",
-                    "type": "approaching_stop_loss",
-                    "symbol": symbol,
-                    "message": f"{symbol} approaching stop-loss ({unrealized_plpc:.2f}% / -3%)",
-                    "unrealized_plpc": unrealized_plpc,
-                })
+            elif symbol in ["NVDA", "GOOGL", "AMZN"] and unrealized_plpc <= -2.5:
+                alerts.append(
+                    {
+                        "level": "WARNING",
+                        "type": "approaching_stop_loss",
+                        "symbol": symbol,
+                        "message": f"{symbol} approaching stop-loss ({unrealized_plpc:.2f}% / -3%)",
+                        "unrealized_plpc": unrealized_plpc,
+                    }
+                )
 
             # Alert: Over-concentration
             if position_pct > 10:
-                alerts.append({
-                    "level": "WARNING",
-                    "type": "over_concentration",
-                    "symbol": symbol,
-                    "message": f"{symbol} is {position_pct:.1f}% of portfolio (limit: 10%)",
-                    "position_pct": position_pct,
-                })
+                alerts.append(
+                    {
+                        "level": "WARNING",
+                        "type": "over_concentration",
+                        "symbol": symbol,
+                        "message": f"{symbol} is {position_pct:.1f}% of portfolio (limit: 10%)",
+                        "position_pct": position_pct,
+                    }
+                )
 
         # Alert: Large portfolio loss
         total_unrealized = sum(float(p.unrealized_pl) for p in positions)
         if total_unrealized < -50:
-            alerts.append({
-                "level": "CRITICAL",
-                "type": "large_portfolio_loss",
-                "message": f"Portfolio down ${total_unrealized:,.2f}",
-                "total_unrealized": total_unrealized,
-            })
+            alerts.append(
+                {
+                    "level": "CRITICAL",
+                    "type": "large_portfolio_loss",
+                    "message": f"Portfolio down ${total_unrealized:,.2f}",
+                    "total_unrealized": total_unrealized,
+                }
+            )
 
     except Exception as e:
-        alerts.append({
-            "level": "ERROR",
-            "type": "check_failed",
-            "message": f"Failed to check risks: {e}",
-        })
+        alerts.append(
+            {
+                "level": "ERROR",
+                "type": "check_failed",
+                "message": f"Failed to check risks: {e}",
+            }
+        )
 
     return alerts
 
@@ -150,4 +162,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

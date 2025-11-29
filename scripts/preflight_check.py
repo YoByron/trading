@@ -12,12 +12,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def check_mark():
     return "✅"
+
+
 def fail_mark():
     return "❌"
+
+
 def warn_mark():
     return "⚠️"
+
 
 def check_environment_variables():
     """Check required environment variables are set"""
@@ -66,6 +72,7 @@ def check_environment_variables():
 
     return all_ok
 
+
 def check_code_fixes():
     """Verify infrastructure fixes are in place"""
     print("\n" + "=" * 70)
@@ -96,7 +103,7 @@ def check_code_fixes():
     workflow_file = Path(".github/workflows/daily-trading.yml")
     if workflow_file.exists():
         content = workflow_file.read_text()
-        if 'timeout-minutes: 30' in content:
+        if "timeout-minutes: 30" in content:
             print(f"{check_mark()} Workflow timeout: 30 minutes")
             checks.append(True)
         else:
@@ -113,6 +120,7 @@ def check_code_fixes():
         checks.append(False)
 
     return all(checks)
+
 
 def check_performance_log():
     """Check performance log is up to date"""
@@ -141,14 +149,19 @@ def check_performance_log():
             print(f"{check_mark()} Performance log: Updated today")
             return True
         elif last_date.date() == today - timedelta(days=1):
-            print(f"{warn_mark()} Performance log: Last updated yesterday (expected if workflow hasn't run today)")
+            print(
+                f"{warn_mark()} Performance log: Last updated yesterday (expected if workflow hasn't run today)"
+            )
             return True
         else:
-            print(f"{fail_mark()} Performance log: Last updated {last_date.date()} (stale)")
+            print(
+                f"{fail_mark()} Performance log: Last updated {last_date.date()} (stale)"
+            )
             return False
     except Exception as e:
         print(f"{fail_mark()} Performance log: Error reading - {e}")
         return False
+
 
 def check_system_state():
     """Check system state is valid"""
@@ -175,6 +188,7 @@ def check_system_state():
     except Exception as e:
         print(f"{warn_mark()} System state: Error reading - {e}")
         return True  # Not critical
+
 
 def check_workflow_config():
     """Check GitHub Actions workflow configuration"""
@@ -217,6 +231,7 @@ def check_workflow_config():
 
     return all(checks)
 
+
 def main():
     print("=" * 70)
     print("PRE-FLIGHT CHECK: Trading System Readiness")
@@ -250,6 +265,7 @@ def main():
     print("=" * 70)
 
     return 0 if all_passed else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

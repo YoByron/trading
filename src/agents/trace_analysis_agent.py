@@ -8,6 +8,7 @@ from src.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
+
 class TraceAnalysisAgent(BaseAgent):
     """
     Trace Analysis Agent: Autonomous Audit & Explainability Monitor.
@@ -21,8 +22,7 @@ class TraceAnalysisAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(
-            name="TraceAnalysisAgent",
-            role="Audit trail analysis and anomaly detection"
+            name="TraceAnalysisAgent", role="Audit trail analysis and anomaly detection"
         )
         self.trace_dir = Path("data/audit_traces")
         self.trace_dir.mkdir(parents=True, exist_ok=True)
@@ -42,10 +42,7 @@ class TraceAnalysisAgent(BaseAgent):
         # 1. Load recent traces
         traces = self._load_recent_traces(limit=10)
         if not traces:
-            return {
-                "action": "NO_ACTION",
-                "message": "No traces found to analyze"
-            }
+            return {"action": "NO_ACTION", "message": "No traces found to analyze"}
 
         # 2. Analyze for anomalies
         anomalies = []
@@ -61,22 +58,28 @@ class TraceAnalysisAgent(BaseAgent):
         report = self._generate_llm_report(anomalies, latency_stats)
 
         # 4. Log findings
-        self.log_decision({
-            "action": "REPORT_GENERATED",
-            "anomalies_found": len(anomalies),
-            "report_summary": report.get("summary", "")
-        })
+        self.log_decision(
+            {
+                "action": "REPORT_GENERATED",
+                "anomalies_found": len(anomalies),
+                "report_summary": report.get("summary", ""),
+            }
+        )
 
         return {
             "action": "REPORT_GENERATED",
             "anomalies": anomalies,
             "latency_stats": latency_stats,
-            "llm_report": report
+            "llm_report": report,
         }
 
     def _load_recent_traces(self, limit: int = 10) -> List[Dict]:
         """Load the most recent JSON trace files."""
-        files = sorted(self.trace_dir.glob("trace_*.json"), key=lambda f: f.stat().st_mtime, reverse=True)
+        files = sorted(
+            self.trace_dir.glob("trace_*.json"),
+            key=lambda f: f.stat().st_mtime,
+            reverse=True,
+        )
         traces = []
         for f in files[:limit]:
             try:
@@ -93,38 +96,47 @@ class TraceAnalysisAgent(BaseAgent):
         trace_id = trace.get("trace_id", "unknown")
 
         # Check 1: High Latency
-        if total_duration > 5000: # 5 seconds
-            anomalies.append({
-                "type": "HIGH_LATENCY",
-                "trace_id": trace_id,
-                "details": f"Total duration {total_duration:.2f}ms exceeds threshold"
-            })
+        if total_duration > 5000:  # 5 seconds
+            anomalies.append(
+                {
+                    "type": "HIGH_LATENCY",
+                    "trace_id": trace_id,
+                    "details": f"Total duration {total_duration:.2f}ms exceeds threshold",
+                }
+            )
 
         # Check 2: Errors in steps
         for step in trace.get("steps", []):
-            if "error" in str(step.get("action", "")).lower() or "error" in str(step.get("reasoning", "")).lower():
-                 anomalies.append({
-                    "type": "STEP_ERROR",
-                    "trace_id": trace_id,
-                    "details": f"Error in step: {step.get('action')}"
-                })
+            if (
+                "error" in str(step.get("action", "")).lower()
+                or "error" in str(step.get("reasoning", "")).lower()
+            ):
+                anomalies.append(
+                    {
+                        "type": "STEP_ERROR",
+                        "trace_id": trace_id,
+                        "details": f"Error in step: {step.get('action')}",
+                    }
+                )
 
         # Check 3: Final Decision Validity
         final_decision = trace.get("final_decision")
-        if not final_decision or (isinstance(final_decision, dict) and "error" in final_decision):
-             anomalies.append({
-                "type": "INVALID_DECISION",
-                "trace_id": trace_id,
-                "details": "Final decision missing or indicates error"
-            })
+        if not final_decision or (
+            isinstance(final_decision, dict) and "error" in final_decision
+        ):
+            anomalies.append(
+                {
+                    "type": "INVALID_DECISION",
+                    "trace_id": trace_id,
+                    "details": "Final decision missing or indicates error",
+                }
+            )
 
-        return {
-            "trace_id": trace_id,
-            "latency": total_duration,
-            "anomalies": anomalies
-        }
+        return {"trace_id": trace_id, "latency": total_duration, "anomalies": anomalies}
 
-    def _generate_llm_report(self, anomalies: List[Dict], latency_stats: List[float]) -> Dict:
+    def _generate_llm_report(
+        self, anomalies: List[Dict], latency_stats: List[float]
+    ) -> Dict:
         """Use Claude to summarize findings."""
         if not anomalies and not latency_stats:
             return {"summary": "No activity to report."}
@@ -149,5 +161,5 @@ class TraceAnalysisAgent(BaseAgent):
         response = self.reason_with_llm(prompt)
         return {
             "summary": response.get("reasoning", "Analysis complete."),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }

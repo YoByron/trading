@@ -12,6 +12,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.orchestration.elite_orchestrator import EliteOrchestrator, PlanningPhase
@@ -42,7 +43,7 @@ def test_elite_orchestrator():
             PlanningPhase.ANALYSIS.value,
             PlanningPhase.RISK_ASSESSMENT.value,
             PlanningPhase.EXECUTION.value,
-            PlanningPhase.AUDIT.value
+            PlanningPhase.AUDIT.value,
         ]
 
         for phase in expected_phases:
@@ -55,6 +56,7 @@ def test_elite_orchestrator():
     except Exception as e:
         print(f"❌ Elite Orchestrator test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -78,7 +80,7 @@ def test_context_engine():
             "price": 450.00,
             "pnl": 0,
             "agent_type": "test",
-            "timestamp": "2025-11-25T10:00:00"
+            "timestamp": "2025-11-25T10:00:00",
         }
         log_path = context_engine.save_trade_log(trade_data)
         print(f"✅ Trade log saved: {log_path}")
@@ -97,6 +99,7 @@ def test_context_engine():
     except Exception as e:
         print(f"❌ Context Engine test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

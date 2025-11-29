@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, date
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 DATA_DIR = Path("data")
 PERF_LOG_FILE = DATA_DIR / "performance_log.json"
@@ -26,7 +26,7 @@ def analyze_reliability():
         print("⚠️  Performance log not found")
         return None
 
-    with open(PERF_LOG_FILE, 'r') as f:
+    with open(PERF_LOG_FILE, "r") as f:
         perf_log = json.load(f)
 
     if not perf_log:
@@ -64,7 +64,7 @@ def analyze_reliability():
         "trading_days": trading_days,
         "gaps": gaps,
         "reliability": reliability,
-        "missing_dates": missing_dates
+        "missing_dates": missing_dates,
     }
 
 
@@ -97,18 +97,22 @@ def suggest_recovery_actions(analysis):
 
     for group in consecutive_groups:
         if len(group) == 1:
-            suggestions.append({
-                "date": group[0],
-                "action": "single_missing",
-                "description": f"Single missing trading day: {group[0]}"
-            })
+            suggestions.append(
+                {
+                    "date": group[0],
+                    "action": "single_missing",
+                    "description": f"Single missing trading day: {group[0]}",
+                }
+            )
         else:
-            suggestions.append({
-                "start_date": group[0],
-                "end_date": group[-1],
-                "action": "consecutive_missing",
-                "description": f"Consecutive missing days: {group[0]} to {group[-1]} ({len(group)} days)"
-            })
+            suggestions.append(
+                {
+                    "start_date": group[0],
+                    "end_date": group[-1],
+                    "action": "consecutive_missing",
+                    "description": f"Consecutive missing days: {group[0]} to {group[-1]} ({len(group)} days)",
+                }
+            )
 
     return suggestions
 
@@ -134,11 +138,11 @@ def main():
     print(f"📈 Current Reliability: {analysis['reliability']:.1f}%")
     print()
 
-    if analysis['gaps'] > 0:
+    if analysis["gaps"] > 0:
         print(f"🔍 Missing Trading Days ({len(analysis['missing_dates'])}):")
-        for missing in analysis['missing_dates'][:10]:
+        for missing in analysis["missing_dates"][:10]:
             print(f"   • {missing}")
-        if len(analysis['missing_dates']) > 10:
+        if len(analysis["missing_dates"]) > 10:
             print(f"   ... and {len(analysis['missing_dates']) - 10} more")
         print()
 
@@ -149,7 +153,9 @@ def main():
             for i, suggestion in enumerate(suggestions[:5], 1):
                 print(f"   {i}. {suggestion['description']}")
             print()
-            print("   Note: These are historical gaps. Future gaps can be prevented by:")
+            print(
+                "   Note: These are historical gaps. Future gaps can be prevented by:"
+            )
             print("   • Ensuring workflow runs daily")
             print("   • Adding retry logic for failed executions")
             print("   • Monitoring workflow status")

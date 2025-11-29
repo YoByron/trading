@@ -14,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def check_dependency_conflicts():
     """Check if requirements.txt has dependency conflicts."""
     print("=" * 70)
@@ -33,25 +34,41 @@ def check_dependency_conflicts():
         # Use pip check or pip install --dry-run with --break-system-packages for validation
         # This is safe because we're only doing a dry-run
         result = subprocess.run(
-            ["python3", "-m", "pip", "install", "--dry-run", "--break-system-packages", "-r", str(requirements_file)],
+            [
+                "python3",
+                "-m",
+                "pip",
+                "install",
+                "--dry-run",
+                "--break-system-packages",
+                "-r",
+                str(requirements_file),
+            ],
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
         )
 
         if result.returncode != 0:
             error_output = result.stderr or result.stdout
 
             # Check for specific conflict messages
-            if "ERROR: ResolutionImpossible" in error_output or "ERROR: Cannot install" in error_output:
+            if (
+                "ERROR: ResolutionImpossible" in error_output
+                or "ERROR: Cannot install" in error_output
+            ):
                 print("❌ Dependency conflicts detected!")
                 print("\nError output:")
                 print(error_output[:500])  # Limit output
-                print("\n💡 TIP: Use 'pip install pip-tools' and 'pip-compile requirements.in' to resolve conflicts")
+                print(
+                    "\n💡 TIP: Use 'pip install pip-tools' and 'pip-compile requirements.in' to resolve conflicts"
+                )
                 return False
             elif "externally-managed-environment" in error_output:
                 # This is OK - we're just validating, not actually installing
-                print("✅ Dependency check completed (externally-managed environment detected - this is OK)")
+                print(
+                    "✅ Dependency check completed (externally-managed environment detected - this is OK)"
+                )
                 return True
             else:
                 print("⚠️  Unexpected error during dependency check:")
@@ -81,7 +98,9 @@ def check_python_version():
 
     # Check if Python version is within supported range (3.9-3.14)
     if version.major == 3 and 9 <= version.minor <= 14:
-        print(f"✅ Python {version.major}.{version.minor} (supported range: 3.9-3.14, CI uses 3.13)")
+        print(
+            f"✅ Python {version.major}.{version.minor} (supported range: 3.9-3.14, CI uses 3.13)"
+        )
         return True
     elif version.major == 3 and version.minor >= 15:
         print(f"❌ Python {version.major}.{version.minor} is NOT supported!")

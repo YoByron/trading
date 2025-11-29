@@ -140,7 +140,9 @@ class SentimentRAGStore:
         return len(docs)
 
     def ingest_from_cache(self, days: int = 30) -> int:
-        documents = list(load_sentiment_documents(window_days=days, base_dir=self.sentiment_dir))
+        documents = list(
+            load_sentiment_documents(window_days=days, base_dir=self.sentiment_dir)
+        )
         return self.upsert_documents(documents)
 
     def reset(self) -> None:
@@ -268,6 +270,7 @@ class SentimentRow:
 # Document preparation
 # --------------------------------------------------------------------- #
 
+
 def load_sentiment_documents(
     window_days: int = 30,
     base_dir: Path = DEFAULT_SENTIMENT_DIR,
@@ -336,7 +339,9 @@ def _render_document_text(ticker: str, date: str, meta: Dict, ticker_data: Dict)
     return "\n".join(lines)
 
 
-def _build_metadata(ticker: str, date: str, meta: Dict, ticker_data: Dict) -> Dict[str, str]:
+def _build_metadata(
+    ticker: str, date: str, meta: Dict, ticker_data: Dict
+) -> Dict[str, str]:
     meta_section = meta.get("meta", {})
     metadata = {
         "ticker": ticker.upper(),

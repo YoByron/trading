@@ -10,6 +10,7 @@ This agent leverages Gemini 3's advanced features:
 Note: "thinking_level" and "thought_signatures" are conceptual features
 implemented via temperature adjustments and conversation history, not direct API parameters.
 """
+
 import os
 import json
 import logging
@@ -41,9 +42,9 @@ class GeminiAgent:
 
     # Temperature mapping for "thinking levels" (conceptual, not API parameter)
     THINKING_TEMPERATURES = {
-        "low": 0.3,      # Focused, deterministic
-        "medium": 0.7,   # Balanced
-        "high": 1.0,     # Creative, exploratory
+        "low": 0.3,  # Focused, deterministic
+        "medium": 0.7,  # Balanced
+        "high": 1.0,  # Creative, exploratory
     }
 
     def __init__(
@@ -51,7 +52,7 @@ class GeminiAgent:
         name: str,
         role: str,
         model: str = "gemini-3-pro-preview",
-        default_thinking_level: str = "medium"
+        default_thinking_level: str = "medium",
     ):
         """
         Initialize Gemini 3 agent.
@@ -91,7 +92,7 @@ class GeminiAgent:
         prompt: str,
         thinking_level: Optional[str] = None,
         tools: Optional[List[Dict]] = None,
-        context: Optional[List[Dict]] = None
+        context: Optional[List[Dict]] = None,
     ) -> Dict[str, Any]:
         """
         Use Gemini 3 reasoning to make decisions.
@@ -113,7 +114,7 @@ class GeminiAgent:
                 "decision": "NO_ACTION",
                 "confidence": 0.0,
                 "tool_calls": [],
-                "thinking_level": thinking_level or self.default_thinking_level
+                "thinking_level": thinking_level or self.default_thinking_level,
             }
 
         thinking_level = thinking_level or self.default_thinking_level
@@ -152,55 +153,43 @@ class GeminiAgent:
                                 parts.append({"text": part})
                             elif isinstance(part, dict):
                                 parts.append(part)
-                        messages.append({
-                            "role": msg.get("role", "user"),
-                            "parts": parts
-                        })
+                        messages.append(
+                            {"role": msg.get("role", "user"), "parts": parts}
+                        )
                     else:
                         # Fallback: assume it's already in correct format
                         messages.append(msg)
 
                 # Add current prompt
-                messages.append({
-                    "role": "user",
-                    "parts": [{"text": prompt}]
-                })
+                messages.append({"role": "user", "parts": [{"text": prompt}]})
 
                 # Generate with conversation history
                 if tools:
                     response = self.client.generate_content(
-                        messages,
-                        generation_config=generation_config,
-                        tools=tools
+                        messages, generation_config=generation_config, tools=tools
                     )
                 else:
                     response = self.client.generate_content(
-                        messages,
-                        generation_config=generation_config
+                        messages, generation_config=generation_config
                     )
             else:
                 # Single message: use simple string format (more efficient)
                 if tools:
                     response = self.client.generate_content(
-                        prompt,
-                        generation_config=generation_config,
-                        tools=tools
+                        prompt, generation_config=generation_config, tools=tools
                     )
                 else:
                     response = self.client.generate_content(
-                        prompt,
-                        generation_config=generation_config
+                        prompt, generation_config=generation_config
                     )
 
             # Store in conversation history
-            self.conversation_history.append({
-                "role": "user",
-                "parts": [{"text": prompt}]
-            })
-            self.conversation_history.append({
-                "role": "model",
-                "parts": [{"text": response.text}]
-            })
+            self.conversation_history.append(
+                {"role": "user", "parts": [{"text": prompt}]}
+            )
+            self.conversation_history.append(
+                {"role": "model", "parts": [{"text": response.text}]}
+            )
 
             # Keep history manageable (last 20 messages)
             if len(self.conversation_history) > 20:
@@ -219,10 +208,16 @@ class GeminiAgent:
             # Extract function calls if present
             if hasattr(response, "function_calls") and response.function_calls:
                 for call in response.function_calls:
-                    result["tool_calls"].append({
-                        "name": call.name,
-                        "args": dict(call.args) if hasattr(call.args, "__dict__") else call.args
-                    })
+                    result["tool_calls"].append(
+                        {
+                            "name": call.name,
+                            "args": (
+                                dict(call.args)
+                                if hasattr(call.args, "__dict__")
+                                else call.args
+                            ),
+                        }
+                    )
 
             return result
 
@@ -238,9 +233,7 @@ class GeminiAgent:
             }
 
     def analyze_with_context(
-        self,
-        data: Dict[str, Any],
-        thinking_level: str = "high"
+        self, data: Dict[str, Any], thinking_level: str = "high"
     ) -> Dict[str, Any]:
         """
         Analyze data with full context preservation using conversation history.
@@ -260,9 +253,7 @@ class GeminiAgent:
 
         # Reason with context
         result = self.reason(
-            prompt=prompt,
-            thinking_level=thinking_level,
-            context=context
+            prompt=prompt, thinking_level=thinking_level, context=context
         )
 
         # Log decision

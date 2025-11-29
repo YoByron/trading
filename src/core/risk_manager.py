@@ -92,6 +92,7 @@ class RiskManager:
         if use_behavioral_finance:
             try:
                 from src.core.behavioral_finance import BehavioralFinanceManager
+
                 self.behavioral_manager = BehavioralFinanceManager(data_dir=data_dir)
                 logger.info("Behavioral finance manager initialized")
             except ImportError as e:
@@ -104,13 +105,15 @@ class RiskManager:
         print(f"  - Max Position Size: {max_position_size_pct}%")
         print(f"  - Max Drawdown: {max_drawdown_pct}%")
         print(f"  - Max Consecutive Losses: {max_consecutive_losses}")
-        print(f"  - Behavioral Finance: {'Enabled' if self.use_behavioral_finance else 'Disabled'}")
+        print(
+            f"  - Behavioral Finance: {'Enabled' if self.use_behavioral_finance else 'Disabled'}"
+        )
 
     def can_trade(
         self,
         account_value: float,
         daily_pl: float,
-        account_info: Optional[Dict[str, any]] = None
+        account_info: Optional[Dict[str, any]] = None,
     ) -> bool:
         """
         Determine if trading is allowed based on current risk parameters.
@@ -141,7 +144,7 @@ class RiskManager:
                         "equity": equity,
                         "daytrade_count": daytrade_count,
                         "pattern_day_trader": is_pdt,
-                        "minimum_required": 25000.0
+                        "minimum_required": 25000.0,
                     },
                 )
                 self.metrics.circuit_breaker_triggered = True
@@ -155,7 +158,7 @@ class RiskManager:
                     details={
                         "equity": equity,
                         "pattern_day_trader": is_pdt,
-                        "minimum_required": 25000.0
+                        "minimum_required": 25000.0,
                     },
                 )
                 self.metrics.circuit_breaker_triggered = True
@@ -354,17 +357,21 @@ class RiskManager:
                 recent_losses = [-self.max_daily_loss_pct / 100]  # Placeholder
 
             # Check if trade should proceed based on behavioral finance
-            should_proceed, behavioral_reason = self.behavioral_manager.should_proceed_with_trade(
-                symbol=symbol,
-                expected_return=expected_return_pct or 0.0,
-                confidence=confidence or 0.5,
-                pattern_type=pattern_type,
-                recent_losses=recent_losses if recent_losses else None,
+            should_proceed, behavioral_reason = (
+                self.behavioral_manager.should_proceed_with_trade(
+                    symbol=symbol,
+                    expected_return=expected_return_pct or 0.0,
+                    confidence=confidence or 0.5,
+                    pattern_type=pattern_type,
+                    recent_losses=recent_losses if recent_losses else None,
+                )
             )
 
             if not should_proceed:
                 validation_result["valid"] = False
-                validation_result["reason"] = f"Behavioral finance check failed: {behavioral_reason}"
+                validation_result["reason"] = (
+                    f"Behavioral finance check failed: {behavioral_reason}"
+                )
                 validation_result["warnings"].append(behavioral_reason)
                 return validation_result
             elif behavioral_reason and "warning" in behavioral_reason.lower():

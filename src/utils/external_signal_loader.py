@@ -51,7 +51,9 @@ class ExternalSignal:
         )
 
 
-def save_signals(signals: List[ExternalSignal], metadata: Optional[Dict] = None) -> Path:
+def save_signals(
+    signals: List[ExternalSignal], metadata: Optional[Dict] = None
+) -> Path:
     """
     Persist a batch of signals to disk.
     """
@@ -75,7 +77,11 @@ def save_signals(signals: List[ExternalSignal], metadata: Optional[Dict] = None)
 
 
 def list_signal_files(limit: Optional[int] = None) -> List[Path]:
-    files = sorted(EXTERNAL_SIGNAL_DIR.glob("signals_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    files = sorted(
+        EXTERNAL_SIGNAL_DIR.glob("signals_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
     if limit:
         return files[:limit]
     return files
@@ -102,7 +108,9 @@ def load_latest_signals() -> Dict[str, Dict]:
         return {}
 
 
-def get_signal_for_ticker(ticker: str, signals: Optional[Dict[str, Dict]] = None) -> Optional[Dict]:
+def get_signal_for_ticker(
+    ticker: str, signals: Optional[Dict[str, Dict]] = None
+) -> Optional[Dict]:
     if not ticker:
         return None
     signals = signals or load_latest_signals()

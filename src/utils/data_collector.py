@@ -15,6 +15,7 @@ from src.utils.market_data import get_market_data_provider
 
 logger = logging.getLogger(__name__)
 
+
 class DataCollector:
     """Collects and archives historical market data."""
 
@@ -32,7 +33,9 @@ class DataCollector:
             symbols: List of ticker symbols
             lookback_days: Days of history to fetch (default: 30)
         """
-        logger.info(f"Collecting data for {len(symbols)} symbols with {lookback_days} days lookback")
+        logger.info(
+            f"Collecting data for {len(symbols)} symbols with {lookback_days} days lookback"
+        )
 
         for symbol in symbols:
             try:
@@ -75,7 +78,7 @@ class DataCollector:
 
             # Combine and remove duplicates based on date index
             combined = pd.concat([existing_data, data])
-            combined = combined[~combined.index.duplicated(keep='last')]
+            combined = combined[~combined.index.duplicated(keep="last")]
             combined.to_csv(filepath)
         else:
             # Save new file
@@ -125,11 +128,12 @@ class DataCollector:
 
         # Combine and remove duplicates
         combined = pd.concat(dataframes)
-        combined = combined[~combined.index.duplicated(keep='last')]
+        combined = combined[~combined.index.duplicated(keep="last")]
         combined.sort_index(inplace=True)
 
         logger.info(f"Loaded {len(combined)} rows for {symbol} from {len(files)} files")
         return combined
+
 
 def main():
     """CLI interface for data collection."""
@@ -138,29 +142,23 @@ def main():
         "--symbols",
         type=str,
         default="SPY,QQQ,VOO,NVDA,GOOGL",
-        help="Comma-separated list of symbols (default: SPY,QQQ,VOO,NVDA,GOOGL)"
+        help="Comma-separated list of symbols (default: SPY,QQQ,VOO,NVDA,GOOGL)",
     )
     parser.add_argument(
         "--lookback",
         type=int,
         default=30,
-        help="Days of historical data to fetch (default: 30)"
+        help="Days of historical data to fetch (default: 30)",
     )
     parser.add_argument(
         "--data-dir",
         type=str,
         default="data/historical",
-        help="Directory to store data (default: data/historical)"
+        help="Directory to store data (default: data/historical)",
     )
+    parser.add_argument("--list", action="store_true", help="List existing data files")
     parser.add_argument(
-        "--list",
-        action="store_true",
-        help="List existing data files"
-    )
-    parser.add_argument(
-        "--load",
-        type=str,
-        help="Load and display historical data for a symbol"
+        "--load", type=str, help="Load and display historical data for a symbol"
     )
 
     args = parser.parse_args()
@@ -168,7 +166,7 @@ def main():
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Initialize collector
@@ -191,6 +189,7 @@ def main():
         symbols = [s.strip() for s in args.symbols.split(",")]
         collector.collect_daily_data(symbols, lookback_days=args.lookback)
         print(f"\nData collection complete for {len(symbols)} symbols")
+
 
 if __name__ == "__main__":
     main()

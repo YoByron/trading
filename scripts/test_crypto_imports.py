@@ -13,11 +13,13 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+
 def test_embedder_import():
     """Test that embedder can be imported without sentence_transformers."""
     print("Test 1: Import embedder module...")
     try:
         from src.rag.vector_db import embedder
+
         print("  ✅ PASSED: embedder module imports")
 
         # Try to get embedder (should fail gracefully if not installed)
@@ -31,29 +33,35 @@ def test_embedder_import():
         print(f"  ❌ FAILED: {e}")
         return False
 
+
 def test_deepagents_tools_import():
     """Test that deepagents tools can be imported."""
     print("\nTest 2: Import deepagents tools...")
     try:
         from src.deepagents_integration import tools
+
         print("  ✅ PASSED: deepagents tools imports")
 
         # Check that _get_sentiment_store exists
-        assert hasattr(tools, '_get_sentiment_store'), "_get_sentiment_store function missing"
+        assert hasattr(
+            tools, "_get_sentiment_store"
+        ), "_get_sentiment_store function missing"
         print("  ✅ PASSED: _get_sentiment_store function exists")
         return True
     except ImportError as e:
-        if 'langchain' in str(e).lower():
+        if "langchain" in str(e).lower():
             print(f"  ⚠️  SKIPPED: langchain not installed ({e})")
             return True  # Not critical for crypto trading
         print(f"  ❌ FAILED: {e}")
         return False
+
 
 def test_crypto_strategy_import():
     """Test that crypto strategy can be imported."""
     print("\nTest 3: Import crypto strategy...")
     try:
         from src.strategies.crypto_strategy import CryptoStrategy
+
         print("  ✅ PASSED: crypto_strategy imports")
 
         # Try to create instance (should work even without RAG)
@@ -64,14 +72,17 @@ def test_crypto_strategy_import():
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_autonomous_trader_import():
     """Test that autonomous_trader can be imported."""
     print("\nTest 4: Import autonomous_trader...")
     try:
         from scripts.autonomous_trader import execute_crypto_trading, is_weekend
+
         print("  ✅ PASSED: autonomous_trader imports")
 
         # Test is_weekend function
@@ -82,8 +93,10 @@ def test_autonomous_trader_import():
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_import_chain():
     """Test the full import chain that happens in GitHub Actions."""
@@ -91,9 +104,10 @@ def test_import_chain():
     try:
         # This is what happens when autonomous_trader.py runs
         from src.core.alpaca_trader import AlpacaTrader
+
         print("  ✅ PASSED: AlpacaTrader imports")
     except ImportError as e:
-        if 'alpaca' in str(e).lower():
+        if "alpaca" in str(e).lower():
             print(f"  ⚠️  SKIPPED: alpaca not installed (expected in local env)")
         else:
             print(f"  ❌ FAILED: {e}")
@@ -101,18 +115,20 @@ def test_import_chain():
 
     try:
         from src.core.risk_manager import RiskManager
+
         print("  ✅ PASSED: RiskManager imports")
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
         return False
 
     # Verify RAG is NOT imported
-    if 'src.rag.sentiment_store' in sys.modules:
+    if "src.rag.sentiment_store" in sys.modules:
         print("  ⚠️  WARNING: sentiment_store was imported (should be lazy)")
     else:
         print("  ✅ PASSED: sentiment_store NOT imported (lazy loading works)")
 
     return True
+
 
 def main():
     """Run all tests."""
@@ -136,6 +152,7 @@ def main():
         except Exception as e:
             print(f"  ❌ TEST CRASHED: {e}")
             import traceback
+
             traceback.print_exc()
             results.append(False)
 
@@ -152,6 +169,7 @@ def main():
     else:
         print("❌ SOME TESTS FAILED")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

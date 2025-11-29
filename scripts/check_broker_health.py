@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.core.broker_health import BrokerHealthMonitor
@@ -26,8 +27,7 @@ from src.alerts.telegram_alerter import TelegramAlerter
 import logging
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -35,14 +35,10 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser(description="Check broker health")
     parser.add_argument(
-        "--alert",
-        action="store_true",
-        help="Send alerts if broker is unhealthy"
+        "--alert", action="store_true", help="Send alerts if broker is unhealthy"
     )
     parser.add_argument(
-        "--broker",
-        default="alpaca",
-        help="Broker name to check (default: alpaca)"
+        "--broker", default="alpaca", help="Broker name to check (default: alpaca)"
     )
     args = parser.parse_args()
 
@@ -73,14 +69,14 @@ def main():
     print(f"  Avg Response Time: {summary['avg_response_time_ms']:.2f}ms")
     print()
 
-    if summary['account_status']:
+    if summary["account_status"]:
         print("Account Info:")
         print(f"  Status: {summary['account_status']}")
-        if summary['buying_power']:
+        if summary["buying_power"]:
             print(f"  Buying Power: ${summary['buying_power']:,.2f}")
         print()
 
-    if summary['last_error']:
+    if summary["last_error"]:
         print(f"Last Error: {summary['last_error']}")
         print()
 
@@ -98,7 +94,11 @@ def main():
                     alerter.send_alert(
                         title="Broker Health Alert",
                         message=alert_msg,
-                        severity="CRITICAL" if summary['consecutive_failures'] >= 3 else "WARNING"
+                        severity=(
+                            "CRITICAL"
+                            if summary["consecutive_failures"] >= 3
+                            else "WARNING"
+                        ),
                     )
                     print("✅ Alert sent via Telegram")
                 except Exception as e:
@@ -108,7 +108,7 @@ def main():
     print("=" * 70)
 
     # Exit with error code if unhealthy
-    sys.exit(0 if summary['is_healthy'] else 1)
+    sys.exit(0 if summary["is_healthy"] else 1)
 
 
 if __name__ == "__main__":

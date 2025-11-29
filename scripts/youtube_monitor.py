@@ -39,11 +39,8 @@ LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -74,7 +71,7 @@ class YouTubeMonitor:
             logger.info("Creating default configuration...")
             self._create_default_config()
 
-        with open(self.config_path, 'r') as f:
+        with open(self.config_path, "r") as f:
             return json.load(f)
 
     def _create_default_config(self):
@@ -91,17 +88,40 @@ class YouTubeMonitor:
                     "handle": "@parkevtatevosian",
                     "focus": "Stock picks, value investing, dividend stocks",
                     "priority": "high",
-                    "keywords": ["stock", "investing", "buy", "dividend", "analysis", "portfolio"]
+                    "keywords": [
+                        "stock",
+                        "investing",
+                        "buy",
+                        "dividend",
+                        "analysis",
+                        "portfolio",
+                    ],
                 }
             ],
             "global_keywords": [
-                "stock", "stocks", "investing", "investment", "buy",
-                "portfolio", "trading", "market", "dividend", "growth",
-                "analysis", "pick", "recommendation", "opportunity"
+                "stock",
+                "stocks",
+                "investing",
+                "investment",
+                "buy",
+                "portfolio",
+                "trading",
+                "market",
+                "dividend",
+                "growth",
+                "analysis",
+                "pick",
+                "recommendation",
+                "opportunity",
             ],
             "exclude_keywords": [
-                "crypto", "cryptocurrency", "bitcoin", "forex",
-                "day trading", "options", "futures"
+                "crypto",
+                "cryptocurrency",
+                "bitcoin",
+                "forex",
+                "day trading",
+                "options",
+                "futures",
             ],
             "analysis_parameters": {
                 "min_video_length_seconds": 180,
@@ -109,11 +129,11 @@ class YouTubeMonitor:
                 "min_views": 100,
                 "extract_tickers": True,
                 "update_watchlist": True,
-                "generate_report": True
-            }
+                "generate_report": True,
+            },
         }
 
-        with open(self.config_path, 'w') as f:
+        with open(self.config_path, "w") as f:
             json.dump(default_config, f, indent=2)
 
         logger.info(f"✅ Created default config: {self.config_path}")
@@ -122,17 +142,19 @@ class YouTubeMonitor:
         """Load history of processed videos"""
         cache_file = CACHE_DIR / "processed_videos.json"
         if cache_file.exists():
-            with open(cache_file, 'r') as f:
+            with open(cache_file, "r") as f:
                 return json.load(f)
         return {}
 
     def _save_processed_videos(self):
         """Save history of processed videos"""
         cache_file = CACHE_DIR / "processed_videos.json"
-        with open(cache_file, 'w') as f:
+        with open(cache_file, "w") as f:
             json.dump(self.processed_videos, f, indent=2)
 
-    def get_recent_videos(self, channel_id: str, lookback_hours: int = 24) -> List[Dict]:
+    def get_recent_videos(
+        self, channel_id: str, lookback_hours: int = 24
+    ) -> List[Dict]:
         """
         Get recent videos from a YouTube channel
 
@@ -143,29 +165,31 @@ class YouTubeMonitor:
         Returns:
             List of video metadata dictionaries
         """
-        logger.info(f"🔍 Checking channel {channel_id} for videos in last {lookback_hours} hours...")
+        logger.info(
+            f"🔍 Checking channel {channel_id} for videos in last {lookback_hours} hours..."
+        )
 
         ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': True,
-            'playlistend': 10,  # Check last 10 videos
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+            "playlistend": 10,  # Check last 10 videos
         }
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 # Get channel uploads - try multiple URL formats
                 # Try @handle format first, then channel ID
-                if channel_id.startswith('@'):
+                if channel_id.startswith("@"):
                     url = f"https://www.youtube.com/{channel_id}/videos"
-                elif channel_id.startswith('UC'):
+                elif channel_id.startswith("UC"):
                     url = f"https://www.youtube.com/channel/{channel_id}/videos"
                 else:
                     url = f"https://www.youtube.com/@{channel_id}/videos"
 
                 info = ydl.extract_info(url, download=False)
 
-                if not info or 'entries' not in info:
+                if not info or "entries" not in info:
                     logger.warning(f"⚠️  No videos found for channel {channel_id}")
                     return []
 
@@ -173,18 +197,17 @@ class YouTubeMonitor:
                 cutoff_time = datetime.now() - timedelta(hours=lookback_hours)
                 recent_videos = []
 
-                for entry in info['entries']:
+                for entry in info["entries"]:
                     if not entry:
                         continue
 
                     # Get full video info
-                    video_id = entry.get('id')
+                    video_id = entry.get("id")
                     if not video_id:
                         continue
 
                     video_info = ydl.extract_info(
-                        f"https://www.youtube.com/watch?v={video_id}",
-                        download=False
+                        f"https://www.youtube.com/watch?v={video_id}", download=False
                     )
 
                     # Check if already processed
@@ -193,26 +216,28 @@ class YouTubeMonitor:
                         continue
 
                     # Parse upload date
-                    upload_date_str = video_info.get('upload_date', '')
+                    upload_date_str = video_info.get("upload_date", "")
                     if upload_date_str:
                         try:
-                            upload_date = datetime.strptime(upload_date_str, '%Y%m%d')
+                            upload_date = datetime.strptime(upload_date_str, "%Y%m%d")
                             if upload_date < cutoff_time:
                                 continue
                         except ValueError:
                             logger.warning(f"⚠️  Invalid date format: {upload_date_str}")
                             continue
 
-                    recent_videos.append({
-                        'video_id': video_id,
-                        'title': video_info.get('title', 'Unknown'),
-                        'channel': video_info.get('channel', 'Unknown'),
-                        'upload_date': upload_date_str,
-                        'duration': video_info.get('duration', 0),
-                        'view_count': video_info.get('view_count', 0),
-                        'description': video_info.get('description', ''),
-                        'url': f"https://www.youtube.com/watch?v={video_id}"
-                    })
+                    recent_videos.append(
+                        {
+                            "video_id": video_id,
+                            "title": video_info.get("title", "Unknown"),
+                            "channel": video_info.get("channel", "Unknown"),
+                            "upload_date": upload_date_str,
+                            "duration": video_info.get("duration", 0),
+                            "view_count": video_info.get("view_count", 0),
+                            "description": video_info.get("description", ""),
+                            "url": f"https://www.youtube.com/watch?v={video_id}",
+                        }
+                    )
 
                 logger.info(f"✅ Found {len(recent_videos)} new videos")
                 return recent_videos
@@ -236,17 +261,17 @@ class YouTubeMonitor:
         text = f"{video['title']} {video['description']}".lower()
 
         # Check channel-specific keywords
-        channel_keywords = channel_config.get('keywords', [])
+        channel_keywords = channel_config.get("keywords", [])
         if any(keyword.lower() in text for keyword in channel_keywords):
             return True
 
         # Check global keywords
-        global_keywords = self.config.get('global_keywords', [])
+        global_keywords = self.config.get("global_keywords", [])
         if any(keyword.lower() in text for keyword in global_keywords):
             return True
 
         # Check exclude keywords
-        exclude_keywords = self.config.get('exclude_keywords', [])
+        exclude_keywords = self.config.get("exclude_keywords", [])
         if any(keyword.lower() in text for keyword in exclude_keywords):
             logger.debug(f"⏭️  Excluded by keyword: {video['title']}")
             return False
@@ -275,14 +300,14 @@ class YouTubeMonitor:
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
             # Get English transcript (auto-generated or manual)
             try:
-                transcript_obj = transcript_list.find_transcript(['en'])
+                transcript_obj = transcript_list.find_transcript(["en"])
             except:
                 # Try auto-generated
-                transcript_obj = transcript_list.find_generated_transcript(['en'])
+                transcript_obj = transcript_list.find_generated_transcript(["en"])
 
             # Fetch transcript
             transcript_data = transcript_obj.fetch()
-            transcript = " ".join([t['text'] for t in transcript_data])
+            transcript = " ".join([t["text"] for t in transcript_data])
 
             # Cache it
             cache_file.write_text(transcript)
@@ -316,11 +341,34 @@ class YouTubeMonitor:
         """Simple keyword-based analysis"""
         # Look for stock tickers (1-5 uppercase letters)
         import re
-        ticker_pattern = r'\b([A-Z]{1,5})\b'
+
+        ticker_pattern = r"\b([A-Z]{1,5})\b"
         potential_tickers = re.findall(ticker_pattern, transcript)
 
         # Filter common words
-        common_words = {'I', 'A', 'THE', 'AND', 'OR', 'BUT', 'IS', 'ARE', 'WAS', 'WERE', 'BE', 'BEEN', 'TO', 'OF', 'IN', 'FOR', 'ON', 'AT', 'BY', 'WITH', 'FROM'}
+        common_words = {
+            "I",
+            "A",
+            "THE",
+            "AND",
+            "OR",
+            "BUT",
+            "IS",
+            "ARE",
+            "WAS",
+            "WERE",
+            "BE",
+            "BEEN",
+            "TO",
+            "OF",
+            "IN",
+            "FOR",
+            "ON",
+            "AT",
+            "BY",
+            "WITH",
+            "FROM",
+        }
         tickers = [t for t in potential_tickers if t not in common_words]
 
         # Count mentions
@@ -331,13 +379,13 @@ class YouTubeMonitor:
                 ticker_counts[ticker] = count
 
         return {
-            'video_id': video['video_id'],
-            'title': video['title'],
-            'analysis_type': 'keyword',
-            'tickers_found': list(ticker_counts.keys()),
-            'ticker_mentions': ticker_counts,
-            'summary': f"Found {len(ticker_counts)} potential stock tickers",
-            'timestamp': datetime.now().isoformat()
+            "video_id": video["video_id"],
+            "title": video["title"],
+            "analysis_type": "keyword",
+            "tickers_found": list(ticker_counts.keys()),
+            "ticker_mentions": ticker_counts,
+            "summary": f"Found {len(ticker_counts)} potential stock tickers",
+            "timestamp": datetime.now().isoformat(),
         }
 
     def _llm_analysis(self, video: Dict, transcript: str) -> Dict:
@@ -374,25 +422,24 @@ Format as JSON with fields:
 
         try:
             analysis = self.llm_analyzer.analyze_sentiment(
-                symbol="YOUTUBE_VIDEO",
-                context=prompt
+                symbol="YOUTUBE_VIDEO", context=prompt
             )
 
             if isinstance(analysis, dict):
                 return {
-                    'video_id': video['video_id'],
-                    'title': video['title'],
-                    'analysis_type': 'llm',
-                    'analysis': analysis,
-                    'timestamp': datetime.now().isoformat()
+                    "video_id": video["video_id"],
+                    "title": video["title"],
+                    "analysis_type": "llm",
+                    "analysis": analysis,
+                    "timestamp": datetime.now().isoformat(),
                 }
             else:
                 return {
-                    'video_id': video['video_id'],
-                    'title': video['title'],
-                    'analysis_type': 'llm',
-                    'summary': str(analysis),
-                    'timestamp': datetime.now().isoformat()
+                    "video_id": video["video_id"],
+                    "title": video["title"],
+                    "analysis_type": "llm",
+                    "summary": str(analysis),
+                    "timestamp": datetime.now().isoformat(),
                 }
 
         except Exception as e:
@@ -410,66 +457,70 @@ Format as JSON with fields:
         Returns:
             True if watchlist was updated
         """
-        if not self.config['analysis_parameters'].get('update_watchlist', True):
+        if not self.config["analysis_parameters"].get("update_watchlist", True):
             logger.debug("📋 Watchlist updates disabled in config")
             return False
 
         # Extract tickers from analysis
         tickers = []
-        if analysis['analysis_type'] == 'keyword':
+        if analysis["analysis_type"] == "keyword":
             tickers = [
-                {'ticker': t, 'mentions': analysis['ticker_mentions'][t]}
-                for t in analysis.get('tickers_found', [])
+                {"ticker": t, "mentions": analysis["ticker_mentions"][t]}
+                for t in analysis.get("tickers_found", [])
             ]
-        elif analysis['analysis_type'] == 'llm':
+        elif analysis["analysis_type"] == "llm":
             # Parse LLM analysis for tickers
-            analysis_data = analysis.get('analysis', {})
-            if isinstance(analysis_data, dict) and 'tickers' in analysis_data:
-                tickers = analysis_data['tickers']
+            analysis_data = analysis.get("analysis", {})
+            if isinstance(analysis_data, dict) and "tickers" in analysis_data:
+                tickers = analysis_data["tickers"]
 
         if not tickers:
             logger.info("📋 No tickers to add to watchlist")
             return False
 
         # Load current watchlist
-        with open(WATCHLIST_FILE, 'r') as f:
+        with open(WATCHLIST_FILE, "r") as f:
             watchlist = json.load(f)
 
         # Add new stocks
         updated = False
         for ticker_data in tickers:
-            ticker = ticker_data.get('ticker', '').upper()
+            ticker = ticker_data.get("ticker", "").upper()
             if not ticker:
                 continue
 
             # Check if already exists
-            existing_tickers = [s['ticker'] for s in watchlist.get('watchlist', [])]
+            existing_tickers = [s["ticker"] for s in watchlist.get("watchlist", [])]
             if ticker in existing_tickers:
                 logger.debug(f"⏭️  {ticker} already in watchlist")
                 continue
 
             # Add to watchlist
-            watchlist.setdefault('watchlist', []).append({
-                'ticker': ticker,
-                'name': f"{ticker} (from YouTube analysis)",
-                'source': f"YouTube - {analysis['title']}",
-                'date_added': datetime.now().strftime('%Y-%m-%d'),
-                'rationale': ticker_data.get('rationale', analysis.get('summary', 'See video analysis')),
-                'priority': ticker_data.get('confidence', 'medium').lower(),
-                'status': 'watchlist',
-                'video_url': f"https://www.youtube.com/watch?v={analysis['video_id']}",
-                'analysis_file': f"docs/youtube_analysis/{analysis['video_id']}.md"
-            })
+            watchlist.setdefault("watchlist", []).append(
+                {
+                    "ticker": ticker,
+                    "name": f"{ticker} (from YouTube analysis)",
+                    "source": f"YouTube - {analysis['title']}",
+                    "date_added": datetime.now().strftime("%Y-%m-%d"),
+                    "rationale": ticker_data.get(
+                        "rationale", analysis.get("summary", "See video analysis")
+                    ),
+                    "priority": ticker_data.get("confidence", "medium").lower(),
+                    "status": "watchlist",
+                    "video_url": f"https://www.youtube.com/watch?v={analysis['video_id']}",
+                    "analysis_file": f"docs/youtube_analysis/{analysis['video_id']}.md",
+                }
+            )
 
             logger.info(f"✅ Added {ticker} to watchlist")
             updated = True
 
         if updated:
             # Update metadata
-            watchlist['meta']['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+            watchlist["meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
 
             # Save
-            with open(WATCHLIST_FILE, 'w') as f:
+            with open(WATCHLIST_FILE, "w") as f:
                 json.dump(watchlist, f, indent=2)
 
             logger.info(f"💾 Watchlist updated with {len(tickers)} new stocks")
@@ -485,7 +536,7 @@ Format as JSON with fields:
             transcript: Full transcript
             analysis: Analysis results
         """
-        if not self.config['analysis_parameters'].get('generate_report', True):
+        if not self.config["analysis_parameters"].get("generate_report", True):
             return
 
         report_file = ANALYSIS_DIR / f"{video['video_id']}.md"
@@ -513,15 +564,15 @@ Format as JSON with fields:
 """
 
         # Add tickers
-        if analysis['analysis_type'] == 'keyword':
+        if analysis["analysis_type"] == "keyword":
             report += "### Tickers Mentioned (Keyword Analysis)\n\n"
-            for ticker, count in analysis.get('ticker_mentions', {}).items():
+            for ticker, count in analysis.get("ticker_mentions", {}).items():
                 report += f"- **{ticker}**: Mentioned {count} times\n"
-        elif analysis['analysis_type'] == 'llm':
+        elif analysis["analysis_type"] == "llm":
             report += "### AI-Extracted Stock Recommendations\n\n"
-            analysis_data = analysis.get('analysis', {})
-            if isinstance(analysis_data, dict) and 'tickers' in analysis_data:
-                for stock in analysis_data['tickers']:
+            analysis_data = analysis.get("analysis", {})
+            if isinstance(analysis_data, dict) and "tickers" in analysis_data:
+                for stock in analysis_data["tickers"]:
                     report += f"""
 ### {stock.get('ticker', 'Unknown')}
 - **Sentiment**: {stock.get('sentiment', 'Unknown').upper()}
@@ -567,22 +618,22 @@ Format as JSON with fields:
         # Check if trading-related
         if not self.is_trading_related(video, channel_config):
             logger.info("⏭️  Skipping non-trading video")
-            self.processed_videos[video['video_id']] = {
-                'title': video['title'],
-                'processed_at': datetime.now().isoformat(),
-                'status': 'skipped_not_trading_related'
+            self.processed_videos[video["video_id"]] = {
+                "title": video["title"],
+                "processed_at": datetime.now().isoformat(),
+                "status": "skipped_not_trading_related",
             }
             self._save_processed_videos()
             return False
 
         # Get transcript
-        transcript = self.get_transcript(video['video_id'])
+        transcript = self.get_transcript(video["video_id"])
         if not transcript:
             logger.warning("⚠️  No transcript available, skipping")
-            self.processed_videos[video['video_id']] = {
-                'title': video['title'],
-                'processed_at': datetime.now().isoformat(),
-                'status': 'skipped_no_transcript'
+            self.processed_videos[video["video_id"]] = {
+                "title": video["title"],
+                "processed_at": datetime.now().isoformat(),
+                "status": "skipped_no_transcript",
             }
             self._save_processed_videos()
             return False
@@ -597,11 +648,11 @@ Format as JSON with fields:
         self.save_analysis_report(video, transcript, analysis)
 
         # Mark as processed
-        self.processed_videos[video['video_id']] = {
-            'title': video['title'],
-            'processed_at': datetime.now().isoformat(),
-            'status': 'completed',
-            'analysis_file': f"docs/youtube_analysis/{video['video_id']}.md"
+        self.processed_videos[video["video_id"]] = {
+            "title": video["title"],
+            "processed_at": datetime.now().isoformat(),
+            "status": "completed",
+            "analysis_file": f"docs/youtube_analysis/{video['video_id']}.md",
         }
         self._save_processed_videos()
 
@@ -612,22 +663,24 @@ Format as JSON with fields:
         """
         Main monitoring loop - check all channels for new videos
         """
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("🚀 AUTONOMOUS YOUTUBE MONITORING - STARTING")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-        lookback_hours = self.config.get('lookback_hours', 24)
-        channels = self.config.get('channels', [])
+        lookback_hours = self.config.get("lookback_hours", 24)
+        channels = self.config.get("channels", [])
 
-        logger.info(f"📊 Monitoring {len(channels)} channels (lookback: {lookback_hours}h)")
+        logger.info(
+            f"📊 Monitoring {len(channels)} channels (lookback: {lookback_hours}h)"
+        )
 
         total_processed = 0
         total_found = 0
 
         for channel_config in channels:
-            channel_name = channel_config['name']
-            channel_id = channel_config['channel_id']
+            channel_name = channel_config["name"]
+            channel_id = channel_config["channel_id"]
 
             logger.info(f"\n{'─'*60}")
             logger.info(f"📺 Channel: {channel_name}")
@@ -650,15 +703,15 @@ Format as JSON with fields:
                     logger.error(f"❌ Error processing video: {e}")
                     continue
 
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("🏁 MONITORING COMPLETE")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"📊 Found: {total_found} new videos")
         logger.info(f"✅ Processed: {total_processed} videos")
         logger.info(f"📝 Logs: {LOG_FILE}")
         logger.info(f"📋 Watchlist: {WATCHLIST_FILE}")
         logger.info(f"📁 Reports: {ANALYSIS_DIR}")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
 
 def main():

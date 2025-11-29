@@ -8,6 +8,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import json
 
+
 def calculate_rsi(prices, period=14):
     """Calculate RSI"""
     delta = prices.diff()
@@ -16,6 +17,7 @@ def calculate_rsi(prices, period=14):
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
     return rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50.0
+
 
 def calculate_macd(prices):
     """Calculate MACD"""
@@ -26,18 +28,20 @@ def calculate_macd(prices):
     histogram = macd_line - signal_line
 
     return {
-        'macd': macd_line.iloc[-1],
-        'signal': signal_line.iloc[-1],
-        'histogram': histogram.iloc[-1]
+        "macd": macd_line.iloc[-1],
+        "signal": signal_line.iloc[-1],
+        "histogram": histogram.iloc[-1],
     }
+
 
 def calculate_volume_ratio(hist):
     """Calculate volume ratio"""
     if len(hist) < 20:
         return 1.0
-    current_volume = hist['Volume'].iloc[-1]
-    avg_volume = hist['Volume'].iloc[-20:].mean()
+    current_volume = hist["Volume"].iloc[-1]
+    avg_volume = hist["Volume"].iloc[-20:].mean()
     return current_volume / avg_volume if avg_volume > 0 else 1.0
+
 
 # Read from a simple CSV format we'll create
 # Since we don't have yfinance, we'll use mock data for demonstration
@@ -155,12 +159,16 @@ print("=" * 80)
 
 # Try to load system state to get more context
 try:
-    with open('/Users/igorganapolsky/workspace/git/apps/trading/data/system_state.json', 'r') as f:
+    with open(
+        "/Users/igorganapolsky/workspace/git/apps/trading/data/system_state.json", "r"
+    ) as f:
         state = json.load(f)
         print()
         print("SYSTEM STATE CONTEXT:")
         print(f"  Challenge Day: {state['challenge']['current_day']}")
-        print(f"  Total P/L: ${state['account']['total_pl']} ({state['account']['total_pl_pct']}%)")
+        print(
+            f"  Total P/L: ${state['account']['total_pl']} ({state['account']['total_pl_pct']}%)"
+        )
         print(f"  Win Rate: {state['performance']['win_rate']}%")
         print()
 except Exception as e:

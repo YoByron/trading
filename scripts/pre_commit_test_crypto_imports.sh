@@ -20,4 +20,3 @@ else:
 "
 
 echo "✅ Crypto trading import check passed"
-

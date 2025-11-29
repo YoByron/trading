@@ -20,7 +20,7 @@ from datetime import datetime, date
 from pathlib import Path
 
 # Add parent to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import alpaca_trade_api as tradeapi
 import pandas as pd
@@ -36,11 +36,11 @@ from src.agents.reinforcement_learning_optimized import OptimizedRLPolicyLearner
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler('logs/advanced_trading.log'),
-        logging.StreamHandler()
-    ]
+        logging.FileHandler("logs/advanced_trading.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,9 @@ ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -72,27 +74,27 @@ def get_market_data(symbol: str) -> dict:
     """
     try:
         # Get price history from Alpaca
-        bars = api.get_bars(symbol, '1Day', limit=200).df
+        bars = api.get_bars(symbol, "1Day", limit=200).df
 
         if bars.empty:
             logger.warning(f"No data for {symbol}")
             return {}
 
         # Calculate volatility
-        returns = bars['close'].pct_change()
-        volatility = returns.std() * (252 ** 0.5)  # Annualized
+        returns = bars["close"].pct_change()
+        volatility = returns.std() * (252**0.5)  # Annualized
 
         # Trend strength (simple momentum)
         if len(bars) >= 50:
-            ma_20 = bars['close'].rolling(20).mean().iloc[-1]
-            ma_50 = bars['close'].rolling(50).mean().iloc[-1]
+            ma_20 = bars["close"].rolling(20).mean().iloc[-1]
+            ma_50 = bars["close"].rolling(50).mean().iloc[-1]
             trend_strength = abs(ma_20 - ma_50) / ma_50
         else:
             trend_strength = 0.1
 
         return {
             "symbol": symbol,
-            "price": bars['close'].iloc[-1],
+            "price": bars["close"].iloc[-1],
             "price_history": bars,
             "volatility": volatility,
             "trend_strength": trend_strength,
@@ -101,16 +103,18 @@ def get_market_data(symbol: str) -> dict:
                 "pe_ratio": "N/A",
                 "growth_rate": "N/A",
                 "profit_margin": "N/A",
-                "market_cap": "N/A"
+                "market_cap": "N/A",
             },
             "news": [
                 # Would come from news API
             ],
             "market_context": {
-                "sector": "Technology" if symbol in ["NVDA", "GOOGL", "AMZN"] else "ETF",
+                "sector": (
+                    "Technology" if symbol in ["NVDA", "GOOGL", "AMZN"] else "ETF"
+                ),
                 "market_trend": "NEUTRAL",
-                "volatility": volatility
-            }
+                "volatility": volatility,
+            },
         }
     except Exception as e:
         logger.error(f"Error fetching data for {symbol}: {e}")
@@ -200,7 +204,7 @@ def main():
                 "symbol": symbol,
                 "confidence": confidence,
                 "volatility": market_data.get("volatility", 0.20),
-                "historical_win_rate": 0.60  # From backtest
+                "historical_win_rate": 0.60,  # From backtest
             }
 
             risk_assessment = risk_agent.analyze(risk_data)
@@ -216,7 +220,9 @@ def main():
                 # Enhanced market state for OptimizedRLPolicyLearner
                 price_history = market_data.get("price_history", {})
                 market_state = {
-                    "market_regime": coordinated_decision.get("market_regime", "UNKNOWN"),
+                    "market_regime": coordinated_decision.get(
+                        "market_regime", "UNKNOWN"
+                    ),
                     "rsi": price_history.get("rsi", 50),
                     "macd_histogram": price_history.get("macd_histogram", 0.0),
                     "trend": price_history.get("trend", "SIDEWAYS"),
@@ -235,9 +241,11 @@ def main():
                         "position_size": position_size,
                         "market_conditions": {
                             "spread": "N/A",
-                            "volume": market_data.get("price_history", {}).get("volume", 0),
-                            "volatility": market_data.get("volatility", 0)
-                        }
+                            "volume": market_data.get("price_history", {}).get(
+                                "volume", 0
+                            ),
+                            "volatility": market_data.get("volatility", 0),
+                        },
                     }
 
                     execution_result = execution_agent.analyze(execution_data)
@@ -245,16 +253,18 @@ def main():
                     print(f"\n🚀 Execution Result:")
                     exec_res = execution_result.get("execution_result", {})
                     print(f"   Status: {exec_res.get('status')}")
-                    if exec_res.get('status') == 'SUCCESS':
+                    if exec_res.get("status") == "SUCCESS":
                         print(f"   Order ID: {exec_res.get('order_id')}")
 
-                        decisions_made.append({
-                            "symbol": symbol,
-                            "action": "BUY",
-                            "position_size": position_size,
-                            "order_id": exec_res.get('order_id'),
-                            "timestamp": datetime.now().isoformat()
-                        })
+                        decisions_made.append(
+                            {
+                                "symbol": symbol,
+                                "action": "BUY",
+                                "position_size": position_size,
+                                "order_id": exec_res.get("order_id"),
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        )
                 else:
                     print(f"   RL overrode to {rl_action} - SKIPPING trade")
             else:
@@ -278,7 +288,7 @@ def main():
     # Save decisions
     if decisions_made:
         decisions_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
-        with open(decisions_file, 'w') as f:
+        with open(decisions_file, "w") as f:
             json.dump(decisions_made, f, indent=2)
         print(f"\n📁 Decisions saved to: {decisions_file}")
 

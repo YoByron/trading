@@ -20,7 +20,9 @@ class YahooFinanceCollector(BaseNewsCollector):
     def __init__(self):
         super().__init__(source_name="yahoo")
 
-    def collect_ticker_news(self, ticker: str, days_back: int = 7) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Collect news for a specific ticker from Yahoo Finance.
 
@@ -57,12 +59,14 @@ class YahooFinanceCollector(BaseNewsCollector):
                     content=item.get("summary", ""),  # Yahoo provides summary
                     url=item.get("link", ""),
                     published_date=pub_date.strftime("%Y-%m-%d"),
-                    ticker=ticker
+                    ticker=ticker,
                 )
 
                 articles.append(article)
 
-            logger.info(f"Collected {len(articles)} articles for {ticker} from Yahoo Finance")
+            logger.info(
+                f"Collected {len(articles)} articles for {ticker} from Yahoo Finance"
+            )
             return articles
 
         except Exception as e:
@@ -98,5 +102,7 @@ class YahooFinanceCollector(BaseNewsCollector):
                 seen_urls.add(url)
                 unique_articles.append(article)
 
-        logger.info(f"Collected {len(unique_articles)} unique market articles from Yahoo Finance")
+        logger.info(
+            f"Collected {len(unique_articles)} unique market articles from Yahoo Finance"
+        )
         return unique_articles

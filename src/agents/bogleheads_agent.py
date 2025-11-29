@@ -7,6 +7,7 @@ from src.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
+
 class BogleHeadsAgent(BaseAgent):
     """
     BogleHeads Agent: "The Voice of Reason"
@@ -26,9 +27,9 @@ class BogleHeadsAgent(BaseAgent):
         super().__init__(
             name="BogleHeadsAgent",
             role="Long-term investment philosophy and market sentiment sanity check",
-            model="claude-3-opus-20240229"
+            model="claude-3-opus-20240229",
         )
-        self.base_url = "https://www.bogleheads.org/forum/viewforum.php?f=10" # Investing - Theory, News & General
+        self.base_url = "https://www.bogleheads.org/forum/viewforum.php?f=10"  # Investing - Theory, News & General
 
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -52,7 +53,7 @@ class BogleHeadsAgent(BaseAgent):
                 "agent": self.name,
                 "signal": "NEUTRAL",
                 "confidence": 0.0,
-                "reasoning": "Failed to fetch forum data. Defaulting to 'Stay the Course'."
+                "reasoning": "Failed to fetch forum data. Defaulting to 'Stay the Course'.",
             }
 
         # 2. Analyze Sentiment with LLM
@@ -62,11 +63,13 @@ class BogleHeadsAgent(BaseAgent):
         result = {
             "agent": self.name,
             "symbol": symbol,
-            "signal": llm_response.get("decision", "HOLD"), # HOLD usually means "Stay the Course"
+            "signal": llm_response.get(
+                "decision", "HOLD"
+            ),  # HOLD usually means "Stay the Course"
             "confidence": llm_response.get("confidence", 0.5),
             "reasoning": llm_response.get("reasoning", "Stay the course."),
             "bogleheads_sentiment": llm_response.get("sentiment_summary", "Unknown"),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         self.log_decision(result)
@@ -81,13 +84,13 @@ class BogleHeadsAgent(BaseAgent):
             response = requests.get(self.base_url, headers=headers, timeout=10)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.text, 'lxml')
+            soup = BeautifulSoup(response.text, "lxml")
 
             # Bogleheads uses phpBB. Topics are usually in <a class="topictitle">
-            topic_links = soup.find_all('a', class_='topictitle')
+            topic_links = soup.find_all("a", class_="topictitle")
 
             titles = [link.text.strip() for link in topic_links]
-            return titles[:20] # Return top 20 topics
+            return titles[:20]  # Return top 20 topics
 
         except Exception as e:
             logger.error(f"Failed to scrape BogleHeads: {e}")

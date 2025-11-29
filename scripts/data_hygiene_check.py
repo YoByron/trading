@@ -20,8 +20,7 @@ from src.utils.data_hygiene import DataHygieneChecker
 from src.utils.data_collector import DataCollector
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -33,12 +32,18 @@ def main():
 
     # Validate command
     validate_parser = subparsers.add_parser("validate", help="Validate data quality")
-    validate_parser.add_argument("--symbols", type=str, help="Comma-separated symbols (default: all)")
-    validate_parser.add_argument("--min-days", type=int, default=252, help="Minimum days required")
+    validate_parser.add_argument(
+        "--symbols", type=str, help="Comma-separated symbols (default: all)"
+    )
+    validate_parser.add_argument(
+        "--min-days", type=int, default=252, help="Minimum days required"
+    )
 
     # Rotate command
     rotate_parser = subparsers.add_parser("rotate", help="Rotate old historical data")
-    rotate_parser.add_argument("--max-age-days", type=int, default=365, help="Maximum age in days")
+    rotate_parser.add_argument(
+        "--max-age-days", type=int, default=365, help="Maximum age in days"
+    )
     rotate_parser.add_argument("--dry-run", action="store_true", help="Preview changes")
 
     # Model check command
@@ -46,14 +51,22 @@ def main():
     model_parser.add_argument("--model-path", type=str, help="Specific model path")
 
     # Cleanup models command
-    cleanup_parser = subparsers.add_parser("cleanup-models", help="Clean up stale models")
+    cleanup_parser = subparsers.add_parser(
+        "cleanup-models", help="Clean up stale models"
+    )
     cleanup_parser.add_argument("--max-age-days", type=int, help="Maximum age in days")
-    cleanup_parser.add_argument("--dry-run", action="store_true", help="Preview changes")
-    cleanup_parser.add_argument("--keep-latest", action="store_true", default=True, help="Keep latest model")
+    cleanup_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview changes"
+    )
+    cleanup_parser.add_argument(
+        "--keep-latest", action="store_true", default=True, help="Keep latest model"
+    )
 
     # Full check command
     full_parser = subparsers.add_parser("full-check", help="Run full hygiene check")
-    full_parser.add_argument("--symbols", type=str, help="Comma-separated symbols (default: all)")
+    full_parser.add_argument(
+        "--symbols", type=str, help="Comma-separated symbols (default: all)"
+    )
     full_parser.add_argument("--output", type=str, help="Output JSON report path")
 
     args = parser.parse_args()
@@ -83,7 +96,9 @@ def main():
 
         for symbol in symbols:
             hist_data = collector.load_historical_data(symbol)
-            validation = checker.validate_historical_data_quality(symbol, hist_data, args.min_days)
+            validation = checker.validate_historical_data_quality(
+                symbol, hist_data, args.min_days
+            )
 
             status = "✅" if validation["valid"] else "❌"
             print(f"\n{status} {symbol}")
@@ -110,8 +125,7 @@ def main():
     elif args.command == "rotate":
         print(f"\n🔄 Rotating historical data older than {args.max_age_days} days...")
         result = checker.rotate_old_historical_data(
-            max_age_days=args.max_age_days,
-            dry_run=args.dry_run
+            max_age_days=args.max_age_days, dry_run=args.dry_run
         )
 
         print(f"\n{'[DRY RUN] ' if args.dry_run else ''}Rotation Results:")
@@ -122,7 +136,9 @@ def main():
         if result["deleted_files"]:
             print(f"\n   Deleted files (showing first 10):")
             for file_info in result["deleted_files"][:10]:
-                print(f"      - {file_info['file']} ({file_info['data_age_days']} days old)")
+                print(
+                    f"      - {file_info['file']} ({file_info['data_age_days']} days old)"
+                )
 
     elif args.command == "check-models":
         print("\n🔍 Checking model staleness...")
@@ -134,7 +150,9 @@ def main():
         print(f"Reason: {result['reason']}")
 
         if result["stale"]:
-            print(f"\n⚠️  Model needs retraining (max age: {result['max_age_days']} days)")
+            print(
+                f"\n⚠️  Model needs retraining (max age: {result['max_age_days']} days)"
+            )
             sys.exit(1)
         else:
             sys.exit(0)
@@ -144,7 +162,7 @@ def main():
         result = checker.cleanup_stale_models(
             max_age_days=args.max_age_days,
             keep_latest=args.keep_latest,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
         )
 
         print(f"\n{'[DRY RUN] ' if args.dry_run else ''}Cleanup Results:")
@@ -181,7 +199,9 @@ def main():
                 print(f"      Issues: {', '.join(validation['issues'])}")
 
         # Model staleness
-        print(f"\n🤖 Model Status: {'❌ STALE' if report['model_staleness']['stale'] else '✅ FRESH'}")
+        print(
+            f"\n🤖 Model Status: {'❌ STALE' if report['model_staleness']['stale'] else '✅ FRESH'}"
+        )
         if report["model_staleness"]["age_days"] is not None:
             print(f"   Age: {report['model_staleness']['age_days']} days")
 

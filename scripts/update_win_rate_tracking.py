@@ -12,23 +12,25 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import alpaca_trade_api as tradeapi
 
 # Connect to Alpaca
 api = tradeapi.REST(
-    os.getenv('ALPACA_API_KEY'),
-    os.getenv('ALPACA_SECRET_KEY'),
-    'https://paper-api.alpaca.markets',
-    api_version='v2'
+    os.getenv("ALPACA_API_KEY"),
+    os.getenv("ALPACA_SECRET_KEY"),
+    "https://paper-api.alpaca.markets",
+    api_version="v2",
 )
+
 
 def main():
     """Migrate system_state.json to new win rate tracking structure"""
-    state_file = Path('data/system_state.json')
+    state_file = Path("data/system_state.json")
 
     if not state_file.exists():
         print("❌ system_state.json not found")
@@ -86,19 +88,23 @@ def main():
         matching_pos["unrealized_pl_pct"] = unrealized_plpc
         matching_pos["last_updated"] = datetime.now().isoformat()
 
-        open_positions_data.append({
-            "symbol": symbol,
-            "qty": qty,
-            "entry_price": entry_price,
-            "current_price": current_price,
-            "unrealized_pl": unrealized_pl,
-            "unrealized_pl_pct": unrealized_plpc,
-        })
+        open_positions_data.append(
+            {
+                "symbol": symbol,
+                "qty": qty,
+                "entry_price": entry_price,
+                "current_price": current_price,
+                "unrealized_pl": unrealized_pl,
+                "unrealized_pl_pct": unrealized_plpc,
+            }
+        )
 
     print(f"✅ Updated {len(open_positions_data)} open positions")
     for pos in open_positions_data:
         status = "📈" if pos["unrealized_pl"] > 0 else "📉"
-        print(f"   {status} {pos['symbol']}: {pos['unrealized_pl']:+.2f} ({pos['unrealized_pl_pct']:+.2f}%)")
+        print(
+            f"   {status} {pos['symbol']}: {pos['unrealized_pl']:+.2f} ({pos['unrealized_pl_pct']:+.2f}%)"
+        )
 
     # Recalculate win rate based on closed trades only
     closed_trades = state["performance"]["closed_trades"]
@@ -124,15 +130,18 @@ def main():
     # Update metadata
     state["meta"]["last_updated"] = datetime.now().isoformat()
     state["meta"]["last_audit"] = datetime.now().isoformat()
-    state["meta"]["audit_notes"] = f"Day {state['challenge']['current_day']} - Win rate tracking updated (separated closed vs open)"
+    state["meta"][
+        "audit_notes"
+    ] = f"Day {state['challenge']['current_day']} - Win rate tracking updated (separated closed vs open)"
 
     # Save updated state
-    with open(state_file, 'w') as f:
+    with open(state_file, "w") as f:
         json.dump(state, f, indent=2)
 
     print()
     print("✅ Win rate tracking updated successfully!")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     main()

@@ -58,7 +58,7 @@ class DQNAgent:
         replay_buffer_size: int = 10000,
         target_update_freq: int = 100,
         device: str = "cpu",
-        model_dir: str = "models/ml"
+        model_dir: str = "models/ml",
     ):
         """
         Initialize DQN Agent.
@@ -100,30 +100,24 @@ class DQNAgent:
         # Build networks
         if use_lstm:
             self.q_network = LSTMDQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
+                input_dim=state_dim, num_actions=action_dim
             ).to(self.device)
             self.target_network = LSTMDQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
+                input_dim=state_dim, num_actions=action_dim
             ).to(self.device)
         elif use_dueling:
             self.q_network = DuelingDQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
+                input_dim=state_dim, num_actions=action_dim
             ).to(self.device)
             self.target_network = DuelingDQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
+                input_dim=state_dim, num_actions=action_dim
             ).to(self.device)
         else:
-            self.q_network = DQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
-            ).to(self.device)
+            self.q_network = DQNNetwork(input_dim=state_dim, num_actions=action_dim).to(
+                self.device
+            )
             self.target_network = DQNNetwork(
-                input_dim=state_dim,
-                num_actions=action_dim
+                input_dim=state_dim, num_actions=action_dim
             ).to(self.device)
 
         # Copy weights to target network
@@ -135,9 +129,7 @@ class DQNAgent:
 
         # Replay buffer
         if use_prioritized_replay:
-            self.replay_buffer = PrioritizedReplayBuffer(
-                capacity=replay_buffer_size
-            )
+            self.replay_buffer = PrioritizedReplayBuffer(capacity=replay_buffer_size)
         else:
             self.replay_buffer = deque(maxlen=replay_buffer_size)
 
@@ -146,7 +138,9 @@ class DQNAgent:
         self.update_count = 0
         self.losses = deque(maxlen=1000)
 
-        logger.info(f"DQN Agent initialized: state_dim={state_dim}, actions={action_dim}")
+        logger.info(
+            f"DQN Agent initialized: state_dim={state_dim}, actions={action_dim}"
+        )
         logger.info(f"  Dueling: {use_dueling}, LSTM: {use_lstm}, Double: {use_double}")
         logger.info(f"  Prioritized Replay: {use_prioritized_replay}")
 
@@ -154,7 +148,7 @@ class DQNAgent:
         self,
         state: np.ndarray,
         agent_recommendation: Optional[str] = None,
-        training: bool = True
+        training: bool = True,
     ) -> int:
         """
         Select action using epsilon-greedy policy.
@@ -171,7 +165,9 @@ class DQNAgent:
             # Explore: random or use agent recommendation
             if agent_recommendation:
                 action_map = {"HOLD": 0, "BUY": 1, "SELL": 2}
-                return action_map.get(agent_recommendation, random.randint(0, self.action_dim - 1))
+                return action_map.get(
+                    agent_recommendation, random.randint(0, self.action_dim - 1)
+                )
             return random.randint(0, self.action_dim - 1)
 
         # Exploit: use Q-network
@@ -190,7 +186,7 @@ class DQNAgent:
         reward: float,
         next_state: np.ndarray,
         done: bool,
-        td_error: Optional[float] = None
+        td_error: Optional[float] = None,
     ):
         """Store transition in replay buffer."""
         if self.use_prioritized_replay:
@@ -200,12 +196,10 @@ class DQNAgent:
                 reward=reward,
                 next_state=next_state,
                 done=done,
-                td_error=td_error
+                td_error=td_error,
             )
         else:
-            self.replay_buffer.append((
-                state, action, reward, next_state, done
-            ))
+            self.replay_buffer.append((state, action, reward, next_state, done))
 
     def train_step(self) -> Optional[float]:
         """
@@ -225,10 +219,18 @@ class DQNAgent:
         # Sample batch
         if self.use_prioritized_replay:
             batch, indices, weights = self.replay_buffer.sample(self.batch_size)
-            states = torch.FloatTensor(np.array([e.state for e in batch])).to(self.device)
-            actions = torch.LongTensor(np.array([e.action for e in batch])).to(self.device)
-            rewards = torch.FloatTensor(np.array([e.reward for e in batch])).to(self.device)
-            next_states = torch.FloatTensor(np.array([e.next_state for e in batch])).to(self.device)
+            states = torch.FloatTensor(np.array([e.state for e in batch])).to(
+                self.device
+            )
+            actions = torch.LongTensor(np.array([e.action for e in batch])).to(
+                self.device
+            )
+            rewards = torch.FloatTensor(np.array([e.reward for e in batch])).to(
+                self.device
+            )
+            next_states = torch.FloatTensor(np.array([e.next_state for e in batch])).to(
+                self.device
+            )
             dones = torch.BoolTensor(np.array([e.done for e in batch])).to(self.device)
             weights = torch.FloatTensor(weights).to(self.device)
         else:
@@ -236,7 +238,9 @@ class DQNAgent:
             states = torch.FloatTensor(np.array([e[0] for e in batch])).to(self.device)
             actions = torch.LongTensor(np.array([e[1] for e in batch])).to(self.device)
             rewards = torch.FloatTensor(np.array([e[2] for e in batch])).to(self.device)
-            next_states = torch.FloatTensor(np.array([e[3] for e in batch])).to(self.device)
+            next_states = torch.FloatTensor(np.array([e[3] for e in batch])).to(
+                self.device
+            )
             dones = torch.BoolTensor(np.array([e[4] for e in batch])).to(self.device)
             weights = None
 
@@ -254,11 +258,13 @@ class DQNAgent:
                 next_q_values = self.target_network(next_states).max(1, keepdim=True)[0]
 
             # Target Q-values
-            target_q_values = rewards.unsqueeze(1) + (self.gamma * next_q_values * (~dones).unsqueeze(1))
+            target_q_values = rewards.unsqueeze(1) + (
+                self.gamma * next_q_values * (~dones).unsqueeze(1)
+            )
 
         # Compute loss
         td_errors = target_q_values - current_q_values
-        loss = (td_errors ** 2)
+        loss = td_errors**2
 
         if weights is not None:
             loss = loss * weights.unsqueeze(1)
@@ -284,10 +290,7 @@ class DQNAgent:
             logger.debug(f"Target network updated at step {self.update_count}")
 
         # Decay epsilon
-        self.epsilon = max(
-            self.epsilon_end,
-            self.epsilon * self.epsilon_decay
-        )
+        self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
 
         self.losses.append(loss.item())
         self.step_count += 1
@@ -297,7 +300,7 @@ class DQNAgent:
     def calculate_reward(
         self,
         trade_result: Dict[str, Any],
-        market_state: Optional[Dict[str, Any]] = None
+        market_state: Optional[Dict[str, Any]] = None,
     ) -> float:
         """
         Calculate reward from trade result.
@@ -332,12 +335,12 @@ class DQNAgent:
     def save(self, filepath: str):
         """Save model and state."""
         save_dict = {
-            'q_network_state_dict': self.q_network.state_dict(),
-            'target_network_state_dict': self.target_network.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'epsilon': self.epsilon,
-            'step_count': self.step_count,
-            'update_count': self.update_count
+            "q_network_state_dict": self.q_network.state_dict(),
+            "target_network_state_dict": self.target_network.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "epsilon": self.epsilon,
+            "step_count": self.step_count,
+            "update_count": self.update_count,
         }
         torch.save(save_dict, filepath)
         logger.info(f"Model saved to {filepath}")
@@ -349,22 +352,22 @@ class DQNAgent:
             return
 
         checkpoint = torch.load(filepath, map_location=self.device)
-        self.q_network.load_state_dict(checkpoint['q_network_state_dict'])
-        self.target_network.load_state_dict(checkpoint['target_network_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.epsilon = checkpoint.get('epsilon', self.epsilon_start)
-        self.step_count = checkpoint.get('step_count', 0)
-        self.update_count = checkpoint.get('update_count', 0)
+        self.q_network.load_state_dict(checkpoint["q_network_state_dict"])
+        self.target_network.load_state_dict(checkpoint["target_network_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        self.epsilon = checkpoint.get("epsilon", self.epsilon_start)
+        self.step_count = checkpoint.get("step_count", 0)
+        self.update_count = checkpoint.get("update_count", 0)
         logger.info(f"Model loaded from {filepath}")
 
     def get_stats(self) -> Dict[str, Any]:
         """Get training statistics."""
         avg_loss = np.mean(self.losses) if self.losses else 0.0
         return {
-            'epsilon': self.epsilon,
-            'step_count': self.step_count,
-            'update_count': self.update_count,
-            'avg_loss': avg_loss,
-            'replay_buffer_size': len(self.replay_buffer),
-            'target_updates': self.update_count // self.target_update_freq
+            "epsilon": self.epsilon,
+            "step_count": self.step_count,
+            "update_count": self.update_count,
+            "avg_loss": avg_loss,
+            "replay_buffer_size": len(self.replay_buffer),
+            "target_updates": self.update_count // self.target_update_freq,
         }

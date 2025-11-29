@@ -41,10 +41,7 @@ class RiskManager:
         sentiment_multiplier = 1.0 + (sentiment_score * 0.25)
 
         notional = (
-            self.daily_budget
-            * blended_confidence
-            * sentiment_multiplier
-            * multiplier
+            self.daily_budget * blended_confidence * sentiment_multiplier * multiplier
         )
 
         cap = account_equity * self.max_position_pct

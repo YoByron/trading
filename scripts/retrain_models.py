@@ -14,10 +14,10 @@ from src.ml.trainer import ModelTrainer
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("ModelRetraining")
+
 
 def main():
     logger.info("Starting ML Model Retraining...")
@@ -40,6 +40,7 @@ def main():
 
     if success_count < len(symbols):
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

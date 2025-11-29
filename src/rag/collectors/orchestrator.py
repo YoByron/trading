@@ -37,15 +37,13 @@ class NewsOrchestrator:
         self.collectors = {
             "yahoo": YahooFinanceCollector(),
             "reddit": RedditCollector(),
-            "alphavantage": AlphaVantageCollector()
+            "alphavantage": AlphaVantageCollector(),
         }
 
         logger.info(f"Initialized {len(self.collectors)} news collectors")
 
     def collect_all_ticker_news(
-        self,
-        ticker: str,
-        days_back: int = 7
+        self, ticker: str, days_back: int = 7
     ) -> List[Dict[str, Any]]:
         """
         Collect news for a ticker from ALL sources.
@@ -77,9 +75,7 @@ class NewsOrchestrator:
         return all_articles
 
     def collect_watchlist_news(
-        self,
-        tickers: List[str],
-        days_back: int = 7
+        self, tickers: List[str], days_back: int = 7
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Collect news for multiple tickers (watchlist).
@@ -99,7 +95,9 @@ class NewsOrchestrator:
             results[ticker] = articles
 
         total_articles = sum(len(articles) for articles in results.values())
-        logger.info(f"\n✅ Collected {total_articles} total articles for {len(tickers)} tickers")
+        logger.info(
+            f"\n✅ Collected {total_articles} total articles for {len(tickers)} tickers"
+        )
 
         return results
 
@@ -132,11 +130,7 @@ class NewsOrchestrator:
         logger.info(f"Collected {len(all_articles)} total market articles")
         return all_articles
 
-    def save_collected_news(
-        self,
-        articles: List[Dict[str, Any]],
-        ticker: str = None
-    ):
+    def save_collected_news(self, articles: List[Dict[str, Any]], ticker: str = None):
         """
         Save collected news to data/rag/normalized/.
 

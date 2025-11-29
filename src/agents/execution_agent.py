@@ -9,6 +9,7 @@ Responsibilities:
 
 Ensures best execution
 """
+
 import logging
 from typing import Dict, Any, Optional
 from alpaca.trading.client import TradingClient
@@ -32,8 +33,7 @@ class ExecutionAgent(BaseAgent):
 
     def __init__(self, alpaca_api: Optional[TradingClient] = None):
         super().__init__(
-            name="ExecutionAgent",
-            role="Order execution and timing optimization"
+            name="ExecutionAgent", role="Order execution and timing optimization"
         )
         self.alpaca_api = alpaca_api
         self.execution_history: list = []
@@ -56,7 +56,7 @@ class ExecutionAgent(BaseAgent):
         if action == "HOLD":
             return {
                 "action": "NO_EXECUTION",
-                "reasoning": "HOLD recommendation - no order needed"
+                "reasoning": "HOLD recommendation - no order needed",
             }
 
         # Check market status
@@ -106,7 +106,10 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             execution_result = self._execute_order(symbol, action, position_size)
             analysis["execution_result"] = execution_result
         else:
-            analysis["execution_result"] = {"status": "NOT_EXECUTED", "reason": analysis["action"]}
+            analysis["execution_result"] = {
+                "status": "NOT_EXECUTED",
+                "reason": analysis["action"],
+            }
 
         # Log decision
         self.log_decision(analysis)
@@ -123,14 +126,20 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             return {
                 "status": "OPEN" if clock.is_open else "CLOSED",
                 "is_open": clock.is_open,
-                "next_open": str(clock.next_open) if hasattr(clock, 'next_open') else None,
-                "next_close": str(clock.next_close) if hasattr(clock, 'next_close') else None
+                "next_open": (
+                    str(clock.next_open) if hasattr(clock, "next_open") else None
+                ),
+                "next_close": (
+                    str(clock.next_close) if hasattr(clock, "next_close") else None
+                ),
             }
         except Exception as e:
             logger.error(f"Error checking market status: {e}")
             return {"status": "ERROR", "is_open": False, "error": str(e)}
 
-    def _execute_order(self, symbol: str, action: str, position_size: float) -> Dict[str, Any]:
+    def _execute_order(
+        self, symbol: str, action: str, position_size: float
+    ) -> Dict[str, Any]:
         """
         Execute order via Alpaca API.
 
@@ -148,7 +157,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                     symbol=symbol,
                     notional=position_size,
                     side=OrderSide.BUY,
-                    time_in_force=TimeInForce.DAY
+                    time_in_force=TimeInForce.DAY,
                 )
                 order = self.alpaca_api.submit_order(req)
             elif action == "SELL":
@@ -163,12 +172,14 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 "symbol": symbol,
                 "action": action,
                 "amount": position_size,
-                "order_status": order.status
+                "order_status": order.status,
             }
 
             # Track execution
             self.execution_history.append(result)
-            logger.info(f"Order executed: {order.id} - {symbol} {action} ${position_size}")
+            logger.info(
+                f"Order executed: {order.id} - {symbol} {action} ${position_size}"
+            )
 
             return result
 
@@ -179,7 +190,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 "error": str(e),
                 "symbol": symbol,
                 "action": action,
-                "amount": position_size
+                "amount": position_size,
             }
 
     def _parse_execution_response(self, reasoning: str) -> Dict[str, Any]:
@@ -189,7 +200,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             "timing": "IMMEDIATE",
             "slippage": 0.001,
             "confidence": 0.8,
-            "action": "EXECUTE"
+            "action": "EXECUTE",
         }
 
         for line in lines:

@@ -13,14 +13,18 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.utils.newsletter_analyzer import NewsletterAnalyzer, get_btc_signal, get_eth_signal
+from src.utils.newsletter_analyzer import (
+    NewsletterAnalyzer,
+    get_btc_signal,
+    get_eth_signal,
+)
 
 
 def test_article_parsing():
     """Test parsing of sample newsletter article"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 1: Article Parsing")
-    print("="*80)
+    print("=" * 80)
 
     sample_article = """
     Bitcoin Bullish Breakout Analysis - November 17, 2025
@@ -58,7 +62,9 @@ def test_article_parsing():
 
     for ticker, signal in signals.items():
         print(f"{ticker} Signal:")
-        print(f"  Sentiment: {signal.sentiment.upper()} (confidence: {signal.confidence:.2f})")
+        print(
+            f"  Sentiment: {signal.sentiment.upper()} (confidence: {signal.confidence:.2f})"
+        )
         if signal.entry_price:
             print(f"  Entry: ${signal.entry_price:,.0f}")
         if signal.target_price:
@@ -74,9 +80,9 @@ def test_article_parsing():
 
 def test_mcp_file_reading():
     """Test reading MCP-populated JSON files"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 2: MCP-Populated File Reading")
-    print("="*80)
+    print("=" * 80)
 
     analyzer = NewsletterAnalyzer()
 
@@ -87,7 +93,9 @@ def test_mcp_file_reading():
         print(f"\nLoaded {len(signals)} signals from MCP files:\n")
         for ticker, signal in signals.items():
             print(f"{ticker} Signal (from {signal.source_date.strftime('%Y-%m-%d')}):")
-            print(f"  Sentiment: {signal.sentiment.upper()} (confidence: {signal.confidence:.2f})")
+            print(
+                f"  Sentiment: {signal.sentiment.upper()} (confidence: {signal.confidence:.2f})"
+            )
             if signal.entry_price:
                 print(f"  Entry: ${signal.entry_price:,.0f}")
             if signal.target_price:
@@ -95,35 +103,41 @@ def test_mcp_file_reading():
             print()
     else:
         print("\nNo MCP-populated signals found.")
-        print("To populate, create files in: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json")
+        print(
+            "To populate, create files in: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json"
+        )
         print("See data/newsletter_signals/newsletter_signals_example.json for format")
 
 
 def test_convenience_functions():
     """Test convenience functions for quick access"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 3: Convenience Functions")
-    print("="*80)
+    print("=" * 80)
 
     btc_signal = get_btc_signal(max_age_days=30)
     eth_signal = get_eth_signal(max_age_days=30)
 
     if btc_signal:
-        print(f"\nBTC: {btc_signal.sentiment.upper()} ({btc_signal.confidence:.2f} confidence)")
+        print(
+            f"\nBTC: {btc_signal.sentiment.upper()} ({btc_signal.confidence:.2f} confidence)"
+        )
     else:
         print("\nBTC: No signal available")
 
     if eth_signal:
-        print(f"ETH: {eth_signal.sentiment.upper()} ({eth_signal.confidence:.2f} confidence)")
+        print(
+            f"ETH: {eth_signal.sentiment.upper()} ({eth_signal.confidence:.2f} confidence)"
+        )
     else:
         print("ETH: No signal available")
 
 
 def test_signal_persistence():
     """Test saving and loading signals"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 4: Signal Persistence")
-    print("="*80)
+    print("=" * 80)
 
     analyzer = NewsletterAnalyzer()
 
@@ -152,21 +166,23 @@ def test_signal_persistence():
 
 def main():
     """Run all tests"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("COINSNACKS NEWSLETTER ANALYZER - TEST SUITE")
-    print("="*80)
+    print("=" * 80)
 
     test_article_parsing()
     test_mcp_file_reading()
     test_convenience_functions()
     test_signal_persistence()
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TESTS COMPLETE")
-    print("="*80)
+    print("=" * 80)
     print("\nIntegration Instructions:")
     print("1. In Claude Desktop: Use MCP RSS tool to fetch CoinSnacks articles")
-    print("2. Extract signals and save to: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json")
+    print(
+        "2. Extract signals and save to: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json"
+    )
     print("3. Trading script calls: get_btc_signal() or get_eth_signal()")
     print("4. Fallback: RSS parsing happens automatically if no MCP files found")
 

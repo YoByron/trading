@@ -102,8 +102,8 @@ class ValueDiscoveryAgent(BaseAgent):
                     }
 
                     # Calculate opportunity score (combination of margin and quality)
-                    opportunity["opportunity_score"] = self._calculate_opportunity_score(
-                        opportunity
+                    opportunity["opportunity_score"] = (
+                        self._calculate_opportunity_score(opportunity)
                     )
 
                     opportunities.append(opportunity)
@@ -113,9 +113,7 @@ class ValueDiscoveryAgent(BaseAgent):
                 continue
 
         # Sort by opportunity score (highest first)
-        opportunities.sort(
-            key=lambda x: x.get("opportunity_score", 0), reverse=True
-        )
+        opportunities.sort(key=lambda x: x.get("opportunity_score", 0), reverse=True)
 
         # Get LLM analysis of top opportunities
         memory_context = self.get_memory_context(limit=5)

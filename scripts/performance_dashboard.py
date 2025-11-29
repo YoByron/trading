@@ -17,8 +17,9 @@ DATA_DIR.mkdir(exist_ok=True)
 api = tradeapi.REST(
     os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
     os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
-    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
-    api_version="v2"
+    os.getenv("APCA_API_BASE_URL")
+    or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    api_version="v2",
 )
 
 
@@ -108,19 +109,23 @@ def display_dashboard():
                 unrealized_plpc = float(pos.unrealized_plpc) * 100
                 total_unrealized += unrealized_pl
 
-                position_data.append({
-                    "symbol": symbol,
-                    "qty": qty,
-                    "entry": entry_price,
-                    "current": current_price,
-                    "pl": unrealized_pl,
-                    "pl_pct": unrealized_plpc,
-                })
+                position_data.append(
+                    {
+                        "symbol": symbol,
+                        "qty": qty,
+                        "entry": entry_price,
+                        "current": current_price,
+                        "pl": unrealized_pl,
+                        "pl_pct": unrealized_plpc,
+                    }
+                )
 
                 emoji = "🟢" if unrealized_pl > 0 else "🔴"
-                print(f"{emoji} {symbol:6s} {qty:8.4f} shares  "
-                      f"Entry: ${entry_price:7.2f}  Current: ${current_price:7.2f}  "
-                      f"P/L: ${unrealized_pl:+8.2f} ({unrealized_plpc:+.2f}%)")
+                print(
+                    f"{emoji} {symbol:6s} {qty:8.4f} shares  "
+                    f"Entry: ${entry_price:7.2f}  Current: ${current_price:7.2f}  "
+                    f"P/L: ${unrealized_pl:+8.2f} ({unrealized_plpc:+.2f}%)"
+                )
 
             print()
             print(f"Total Unrealized P/L: ${total_unrealized:+,.2f}")
@@ -176,9 +181,9 @@ def display_dashboard():
 
     # Trade statistics
     try:
-        orders = api.list_orders(status='all', limit=100)
-        buy_orders = [o for o in orders if o.side == 'buy' and o.status == 'filled']
-        sell_orders = [o for o in orders if o.side == 'sell' and o.status == 'filled']
+        orders = api.list_orders(status="all", limit=100)
+        buy_orders = [o for o in orders if o.side == "buy" and o.status == "filled"]
+        sell_orders = [o for o in orders if o.side == "sell" and o.status == "filled"]
 
         print("📊 TRADE STATISTICS")
         print("-" * 70)

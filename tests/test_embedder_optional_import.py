@@ -3,6 +3,7 @@ Test that embedder can be imported without sentence_transformers installed.
 
 This test verifies that the lazy import fix works correctly.
 """
+
 import pytest
 import sys
 from unittest.mock import patch, MagicMock
@@ -11,7 +12,7 @@ from unittest.mock import patch, MagicMock
 def test_embedder_import_without_sentence_transformers():
     """Test that embedder module can be imported without sentence_transformers."""
     # Mock the import to simulate missing sentence_transformers
-    with patch.dict('sys.modules', {'sentence_transformers': None}):
+    with patch.dict("sys.modules", {"sentence_transformers": None}):
         # Should be able to import the module
         from src.rag.vector_db import embedder
 
@@ -24,6 +25,7 @@ def test_embedder_import_with_sentence_transformers():
     """Test that embedder works when sentence_transformers is available."""
     try:
         from sentence_transformers import SentenceTransformer
+
         # If available, test that it works
         from src.rag.vector_db.embedder import get_embedder, NewsEmbedder
 
@@ -42,7 +44,9 @@ def test_deepagents_tools_import_without_rag():
         from src.deepagents_integration import tools
 
         # _get_sentiment_store should return None when RAG not available
-        with patch('src.deepagents_integration.tools._get_sentiment_store', return_value=None):
+        with patch(
+            "src.deepagents_integration.tools._get_sentiment_store", return_value=None
+        ):
             # Should handle gracefully
             result = tools.query_sentiment("test query")
             assert "error" in result.lower() or "not available" in result.lower()

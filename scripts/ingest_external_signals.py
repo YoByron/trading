@@ -85,7 +85,9 @@ def collect_alpha_vantage_signals(
         }
 
         try:
-            response = requests.get("https://www.alphavantage.co/query", params=params, timeout=30)
+            response = requests.get(
+                "https://www.alphavantage.co/query", params=params, timeout=30
+            )
             response.raise_for_status()
             data = response.json()
         except Exception as exc:  # noqa: BLE001
@@ -219,7 +221,9 @@ def aggregate_contributions(
                 notes.append(item["notes"])
 
         aggregated_confidence = min(1.0, total_confidence)
-        aggregated_score = weighted_score / total_confidence if total_confidence else 0.0
+        aggregated_score = (
+            weighted_score / total_confidence if total_confidence else 0.0
+        )
 
         aggregated.append(
             ExternalSignal(
@@ -245,7 +249,9 @@ def main() -> None:
 
     contributions: Dict[str, List[Dict]] = defaultdict(list)
 
-    news_contrib = collect_alpha_vantage_signals(args.tickers, args.days_back, args.min_articles)
+    news_contrib = collect_alpha_vantage_signals(
+        args.tickers, args.days_back, args.min_articles
+    )
     for ticker, items in news_contrib.items():
         contributions[ticker].extend(items)
 

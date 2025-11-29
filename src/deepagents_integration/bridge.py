@@ -102,7 +102,11 @@ class DeepAgentsTradingAgent(TradingAgent):
         if config:
             summary_parts.append(f"Configuration: {config}")
 
-        return "\n".join(summary_parts) if summary_parts else "No specific context provided."
+        return (
+            "\n".join(summary_parts)
+            if summary_parts
+            else "No specific context provided."
+        )
 
     def _extract_response(self, result: Any) -> str:
         """Extract text response from deepagent result."""

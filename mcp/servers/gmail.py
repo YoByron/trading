@@ -7,6 +7,7 @@ Provides tools for:
 - Processing attachments
 - Email-based workflow triggers
 """
+
 from __future__ import annotations
 
 import os
@@ -26,6 +27,7 @@ try:
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+
     GMAIL_API_AVAILABLE = True
 except ImportError:
     GMAIL_API_AVAILABLE = False
@@ -36,9 +38,11 @@ from mcp.utils import ensure_env_var, run_sync
 logger = logging.getLogger(__name__)
 
 # Gmail API scopes
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',
-          'https://www.googleapis.com/auth/gmail.send',
-          'https://www.googleapis.com/auth/gmail.modify']
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.modify",
+]
 
 _gmail_service = None
 
@@ -48,7 +52,9 @@ def _get_gmail_client():
     global _gmail_service
 
     if not GMAIL_API_AVAILABLE:
-        logger.warning("Gmail API libraries not installed - install google-api-python-client")
+        logger.warning(
+            "Gmail API libraries not installed - install google-api-python-client"
+        )
         return None
 
     if _gmail_service is not None:
@@ -75,19 +81,23 @@ def _get_gmail_client():
                 creds.refresh(Request())
             else:
                 if not os.path.exists(credentials_path):
-                    logger.error(f"Gmail credentials file not found: {credentials_path}")
+                    logger.error(
+                        f"Gmail credentials file not found: {credentials_path}"
+                    )
                     return None
 
-                flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    credentials_path, SCOPES
+                )
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for next run
             os.makedirs(os.path.dirname(token_path), exist_ok=True)
-            with open(token_path, 'w') as token:
+            with open(token_path, "w") as token:
                 token.write(creds.to_json())
 
         # Build Gmail service
-        _gmail_service = build('gmail', 'v1', credentials=creds)
+        _gmail_service = build("gmail", "v1", credentials=creds)
         logger.info("Gmail API client initialized successfully")
         return _gmail_service
 
@@ -97,8 +107,7 @@ def _get_gmail_client():
 
 
 async def monitor_emails_async(
-    query: str = "is:unread",
-    max_results: int = 10
+    query: str = "is:unread", max_results: int = 10
 ) -> Dict[str, Any]:
     """
     Monitor emails matching query.
@@ -119,51 +128,53 @@ async def monitor_emails_async(
             "query": query,
             "count": 0,
             "timestamp": datetime.now().isoformat(),
-            "error": "Gmail API client not available - check credentials"
+            "error": "Gmail API client not available - check credentials",
         }
 
     try:
         # Search for messages
-        results = service.users().messages().list(
-            userId='me',
-            q=query,
-            maxResults=min(max_results, 100)
-        ).execute()
+        results = (
+            service.users()
+            .messages()
+            .list(userId="me", q=query, maxResults=min(max_results, 100))
+            .execute()
+        )
 
-        messages = results.get('messages', [])
+        messages = results.get("messages", [])
         emails = []
 
         for msg in messages:
             try:
                 # Get full message details
-                message = service.users().messages().get(
-                    userId='me',
-                    id=msg['id'],
-                    format='full'
-                ).execute()
+                message = (
+                    service.users()
+                    .messages()
+                    .get(userId="me", id=msg["id"], format="full")
+                    .execute()
+                )
 
-                payload = message.get('payload', {})
-                headers = payload.get('headers', [])
+                payload = message.get("payload", {})
+                headers = payload.get("headers", [])
 
                 # Extract headers
                 email_data = {
-                    "id": msg['id'],
-                    "thread_id": message.get('threadId'),
-                    "snippet": message.get('snippet', ''),
-                    "labels": message.get('labelIds', []),
+                    "id": msg["id"],
+                    "thread_id": message.get("threadId"),
+                    "snippet": message.get("snippet", ""),
+                    "labels": message.get("labelIds", []),
                 }
 
                 for header in headers:
-                    name = header.get('name', '').lower()
-                    value = header.get('value', '')
-                    if name == 'from':
-                        email_data['from'] = value
-                    elif name == 'to':
-                        email_data['to'] = value
-                    elif name == 'subject':
-                        email_data['subject'] = value
-                    elif name == 'date':
-                        email_data['date'] = value
+                    name = header.get("name", "").lower()
+                    value = header.get("value", "")
+                    if name == "from":
+                        email_data["from"] = value
+                    elif name == "to":
+                        email_data["to"] = value
+                    elif name == "subject":
+                        email_data["subject"] = value
+                    elif name == "date":
+                        email_data["date"] = value
 
                 emails.append(email_data)
 
@@ -176,7 +187,7 @@ async def monitor_emails_async(
             "query": query,
             "count": len(emails),
             "timestamp": datetime.now().isoformat(),
-            "success": True
+            "success": True,
         }
 
     except HttpError as e:
@@ -186,7 +197,7 @@ async def monitor_emails_async(
             "query": query,
             "count": 0,
             "timestamp": datetime.now().isoformat(),
-            "error": f"Gmail API error: {str(e)}"
+            "error": f"Gmail API error: {str(e)}",
         }
     except Exception as e:
         logger.error(f"Unexpected error monitoring emails: {e}")
@@ -195,14 +206,11 @@ async def monitor_emails_async(
             "query": query,
             "count": 0,
             "timestamp": datetime.now().isoformat(),
-            "error": str(e)
+            "error": str(e),
         }
 
 
-def monitor_emails(
-    query: str = "is:unread",
-    max_results: int = 10
-) -> Dict[str, Any]:
+def monitor_emails(query: str = "is:unread", max_results: int = 10) -> Dict[str, Any]:
     """Sync wrapper for monitor_emails_async."""
     return run_sync(monitor_emails_async(query, max_results))
 
@@ -211,7 +219,7 @@ async def send_email_async(
     to: str | list[str],
     subject: str,
     body: str,
-    attachments: Optional[list[str]] = None
+    attachments: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """
     Send email via Gmail.
@@ -233,7 +241,7 @@ async def send_email_async(
             "success": False,
             "to": to if isinstance(to, list) else [to],
             "subject": subject,
-            "error": "Gmail API client not available - check credentials"
+            "error": "Gmail API client not available - check credentials",
         }
 
     try:
@@ -241,40 +249,42 @@ async def send_email_async(
 
         # Create message
         message = MIMEMultipart()
-        message['to'] = ', '.join(recipients)
-        message['subject'] = subject
-        message.attach(MIMEText(body, 'plain'))
+        message["to"] = ", ".join(recipients)
+        message["subject"] = subject
+        message.attach(MIMEText(body, "plain"))
 
         # Add attachments if provided
         if attachments:
             for file_path in attachments:
                 if os.path.exists(file_path):
-                    with open(file_path, 'rb') as f:
-                        part = MIMEBase('application', 'octet-stream')
+                    with open(file_path, "rb") as f:
+                        part = MIMEBase("application", "octet-stream")
                         part.set_payload(f.read())
                         encoders.encode_base64(part)
                         part.add_header(
-                            'Content-Disposition',
-                            f'attachment; filename= {os.path.basename(file_path)}'
+                            "Content-Disposition",
+                            f"attachment; filename= {os.path.basename(file_path)}",
                         )
                         message.attach(part)
 
         # Encode message
-        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
 
         # Send message
-        send_message = service.users().messages().send(
-            userId='me',
-            body={'raw': raw_message}
-        ).execute()
+        send_message = (
+            service.users()
+            .messages()
+            .send(userId="me", body={"raw": raw_message})
+            .execute()
+        )
 
         return {
             "success": True,
             "to": recipients,
             "subject": subject,
-            "message_id": send_message.get('id'),
-            "thread_id": send_message.get('threadId'),
-            "timestamp": datetime.now().isoformat()
+            "message_id": send_message.get("id"),
+            "thread_id": send_message.get("threadId"),
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HttpError as e:
@@ -283,7 +293,7 @@ async def send_email_async(
             "success": False,
             "to": to if isinstance(to, list) else [to],
             "subject": subject,
-            "error": f"Gmail API error: {str(e)}"
+            "error": f"Gmail API error: {str(e)}",
         }
     except Exception as e:
         logger.error(f"Unexpected error sending email: {e}")
@@ -291,7 +301,7 @@ async def send_email_async(
             "success": False,
             "to": to if isinstance(to, list) else [to],
             "subject": subject,
-            "error": str(e)
+            "error": str(e),
         }
 
 
@@ -299,16 +309,14 @@ def send_email(
     to: str | list[str],
     subject: str,
     body: str,
-    attachments: Optional[list[str]] = None
+    attachments: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """Sync wrapper for send_email_async."""
     return run_sync(send_email_async(to, subject, body, attachments))
 
 
 async def process_attachment_async(
-    message_id: str,
-    attachment_id: str,
-    save_path: Optional[str] = None
+    message_id: str, attachment_id: str, save_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Download and process email attachment.
@@ -329,24 +337,26 @@ async def process_attachment_async(
             "success": False,
             "message_id": message_id,
             "attachment_id": attachment_id,
-            "error": "Gmail API client not available - check credentials"
+            "error": "Gmail API client not available - check credentials",
         }
 
     try:
         # Get attachment
-        attachment = service.users().messages().attachments().get(
-            userId='me',
-            messageId=message_id,
-            id=attachment_id
-        ).execute()
+        attachment = (
+            service.users()
+            .messages()
+            .attachments()
+            .get(userId="me", messageId=message_id, id=attachment_id)
+            .execute()
+        )
 
         # Decode attachment data
-        file_data = base64.urlsafe_b64decode(attachment['data'])
+        file_data = base64.urlsafe_b64decode(attachment["data"])
 
         # Save to file if path provided
         if save_path:
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            with open(save_path, 'wb') as f:
+            with open(save_path, "wb") as f:
                 f.write(file_data)
 
         return {
@@ -354,8 +364,8 @@ async def process_attachment_async(
             "message_id": message_id,
             "attachment_id": attachment_id,
             "saved_path": save_path,
-            "size": attachment.get('size', len(file_data)),
-            "timestamp": datetime.now().isoformat()
+            "size": attachment.get("size", len(file_data)),
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HttpError as e:
@@ -364,7 +374,7 @@ async def process_attachment_async(
             "success": False,
             "message_id": message_id,
             "attachment_id": attachment_id,
-            "error": f"Gmail API error: {str(e)}"
+            "error": f"Gmail API error: {str(e)}",
         }
     except Exception as e:
         logger.error(f"Unexpected error processing attachment: {e}")
@@ -372,14 +382,12 @@ async def process_attachment_async(
             "success": False,
             "message_id": message_id,
             "attachment_id": attachment_id,
-            "error": str(e)
+            "error": str(e),
         }
 
 
 def process_attachment(
-    message_id: str,
-    attachment_id: str,
-    save_path: Optional[str] = None
+    message_id: str, attachment_id: str, save_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """Sync wrapper for process_attachment_async."""
     return run_sync(process_attachment_async(message_id, attachment_id, save_path))

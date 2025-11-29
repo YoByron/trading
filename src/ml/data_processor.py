@@ -7,6 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class DataProcessor:
     """
     Handles data fetching, feature engineering, and preprocessing for the ML model.
@@ -15,12 +16,22 @@ class DataProcessor:
     def __init__(self, sequence_length: int = 60, feature_columns: List[str] = None):
         self.sequence_length = sequence_length
         self.feature_columns = feature_columns or [
-            'Close', 'Volume', 'Returns', 'RSI', 'MACD', 'Signal', 'Volatility',
-            'Bogleheads_Sentiment', 'Bogleheads_Regime', 'Bogleheads_Risk'  # Bogleheads features
+            "Close",
+            "Volume",
+            "Returns",
+            "RSI",
+            "MACD",
+            "Signal",
+            "Volatility",
+            "Bogleheads_Sentiment",
+            "Bogleheads_Regime",
+            "Bogleheads_Risk",  # Bogleheads features
         ]
         self.scalers = {}  # Store scalers per symbol if needed
 
-    def fetch_data(self, symbol: str, period: str = "2y", interval: str = "1d") -> pd.DataFrame:
+    def fetch_data(
+        self, symbol: str, period: str = "2y", interval: str = "1d"
+    ) -> pd.DataFrame:
         """Fetch historical data using yfinance."""
         try:
             df = yf.download(symbol, period=period, interval=interval, progress=False)
@@ -44,47 +55,53 @@ class DataProcessor:
             df.columns = df.columns.get_level_values(0)
 
         # 1. Returns
-        df['Returns'] = df['Close'].pct_change()
+        df["Returns"] = df["Close"].pct_change()
 
         # 2. RSI (14)
-        delta = df['Close'].diff()
+        delta = df["Close"].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rs = gain / loss
-        df['RSI'] = 100 - (100 / (1 + rs))
+        df["RSI"] = 100 - (100 / (1 + rs))
 
         # 3. MACD (12, 26, 9)
-        exp1 = df['Close'].ewm(span=12, adjust=False).mean()
-        exp2 = df['Close'].ewm(span=26, adjust=False).mean()
-        df['MACD'] = exp1 - exp2
-        df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+        exp1 = df["Close"].ewm(span=12, adjust=False).mean()
+        exp2 = df["Close"].ewm(span=26, adjust=False).mean()
+        df["MACD"] = exp1 - exp2
+        df["Signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
 
         # 4. Volatility (20-day rolling std dev)
-        df['Volatility'] = df['Returns'].rolling(window=20).std()
+        df["Volatility"] = df["Returns"].rolling(window=20).std()
 
         # 5. Volume Change
-        df['Volume_Change'] = df['Volume'].pct_change()
+        df["Volume_Change"] = df["Volume"].pct_change()
 
         # 6. Add Bogleheads features if available (optional)
         try:
-            from src.utils.bogleheads_integration import get_bogleheads_signal_for_symbol, get_bogleheads_regime
+            from src.utils.bogleheads_integration import (
+                get_bogleheads_signal_for_symbol,
+                get_bogleheads_regime,
+            )
 
             signal = get_bogleheads_signal_for_symbol("SPY")  # Use SPY as market proxy
             regime = get_bogleheads_regime()
 
-            df['Bogleheads_Sentiment'] = signal.get('score', 0.0) / 100.0
-            df['Bogleheads_Regime'] = {'bull': 1.0, 'bear': -1.0, 'choppy': 0.0, 'uncertain': 0.0}.get(
-                regime.get('regime', 'unknown'), 0.0
-            )
-            df['Bogleheads_Risk'] = {'low': 0.0, 'medium': 0.5, 'high': 1.0}.get(
-                regime.get('risk_level', 'medium'), 0.5
+            df["Bogleheads_Sentiment"] = signal.get("score", 0.0) / 100.0
+            df["Bogleheads_Regime"] = {
+                "bull": 1.0,
+                "bear": -1.0,
+                "choppy": 0.0,
+                "uncertain": 0.0,
+            }.get(regime.get("regime", "unknown"), 0.0)
+            df["Bogleheads_Risk"] = {"low": 0.0, "medium": 0.5, "high": 1.0}.get(
+                regime.get("risk_level", "medium"), 0.5
             )
         except Exception as e:
             logger.debug(f"Could not add Bogleheads features: {e}")
             # Fill with default values if unavailable
-            df['Bogleheads_Sentiment'] = 0.0
-            df['Bogleheads_Regime'] = 0.0
-            df['Bogleheads_Risk'] = 0.5
+            df["Bogleheads_Sentiment"] = 0.0
+            df["Bogleheads_Regime"] = 0.0
+            df["Bogleheads_Risk"] = 0.5
 
         # Fill NaNs
         df.fillna(0, inplace=True)
@@ -134,7 +151,9 @@ class DataProcessor:
         Prepare the latest sequence for inference.
         Includes Bogleheads features if available.
         """
-        df = self.fetch_data(symbol, period="6mo") # Fetch enough for indicators + sequence
+        df = self.fetch_data(
+            symbol, period="6mo"
+        )  # Fetch enough for indicators + sequence
         if df.empty:
             return None
 
@@ -142,21 +161,33 @@ class DataProcessor:
 
         # Add Bogleheads features if available
         try:
-            from src.utils.bogleheads_integration import get_bogleheads_signal_for_symbol, get_bogleheads_regime
+            from src.utils.bogleheads_integration import (
+                get_bogleheads_signal_for_symbol,
+                get_bogleheads_regime,
+            )
 
             signal = get_bogleheads_signal_for_symbol(symbol)
             regime = get_bogleheads_regime()
 
             # Add Bogleheads features to all rows (use current values)
-            df['Bogleheads_Sentiment'] = signal.get('score', 0.0) / 100.0  # Normalize to -1 to 1
-            df['Bogleheads_Regime'] = {'bull': 1.0, 'bear': -1.0, 'choppy': 0.0, 'uncertain': 0.0}.get(regime.get('regime', 'unknown'), 0.0)
-            df['Bogleheads_Risk'] = {'low': 0.0, 'medium': 0.5, 'high': 1.0}.get(regime.get('risk_level', 'medium'), 0.5)
+            df["Bogleheads_Sentiment"] = (
+                signal.get("score", 0.0) / 100.0
+            )  # Normalize to -1 to 1
+            df["Bogleheads_Regime"] = {
+                "bull": 1.0,
+                "bear": -1.0,
+                "choppy": 0.0,
+                "uncertain": 0.0,
+            }.get(regime.get("regime", "unknown"), 0.0)
+            df["Bogleheads_Risk"] = {"low": 0.0, "medium": 0.5, "high": 1.0}.get(
+                regime.get("risk_level", "medium"), 0.5
+            )
         except Exception as e:
             logger.debug(f"Could not add Bogleheads features: {e}")
             # Fill with zeros if unavailable
-            df['Bogleheads_Sentiment'] = 0.0
-            df['Bogleheads_Regime'] = 0.0
-            df['Bogleheads_Risk'] = 0.5
+            df["Bogleheads_Sentiment"] = 0.0
+            df["Bogleheads_Regime"] = 0.0
+            df["Bogleheads_Risk"] = 0.5
 
         df = self.normalize_data(df)
 
@@ -170,7 +201,7 @@ class DataProcessor:
             if col not in df.columns:
                 df[col] = 0.0
 
-        last_sequence = df[self.feature_columns].iloc[-self.sequence_length:].values
+        last_sequence = df[self.feature_columns].iloc[-self.sequence_length :].values
 
         # Add batch dimension: (1, seq_len, features)
         return torch.FloatTensor(last_sequence).unsqueeze(0)

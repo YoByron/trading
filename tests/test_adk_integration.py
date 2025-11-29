@@ -4,7 +4,11 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.orchestration.adk_integration import ADKDecision, ADKTradeAdapter, summarize_adk_decision
+from src.orchestration.adk_integration import (
+    ADKDecision,
+    ADKTradeAdapter,
+    summarize_adk_decision,
+)
 
 
 class DummyClient:
@@ -12,7 +16,9 @@ class DummyClient:
         self.responses = responses
         self.calls: List[str] = []
 
-    def run_structured(self, *, symbol: str, context: Dict[str, Any], require_json: bool) -> Dict[str, Any]:
+    def run_structured(
+        self, *, symbol: str, context: Dict[str, Any], require_json: bool
+    ) -> Dict[str, Any]:
         self.calls.append(symbol)
         return self.responses.get(symbol, {})
 
@@ -25,7 +31,9 @@ class DummyStore:
         return self._rows
 
 
-def _decision_payload(action: str, confidence: float, position_size: float = 0.0) -> Dict[str, Any]:
+def _decision_payload(
+    action: str, confidence: float, position_size: float = 0.0
+) -> Dict[str, Any]:
     return {
         "trade_summary": {
             "action": action,
@@ -57,7 +65,9 @@ def test_adapter_selects_highest_confidence(monkeypatch: pytest.MonkeyPatch) -> 
     assert adapter.client.calls == ["SPY", "QQQ"]  # type: ignore[union-attr]
 
 
-def test_adapter_rejects_non_actionable_responses(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_adapter_rejects_non_actionable_responses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     responses = {
         "SPY": _decision_payload("HOLD", 0.9),
         "QQQ": {

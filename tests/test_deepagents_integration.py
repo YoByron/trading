@@ -29,6 +29,7 @@ def test_deepagents_import():
             create_analysis_agent_adapter,
             create_research_agent_adapter,
         )
+
         print("✅ DeepAgents adapter imports successful")
         return True
     except ImportError as e:
@@ -66,7 +67,9 @@ def test_adapter_initialization():
         print(f"   Agent name: {adapter.agent_name}")
         return True
     except Exception as e:
-        print(f"⚠️  DeepAgents adapter initialization failed (this is OK if dependencies are missing): {e}")
+        print(
+            f"⚠️  DeepAgents adapter initialization failed (this is OK if dependencies are missing): {e}"
+        )
         return False
 
 
@@ -75,6 +78,7 @@ def test_main_orchestrator_import():
     print("\nTesting TradingOrchestrator import...")
     try:
         from src.main import TradingOrchestrator
+
         print("✅ TradingOrchestrator imports successfully with DeepAgents integration")
         return True
     except ImportError as e:
@@ -92,12 +96,14 @@ def test_orchestrator_initialization():
         orchestrator = TradingOrchestrator(mode="paper")
 
         # Check if deepagents_adapter was initialized
-        if hasattr(orchestrator, 'deepagents_adapter'):
+        if hasattr(orchestrator, "deepagents_adapter"):
             if orchestrator.deepagents_adapter is not None:
                 print("✅ TradingOrchestrator initialized with DeepAgents adapter")
                 print(f"   Adapter type: {type(orchestrator.deepagents_adapter)}")
             else:
-                print("⚠️  TradingOrchestrator initialized but DeepAgents adapter is None (may be disabled or failed)")
+                print(
+                    "⚠️  TradingOrchestrator initialized but DeepAgents adapter is None (may be disabled or failed)"
+                )
         else:
             print("❌ TradingOrchestrator missing deepagents_adapter attribute")
             return False
@@ -106,6 +112,7 @@ def test_orchestrator_initialization():
     except Exception as e:
         print(f"❌ Failed to initialize TradingOrchestrator: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -123,7 +130,9 @@ def main():
     results.append(("Environment variable", test_environment_variable()))
     results.append(("Adapter initialization", test_adapter_initialization()))
     results.append(("Import TradingOrchestrator", test_main_orchestrator_import()))
-    results.append(("Initialize TradingOrchestrator", test_orchestrator_initialization()))
+    results.append(
+        ("Initialize TradingOrchestrator", test_orchestrator_initialization())
+    )
 
     # Summary
     print("\n" + "=" * 80)

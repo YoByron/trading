@@ -163,12 +163,19 @@ class MultiLLMAnalyzer:
 
         # Use LangSmith wrapper if available
         try:
-            from src.utils.langsmith_wrapper import get_traced_openai_client, get_traced_async_openai_client
+            from src.utils.langsmith_wrapper import (
+                get_traced_openai_client,
+                get_traced_async_openai_client,
+            )
 
             if use_async:
-                self.client = get_traced_async_openai_client(api_key=self.api_key, base_url=base_url)
+                self.client = get_traced_async_openai_client(
+                    api_key=self.api_key, base_url=base_url
+                )
             else:
-                self.sync_client = get_traced_openai_client(api_key=self.api_key, base_url=base_url)
+                self.sync_client = get_traced_openai_client(
+                    api_key=self.api_key, base_url=base_url
+                )
         except ImportError:
             # Fallback to regular client if wrapper not available
             if use_async:
@@ -1128,12 +1135,19 @@ class LLMCouncilAnalyzer:
 
         # Use LangSmith wrapper if available
         try:
-            from src.utils.langsmith_wrapper import get_traced_openai_client, get_traced_async_openai_client
+            from src.utils.langsmith_wrapper import (
+                get_traced_openai_client,
+                get_traced_async_openai_client,
+            )
 
             if use_async:
-                self.client = get_traced_async_openai_client(api_key=self.api_key, base_url=base_url)
+                self.client = get_traced_async_openai_client(
+                    api_key=self.api_key, base_url=base_url
+                )
             else:
-                self.sync_client = get_traced_openai_client(api_key=self.api_key, base_url=base_url)
+                self.sync_client = get_traced_openai_client(
+                    api_key=self.api_key, base_url=base_url
+                )
         except ImportError:
             # Fallback to regular client if wrapper not available
             if use_async:
@@ -1252,7 +1266,9 @@ class LLMCouncilAnalyzer:
             else:
                 first_opinions[model_name] = response
 
-        logger.info(f"Stage 1 complete: {len([r for r in first_opinions.values() if r.success])} successful responses")
+        logger.info(
+            f"Stage 1 complete: {len([r for r in first_opinions.values() if r.success])} successful responses"
+        )
         return first_opinions
 
     async def _stage2_review(
@@ -1504,7 +1520,10 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
 
         # Stage 2: Review (optional but recommended)
         reviews = {}
-        if include_reviews and len([r for r in first_opinions.values() if r.success]) >= 2:
+        if (
+            include_reviews
+            and len([r for r in first_opinions.values() if r.success]) >= 2
+        ):
             reviews = await self._stage2_review(first_opinions, query)
         else:
             logger.info("Skipping Stage 2 review (not enough responses or disabled)")
@@ -1514,7 +1533,11 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
 
         # Calculate confidence based on agreement
         successful_responses = [r for r in first_opinions.values() if r.success]
-        confidence = len(successful_responses) / len(self.council_models) if self.council_models else 0.0
+        confidence = (
+            len(successful_responses) / len(self.council_models)
+            if self.council_models
+            else 0.0
+        )
 
         # Extract individual responses
         individual_responses = {
@@ -1525,8 +1548,7 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
 
         # Extract rankings from reviews
         rankings = {
-            reviewer: review.get("rankings", [])
-            for reviewer, review in reviews.items()
+            reviewer: review.get("rankings", []) for reviewer, review in reviews.items()
         }
 
         total_time = time.time() - start_time

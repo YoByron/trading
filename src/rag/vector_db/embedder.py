@@ -13,15 +13,19 @@ logger = logging.getLogger(__name__)
 # Lazy import to avoid breaking crypto trading when RAG dependencies aren't installed
 _SentenceTransformer: Optional[type] = None
 
+
 def _get_sentence_transformer():
     """Lazy import of SentenceTransformer."""
     global _SentenceTransformer
     if _SentenceTransformer is None:
         try:
             from sentence_transformers import SentenceTransformer
+
             _SentenceTransformer = SentenceTransformer
         except ImportError:
-            logger.warning("sentence-transformers not installed - RAG features disabled")
+            logger.warning(
+                "sentence-transformers not installed - RAG features disabled"
+            )
             raise ImportError(
                 "sentence-transformers is required for RAG features. "
                 "Install with: pip install -r requirements-rag.txt"
@@ -53,7 +57,9 @@ class NewsEmbedder:
         try:
             SentenceTransformer = _get_sentence_transformer()
             self.model = SentenceTransformer(model_name)
-            logger.info(f"Embedding model loaded successfully (dimensions: {self.model.get_sentence_embedding_dimension()})")
+            logger.info(
+                f"Embedding model loaded successfully (dimensions: {self.model.get_sentence_embedding_dimension()})"
+            )
 
         except ImportError as e:
             logger.error(f"Failed to import sentence-transformers: {e}")
@@ -101,7 +107,7 @@ class NewsEmbedder:
                 texts,
                 batch_size=batch_size,
                 show_progress_bar=len(texts) > 100,
-                convert_to_numpy=True
+                convert_to_numpy=True,
             )
             return [emb for emb in embeddings]
 

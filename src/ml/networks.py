@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple
 
+
 class LSTMPPO(nn.Module):
     """
     Hybrid LSTM-PPO Network for Trading.
@@ -13,7 +14,13 @@ class LSTMPPO(nn.Module):
     3. Critic Head: Outputs value estimate for the state
     """
 
-    def __init__(self, input_dim: int, hidden_dim: int = 128, num_layers: int = 2, action_dim: int = 3):
+    def __init__(
+        self,
+        input_dim: int,
+        hidden_dim: int = 128,
+        num_layers: int = 2,
+        action_dim: int = 3,
+    ):
         """
         Args:
             input_dim: Number of input features (e.g., Open, High, Low, Close, Vol, RSI, MACD...)
@@ -33,7 +40,7 @@ class LSTMPPO(nn.Module):
             hidden_size=hidden_dim,
             num_layers=num_layers,
             batch_first=True,
-            dropout=0.2 if num_layers > 1 else 0
+            dropout=0.2 if num_layers > 1 else 0,
         )
 
         # 2. Actor Head (Policy)
@@ -41,17 +48,17 @@ class LSTMPPO(nn.Module):
             nn.Linear(hidden_dim, 64),
             nn.ReLU(),
             nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1)
+            nn.Softmax(dim=-1),
         )
 
         # 3. Critic Head (Value)
         self.critic = nn.Sequential(
-            nn.Linear(hidden_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(hidden_dim, 64), nn.ReLU(), nn.Linear(64, 1)
         )
 
-    def forward(self, x: torch.Tensor, hidden: Tuple[torch.Tensor, torch.Tensor] = None):
+    def forward(
+        self, x: torch.Tensor, hidden: Tuple[torch.Tensor, torch.Tensor] = None
+    ):
         """
         Forward pass.
 
@@ -81,7 +88,12 @@ class LSTMPPO(nn.Module):
 
         return action_probs, state_value, next_hidden
 
-    def get_action(self, x: torch.Tensor, hidden: Tuple[torch.Tensor, torch.Tensor] = None, deterministic: bool = False):
+    def get_action(
+        self,
+        x: torch.Tensor,
+        hidden: Tuple[torch.Tensor, torch.Tensor] = None,
+        deterministic: bool = False,
+    ):
         """
         Select an action given the state.
 

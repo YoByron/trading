@@ -40,13 +40,17 @@ def main():
                 try:
                     # Support both ISO and "YYYY-MM-DD HH:MM:SS" formats
                     if "T" in last_updated:
-                        last_dt = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
+                        last_dt = datetime.fromisoformat(
+                            last_updated.replace("Z", "+00:00")
+                        )
                     else:
                         last_dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
 
                     if last_dt.date() == today:
                         skip = True
-                        reason = f"Trading already executed today at {last_dt.isoformat()}"
+                        reason = (
+                            f"Trading already executed today at {last_dt.isoformat()}"
+                        )
                     else:
                         reason = f"Last execution was {last_dt.date()}, proceeding with today's trade"
                 except ValueError as e:
@@ -55,7 +59,9 @@ def main():
             print(f"❌ Error: Invalid JSON in system_state.json: {e}", file=sys.stderr)
             sys.exit(1)
         except Exception as exc:
-            print(f"❌ Error: Unable to inspect system_state.json: {exc}", file=sys.stderr)
+            print(
+                f"❌ Error: Unable to inspect system_state.json: {exc}", file=sys.stderr
+            )
             sys.exit(1)
     else:
         reason = "system_state.json not found (first run)"

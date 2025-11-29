@@ -7,6 +7,7 @@ from src.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
+
 class GammaExposureAgent(BaseAgent):
     """
     Gamma Exposure (GEX) Agent: "The X-Ray Vision"
@@ -27,7 +28,7 @@ class GammaExposureAgent(BaseAgent):
         super().__init__(
             name="GammaExposureAgent",
             role="Options flow and market maker positioning analysis",
-            model="claude-3-opus-20240229"
+            model="claude-3-opus-20240229",
         )
 
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,7 +68,7 @@ class GammaExposureAgent(BaseAgent):
             "signal": implication["signal"],
             "confidence": implication["confidence"],
             "reasoning": llm_response.get("reasoning", "Analysis complete"),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         self.log_decision(result)
@@ -86,18 +87,18 @@ class GammaExposureAgent(BaseAgent):
         if is_index:
             # Indices usually have high Put OI (Hedges) -> Dealers Long Puts -> Short Gamma?
             # Actually, Dealers are usually Short Puts (selling insurance) -> Long Gamma.
-            total_gex = 5000000000 # $5B Positive Gamma (Stabilizing)
-            zero_gamma_level = price * 0.95 # Support level
+            total_gex = 5000000000  # $5B Positive Gamma (Stabilizing)
+            zero_gamma_level = price * 0.95  # Support level
         else:
             # Volatile stocks might be Short Gamma (Accelerator)
-            total_gex = -100000000 # -$100M Negative Gamma (Volatile)
-            zero_gamma_level = price * 1.02 # Resistance
+            total_gex = -100000000  # -$100M Negative Gamma (Volatile)
+            zero_gamma_level = price * 1.02  # Resistance
 
         return {
             "total_gex_dollars": total_gex,
             "regime": "POSITIVE_GAMMA" if total_gex > 0 else "NEGATIVE_GAMMA",
             "zero_gamma_level": zero_gamma_level,
-            "volatility_implication": "LOW_VOL" if total_gex > 0 else "HIGH_VOL"
+            "volatility_implication": "LOW_VOL" if total_gex > 0 else "HIGH_VOL",
         }
 
     def _interpret_gex(self, profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -106,16 +107,18 @@ class GammaExposureAgent(BaseAgent):
             return {
                 "signal": "MEAN_REVERSION",
                 "confidence": 0.7,
-                "description": "Dealers are Long Gamma. They will sell rips and buy dips. Expect low volatility."
+                "description": "Dealers are Long Gamma. They will sell rips and buy dips. Expect low volatility.",
             }
         else:
             return {
                 "signal": "MOMENTUM",
                 "confidence": 0.8,
-                "description": "Dealers are Short Gamma. They must chase the price. Expect explosive moves."
+                "description": "Dealers are Short Gamma. They must chase the price. Expect explosive moves.",
             }
 
-    def _build_gex_prompt(self, symbol: str, price: float, profile: Dict, implication: Dict) -> str:
+    def _build_gex_prompt(
+        self, symbol: str, price: float, profile: Dict, implication: Dict
+    ) -> str:
         return f"""You are the Gamma Exposure Agent.
 
         ANALYSIS FOR {symbol}:

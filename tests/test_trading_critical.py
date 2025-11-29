@@ -13,7 +13,7 @@ from datetime import datetime, date
 from unittest.mock import Mock, patch
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.evaluation.trading_evaluator import TradingSystemEvaluator, TradeEvaluation
 
@@ -31,13 +31,11 @@ class TestOrderValidation(unittest.TestCase):
             "amount": 1600.0,  # 200x expected
             "status": "filled",
             "order_id": "test_1",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=8.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=8.0, daily_allocation=10.0
         )
 
         # Should fail
@@ -66,13 +64,11 @@ class TestOrderValidation(unittest.TestCase):
             "validated": True,
             "preflight_passed": True,
             "system_state_age_hours": 1.0,
-            "data_source": "alpaca"
+            "data_source": "alpaca",
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=6.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=6.0, daily_allocation=10.0
         )
 
         # Should pass
@@ -97,13 +93,11 @@ class TestStalenessDetection(unittest.TestCase):
             "system_state_age_hours": 120.0,  # 5 days old
             "validated": True,
             "preflight_passed": True,
-            "data_source": "alpaca"
+            "data_source": "alpaca",
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=2.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=2.0, daily_allocation=10.0
         )
 
         # Should fail reliability check
@@ -131,17 +125,18 @@ class TestErrorPatternDetection(unittest.TestCase):
             "status": "failed",
             "order_id": "test_4",
             "timestamp": datetime.now().isoformat(),
-            "api_errors": ["Network error: Connection refused", "DNS resolution failed"],
+            "api_errors": [
+                "Network error: Connection refused",
+                "DNS resolution failed",
+            ],
             "validated": True,
             "preflight_passed": True,
             "system_state_age_hours": 1.0,
-            "data_source": "alpaca"
+            "data_source": "alpaca",
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=2.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=2.0, daily_allocation=10.0
         )
 
         errors = evaluation.evaluation.get("errors")
@@ -160,13 +155,11 @@ class TestErrorPatternDetection(unittest.TestCase):
             "validated": True,
             "preflight_passed": True,
             "system_state_age_hours": 1.0,
-            "data_source": "alpaca"
+            "data_source": "alpaca",
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=6.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=6.0, daily_allocation=10.0
         )
 
         errors = evaluation.evaluation.get("errors")
@@ -180,6 +173,7 @@ class TestEvaluationStorage(unittest.TestCase):
         self.evaluator = TradingSystemEvaluator()
         # Use temporary directory for tests
         import tempfile
+
         self.temp_dir = Path(tempfile.mkdtemp())
         self.evaluator.data_dir = self.temp_dir
         self.evaluator.eval_dir = self.temp_dir / "evaluations"
@@ -196,13 +190,11 @@ class TestEvaluationStorage(unittest.TestCase):
             "validated": True,
             "preflight_passed": True,
             "system_state_age_hours": 1.0,
-            "data_source": "alpaca"
+            "data_source": "alpaca",
         }
 
         evaluation = self.evaluator.evaluate_trade_execution(
-            trade_result=trade_result,
-            expected_amount=6.0,
-            daily_allocation=10.0
+            trade_result=trade_result, expected_amount=6.0, daily_allocation=10.0
         )
 
         # Save evaluation
@@ -213,7 +205,8 @@ class TestEvaluationStorage(unittest.TestCase):
 
         # Verify content
         import json
-        with open(eval_file, 'r') as f:
+
+        with open(eval_file, "r") as f:
             saved_evaluations = json.load(f)
 
         self.assertEqual(len(saved_evaluations), 1)
@@ -233,13 +226,11 @@ class TestEvaluationStorage(unittest.TestCase):
                 "validated": True,
                 "preflight_passed": True,
                 "system_state_age_hours": 1.0,
-                "data_source": "alpaca"
+                "data_source": "alpaca",
             }
 
             evaluation = self.evaluator.evaluate_trade_execution(
-                trade_result=trade_result,
-                expected_amount=6.0,
-                daily_allocation=10.0
+                trade_result=trade_result, expected_amount=6.0, daily_allocation=10.0
             )
 
             self.evaluator.save_evaluation(evaluation)

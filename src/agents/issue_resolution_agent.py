@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IssueDiagnosis:
     """Diagnosis of a GitHub issue"""
+
     issue_number: int
     issue_title: str
     root_cause: str
@@ -62,22 +63,28 @@ class IssueResolutionAgent:
         Returns:
             IssueDiagnosis with root cause and fix strategy
         """
-        logger.info(f"🔍 Diagnosing issue #{issue_data['number']}: {issue_data['title']}")
+        logger.info(
+            f"🔍 Diagnosing issue #{issue_data['number']}: {issue_data['title']}"
+        )
 
         # Extract issue context
-        issue_title = issue_data.get('title', '')
-        issue_body = issue_data.get('body', '')
-        issue_labels = [label['name'] for label in issue_data.get('labels', [])]
-        issue_created = issue_data.get('created_at', '')
-        issue_number = issue_data.get('number', 0)
+        issue_title = issue_data.get("title", "")
+        issue_body = issue_data.get("body", "")
+        issue_labels = [label["name"] for label in issue_data.get("labels", [])]
+        issue_created = issue_data.get("created_at", "")
+        issue_number = issue_data.get("number", 0)
 
         # Store issue number for rule-based diagnosis
         self._current_issue_number = issue_number
 
         # Rule-based pre-diagnosis for common patterns (doesn't require AI)
-        rule_based_diagnosis = self._rule_based_diagnosis(issue_title, issue_body, issue_labels, issue_created)
+        rule_based_diagnosis = self._rule_based_diagnosis(
+            issue_title, issue_body, issue_labels, issue_created
+        )
         if rule_based_diagnosis:
-            logger.info(f"✅ Rule-based diagnosis found: {rule_based_diagnosis.root_cause[:100]}...")
+            logger.info(
+                f"✅ Rule-based diagnosis found: {rule_based_diagnosis.root_cause[:100]}..."
+            )
             return rule_based_diagnosis
 
         # Use Gemini for root cause analysis
@@ -113,8 +120,7 @@ Format as JSON:
         if self.elite_orchestrator.gemini_agent:
             try:
                 gemini_result = self.elite_orchestrator.gemini_agent.reason(
-                    prompt=diagnosis_prompt,
-                    thinking_level="high"
+                    prompt=diagnosis_prompt, thinking_level="high"
                 )
 
                 # Parse JSON from response
@@ -125,14 +131,18 @@ Format as JSON:
                     diagnosis_json = json.loads(reasoning[json_start:json_end])
 
                     diagnosis = IssueDiagnosis(
-                        issue_number=issue_data['number'],
+                        issue_number=issue_data["number"],
                         issue_title=issue_title,
                         root_cause=diagnosis_json.get("root_cause", "Unknown"),
-                        fix_strategy=diagnosis_json.get("fix_strategy", "Manual review required"),
+                        fix_strategy=diagnosis_json.get(
+                            "fix_strategy", "Manual review required"
+                        ),
                         confidence=diagnosis_json.get("confidence", 0.5),
                         can_auto_fix=diagnosis_json.get("can_auto_fix", False),
                         fix_steps=diagnosis_json.get("fix_steps", []),
-                        estimated_time_minutes=diagnosis_json.get("estimated_time_minutes", 10)
+                        estimated_time_minutes=diagnosis_json.get(
+                            "estimated_time_minutes", 10
+                        ),
                     )
             except Exception as e:
                 logger.warning(f"Gemini diagnosis failed: {e}")
@@ -140,19 +150,19 @@ Format as JSON:
         # Fallback to Langchain if Gemini unavailable
         if diagnosis is None and self.elite_orchestrator.langchain_agent:
             try:
-                langchain_result = self.elite_orchestrator.langchain_agent.invoke({
-                    "input": diagnosis_prompt
-                })
+                langchain_result = self.elite_orchestrator.langchain_agent.invoke(
+                    {"input": diagnosis_prompt}
+                )
                 # Parse Langchain response (simpler format)
                 diagnosis = IssueDiagnosis(
-                    issue_number=issue_data['number'],
+                    issue_number=issue_data["number"],
                     issue_title=issue_title,
                     root_cause="Analysis in progress",
                     fix_strategy=str(langchain_result)[:500],
                     confidence=0.6,
                     can_auto_fix=False,
                     fix_steps=[],
-                    estimated_time_minutes=10
+                    estimated_time_minutes=10,
                 )
             except Exception as e:
                 logger.warning(f"Langchain diagnosis failed: {e}")
@@ -160,14 +170,14 @@ Format as JSON:
         # Default diagnosis if all agents fail
         if diagnosis is None:
             diagnosis = IssueDiagnosis(
-                issue_number=issue_data['number'],
+                issue_number=issue_data["number"],
                 issue_title=issue_title,
                 root_cause="Unable to diagnose - manual review required",
                 fix_strategy="Manual investigation needed",
                 confidence=0.0,
                 can_auto_fix=False,
                 fix_steps=[],
-                estimated_time_minutes=0
+                estimated_time_minutes=0,
             )
 
         logger.info(f"✅ Diagnosis complete: {diagnosis.root_cause[:100]}...")
@@ -178,7 +188,7 @@ Format as JSON:
         issue_title: str,
         issue_body: str,
         issue_labels: List[str],
-        issue_created: str
+        issue_created: str,
     ) -> Optional[IssueDiagnosis]:
         """
         Rule-based diagnosis for common trading failure patterns.
@@ -191,22 +201,28 @@ Format as JSON:
         if "Daily Trading Execution Failed" in issue_title:
             # Extract run number
             import re
-            run_match = re.search(r'Run #(\d+)', issue_title)
+
+            run_match = re.search(r"Run #(\d+)", issue_title)
             run_number = int(run_match.group(1)) if run_match else None
 
             # Check if issue is older than 6 hours (reduced from 24h for faster resolution)
             if issue_created:
                 from datetime import datetime, timezone, timedelta
+
                 try:
-                    created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
-                    age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
+                    created_dt = datetime.fromisoformat(
+                        issue_created.replace("Z", "+00:00")
+                    )
+                    age_hours = (
+                        datetime.now(timezone.utc) - created_dt
+                    ).total_seconds() / 3600
 
                     # If older than 6 hours, likely transient and can be auto-resolved
                     # Most trading failures are transient (timeouts, API errors, etc.)
                     if age_hours > 6:
                         # Extract issue number from labels or use 0 (will be set by caller)
                         issue_num = 0
-                        if hasattr(self, '_current_issue_number'):
+                        if hasattr(self, "_current_issue_number"):
                             issue_num = self._current_issue_number
                         return IssueDiagnosis(
                             issue_number=issue_num,
@@ -216,7 +232,7 @@ Format as JSON:
                             confidence=0.85,
                             can_auto_fix=True,
                             fix_steps=[],  # No fix steps needed - just close the issue
-                            estimated_time_minutes=0
+                            estimated_time_minutes=0,
                         )
                 except Exception as e:
                     logger.warning(f"Could not parse issue date: {e}")
@@ -231,12 +247,12 @@ Format as JSON:
                 "connection error",
                 "ModuleNotFoundError",
                 "dependency",
-                "pip install"
+                "pip install",
             ]
 
             issue_text_lower = (issue_title + " " + issue_body).lower()
             if any(pattern in issue_text_lower for pattern in transient_patterns):
-                issue_num = getattr(self, '_current_issue_number', 0)
+                issue_num = getattr(self, "_current_issue_number", 0)
                 return IssueDiagnosis(
                     issue_number=issue_num,
                     issue_title=issue_title,
@@ -245,20 +261,25 @@ Format as JSON:
                     confidence=0.8,
                     can_auto_fix=True,
                     fix_steps=[],  # No fix steps needed - just close the issue
-                    estimated_time_minutes=0
+                    estimated_time_minutes=0,
                 )
 
         # Pattern 2: Issues with "auto-resolve" label older than 6 hours (reduced from 48h)
         # If an issue is marked for auto-resolve, it should be resolved quickly
         if "auto-resolve" in issue_labels and issue_created:
             from datetime import datetime, timezone, timedelta
+
             try:
-                created_dt = datetime.fromisoformat(issue_created.replace('Z', '+00:00'))
-                age_hours = (datetime.now(timezone.utc) - created_dt).total_seconds() / 3600
+                created_dt = datetime.fromisoformat(
+                    issue_created.replace("Z", "+00:00")
+                )
+                age_hours = (
+                    datetime.now(timezone.utc) - created_dt
+                ).total_seconds() / 3600
 
                 # If older than 6 hours and still open, likely resolved or stale
                 if age_hours > 6:
-                    issue_num = getattr(self, '_current_issue_number', 0)
+                    issue_num = getattr(self, "_current_issue_number", 0)
                     return IssueDiagnosis(
                         issue_number=issue_num,
                         issue_title=issue_title,
@@ -267,10 +288,12 @@ Format as JSON:
                         confidence=0.8,
                         can_auto_fix=True,
                         fix_steps=[],
-                        estimated_time_minutes=0
+                        estimated_time_minutes=0,
                     )
             except Exception as e:
-                logger.warning(f"Could not parse issue date for auto-resolve check: {e}")
+                logger.warning(
+                    f"Could not parse issue date for auto-resolve check: {e}"
+                )
 
         return None
 
@@ -288,7 +311,7 @@ Format as JSON:
             return {
                 "success": False,
                 "reason": "Issue cannot be auto-fixed",
-                "diagnosis": asdict(diagnosis)
+                "diagnosis": asdict(diagnosis),
             }
 
         logger.info(f"🔧 Attempting to fix issue #{diagnosis.issue_number}")
@@ -298,31 +321,33 @@ Format as JSON:
         # If no fix steps, consider it successful (issue just needs to be closed)
         if not diagnosis.fix_steps:
             logger.info("No fix steps required - issue can be auto-resolved by closing")
-            fix_results.append({
-                "step": "auto_resolve",
-                "success": True,
-                "message": "No fix steps needed - transient failure resolved"
-            })
+            fix_results.append(
+                {
+                    "step": "auto_resolve",
+                    "success": True,
+                    "message": "No fix steps needed - transient failure resolved",
+                }
+            )
         else:
             for step in diagnosis.fix_steps:
                 try:
                     result = self._execute_fix_step(step, diagnosis)
-                    fix_results.append({
-                        "step": step,
-                        "success": result.get("success", False),
-                        "message": result.get("message", "")
-                    })
+                    fix_results.append(
+                        {
+                            "step": step,
+                            "success": result.get("success", False),
+                            "message": result.get("message", ""),
+                        }
+                    )
 
                     if not result.get("success", False):
                         logger.warning(f"Fix step failed: {step}")
                         break
                 except Exception as e:
                     logger.error(f"Error executing fix step '{step}': {e}")
-                    fix_results.append({
-                        "step": step,
-                        "success": False,
-                        "error": str(e)
-                    })
+                    fix_results.append(
+                        {"step": step, "success": False, "error": str(e)}
+                    )
                     break
 
         all_succeeded = all(r.get("success", False) for r in fix_results)
@@ -330,7 +355,7 @@ Format as JSON:
         return {
             "success": all_succeeded,
             "fix_results": fix_results,
-            "diagnosis": asdict(diagnosis)
+            "diagnosis": asdict(diagnosis),
         }
 
     def _execute_fix_step(self, step: str, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
@@ -357,10 +382,7 @@ Format as JSON:
         elif "cache" in step_lower:
             return self._clear_cache(diagnosis)
         else:
-            return {
-                "success": False,
-                "message": f"Unknown fix step: {step}"
-            }
+            return {"success": False, "message": f"Unknown fix step: {step}"}
 
     def _retry_workflow(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
         """Retry the failed workflow"""
@@ -379,22 +401,13 @@ Format as JSON:
             logger.info(f"🔄 Retrying workflow: {workflow}")
             # Note: Actual retry would need GitHub API call
             # For now, return success (workflow will be retried by monitoring system)
-            return {
-                "success": True,
-                "message": f"Workflow {workflow} queued for retry"
-            }
+            return {"success": True, "message": f"Workflow {workflow} queued for retry"}
         else:
-            return {
-                "success": False,
-                "message": "Could not identify workflow to retry"
-            }
+            return {"success": False, "message": "Could not identify workflow to retry"}
 
     def _check_secrets(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
         """Check if GitHub Secrets are configured"""
-        required_secrets = [
-            "ALPACA_API_KEY",
-            "ALPACA_SECRET_KEY"
-        ]
+        required_secrets = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"]
 
         missing_secrets = []
         for secret in required_secrets:
@@ -407,7 +420,7 @@ Format as JSON:
 
         return {
             "success": True,
-            "message": "Secret check completed (manual verification may be needed)"
+            "message": "Secret check completed (manual verification may be needed)",
         }
 
     def _fix_dependencies(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
@@ -417,15 +430,9 @@ Format as JSON:
         # Check if requirements.txt exists and is valid
         requirements_file = project_root / "requirements.txt"
         if requirements_file.exists():
-            return {
-                "success": True,
-                "message": "Dependencies validated"
-            }
+            return {"success": True, "message": "Dependencies validated"}
         else:
-            return {
-                "success": False,
-                "message": "requirements.txt not found"
-            }
+            return {"success": False, "message": "requirements.txt not found"}
 
     def _fix_workflow_syntax(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
         """Fix workflow YAML syntax errors"""
@@ -434,15 +441,9 @@ Format as JSON:
         # Validate workflow files
         workflows_dir = project_root / ".github" / "workflows"
         if workflows_dir.exists():
-            return {
-                "success": True,
-                "message": "Workflow syntax validated"
-            }
+            return {"success": True, "message": "Workflow syntax validated"}
         else:
-            return {
-                "success": False,
-                "message": "Workflows directory not found"
-            }
+            return {"success": False, "message": "Workflows directory not found"}
 
     def _clear_cache(self, diagnosis: IssueDiagnosis) -> Dict[str, Any]:
         """Clear stale cache"""
@@ -452,6 +453,7 @@ Format as JSON:
         if cache_dir.exists():
             # Clear old cache files
             import time
+
             cutoff_time = time.time() - (24 * 3600)  # 24 hours
 
             cleared_count = 0
@@ -466,12 +468,12 @@ Format as JSON:
 
             return {
                 "success": True,
-                "message": f"Cleared {cleared_count} stale cache files"
+                "message": f"Cleared {cleared_count} stale cache files",
             }
         else:
             return {
                 "success": True,
-                "message": "No cache directory found (nothing to clear)"
+                "message": "No cache directory found (nothing to clear)",
             }
 
     def resolve_issue(self, issue_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -494,27 +496,27 @@ Format as JSON:
             fix_result = self.attempt_fix(diagnosis)
 
             if fix_result["success"]:
-                self.resolved_issues.append(issue_data['number'])
+                self.resolved_issues.append(issue_data["number"])
                 return {
                     "success": True,
-                    "issue_number": issue_data['number'],
+                    "issue_number": issue_data["number"],
                     "diagnosis": asdict(diagnosis),
                     "fix_result": fix_result,
-                    "message": "Issue auto-resolved"
+                    "message": "Issue auto-resolved",
                 }
             else:
-                self.failed_fixes.append(issue_data['number'])
+                self.failed_fixes.append(issue_data["number"])
                 return {
                     "success": False,
-                    "issue_number": issue_data['number'],
+                    "issue_number": issue_data["number"],
                     "diagnosis": asdict(diagnosis),
                     "fix_result": fix_result,
-                    "message": "Auto-fix attempted but failed"
+                    "message": "Auto-fix attempted but failed",
                 }
         else:
             return {
                 "success": False,
-                "issue_number": issue_data['number'],
+                "issue_number": issue_data["number"],
                 "diagnosis": asdict(diagnosis),
-                "message": "Issue cannot be auto-fixed - manual review required"
+                "message": "Issue cannot be auto-fixed - manual review required",
             }

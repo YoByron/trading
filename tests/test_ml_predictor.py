@@ -1,8 +1,10 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.ml.inference import MLPredictor
+
 
 def test_ml_predictor():
     print("Initializing ML Predictor...")
@@ -19,6 +21,7 @@ def test_ml_predictor():
         print("\n✅ Test Passed: Valid signal received")
     else:
         print("\n❌ Test Failed: Invalid signal")
+
 
 if __name__ == "__main__":
     test_ml_predictor()

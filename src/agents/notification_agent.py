@@ -7,6 +7,7 @@ Integrates with MCP servers for:
 - SMS notifications (future)
 - Dashboard updates
 """
+
 import os
 import json
 import logging
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class NotificationChannel(Enum):
     """Notification channel types."""
+
     SLACK = "slack"
     EMAIL = "email"
     SMS = "sms"
@@ -30,6 +32,7 @@ class NotificationChannel(Enum):
 
 class NotificationPriority(Enum):
     """Notification priority levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -49,12 +52,11 @@ class NotificationAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(
-            name="NotificationAgent",
-            role="Multi-Channel Notification Coordinator"
+            name="NotificationAgent", role="Multi-Channel Notification Coordinator"
         )
         self.enabled_channels = os.getenv(
             "NOTIFICATION_CHANNELS",
-            "email,dashboard,log"  # Slack removed - use email instead
+            "email,dashboard,log",  # Slack removed - use email instead
         ).split(",")
 
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -74,10 +76,7 @@ class NotificationAgent(BaseAgent):
         context = data.get("context", {})
 
         if not message:
-            return {
-                "success": False,
-                "error": "message required"
-            }
+            return {"success": False, "error": "message required"}
 
         results = []
 
@@ -92,22 +91,12 @@ class NotificationAgent(BaseAgent):
                 elif channel == "log":
                     result = self._log_notification(message, priority, context)
                 else:
-                    result = {
-                        "success": False,
-                        "error": f"Unknown channel: {channel}"
-                    }
+                    result = {"success": False, "error": f"Unknown channel: {channel}"}
 
-                results.append({
-                    "channel": channel,
-                    **result
-                })
+                results.append({"channel": channel, **result})
             except Exception as e:
                 logger.error(f"Notification failed for {channel}: {e}")
-                results.append({
-                    "channel": channel,
-                    "success": False,
-                    "error": str(e)
-                })
+                results.append({"channel": channel, "success": False, "error": str(e)})
 
         success_count = sum(1 for r in results if r.get("success"))
 
@@ -115,10 +104,12 @@ class NotificationAgent(BaseAgent):
             "success": success_count > 0,
             "total_channels": len(channels),
             "successful_channels": success_count,
-            "results": results
+            "results": results,
         }
 
-    def _send_slack_notification(self, message: str, priority: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _send_slack_notification(
+        self, message: str, priority: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Send Slack notification via MCP.
 
@@ -140,7 +131,7 @@ class NotificationAgent(BaseAgent):
             "message": message,
             "priority": priority,
             "timestamp": datetime.now().isoformat(),
-            **context
+            **context,
         }
 
         # Would call: mcp.servers.slack.send_message(slack_payload)
@@ -148,10 +139,12 @@ class NotificationAgent(BaseAgent):
         return {
             "success": True,
             "channel": "slack",
-            "message_id": f"slack_{datetime.now().timestamp()}"
+            "message_id": f"slack_{datetime.now().timestamp()}",
         }
 
-    def _send_email_notification(self, message: str, priority: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _send_email_notification(
+        self, message: str, priority: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Send email notification via MCP.
 
@@ -173,7 +166,7 @@ class NotificationAgent(BaseAgent):
             "subject": f"[{priority.upper()}] Trading System Alert",
             "body": message,
             "priority": priority,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Would call: mcp.servers.gmail.send_email(email_payload)
@@ -181,10 +174,12 @@ class NotificationAgent(BaseAgent):
         return {
             "success": True,
             "channel": "email",
-            "message_id": f"email_{datetime.now().timestamp()}"
+            "message_id": f"email_{datetime.now().timestamp()}",
         }
 
-    def _update_dashboard(self, message: str, notification_type: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _update_dashboard(
+        self, message: str, notification_type: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Update dashboard with notification.
 
@@ -203,7 +198,7 @@ class NotificationAgent(BaseAgent):
             "message": message,
             "type": notification_type,
             "timestamp": datetime.now().isoformat(),
-            **context
+            **context,
         }
 
         # Would update dashboard state/store
@@ -212,10 +207,12 @@ class NotificationAgent(BaseAgent):
         return {
             "success": True,
             "channel": "dashboard",
-            "message_id": f"dashboard_{datetime.now().timestamp()}"
+            "message_id": f"dashboard_{datetime.now().timestamp()}",
         }
 
-    def _log_notification(self, message: str, priority: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _log_notification(
+        self, message: str, priority: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Log notification to file.
 
@@ -231,7 +228,7 @@ class NotificationAgent(BaseAgent):
             "timestamp": datetime.now().isoformat(),
             "priority": priority,
             "message": message,
-            **context
+            **context,
         }
 
         logger.info(f"Notification logged: {json.dumps(log_entry)}")
@@ -239,7 +236,7 @@ class NotificationAgent(BaseAgent):
         return {
             "success": True,
             "channel": "log",
-            "message_id": f"log_{datetime.now().timestamp()}"
+            "message_id": f"log_{datetime.now().timestamp()}",
         }
 
     def send_trade_alert(self, trade_data: Dict[str, Any]):
@@ -250,13 +247,15 @@ class NotificationAgent(BaseAgent):
             f"{trade_data.get('quantity')} shares @ ${trade_data.get('price', 0):.2f}"
         )
 
-        return self.analyze({
-            "message": message,
-            "channels": ["email", "dashboard"],  # Removed Slack
-            "priority": NotificationPriority.MEDIUM.value,
-            "type": "trade",
-            "context": trade_data
-        })
+        return self.analyze(
+            {
+                "message": message,
+                "channels": ["email", "dashboard"],  # Removed Slack
+                "priority": NotificationPriority.MEDIUM.value,
+                "type": "trade",
+                "context": trade_data,
+            }
+        )
 
     def send_risk_alert(self, risk_data: Dict[str, Any]):
         """Send risk management alert."""
@@ -265,13 +264,15 @@ class NotificationAgent(BaseAgent):
             f"{risk_data.get('message', 'Risk threshold exceeded')}"
         )
 
-        return self.analyze({
-            "message": message,
-            "channels": ["email"],  # Removed Slack
-            "priority": NotificationPriority.HIGH.value,
-            "type": "risk",
-            "context": risk_data
-        })
+        return self.analyze(
+            {
+                "message": message,
+                "channels": ["email"],  # Removed Slack
+                "priority": NotificationPriority.HIGH.value,
+                "type": "risk",
+                "context": risk_data,
+            }
+        )
 
     def send_approval_request(self, approval_data: Dict[str, Any]):
         """Send approval request notification."""
@@ -280,10 +281,12 @@ class NotificationAgent(BaseAgent):
             f"{approval_data.get('description', 'Human approval needed')}"
         )
 
-        return self.analyze({
-            "message": message,
-            "channels": ["email"],  # Removed Slack
-            "priority": NotificationPriority.CRITICAL.value,
-            "type": "approval",
-            "context": approval_data
-        })
+        return self.analyze(
+            {
+                "message": message,
+                "channels": ["email"],  # Removed Slack
+                "priority": NotificationPriority.CRITICAL.value,
+                "type": "approval",
+                "context": approval_data,
+            }
+        )

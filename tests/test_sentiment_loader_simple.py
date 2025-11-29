@@ -24,20 +24,17 @@ from src.utils.sentiment_loader import (
     get_market_regime,
     print_sentiment_summary,
     normalize_sentiment_score,
-    is_sentiment_fresh
+    is_sentiment_fresh,
 )
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 
 
 def main():
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SENTIMENT LOADER SIMPLE TEST")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
     # Test 1: Load sentiment data
     print("TEST 1: Loading sentiment data...")
@@ -55,8 +52,8 @@ def main():
     print("\nTEST 2: Checking data freshness...")
     try:
         is_fresh = is_sentiment_fresh(sentiment_data)
-        freshness = sentiment_data['meta']['freshness']
-        days_old = sentiment_data['meta']['days_old']
+        freshness = sentiment_data["meta"]["freshness"]
+        days_old = sentiment_data["meta"]["days_old"]
         print(f"✓ Freshness check: {freshness} ({days_old} days old)")
         print(f"  Is fresh: {is_fresh}")
     except Exception as e:
@@ -69,7 +66,9 @@ def main():
     try:
         for ticker in test_tickers:
             score, confidence, regime = get_ticker_sentiment(ticker, sentiment_data)
-            print(f"  {ticker:<6}: score={score:>6.2f}, confidence={confidence:<6}, regime={regime}")
+            print(
+                f"  {ticker:<6}: score={score:>6.2f}, confidence={confidence:<6}, regime={regime}"
+            )
         print("✓ All ticker lookups succeeded")
     except Exception as e:
         print(f"✗ Ticker lookup failed: {e}")
@@ -98,9 +97,13 @@ def main():
         for source, raw, expected in test_cases:
             actual = normalize_sentiment_score(raw, source)
             if abs(actual - expected) < 0.1:
-                print(f"  ✓ {source:<12} {raw:>5} → {actual:.1f} (expected {expected:.1f})")
+                print(
+                    f"  ✓ {source:<12} {raw:>5} → {actual:.1f} (expected {expected:.1f})"
+                )
             else:
-                print(f"  ✗ {source:<12} {raw:>5} → {actual:.1f} (expected {expected:.1f})")
+                print(
+                    f"  ✗ {source:<12} {raw:>5} → {actual:.1f} (expected {expected:.1f})"
+                )
                 all_passed = False
 
         if all_passed:
@@ -118,9 +121,9 @@ def main():
         print(f"✗ Summary print failed: {e}")
         return False
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("✓ ALL TESTS PASSED")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
     return True
 
 

@@ -11,6 +11,7 @@ import sys
 from datetime import datetime, timedelta
 from typing import List, Dict
 
+
 def run_gh_command(cmd: str) -> tuple[str, int]:
     """Run GitHub CLI command and return output."""
     try:
@@ -20,6 +21,7 @@ def run_gh_command(cmd: str) -> tuple[str, int]:
         return result.stdout.strip(), result.returncode
     except Exception as e:
         return str(e), 1
+
 
 def get_open_issues() -> List[Dict]:
     """Get all open issues."""
@@ -35,6 +37,7 @@ def get_open_issues() -> List[Dict]:
     except json.JSONDecodeError:
         print("❌ Failed to parse issues JSON")
         return []
+
 
 def find_duplicates(issues: List[Dict]) -> List[List[Dict]]:
     """Find duplicate issues based on title similarity."""
@@ -63,7 +66,7 @@ def find_duplicates(issues: List[Dict]) -> List[List[Dict]]:
                 group = [issue1]
                 processed.add(i)
 
-                for j, issue2 in enumerate(issues[i+1:], start=i+1):
+                for j, issue2 in enumerate(issues[i + 1 :], start=i + 1):
                     if j in processed:
                         continue
 
@@ -71,7 +74,9 @@ def find_duplicates(issues: List[Dict]) -> List[List[Dict]]:
                     body2_lower = issue2.get("body", "").lower()
 
                     # Check if similar
-                    if all(kw in title2_lower or kw in body2_lower for kw in keyword_set):
+                    if all(
+                        kw in title2_lower or kw in body2_lower for kw in keyword_set
+                    ):
                         # Check title similarity (simple word overlap)
                         words1 = set(title1_lower.split())
                         words2 = set(title2_lower.split())
@@ -86,6 +91,7 @@ def find_duplicates(issues: List[Dict]) -> List[List[Dict]]:
                 break
 
     return duplicates
+
 
 def close_duplicate_issues(duplicates: List[List[Dict]], dry_run: bool = True):
     """Close duplicate issues, keeping the oldest one open."""
@@ -116,13 +122,14 @@ def close_duplicate_issues(duplicates: List[List[Dict]], dry_run: bool = True):
                 print(f"   Would add comment: {comment[:100]}...")
             else:
                 # Add comment first
-                run_gh_command(
-                    f"gh issue comment {issue['number']} --body '{comment}'"
-                )
+                run_gh_command(f"gh issue comment {issue['number']} --body '{comment}'")
 
                 # Close issue
-                run_gh_command(f"gh issue close {issue['number']} --comment '{comment}'")
+                run_gh_command(
+                    f"gh issue close {issue['number']} --comment '{comment}'"
+                )
                 print(f"   ✅ Closed: #{issue['number']}")
+
 
 def main():
     """Main function."""
@@ -190,6 +197,7 @@ def main():
     else:
         print("✅ Duplicate issues closed")
     print("=" * 80)
+
 
 if __name__ == "__main__":
     main()

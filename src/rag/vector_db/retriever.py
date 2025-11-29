@@ -37,7 +37,7 @@ class RAGRetriever:
         n_results: int = 5,
         ticker: Optional[str] = None,
         source: Optional[str] = None,
-        days_back: Optional[int] = None
+        days_back: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Query RAG database with natural language.
@@ -70,9 +70,7 @@ class RAGRetriever:
 
         # Query database
         results = self.db.query(
-            query_text=query,
-            n_results=n_results,
-            where=where if where else None
+            query_text=query, n_results=n_results, where=where if where else None
         )
 
         if results["status"] != "success":
@@ -88,25 +86,27 @@ class RAGRetriever:
             if days_back is not None:
                 article_date = metadata.get("date")
                 if article_date:
-                    cutoff_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+                    cutoff_date = (datetime.now() - timedelta(days=days_back)).strftime(
+                        "%Y-%m-%d"
+                    )
                     if article_date < cutoff_date:
                         continue  # Skip old articles
 
-            articles.append({
-                "content": results["documents"][i],
-                "metadata": metadata,
-                "relevance_score": 1 - results["distances"][i],  # Convert distance to similarity
-                "id": results["ids"][i]
-            })
+            articles.append(
+                {
+                    "content": results["documents"][i],
+                    "metadata": metadata,
+                    "relevance_score": 1
+                    - results["distances"][i],  # Convert distance to similarity
+                    "id": results["ids"][i],
+                }
+            )
 
         logger.info(f"Retrieved {len(articles)} articles for query: {query[:50]}...")
         return articles
 
     def get_ticker_context(
-        self,
-        ticker: str,
-        n_results: int = 20,
-        days_back: int = 7
+        self, ticker: str, n_results: int = 20, days_back: int = 7
     ) -> str:
         """
         Get formatted context for a ticker (for LLM prompt).
@@ -130,7 +130,7 @@ class RAGRetriever:
             query=f"Latest news and analysis for {ticker}",
             n_results=n_results,
             ticker=ticker,
-            days_back=days_back
+            days_back=days_back,
         )
 
         if not articles:
@@ -144,17 +144,11 @@ class RAGRetriever:
             date = article["metadata"].get("date", "Unknown")
             content = article["content"][:200]  # First 200 chars
 
-            context_lines.append(
-                f"{i}. [{source.title()}] ({date}) {content}..."
-            )
+            context_lines.append(f"{i}. [{source.title()}] ({date}) {content}...")
 
         return "\n".join(context_lines)
 
-    def get_market_sentiment(
-        self,
-        ticker: str,
-        days_back: int = 7
-    ) -> Dict[str, Any]:
+    def get_market_sentiment(self, ticker: str, days_back: int = 7) -> Dict[str, Any]:
         """
         Aggregate sentiment for a ticker from RAG database.
 
@@ -179,7 +173,7 @@ class RAGRetriever:
             query=f"Sentiment and market analysis for {ticker}",
             n_results=50,  # Get more for aggregation
             ticker=ticker,
-            days_back=days_back
+            days_back=days_back,
         )
 
         if not articles:
@@ -188,14 +182,20 @@ class RAGRetriever:
                 "sentiment_score": 0.5,  # Neutral
                 "article_count": 0,
                 "sources": [],
-                "summary": "No recent news"
+                "summary": "No recent news",
             }
 
         # Aggregate sentiment from relevance scores
         avg_sentiment = sum(a["relevance_score"] for a in articles) / len(articles)
 
         # Extract unique sources
-        sources = list(set(a["metadata"].get("source") for a in articles if a["metadata"].get("source")))
+        sources = list(
+            set(
+                a["metadata"].get("source")
+                for a in articles
+                if a["metadata"].get("source")
+            )
+        )
 
         # Classify sentiment
         if avg_sentiment > 0.7:
@@ -214,14 +214,10 @@ class RAGRetriever:
             "sentiment_score": avg_sentiment,
             "article_count": len(articles),
             "sources": sources,
-            "summary": summary
+            "summary": summary,
         }
 
-    def semantic_search(
-        self,
-        query: str,
-        n_results: int = 10
-    ) -> List[str]:
+    def semantic_search(self, query: str, n_results: int = 10) -> List[str]:
         """
         Simple semantic search (returns just content).
 

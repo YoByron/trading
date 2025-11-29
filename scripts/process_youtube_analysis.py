@@ -55,12 +55,14 @@ def extract_stock_tickers(markdown_content: str) -> List[Dict[str, str]]:
     stocks = []
 
     # Pattern 1: **TICKER** - Company Name
-    pattern1 = re.findall(r'\*\*([A-Z]{1,5})\*\*\s*[-:]\s*(.+?)(?:\n|$)', markdown_content)
+    pattern1 = re.findall(
+        r"\*\*([A-Z]{1,5})\*\*\s*[-:]\s*(.+?)(?:\n|$)", markdown_content
+    )
     for ticker, name in pattern1:
         stocks.append({"ticker": ticker, "name": name.strip()})
 
     # Pattern 2: TICKER: Company Name
-    pattern2 = re.findall(r'^([A-Z]{1,5}):\s*(.+?)$', markdown_content, re.MULTILINE)
+    pattern2 = re.findall(r"^([A-Z]{1,5}):\s*(.+?)$", markdown_content, re.MULTILINE)
     for ticker, name in pattern2:
         if ticker not in [s["ticker"] for s in stocks]:
             stocks.append({"ticker": ticker, "name": name.strip()})
@@ -72,7 +74,7 @@ def parse_video_2_analysis() -> List[Dict[str, Any]]:
     """Parse Video #2 analysis (top 6 stocks)"""
     print("\n📊 Parsing Video #2: Top 6 Stocks...")
 
-    with open(VIDEO_2_FILE, 'r') as f:
+    with open(VIDEO_2_FILE, "r") as f:
         content = f.read()
 
     stocks = extract_stock_tickers(content)
@@ -81,7 +83,7 @@ def parse_video_2_analysis() -> List[Dict[str, Any]]:
     for stock in stocks:
         ticker = stock["ticker"]
         # Find section with this ticker
-        pattern = rf'\*\*{ticker}\*\*.*?\n\n(.+?)(?:\n\n|\Z)'
+        pattern = rf"\*\*{ticker}\*\*.*?\n\n(.+?)(?:\n\n|\Z)"
         match = re.search(pattern, content, re.DOTALL)
         if match:
             rationale = match.group(1).strip()[:200]  # First 200 chars
@@ -102,7 +104,7 @@ def parse_video_4_analysis() -> Dict[str, Any]:
     """Parse Video #4 analysis (AMZN OpenAI deal)"""
     print("\n📊 Parsing Video #4: AMZN OpenAI Deal...")
 
-    with open(VIDEO_4_FILE, 'r') as f:
+    with open(VIDEO_4_FILE, "r") as f:
         content = f.read()
 
     # Extract AMZN recommendation
@@ -111,7 +113,7 @@ def parse_video_4_analysis() -> Dict[str, Any]:
         "name": "Amazon.com Inc.",
         "source": "YouTube - OpenAI Partnership Analysis",
         "date_added": datetime.now().strftime("%Y-%m-%d"),
-        "status": "watchlist"
+        "status": "watchlist",
     }
 
     # Look for recommendation section
@@ -127,8 +129,11 @@ def parse_video_4_analysis() -> Dict[str, Any]:
         amzn_stock["priority"] = "medium"
 
     # Extract rationale (first paragraph after "Summary" or "Recommendation")
-    summary_match = re.search(r'(?:Summary|Recommendation|Analysis).*?\n\n(.+?)(?:\n\n|\Z)',
-                              content, re.DOTALL | re.IGNORECASE)
+    summary_match = re.search(
+        r"(?:Summary|Recommendation|Analysis).*?\n\n(.+?)(?:\n\n|\Z)",
+        content,
+        re.DOTALL | re.IGNORECASE,
+    )
     if summary_match:
         amzn_stock["rationale"] = summary_match.group(1).strip()[:200]
     else:
@@ -143,7 +148,7 @@ def update_watchlist(video_2_stocks: List[Dict], amzn_stock: Dict) -> None:
     print("\n📝 Updating watchlist...")
 
     # Load current watchlist
-    with open(WATCHLIST_FILE, 'r') as f:
+    with open(WATCHLIST_FILE, "r") as f:
         watchlist = json.load(f)
 
     # Add new stocks to watchlist section
@@ -162,13 +167,15 @@ def update_watchlist(video_2_stocks: List[Dict], amzn_stock: Dict) -> None:
     watchlist["meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d")
 
     # Save
-    with open(WATCHLIST_FILE, 'w') as f:
+    with open(WATCHLIST_FILE, "w") as f:
         json.dump(watchlist, f, indent=2)
 
     print(f"✅ Watchlist updated: {len(all_new_stocks)} new stocks")
 
 
-def generate_recommendations_report(video_2_stocks: List[Dict], amzn_stock: Dict) -> None:
+def generate_recommendations_report(
+    video_2_stocks: List[Dict], amzn_stock: Dict
+) -> None:
     """Generate final recommendations report"""
     print("\n📋 Generating recommendations report...")
 
@@ -237,7 +244,9 @@ def generate_recommendations_report(video_2_stocks: List[Dict], amzn_stock: Dict
 ### Immediate Additions (High Priority)
 """
 
-    high_priority = [s for s in video_2_stocks + [amzn_stock] if s['priority'] == 'high']
+    high_priority = [
+        s for s in video_2_stocks + [amzn_stock] if s["priority"] == "high"
+    ]
     if high_priority:
         for stock in high_priority:
             report += f"- {stock['ticker']} ({stock['name']})\n"
@@ -245,7 +254,9 @@ def generate_recommendations_report(video_2_stocks: List[Dict], amzn_stock: Dict
         report += "- None (all stocks medium/low priority)\n"
 
     report += "\n### Monitor (Medium Priority)\n"
-    medium_priority = [s for s in video_2_stocks + [amzn_stock] if s['priority'] == 'medium']
+    medium_priority = [
+        s for s in video_2_stocks + [amzn_stock] if s["priority"] == "medium"
+    ]
     if medium_priority:
         for stock in medium_priority:
             report += f"- {stock['ticker']} ({stock['name']})\n"
@@ -253,7 +264,7 @@ def generate_recommendations_report(video_2_stocks: List[Dict], amzn_stock: Dict
         report += "- None\n"
 
     report += "\n### Lower Priority\n"
-    low_priority = [s for s in video_2_stocks + [amzn_stock] if s['priority'] == 'low']
+    low_priority = [s for s in video_2_stocks + [amzn_stock] if s["priority"] == "low"]
     if low_priority:
         for stock in low_priority:
             report += f"- {stock['ticker']} ({stock['name']})\n"
@@ -289,7 +300,7 @@ def generate_recommendations_report(video_2_stocks: List[Dict], amzn_stock: Dict
 """
 
     # Save report
-    with open(RECOMMENDATIONS_FILE, 'w') as f:
+    with open(RECOMMENDATIONS_FILE, "w") as f:
         f.write(report)
 
     print(f"✅ Report generated: {RECOMMENDATIONS_FILE}")
@@ -299,7 +310,7 @@ def update_system_state() -> None:
     """Update system_state.json with YouTube analysis integration"""
     print("\n🔧 Updating system state...")
 
-    with open(SYSTEM_STATE_FILE, 'r') as f:
+    with open(SYSTEM_STATE_FILE, "r") as f:
         state = json.load(f)
 
     # Add note about YouTube analysis
@@ -315,7 +326,7 @@ def update_system_state() -> None:
     state["meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     # Save
-    with open(SYSTEM_STATE_FILE, 'w') as f:
+    with open(SYSTEM_STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
     print("✅ System state updated")

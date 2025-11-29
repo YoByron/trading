@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from dotenv import load_dotenv
 import alpaca_trade_api as tradeapi
@@ -22,7 +22,7 @@ if not ALPACA_KEY or not ALPACA_SECRET:
     print("❌ Missing API credentials")
     sys.exit(1)
 
-api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, ALPACA_BASE_URL, api_version='v2')
+api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, ALPACA_BASE_URL, api_version="v2")
 
 # Get positions
 positions = api.list_positions()
@@ -33,8 +33,10 @@ for pos in positions:
     entry_price = float(pos.avg_entry_price)
     current_price = float(pos.current_price)
     unrealized_pct = float(pos.unrealized_plpc) * 100
-    print(f"  {pos.symbol}: {pos.qty} shares @ ${entry_price:.2f}, Current: ${current_price:.2f}, P/L: {unrealized_pct:.2f}%")
-    if pos.symbol == 'GOOGL':
+    print(
+        f"  {pos.symbol}: {pos.qty} shares @ ${entry_price:.2f}, Current: ${current_price:.2f}, P/L: {unrealized_pct:.2f}%"
+    )
+    if pos.symbol == "GOOGL":
         googl_position = pos
 
 if not googl_position:
@@ -60,20 +62,23 @@ if unrealized_pct >= 10.0:
     try:
         # Close the position
         order = api.submit_order(
-            symbol='GOOGL',
+            symbol="GOOGL",
             qty=float(googl_position.qty),
-            side='sell',
-            type='market',
-            time_in_force='day'
+            side="sell",
+            type="market",
+            time_in_force="day",
         )
         print(f"✅ CLOSED GOOGL position!")
         print(f"   Order ID: {order.id}")
         print(f"   Quantity: {googl_position.qty} shares")
-        print(f"   Estimated proceeds: ${float(googl_position.qty) * current_price:.2f}")
+        print(
+            f"   Estimated proceeds: ${float(googl_position.qty) * current_price:.2f}"
+        )
         print(f"   Realized profit: ${unrealized_pl:.2f} ({unrealized_pct:.2f}%)")
     except Exception as e:
         print(f"❌ Failed to close position: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 else:

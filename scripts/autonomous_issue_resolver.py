@@ -20,13 +20,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.agents.issue_resolution_agent import IssueResolutionAgent
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
-def get_github_issues(github_token: str, label: str = "trading-failure") -> List[Dict[str, Any]]:
+def get_github_issues(
+    github_token: str, label: str = "trading-failure"
+) -> List[Dict[str, Any]]:
     """
     Get GitHub issues with specified label.
 
@@ -42,15 +43,11 @@ def get_github_issues(github_token: str, label: str = "trading-failure") -> List
 
         headers = {
             "Authorization": f"token {github_token}",
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json",
         }
 
         url = f"https://api.github.com/repos/IgorGanapolsky/trading/issues"
-        params = {
-            "state": "open",
-            "labels": label,
-            "per_page": 100
-        }
+        params = {"state": "open", "labels": label, "per_page": 100}
 
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
@@ -61,7 +58,9 @@ def get_github_issues(github_token: str, label: str = "trading-failure") -> List
         return []
 
 
-def update_issue(github_token: str, issue_number: int, comment: str, close: bool = False) -> bool:
+def update_issue(
+    github_token: str, issue_number: int, comment: str, close: bool = False
+) -> bool:
     """
     Update GitHub issue with comment and optionally close it.
 
@@ -79,7 +78,7 @@ def update_issue(github_token: str, issue_number: int, comment: str, close: bool
 
         headers = {
             "Authorization": f"token {github_token}",
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json",
         }
 
         # Add comment
@@ -110,18 +109,18 @@ def main():
         "--label",
         type=str,
         default="trading-failure",
-        help="GitHub issue label to process (default: trading-failure)"
+        help="GitHub issue label to process (default: trading-failure)",
     )
     parser.add_argument(
         "--max-issues",
         type=int,
         default=10,
-        help="Maximum issues to process (default: 10)"
+        help="Maximum issues to process (default: 10)",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Dry run mode (don't actually fix issues)"
+        help="Dry run mode (don't actually fix issues)",
     )
 
     args = parser.parse_args()
@@ -160,9 +159,9 @@ def main():
     resolved = 0
     failed = 0
 
-    for issue in issues[:args.max_issues]:
-        issue_number = issue['number']
-        issue_title = issue['title']
+    for issue in issues[: args.max_issues]:
+        issue_number = issue["number"]
+        issue_title = issue["title"]
 
         print(f"\n{'=' * 80}")
         print(f"Issue #{issue_number}: {issue_title}")
@@ -200,7 +199,7 @@ This issue was automatically resolved by the AI Issue Resolution Agent.
             print(f"⚠️  Issue #{issue_number} could not be auto-resolved")
             print(f"   Reason: {result.get('message', 'Unknown')}")
 
-            if not args.dry_run and result.get('diagnosis', {}).get('root_cause'):
+            if not args.dry_run and result.get("diagnosis", {}).get("root_cause"):
                 comment = f"""## 🤖 Autonomous Diagnosis Complete
 
 **Status**: ⚠️ Requires manual review

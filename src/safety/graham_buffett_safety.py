@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 class SafetyRating(Enum):
     """Safety rating for investment opportunities."""
+
     EXCELLENT = "excellent"  # Strong margin of safety, high quality
     GOOD = "good"  # Adequate margin of safety, good quality
     ACCEPTABLE = "acceptable"  # Minimal margin of safety, acceptable quality
@@ -44,6 +45,7 @@ class SafetyRating(Enum):
 @dataclass
 class CompanyQuality:
     """Container for company quality metrics."""
+
     symbol: str
     debt_to_equity: Optional[float]  # Lower is better
     current_ratio: Optional[float]  # Higher is better (>1.0 is healthy)
@@ -64,6 +66,7 @@ class CompanyQuality:
 @dataclass
 class SafetyAnalysis:
     """Complete safety analysis for an investment opportunity."""
+
     symbol: str
     market_price: float
     intrinsic_value: Optional[float]
@@ -73,8 +76,12 @@ class SafetyAnalysis:
     reasons: List[str]  # Reasons for rating
     warnings: List[str]  # Warning messages
     # Intelligent Investor additions
-    defensive_investor_score: Optional[float]  # 0-100 score for defensive investor criteria
-    mr_market_sentiment: Optional[str]  # "fearful", "greedy", "neutral" - Mr. Market concept
+    defensive_investor_score: Optional[
+        float
+    ]  # 0-100 score for defensive investor criteria
+    mr_market_sentiment: Optional[
+        str
+    ]  # "fearful", "greedy", "neutral" - Mr. Market concept
     value_score: Optional[float]  # 0-100 value investing score
     timestamp: datetime
 
@@ -104,9 +111,15 @@ class GrahamBuffettSafety:
     MIN_EARNINGS_GROWTH = 0.05  # Minimum 5% annual earnings growth
 
     # Intelligent Investor - Defensive Investor Criteria (Graham's checklist)
-    MAX_PE_RATIO = 15.0  # Maximum P/E ratio for defensive investor (Graham recommended <15)
-    MAX_PB_RATIO = 1.5  # Maximum P/B ratio for defensive investor (Graham recommended <1.5)
-    MIN_DIVIDEND_YIELD = 0.02  # Minimum 2% dividend yield (preferred for defensive investor)
+    MAX_PE_RATIO = (
+        15.0  # Maximum P/E ratio for defensive investor (Graham recommended <15)
+    )
+    MAX_PB_RATIO = (
+        1.5  # Maximum P/B ratio for defensive investor (Graham recommended <1.5)
+    )
+    MIN_DIVIDEND_YIELD = (
+        0.02  # Minimum 2% dividend yield (preferred for defensive investor)
+    )
     MAX_PE_RATIO_STRICT = 20.0  # Absolute maximum P/E (reject if above)
     MAX_PB_RATIO_STRICT = 2.0  # Absolute maximum P/B (reject if above)
 
@@ -119,19 +132,47 @@ class GrahamBuffettSafety:
     # These are companies most investors understand
     WELL_KNOWN_TICKERS = {
         # Tech
-        "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "META", "NVDA", "TSLA",
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "GOOG",
+        "AMZN",
+        "META",
+        "NVDA",
+        "TSLA",
         # Finance
-        "JPM", "BAC", "WFC", "GS", "MS",
+        "JPM",
+        "BAC",
+        "WFC",
+        "GS",
+        "MS",
         # Consumer
-        "WMT", "HD", "MCD", "SBUX", "NKE", "DIS",
+        "WMT",
+        "HD",
+        "MCD",
+        "SBUX",
+        "NKE",
+        "DIS",
         # Healthcare
-        "JNJ", "PFE", "UNH", "ABBV",
+        "JNJ",
+        "PFE",
+        "UNH",
+        "ABBV",
         # Industrial
-        "BA", "CAT", "GE", "HON",
+        "BA",
+        "CAT",
+        "GE",
+        "HON",
         # Energy
-        "XOM", "CVX",
+        "XOM",
+        "CVX",
         # ETFs (always acceptable)
-        "SPY", "QQQ", "VOO", "VTI", "DIA", "IWM",
+        "SPY",
+        "QQQ",
+        "VOO",
+        "VTI",
+        "DIA",
+        "IWM",
     }
 
     def __init__(
@@ -216,8 +257,8 @@ class GrahamBuffettSafety:
             if dcf_result and dcf_result.intrinsic_value > 0:
                 intrinsic_value = dcf_result.intrinsic_value
                 margin_of_safety_pct = (
-                    (intrinsic_value - market_price) / intrinsic_value
-                )
+                    intrinsic_value - market_price
+                ) / intrinsic_value
 
                 logger.info(
                     f"{symbol} intrinsic value: ${intrinsic_value:.2f}, "
@@ -478,7 +519,9 @@ class GrahamBuffettSafety:
 
             # Earnings data
             financials = ticker.financials
-            earnings_data = ticker.earnings_history if hasattr(ticker, 'earnings_history') else None
+            earnings_data = (
+                ticker.earnings_history if hasattr(ticker, "earnings_history") else None
+            )
 
             # Calculate 3-year earnings growth
             earnings_growth_3y = None
@@ -487,15 +530,25 @@ class GrahamBuffettSafety:
             if financials is not None and not financials.empty:
                 try:
                     # Get net income for last 3 years
-                    net_income = financials.loc["Net Income"] if "Net Income" in financials.index else None
+                    net_income = (
+                        financials.loc["Net Income"]
+                        if "Net Income" in financials.index
+                        else None
+                    )
                     if net_income is not None and len(net_income) >= 2:
                         # Calculate growth
-                        years = net_income.index[:3] if len(net_income) >= 3 else net_income.index[:2]
+                        years = (
+                            net_income.index[:3]
+                            if len(net_income) >= 3
+                            else net_income.index[:2]
+                        )
                         if len(years) >= 2:
                             latest = net_income.iloc[0]
                             oldest = net_income.iloc[-1]
                             if oldest != 0:
-                                earnings_growth_3y = (latest / oldest) ** (1 / (len(years) - 1)) - 1
+                                earnings_growth_3y = (latest / oldest) ** (
+                                    1 / (len(years) - 1)
+                                ) - 1
 
                             # Calculate consistency (lower variance = higher consistency)
                             if len(net_income) >= 3:
@@ -928,7 +981,10 @@ class GrahamBuffettSafety:
 
         # Acceptable: Either good margin OR good quality OR good defensive score
         if (
-            (margin_of_safety_pct is not None and margin_of_safety_pct >= self.min_margin_of_safety)
+            (
+                margin_of_safety_pct is not None
+                and margin_of_safety_pct >= self.min_margin_of_safety
+            )
             or (quality and quality.quality_score >= 60)
             or (defensive_score is not None and defensive_score >= 60)
         ):
@@ -936,7 +992,10 @@ class GrahamBuffettSafety:
 
         # Poor: Low margin of safety AND low quality AND low defensive score
         if (
-            (margin_of_safety_pct is not None and margin_of_safety_pct < self.min_margin_of_safety)
+            (
+                margin_of_safety_pct is not None
+                and margin_of_safety_pct < self.min_margin_of_safety
+            )
             or (quality and quality.quality_score < 40)
             or (defensive_score is not None and defensive_score < 40)
         ):

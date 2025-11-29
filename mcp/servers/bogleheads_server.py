@@ -26,30 +26,27 @@ logger = logging.getLogger(__name__)
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent.parent
 import sys
+
 sys.path.insert(0, str(project_root))
 
 
 async def monitor_forum_tool(arguments: Dict[str, Any]) -> List[TextContent]:
     """Monitor Bogleheads forum for new insights."""
     try:
-        from claude.skills.bogleheads_learner.scripts.bogleheads_learner import BogleheadsLearner
+        from claude.skills.bogleheads_learner.scripts.bogleheads_learner import (
+            BogleheadsLearner,
+        )
 
         learner = BogleheadsLearner()
         result = learner.monitor_bogleheads_forum(
             topics=arguments.get("topics", ["Personal Investments"]),
             keywords=arguments.get("keywords", ["market timing", "risk"]),
-            max_posts=arguments.get("max_posts", 50)
+            max_posts=arguments.get("max_posts", 50),
         )
 
-        return [TextContent(
-            type="text",
-            text=json.dumps(result, indent=2)
-        )]
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error: {str(e)}"
-        )]
+        return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
 async def get_signal_tool(arguments: Dict[str, Any]) -> List[TextContent]:
@@ -62,15 +59,9 @@ async def get_signal_tool(arguments: Dict[str, Any]) -> List[TextContent]:
 
         signal = get_bogleheads_signal_for_symbol(symbol, market_context)
 
-        return [TextContent(
-            type="text",
-            text=json.dumps(signal, indent=2)
-        )]
+        return [TextContent(type="text", text=json.dumps(signal, indent=2))]
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error: {str(e)}"
-        )]
+        return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
 async def analyze_regime_tool(arguments: Dict[str, Any]) -> List[TextContent]:
@@ -80,15 +71,9 @@ async def analyze_regime_tool(arguments: Dict[str, Any]) -> List[TextContent]:
 
         regime = get_bogleheads_regime()
 
-        return [TextContent(
-            type="text",
-            text=json.dumps(regime, indent=2)
-        )]
+        return [TextContent(type="text", text=json.dumps(regime, indent=2))]
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error: {str(e)}"
-        )]
+        return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
 def create_server() -> Optional[Server]:
@@ -110,19 +95,19 @@ def create_server() -> Optional[Server]:
                         "topics": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Forum topics to monitor"
+                            "description": "Forum topics to monitor",
                         },
                         "keywords": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Keywords to filter posts"
+                            "description": "Keywords to filter posts",
                         },
                         "max_posts": {
                             "type": "integer",
-                            "description": "Maximum posts to analyze"
-                        }
-                    }
-                }
+                            "description": "Maximum posts to analyze",
+                        },
+                    },
+                },
             ),
             Tool(
                 name="get_bogleheads_signal",
@@ -132,15 +117,15 @@ def create_server() -> Optional[Server]:
                     "properties": {
                         "symbol": {
                             "type": "string",
-                            "description": "Symbol to analyze"
+                            "description": "Symbol to analyze",
                         },
                         "market_context": {
                             "type": "object",
-                            "description": "Current market context"
-                        }
+                            "description": "Current market context",
+                        },
                     },
-                    "required": ["symbol"]
-                }
+                    "required": ["symbol"],
+                },
             ),
             Tool(
                 name="analyze_bogleheads_regime",
@@ -150,11 +135,11 @@ def create_server() -> Optional[Server]:
                     "properties": {
                         "timeframe": {
                             "type": "string",
-                            "description": "Timeframe to analyze"
+                            "description": "Timeframe to analyze",
                         }
-                    }
-                }
-            )
+                    },
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -180,9 +165,7 @@ async def main():
 
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options()
+            read_stream, write_stream, server.create_initialization_options()
         )
 
 

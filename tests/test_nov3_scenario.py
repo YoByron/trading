@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from src.core.alpaca_trader import AlpacaTrader, OrderExecutionError
 
+
 def test_nov3_scenario():
     """Test the exact Nov 3 scenario."""
     print("=" * 80)
@@ -59,12 +60,14 @@ def test_nov3_scenario():
         print(f"  Multiplier: {order['amount']/order['expected']:.1f}x")
 
         try:
-            trader.validate_order_amount(order['symbol'], order['amount'], order['tier'])
+            trader.validate_order_amount(
+                order["symbol"], order["amount"], order["tier"]
+            )
             print(f"  ❌ VALIDATION FAILED - Order was ACCEPTED (bad!)")
-            total_deployed += order['amount']
+            total_deployed += order["amount"]
         except OrderExecutionError as e:
             print(f"  ✅ VALIDATION SUCCESS - Order was REJECTED (good!)")
-            total_rejected += order['amount']
+            total_rejected += order["amount"]
 
         print()
 
@@ -83,6 +86,7 @@ def test_nov3_scenario():
     else:
         print("❌ FAILURE! Validation did not prevent the incident.")
         return False
+
 
 if __name__ == "__main__":
     success = test_nov3_scenario()

@@ -11,31 +11,34 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from state_manager import StateManager, STATE_FILE
+
 
 def backup_state():
     """Backup current state"""
     if STATE_FILE.exists():
-        backup_file = STATE_FILE.with_suffix('.json.backup')
-        with open(STATE_FILE, 'r') as src, open(backup_file, 'w') as dst:
+        backup_file = STATE_FILE.with_suffix(".json.backup")
+        with open(STATE_FILE, "r") as src, open(backup_file, "w") as dst:
             dst.write(src.read())
         print(f"✅ Backed up state to {backup_file}")
         return True
     return False
 
+
 def restore_state():
     """Restore state from backup"""
-    backup_file = STATE_FILE.with_suffix('.json.backup')
+    backup_file = STATE_FILE.with_suffix(".json.backup")
     if backup_file.exists():
-        with open(backup_file, 'r') as src, open(STATE_FILE, 'w') as dst:
+        with open(backup_file, "r") as src, open(STATE_FILE, "w") as dst:
             dst.write(src.read())
         print(f"✅ Restored state from {backup_file}")
         backup_file.unlink()
         return True
     return False
+
 
 def set_state_age(hours_old: float):
     """Set state to be a specific age"""
@@ -43,25 +46,26 @@ def set_state_age(hours_old: float):
         print(f"❌ State file not found: {STATE_FILE}")
         return False
 
-    with open(STATE_FILE, 'r') as f:
+    with open(STATE_FILE, "r") as f:
         state = json.load(f)
 
     # Set last_updated to be hours_old ago
     fake_time = datetime.now() - timedelta(hours=hours_old)
     state["meta"]["last_updated"] = fake_time.isoformat()
 
-    with open(STATE_FILE, 'w') as f:
+    with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
-    print(f"✅ Set state to be {hours_old:.1f} hours ({hours_old/24:.1f} days) old")
+    print(f"✅ Set state to be {hours_old:.1f} hours ({hours_old / 24:.1f} days) old")
     return True
+
 
 def test_scenario(name: str, hours_old: float, should_fail: bool = False):
     """Test a specific staleness scenario"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(f"TEST: {name}")
-    print(f"Age: {hours_old:.1f} hours ({hours_old/24:.1f} days)")
-    print("="*70)
+    print(f"Age: {hours_old:.1f} hours ({hours_old / 24:.1f} days)")
+    print("=" * 70)
 
     # Set the state age
     if not set_state_age(hours_old):
@@ -72,7 +76,9 @@ def test_scenario(name: str, hours_old: float, should_fail: bool = False):
         sm = StateManager()
         print(f"\n✅ StateManager loaded successfully")
         print(f"Status: {sm.state['meta']['staleness_status']}")
-        print(f"Confidence: {sm.state['meta']['self_evaluation']['confidence_in_state']*100:.0f}%")
+        print(
+            f"Confidence: {sm.state['meta']['self_evaluation']['confidence_in_state'] * 100:.0f}%"
+        )
 
         if should_fail:
             print(f"\n❌ FAILED: Should have raised ValueError for EXPIRED state")
@@ -89,10 +95,11 @@ def test_scenario(name: str, hours_old: float, should_fail: bool = False):
             print(f"Error: {e}")
             return False
 
+
 def main():
-    print("="*70)
+    print("=" * 70)
     print("STALENESS DETECTION TEST SUITE")
-    print("="*70)
+    print("=" * 70)
 
     # Backup current state
     if not backup_state():
@@ -103,37 +110,49 @@ def main():
         results = []
 
         # Test 1: FRESH state (12 hours)
-        results.append(("FRESH (12 hours)", test_scenario(
-            "FRESH State - 12 hours old",
-            hours_old=12,
-            should_fail=False
-        )))
+        results.append(
+            (
+                "FRESH (12 hours)",
+                test_scenario(
+                    "FRESH State - 12 hours old", hours_old=12, should_fail=False
+                ),
+            )
+        )
 
         # Test 2: AGING state (36 hours)
-        results.append(("AGING (36 hours)", test_scenario(
-            "AGING State - 36 hours old",
-            hours_old=36,
-            should_fail=False
-        )))
+        results.append(
+            (
+                "AGING (36 hours)",
+                test_scenario(
+                    "AGING State - 36 hours old", hours_old=36, should_fail=False
+                ),
+            )
+        )
 
         # Test 3: STALE state (60 hours / 2.5 days)
-        results.append(("STALE (2.5 days)", test_scenario(
-            "STALE State - 2.5 days old",
-            hours_old=60,
-            should_fail=False
-        )))
+        results.append(
+            (
+                "STALE (2.5 days)",
+                test_scenario(
+                    "STALE State - 2.5 days old", hours_old=60, should_fail=False
+                ),
+            )
+        )
 
         # Test 4: EXPIRED state (96 hours / 4 days)
-        results.append(("EXPIRED (4 days)", test_scenario(
-            "EXPIRED State - 4 days old",
-            hours_old=96,
-            should_fail=True
-        )))
+        results.append(
+            (
+                "EXPIRED (4 days)",
+                test_scenario(
+                    "EXPIRED State - 4 days old", hours_old=96, should_fail=True
+                ),
+            )
+        )
 
         # Print summary
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST SUMMARY")
-        print("="*70)
+        print("=" * 70)
         for name, passed in results:
             status = "✅ PASS" if passed else "❌ FAIL"
             print(f"{status}: {name}")
@@ -147,7 +166,8 @@ def main():
     finally:
         # Always restore original state
         restore_state()
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
+
 
 if __name__ == "__main__":
     main()

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EvolutionCycle:
     """A single co-evolution cycle"""
+
     cycle_id: str = field(default_factory=lambda: str(uuid4()))
     started_at: str = field(default_factory=lambda: datetime.now().isoformat())
     finished_at: Optional[str] = None
@@ -60,6 +61,7 @@ class EvolutionCycle:
 @dataclass
 class CoEvolutionState:
     """State tracking for co-evolution"""
+
     total_cycles: int = 0
     successful_cycles: int = 0
     evolution_count: int = 0
@@ -74,9 +76,13 @@ class CoEvolutionState:
 
     # Evolution milestones
     last_evolution: Optional[str] = None
-    difficulty_progression: List[Tuple[str, str]] = field(default_factory=list)  # (timestamp, difficulty)
+    difficulty_progression: List[Tuple[str, str]] = field(
+        default_factory=list
+    )  # (timestamp, difficulty)
 
-    def record_cycle(self, success: bool, capability: float, difficulty: TaskDifficulty):
+    def record_cycle(
+        self, success: bool, capability: float, difficulty: TaskDifficulty
+    ):
         """Record a completed cycle"""
         self.total_cycles += 1
         if success:
@@ -86,7 +92,9 @@ class CoEvolutionState:
         self.current_difficulty = difficulty
 
         # Track history
-        success_rate = self.successful_cycles / self.total_cycles if self.total_cycles > 0 else 0.0
+        success_rate = (
+            self.successful_cycles / self.total_cycles if self.total_cycles > 0 else 0.0
+        )
         self.success_rate_history.append(success_rate)
         self.capability_history.append(capability)
 
@@ -96,13 +104,19 @@ class CoEvolutionState:
         if len(self.capability_history) > 100:
             self.capability_history = self.capability_history[-100:]
 
-    def record_evolution(self, from_difficulty: TaskDifficulty, to_difficulty: TaskDifficulty):
+    def record_evolution(
+        self, from_difficulty: TaskDifficulty, to_difficulty: TaskDifficulty
+    ):
         """Record a difficulty evolution"""
         if from_difficulty != to_difficulty:
             self.evolution_count += 1
             self.last_evolution = datetime.now().isoformat()
-            self.difficulty_progression.append((self.last_evolution, to_difficulty.value))
-            logger.info(f"🔄 Evolution recorded: {from_difficulty.value} -> {to_difficulty.value}")
+            self.difficulty_progression.append(
+                (self.last_evolution, to_difficulty.value)
+            )
+            logger.info(
+                f"🔄 Evolution recorded: {from_difficulty.value} -> {to_difficulty.value}"
+            )
 
 
 class CoEvolutionEngine:
@@ -120,7 +134,7 @@ class CoEvolutionEngine:
         self,
         storage_dir: Optional[Path] = None,
         curriculum_agent: Optional[CurriculumAgent] = None,
-        executor_agent: Optional[ExecutorAgent] = None
+        executor_agent: Optional[ExecutorAgent] = None,
     ):
         """
         Initialize Co-Evolution Engine
@@ -154,9 +168,7 @@ class CoEvolutionEngine:
         logger.info(f"   Total cycles: {self.state.total_cycles}")
 
     def run_evolution_cycle(
-        self,
-        category: Optional[str] = None,
-        symbols: Optional[List[str]] = None
+        self, category: Optional[str] = None, symbols: Optional[List[str]] = None
     ) -> EvolutionCycle:
         """
         Run a single co-evolution cycle
@@ -181,7 +193,7 @@ class CoEvolutionEngine:
             task = self.curriculum_agent.generate_task(
                 executor_capability=self.state.executor_capability,
                 category=None,  # Will be set from category parameter if needed
-                symbols=symbols
+                symbols=symbols,
             )
             cycle.task = task
 
@@ -192,13 +204,15 @@ class CoEvolutionEngine:
             execution_result = self.executor_agent.execute_task(task)
             cycle.execution_result = execution_result
 
-            logger.info(f"   Execution: {'✅' if execution_result.success else '❌'} (score: {execution_result.success_score:.2f})")
+            logger.info(
+                f"   Execution: {'✅' if execution_result.success else '❌'} (score: {execution_result.success_score:.2f})"
+            )
 
             # Step 3: Record execution result with Curriculum Agent
             self.curriculum_agent.record_execution_result(
                 task_id=task.task_id,
                 result=execution_result.outputs,
-                success_score=execution_result.success_score
+                success_score=execution_result.success_score,
             )
 
             # Step 4: Update executor capability
@@ -207,20 +221,26 @@ class CoEvolutionEngine:
 
             # Step 5: Check for evolution
             difficulty_before = self.state.current_difficulty
-            self.state.current_difficulty = self.curriculum_agent.state.current_difficulty
+            self.state.current_difficulty = (
+                self.curriculum_agent.state.current_difficulty
+            )
             cycle.curriculum_difficulty_after = self.state.current_difficulty.value
 
             if difficulty_before != self.state.current_difficulty:
                 cycle.evolution_occurred = True
-                self.state.record_evolution(difficulty_before, self.state.current_difficulty)
-                logger.info(f"🔄 Evolution occurred: {difficulty_before.value} -> {self.state.current_difficulty.value}")
+                self.state.record_evolution(
+                    difficulty_before, self.state.current_difficulty
+                )
+                logger.info(
+                    f"🔄 Evolution occurred: {difficulty_before.value} -> {self.state.current_difficulty.value}"
+                )
 
             # Step 6: Update state
             cycle.success = execution_result.success
             self.state.record_cycle(
                 success=execution_result.success,
                 capability=new_capability,
-                difficulty=self.state.current_difficulty
+                difficulty=self.state.current_difficulty,
             )
 
             # Step 7: Save state
@@ -230,7 +250,9 @@ class CoEvolutionEngine:
             cycle.finished_at = datetime.now().isoformat()
             self.cycle_history.append(cycle)
 
-            logger.info(f"✅ Cycle completed: success={cycle.success}, evolution={cycle.evolution_occurred}")
+            logger.info(
+                f"✅ Cycle completed: success={cycle.success}, evolution={cycle.evolution_occurred}"
+            )
 
         except Exception as e:
             logger.exception(f"❌ Cycle failed: {e}")
@@ -241,9 +263,7 @@ class CoEvolutionEngine:
         return cycle
 
     def run_evolution_loop(
-        self,
-        num_cycles: int = 10,
-        min_cycles_before_evolution: int = 3
+        self, num_cycles: int = 10, min_cycles_before_evolution: int = 3
     ) -> List[EvolutionCycle]:
         """
         Run multiple evolution cycles
@@ -280,14 +300,28 @@ class CoEvolutionEngine:
         return {
             "total_cycles": self.state.total_cycles,
             "successful_cycles": self.state.successful_cycles,
-            "success_rate": self.state.successful_cycles / self.state.total_cycles if self.state.total_cycles > 0 else 0.0,
+            "success_rate": (
+                self.state.successful_cycles / self.state.total_cycles
+                if self.state.total_cycles > 0
+                else 0.0
+            ),
             "evolution_count": self.state.evolution_count,
             "current_difficulty": self.state.current_difficulty.value,
             "executor_capability": self.state.executor_capability,
             "last_evolution": self.state.last_evolution,
-            "difficulty_progression": self.state.difficulty_progression[-10:],  # Last 10 evolutions
-            "recent_success_rate": self.state.success_rate_history[-10:] if self.state.success_rate_history else [],
-            "recent_capability": self.state.capability_history[-10:] if self.state.capability_history else []
+            "difficulty_progression": self.state.difficulty_progression[
+                -10:
+            ],  # Last 10 evolutions
+            "recent_success_rate": (
+                self.state.success_rate_history[-10:]
+                if self.state.success_rate_history
+                else []
+            ),
+            "recent_capability": (
+                self.state.capability_history[-10:]
+                if self.state.capability_history
+                else []
+            ),
         }
 
     def _log_progress(self):
@@ -305,15 +339,15 @@ class CoEvolutionEngine:
         successful = sum(1 for c in cycles if c.success)
         evolutions = sum(1 for c in cycles if c.evolution_occurred)
 
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("🎯 Evolution Loop Complete")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"Total Cycles: {len(cycles)}")
         logger.info(f"Successful: {successful} ({successful/len(cycles)*100:.1f}%)")
         logger.info(f"Evolutions: {evolutions}")
         logger.info(f"Final Difficulty: {self.state.current_difficulty.value}")
         logger.info(f"Final Capability: {self.state.executor_capability:.2f}")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
     def _save_state(self):
         """Save evolution state to disk"""

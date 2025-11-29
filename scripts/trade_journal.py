@@ -19,8 +19,9 @@ JOURNAL_DIR.mkdir(exist_ok=True)
 api = tradeapi.REST(
     os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
     os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
-    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
-    api_version="v2"
+    os.getenv("APCA_API_BASE_URL")
+    or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    api_version="v2",
 )
 
 
@@ -33,10 +34,10 @@ def get_trade_context(symbol, entry_date=None):
         if bars.empty:
             return {}
 
-        current_price = float(bars['close'].iloc[-1])
-        high_30d = float(bars['high'].max())
-        low_30d = float(bars['low'].min())
-        volatility = float(bars['close'].pct_change().std() * 100)
+        current_price = float(bars["close"].iloc[-1])
+        high_30d = float(bars["high"].max())
+        low_30d = float(bars["low"].min())
+        volatility = float(bars["close"].pct_change().std() * 100)
 
         return {
             "current_price": current_price,
@@ -131,16 +132,23 @@ def analyze_trade(entry):
 
     analysis = {
         "outcome": "win" if entry["exit"]["pnl"] > 0 else "loss",
-        "performance": "excellent" if entry["exit"]["pnl_pct"] > 5 else
-                      "good" if entry["exit"]["pnl_pct"] > 2 else
-                      "poor" if entry["exit"]["pnl_pct"] < -3 else
-                      "acceptable",
+        "performance": (
+            "excellent"
+            if entry["exit"]["pnl_pct"] > 5
+            else (
+                "good"
+                if entry["exit"]["pnl_pct"] > 2
+                else "poor" if entry["exit"]["pnl_pct"] < -3 else "acceptable"
+            )
+        ),
     }
 
     # Check if stop-loss was hit
     if "stop-loss" in entry["exit"]["reason"].lower():
         analysis["stop_loss_hit"] = True
-        analysis["risk_management"] = "effective" if entry["exit"]["pnl_pct"] > -5 else "needs_improvement"
+        analysis["risk_management"] = (
+            "effective" if entry["exit"]["pnl_pct"] > -5 else "needs_improvement"
+        )
 
     # Check if take-profit was hit
     if "take-profit" in entry["exit"]["reason"].lower():
@@ -166,16 +174,18 @@ def update_journal_index(entry):
     if existing:
         index["trades"].remove(existing)
 
-    index["trades"].append({
-        "trade_id": trade_id,
-        "symbol": entry["symbol"],
-        "tier": entry["tier"],
-        "status": entry["status"],
-        "entry_date": entry["entry"]["timestamp"],
-        "exit_date": entry.get("exit", {}).get("timestamp"),
-        "pnl": entry.get("exit", {}).get("pnl", 0),
-        "pnl_pct": entry.get("exit", {}).get("pnl_pct", 0),
-    })
+    index["trades"].append(
+        {
+            "trade_id": trade_id,
+            "symbol": entry["symbol"],
+            "tier": entry["tier"],
+            "status": entry["status"],
+            "entry_date": entry["entry"]["timestamp"],
+            "exit_date": entry.get("exit", {}).get("timestamp"),
+            "pnl": entry.get("exit", {}).get("pnl", 0),
+            "pnl_pct": entry.get("exit", {}).get("pnl_pct", 0),
+        }
+    )
 
     # Sort by entry date (newest first)
     index["trades"].sort(key=lambda x: x["entry_date"], reverse=True)

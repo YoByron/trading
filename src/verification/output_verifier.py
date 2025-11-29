@@ -19,6 +19,7 @@ from dataclasses import dataclass
 @dataclass
 class VerificationRule:
     """Quality rule for output verification"""
+
     name: str
     condition: callable
     severity: str  # "critical", "warning", "info"
@@ -49,43 +50,49 @@ class OutputVerifier:
             # CRITICAL RULES (must pass)
             VerificationRule(
                 name="portfolio_not_negative",
-                condition=lambda state: state["account"]["total_pl"] > -1000,  # Max $1000 loss
+                condition=lambda state: state["account"]["total_pl"]
+                > -1000,  # Max $1000 loss
                 severity="critical",
-                message="Portfolio loss exceeds $1000 limit"
+                message="Portfolio loss exceeds $1000 limit",
             ),
             VerificationRule(
                 name="automation_operational",
-                condition=lambda state: state["automation"].get("workflow_status") == "OPERATIONAL",
+                condition=lambda state: state["automation"].get("workflow_status")
+                == "OPERATIONAL",
                 severity="critical",
-                message="Automation workflow is not operational"
+                message="Automation workflow is not operational",
             ),
             VerificationRule(
                 name="data_freshness",
-                condition=lambda state: self._check_freshness(state["meta"]["last_updated"]),
+                condition=lambda state: self._check_freshness(
+                    state["meta"]["last_updated"]
+                ),
                 severity="critical",
-                message="System state data is stale (>24 hours old)"
+                message="System state data is stale (>24 hours old)",
             ),
-
             # WARNING RULES (should pass)
             VerificationRule(
                 name="win_rate_target",
-                condition=lambda state: state["performance"]["win_rate"] >= 50.0 or state["challenge"]["current_day"] < 30,
+                condition=lambda state: state["performance"]["win_rate"] >= 50.0
+                or state["challenge"]["current_day"] < 30,
                 severity="warning",
-                message="Win rate below 50% target (after Day 30)"
+                message="Win rate below 50% target (after Day 30)",
             ),
             VerificationRule(
                 name="profitable_trend",
-                condition=lambda state: state["account"]["total_pl"] >= 0 or state["challenge"]["current_day"] < 30,
+                condition=lambda state: state["account"]["total_pl"] >= 0
+                or state["challenge"]["current_day"] < 30,
                 severity="warning",
-                message="Portfolio not profitable (expected after Day 30)"
+                message="Portfolio not profitable (expected after Day 30)",
             ),
-
             # INFO RULES (nice to have)
             VerificationRule(
                 name="backtest_alignment",
-                condition=lambda state: abs(state["performance"]["win_rate"] - 62.2) < 20 or state["challenge"]["current_day"] < 30,
+                condition=lambda state: abs(state["performance"]["win_rate"] - 62.2)
+                < 20
+                or state["challenge"]["current_day"] < 30,
                 severity="info",
-                message="Live win rate diverging from backtest (62.2%)"
+                message="Live win rate diverging from backtest (62.2%)",
             ),
         ]
 
@@ -115,7 +122,9 @@ class OutputVerifier:
         # Rule: Daily investment must be $8-10 (allowing for rounding)
         total_invested = sum(t["amount"] for t in trades)
         if not (7 <= total_invested <= 11):
-            issues.append(f"Invalid daily investment: ${total_invested:.2f} (expected $8-10)")
+            issues.append(
+                f"Invalid daily investment: ${total_invested:.2f} (expected $8-10)"
+            )
 
         # Rule: Must have Tier 1 (core) trade
         has_tier1 = any(t["tier"] == "T1_CORE" for t in trades)
@@ -135,11 +144,7 @@ class OutputVerifier:
         with open(self.system_state_path) as f:
             state = json.load(f)
 
-        results = {
-            "critical": [],
-            "warning": [],
-            "info": []
-        }
+        results = {"critical": [], "warning": [], "info": []}
 
         # Run all verification rules
         for rule in self.verification_rules:
@@ -147,14 +152,18 @@ class OutputVerifier:
                 if not rule.condition(state):
                     results[rule.severity].append(f"{rule.name}: {rule.message}")
             except Exception as e:
-                results["critical"].append(f"{rule.name}: Error running rule - {str(e)}")
+                results["critical"].append(
+                    f"{rule.name}: Error running rule - {str(e)}"
+                )
 
         # Success = no critical issues
         success = len(results["critical"]) == 0
 
         return success, results
 
-    def verify_portfolio_claims(self, claimed_pl: float, claimed_equity: float) -> Tuple[bool, str]:
+    def verify_portfolio_claims(
+        self, claimed_pl: float, claimed_equity: float
+    ) -> Tuple[bool, str]:
         """
         Verify portfolio claims against system state
         Prevents anti-lying violations
@@ -170,12 +179,17 @@ class OutputVerifier:
 
         # Allow 1% tolerance for rounding
         pl_matches = abs(claimed_pl - actual_pl) < (abs(actual_pl) * 0.01 + 1)
-        equity_matches = abs(claimed_equity - actual_equity) < (actual_equity * 0.01 + 1)
+        equity_matches = abs(claimed_equity - actual_equity) < (
+            actual_equity * 0.01 + 1
+        )
 
         if pl_matches and equity_matches:
             return True, "Claims verified accurate"
         else:
-            return False, f"LYING DETECTED: Claimed P/L ${claimed_pl:.2f} vs actual ${actual_pl:.2f}, Claimed equity ${claimed_equity:.2f} vs actual ${actual_equity:.2f}"
+            return (
+                False,
+                f"LYING DETECTED: Claimed P/L ${claimed_pl:.2f} vs actual ${actual_pl:.2f}, Claimed equity ${claimed_equity:.2f} vs actual ${actual_equity:.2f}",
+            )
 
     def generate_verification_report(self) -> str:
         """
@@ -266,19 +280,19 @@ class LLMJudge:
             return {
                 "quality_score": 90,
                 "reasoning": "Profitable with good win rate",
-                "recommendations": ["Continue current strategy"]
+                "recommendations": ["Continue current strategy"],
             }
         elif pl >= 0:
             return {
                 "quality_score": 70,
                 "reasoning": "Break-even, acceptable for R&D phase",
-                "recommendations": ["Monitor win rate", "Collect more data"]
+                "recommendations": ["Monitor win rate", "Collect more data"],
             }
         else:
             return {
                 "quality_score": 50,
                 "reasoning": "Losses acceptable in R&D but need improvement",
-                "recommendations": ["Review losing trades", "Adjust filters"]
+                "recommendations": ["Review losing trades", "Adjust filters"],
             }
 
 
@@ -291,7 +305,6 @@ if __name__ == "__main__":
 
     # Test portfolio claim verification
     accurate, message = verifier.verify_portfolio_claims(
-        claimed_pl=13.96,
-        claimed_equity=100013.96
+        claimed_pl=13.96, claimed_equity=100013.96
     )
     print(f"Portfolio Claims: {message}")

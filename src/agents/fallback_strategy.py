@@ -6,6 +6,7 @@ traditional technical analysis without LLM reasoning.
 
 This ensures the system NEVER stops working due to API issues.
 """
+
 import logging
 from typing import Dict, Any
 
@@ -123,7 +124,7 @@ DECISION: {action} (Confidence: {confidence:.2f})
             "score": score,
             "reasoning": reasoning,
             "mode": "FALLBACK",
-            "indicators": indicators
+            "indicators": indicators,
         }
 
     @staticmethod
@@ -136,7 +137,7 @@ DECISION: {action} (Confidence: {confidence:.2f})
             "sentiment": 0.0,
             "thesis": "LLM unavailable - defaulting to HOLD",
             "risks": "Cannot analyze fundamentals without LLM",
-            "mode": "FALLBACK"
+            "mode": "FALLBACK",
         }
 
     @staticmethod
@@ -153,5 +154,5 @@ DECISION: {action} (Confidence: {confidence:.2f})
             "risk_score": 7,  # High risk due to no LLM analysis
             "position_approval": "REDUCE",
             "risks": "Conservative sizing due to LLM unavailability",
-            "mode": "FALLBACK"
+            "mode": "FALLBACK",
         }

@@ -43,10 +43,10 @@ SENTIMENT_DIR = Path("data/sentiment")
 
 # Sentiment score thresholds (0-100 scale)
 VERY_BEARISH_THRESHOLD = 30  # Below 30 = very bearish
-BEARISH_THRESHOLD = 40       # 30-40 = bearish
-NEUTRAL_LOW = 40             # 40-60 = neutral
+BEARISH_THRESHOLD = 40  # 30-40 = bearish
+NEUTRAL_LOW = 40  # 40-60 = neutral
 NEUTRAL_HIGH = 60
-BULLISH_THRESHOLD = 70       # 60-70 = bullish
+BULLISH_THRESHOLD = 70  # 60-70 = bullish
 VERY_BULLISH_THRESHOLD = 70  # Above 70 = very bullish
 
 # Data freshness threshold (hours)
@@ -139,10 +139,7 @@ def normalize_sentiment_score(score: float, source: str) -> float:
         return max(0, min(100, score))
 
 
-def load_latest_sentiment(
-    date: Optional[str] = None,
-    fallback_days: int = 7
-) -> Dict:
+def load_latest_sentiment(date: Optional[str] = None, fallback_days: int = 7) -> Dict:
     """
     Load the most recent sentiment data from cache files.
 
@@ -199,7 +196,7 @@ def load_latest_sentiment(
             reddit_file = SENTIMENT_DIR / f"reddit_{date_str}.json"
             if reddit_file.exists():
                 try:
-                    with open(reddit_file, 'r') as f:
+                    with open(reddit_file, "r") as f:
                         reddit_data = json.load(f)
                         logger.info(f"Loaded Reddit sentiment from {reddit_file}")
                 except Exception as e:
@@ -214,7 +211,7 @@ def load_latest_sentiment(
             news_file = SENTIMENT_DIR / f"news_{date_str}.json"
             if news_file.exists():
                 try:
-                    with open(news_file, 'r') as f:
+                    with open(news_file, "r") as f:
                         news_data = json.load(f)
                         logger.info(f"Loaded news sentiment from {news_file}")
                 except Exception as e:
@@ -243,9 +240,9 @@ def load_latest_sentiment(
                 "date": target_date.strftime("%Y-%m-%d"),
                 "timestamp": datetime.now().isoformat(),
                 "sources": [],
-                "freshness": "missing"
+                "freshness": "missing",
             },
-            "sentiment_by_ticker": {}
+            "sentiment_by_ticker": {},
         }
 
     # Combine sentiment from both sources
@@ -262,7 +259,7 @@ def load_latest_sentiment(
                 combined_sentiment[ticker] = {
                     "sources": {},
                     "scores": [],
-                    "confidences": []
+                    "confidences": [],
                 }
 
             # Normalize Reddit score
@@ -275,11 +272,13 @@ def load_latest_sentiment(
                 "mentions": data.get("mentions", 0),
                 "confidence": data.get("confidence", "low"),
                 "bullish_keywords": data.get("bullish_keywords", 0),
-                "bearish_keywords": data.get("bearish_keywords", 0)
+                "bearish_keywords": data.get("bearish_keywords", 0),
             }
 
             combined_sentiment[ticker]["scores"].append(normalized_score)
-            combined_sentiment[ticker]["confidences"].append(data.get("confidence", "low"))
+            combined_sentiment[ticker]["confidences"].append(
+                data.get("confidence", "low")
+            )
 
     # Process News data
     if news_data:
@@ -291,7 +290,7 @@ def load_latest_sentiment(
                 combined_sentiment[ticker] = {
                     "sources": {},
                     "scores": [],
-                    "confidences": []
+                    "confidences": [],
                 }
 
             # News data is wrapped in TickerSentiment object
@@ -304,11 +303,13 @@ def load_latest_sentiment(
                 "confidence": ticker_obj.get("confidence", "low"),
                 "yahoo": ticker_obj.get("sources", {}).get("yahoo", {}),
                 "stocktwits": ticker_obj.get("sources", {}).get("stocktwits", {}),
-                "alphavantage": ticker_obj.get("sources", {}).get("alphavantage", {})
+                "alphavantage": ticker_obj.get("sources", {}).get("alphavantage", {}),
             }
 
             combined_sentiment[ticker]["scores"].append(normalized_score)
-            combined_sentiment[ticker]["confidences"].append(ticker_obj.get("confidence", "low"))
+            combined_sentiment[ticker]["confidences"].append(
+                ticker_obj.get("confidence", "low")
+            )
 
     # Calculate final scores and confidence
     final_sentiment = {}
@@ -338,7 +339,7 @@ def load_latest_sentiment(
             "score": round(final_score, 2),
             "confidence": final_confidence,
             "sources": data["sources"],
-            "market_regime": market_regime
+            "market_regime": market_regime,
         }
 
     return {
@@ -347,9 +348,9 @@ def load_latest_sentiment(
             "timestamp": datetime.now().isoformat(),
             "sources": sources_used,
             "freshness": freshness,
-            "days_old": days_searched
+            "days_old": days_searched,
         },
-        "sentiment_by_ticker": final_sentiment
+        "sentiment_by_ticker": final_sentiment,
     }
 
 
@@ -357,7 +358,7 @@ def get_ticker_sentiment(
     ticker: str,
     sentiment_data: Optional[Dict] = None,
     default_score: float = 50.0,
-    default_confidence: str = "low"
+    default_confidence: str = "low",
 ) -> Tuple[float, str, str]:
     """
     Get sentiment score for a specific ticker.
@@ -405,7 +406,9 @@ def get_ticker_sentiment(
     return score, confidence, market_regime
 
 
-def is_sentiment_fresh(sentiment_data: Dict, max_age_hours: int = MAX_AGE_HOURS) -> bool:
+def is_sentiment_fresh(
+    sentiment_data: Dict, max_age_hours: int = MAX_AGE_HOURS
+) -> bool:
     """
     Check if sentiment data is fresh (recent enough to use).
 
@@ -469,8 +472,12 @@ def get_sentiment_summary(sentiment_data: Optional[Dict] = None) -> Dict:
     tickers = sentiment_data.get("sentiment_by_ticker", {})
 
     # Count tickers by sentiment
-    bullish = sum(1 for t in tickers.values() if t.get("score", 50) >= BULLISH_THRESHOLD)
-    bearish = sum(1 for t in tickers.values() if t.get("score", 50) <= BEARISH_THRESHOLD)
+    bullish = sum(
+        1 for t in tickers.values() if t.get("score", 50) >= BULLISH_THRESHOLD
+    )
+    bearish = sum(
+        1 for t in tickers.values() if t.get("score", 50) <= BEARISH_THRESHOLD
+    )
     neutral = len(tickers) - bullish - bearish
 
     # Count by confidence
@@ -490,7 +497,7 @@ def get_sentiment_summary(sentiment_data: Optional[Dict] = None) -> Dict:
         "high_confidence": high_conf,
         "medium_confidence": med_conf,
         "low_confidence": low_conf,
-        "market_regime": get_market_regime(sentiment_data)
+        "market_regime": get_market_regime(sentiment_data),
     }
 
 
@@ -503,24 +510,30 @@ def print_sentiment_summary(sentiment_data: Optional[Dict] = None):
     """
     summary = get_sentiment_summary(sentiment_data)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SENTIMENT SUMMARY")
-    print("="*80)
+    print("=" * 80)
     print(f"Date: {summary['date']}")
     print(f"Freshness: {summary['freshness'].upper()} ({summary['days_old']} days old)")
     print(f"Sources: {', '.join(summary['sources'])}")
     print(f"Market Regime: {summary['market_regime'].upper()}")
     print()
     print(f"Total Tickers: {summary['total_tickers']}")
-    print(f"  Bullish:  {summary['bullish']} ({summary['bullish']/summary['total_tickers']*100:.0f}%)")
-    print(f"  Neutral:  {summary['neutral']} ({summary['neutral']/summary['total_tickers']*100:.0f}%)")
-    print(f"  Bearish:  {summary['bearish']} ({summary['bearish']/summary['total_tickers']*100:.0f}%)")
+    print(
+        f"  Bullish:  {summary['bullish']} ({summary['bullish']/summary['total_tickers']*100:.0f}%)"
+    )
+    print(
+        f"  Neutral:  {summary['neutral']} ({summary['neutral']/summary['total_tickers']*100:.0f}%)"
+    )
+    print(
+        f"  Bearish:  {summary['bearish']} ({summary['bearish']/summary['total_tickers']*100:.0f}%)"
+    )
     print()
     print(f"Confidence Levels:")
     print(f"  High:   {summary['high_confidence']}")
     print(f"  Medium: {summary['medium_confidence']}")
     print(f"  Low:    {summary['low_confidence']}")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
 
 def query_sentiment_rag(
@@ -537,6 +550,7 @@ def query_sentiment_rag(
         top_k: Number of results to return
     """
     from src.rag.sentiment_store import SentimentRAGStore  # Lazy import to avoid
+
     # heavy dependencies when only using JSON loader
 
     store = SentimentRAGStore()
@@ -566,7 +580,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Load and display sentiment summary
@@ -582,5 +596,9 @@ if __name__ == "__main__":
         print("-" * 80)
 
         for ticker in tickers:
-            score, confidence, regime = get_ticker_sentiment(ticker.strip(), sentiment_data)
-            print(f"{ticker}: score={score:.1f}, confidence={confidence}, regime={regime}")
+            score, confidence, regime = get_ticker_sentiment(
+                ticker.strip(), sentiment_data
+            )
+            print(
+                f"{ticker}: score={score:.1f}, confidence={confidence}, regime={regime}"
+            )

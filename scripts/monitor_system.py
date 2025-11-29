@@ -17,15 +17,15 @@ from typing import Dict, List, Optional
 import subprocess
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -51,106 +51,132 @@ class SystemMonitor:
     def check_performance_log_freshness(self) -> bool:
         """Check if performance log was updated recently."""
         if not PERF_LOG_FILE.exists():
-            self.alerts.append({
-                "level": "CRITICAL",
-                "component": "Performance Log",
-                "message": "Performance log file does not exist",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "CRITICAL",
+                    "component": "Performance Log",
+                    "message": "Performance log file does not exist",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
 
         try:
-            with open(PERF_LOG_FILE, 'r') as f:
+            with open(PERF_LOG_FILE, "r") as f:
                 perf_data = json.load(f)
 
             if not perf_data:
-                self.alerts.append({
-                    "level": "WARNING",
-                    "component": "Performance Log",
-                    "message": "Performance log is empty",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "WARNING",
+                        "component": "Performance Log",
+                        "message": "Performance log is empty",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 return False
 
             last_entry = perf_data[-1]
-            last_date = datetime.fromisoformat(last_entry.get("timestamp", last_entry.get("date", "")))
-            age_hours = (datetime.now() - last_date.replace(tzinfo=None)).total_seconds() / 3600
+            last_date = datetime.fromisoformat(
+                last_entry.get("timestamp", last_entry.get("date", ""))
+            )
+            age_hours = (
+                datetime.now() - last_date.replace(tzinfo=None)
+            ).total_seconds() / 3600
 
             self.metrics["perf_log_age_hours"] = age_hours
 
             if age_hours > ALERT_THRESHOLDS["max_perf_log_age_hours"]:
-                self.alerts.append({
-                    "level": "WARNING",
-                    "component": "Performance Log",
-                    "message": f"Performance log is {age_hours:.1f} hours old (threshold: {ALERT_THRESHOLDS['max_perf_log_age_hours']}h)",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "WARNING",
+                        "component": "Performance Log",
+                        "message": f"Performance log is {age_hours:.1f} hours old (threshold: {ALERT_THRESHOLDS['max_perf_log_age_hours']}h)",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 return False
 
             return True
         except Exception as e:
-            self.alerts.append({
-                "level": "ERROR",
-                "component": "Performance Log",
-                "message": f"Error reading performance log: {e}",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "ERROR",
+                    "component": "Performance Log",
+                    "message": f"Error reading performance log: {e}",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
 
     def check_system_state_freshness(self) -> bool:
         """Check if system state was updated recently."""
         if not SYSTEM_STATE_FILE.exists():
-            self.alerts.append({
-                "level": "WARNING",
-                "component": "System State",
-                "message": "System state file does not exist",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "WARNING",
+                    "component": "System State",
+                    "message": "System state file does not exist",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
 
         try:
-            with open(SYSTEM_STATE_FILE, 'r') as f:
+            with open(SYSTEM_STATE_FILE, "r") as f:
                 system_state = json.load(f)
 
             # Check both root level and meta.last_updated (backwards compatibility)
-            last_updated_str = system_state.get("last_updated") or system_state.get("meta", {}).get("last_updated")
+            last_updated_str = system_state.get("last_updated") or system_state.get(
+                "meta", {}
+            ).get("last_updated")
             if not last_updated_str:
-                self.alerts.append({
-                    "level": "WARNING",
-                    "component": "System State",
-                    "message": "System state has no timestamp",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "WARNING",
+                        "component": "System State",
+                        "message": "System state has no timestamp",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 return False
 
-            last_updated = datetime.fromisoformat(last_updated_str.replace("Z", "+00:00"))
-            age_hours = (datetime.now() - last_updated.replace(tzinfo=None)).total_seconds() / 3600
+            last_updated = datetime.fromisoformat(
+                last_updated_str.replace("Z", "+00:00")
+            )
+            age_hours = (
+                datetime.now() - last_updated.replace(tzinfo=None)
+            ).total_seconds() / 3600
 
             self.metrics["system_state_age_hours"] = age_hours
 
             if age_hours > ALERT_THRESHOLDS["max_system_state_age_hours"]:
-                self.alerts.append({
-                    "level": "WARNING",
-                    "component": "System State",
-                    "message": f"System state is {age_hours:.1f} hours old (threshold: {ALERT_THRESHOLDS['max_system_state_age_hours']}h)",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "WARNING",
+                        "component": "System State",
+                        "message": f"System state is {age_hours:.1f} hours old (threshold: {ALERT_THRESHOLDS['max_system_state_age_hours']}h)",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 return False
 
             return True
         except Exception as e:
-            self.alerts.append({
-                "level": "ERROR",
-                "component": "System State",
-                "message": f"Error reading system state: {e}",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "ERROR",
+                    "component": "System State",
+                    "message": f"Error reading system state: {e}",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
 
     def check_portfolio_health(self) -> bool:
         """Check portfolio equity and P/L."""
         try:
-            with open(PERF_LOG_FILE, 'r') as f:
+            with open(PERF_LOG_FILE, "r") as f:
                 perf_data = json.load(f)
 
             if not perf_data:
@@ -165,31 +191,37 @@ class SystemMonitor:
 
             # Check equity threshold
             if equity < ALERT_THRESHOLDS["min_equity"]:
-                self.alerts.append({
-                    "level": "CRITICAL",
-                    "component": "Portfolio",
-                    "message": f"Equity dropped below ${ALERT_THRESHOLDS['min_equity']:,} (current: ${equity:,.2f})",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "CRITICAL",
+                        "component": "Portfolio",
+                        "message": f"Equity dropped below ${ALERT_THRESHOLDS['min_equity']:,} (current: ${equity:,.2f})",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 return False
 
             # Check daily loss threshold
             if pl < -ALERT_THRESHOLDS["max_daily_loss"]:
-                self.alerts.append({
-                    "level": "WARNING",
-                    "component": "Portfolio",
-                    "message": f"Daily loss exceeds ${ALERT_THRESHOLDS['max_daily_loss']} (current: ${pl:,.2f})",
-                    "timestamp": datetime.now().isoformat()
-                })
+                self.alerts.append(
+                    {
+                        "level": "WARNING",
+                        "component": "Portfolio",
+                        "message": f"Daily loss exceeds ${ALERT_THRESHOLDS['max_daily_loss']} (current: ${pl:,.2f})",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             return True
         except Exception as e:
-            self.alerts.append({
-                "level": "ERROR",
-                "component": "Portfolio",
-                "message": f"Error checking portfolio health: {e}",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "ERROR",
+                    "component": "Portfolio",
+                    "message": f"Error checking portfolio health: {e}",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
 
     def check_workflow_status(self) -> bool:
@@ -198,12 +230,14 @@ class SystemMonitor:
         # For now, we'll check if workflow files exist
         workflow_file = Path(".github/workflows/daily-trading.yml")
         if not workflow_file.exists():
-            self.alerts.append({
-                "level": "ERROR",
-                "component": "Workflow",
-                "message": "Workflow file not found",
-                "timestamp": datetime.now().isoformat()
-            })
+            self.alerts.append(
+                {
+                    "level": "ERROR",
+                    "component": "Workflow",
+                    "message": "Workflow file not found",
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             return False
         return True
 
@@ -229,8 +263,8 @@ class SystemMonitor:
                 "critical": critical,
                 "warnings": warnings,
                 "errors": errors,
-                "total": len(self.alerts)
-            }
+                "total": len(self.alerts),
+            },
         }
 
     def print_report(self, report: Dict):
@@ -280,13 +314,13 @@ def main():
     parser.add_argument(
         "--continuous",
         action="store_true",
-        help="Run continuously (check every 5 minutes)"
+        help="Run continuously (check every 5 minutes)",
     )
     parser.add_argument(
         "--interval",
         type=int,
         default=300,
-        help="Check interval in seconds (default: 300 = 5 minutes)"
+        help="Check interval in seconds (default: 300 = 5 minutes)",
     )
     args = parser.parse_args()
 

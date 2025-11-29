@@ -14,11 +14,12 @@ import sys
 import os
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 try:
     from src.rag.vector_db.chroma_client import TradingRAGDatabase
     from src.rag.vector_db.embedder import NewsEmbedder
+
     RAG_AVAILABLE = True
 except Exception as e:
     RAG_AVAILABLE = False
@@ -52,9 +53,7 @@ class EvaluationRAGStorage:
             self.enabled = False
 
     def store_evaluation(
-        self,
-        evaluation: Dict[str, Any],
-        trade_result: Dict[str, Any]
+        self, evaluation: Dict[str, Any], trade_result: Dict[str, Any]
     ) -> bool:
         """
         Store evaluation result in RAG system.
@@ -81,7 +80,7 @@ class EvaluationRAGStorage:
                 "timestamp": evaluation.get("timestamp", datetime.now().isoformat()),
                 "overall_score": evaluation.get("overall_score", 0.0),
                 "passed": evaluation.get("passed", False),
-                "dimensions": list(evaluation.get("evaluation", {}).keys())
+                "dimensions": list(evaluation.get("evaluation", {}).keys()),
             }
 
             # Create unique ID
@@ -89,9 +88,7 @@ class EvaluationRAGStorage:
 
             # Store in ChromaDB
             result = self.db.add_documents(
-                documents=[doc_text],
-                metadatas=[metadata],
-                ids=[doc_id]
+                documents=[doc_text], metadatas=[metadata], ids=[doc_id]
             )
 
             logger.info(f"Stored evaluation {doc_id} in RAG system")
@@ -102,9 +99,7 @@ class EvaluationRAGStorage:
             return False
 
     def _create_document_text(
-        self,
-        evaluation: Dict[str, Any],
-        trade_result: Dict[str, Any]
+        self, evaluation: Dict[str, Any], trade_result: Dict[str, Any]
     ) -> str:
         """Create searchable text from evaluation."""
         lines = []
@@ -141,9 +136,7 @@ class EvaluationRAGStorage:
         return "\n".join(lines)
 
     def query_similar_evaluations(
-        self,
-        query: str,
-        n_results: int = 5
+        self, query: str, n_results: int = 5
     ) -> List[Dict[str, Any]]:
         """
         Query similar evaluations using semantic search.
@@ -162,7 +155,7 @@ class EvaluationRAGStorage:
             results = self.db.query_documents(
                 query_text=query,
                 n_results=n_results,
-                filter_metadata={"type": "evaluation"}
+                filter_metadata={"type": "evaluation"},
             )
             return results
         except Exception as e:

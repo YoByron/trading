@@ -38,12 +38,14 @@ class LangChainSentimentAgent:
             "keys score (-1 to 1) and reason. Negative score means avoid the trade.\n\n"
             f"Ticker: {symbol}\n"
             f"Technical context: {json.dumps(indicators, default=str)[:800]}\n\n"
-            "Respond strictly as JSON, e.g. {\"score\": 0.1, \"reason\": \"...\"}"
+            'Respond strictly as JSON, e.g. {"score": 0.1, "reason": "..."}'
         )
 
         executor = self._get_executor()
         result = executor.invoke({"input": prompt})
-        raw_output = result.get("output", "") if isinstance(result, dict) else str(result)
+        raw_output = (
+            result.get("output", "") if isinstance(result, dict) else str(result)
+        )
 
         try:
             parsed = json.loads(raw_output)

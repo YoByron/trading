@@ -42,6 +42,7 @@ class SkillsIntegration:
         try:
             # Sentiment Analyzer
             import sentiment_analyzer
+
             self.sentiment_analyzer = sentiment_analyzer.SentimentAnalyzer()
             logger.info("✅ Sentiment Analyzer skill loaded")
         except Exception as e:
@@ -50,6 +51,7 @@ class SkillsIntegration:
         try:
             # Position Sizer
             import position_sizer
+
             self.position_sizer = position_sizer.PositionSizer()
             logger.info("✅ Position Sizer skill loaded")
         except Exception as e:
@@ -58,6 +60,7 @@ class SkillsIntegration:
         try:
             # Anomaly Detector
             import anomaly_detector
+
             self.anomaly_detector = anomaly_detector.AnomalyDetector()
             logger.info("✅ Anomaly Detector skill loaded")
         except Exception as e:
@@ -66,6 +69,7 @@ class SkillsIntegration:
         try:
             # Performance Monitor
             import performance_monitor
+
             self.performance_monitor = performance_monitor.PerformanceMonitor()
             logger.info("✅ Performance Monitor skill loaded")
         except Exception as e:
@@ -74,6 +78,7 @@ class SkillsIntegration:
         try:
             # Financial Data Fetcher
             import fetch_data
+
             self.financial_data_fetcher = fetch_data.FinancialDataFetcher()
             logger.info("✅ Financial Data Fetcher skill loaded")
         except Exception as e:
@@ -82,6 +87,7 @@ class SkillsIntegration:
         try:
             # Portfolio Risk Assessment
             import risk_assessment
+
             self.portfolio_risk_assessor = risk_assessment.PortfolioRiskAssessor()
             logger.info("✅ Portfolio Risk Assessment skill loaded")
         except Exception as e:
@@ -93,19 +99,25 @@ class SkillsIntegration:
             return {"success": False, "error": "Sentiment Analyzer not available"}
         return self.sentiment_analyzer.get_composite_sentiment(symbols=symbols)
 
-    def calculate_position(self, symbol: str, account_value: float, **kwargs) -> Dict[str, Any]:
+    def calculate_position(
+        self, symbol: str, account_value: float, **kwargs
+    ) -> Dict[str, Any]:
         """Calculate position size"""
         if not self.position_sizer:
             return {"success": False, "error": "Position Sizer not available"}
         return self.position_sizer.calculate_position_size(
-            symbol=symbol,
-            account_value=account_value,
-            **kwargs
+            symbol=symbol, account_value=account_value, **kwargs
         )
 
-    def detect_execution_anomalies(self, order_id: str, expected_price: float,
-                                   actual_fill_price: float, quantity: float,
-                                   order_type: str, timestamp: str) -> Dict[str, Any]:
+    def detect_execution_anomalies(
+        self,
+        order_id: str,
+        expected_price: float,
+        actual_fill_price: float,
+        quantity: float,
+        order_type: str,
+        timestamp: str,
+    ) -> Dict[str, Any]:
         """Detect execution anomalies"""
         if not self.anomaly_detector:
             return {"success": False, "error": "Anomaly Detector not available"}
@@ -115,19 +127,20 @@ class SkillsIntegration:
             actual_fill_price=actual_fill_price,
             quantity=quantity,
             order_type=order_type,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
-    def get_performance_metrics(self, start_date: Optional[str] = None,
-                                end_date: Optional[str] = None,
-                                benchmark_symbol: str = "SPY") -> Dict[str, Any]:
+    def get_performance_metrics(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        benchmark_symbol: str = "SPY",
+    ) -> Dict[str, Any]:
         """Get performance metrics"""
         if not self.performance_monitor:
             return {"success": False, "error": "Performance Monitor not available"}
         return self.performance_monitor.calculate_performance_metrics(
-            start_date=start_date,
-            end_date=end_date,
-            benchmark_symbol=benchmark_symbol
+            start_date=start_date, end_date=end_date, benchmark_symbol=benchmark_symbol
         )
 
     def assess_portfolio_health(self) -> Dict[str, Any]:

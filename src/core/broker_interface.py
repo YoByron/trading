@@ -15,6 +15,7 @@ from dataclasses import dataclass
 @dataclass
 class OrderResult:
     """Standardized order execution result."""
+
     order_id: str
     symbol: str
     side: str  # 'buy' or 'sell'
@@ -30,6 +31,7 @@ class OrderResult:
 @dataclass
 class AccountInfo:
     """Standardized account information."""
+
     account_number: str
     status: str
     buying_power: float
@@ -63,11 +65,7 @@ class BrokerInterface(ABC):
 
     @abstractmethod
     def execute_order(
-        self,
-        symbol: str,
-        amount_usd: float,
-        side: str = "buy",
-        **kwargs
+        self, symbol: str, amount_usd: float, side: str = "buy", **kwargs
     ) -> OrderResult:
         """
         Execute a market order.
@@ -142,10 +140,7 @@ class BrokerInterface(ABC):
 
     @abstractmethod
     def get_historical_bars(
-        self,
-        symbol: str,
-        timeframe: str = "1Day",
-        limit: int = 100
+        self, symbol: str, timeframe: str = "1Day", limit: int = 100
     ) -> List[Dict[str, Any]]:
         """
         Get historical price bars.
@@ -169,19 +164,23 @@ class BrokerInterface(ABC):
 
 class BrokerError(Exception):
     """Base exception for broker operations."""
+
     pass
 
 
 class OrderExecutionError(BrokerError):
     """Exception raised when order execution fails."""
+
     pass
 
 
 class AccountError(BrokerError):
     """Exception raised when account operations fail."""
+
     pass
 
 
 class MarketDataError(BrokerError):
     """Exception raised when market data retrieval fails."""
+
     pass

@@ -9,6 +9,7 @@ Responsibilities:
 
 Enhanced with LLM reasoning for context-aware decisions
 """
+
 import logging
 import pandas as pd
 import numpy as np
@@ -30,8 +31,7 @@ class SignalAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(
-            name="SignalAgent",
-            role="Technical analysis and momentum signal generation"
+            name="SignalAgent", role="Technical analysis and momentum signal generation"
         )
 
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -123,11 +123,13 @@ FACTORS: [key factors]"""
                 "ma_200": 0,
                 "price_vs_ma50": 0,
                 "trend": "UNKNOWN",
-                "momentum_score": 0
+                "momentum_score": 0,
             }
 
-        close = price_data['Close'] if 'Close' in price_data else price_data['close']
-        volume = price_data['Volume'] if 'Volume' in price_data else price_data['volume']
+        close = price_data["Close"] if "Close" in price_data else price_data["close"]
+        volume = (
+            price_data["Volume"] if "Volume" in price_data else price_data["volume"]
+        )
 
         # MACD
         ema_12 = close.ewm(span=12, adjust=False).mean()
@@ -149,7 +151,9 @@ FACTORS: [key factors]"""
 
         # Volume ratio
         avg_volume = volume.rolling(window=20).mean()
-        volume_ratio = volume.iloc[-1] / avg_volume.iloc[-1] if avg_volume.iloc[-1] > 0 else 1.0
+        volume_ratio = (
+            volume.iloc[-1] / avg_volume.iloc[-1] if avg_volume.iloc[-1] > 0 else 1.0
+        )
 
         # Current values
         current_price = close.iloc[-1]
@@ -194,7 +198,7 @@ FACTORS: [key factors]"""
             "ma_200": current_ma200,
             "price_vs_ma50": (current_price - current_ma50) / current_ma50,
             "trend": trend,
-            "momentum_score": momentum_score
+            "momentum_score": momentum_score,
         }
 
     def _parse_signal_response(self, reasoning: str) -> Dict[str, Any]:
@@ -206,7 +210,7 @@ FACTORS: [key factors]"""
             "entry_quality": 5,
             "action": "HOLD",
             "confidence": 0.5,
-            "factors": ""
+            "factors": "",
         }
 
         for line in lines:

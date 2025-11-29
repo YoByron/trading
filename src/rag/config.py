@@ -99,9 +99,9 @@ def validate_config() -> bool:
     assert EMBEDDING_CONFIG["batch_size"] > 0, "Batch size must be positive"
 
     # Check retrieval parameters
-    assert RETRIEVAL_CONFIG["default_k"] <= RETRIEVAL_CONFIG["max_k"], \
-        "default_k must be <= max_k"
-    assert 0 <= RETRIEVAL_CONFIG["min_score"] <= 1, \
-        "min_score must be between 0 and 1"
+    assert (
+        RETRIEVAL_CONFIG["default_k"] <= RETRIEVAL_CONFIG["max_k"]
+    ), "default_k must be <= max_k"
+    assert 0 <= RETRIEVAL_CONFIG["min_score"] <= 1, "min_score must be between 0 and 1"
 
     return True

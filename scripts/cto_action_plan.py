@@ -42,60 +42,76 @@ def generate_action_plan():
     # 1. SPY Position Management
     spy_pos = next((p for p in positions if p.get("symbol") == "SPY"), None)
     if spy_pos and spy_pos.get("unrealized_pl_pct", 0) < -4:
-        actions.append({
-            "priority": "CRITICAL",
-            "action": "Review SPY position strategy",
-            "reason": f"SPY down {spy_pos.get('unrealized_pl_pct', 0):.2f}% - largest loss",
-            "impact": "Prevent further losses, learn from entry timing",
-            "can_do": "✅ Analyze entry timing, recommend exit strategy",
-        })
+        actions.append(
+            {
+                "priority": "CRITICAL",
+                "action": "Review SPY position strategy",
+                "reason": f"SPY down {spy_pos.get('unrealized_pl_pct', 0):.2f}% - largest loss",
+                "impact": "Prevent further losses, learn from entry timing",
+                "can_do": "✅ Analyze entry timing, recommend exit strategy",
+            }
+        )
 
     # 2. GOOGL Profit Taking
     googl_pos = next((p for p in positions if p.get("symbol") == "GOOGL"), None)
     if googl_pos and googl_pos.get("unrealized_pl_pct", 0) > 2:
-        actions.append({
-            "priority": "HIGH",
-            "action": "Consider taking profit on GOOGL",
-            "reason": f"GOOGL up {googl_pos.get('unrealized_pl_pct', 0):.2f}% - approaching +3% target",
-            "impact": "Lock in $9.49 profit, reduce risk",
-            "can_do": "✅ Execute partial profit-taking order",
-        })
+        actions.append(
+            {
+                "priority": "HIGH",
+                "action": "Consider taking profit on GOOGL",
+                "reason": f"GOOGL up {googl_pos.get('unrealized_pl_pct', 0):.2f}% - approaching +3% target",
+                "impact": "Lock in $9.49 profit, reduce risk",
+                "can_do": "✅ Execute partial profit-taking order",
+            }
+        )
 
     # 3. Strategy Optimization
     if len(positions) > 0:
-        actions.append({
-            "priority": "HIGH",
-            "action": "Optimize entry criteria",
-            "reason": "SPY entered 4.44% too high - entry filters need improvement",
-            "impact": "Prevent bad entries, improve win rate",
-            "can_do": "✅ Already implemented MA filter - monitor effectiveness",
-        })
+        actions.append(
+            {
+                "priority": "HIGH",
+                "action": "Optimize entry criteria",
+                "reason": "SPY entered 4.44% too high - entry filters need improvement",
+                "impact": "Prevent bad entries, improve win rate",
+                "can_do": "✅ Already implemented MA filter - monitor effectiveness",
+            }
+        )
 
     # 4. Performance Monitoring
-    actions.append({
-        "priority": "MEDIUM",
-        "action": "Set up automated alerts",
-        "reason": "Get notified of critical P/L changes and system issues",
-        "impact": "Faster response to problems",
-        "can_do": "✅ Create alert system for critical thresholds",
-    })
+    actions.append(
+        {
+            "priority": "MEDIUM",
+            "action": "Set up automated alerts",
+            "reason": "Get notified of critical P/L changes and system issues",
+            "impact": "Faster response to problems",
+            "can_do": "✅ Create alert system for critical thresholds",
+        }
+    )
 
     # 5. Position Diversification
     total_value = sum(p.get("amount", 0) for p in positions)
     if spy_pos:
-        spy_pct = (spy_pos.get("amount", 0) / total_value * 100) if total_value > 0 else 0
+        spy_pct = (
+            (spy_pos.get("amount", 0) / total_value * 100) if total_value > 0 else 0
+        )
         if spy_pct > 70:
-            actions.append({
-                "priority": "MEDIUM",
-                "action": "Rebalance portfolio",
-                "reason": f"SPY is {spy_pct:.1f}% of portfolio - too concentrated",
-                "impact": "Better risk distribution",
-                "can_do": "✅ Position limits already implemented - will prevent future concentration",
-            })
+            actions.append(
+                {
+                    "priority": "MEDIUM",
+                    "action": "Rebalance portfolio",
+                    "reason": f"SPY is {spy_pct:.1f}% of portfolio - too concentrated",
+                    "impact": "Better risk distribution",
+                    "can_do": "✅ Position limits already implemented - will prevent future concentration",
+                }
+            )
 
     # Display actions
     for i, act in enumerate(actions, 1):
-        priority_emoji = "🚨" if act["priority"] == "CRITICAL" else "⚠️" if act["priority"] == "HIGH" else "ℹ️"
+        priority_emoji = (
+            "🚨"
+            if act["priority"] == "CRITICAL"
+            else "⚠️" if act["priority"] == "HIGH" else "ℹ️"
+        )
         print(f"\n{i}. {priority_emoji} [{act['priority']}] {act['action']}")
         print(f"   Reason: {act['reason']}")
         print(f"   Impact: {act['impact']}")

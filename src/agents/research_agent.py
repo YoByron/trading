@@ -9,6 +9,7 @@ Responsibilities:
 
 Inspired by P1GPT multi-modal analysis framework
 """
+
 import logging
 from typing import Dict, Any
 from .base_agent import BaseAgent
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Import RAG retriever for semantic news search
 try:
     from src.rag.vector_db.retriever import get_retriever
+
     RAG_AVAILABLE = True
 except ImportError:
     RAG_AVAILABLE = False
@@ -36,8 +38,7 @@ class ResearchAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(
-            name="ResearchAgent",
-            role="Multi-modal fundamental analysis and sentiment"
+            name="ResearchAgent", role="Multi-modal fundamental analysis and sentiment"
         )
 
         # Initialize RAG retriever if available
@@ -74,19 +75,23 @@ class ResearchAgent(BaseAgent):
                     query=f"Latest news and analysis for {symbol}",
                     n_results=10,
                     ticker=symbol,
-                    days_back=7
+                    days_back=7,
                 )
 
                 # Convert RAG articles to expected news format
                 news = []
                 for article in rag_articles:
-                    news.append({
-                        "title": article["metadata"].get("title", article["content"][:100]),
-                        "date": article["metadata"].get("date", "N/A"),
-                        "sentiment": article["metadata"].get("sentiment", 0.5),
-                        "source": article["metadata"].get("source", "unknown"),
-                        "relevance": article["relevance_score"]
-                    })
+                    news.append(
+                        {
+                            "title": article["metadata"].get(
+                                "title", article["content"][:100]
+                            ),
+                            "date": article["metadata"].get("date", "N/A"),
+                            "sentiment": article["metadata"].get("sentiment", 0.5),
+                            "source": article["metadata"].get("source", "unknown"),
+                            "relevance": article["relevance_score"],
+                        }
+                    )
 
                 logger.info(f"Retrieved {len(news)} articles from RAG for {symbol}")
 
@@ -153,7 +158,9 @@ RISKS: [key risks]"""
 
         formatted = ""
         for i, item in enumerate(news[:5], 1):  # Top 5 news items
-            formatted += f"{i}. {item.get('title', 'N/A')} ({item.get('date', 'N/A')})\n"
+            formatted += (
+                f"{i}. {item.get('title', 'N/A')} ({item.get('date', 'N/A')})\n"
+            )
             formatted += f"   Sentiment: {item.get('sentiment', 'neutral')}\n"
 
         return formatted
@@ -175,7 +182,7 @@ RISKS: [key risks]"""
             "thesis": "",
             "action": "HOLD",
             "confidence": 0.5,
-            "risks": ""
+            "risks": "",
         }
 
         for line in lines:

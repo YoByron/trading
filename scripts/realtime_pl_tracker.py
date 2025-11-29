@@ -14,13 +14,15 @@ DATA_DIR.mkdir(exist_ok=True)
 
 # Load from .env or environment
 from dotenv import load_dotenv
+
 load_dotenv()
 
 api = tradeapi.REST(
     os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY"),
     os.getenv("APCA_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY"),
-    os.getenv("APCA_API_BASE_URL") or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
-    api_version="v2"
+    os.getenv("APCA_API_BASE_URL")
+    or os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets"),
+    api_version="v2",
 )
 
 
@@ -129,7 +131,9 @@ def main():
                     print(f"  Positions: {len(entry['positions'])}")
                     print()
             else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Market closed - waiting...")
+                print(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] Market closed - waiting..."
+                )
 
             time.sleep(update_interval)
 

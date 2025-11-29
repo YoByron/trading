@@ -37,8 +37,8 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
 
         # ML Predictor should be initialized (or None if unavailable)
         self.assertIsNotNone(
-            hasattr(self.orchestrator, 'ml_predictor'),
-            "Elite Orchestrator should have ml_predictor attribute"
+            hasattr(self.orchestrator, "ml_predictor"),
+            "Elite Orchestrator should have ml_predictor attribute",
         )
 
         if self.orchestrator.ml_predictor is not None:
@@ -58,14 +58,12 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
             "action": "BUY",
             "confidence": 0.85,
             "value_estimate": 1.23,
-            "probs": {
-                "HOLD": 0.10,
-                "BUY": 0.85,
-                "SELL": 0.05
-            }
+            "probs": {"HOLD": 0.10, "BUY": 0.85, "SELL": 0.05},
         }
 
-        with patch.object(self.orchestrator.ml_predictor, 'get_signal', return_value=mock_signal):
+        with patch.object(
+            self.orchestrator.ml_predictor, "get_signal", return_value=mock_signal
+        ):
             signal = self.orchestrator.ml_predictor.get_signal("SPY")
 
             # Validate signal format
@@ -76,7 +74,9 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
             self.assertGreaterEqual(signal["confidence"], 0.0)
             self.assertLessEqual(signal["confidence"], 1.0)
 
-            print(f"✅ Signal format valid: {signal['action']} ({signal['confidence']:.2f})")
+            print(
+                f"✅ Signal format valid: {signal['action']} ({signal['confidence']:.2f})"
+            )
 
     def test_analysis_phase_includes_ml_predictor(self):
         """Test that analysis phase includes ML Predictor recommendations"""
@@ -87,24 +87,23 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
 
         # Mock ML Predictor if available
         if self.orchestrator.ml_predictor:
-            mock_signal = {
-                "action": "BUY",
-                "confidence": 0.80,
-                "value_estimate": 1.15
-            }
+            mock_signal = {"action": "BUY", "confidence": 0.80, "value_estimate": 1.15}
 
-            with patch.object(self.orchestrator.ml_predictor, 'get_signal', return_value=mock_signal):
+            with patch.object(
+                self.orchestrator.ml_predictor, "get_signal", return_value=mock_signal
+            ):
                 # Execute analysis phase
                 analysis_result = self.orchestrator._execute_analysis(plan)
 
                 # Check that ML recommendations are included
                 agent_results = analysis_result.get("agent_results", [])
                 ml_recommendations = [
-                    r for r in agent_results
-                    if r.get("agent") == "ml_model"
+                    r for r in agent_results if r.get("agent") == "ml_model"
                 ]
 
-                self.assertGreater(len(ml_recommendations), 0, "ML recommendations should be included")
+                self.assertGreater(
+                    len(ml_recommendations), 0, "ML recommendations should be included"
+                )
 
                 # Validate ML recommendation format
                 for rec in ml_recommendations:
@@ -113,7 +112,9 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
                     self.assertIn("confidence", rec)
                     self.assertIn("reasoning", rec)
 
-                print(f"✅ ML Predictor included in analysis: {len(ml_recommendations)} recommendations")
+                print(
+                    f"✅ ML Predictor included in analysis: {len(ml_recommendations)} recommendations"
+                )
         else:
             print("⚠️  ML Predictor not available - skipping test")
             self.skipTest("ML Predictor not available")
@@ -125,24 +126,31 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
         plan = self.orchestrator.create_trade_plan(symbols=self.test_symbols)
 
         # Mock all agents to return consistent signals
-        mock_ml_signal = {
-            "action": "BUY",
-            "confidence": 0.85,
-            "value_estimate": 1.20
-        }
+        mock_ml_signal = {"action": "BUY", "confidence": 0.85, "value_estimate": 1.20}
 
-        mock_gemini_result = {
-            "decision": "BUY",
-            "reasoning": "Test reasoning"
-        }
+        mock_gemini_result = {"decision": "BUY", "reasoning": "Test reasoning"}
 
         # Mock agents
-        with patch.object(self.orchestrator, 'ml_predictor',
-                         Mock(get_signal=lambda s: mock_ml_signal) if self.orchestrator.ml_predictor else None):
-            with patch.object(self.orchestrator, 'gemini_agent',
-                             Mock(reason=lambda **kwargs: mock_gemini_result) if self.orchestrator.gemini_agent else None):
-                with patch.object(self.orchestrator, 'langchain_agent', None):
-                    with patch.object(self.orchestrator, 'mcp_orchestrator', None):
+        with patch.object(
+            self.orchestrator,
+            "ml_predictor",
+            (
+                Mock(get_signal=lambda s: mock_ml_signal)
+                if self.orchestrator.ml_predictor
+                else None
+            ),
+        ):
+            with patch.object(
+                self.orchestrator,
+                "gemini_agent",
+                (
+                    Mock(reason=lambda **kwargs: mock_gemini_result)
+                    if self.orchestrator.gemini_agent
+                    else None
+                ),
+            ):
+                with patch.object(self.orchestrator, "langchain_agent", None):
+                    with patch.object(self.orchestrator, "mcp_orchestrator", None):
 
                         analysis_result = self.orchestrator._execute_analysis(plan)
 
@@ -155,18 +163,26 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
                                 buy_votes = vote.get("buy_votes", 0)
                                 total_votes = vote.get("total_votes", 0)
 
-                                print(f"✅ {symbol}: {buy_votes}/{total_votes} BUY votes")
+                                print(
+                                    f"✅ {symbol}: {buy_votes}/{total_votes} BUY votes"
+                                )
 
                                 # If ML Predictor is available, it should contribute to votes
                                 if self.orchestrator.ml_predictor:
                                     recommendations = vote.get("recommendations", {})
                                     ml_rec = next(
-                                        (r for k, r in recommendations.items() if "ml" in k),
-                                        None
+                                        (
+                                            r
+                                            for k, r in recommendations.items()
+                                            if "ml" in k
+                                        ),
+                                        None,
                                     )
                                     if ml_rec:
                                         self.assertEqual(ml_rec["agent"], "ml_model")
-                                        print(f"   ✅ ML signal included: {ml_rec['recommendation']}")
+                                        print(
+                                            f"   ✅ ML signal included: {ml_rec['recommendation']}"
+                                        )
 
     def test_ml_predictor_error_handling(self):
         """Test that Elite Orchestrator handles ML Predictor errors gracefully"""
@@ -176,7 +192,11 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
 
         # Mock ML Predictor to raise exception
         if self.orchestrator.ml_predictor:
-            with patch.object(self.orchestrator.ml_predictor, 'get_signal', side_effect=Exception("ML Predictor error")):
+            with patch.object(
+                self.orchestrator.ml_predictor,
+                "get_signal",
+                side_effect=Exception("ML Predictor error"),
+            ):
                 # Should not crash, just log warning
                 analysis_result = self.orchestrator._execute_analysis(plan)
 
@@ -202,17 +222,18 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
         mock_signal = {
             "action": "HOLD",
             "confidence": 0.0,
-            "reason": "Insufficient data"
+            "reason": "Insufficient data",
         }
 
-        with patch.object(self.orchestrator.ml_predictor, 'get_signal', return_value=mock_signal):
+        with patch.object(
+            self.orchestrator.ml_predictor, "get_signal", return_value=mock_signal
+        ):
             analysis_result = self.orchestrator._execute_analysis(plan)
 
             # Should still include ML recommendation (even if HOLD)
             agent_results = analysis_result.get("agent_results", [])
             ml_recommendations = [
-                r for r in agent_results
-                if r.get("agent") == "ml_model"
+                r for r in agent_results if r.get("agent") == "ml_model"
             ]
 
             if ml_recommendations:
@@ -226,13 +247,11 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
 
         # Mock ML Predictor if available
         if self.orchestrator.ml_predictor:
-            mock_signal = {
-                "action": "BUY",
-                "confidence": 0.75,
-                "value_estimate": 1.10
-            }
+            mock_signal = {"action": "BUY", "confidence": 0.75, "value_estimate": 1.10}
 
-            with patch.object(self.orchestrator.ml_predictor, 'get_signal', return_value=mock_signal):
+            with patch.object(
+                self.orchestrator.ml_predictor, "get_signal", return_value=mock_signal
+            ):
                 # Run full trading cycle
                 result = self.orchestrator.run_trading_cycle(symbols=self.test_symbols)
 
@@ -247,11 +266,17 @@ class TestEliteOrchestratorRLIntegration(unittest.TestCase):
                     analysis_phase = result["phases"]["analysis"]
                     agent_results = analysis_phase.get("agent_results", [])
 
-                    ml_results = [r for r in agent_results if r.get("agent") == "ml_model"]
+                    ml_results = [
+                        r for r in agent_results if r.get("agent") == "ml_model"
+                    ]
                     if ml_results:
-                        print(f"✅ RL system participated in orchestration: {len(ml_results)} signals")
+                        print(
+                            f"✅ RL system participated in orchestration: {len(ml_results)} signals"
+                        )
                     else:
-                        print("⚠️  RL system did not participate (may be expected if other agents unavailable)")
+                        print(
+                            "⚠️  RL system did not participate (may be expected if other agents unavailable)"
+                        )
 
                 print("✅ End-to-end orchestration completed")
         else:
@@ -277,6 +302,7 @@ class TestRLModelTrainingIntegration(unittest.TestCase):
         # Try to initialize ML Predictor
         try:
             from src.ml.inference import MLPredictor
+
             predictor = MLPredictor()
 
             # Try to get signal (may fail if data unavailable, but model should load)
@@ -289,7 +315,9 @@ class TestRLModelTrainingIntegration(unittest.TestCase):
             print(f"✅ Trained model usable: {signal['action']} signal generated")
         except Exception as e:
             print(f"⚠️  Model loading failed: {e}")
-            print("   (This may be OK if data unavailable, but model should still load)")
+            print(
+                "   (This may be OK if data unavailable, but model should still load)"
+            )
 
 
 def main():

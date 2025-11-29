@@ -53,8 +53,7 @@ class TradingRAGDatabase:
 
         # Get or create collection for market news
         self.collection = self.client.get_or_create_collection(
-            name="market_news",
-            metadata={"hnsw:space": "cosine"}  # Cosine similarity
+            name="market_news", metadata={"hnsw:space": "cosine"}  # Cosine similarity
         )
 
         logger.info(f"ChromaDB initialized at {persist_directory}")
@@ -64,7 +63,7 @@ class TradingRAGDatabase:
         self,
         documents: List[str],
         metadatas: List[Dict[str, Any]],
-        ids: Optional[List[str]] = None
+        ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Add documents to the vector database.
@@ -90,7 +89,10 @@ class TradingRAGDatabase:
             return {"status": "error", "message": "No documents provided"}
 
         if len(documents) != len(metadatas):
-            return {"status": "error", "message": "Documents and metadatas length mismatch"}
+            return {
+                "status": "error",
+                "message": "Documents and metadatas length mismatch",
+            }
 
         # Auto-generate IDs if not provided
         if ids is None:
@@ -99,18 +101,10 @@ class TradingRAGDatabase:
 
         try:
             # Add to ChromaDB (will automatically generate embeddings)
-            self.collection.add(
-                documents=documents,
-                metadatas=metadatas,
-                ids=ids
-            )
+            self.collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
             logger.info(f"Added {len(documents)} documents to RAG database")
-            return {
-                "status": "success",
-                "count": len(documents),
-                "ids": ids
-            }
+            return {"status": "success", "count": len(documents), "ids": ids}
 
         except Exception as e:
             logger.error(f"Error adding documents: {e}")
@@ -120,7 +114,7 @@ class TradingRAGDatabase:
         self,
         query_text: str,
         n_results: int = 5,
-        where: Optional[Dict[str, Any]] = None
+        where: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Query the vector database with semantic search.
@@ -143,9 +137,7 @@ class TradingRAGDatabase:
         """
         try:
             results = self.collection.query(
-                query_texts=[query_text],
-                n_results=n_results,
-                where=where
+                query_texts=[query_text], n_results=n_results, where=where
             )
 
             return {
@@ -153,7 +145,7 @@ class TradingRAGDatabase:
                 "documents": results["documents"][0] if results["documents"] else [],
                 "metadatas": results["metadatas"][0] if results["metadatas"] else [],
                 "distances": results["distances"][0] if results["distances"] else [],
-                "ids": results["ids"][0] if results["ids"] else []
+                "ids": results["ids"][0] if results["ids"] else [],
             }
 
         except Exception as e:
@@ -161,10 +153,7 @@ class TradingRAGDatabase:
             return {"status": "error", "message": str(e)}
 
     def get_ticker_news(
-        self,
-        ticker: str,
-        n_results: int = 20,
-        date_filter: Optional[str] = None
+        self, ticker: str, n_results: int = 20, date_filter: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Get all news for a specific ticker.
@@ -185,7 +174,7 @@ class TradingRAGDatabase:
         results = self.query(
             query_text=f"Latest news and analysis for {ticker}",
             n_results=n_results,
-            where=where
+            where=where,
         )
 
         if results["status"] != "success":
@@ -194,12 +183,15 @@ class TradingRAGDatabase:
         # Combine into article objects
         articles = []
         for i in range(len(results["documents"])):
-            articles.append({
-                "content": results["documents"][i],
-                "metadata": results["metadatas"][i],
-                "relevance_score": 1 - results["distances"][i],  # Convert distance to similarity
-                "id": results["ids"][i]
-            })
+            articles.append(
+                {
+                    "content": results["documents"][i],
+                    "metadata": results["metadatas"][i],
+                    "relevance_score": 1
+                    - results["distances"][i],  # Convert distance to similarity
+                    "id": results["ids"][i],
+                }
+            )
 
         return articles
 
@@ -222,7 +214,7 @@ class TradingRAGDatabase:
             return {
                 "content": result["documents"][0],
                 "metadata": result["metadatas"][0],
-                "id": result["ids"][0]
+                "id": result["ids"][0],
             }
 
         except Exception as e:
@@ -265,8 +257,7 @@ class TradingRAGDatabase:
             # Delete and recreate collection
             self.client.delete_collection("market_news")
             self.collection = self.client.get_or_create_collection(
-                name="market_news",
-                metadata={"hnsw:space": "cosine"}
+                name="market_news", metadata={"hnsw:space": "cosine"}
             )
             logger.warning("RAG database reset - all documents deleted")
             return True
@@ -291,7 +282,7 @@ class TradingRAGDatabase:
                     "total_documents": 0,
                     "unique_tickers": 0,
                     "sources": [],
-                    "date_range": None
+                    "date_range": None,
                 }
 
             # Sample up to 1000 documents for stats
@@ -316,7 +307,7 @@ class TradingRAGDatabase:
                 "tickers": sorted(list(tickers)),
                 "sources": sorted(list(sources)),
                 "date_range": date_range,
-                "sample_size": sample_size
+                "sample_size": sample_size,
             }
 
         except Exception as e:

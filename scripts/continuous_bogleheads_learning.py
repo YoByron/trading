@@ -16,11 +16,12 @@ from datetime import datetime
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from claude.skills.bogleheads_learner.scripts.bogleheads_learner import BogleheadsLearner
+from claude.skills.bogleheads_learner.scripts.bogleheads_learner import (
+    BogleheadsLearner,
+)
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,18 +41,28 @@ def main():
             iteration += 1
             logger.info(f"\n{'='*80}")
             logger.info(f"Iteration {iteration} - {datetime.now().isoformat()}")
-            logger.info("="*80)
+            logger.info("=" * 80)
 
             # Monitor forum
             result = learner.monitor_bogleheads_forum(
                 topics=["Personal Investments", "Investing - Theory, News & General"],
                 keywords=[
-                    "market timing", "rebalancing", "risk", "volatility",
-                    "bear market", "bull market", "diversification", "allocation",
-                    "index funds", "ETF", "SPY", "QQQ", "VOO"
+                    "market timing",
+                    "rebalancing",
+                    "risk",
+                    "volatility",
+                    "bear market",
+                    "bull market",
+                    "diversification",
+                    "allocation",
+                    "index funds",
+                    "ETF",
+                    "SPY",
+                    "QQQ",
+                    "VOO",
                 ],
                 max_posts=50,
-                min_replies=5
+                min_replies=5,
             )
 
             logger.info(f"📊 Monitoring result: {result}")
@@ -69,7 +80,9 @@ def main():
             wait_hours = 24
             wait_seconds = wait_hours * 3600
             logger.info(f"⏳ Waiting {wait_hours} hours until next monitoring cycle...")
-            logger.info(f"   Next run: {datetime.fromtimestamp(time.time() + wait_seconds).isoformat()}")
+            logger.info(
+                f"   Next run: {datetime.fromtimestamp(time.time() + wait_seconds).isoformat()}"
+            )
 
             time.sleep(wait_seconds)
 

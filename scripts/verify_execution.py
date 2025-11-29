@@ -21,13 +21,17 @@ import alpaca_trade_api as tradeapi
 
 # Configuration - Load from .env
 from dotenv import load_dotenv
+
 load_dotenv()
 
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
+
 
 def verify_execution():
     """Verify today's trade execution with ACTUAL Alpaca API data."""
@@ -52,11 +56,7 @@ def verify_execution():
 
     # Get all orders for today
     today = date.today().isoformat()
-    orders = api.list_orders(
-        status='all',
-        after=today,
-        limit=100
-    )
+    orders = api.list_orders(status="all", after=today, limit=100)
 
     print(f"\n📋 TODAY'S ORDERS ({len(orders)} total)")
     print("-" * 70)
@@ -71,10 +71,12 @@ def verify_execution():
         qty = float(order.qty) if order.qty else 0
         filled_qty = float(order.filled_qty) if order.filled_qty else 0
 
-        if status == 'filled':
+        if status == "filled":
             filled_orders.append(order)
-            print(f"✅ FILLED:  {symbol:6} | Qty: {filled_qty:8.4f} | ${float(order.filled_avg_price) * filled_qty:.2f}")
-        elif status in ['new', 'accepted', 'pending_new']:
+            print(
+                f"✅ FILLED:  {symbol:6} | Qty: {filled_qty:8.4f} | ${float(order.filled_avg_price) * filled_qty:.2f}"
+            )
+        elif status in ["new", "accepted", "pending_new"]:
             pending_orders.append(order)
             print(f"⏳ PENDING: {symbol:6} | Qty: {qty:8.4f} | Status: {status}")
         else:
@@ -94,9 +96,11 @@ def verify_execution():
         total_pl += pl
 
         status_emoji = "✅" if pl >= 0 else "❌"
-        print(f"{status_emoji} {pos.symbol:6} | Qty: {float(pos.qty):8.4f} | "
-              f"Value: ${float(pos.market_value):8.2f} | "
-              f"P/L: ${pl:+7.2f} ({pl_pct:+.2f}%)")
+        print(
+            f"{status_emoji} {pos.symbol:6} | Qty: {float(pos.qty):8.4f} | "
+            f"Value: ${float(pos.market_value):8.2f} | "
+            f"P/L: ${pl:+7.2f} ({pl_pct:+.2f}%)"
+        )
 
     print("-" * 70)
     print(f"Total Unrealized P/L: ${total_pl:+,.2f}")
@@ -133,13 +137,14 @@ def verify_execution():
     print("=" * 70)
 
     return {
-        'equity': float(account.equity),
-        'pl': total_pl,
-        'filled_count': len(filled_orders),
-        'pending_count': len(pending_orders),
-        'failed_count': len(failed_orders),
-        'positions_count': len(positions)
+        "equity": float(account.equity),
+        "pl": total_pl,
+        "filled_count": len(filled_orders),
+        "pending_count": len(pending_orders),
+        "failed_count": len(failed_orders),
+        "positions_count": len(positions),
     }
+
 
 if __name__ == "__main__":
     try:

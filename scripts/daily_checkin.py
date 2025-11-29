@@ -19,7 +19,9 @@ ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
 
 api = tradeapi.REST(
     ALPACA_KEY,
@@ -187,8 +189,12 @@ def get_video_analysis_summary():
         "new_today_stocks": new_today,
         "high_priority_count": len(high_priority),
         "high_priority_stocks": high_priority,
-        "videos_analyzed_total": video_stats.get("videos_analyzed", 0) if video_stats else 0,
-        "stocks_from_videos": video_stats.get("stocks_added_from_videos", 0) if video_stats else 0,
+        "videos_analyzed_total": (
+            video_stats.get("videos_analyzed", 0) if video_stats else 0
+        ),
+        "stocks_from_videos": (
+            video_stats.get("stocks_added_from_videos", 0) if video_stats else 0
+        ),
         "last_analysis": video_stats.get("last_analysis_date") if video_stats else None,
         "recent_videos": recent_videos,
     }
@@ -284,41 +290,49 @@ def main():
         print(f"Current Watchlist Size:    {video_summary['total_watchlist']}")
 
         # New additions today
-        if video_summary['new_today'] > 0:
+        if video_summary["new_today"] > 0:
             print(f"\n✨ NEW TODAY ({video_summary['new_today']})")
-            for stock in video_summary['new_today_stocks']:
-                analyst = stock.get('source', 'Unknown').split('-')[0].strip()
+            for stock in video_summary["new_today_stocks"]:
+                analyst = stock.get("source", "Unknown").split("-")[0].strip()
                 print(f"   📌 {stock['ticker']:5s} - {stock['name']}")
                 print(f"      Source: {analyst}")
                 print(f"      Priority: {stock.get('priority', 'medium').upper()}")
-                if 'catalyst' in stock:
+                if "catalyst" in stock:
                     print(f"      Catalyst: {stock['catalyst'][:60]}...")
         else:
             print(f"\nNo new stocks added today")
 
         # High priority picks
-        if video_summary['high_priority_count'] > 0:
-            print(f"\n🎯 HIGH PRIORITY WATCHLIST ({video_summary['high_priority_count']})")
-            for stock in video_summary['high_priority_stocks']:
-                analyst = stock.get('source', 'Unknown').split('-')[0].strip()
+        if video_summary["high_priority_count"] > 0:
+            print(
+                f"\n🎯 HIGH PRIORITY WATCHLIST ({video_summary['high_priority_count']})"
+            )
+            for stock in video_summary["high_priority_stocks"]:
+                analyst = stock.get("source", "Unknown").split("-")[0].strip()
                 print(f"   ⭐ {stock['ticker']:5s} - {stock['name']}")
                 print(f"      Source: {analyst}")
-                print(f"      Rationale: {stock.get('rationale', 'See analysis')[:60]}...")
-                if 'profit_targets' in stock and stock['profit_targets']:
+                print(
+                    f"      Rationale: {stock.get('rationale', 'See analysis')[:60]}..."
+                )
+                if "profit_targets" in stock and stock["profit_targets"]:
                     print(f"      Target: {stock['profit_targets'][0]}")
 
         # Recent video sources
-        if video_summary['recent_videos']:
+        if video_summary["recent_videos"]:
             print(f"\n📹 RECENT ANALYSIS")
-            for video in video_summary['recent_videos'][:3]:
-                video_date = datetime.fromisoformat(video['date']).strftime("%b %d")
-                print(f"   • {video['analyst']} ({video_date}) - {len(video.get('stocks_added', []))} stocks")
-                if video.get('stocks_added'):
+            for video in video_summary["recent_videos"][:3]:
+                video_date = datetime.fromisoformat(video["date"]).strftime("%b %d")
+                print(
+                    f"   • {video['analyst']} ({video_date}) - {len(video.get('stocks_added', []))} stocks"
+                )
+                if video.get("stocks_added"):
                     print(f"     Added: {', '.join(video['stocks_added'])}")
 
         # Last analysis timestamp
-        if video_summary['last_analysis']:
-            last_date = datetime.fromisoformat(video_summary['last_analysis']).strftime("%b %d, %I:%M %p")
+        if video_summary["last_analysis"]:
+            last_date = datetime.fromisoformat(video_summary["last_analysis"]).strftime(
+                "%b %d, %I:%M %p"
+            )
             print(f"\nLast Analysis: {last_date}")
     else:
         print(f"\n📺 VIDEO ANALYSIS UPDATES")

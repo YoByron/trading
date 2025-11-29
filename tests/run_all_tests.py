@@ -11,27 +11,28 @@ import os
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def run_test_file(test_file: Path):
     """Run a single test file."""
     print(f"\n{'=' * 70}")
     print(f"Running: {test_file.name}")
-    print('=' * 70)
+    print("=" * 70)
 
     try:
         # Import and run test module
         import importlib.util
+
         spec = importlib.util.spec_from_file_location("test_module", test_file)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
         # If module has a main function, run it
-        if hasattr(module, '__main__') or hasattr(module, 'main'):
-            if hasattr(module, 'main'):
+        if hasattr(module, "__main__") or hasattr(module, "main"):
+            if hasattr(module, "main"):
                 module.main()
-            elif '__name__' in dir(module) and module.__name__ == '__main__':
+            elif "__name__" in dir(module) and module.__name__ == "__main__":
                 # Module runs tests on import
                 pass
 
@@ -39,6 +40,7 @@ def run_test_file(test_file: Path):
     except Exception as e:
         print(f"❌ Error running {test_file.name}: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

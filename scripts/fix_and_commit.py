@@ -4,6 +4,7 @@ import subprocess
 import os
 import sys
 
+
 def run_git_command(cmd):
     """Run git command and return result."""
     try:
@@ -12,17 +13,18 @@ def run_git_command(cmd):
             shell=True,
             capture_output=True,
             text=True,
-            cwd='/Users/igorganapolsky/workspace/git/apps/trading'
+            cwd="/Users/igorganapolsky/workspace/git/apps/trading",
         )
         return result.returncode == 0, result.stdout, result.stderr
     except Exception as e:
         return False, "", str(e)
 
+
 def main():
     print("🔧 Fixing shell issue and committing changes...")
 
     # Check git status
-    success, stdout, stderr = run_git_command('git status --short')
+    success, stdout, stderr = run_git_command("git status --short")
     if not success:
         print(f"❌ Git status failed: {stderr}")
         return 1
@@ -34,7 +36,7 @@ def main():
     print(f"📋 Changes detected:\n{stdout}")
 
     # Add all changes
-    success, stdout, stderr = run_git_command('git add -A')
+    success, stdout, stderr = run_git_command("git add -A")
     if not success:
         print(f"❌ Git add failed: {stderr}")
         return 1
@@ -59,7 +61,7 @@ All archived files preserved in docs/_archive/ for reference."""
     print("✅ Committed changes")
 
     # Push
-    success, stdout, stderr = run_git_command('git push origin main')
+    success, stdout, stderr = run_git_command("git push origin main")
     if not success:
         print(f"❌ Git push failed: {stderr}")
         return 1
@@ -68,5 +70,6 @@ All archived files preserved in docs/_archive/ for reference."""
     print("\n🎉 All changes committed and pushed successfully!")
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

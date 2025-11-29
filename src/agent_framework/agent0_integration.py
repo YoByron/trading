@@ -26,11 +26,7 @@ class Agent0Integration:
     3. Statistics and monitoring
     """
 
-    def __init__(
-        self,
-        storage_dir: Optional[Path] = None,
-        enabled: bool = True
-    ):
+    def __init__(self, storage_dir: Optional[Path] = None, enabled: bool = True):
         """
         Initialize Agent0 Integration
 
@@ -54,9 +50,7 @@ class Agent0Integration:
             self.enabled = False
 
     def run_evolution_cycle(
-        self,
-        category: Optional[str] = None,
-        symbols: Optional[List[str]] = None
+        self, category: Optional[str] = None, symbols: Optional[List[str]] = None
     ) -> Optional[EvolutionCycle]:
         """
         Run a single evolution cycle
@@ -81,8 +75,7 @@ class Agent0Integration:
                     logger.warning(f"Unknown category: {category}, using default")
 
             cycle = self.engine.run_evolution_cycle(
-                category=task_category.value if task_category else None,
-                symbols=symbols
+                category=task_category.value if task_category else None, symbols=symbols
             )
 
             return cycle
@@ -90,10 +83,7 @@ class Agent0Integration:
             logger.error(f"Evolution cycle failed: {e}")
             return None
 
-    def run_evolution_loop(
-        self,
-        num_cycles: int = 10
-    ) -> List[EvolutionCycle]:
+    def run_evolution_loop(self, num_cycles: int = 10) -> List[EvolutionCycle]:
         """
         Run multiple evolution cycles
 
@@ -116,10 +106,7 @@ class Agent0Integration:
     def get_statistics(self) -> Dict[str, Any]:
         """Get Agent0 statistics"""
         if not self.enabled or not self.engine:
-            return {
-                "enabled": False,
-                "status": "disabled"
-            }
+            return {"enabled": False, "status": "disabled"}
 
         try:
             stats = self.engine.get_statistics()
@@ -127,11 +114,7 @@ class Agent0Integration:
             return stats
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
-            return {
-                "enabled": True,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"enabled": True, "status": "error", "error": str(e)}
 
     def is_ready(self) -> bool:
         """Check if Agent0 is ready to use"""

@@ -41,15 +41,15 @@ def train_model_with_params(params: dict, symbol: str) -> LSTMPPO:
     trainer = ModelTrainer(device="cpu")
 
     # Override hyperparameters
-    trainer.hidden_dim = params.get('hidden_dim', 128)
-    trainer.num_layers = params.get('num_layers', 2)
-    trainer.learning_rate = params.get('learning_rate', 0.001)
-    trainer.batch_size = params.get('batch_size', 32)
+    trainer.hidden_dim = params.get("hidden_dim", 128)
+    trainer.num_layers = params.get("num_layers", 2)
+    trainer.learning_rate = params.get("learning_rate", 0.001)
+    trainer.batch_size = params.get("batch_size", 32)
 
     # Train model
     result = trainer.train_supervised(symbol, use_cloud_rl=False)
 
-    if not result.get('success'):
+    if not result.get("success"):
         raise ValueError(f"Training failed: {result.get('error')}")
 
     # Load trained model
@@ -77,16 +77,19 @@ def evaluate_model(model: LSTMPPO, symbol: str) -> dict:
     # Fetch and prepare data
     df = data_processor.fetch_data(symbol, period="2y")
     if df.empty:
-        return {'sharpe_ratio': -1.0, 'win_rate': 0.0, 'total_return': -1.0}
+        return {"sharpe_ratio": -1.0, "win_rate": 0.0, "total_return": -1.0}
 
     df = data_processor.add_technical_indicators(df)
     df = data_processor.normalize_data(df)
 
     # Create sequences
     X_tensor = data_processor.create_sequences(df)
-    targets = (df['Returns'].shift(-1) > 0).astype(int).values
+    targets = (df["Returns"].shift(-1) > 0).astype(int).values
     y_tensor = torch.LongTensor(
-        targets[data_processor.sequence_length : data_processor.sequence_length + len(X_tensor)]
+        targets[
+            data_processor.sequence_length : data_processor.sequence_length
+            + len(X_tensor)
+        ]
     )
 
     # Split for validation
@@ -109,39 +112,38 @@ def evaluate_model(model: LSTMPPO, symbol: str) -> dict:
         sharpe_ratio = (win_rate - 0.5) * 2.0  # Normalize to [-1, 1] range, then scale
 
     return {
-        'sharpe_ratio': sharpe_ratio,
-        'win_rate': win_rate,
-        'total_return': win_rate - 0.5  # Simple proxy
+        "sharpe_ratio": sharpe_ratio,
+        "win_rate": win_rate,
+        "total_return": win_rate - 0.5,  # Simple proxy
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Optimize hyperparameters for RL trading models")
-    parser.add_argument(
-        '--symbol',
-        type=str,
-        default='SPY',
-        help='Symbol to optimize for (default: SPY)'
+    parser = argparse.ArgumentParser(
+        description="Optimize hyperparameters for RL trading models"
     )
     parser.add_argument(
-        '--n-trials',
-        type=int,
-        default=20,
-        help='Number of trials (default: 20)'
+        "--symbol",
+        type=str,
+        default="SPY",
+        help="Symbol to optimize for (default: SPY)",
     )
     parser.add_argument(
-        '--metric',
-        type=str,
-        default='sharpe_ratio',
-        choices=['sharpe_ratio', 'win_rate', 'total_return'],
-        help='Metric to optimize (default: sharpe_ratio)'
+        "--n-trials", type=int, default=20, help="Number of trials (default: 20)"
     )
     parser.add_argument(
-        '--method',
+        "--metric",
         type=str,
-        default='random',
-        choices=['random', 'grid'],
-        help='Search method (default: random)'
+        default="sharpe_ratio",
+        choices=["sharpe_ratio", "win_rate", "total_return"],
+        help="Metric to optimize (default: sharpe_ratio)",
+    )
+    parser.add_argument(
+        "--method",
+        type=str,
+        default="random",
+        choices=["random", "grid"],
+        help="Search method (default: random)",
     )
 
     args = parser.parse_args()
@@ -158,22 +160,21 @@ def main():
 
     # Initialize optimizer
     optimizer = HyperparameterOptimizer(
-        optimization_metric=args.metric,
-        n_trials=args.n_trials
+        optimization_metric=args.metric, n_trials=args.n_trials
     )
 
     # Run optimization
-    if args.method == 'random':
+    if args.method == "random":
         results = optimizer.random_search(
             train_fn=lambda params: train_model_with_params(params, args.symbol),
             evaluate_fn=evaluate_model,
-            symbol=args.symbol
+            symbol=args.symbol,
         )
     else:
         results = optimizer.grid_search(
             train_fn=lambda params: train_model_with_params(params, args.symbol),
             evaluate_fn=evaluate_model,
-            symbol=args.symbol
+            symbol=args.symbol,
         )
 
     # Print results
@@ -182,7 +183,7 @@ def main():
     print("=" * 70)
     print(f"Best {args.metric}: {results['best_score']:.4f}")
     print(f"\nBest Hyperparameters:")
-    for key, value in results['best_params'].items():
+    for key, value in results["best_params"].items():
         print(f"  {key}: {value}")
     print(f"\nTotal trials: {results['total_trials']}")
     print("=" * 70)

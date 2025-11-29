@@ -19,12 +19,12 @@ from typing import Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ def get_alpaca_client():
     """Get Alpaca API client."""
     try:
         from src.core.alpaca_trader import AlpacaTrader
+
         return AlpacaTrader(paper=True)
     except Exception as e:
         logger.error(f"Failed to initialize Alpaca client: {e}")
@@ -116,7 +117,7 @@ def execute_partial_profit(position: Dict, trader) -> bool:
             symbol=symbol,
             amount_usd=sell_quantity * current_price,
             side="sell",
-            tier="T1_CORE"
+            tier="T1_CORE",
         )
 
         logger.info(f"✅ Partial profit-taking executed: {result.get('id', 'N/A')}")
@@ -143,11 +144,7 @@ def update_stop_loss(position: Dict, trader) -> bool:
         logger.info(f"  Stop-loss: ${entry_price:.2f} (breakeven)")
 
         # Set stop-loss at entry price (breakeven)
-        trader.set_stop_loss(
-            symbol=symbol,
-            qty=quantity,
-            stop_price=entry_price
-        )
+        trader.set_stop_loss(symbol=symbol, qty=quantity, stop_price=entry_price)
 
         logger.info(f"✅ Stop-loss updated to breakeven")
         return True
@@ -178,7 +175,7 @@ def execute_full_exit(position: Dict, trader) -> bool:
             symbol=symbol,
             amount_usd=quantity * current_price,
             side="sell",
-            tier="T1_CORE"
+            tier="T1_CORE",
         )
 
         logger.info(f"✅ Full exit executed: {result.get('id', 'N/A')}")
@@ -228,11 +225,15 @@ def process_positions():
             if execute_full_exit(position, trader):
                 actions_taken.append(f"{symbol}: Full exit executed")
         elif should_partial_profit(position):
-            print(f"  🎯 Action: PARTIAL PROFIT-TAKING (≥{PARTIAL_PROFIT_THRESHOLD*100:.0f}% profit)")
+            print(
+                f"  🎯 Action: PARTIAL PROFIT-TAKING (≥{PARTIAL_PROFIT_THRESHOLD*100:.0f}% profit)"
+            )
             if execute_partial_profit(position, trader):
                 actions_taken.append(f"{symbol}: Partial profit-taking executed")
         elif should_trail_stop(position):
-            print(f"  🎯 Action: TRAIL STOP TO BREAKEVEN (≥{TRAIL_STOP_THRESHOLD*100:.0f}% profit)")
+            print(
+                f"  🎯 Action: TRAIL STOP TO BREAKEVEN (≥{TRAIL_STOP_THRESHOLD*100:.0f}% profit)"
+            )
             if update_stop_loss(position, trader):
                 actions_taken.append(f"{symbol}: Stop-loss trailed to breakeven")
         else:

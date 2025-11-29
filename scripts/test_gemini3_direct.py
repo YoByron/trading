@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Load environment
 from dotenv import load_dotenv
+
 load_dotenv()
 
 print("=" * 80)
@@ -30,6 +31,7 @@ if not api_key:
 
 # Security: Mask API key in output (CodeQL-safe: store masked value first)
 from src.utils.security import mask_api_key
+
 masked_value = mask_api_key(api_key)
 print(f"\n✅ GOOGLE_API_KEY found: {masked_value}")
 
@@ -44,7 +46,7 @@ try:
 
     # Test simple generation
     print("\n📝 Testing simple generation...")
-    model = genai.GenerativeModel('gemini-3.0-pro')
+    model = genai.GenerativeModel("gemini-3.0-pro")
 
     prompt = """You are a trading AI assistant. Analyze this scenario:
 
@@ -76,5 +78,6 @@ except ImportError as e:
 except Exception as e:
     print(f"\n❌ Error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

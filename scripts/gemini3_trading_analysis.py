@@ -60,7 +60,9 @@ def main():
     print("\n📊 Analyzing market with Gemini 3...")
     print(f"   Thinking level: high (deep analysis)")
     print(f"   Symbols: {symbols}")
-    print(f"   Market data: {len([k for k in market_data.keys() if k != 'symbols' and k != 'timestamp'])} symbols loaded")
+    print(
+        f"   Market data: {len([k for k in market_data.keys() if k != 'symbols' and k != 'timestamp'])} symbols loaded"
+    )
 
     # Analyze with high thinking level for comprehensive analysis
     result = integration.analyze_market(

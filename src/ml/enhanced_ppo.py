@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PPOBatch:
     """Batch of experiences for PPO training."""
+
     states: torch.Tensor
     actions: torch.Tensor
     old_log_probs: torch.Tensor
@@ -61,7 +62,7 @@ class EnhancedPPOTrainer:
         max_grad_norm: float = 0.5,
         ppo_epochs: int = 4,
         batch_size: int = 64,
-        device: str = "cpu"
+        device: str = "cpu",
     ):
         """
         Initialize Enhanced PPO Trainer.
@@ -100,7 +101,9 @@ class EnhancedPPOTrainer:
         self.values = []
         self.dones = []
 
-        logger.info(f"Enhanced PPO Trainer initialized: lr={learning_rate}, clip={clip_epsilon}")
+        logger.info(
+            f"Enhanced PPO Trainer initialized: lr={learning_rate}, clip={clip_epsilon}"
+        )
 
     def store_transition(
         self,
@@ -109,7 +112,7 @@ class EnhancedPPOTrainer:
         reward: float,
         log_prob: torch.Tensor,
         value: torch.Tensor,
-        done: bool
+        done: bool,
     ):
         """Store transition in buffer."""
         self.states.append(state)
@@ -124,7 +127,7 @@ class EnhancedPPOTrainer:
         rewards: List[float],
         values: List[float],
         dones: List[bool],
-        next_value: float = 0.0
+        next_value: float = 0.0,
     ) -> Tuple[List[float], List[float]]:
         """
         Compute Generalized Advantage Estimation (GAE).
@@ -183,7 +186,7 @@ class EnhancedPPOTrainer:
             rewards.tolist(),
             values.detach().cpu().numpy().flatten().tolist(),
             dones.tolist(),
-            next_value
+            next_value,
         )
 
         advantages = torch.FloatTensor(advantages).to(self.device)
@@ -222,26 +225,35 @@ class EnhancedPPOTrainer:
                 # Policy loss (clipped surrogate)
                 ratio = torch.exp(new_log_probs - batch_old_log_probs)
                 surr1 = ratio * batch_advantages
-                surr2 = torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * batch_advantages
+                surr2 = (
+                    torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon)
+                    * batch_advantages
+                )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
                 # Value loss (clipped)
                 value_clipped = values[batch_indices] + torch.clamp(
                     state_values - values[batch_indices],
                     -self.clip_epsilon,
-                    self.clip_epsilon
+                    self.clip_epsilon,
                 )
                 value_loss1 = (state_values - batch_returns) ** 2
                 value_loss2 = (value_clipped - batch_returns) ** 2
                 value_loss = 0.5 * torch.max(value_loss1, value_loss2).mean()
 
                 # Total loss
-                loss = policy_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+                loss = (
+                    policy_loss
+                    + self.value_coef * value_loss
+                    - self.entropy_coef * entropy
+                )
 
                 # Backward pass
                 self.optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.max_grad_norm
+                )
                 self.optimizer.step()
 
                 total_policy_loss += policy_loss.item()
@@ -256,13 +268,21 @@ class EnhancedPPOTrainer:
         self.values.clear()
         self.dones.clear()
 
-        avg_policy_loss = total_policy_loss / (self.ppo_epochs * (len(states) // self.batch_size + 1))
-        avg_value_loss = total_value_loss / (self.ppo_epochs * (len(states) // self.batch_size + 1))
-        avg_entropy = total_entropy / (self.ppo_epochs * (len(states) // self.batch_size + 1))
+        avg_policy_loss = total_policy_loss / (
+            self.ppo_epochs * (len(states) // self.batch_size + 1)
+        )
+        avg_value_loss = total_value_loss / (
+            self.ppo_epochs * (len(states) // self.batch_size + 1)
+        )
+        avg_entropy = total_entropy / (
+            self.ppo_epochs * (len(states) // self.batch_size + 1)
+        )
 
         return {
             "policy_loss": avg_policy_loss,
             "value_loss": avg_value_loss,
             "entropy": avg_entropy,
-            "loss": avg_policy_loss + self.value_coef * avg_value_loss - self.entropy_coef * avg_entropy
+            "loss": avg_policy_loss
+            + self.value_coef * avg_value_loss
+            - self.entropy_coef * avg_entropy,
         }
