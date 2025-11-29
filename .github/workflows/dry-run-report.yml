@@ -23,16 +23,35 @@ jobs:
           if [ -f requirements-minimal.txt ]; then pip install -r requirements-minimal.txt; fi
           pip install pyyaml
 
-      - name: Run dry run (no external agents)
+      - name: Run dry run (auto-detect agents by secrets)
         env:
           PAPER_TRADING: 'true'
           ENSEMBLE_CONFIG_PATH: profiles/ensemble-config.yaml
+          # Optional secrets for agent enablement
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
         run: |
-          python scripts/dry_run.py \
-            --symbols SPY QQQ \
-            --exclude-agents mcp langchain gemini ml_model ensemble_rl grok_twitter \
-            --export-json dryrun.json \
-            --export-md dryrun.md
+          INCLUDE_LIST=""
+          [ -n "$OPENROUTER_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST mcp"
+          [ -n "$ANTHROPIC_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST langchain"
+          [ -n "$GROK_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST grok_twitter"
+
+          if [ -n "$INCLUDE_LIST" ]; then
+            echo "Including agents:$INCLUDE_LIST"
+            python scripts/dry_run.py \
+              --symbols SPY QQQ \
+              --include-agents $INCLUDE_LIST \
+              --export-json dryrun.json \
+              --export-md dryrun.md
+          else
+            echo "No secrets detected, running safe dry-run with agents excluded"
+            python scripts/dry_run.py \
+              --symbols SPY QQQ \
+              --exclude-agents mcp langchain gemini ml_model ensemble_rl grok_twitter \
+              --export-json dryrun.json \
+              --export-md dryrun.md
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -78,6 +97,33 @@ jobs:
           else
             echo "_No dry run markdown available for this run._" >> "$page"
           fi
+          # Also update the Progress Dashboard with a link to the latest automated run
+          dash="wiki/Progress-Dashboard.md"
+          link_line="**Latest Automated Dry Run**: See [[Automated-Dry-Run]] (updated $ts)"
+          if [ -f "$dash" ]; then
+            # Prepend the link at the top (below title if present)
+            tmp=$(mktemp)
+            # If the first line is a title, keep it, then insert link
+            first_line=$(head -n 1 "$dash")
+            if echo "$first_line" | grep -q '^#'; then
+              {
+                echo "$first_line"
+                echo ""
+                echo "$link_line"
+                tail -n +2 "$dash"
+              } > "$tmp"
+            else
+              {
+                echo "$link_line"
+                echo ""
+                cat "$dash"
+              } > "$tmp"
+            fi
+            mv "$tmp" "$dash"
+          else
+            echo -e "# Progress Dashboard\n\n$link_line\n" > "$dash"
+          fi
           git -C wiki add Automated-Dry-Run.md
+          git -C wiki add Progress-Dashboard.md || true
           git -C wiki commit -m "Update Automated Dry Run Report ($ts)" || echo "No changes to commit."
           git -C wiki push
