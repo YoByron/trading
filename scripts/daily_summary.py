@@ -27,28 +27,28 @@ STATE_FILE = DATA_DIR / "system_state.json"
 def get_today_summary():
     """Get today's trading summary."""
     today = datetime.now().strftime('%Y-%m-%d')
-    
+
     # Load performance log
     perf_data = []
     if PERF_FILE.exists():
         with open(PERF_FILE) as f:
             perf_data = json.load(f)
-    
+
     # Load system state
     state = {}
     if STATE_FILE.exists():
         with open(STATE_FILE) as f:
             state = json.load(f)
-    
+
     # Find today's entries
     today_entries = [e for e in perf_data if e.get('date') == today]
-    
+
     print("=" * 60)
     print("📊 DAILY TRADING SUMMARY")
     print("=" * 60)
     print(f"Date: {today}")
     print()
-    
+
     if today_entries:
         latest = today_entries[-1]
         print("💰 TODAY'S PERFORMANCE")
@@ -61,9 +61,9 @@ def get_today_summary():
         if perf_data:
             latest = perf_data[-1]
             print(f"  Last entry: {latest.get('date')} - P/L: ${latest.get('pl', 0):+,.2f}")
-    
+
     print()
-    
+
     # Overall performance
     starting = 100000.0
     if today_entries:
@@ -72,14 +72,14 @@ def get_today_summary():
         current = state['account'].get('current_equity', starting)
     else:
         current = starting
-    
+
     total_pnl = current - starting
     print("📈 OVERALL PERFORMANCE")
     print(f"  Starting:    ${starting:,.2f}")
     print(f"  Current:     ${current:,.2f}")
     print(f"  Total P/L:   ${total_pnl:+,.2f} ({total_pnl/starting*100:+.4f}%)")
     print()
-    
+
     # Current positions
     if state.get('performance', {}).get('open_positions'):
         positions = state['performance']['open_positions']
@@ -91,13 +91,13 @@ def get_today_summary():
             unrealized = pos.get('unrealized_pl', 0)
             unrealized_pct = pos.get('unrealized_pl_pct', 0)
             total_unrealized += unrealized
-            
+
             emoji = "🟢" if unrealized > 0 else "🔴"
             print(f"  {emoji} {symbol:6s} {qty:8.4f} shares  P/L: ${unrealized:+8.2f} ({unrealized_pct:+.2f}%)")
-        
+
         print(f"\n  Total Unrealized P/L: ${total_unrealized:+,.2f}")
         print()
-    
+
     # Performance metrics
     if state.get('performance'):
         perf = state['performance']
@@ -107,7 +107,7 @@ def get_today_summary():
         print(f"  Best Trade:   {perf.get('best_trade', {}).get('symbol', 'N/A')} ${perf.get('best_trade', {}).get('pl', 0):+,.2f}")
         print(f"  Worst Trade:  {perf.get('worst_trade', {}).get('symbol', 'N/A')} ${perf.get('worst_trade', {}).get('pl', 0):+,.2f}")
         print()
-    
+
     # Challenge status
     if state.get('challenge'):
         challenge = state['challenge']
@@ -115,9 +115,8 @@ def get_today_summary():
         print(f"  Day: {challenge.get('current_day', 0)}/{challenge.get('total_days', 90)}")
         print(f"  Phase: {challenge.get('phase', 'Unknown')}")
         print()
-    
+
     print("=" * 60)
 
 if __name__ == "__main__":
     get_today_summary()
-

@@ -17,21 +17,21 @@ jobs:
   security-scan:
     name: Security Vulnerability Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install safety bandit
-      
+
       - name: Run Safety check (Python dependencies)
         run: |
           echo "🔒 Scanning Python dependencies for vulnerabilities..."
@@ -47,7 +47,7 @@ jobs:
             exit 1
           }
           echo "✅ No critical security vulnerabilities found"
-      
+
       - name: Run pip-audit (comprehensive dependency scan)
         run: |
           echo "🔒 Running comprehensive dependency audit..."
@@ -57,7 +57,7 @@ jobs:
             echo "Review alerts and update packages as needed"
             # Don't fail the build - just report
           }
-      
+
       - name: Run Bandit (Python code security)
         run: |
           echo "🔒 Scanning Python code for security issues..."
@@ -74,7 +74,7 @@ jobs:
             echo "Review Bandit output and fix issues"
             exit 1
           }
-      
+
       - name: Check for hardcoded secrets
         run: |
           echo "🔒 Checking for hardcoded secrets..."
@@ -84,4 +84,3 @@ jobs:
             exit 1
           fi
           echo "✅ No hardcoded secrets detected"
-

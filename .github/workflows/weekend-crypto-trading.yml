@@ -212,9 +212,9 @@ jobs:
         run: |
           echo "📊 Generating progress dashboard..."
           set -e  # Exit on error for critical steps
-          
+
           python3 scripts/generate_progress_dashboard.py
-          
+
           # Verify dashboard file exists
           if [ ! -f "wiki/Progress-Dashboard.md" ]; then
             echo "❌ ERROR: Dashboard file not found at wiki/Progress-Dashboard.md"
@@ -235,7 +235,7 @@ jobs:
           WIKI_DIR="wiki_repo"
           MAX_RETRIES=3
           RETRY_COUNT=0
-          
+
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             if git clone "https://x-access-token:${WIKI_TOKEN}@github.com/IgorGanapolsky/trading.wiki.git" "$WIKI_DIR" 2>/dev/null; then
               echo "✅ Wiki repository exists, updating..."

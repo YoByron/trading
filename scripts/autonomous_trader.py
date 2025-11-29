@@ -31,31 +31,31 @@ def execute_crypto_trading() -> None:
     from src.core.alpaca_trader import AlpacaTrader
     from src.core.risk_manager import RiskManager
     from src.strategies.crypto_strategy import CryptoStrategy
-    
+
     logger = setup_logging()
     logger.info("=" * 80)
     logger.info("CRYPTO TRADING MODE")
     logger.info("=" * 80)
-    
+
     try:
         # Initialize crypto strategy
         trader = AlpacaTrader(paper=True)
         risk_manager = RiskManager()
-        
+
         crypto_strategy = CryptoStrategy(
             trader=trader,
             risk_manager=risk_manager,
             daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50"))
         )
-        
+
         # Execute crypto trading
         order = crypto_strategy.execute_daily()
-        
+
         if order:
             logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
-            
+
     except Exception as e:
         logger.error(f"❌ Crypto trading failed: {e}", exc_info=True)
         raise
@@ -69,7 +69,7 @@ def main() -> None:
         help="Execute crypto trading only (for weekends/holidays)"
     )
     args = parser.parse_args()
-    
+
     load_dotenv()
     logger = setup_logging()
 
@@ -82,7 +82,7 @@ def main() -> None:
 
     # Normal stock trading - import only when needed
     from src.orchestrator.main import TradingOrchestrator
-    
+
     logger.info("Starting hybrid funnel orchestrator entrypoint.")
     tickers = _parse_tickers()
 

@@ -293,4 +293,3 @@ crontab -e
 ---
 
 **Next Steps**: Push the workflow file and enable GitHub Actions! 🚀
-

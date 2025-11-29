@@ -56,4 +56,3 @@ def get_indicator(
     if period is not None:
         payload["period"] = period
     return _client(client).call_tool(SERVER_ID, "get_indicator", payload)
-

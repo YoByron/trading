@@ -427,4 +427,3 @@ The skill includes data formatted for:
 - Monthly return heatmaps
 - Strategy comparison charts
 - Trade distribution histograms
-

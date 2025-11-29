@@ -43,7 +43,7 @@ Once you've created the first page manually, GitHub Actions will:
 
 The dashboard updates **automatically every day** after trading execution via GitHub Actions.
 
-**Workflow**: `.github/workflows/daily-trading.yml`  
+**Workflow**: `.github/workflows/daily-trading.yml`
 **Script**: `scripts/generate_progress_dashboard.py`
 
 ---
@@ -66,4 +66,3 @@ The dashboard updates **automatically every day** after trading execution via Gi
 ---
 
 *Once initialized, the wiki is fully automated - no manual work needed!*
-

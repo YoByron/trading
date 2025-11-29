@@ -19,23 +19,23 @@ def main():
     print("=" * 80)
     print("🧠 GEMINI 3 TRADING ANALYSIS")
     print("=" * 80)
-    
+
     # Get integration
     integration = get_gemini3_integration()
-    
+
     if not integration.enabled:
         print("\n❌ Gemini 3 not available")
         print("   Set GOOGLE_API_KEY environment variable to enable")
         return
-    
+
     print("\n✅ Gemini 3 integration enabled")
-    
+
     # Get real market data
     from src.utils.market_data import get_market_data_provider
     from datetime import datetime
-    
+
     market_provider = get_market_data_provider()
-    
+
     print("\n📊 Gathering real market data...")
     symbols = ["SPY", "QQQ", "VOO"]
     market_data = {
@@ -44,7 +44,7 @@ def main():
         "market_regime": "neutral",
         "volatility": "moderate",
     }
-    
+
     # Get current prices
     for symbol in symbols:
         try:
@@ -56,34 +56,34 @@ def main():
                 }
         except Exception as e:
             print(f"   ⚠️  Could not fetch {symbol}: {e}")
-    
+
     print("\n📊 Analyzing market with Gemini 3...")
     print(f"   Thinking level: high (deep analysis)")
     print(f"   Symbols: {symbols}")
     print(f"   Market data: {len([k for k in market_data.keys() if k != 'symbols' and k != 'timestamp'])} symbols loaded")
-    
+
     # Analyze with high thinking level for comprehensive analysis
     result = integration.analyze_market(
         symbols=symbols,
         market_data=market_data,
         thinking_level="high",  # Deep analysis
     )
-    
+
     if "error" in result:
         print(f"\n❌ Error: {result['error']}")
         return
-    
+
     print("\n" + "=" * 80)
     print("📋 ANALYSIS RESULTS")
     print("=" * 80)
-    
+
     if result.get("decision"):
         decision = result["decision"]
         print(f"\n🎯 Decision: {decision.get('action', 'N/A')}")
         print(f"   Symbol: {decision.get('symbol', 'N/A')}")
         print(f"   Confidence: {decision.get('confidence', 0):.2f}")
         print(f"   Reasoning: {decision.get('reasoning', 'N/A')}")
-    
+
     if result.get("analysis"):
         analysis = result["analysis"]
         print(f"\n📊 Analysis:")
@@ -91,10 +91,10 @@ def main():
             print(f"   Research: {analysis['research'][:200]}...")
         if "technical" in analysis:
             print(f"   Technical: {analysis['technical'][:200]}...")
-    
+
     if result.get("thought_signatures"):
         print(f"\n🧠 Thought Signatures: {len(result['thought_signatures'])} preserved")
-    
+
     print("\n" + "=" * 80)
     print("✅ Analysis Complete")
     print("=" * 80)
@@ -102,4 +102,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

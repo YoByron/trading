@@ -39,10 +39,10 @@ def load_todays_trades() -> List[Dict[str, Any]]:
     """Load today's trade log."""
     today = date.today().isoformat()
     trades_file = DATA_DIR / f"trades_{today}.json"
-    
+
     if not trades_file.exists():
         return []
-    
+
     try:
         with open(trades_file, 'r') as f:
             return json.load(f)
@@ -55,7 +55,7 @@ def get_portfolio_status() -> Dict[str, Any]:
     try:
         api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
         account = api.get_account()
-        
+
         return {
             "equity": float(account.equity),
             "cash": float(account.cash),
@@ -69,21 +69,21 @@ def get_portfolio_status() -> Dict[str, Any]:
 def get_rl_stats() -> Dict[str, Any]:
     """Get RL policy learning stats."""
     rl_file = DATA_DIR / "rl_policy_state.json"
-    
+
     if not rl_file.exists():
         return {"states_learned": 0, "action_distribution": {}}
-    
+
     try:
         with open(rl_file, 'r') as f:
             data = json.load(f)
             q_table = data.get("q_table", {})
-            
+
             # Count actions
             action_counts = {"BUY": 0, "SELL": 0, "HOLD": 0}
             for state_actions in q_table.values():
                 best_action = max(state_actions, key=state_actions.get)
                 action_counts[best_action] += 1
-            
+
             return {
                 "states_learned": len(q_table),
                 "action_distribution": action_counts,
@@ -154,7 +154,7 @@ def generate_report() -> str:
     manual_trading = get_manual_trading_status()
     rl_stats = get_rl_stats()
     cb_status = get_circuit_breaker_status()
-    
+
     # Build report
     report = f"""
 {'=' * 80}
@@ -192,7 +192,7 @@ COMBINED TOTAL:
 Total Trades: {len(trades)}
 
 """
-    
+
     if trades:
         for i, trade in enumerate(trades, 1):
             report += f"\nTrade {i}:\n"
@@ -259,12 +259,12 @@ Status:             {'🚨 TRIPPED' if cb_status.get('is_tripped') else '✅ OK'
 Consecutive Losses: {cb_status.get('consecutive_losses', 0)}
 API Errors Today:   {cb_status.get('api_errors_today', 0)}
 """
-    
+
     if cb_status.get('is_tripped'):
         report += f"\n⚠️  TRIP REASON: {cb_status.get('trip_reason', 'Unknown')}\n"
         report += f"⚠️  DETAILS: {cb_status.get('trip_details', 'N/A')}\n"
         report += f"⚠️  ACTION REQUIRED: Manual reset needed\n"
-    
+
     report += f"""
 {'=' * 80}
 📁 LOG FILES
@@ -278,7 +278,7 @@ CB State:     data/circuit_breaker_state.json
 Generated: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}
 {'=' * 80}
 """
-    
+
     return report
 
 
@@ -286,18 +286,17 @@ def main():
     """Generate and save daily report."""
     today = date.today().isoformat()
     report = generate_report()
-    
+
     # Print to console
     print(report)
-    
+
     # Save to file
     report_file = REPORTS_DIR / f"daily_report_{today}.txt"
     with open(report_file, 'w') as f:
         f.write(report)
-    
+
     print(f"\n📁 Report saved to: {report_file}\n")
 
 
 if __name__ == "__main__":
     main()
-

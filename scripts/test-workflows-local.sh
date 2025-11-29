@@ -60,7 +60,7 @@ SKIPPED=0
 
 for workflow in $WORKFLOWS; do
     workflow_name=$(basename "$workflow")
-    
+
     # Skip workflows that require secrets or external services for basic testing
     if [[ "$workflow_name" == *"diagnose"* ]] || \
        [[ "$workflow_name" == *"notify"* ]] || \
@@ -69,9 +69,9 @@ for workflow in $WORKFLOWS; do
         SKIPPED=$((SKIPPED + 1))
         continue
     fi
-    
+
     echo -e "${GREEN}Testing: $workflow_name${NC}"
-    
+
     # Determine which event to use based on workflow triggers
     # Check if workflow supports workflow_dispatch, otherwise use push
     EVENT="workflow_dispatch"
@@ -82,10 +82,10 @@ for workflow in $WORKFLOWS; do
             EVENT="push"
         fi
     fi
-    
+
     # Test workflow syntax with act (dry-run) with timeout
     ACT_OUTPUT=$(timeout 5 act "$EVENT" --workflows "$workflow" --dryrun 2>&1 || echo "TIMEOUT")
-    
+
     # Handle timeout
     if echo "$ACT_OUTPUT" | grep -q "TIMEOUT"; then
         echo -e "${YELLOW}⚠️  $workflow_name: Test timed out (may have secrets issues, but syntax likely OK)${NC}"
@@ -120,4 +120,3 @@ else
     echo -e "${GREEN}✅ All tested workflows passed!${NC}"
     exit 0
 fi
-

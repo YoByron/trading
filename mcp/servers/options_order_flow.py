@@ -45,4 +45,3 @@ def flow_snapshot(
 ) -> Dict[str, Any]:
     payload = {"symbol": symbol}
     return _client(client).call_tool(SERVER_ID, "flow_snapshot", payload)
-

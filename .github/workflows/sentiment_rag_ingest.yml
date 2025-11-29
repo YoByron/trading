@@ -38,4 +38,3 @@ jobs:
         with:
           name: sentiment-rag-db
           path: data/rag/sentiment_rag.db
-

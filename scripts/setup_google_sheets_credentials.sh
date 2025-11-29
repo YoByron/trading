@@ -55,4 +55,3 @@ echo "   3. Create Google Sheet with 'Target IPOs' tab"
 echo "   4. Set GitHub Secret: GOOGLE_SHEETS_IPO_SPREADSHEET_ID"
 echo "      (Get ID from Google Sheets URL)"
 echo ""
-

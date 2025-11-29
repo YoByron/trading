@@ -43,5 +43,3 @@ Provide reliable, multi-source market data fetching with automatic fallbacks and
 ## Performance Metrics
 - Tracks: total requests, success rate, avg latency per source
 - Accessible via: `MarketDataProvider.get_performance_metrics()`
-
-

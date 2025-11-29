@@ -69,5 +69,3 @@ When adding a new feature:
 - 🚧 **In Progress**: Feature is being developed
 - 📋 **Planned**: Feature is planned but not started
 - ⚠️ **Deprecated**: Feature is no longer used
-
-

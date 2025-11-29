@@ -1,6 +1,6 @@
 # CI Failure Prevention Strategy
 
-**Last Updated**: November 21, 2025  
+**Last Updated**: November 21, 2025
 **Purpose**: Prevent dependency conflicts and CI failures before they reach GitHub
 
 ---
@@ -8,7 +8,7 @@
 ## 🎯 Multi-Layer Prevention Strategy
 
 ### Layer 1: Pre-Commit Hook (Local)
-**When**: Before every commit  
+**When**: Before every commit
 **What**: Validates dependencies if `requirements.txt` changed
 
 ```bash
@@ -24,7 +24,7 @@ git commit -m "Update requirements.txt"
 - ✅ No wasted commits
 
 ### Layer 2: ACT Local CI Testing (Local)
-**When**: Before pushing to GitHub  
+**When**: Before pushing to GitHub
 **What**: Run full CI workflows locally
 
 ```bash
@@ -42,7 +42,7 @@ act -W .github/workflows/adk-ci.yml --secret-file .github/local-secrets.env
 - ✅ Faster debugging
 
 ### Layer 3: GitHub Actions Dependency Check (CI)
-**When**: On every PR that changes dependencies  
+**When**: On every PR that changes dependencies
 **What**: Automatic dependency validation
 
 **Workflow**: `.github/workflows/dependency-check.yml`
@@ -56,7 +56,7 @@ act -W .github/workflows/adk-ci.yml --secret-file .github/local-secrets.env
 - ✅ Prevents broken code from merging
 
 ### Layer 4: Full CI Suite (CI)
-**When**: On every push/PR  
+**When**: On every push/PR
 **What**: Full test suite runs
 
 **Workflows**:
@@ -194,4 +194,3 @@ pip-compile requirements.in
 - Monitor CI failure rate
 - Improve validation scripts based on failures
 - Add more comprehensive dependency checking
-

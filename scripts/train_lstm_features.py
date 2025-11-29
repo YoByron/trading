@@ -53,16 +53,16 @@ def prepare_training_data(
 ) -> tuple:
     """
     Prepare sequences for LSTM training with proper sliding windows.
-    
+
     Creates sequences where each sequence contains multiple timesteps,
     each timestep having a feature vector. This is the correct format for LSTM.
-    
+
     Args:
         hist_data: Historical OHLCV DataFrame
         seq_length: Length of input sequences (number of timesteps)
         prediction_horizon: Days ahead to predict (for supervised learning)
         min_window_size: Minimum data needed for technical indicators
-    
+
     Returns:
         Tuple of (sequences, labels) where:
         - sequences: (n_samples, seq_length, n_features) - proper 3D array
@@ -70,57 +70,57 @@ def prepare_training_data(
     """
     sequences = []
     labels = []
-    
+
     close_prices = hist_data['Close'].values
-    
+
     # Need enough data to calculate features for each timestep in sequence
     # Each timestep needs min_window_size bars to calculate indicators
     start_idx = min_window_size
     end_idx = len(hist_data) - prediction_horizon
-    
+
     logger.info(f"Preparing sequences: {end_idx - start_idx - seq_length} samples from {len(hist_data)} bars")
-    
+
     # Create sliding window sequences
     for i in range(start_idx, end_idx - seq_length + 1):
         # Extract sequence: seq_length timesteps
         sequence_features = []
-        
+
         # For each timestep in the sequence, calculate features using a rolling window
         for t in range(i - seq_length, i):
             # Use a window ending at timestep t for feature calculation
             # Need at least min_window_size bars before t
             window_start = max(0, t - min_window_size)
             window_data = hist_data.iloc[window_start:t+1]
-            
+
             if len(window_data) < 50:  # Minimum for basic indicators
                 # Skip this sequence if not enough data
                 break
-            
+
             # Calculate features for this timestep
             features = calculate_all_features(window_data)
             feature_array = _features_to_array(features)
             sequence_features.append(feature_array)
-        
+
         # Only add sequence if we got all timesteps
         if len(sequence_features) == seq_length:
             sequences.append(sequence_features)
-            
+
             # Label: future return (for supervised learning)
             future_return = (close_prices[i + prediction_horizon] - close_prices[i]) / close_prices[i]
             labels.append(future_return)
-    
+
     if not sequences:
         logger.warning("No sequences created from historical data")
         return np.array([]), np.array([])
-    
+
     # Convert to numpy array: (n_samples, seq_length, n_features)
     sequences = np.array(sequences)
     labels = np.array(labels)
-    
+
     logger.info(f"Created {len(sequences)} sequences")
     logger.info(f"Sequence shape: {sequences.shape} (samples, timesteps, features)")
     logger.info(f"Labels shape: {labels.shape}")
-    
+
     return sequences, labels
 
 
@@ -134,12 +134,12 @@ def _features_to_array(features: Dict[str, float]) -> np.ndarray:
         'bb_upper', 'bb_middle', 'bb_lower', 'bb_width', 'bb_position',
         'atr', 'atr_pct', 'volume', 'volume_ratio', 'obv', 'obv_ma', 'volume_roc'
     ]
-    
+
     array = np.array([features.get(key, 0.0) for key in feature_order])
-    
+
     # Normalize
     array = (array - array.mean()) / (array.std() + 1e-8)
-    
+
     return array
 
 
@@ -153,7 +153,7 @@ def train_lstm_model(
 ) -> LSTMTradingFeatureExtractor:
     """
     Train LSTM feature extractor.
-    
+
     Args:
         sequences: Training sequences (n_samples, seq_length, n_features)
         labels: Training labels (n_samples,)
@@ -161,34 +161,34 @@ def train_lstm_model(
         batch_size: Batch size
         learning_rate: Learning rate
         device: Device to train on
-    
+
     Returns:
         Trained LSTM model
     """
     if len(sequences) == 0:
         raise ValueError("No training sequences provided")
-    
+
     device = torch.device(device)
-    
+
     # Verify sequence shape: should be (n_samples, seq_length, n_features)
     if len(sequences.shape) != 3:
         raise ValueError(
             f"Expected 3D sequences (n_samples, seq_length, n_features), "
             f"got shape {sequences.shape}"
         )
-    
+
     n_samples, seq_length, input_dim = sequences.shape
-    
+
     logger.info(f"Training LSTM on {n_samples} sequences")
     logger.info(f"Sequence length: {seq_length} timesteps")
     logger.info(f"Features per timestep: {input_dim}")
-    
+
     logger.info(f"Training LSTM: input_dim={input_dim}, seq_length={seq_length}")
-    
+
     # Create dataset
     dataset = MarketDataDataset(sequences, labels)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    
+
     # Initialize model
     model = LSTMTradingFeatureExtractor(
         input_dim=input_dim,
@@ -197,46 +197,46 @@ def train_lstm_model(
         output_dim=50,
         dropout=0.2
     ).to(device)
-    
+
     # Loss and optimizer
     criterion = nn.MSELoss()  # Predict future returns
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
+
     # Training loop
     model.train()
     for epoch in range(epochs):
         total_loss = 0.0
         n_batches = 0
-        
+
         for batch_sequences, batch_labels in dataloader:
             batch_sequences = batch_sequences.to(device)
             batch_labels = batch_labels.to(device)
-            
+
             # Forward pass
             features = model(batch_sequences)
-            
+
             # Predict future return (simple linear projection)
             predictions = features.mean(dim=1)  # Average features as prediction
-            
+
             # Calculate loss
             loss = criterion(predictions, batch_labels)
-            
+
             # Backward pass
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+
             total_loss += loss.item()
             n_batches += 1
-        
+
         avg_loss = total_loss / n_batches if n_batches > 0 else 0.0
-        
+
         if (epoch + 1) % 10 == 0:
             logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
-    
+
     model.eval()
     logger.info("Training complete")
-    
+
     return model
 
 
@@ -286,9 +286,9 @@ def main():
         choices=["cpu", "cuda"],
         help="Device to train on (default: cpu)"
     )
-    
+
     args = parser.parse_args()
-    
+
     print("=" * 70)
     print("LSTM Feature Extractor Training")
     print("=" * 70)
@@ -296,48 +296,48 @@ def main():
     print(f"Epochs: {args.epochs}")
     print(f"Device: {args.device}")
     print("=" * 70)
-    
+
     # Load historical data
     symbols = [s.strip() for s in args.symbols.split(",")]
     collector = DataCollector(data_dir="data/historical")
-    
+
     all_sequences = []
     all_labels = []
-    
+
     for symbol in symbols:
         logger.info(f"Loading data for {symbol}...")
         hist_data = collector.load_historical_data(symbol)
-        
+
         if hist_data.empty:
             logger.warning(f"No historical data for {symbol}, skipping")
             continue
-        
+
         if len(hist_data) < args.seq_length + 10:
             logger.warning(f"Insufficient data for {symbol} ({len(hist_data)} bars), skipping")
             continue
-        
+
         # Prepare training data
         sequences, labels = prepare_training_data(
             hist_data,
             seq_length=args.seq_length,
             prediction_horizon=5
         )
-        
+
         if len(sequences) > 0:
             all_sequences.append(sequences)
             all_labels.append(labels)
             logger.info(f"{symbol}: {len(sequences)} sequences")
-    
+
     if not all_sequences:
         logger.error("No training data available. Run populate_historical_data.py first.")
         sys.exit(1)
-    
+
     # Combine all symbols
     combined_sequences = np.concatenate(all_sequences, axis=0)
     combined_labels = np.concatenate(all_labels, axis=0)
-    
+
     logger.info(f"Total training samples: {len(combined_sequences)}")
-    
+
     # Train model
     logger.info("Starting training...")
     model = train_lstm_model(
@@ -348,13 +348,13 @@ def main():
         learning_rate=args.learning_rate,
         device=args.device
     )
-    
+
     # Save model
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     wrapper = LSTMPPOWrapper()
     wrapper.feature_extractor = model
     wrapper.save_model(args.output)
-    
+
     print(f"\n✅ Model saved to: {args.output}")
     print("Next steps:")
     print("1. Integrate with OptimizedRLPolicyLearner")
@@ -364,4 +364,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

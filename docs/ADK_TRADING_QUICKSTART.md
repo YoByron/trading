@@ -58,5 +58,3 @@ curl -s http://127.0.0.1:8091/metrics
 ```
 
 - Decision logs are stored at `logs/adk_orchestrator.jsonl`; ensure your log shipper tails this file for compliance.
-
-

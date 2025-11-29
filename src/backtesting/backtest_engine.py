@@ -211,10 +211,10 @@ class BacktestEngine:
                     # Reset index to get timestamp as column if needed, or just use it
                     # Alpaca-py returns MultiIndex (symbol, timestamp) or just timestamp if single symbol?
                     # Usually MultiIndex. Let's check.
-                    
+
                     if 'symbol' in bars.index.names:
                         bars = bars.droplevel('symbol')
-                    
+
                     # Rename columns to match yfinance format
                     bars = bars.rename(columns={
                         'open': 'Open',

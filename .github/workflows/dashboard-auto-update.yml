@@ -74,7 +74,7 @@ jobs:
           WIKI_DIR="wiki_repo"
           MAX_RETRIES=3
           RETRY_COUNT=0
-          
+
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             if git clone "https://x-access-token:${GH_TOKEN}@github.com/IgorGanapolsky/trading.wiki.git" "$WIKI_DIR" 2>&1; then
               echo "✅ Wiki repository cloned successfully"
@@ -135,4 +135,3 @@ jobs:
         run: |
           echo "✅ Dashboard update workflow completed"
           echo "📊 Check dashboard: https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard"
-

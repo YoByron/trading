@@ -52,19 +52,19 @@ jobs:
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
           echo "🔍 Running comprehensive data hygiene check..."
-          
+
           SYMBOLS="${{ github.event.inputs.symbols }}"
           SYMBOLS_ARG=""
           if [ -n "$SYMBOLS" ]; then
             SYMBOLS_ARG="--symbols $SYMBOLS"
           fi
-          
+
           python3 scripts/data_hygiene_check.py full-check $SYMBOLS_ARG \
             --output hygiene_report.json || {
               echo "hygiene_issues=true" >> $GITHUB_OUTPUT
               exit 0  # Don't fail workflow, but flag issues
             }
-          
+
           echo "hygiene_issues=false" >> $GITHUB_OUTPUT
 
       - name: Rotate old historical data
@@ -99,31 +99,31 @@ jobs:
           script: |
             const fs = require('fs');
             const report = JSON.parse(fs.readFileSync('hygiene_report.json', 'utf8'));
-            
+
             const issues = report.recommendations || [];
             const modelStale = report.model_staleness?.stale || false;
-            
+
             let body = '## Data Hygiene Issues Detected\n\n';
             body += `**Timestamp:** ${report.timestamp}\n\n`;
-            
+
             if (modelStale) {
               body += `### 🤖 Model Staleness\n`;
               body += `- ${report.model_staleness.reason}\n`;
               body += `- Age: ${report.model_staleness.age_days} days\n\n`;
             }
-            
+
             if (issues.length > 0) {
               body += `### 📊 Data Quality Issues\n`;
               issues.forEach((issue, i) => {
                 body += `${i + 1}. ${issue}\n`;
               });
             }
-            
+
             body += '\n### Recommended Actions\n';
             body += '1. Review data quality issues\n';
             body += '2. Retrain model if stale\n';
             body += '3. Collect fresh data if needed\n';
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -131,4 +131,3 @@ jobs:
               body: body,
               labels: ['data-quality', 'automated']
             });
-

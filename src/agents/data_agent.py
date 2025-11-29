@@ -126,4 +126,3 @@ class DataAgent(TradingAgent):
             payload=payload,
             warnings=warnings,
         )
-

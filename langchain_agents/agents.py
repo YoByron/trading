@@ -60,4 +60,3 @@ def build_price_action_agent(
         verbose=True,
     )
     return executor
-

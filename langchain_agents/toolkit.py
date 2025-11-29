@@ -133,4 +133,3 @@ def build_mcp_tool(client: Optional[MCPClient] = None) -> StructuredTool:
         func=call_mcp,
         args_schema=MCPCallInput,
     )
-

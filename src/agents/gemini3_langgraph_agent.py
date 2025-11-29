@@ -50,14 +50,14 @@ class AgentState(TypedDict):
 class Gemini3LangGraphAgent:
     """
     Enhanced Gemini 3 agent using LangGraph for multi-agent orchestration.
-    
+
     Features:
     - Thinking level control (low/medium/high)
     - Thought signature preservation
     - Multi-agent workflow orchestration
     - Multimodal analysis support
     """
-    
+
     def __init__(
         self,
         model: str = "gemini-3.0-pro",
@@ -66,7 +66,7 @@ class Gemini3LangGraphAgent:
     ):
         """
         Initialize Gemini 3 LangGraph agent.
-        
+
         Args:
             model: Gemini model name
             default_thinking_level: Default reasoning depth
@@ -75,7 +75,7 @@ class Gemini3LangGraphAgent:
         self.model_name = model
         self.default_thinking_level = default_thinking_level
         self.temperature = temperature
-        
+
         # Configure Gemini API
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -95,7 +95,7 @@ class Gemini3LangGraphAgent:
                     temperature=temperature,
                     google_api_key=api_key,
                 )
-                
+
                 # Build agent graph
                 if StateGraph:
                     self.workflow = self._build_workflow()
@@ -106,33 +106,33 @@ class Gemini3LangGraphAgent:
                 logger.error(f"Failed to initialize Gemini 3: {e}")
                 self.llm = None
                 self.workflow = None
-        
+
         logger.info(f"Initialized Gemini3LangGraphAgent with {model}")
-    
+
     def _build_workflow(self):
         """Build LangGraph workflow for multi-agent system."""
         if not StateGraph:
             return None
-        
+
         workflow = StateGraph(AgentState)
-        
+
         # Add nodes
         workflow.add_node("research", self._research_agent)
         workflow.add_node("analyze", self._analysis_agent)
         workflow.add_node("decide", self._decision_agent)
-        
+
         # Define edges
         workflow.set_entry_point("research")
         workflow.add_edge("research", "analyze")
         workflow.add_edge("analyze", "decide")
         workflow.add_edge("decide", END)
-        
+
         return workflow.compile()
-    
+
     def _research_agent(self, state: AgentState) -> AgentState:
         """Research agent - gathers market data and context."""
         logger.info("Research agent: Gathering market data")
-        
+
         prompt = f"""You are a market research agent. Analyze the following market data:
 
 {json.dumps(state.get('market_data', {}), indent=2)}
@@ -145,22 +145,22 @@ Provide:
 
 Perform deep, thorough analysis.
 """
-        
+
         if self.llm:
             messages = state.get("messages", [])
             messages.append(HumanMessage(content=prompt))
-            
+
             response = self.llm.invoke(messages)
-            
+
             state["messages"].append(response)
             state["analysis"]["research"] = response.content
-        
+
         return state
-    
+
     def _analysis_agent(self, state: AgentState) -> AgentState:
         """Analysis agent - performs technical and fundamental analysis."""
         logger.info("Analysis agent: Performing analysis")
-        
+
         prompt = f"""You are a trading analysis agent. Based on the research:
 
 {state.get('analysis', {}).get('research', '')}
@@ -173,22 +173,22 @@ Perform technical and fundamental analysis:
 
 Provide balanced, thorough analysis.
 """
-        
+
         if self.llm:
             messages = state.get("messages", [])
             messages.append(HumanMessage(content=prompt))
-            
+
             response = self.llm.invoke(messages)
-            
+
             state["messages"].append(response)
             state["analysis"]["technical"] = response.content
-        
+
         return state
-    
+
     def _decision_agent(self, state: AgentState) -> AgentState:
         """Decision agent - makes final trading decision."""
         logger.info("Decision agent: Making trading decision")
-        
+
         prompt = f"""You are a trading decision agent. Based on research and analysis:
 
 Research: {state.get('analysis', {}).get('research', '')}
@@ -203,15 +203,15 @@ Make a final trading decision:
 
 Format as JSON.
 """
-        
+
         if self.llm:
             messages = state.get("messages", [])
             messages.append(HumanMessage(content=prompt))
-            
+
             response = self.llm.invoke(messages)
-            
+
             state["messages"].append(response)
-            
+
             # Parse decision
             try:
                 decision_text = response.content
@@ -226,9 +226,9 @@ Format as JSON.
             except Exception as e:
                 logger.error(f"Failed to parse decision: {e}")
                 state["decision"] = {"action": "HOLD", "error": str(e)}
-        
+
         return state
-    
+
     def evaluate(
         self,
         market_data: Dict[str, Any],
@@ -236,19 +236,19 @@ Format as JSON.
     ) -> Dict[str, Any]:
         """
         Evaluate trading opportunity using multi-agent system.
-        
+
         Args:
             market_data: Market data dictionary
             thinking_level: Reasoning depth (low/medium/high)
-            
+
         Returns:
             Trading decision with reasoning
         """
         if not self.llm:
             return {"error": "Gemini API not configured"}
-        
+
         thinking_level = thinking_level or self.default_thinking_level
-        
+
         # Initialize state
         initial_state: AgentState = {
             "messages": [
@@ -260,7 +260,7 @@ Format as JSON.
             "thought_signatures": [],
             "thinking_level": thinking_level,
         }
-        
+
         # Run workflow
         if not self.workflow:
             # Fallback: direct LLM call if workflow unavailable
@@ -276,10 +276,10 @@ Format as JSON.
                 except Exception as e:
                     logger.error(f"Direct LLM call failed: {e}")
             return {"error": "Workflow not available"}
-        
+
         try:
             final_state = self.workflow.invoke(initial_state)
-            
+
             return {
                 "decision": final_state.get("decision"),
                 "analysis": final_state.get("analysis"),
@@ -297,7 +297,7 @@ Format as JSON.
                 "error": str(e),
                 "decision": {"action": "HOLD", "reasoning": "System error"},
             }
-    
+
     def analyze_chart(
         self,
         chart_image_path: str,
@@ -306,24 +306,24 @@ Format as JSON.
     ) -> Dict[str, Any]:
         """
         Analyze chart image using multimodal capabilities.
-        
+
         Args:
             chart_image_path: Path to chart image
             symbol: Stock symbol
             thinking_level: Reasoning depth
-            
+
         Returns:
             Chart analysis results
         """
         if not self.llm:
             return {"error": "Gemini API not configured"}
-        
+
         try:
             import PIL.Image
-            
+
             # Load image
             image = PIL.Image.open(chart_image_path)
-            
+
             prompt = f"""Analyze this {symbol} price chart:
 
 1. Identify trend (uptrend/downtrend/sideways)
@@ -334,11 +334,11 @@ Format as JSON.
 
 Provide detailed, thorough analysis.
 """
-            
+
             # Use Gemini's multimodal capabilities
             model = genai.GenerativeModel(self.model_name)
             response = model.generate_content([prompt, image])
-            
+
             return {
                 "symbol": symbol,
                 "analysis": response.text,
@@ -356,11 +356,11 @@ def create_trading_agent(
 ) -> Gemini3LangGraphAgent:
     """
     Factory function to create Gemini 3 trading agent.
-    
+
     Args:
         model: Gemini model name
         thinking_level: Default reasoning depth
-        
+
     Returns:
         Configured Gemini3LangGraphAgent instance
     """
@@ -368,4 +368,3 @@ def create_trading_agent(
         model=model,
         default_thinking_level=thinking_level,
     )
-

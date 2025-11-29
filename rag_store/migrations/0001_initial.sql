@@ -24,4 +24,3 @@ CREATE INDEX IF NOT EXISTS idx_snapshots_ticker_date
     ON sentiment_snapshots (ticker, snapshot_date);
 
 COMMIT;
-

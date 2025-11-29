@@ -137,4 +137,3 @@ When `CoreStrategy.execute_daily()` runs:
 4. Executes trade with full protection
 
 **That's it!** The system is fully operational. 🚀
-

@@ -322,4 +322,3 @@ strategy = GrowthStrategy(use_intelligent_investor=False)
 ---
 
 **Remember**: This module is designed to **protect capital** by ensuring we only invest in quality companies at attractive prices. It may reduce trading frequency, but that's by design - quality over quantity, following Benjamin Graham's timeless principles from "The Intelligent Investor".
-

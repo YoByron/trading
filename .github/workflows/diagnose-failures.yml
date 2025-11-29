@@ -15,11 +15,11 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Check workflow status and secrets
         uses: actions/github-script@v7
         with:
@@ -29,7 +29,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            
+
             const criticalWorkflows = [
               'daily-trading.yml',
               'weekend-crypto-trading.yml',
@@ -37,22 +37,22 @@ jobs:
               'notify-on-failure.yml',
               'workflow-health-check.yml',
             ];
-            
+
             const issues = [];
             const disabledWorkflows = [];
             const missingSecrets = [];
-            
+
             // Check each critical workflow
             for (const workflow of workflows.workflows) {
               const workflowName = workflow.path.replace('.github/workflows/', '');
-              
+
               if (criticalWorkflows.includes(workflowName)) {
                 const { data: workflowData } = await github.rest.actions.getWorkflow({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   workflow_id: workflow.id,
                 });
-                
+
                 // Check if disabled
                 if (!workflowData.state || workflowData.state === 'disabled') {
                   disabledWorkflows.push({
@@ -61,7 +61,7 @@ jobs:
                     id: workflow.id,
                   });
                 }
-                
+
                 // Get recent runs to check for patterns
                 const { data: runs } = await github.rest.actions.listWorkflowRuns({
                   owner: context.repo.owner,
@@ -69,9 +69,9 @@ jobs:
                   workflow_id: workflow.id,
                   per_page: 5,
                 });
-                
+
                 const recentFailures = runs.workflow_runs.filter(run => run.conclusion === 'failure');
-                
+
                 if (recentFailures.length > 0) {
                   issues.push({
                     workflow: workflow.name,
@@ -81,11 +81,11 @@ jobs:
                 }
               }
             }
-            
+
             // Generate report
             let report = `# 🔍 Workflow Failure Diagnosis Report\n\n`;
             report += `**Generated**: ${new Date().toISOString()}\n\n`;
-            
+
             if (disabledWorkflows.length > 0) {
               report += `## 🚨 DISABLED WORKFLOWS (${disabledWorkflows.length})\n\n`;
               report += `**CRITICAL**: These workflows are disabled and won't run!\n\n`;
@@ -98,7 +98,7 @@ jobs:
               report += `2. Click "Enable workflow" button\n`;
               report += `3. Click "Run workflow" to test\n\n`;
             }
-            
+
             if (issues.length > 0) {
               report += `## ❌ RECENT FAILURES\n\n`;
               for (const issue of issues) {
@@ -107,26 +107,26 @@ jobs:
                 report += `- **Latest**: [View Run](${issue.latestFailure})\n\n`;
               }
             }
-            
+
             if (disabledWorkflows.length === 0 && issues.length === 0) {
               report += `## ✅ ALL WORKFLOWS HEALTHY\n\n`;
               report += `No disabled workflows or recent failures detected.\n`;
             }
-            
+
             // Create or update issue
             const issueTitle = `🔍 Workflow Health Report - ${new Date().toISOString().split('T')[0]}`;
-            
+
             const { data: existingIssues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               labels: 'workflow-health',
             });
-            
-            const todayIssue = existingIssues.find(issue => 
+
+            const todayIssue = existingIssues.find(issue =>
               issue.title.includes(new Date().toISOString().split('T')[0])
             );
-            
+
             if (todayIssue) {
               // Update existing issue
               await github.rest.issues.update({
@@ -147,7 +147,7 @@ jobs:
               });
               console.log('Created new health report issue');
             }
-            
+
             // Output summary
             core.summary.addHeading('Workflow Health Summary');
             if (disabledWorkflows.length > 0) {
@@ -160,4 +160,3 @@ jobs:
               core.summary.addRaw(`✅ **All workflows healthy**`);
             }
             core.summary.write();
-

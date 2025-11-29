@@ -5,9 +5,9 @@ This file defines custom slash commands for the trading system. These commands p
 ## Available Commands
 
 ### `/backtest`
-**Purpose**: Run a backtest of the trading strategy  
-**Script**: `scripts/run_backtest_now.py`  
-**Usage**: `/backtest [--days 60] [--symbol SPY]`  
+**Purpose**: Run a backtest of the trading strategy
+**Script**: `scripts/run_backtest_now.py`
+**Usage**: `/backtest [--days 60] [--symbol SPY]`
 **Description**: Executes a backtest of the momentum strategy (MACD + RSI + Volume) over the specified period. Defaults to 60 days if not specified.
 
 **Example**:
@@ -20,9 +20,9 @@ This file defines custom slash commands for the trading system. These commands p
 ---
 
 ### `/verify-trades`
-**Purpose**: Verify recent trades and execution accuracy  
-**Script**: `scripts/verify_execution.py`  
-**Usage**: `/verify-trades [--days 7]`  
+**Purpose**: Verify recent trades and execution accuracy
+**Script**: `scripts/verify_execution.py`
+**Usage**: `/verify-trades [--days 7]`
 **Description**: Verifies that trades executed correctly by comparing Alpaca API data with system state. Checks for order size errors, execution accuracy, and position tracking.
 
 **Example**:
@@ -39,9 +39,9 @@ This file defines custom slash commands for the trading system. These commands p
 ---
 
 ### `/analyze-performance`
-**Purpose**: Generate comprehensive performance analysis  
-**Script**: `scripts/daily_report.py`  
-**Usage**: `/analyze-performance [--days 30]`  
+**Purpose**: Generate comprehensive performance analysis
+**Script**: `scripts/daily_report.py`
+**Usage**: `/analyze-performance [--days 30]`
 **Description**: Analyzes trading performance over the specified period. Includes win rate, P/L analysis, position tracking, and system health metrics.
 
 **Example**:
@@ -59,9 +59,9 @@ This file defines custom slash commands for the trading system. These commands p
 ---
 
 ### `/health-check`
-**Purpose**: Run pre-market health check  
-**Script**: `scripts/pre_market_health_check.py`  
-**Usage**: `/health-check`  
+**Purpose**: Run pre-market health check
+**Script**: `scripts/pre_market_health_check.py`
+**Usage**: `/health-check`
 **Description**: Validates system readiness before trading. Checks API connectivity, market status, circuit breakers, and data sources.
 
 **Example**:
@@ -79,9 +79,9 @@ This file defines custom slash commands for the trading system. These commands p
 ---
 
 ### `/preflight`
-**Purpose**: Run comprehensive pre-flight check  
-**Script**: `scripts/preflight_check.py`  
-**Usage**: `/preflight`  
+**Purpose**: Run comprehensive pre-flight check
+**Script**: `scripts/preflight_check.py`
+**Usage**: `/preflight`
 **Description**: Performs comprehensive system readiness check including environment variables, code fixes, performance log freshness, and workflow configuration.
 
 **Example**:
@@ -140,5 +140,3 @@ result = subprocess.run(
 # Format and return output
 return format_output(result.stdout, result.stderr)
 ```
-
-

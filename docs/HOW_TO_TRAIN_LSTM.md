@@ -227,4 +227,3 @@ print('✅ Model loaded successfully')
 ---
 
 **Last Updated**: November 25, 2025
-

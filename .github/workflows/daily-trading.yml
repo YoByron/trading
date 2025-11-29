@@ -42,18 +42,18 @@ jobs:
           # Always fetch latest to get any YouTube analysis updates
           ref: main
           fetch-depth: 1
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Run tests
         run: |
           echo "🧪 Running test suite..."
@@ -88,9 +88,9 @@ jobs:
           echo "🚀 TURBO MODE: Starting Go ADK orchestrator service..."
           echo "   Model: ${ADK_MODEL}"
           echo "   Port: ${ADK_PORT}"
-          
+
           cd go/adk_trading
-          
+
           # Build first to catch compilation errors early
           echo "📦 Building ADK orchestrator..."
           go build -o /tmp/trading_orchestrator ./cmd/trading_orchestrator || {
@@ -99,7 +99,7 @@ jobs:
             echo "⚠️  Continuing with fallback to Python strategies..."
             exit 0
           }
-          
+
           # Start service in background
           echo "🚀 Starting ADK service..."
           nohup /tmp/trading_orchestrator \
@@ -296,7 +296,7 @@ jobs:
           DEEPAGENTS_ENABLED: ${{ secrets.DEEPAGENTS_ENABLED || 'true' }}
         run: |
           python scripts/autonomous_trader.py
-      
+
       - name: Check for state changes
         id: check_state_changes
         if: steps.check_execution.outputs.skip != 'true'
@@ -393,9 +393,9 @@ jobs:
         run: |
           echo "📊 Generating enhanced world-class progress dashboard..."
           python3 scripts/generate_world_class_dashboard_enhanced.py || python3 scripts/generate_world_class_dashboard.py || python3 scripts/generate_progress_dashboard.py
-          
+
           echo "📝 Updating GitHub Wiki..."
-          
+
           # Clone wiki repository (create if doesn't exist)
           WIKI_DIR="wiki_repo"
           if git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git "$WIKI_DIR" 2>/dev/null; then
@@ -410,25 +410,25 @@ jobs:
             git remote add origin https://${{ secrets.GITHUB_TOKEN }}@github.com/IgorGanapolsky/trading.wiki.git
             cd ..
           fi
-          
+
           # Copy generated dashboard and home page to wiki
           cp wiki/Progress-Dashboard.md "$WIKI_DIR/Progress-Dashboard.md"
           if [ -f wiki/Home.md ]; then
             cp wiki/Home.md "$WIKI_DIR/Home.md"
           fi
-          
+
           # Copy chart images if they exist
           if [ -d wiki/charts ]; then
             mkdir -p "$WIKI_DIR/charts"
             cp -r wiki/charts/* "$WIKI_DIR/charts/" 2>/dev/null || true
           fi
-          
+
           # Commit and push to wiki
           cd "$WIKI_DIR"
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add -A
-          
+
           if git diff --staged --quiet && [ -n "$(git log --oneline 2>/dev/null)" ]; then
             echo "📋 No changes to dashboard"
           else
@@ -437,7 +437,7 @@ jobs:
             else
               COMMIT_MSG="📊 Auto-update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
             fi
-            
+
             git commit -m "$COMMIT_MSG" || echo "No changes to commit"
 
             # Push to wiki - detect current branch or use master (wiki default)
@@ -475,4 +475,3 @@ jobs:
             data/trades_*.json
             wiki/Progress-Dashboard.md
           retention-days: 30
-

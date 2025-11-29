@@ -1,6 +1,6 @@
 # Quick Reference Guide
 
-**Last Updated**: November 20, 2025  
+**Last Updated**: November 20, 2025
 **Purpose**: Quick commands and troubleshooting for common operations
 
 ---
@@ -113,4 +113,3 @@ python3 -c "from src.utils.market_data import get_market_data_provider; p = get_
 2. Review `docs/MISTAKES_AND_LEARNINGS.md` for known issues
 3. Check evaluation results for detected patterns
 4. Review system monitoring alerts
-

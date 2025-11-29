@@ -2,8 +2,8 @@
 
 ## Current Situation
 
-**Status**: Workflow may be disabled or failing  
-**Last Successful Run**: November 11, 2025  
+**Status**: Workflow may be disabled or failing
+**Last Successful Run**: November 11, 2025
 **Missing Days**: Nov 12-15, 18-20 (7 trading days)
 
 ## Quick Fix (2 Minutes)
@@ -40,8 +40,8 @@ If you see the yellow banner:
 
 ## What Happens After Fix
 
-✅ **Tomorrow (Nov 21)**: Workflow automatically runs at 9:35 AM EST  
-✅ **Every Weekday**: Scheduled execution resumes  
+✅ **Tomorrow (Nov 21)**: Workflow automatically runs at 9:35 AM EST
+✅ **Every Weekday**: Scheduled execution resumes
 ✅ **No Code Changes**: Everything is already configured correctly
 
 ## Why This Happened
@@ -117,4 +117,3 @@ gh run list --workflow=daily-trading.yml --limit 5
 ---
 
 **Bottom Line**: The fix is simple - just click 2 buttons in GitHub UI. The workflow is configured correctly, it just needs to be re-enabled.
-

@@ -1,6 +1,6 @@
 # 🔒 Security Guidelines
 
-**Last Updated**: November 21, 2025  
+**Last Updated**: November 21, 2025
 **Purpose**: Prevent sensitive data exposure in code, logs, and output
 
 ---
@@ -263,4 +263,3 @@ def validate_config():
 ---
 
 **Remember**: When in doubt, mask it! Better safe than sorry.
-

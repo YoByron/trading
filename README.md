@@ -69,8 +69,8 @@ These documents contain critical protocols and context for understanding how the
 - ✅ Max Drawdown: **2.2%** (excellent)
 - ✅ Annualized Return: **26.16%**
 
-**Current Status**: Day 7 of 90-day R&D phase  
-**Account**: $99,978.75 (paper trading)  
+**Current Status**: Day 7 of 90-day R&D phase
+**Account**: $99,978.75 (paper trading)
 **Daily Investment**: $10/day (fixed)
 
 ---
@@ -260,6 +260,6 @@ This software is for educational purposes. Trading involves risk. Past performan
 
 ---
 
-**Built with**: Python, Alpaca API, GitHub Actions, Streamlit  
-**Maintained by**: Igor Ganapolsky  
+**Built with**: Python, Alpaca API, GitHub Actions, Streamlit
+**Maintained by**: Igor Ganapolsky
 **Documentation**: See [docs/](docs/) for complete guides

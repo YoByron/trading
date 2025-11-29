@@ -52,4 +52,3 @@ else
 fi
 
 echo "✅ Wiki setup complete!"
-

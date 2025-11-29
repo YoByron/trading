@@ -102,12 +102,12 @@ def create_trading_research_agent(
 ) -> any:
     """
     Create a deepagent for trading research with planning and sub-agent capabilities.
-    
+
     Args:
         model: Model name or instance (default: claude-sonnet-4-5-20250929)
         include_mcp_tools: Whether to include MCP trading tools
         temperature: Model temperature (default: 0.3)
-    
+
     Returns:
         DeepAgent instance configured for trading research
     """
@@ -118,20 +118,20 @@ def create_trading_research_agent(
         )
     elif isinstance(model, str):
         model = init_chat_model(model=model, temperature=temperature)
-    
+
     tools = build_trading_tools()
-    
+
     if include_mcp_tools:
         tools.extend(build_mcp_tools_for_deepagents())
-    
+
     logger.info(f"Creating trading research agent with {len(tools)} tools")
-    
+
     agent = create_deep_agent(
         model=model,
         tools=tools,
         system_prompt=TRADING_RESEARCH_SYSTEM_PROMPT,
     )
-    
+
     return agent
 
 
@@ -143,13 +143,13 @@ def create_market_analysis_agent(
 ) -> any:
     """
     Create a deepagent for market analysis with sub-agent delegation.
-    
+
     Args:
         model: Model name or instance (default: claude-sonnet-4-5-20250929)
         include_mcp_tools: Whether to include MCP trading tools
         temperature: Model temperature (default: 0.2 for more deterministic analysis)
         subagents: Optional list of sub-agent configurations
-    
+
     Returns:
         DeepAgent instance configured for market analysis
     """
@@ -160,20 +160,19 @@ def create_market_analysis_agent(
         )
     elif isinstance(model, str):
         model = init_chat_model(model=model, temperature=temperature)
-    
+
     tools = build_trading_tools()
-    
+
     if include_mcp_tools:
         tools.extend(build_mcp_tools_for_deepagents())
-    
+
     logger.info(f"Creating market analysis agent with {len(tools)} tools")
-    
+
     agent = create_deep_agent(
         model=model,
         tools=tools,
         system_prompt=MARKET_ANALYSIS_SYSTEM_PROMPT,
         subagents=subagents,
     )
-    
-    return agent
 
+    return agent

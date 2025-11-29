@@ -27,13 +27,13 @@ except ImportError:
 class ResearchAgent(BaseAgent):
     """
     Research Agent analyzes fundamentals, news, and sentiment.
-    
+
     Multi-modal approach:
     - Fundamental data (P/E, growth, margins)
     - News sentiment
     - Market context
     """
-    
+
     def __init__(self):
         super().__init__(
             name="ResearchAgent",
@@ -50,7 +50,7 @@ class ResearchAgent(BaseAgent):
                 self.retriever = None
         else:
             self.retriever = None
-    
+
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze fundamentals, news, and sentiment.
@@ -96,10 +96,10 @@ class ResearchAgent(BaseAgent):
         else:
             # Fallback to passed-in news if RAG not available
             news = data.get("news", [])
-        
+
         # Build comprehensive research prompt
         memory_context = self.get_memory_context(limit=3)
-        
+
         prompt = f"""You are a Research Agent analyzing {symbol} for trading decision.
 
 FUNDAMENTAL DATA:
@@ -136,35 +136,35 @@ RISKS: [key risks]"""
 
         # Get LLM analysis
         response = self.reason_with_llm(prompt)
-        
+
         # Parse response
         analysis = self._parse_research_response(response["reasoning"])
         analysis["full_reasoning"] = response["reasoning"]
-        
+
         # Log decision
         self.log_decision(analysis)
-        
+
         return analysis
-    
+
     def _format_news(self, news: list) -> str:
         """Format news items for prompt."""
         if not news:
             return "No recent news available."
-        
+
         formatted = ""
         for i, item in enumerate(news[:5], 1):  # Top 5 news items
             formatted += f"{i}. {item.get('title', 'N/A')} ({item.get('date', 'N/A')})\n"
             formatted += f"   Sentiment: {item.get('sentiment', 'neutral')}\n"
-        
+
         return formatted
-    
+
     def _parse_research_response(self, reasoning: str) -> Dict[str, Any]:
         """
         Parse LLM response into structured analysis.
-        
+
         Args:
             reasoning: LLM response text
-            
+
         Returns:
             Structured analysis dict
         """
@@ -177,7 +177,7 @@ RISKS: [key risks]"""
             "confidence": 0.5,
             "risks": ""
         }
-        
+
         for line in lines:
             line = line.strip()
             if line.startswith("STRENGTH:"):
@@ -203,6 +203,5 @@ RISKS: [key risks]"""
                     pass
             elif line.startswith("RISKS:"):
                 analysis["risks"] = line.split(":", 1)[1].strip()
-        
-        return analysis
 
+        return analysis

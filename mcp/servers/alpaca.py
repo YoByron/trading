@@ -53,4 +53,3 @@ def get_account(
     client: Optional[MCPClient] = None,
 ) -> Dict[str, Any]:
     return _client(client).call_tool(SERVER_ID, "get_account", {})
-

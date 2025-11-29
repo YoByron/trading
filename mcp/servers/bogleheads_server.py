@@ -33,14 +33,14 @@ async def monitor_forum_tool(arguments: Dict[str, Any]) -> List[TextContent]:
     """Monitor Bogleheads forum for new insights."""
     try:
         from claude.skills.bogleheads_learner.scripts.bogleheads_learner import BogleheadsLearner
-        
+
         learner = BogleheadsLearner()
         result = learner.monitor_bogleheads_forum(
             topics=arguments.get("topics", ["Personal Investments"]),
             keywords=arguments.get("keywords", ["market timing", "risk"]),
             max_posts=arguments.get("max_posts", 50)
         )
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(result, indent=2)
@@ -56,12 +56,12 @@ async def get_signal_tool(arguments: Dict[str, Any]) -> List[TextContent]:
     """Get Bogleheads trading signal for a symbol."""
     try:
         from src.utils.bogleheads_integration import get_bogleheads_signal_for_symbol
-        
+
         symbol = arguments.get("symbol", "SPY")
         market_context = arguments.get("market_context", {})
-        
+
         signal = get_bogleheads_signal_for_symbol(symbol, market_context)
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(signal, indent=2)
@@ -77,9 +77,9 @@ async def analyze_regime_tool(arguments: Dict[str, Any]) -> List[TextContent]:
     """Analyze market regime from Bogleheads discussions."""
     try:
         from src.utils.bogleheads_integration import get_bogleheads_regime
-        
+
         regime = get_bogleheads_regime()
-        
+
         return [TextContent(
             type="text",
             text=json.dumps(regime, indent=2)
@@ -95,9 +95,9 @@ def create_server() -> Optional[Server]:
     """Create MCP server with Bogleheads tools."""
     if not Server:
         return None
-    
+
     server = Server("bogleheads-learner")
-    
+
     @server.list_tools()
     async def list_tools() -> List[Tool]:
         return [
@@ -156,7 +156,7 @@ def create_server() -> Optional[Server]:
                 }
             )
         ]
-    
+
     @server.call_tool()
     async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         if name == "monitor_bogleheads_forum":
@@ -167,7 +167,7 @@ def create_server() -> Optional[Server]:
             return await analyze_regime_tool(arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
-    
+
     return server
 
 
@@ -177,7 +177,7 @@ async def main():
     if not server:
         logger.error("MCP server not available")
         return
-    
+
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
@@ -188,4 +188,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

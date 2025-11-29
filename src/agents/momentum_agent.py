@@ -53,4 +53,3 @@ class MomentumAgent:
             return 0.0
         # Damp extremely large values (>100) to 1.0 asymptotically
         return min(1.0, score / (score + 100.0))
-

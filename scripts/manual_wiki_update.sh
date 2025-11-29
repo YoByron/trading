@@ -50,7 +50,7 @@ git add -A
 if ! git diff --staged --quiet; then
     COMMIT_MSG="📊 Manual update progress dashboard - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
     git commit -m "$COMMIT_MSG"
-    
+
     # Try master branch first (wiki default), then main
     if git push origin master 2>/dev/null; then
         echo "✅ Wiki updated successfully (master branch)!"
@@ -70,4 +70,3 @@ rm -rf "$WIKI_DIR"
 
 echo "✅ Wiki update complete!"
 echo "📊 View dashboard: https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard"
-

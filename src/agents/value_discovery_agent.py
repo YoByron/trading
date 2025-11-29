@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class ValueDiscoveryAgent(BaseAgent):
     """
     Value Discovery Agent finds undervalued investment opportunities.
-    
+
     Key functions:
     - Scan watchlist for undervalued stocks
     - Calculate margin of safety for each
@@ -44,25 +44,25 @@ class ValueDiscoveryAgent(BaseAgent):
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Discover undervalued opportunities from watchlist.
-        
+
         Args:
             data: Contains watchlist (list of symbols) and optional market prices
-            
+
         Returns:
             List of undervalued opportunities ranked by safety and value
         """
         watchlist = data.get("watchlist", [])
         market_prices = data.get("market_prices", {})
-        
+
         if not watchlist:
             return {
                 "action": "NO_OPPORTUNITIES",
                 "message": "No symbols in watchlist",
                 "opportunities": [],
             }
-        
+
         opportunities = []
-        
+
         # Analyze each symbol in watchlist
         for symbol in watchlist:
             try:
@@ -73,14 +73,14 @@ class ValueDiscoveryAgent(BaseAgent):
                     market_price = self._get_current_price(symbol)
                     if not market_price:
                         continue
-                
+
                 # Perform safety analysis
                 safety_analysis = self.safety_analyzer.analyze_safety(
                     symbol=symbol,
                     market_price=market_price,
                     force_refresh=False,
                 )
-                
+
                 # Only include opportunities with margin of safety
                 if (
                     safety_analysis.margin_of_safety_pct is not None
@@ -100,51 +100,51 @@ class ValueDiscoveryAgent(BaseAgent):
                         "reasons": safety_analysis.reasons,
                         "warnings": safety_analysis.warnings,
                     }
-                    
+
                     # Calculate opportunity score (combination of margin and quality)
                     opportunity["opportunity_score"] = self._calculate_opportunity_score(
                         opportunity
                     )
-                    
+
                     opportunities.append(opportunity)
-                    
+
             except Exception as e:
                 logger.warning(f"Error analyzing {symbol} for value discovery: {e}")
                 continue
-        
+
         # Sort by opportunity score (highest first)
         opportunities.sort(
             key=lambda x: x.get("opportunity_score", 0), reverse=True
         )
-        
+
         # Get LLM analysis of top opportunities
         memory_context = self.get_memory_context(limit=5)
-        
+
         prompt = self._build_discovery_prompt(opportunities[:10], memory_context)
-        
+
         llm_response = self.reason_with_llm(prompt)
-        
+
         # Combine analysis
         analysis = self._combine_discovery_analysis(opportunities, llm_response)
-        
+
         # Log decision
         self.log_decision(analysis)
-        
+
         return analysis
-    
+
     def _calculate_opportunity_score(self, opportunity: Dict[str, Any]) -> float:
         """Calculate composite opportunity score (0-100)."""
-        
+
         margin_pct = opportunity.get("margin_of_safety_pct", 0.0)
         quality_score = opportunity.get("quality_score", 0.0)
         safety_rating = opportunity.get("safety_rating", "reject")
-        
+
         # Margin of safety component (0-50 points)
         margin_score = min(margin_pct * 100, 50.0)  # Cap at 50 points
-        
+
         # Quality component (0-40 points)
         quality_component = (quality_score / 100.0) * 40.0
-        
+
         # Safety rating component (0-10 points)
         rating_scores = {
             "excellent": 10,
@@ -154,16 +154,16 @@ class ValueDiscoveryAgent(BaseAgent):
             "reject": 0,
         }
         rating_component = rating_scores.get(safety_rating, 0)
-        
+
         total_score = margin_score + quality_component + rating_component
-        
+
         return round(total_score, 1)
-    
+
     def _get_current_price(self, symbol: str) -> Optional[float]:
         """Get current market price for symbol."""
         try:
             import yfinance as yf
-            
+
             ticker = yf.Ticker(symbol)
             data = ticker.history(period="1d")
             if not data.empty:
@@ -172,12 +172,12 @@ class ValueDiscoveryAgent(BaseAgent):
         except Exception as e:
             logger.warning(f"Error fetching price for {symbol}: {e}")
             return None
-    
+
     def _build_discovery_prompt(
         self, opportunities: List[Dict], memory_context: str
     ) -> str:
         """Build LLM prompt for value discovery analysis."""
-        
+
         opportunities_summary = ""
         for i, opp in enumerate(opportunities[:5], 1):  # Top 5
             opportunities_summary += f"""
@@ -189,7 +189,7 @@ class ValueDiscoveryAgent(BaseAgent):
    - Safety Rating: {opp['safety_rating'].upper()}
    - Opportunity Score: {opp['opportunity_score']:.1f}/100
 """
-        
+
         prompt = f"""You are a Value Discovery Agent identifying the best investment opportunities.
 
 TOP OPPORTUNITIES:
@@ -210,16 +210,16 @@ MARKET_ASSESSMENT: [VALUE-RICH/MIXED/OVERVALUED]
 RECOMMENDED_ACTION: [BUY_NOW/WAIT/AVOID]
 TOP_3_PICKS: [symbol1, symbol2, symbol3]
 STRATEGY: [investment strategy]"""
-        
+
         return prompt
-    
+
     def _combine_discovery_analysis(
         self, opportunities: List[Dict], llm_response: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Combine opportunities with LLM insights."""
-        
+
         llm_analysis = self._parse_llm_response(llm_response.get("reasoning", ""))
-        
+
         analysis = {
             "action": "OPPORTUNITIES_FOUND" if opportunities else "NO_OPPORTUNITIES",
             "total_opportunities": len(opportunities),
@@ -232,9 +232,9 @@ STRATEGY: [investment strategy]"""
             "full_reasoning": llm_response.get("reasoning", ""),
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         return analysis
-    
+
     def _parse_llm_response(self, reasoning: str) -> Dict[str, Any]:
         """Parse LLM response."""
         lines = reasoning.split("\n")
@@ -245,7 +245,7 @@ STRATEGY: [investment strategy]"""
             "top_3_picks": [],
             "strategy": "",
         }
-        
+
         for line in lines:
             line = line.strip()
             if line.startswith("BEST_OPPORTUNITY:"):
@@ -265,6 +265,5 @@ STRATEGY: [investment strategy]"""
                 analysis["top_3_picks"] = picks[:3]
             elif line.startswith("STRATEGY:"):
                 analysis["strategy"] = line.split(":", 1)[1].strip()
-        
-        return analysis
 
+        return analysis

@@ -28,4 +28,3 @@ def analyze_stock(symbol: str, data: Mapping[str, Any]) -> Dict[str, Any]:
     """
 
     return run_sync(analyze_stock_async(symbol, data))
-

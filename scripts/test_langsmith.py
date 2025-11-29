@@ -31,17 +31,17 @@ def my_test_function(text: str):
 def main() -> None:
     api_key = os.getenv("LANGCHAIN_API_KEY")
     project = os.getenv("LANGCHAIN_PROJECT")
-    
+
     if not api_key:
         print("❌ LANGCHAIN_API_KEY not found in environment")
         return
-        
+
     if not project:
         print("❌ LANGCHAIN_PROJECT not found in environment")
         return
 
     print(f"Testing LangSmith connection for project: {project}")
-    
+
     try:
         result = my_test_function("hello langsmith")
         print(f"✅ Function executed: {result}")

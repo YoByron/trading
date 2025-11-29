@@ -1,7 +1,7 @@
 # Gemini 3 AI Agent Integration
 
-**Date**: November 20, 2025  
-**Status**: ✅ Implemented  
+**Date**: November 20, 2025
+**Status**: ✅ Implemented
 **Based on**: [Google Gemini 3 AI Agents Guide](https://developers.googleblog.com/building-ai-agents-with-google-gemini-3-and-open-source-frameworks/)
 
 ---
@@ -136,7 +136,7 @@ if gemini3.enabled:
         market_context=market_data,
         thinking_level="high",
     )
-    
+
     # Use recommendation in decision
     if recommendation.get("decision", {}).get("action") == "BUY":
         # Execute trade
@@ -218,7 +218,7 @@ from src.agents.gemini3_integration import get_gemini3_integration
 class CoreStrategy:
     def execute_daily(self):
         # ... existing logic ...
-        
+
         # Add Gemini 3 validation
         gemini3 = get_gemini3_integration()
         if gemini3.enabled:
@@ -227,7 +227,7 @@ class CoreStrategy:
                 market_context=context,
                 thinking_level="high",
             )
-            
+
             if recommendation.get("decision", {}).get("action") != "BUY":
                 logger.warning("Gemini 3 recommends against trade")
                 return None
@@ -280,4 +280,3 @@ python3 scripts/gemini3_trading_analysis.py
 2. **Chart Generation**: Auto-generate charts for analysis
 3. **Performance Monitoring**: Track Gemini 3 decision quality
 4. **Cost Optimization**: Monitor API usage and costs
-

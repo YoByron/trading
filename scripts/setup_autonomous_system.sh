@@ -31,10 +31,10 @@ echo ""
 # Setup launchd for continuous RL training (macOS)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "🍎 Setting up macOS launchd daemon for continuous RL training..."
-    
+
     LAUNCHD_DIR="${HOME}/Library/LaunchAgents"
     mkdir -p "${LAUNCHD_DIR}"
-    
+
     # Create plist for continuous RL training (every 2 hours)
     cat > "${LAUNCHD_DIR}/com.trading.rl_training.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -43,7 +43,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 <dict>
     <key>Label</key>
     <string>com.trading.rl_training</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${VENV_PATH}</string>
@@ -53,22 +53,22 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         <string>7200</string>
         <string>--use-langsmith</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/rl_training_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/rl_training_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <true/>
-    
+
     <key>KeepAlive</key>
     <true/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -79,11 +79,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 </dict>
 </plist>
 EOF
-    
+
     # Load the daemon
     launchctl unload "${LAUNCHD_DIR}/com.trading.rl_training.plist" 2>/dev/null || true
     launchctl load "${LAUNCHD_DIR}/com.trading.rl_training.plist"
-    
+
     echo "✅ Launchd daemon installed and started"
     echo "   Will run RL training every 2 hours automatically"
     echo ""
@@ -144,4 +144,3 @@ echo "🎯 ZERO MANUAL WORK REQUIRED"
 echo ""
 echo "Everything runs automatically. Just check the dashboards!"
 echo ""
-

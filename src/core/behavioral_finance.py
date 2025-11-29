@@ -93,11 +93,11 @@ class PatternCheck:
 class BehavioralFinanceManager:
     """
     Behavioral Finance Manager implementing Jason Zweig's principles.
-    
+
     This manager prevents psychological biases from affecting trading decisions
     by tracking emotions, expectations, patterns, and decision-making history.
     """
-    
+
     def __init__(
         self,
         data_dir: str = "data",
@@ -107,7 +107,7 @@ class BehavioralFinanceManager:
     ):
         """
         Initialize the Behavioral Finance Manager.
-        
+
         Args:
             data_dir: Directory to store behavioral finance data
             max_pattern_confidence: Maximum confidence allowed for patterns without validation
@@ -116,25 +116,25 @@ class BehavioralFinanceManager:
         """
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.max_pattern_confidence = max_pattern_confidence
         self.min_pattern_sample_size = min_pattern_sample_size
         self.loss_aversion_threshold = loss_aversion_threshold
-        
+
         # Storage for tracking
         self.expectations: List[TradeExpectation] = []
         self.emotional_registry: List[EmotionalRecord] = []
         self.pattern_history: Dict[str, List[PatternCheck]] = {}
         self.decision_history: List[Dict[str, Any]] = []
-        
+
         # Load historical data
         self._load_historical_data()
-        
+
         logger.info("Behavioral Finance Manager initialized")
         logger.info(f"  - Max pattern confidence: {max_pattern_confidence}")
         logger.info(f"  - Min pattern sample size: {min_pattern_sample_size}")
         logger.info(f"  - Loss aversion threshold: {loss_aversion_threshold}%")
-    
+
     def record_trade_expectation(
         self,
         symbol: str,
@@ -144,15 +144,15 @@ class BehavioralFinanceManager:
     ) -> TradeExpectation:
         """
         Record trade expectations before execution.
-        
+
         Principle: Anticipation vs. Reality - Track what we expect vs what happens.
-        
+
         Args:
             symbol: Trading symbol
             expected_return_pct: Expected return percentage
             expected_confidence: Confidence level (0-1)
             entry_price: Entry price
-            
+
         Returns:
             TradeExpectation object
         """
@@ -163,18 +163,18 @@ class BehavioralFinanceManager:
             entry_price=entry_price,
             entry_date=datetime.now(),
         )
-        
+
         self.expectations.append(expectation)
         self._save_expectations()
-        
+
         logger.info(
             f"Recorded expectation for {symbol}: "
             f"expected_return={expected_return_pct:.2f}%, "
             f"confidence={expected_confidence:.2f}"
         )
-        
+
         return expectation
-    
+
     def update_trade_outcome(
         self,
         expectation: TradeExpectation,
@@ -183,9 +183,9 @@ class BehavioralFinanceManager:
     ) -> None:
         """
         Update trade outcome and calculate expectation gap.
-        
+
         Principle: Anticipation vs. Reality - Compare expected vs actual.
-        
+
         Args:
             expectation: TradeExpectation object
             exit_price: Exit price
@@ -195,7 +195,7 @@ class BehavioralFinanceManager:
         expectation.exit_date = datetime.now()
         expectation.actual_return_pct = actual_return_pct
         expectation.expectation_gap = actual_return_pct - expectation.expected_return_pct
-        
+
         # Record emotional response based on gap
         if expectation.expectation_gap < -0.05:  # Much worse than expected
             self.record_emotion(
@@ -215,16 +215,16 @@ class BehavioralFinanceManager:
                 decision_made=f"Expected {expectation.expected_return_pct:.2f}%, got {actual_return_pct:.2f}%",
                 outcome="surprise_gain",
             )
-        
+
         self._save_expectations()
-        
+
         logger.info(
             f"Updated outcome for {expectation.symbol}: "
             f"expected={expectation.expected_return_pct:.2f}%, "
             f"actual={actual_return_pct:.2f}%, "
             f"gap={expectation.expectation_gap:.2f}%"
         )
-    
+
     def record_emotion(
         self,
         event_type: str,
@@ -237,9 +237,9 @@ class BehavioralFinanceManager:
     ) -> None:
         """
         Record emotional response to trading events.
-        
+
         Principle: Emotional Registry - Track emotional patterns for improvement.
-        
+
         Args:
             event_type: Type of event (trade_execution, loss, gain, etc.)
             symbol: Trading symbol if applicable
@@ -259,15 +259,15 @@ class BehavioralFinanceManager:
             outcome=outcome,
             notes=notes,
         )
-        
+
         self.emotional_registry.append(record)
         self._save_emotional_registry()
-        
+
         logger.debug(
             f"Recorded emotion: {emotional_state.value} "
             f"(intensity={intensity:.2f}) for {event_type}"
         )
-    
+
     def check_pattern_recognition_bias(
         self,
         pattern_type: str,
@@ -276,23 +276,23 @@ class BehavioralFinanceManager:
     ) -> Tuple[bool, str]:
         """
         Check for pattern recognition bias.
-        
+
         Principle: Pattern Recognition Bias - Prevent overconfidence from perceived patterns.
-        
+
         Args:
             pattern_type: Type of pattern (e.g., "momentum", "reversal", "breakout")
             detected_pattern: Description of detected pattern
             confidence: Confidence level in the pattern (0-1)
-            
+
         Returns:
             Tuple of (is_valid, reason)
         """
         # Check if we have enough historical data for this pattern
         if pattern_type not in self.pattern_history:
             self.pattern_history[pattern_type] = []
-        
+
         pattern_checks = self.pattern_history[pattern_type]
-        
+
         # If confidence is too high without validation, flag as potential bias
         if confidence > self.max_pattern_confidence and len(pattern_checks) < self.min_pattern_sample_size:
             warning = (
@@ -302,12 +302,12 @@ class BehavioralFinanceManager:
             )
             logger.warning(warning)
             return False, warning
-        
+
         # Calculate historical success rate
         if len(pattern_checks) >= self.min_pattern_sample_size:
             successful_patterns = sum(1 for p in pattern_checks if p.is_valid)
             success_rate = successful_patterns / len(pattern_checks)
-            
+
             # If historical success rate is low, reduce confidence
             if success_rate < 0.5 and confidence > 0.6:
                 adjusted_confidence = confidence * success_rate
@@ -317,7 +317,7 @@ class BehavioralFinanceManager:
                 )
                 logger.warning(warning)
                 return False, warning
-        
+
         # Record the pattern check
         pattern_check = PatternCheck(
             pattern_type=pattern_type,
@@ -330,12 +330,12 @@ class BehavioralFinanceManager:
             sample_size=len(pattern_checks),
             is_valid=True,  # Will be updated later based on outcome
         )
-        
+
         self.pattern_history[pattern_type].append(pattern_check)
         self._save_pattern_history()
-        
+
         return True, "Pattern validated"
-    
+
     def update_pattern_outcome(
         self,
         pattern_type: str,
@@ -343,7 +343,7 @@ class BehavioralFinanceManager:
     ) -> None:
         """
         Update pattern outcome to improve future validation.
-        
+
         Args:
             pattern_type: Type of pattern
             was_successful: Whether the pattern prediction was successful
@@ -352,7 +352,7 @@ class BehavioralFinanceManager:
             # Update the most recent pattern check
             self.pattern_history[pattern_type][-1].is_valid = was_successful
             self._save_pattern_history()
-    
+
     def check_loss_aversion(
         self,
         recent_losses: List[float],
@@ -361,24 +361,24 @@ class BehavioralFinanceManager:
     ) -> Tuple[bool, str]:
         """
         Check for loss aversion bias.
-        
+
         Principle: Loss Aversion - Prevent becoming overly conservative after losses.
-        
+
         Args:
             recent_losses: List of recent loss percentages
             account_value: Current account value
             daily_pl: Today's profit/loss
-            
+
         Returns:
             Tuple of (should_trade, reason)
         """
         if not recent_losses:
             return True, "No recent losses"
-        
+
         # Check if we're experiencing significant losses
         avg_loss = np.mean(recent_losses)
         max_loss = max(recent_losses)
-        
+
         # If losses exceed threshold, check for loss aversion
         if max_loss < self.loss_aversion_threshold:
             # Check if we're becoming too conservative
@@ -386,7 +386,7 @@ class BehavioralFinanceManager:
                 e for e in self.emotional_registry[-10:]
                 if e.emotional_state == EmotionalState.FEAR
             ]
-            
+
             if len(recent_emotions) > 5:  # Too many fear responses
                 warning = (
                     f"Loss aversion detected: {len(recent_emotions)} fear responses "
@@ -394,7 +394,7 @@ class BehavioralFinanceManager:
                     f"Consider: losses are normal, don't become overly conservative."
                 )
                 logger.warning(warning)
-                
+
                 # Record the loss aversion event
                 self.record_emotion(
                     event_type="loss_aversion_check",
@@ -404,25 +404,25 @@ class BehavioralFinanceManager:
                     outcome="potential_overconservatism",
                     notes=f"Recent losses: {recent_losses}",
                 )
-                
+
                 # Still allow trading but with warning
                 return True, warning
-        
+
         return True, "Loss aversion check passed"
-    
+
     def check_emotional_state(self) -> Tuple[EmotionalState, float]:
         """
         Check current emotional state based on recent records.
-        
+
         Returns:
             Tuple of (dominant_emotion, intensity)
         """
         if not self.emotional_registry:
             return EmotionalState.NEUTRAL, 0.0
-        
+
         # Look at last 10 emotional records
         recent_emotions = self.emotional_registry[-10:]
-        
+
         # Count occurrences of each emotion
         emotion_counts: Dict[EmotionalState, Tuple[int, float]] = {}
         for record in recent_emotions:
@@ -431,22 +431,22 @@ class BehavioralFinanceManager:
                 emotion_counts[state] = (0, 0.0)
             count, total_intensity = emotion_counts[state]
             emotion_counts[state] = (count + 1, total_intensity + record.intensity)
-        
+
         if not emotion_counts:
             return EmotionalState.NEUTRAL, 0.0
-        
+
         # Find dominant emotion
         dominant_emotion = max(
             emotion_counts.items(),
             key=lambda x: x[1][0]  # Sort by count
         )[0]
-        
+
         # Calculate average intensity
         count, total_intensity = emotion_counts[dominant_emotion]
         avg_intensity = total_intensity / count if count > 0 else 0.0
-        
+
         return dominant_emotion, avg_intensity
-    
+
     def should_proceed_with_trade(
         self,
         symbol: str,
@@ -457,34 +457,34 @@ class BehavioralFinanceManager:
     ) -> Tuple[bool, str]:
         """
         Comprehensive check to determine if trade should proceed.
-        
+
         Combines all behavioral finance checks.
-        
+
         Args:
             symbol: Trading symbol
             expected_return: Expected return percentage
             confidence: Confidence level (0-1)
             pattern_type: Type of pattern if applicable
             recent_losses: Recent loss percentages
-            
+
         Returns:
             Tuple of (should_proceed, reason)
         """
         # Check emotional state
         emotion, intensity = self.check_emotional_state()
-        
+
         if emotion in [EmotionalState.PANIC, EmotionalState.FEAR] and intensity > 0.7:
             return False, (
                 f"High {emotion.value} intensity ({intensity:.2f}) detected. "
                 f"Pausing trading to prevent emotional decisions."
             )
-        
+
         if emotion == EmotionalState.EUPHORIA and intensity > 0.8:
             return False, (
                 f"High euphoria intensity ({intensity:.2f}) detected. "
                 f"Risk of overconfidence. Pausing trading."
             )
-        
+
         # Check pattern recognition bias
         if pattern_type:
             is_valid, reason = self.check_pattern_recognition_bias(
@@ -494,7 +494,7 @@ class BehavioralFinanceManager:
             )
             if not is_valid:
                 return False, reason
-        
+
         # Check loss aversion
         if recent_losses:
             should_trade, reason = self.check_loss_aversion(
@@ -505,13 +505,13 @@ class BehavioralFinanceManager:
             if "overconservatism" in reason.lower():
                 # Still allow but log warning
                 logger.warning(reason)
-        
+
         return True, "All behavioral checks passed"
-    
+
     def get_behavioral_summary(self) -> Dict[str, Any]:
         """
         Get summary of behavioral finance metrics.
-        
+
         Returns:
             Dictionary with behavioral finance summary
         """
@@ -523,17 +523,17 @@ class BehavioralFinanceManager:
             np.mean([e.expectation_gap for e in completed_expectations])
             if completed_expectations else 0.0
         )
-        
+
         # Get emotional state
         dominant_emotion, intensity = self.check_emotional_state()
-        
+
         # Pattern success rates
         pattern_success_rates = {}
         for pattern_type, checks in self.pattern_history.items():
             if checks:
                 successful = sum(1 for c in checks if c.is_valid)
                 pattern_success_rates[pattern_type] = successful / len(checks)
-        
+
         return {
             "dominant_emotion": dominant_emotion.value,
             "emotion_intensity": intensity,
@@ -551,13 +551,13 @@ class BehavioralFinanceManager:
                 for e in self.emotional_registry[-5:]
             ],
         }
-    
+
     def _load_historical_data(self) -> None:
         """Load historical behavioral finance data from disk."""
         expectations_file = self.data_dir / "behavioral_expectations.json"
         emotions_file = self.data_dir / "behavioral_emotions.json"
         patterns_file = self.data_dir / "behavioral_patterns.json"
-        
+
         # Load expectations
         if expectations_file.exists():
             try:
@@ -581,7 +581,7 @@ class BehavioralFinanceManager:
                 logger.info(f"Loaded {len(self.expectations)} historical expectations")
             except Exception as e:
                 logger.warning(f"Failed to load expectations: {e}")
-        
+
         # Load emotional registry
         if emotions_file.exists():
             try:
@@ -603,7 +603,7 @@ class BehavioralFinanceManager:
                 logger.info(f"Loaded {len(self.emotional_registry)} emotional records")
             except Exception as e:
                 logger.warning(f"Failed to load emotional registry: {e}")
-        
+
         # Load pattern history
         if patterns_file.exists():
             try:
@@ -625,7 +625,7 @@ class BehavioralFinanceManager:
                 logger.info(f"Loaded pattern history for {len(self.pattern_history)} pattern types")
             except Exception as e:
                 logger.warning(f"Failed to load pattern history: {e}")
-    
+
     def _save_expectations(self) -> None:
         """Save expectations to disk."""
         expectations_file = self.data_dir / "behavioral_expectations.json"
@@ -649,7 +649,7 @@ class BehavioralFinanceManager:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save expectations: {e}")
-    
+
     def _save_emotional_registry(self) -> None:
         """Save emotional registry to disk."""
         emotions_file = self.data_dir / "behavioral_emotions.json"
@@ -671,7 +671,7 @@ class BehavioralFinanceManager:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save emotional registry: {e}")
-    
+
     def _save_pattern_history(self) -> None:
         """Save pattern history to disk."""
         patterns_file = self.data_dir / "behavioral_patterns.json"
@@ -694,4 +694,3 @@ class BehavioralFinanceManager:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save pattern history: {e}")
-

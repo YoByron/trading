@@ -65,4 +65,3 @@ class SentimentVectorStore:
             n_results=n_results,
             where=where,
         )
-

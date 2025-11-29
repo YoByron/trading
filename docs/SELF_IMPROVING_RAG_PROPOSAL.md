@@ -1,7 +1,7 @@
 # 🚀 Self-Improving Agentic RAG System - Implementation Proposal
 
-**Date**: November 20, 2025  
-**Status**: PROPOSED - Addresses 10 documented mistakes  
+**Date**: November 20, 2025
+**Status**: PROPOSED - Addresses 10 documented mistakes
 **Source**: https://levelup.gitconnected.com/building-a-self-improving-agentic-rag-system-f55003af44c4
 
 ---
@@ -55,70 +55,70 @@
 ## 🔧 How It Addresses Our Mistakes
 
 ### Mistake #1: $1,600 Order Instead of $8
-**Current Fix**: Manual order validation  
-**Self-Improving Fix**: 
+**Current Fix**: Manual order validation
+**Self-Improving Fix**:
 - Diagnostic agent detects "order size > 10x expected"
 - SOP architect creates rule: "Reject orders > 10x daily allocation"
 - System automatically validates before execution
 
 ### Mistake #2: System State Stale for 5 Days
-**Current Fix**: Manual staleness checks  
+**Current Fix**: Manual staleness checks
 **Self-Improving Fix**:
 - Evaluation agent detects "system state age > 24 hours"
 - Diagnostic agent identifies "no staleness detection"
 - SOP architect adds "check freshness before trading" rule
 
 ### Mistake #3: Network/DNS Errors
-**Current Fix**: Retry logic added manually  
+**Current Fix**: Retry logic added manually
 **Self-Improving Fix**:
 - Evaluation agent detects "API failures"
 - Diagnostic agent identifies "no retry logic"
 - SOP architect adds "exponential backoff retry" procedure
 
 ### Mistake #4: 5-Day Automation Gap
-**Current Fix**: Manual dependency fixes  
+**Current Fix**: Manual dependency fixes
 **Self-Improving Fix**:
 - Evaluation agent detects "no trades for 5 days"
 - Diagnostic agent identifies "protobuf incompatibility"
 - SOP architect adds "pre-flight dependency check" rule
 
 ### Mistake #5: Anti-Lying Violation
-**Current Fix**: Manual calendar verification  
+**Current Fix**: Manual calendar verification
 **Self-Improving Fix**:
 - Evaluation agent detects "claimed date is Saturday"
 - Diagnostic agent identifies "no calendar verification"
 - SOP architect adds "verify market hours before claims" rule
 
 ### Mistake #6: GitHub Actions Timeout
-**Current Fix**: Manual timeout increases  
+**Current Fix**: Manual timeout increases
 **Self-Improving Fix**:
 - Evaluation agent detects "workflow timeout"
 - Diagnostic agent identifies "Alpha Vantage exponential backoff"
 - SOP architect adds "fail-fast timeout" procedure
 
 ### Mistake #7: No Position Management
-**Current Fix**: Manual code fixes  
+**Current Fix**: Manual code fixes
 **Self-Improving Fix**:
 - Evaluation agent detects "positions never closed"
 - Diagnostic agent identifies "manage_existing_positions() not called"
 - SOP architect adds "check positions before new trades" rule
 
 ### Mistake #8: Wrong Backtest
-**Current Fix**: Manual backtest rerun  
+**Current Fix**: Manual backtest rerun
 **Self-Improving Fix**:
 - Evaluation agent detects "backtest doesn't match production"
 - Diagnostic agent identifies "no backtest validation"
 - SOP architect adds "verify backtest matches code" rule
 
 ### Mistake #9: No Automated Testing
-**Current Fix**: Manual health checks  
+**Current Fix**: Manual health checks
 **Self-Improving Fix**:
 - Evaluation agent detects "bugs found in production"
 - Diagnostic agent identifies "no integration tests"
 - SOP architect creates test suite automatically
 
 ### Mistake #10: No Graceful Degradation
-**Current Fix**: Manual fallback logic  
+**Current Fix**: Manual fallback logic
 **Self-Improving Fix**:
 - Evaluation agent detects "system fails hard"
 - Diagnostic agent identifies "no fallback paths"
@@ -134,7 +134,7 @@
 ```python
 class TradingSystemEvaluator:
     """Multi-dimensional evaluation of trading system."""
-    
+
     def evaluate_execution(self, trade_result):
         """Evaluate trade execution accuracy."""
         return {
@@ -143,7 +143,7 @@ class TradingSystemEvaluator:
             "reliability": self._check_system_health(trade_result),
             "errors": self._detect_errors(trade_result)
         }
-    
+
     def evaluate_data_quality(self, data_result):
         """Evaluate data source reliability."""
         return {
@@ -159,11 +159,11 @@ class TradingSystemEvaluator:
 ```python
 class DiagnosticAgent:
     """Identifies weaknesses and root causes."""
-    
+
     def diagnose(self, evaluation_results):
         """Analyze evaluation results to find patterns."""
         weaknesses = []
-        
+
         # Pattern detection
         if self._detect_pattern("order_size > 10x", evaluation_results):
             weaknesses.append({
@@ -172,7 +172,7 @@ class DiagnosticAgent:
                 "frequency": self._count_occurrences("order_size > 10x"),
                 "impact": "HIGH"
             })
-        
+
         return weaknesses
 ```
 
@@ -182,11 +182,11 @@ class DiagnosticAgent:
 ```python
 class SOPArchitectAgent:
     """Updates procedures based on diagnostics."""
-    
+
     def update_procedures(self, weaknesses):
         """Create/update SOPs to prevent weaknesses."""
         new_rules = []
-        
+
         for weakness in weaknesses:
             if weakness["issue"] == "Order size validation missing":
                 new_rules.append({
@@ -199,7 +199,7 @@ class SOPArchitectAgent:
                     """,
                     "enforcement": "PRE_TRADE_VALIDATION"
                 })
-        
+
         return new_rules
 ```
 
@@ -306,4 +306,3 @@ for rule in new_rules:
 - **Our Mistakes**: `docs/MISTAKES_AND_LEARNINGS.md`
 - **Current RAG**: `src/rag/` (already exists)
 - **Error Monitoring**: `src/utils/error_monitoring.py` (Sentry integration)
-

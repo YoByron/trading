@@ -18,7 +18,7 @@ Agents:
 __version__ = "2.0.0"
 __all__ = [
     "MetaAgent",
-    "ResearchAgent", 
+    "ResearchAgent",
     "SignalAgent",
     "RiskAgent",
     "ExecutionAgent",
@@ -26,4 +26,3 @@ __all__ = [
     "ApprovalAgent",
     "NotificationAgent",
 ]
-

@@ -54,13 +54,12 @@ To adjust MACD threshold in production, set in GitHub Secrets:
 CRYPTO_MACD_THRESHOLD=-50  # Default (recommended)
 # OR
 CRYPTO_MACD_THRESHOLD=0    # Original strict behavior
-# OR  
+# OR
 CRYPTO_MACD_THRESHOLD=-100 # Very permissive
 ```
 
 ---
 
-**Test Date**: November 24, 2025  
-**Status**: ✅ **ALL FIXES VERIFIED**  
+**Test Date**: November 24, 2025
+**Status**: ✅ **ALL FIXES VERIFIED**
 **Next**: Ready for next weekend execution
-

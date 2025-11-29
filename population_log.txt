@@ -8,7 +8,7 @@
 2025-11-26 16:33:38,695 - src.utils.data_collector - INFO - Collecting data for 4 symbols with 252 days lookback
 2025-11-26 16:33:38,695 - src.utils.data_collector - INFO - Fetching data for SPY...
 2025-11-26 16:33:38,703 - src.utils.market_data - WARNING - SPY: Paid sources unavailable/unreliable. Trying yfinance (unreliable free source).
-2025-11-26 16:34:09,091 - yfinance - ERROR - 
+2025-11-26 16:34:09,091 - yfinance - ERROR -
 1 Failed download:
 2025-11-26 16:34:09,091 - yfinance - ERROR - ['SPY']: Timeout('Failed to perform, curl: (28) Connection timed out after 30002 milliseconds. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.')
 2025-11-26 16:34:09,555 - src.utils.market_data - WARNING - SPY: Alpha Vantage fallback unavailable (ALPHA_VANTAGE_API_KEY not configured).

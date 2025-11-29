@@ -1,7 +1,7 @@
 # Behavioral Finance Integration - Jason Zweig Principles
 
-**Based on**: "Your Money and Your Brain" by Jason Zweig  
-**Implementation Date**: November 24, 2025  
+**Based on**: "Your Money and Your Brain" by Jason Zweig
+**Implementation Date**: November 24, 2025
 **Purpose**: Prevent psychological biases from affecting trading decisions
 
 ---
@@ -349,4 +349,3 @@ bf_manager = BehavioralFinanceManager(
 ---
 
 **Last Updated**: November 24, 2025
-

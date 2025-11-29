@@ -1,6 +1,6 @@
 # Long-Running Agent Harness Analysis
 
-**Date**: November 26, 2025  
+**Date**: November 26, 2025
 **Reference**: [Anthropic's Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 
 ## Executive Summary
@@ -123,4 +123,3 @@ Every subsequent agent session should:
 - **Incremental Work**: Prevents agents from trying to do too much at once
 - **Clean State**: Each session ends with mergeable code
 - **Context Bridging**: Progress file + git logs bridge context windows effectively
-

@@ -66,7 +66,6 @@ Check if trades now execute when MACD is slightly negative but improving.
 
 ---
 
-**Status**: ✅ **IMPLEMENTED** - MACD threshold now configurable via `CRYPTO_MACD_THRESHOLD`  
-**Default**: `-50.0` (less conservative than original `0`)  
+**Status**: ✅ **IMPLEMENTED** - MACD threshold now configurable via `CRYPTO_MACD_THRESHOLD`
+**Default**: `-50.0` (less conservative than original `0`)
 **Date**: November 24, 2025
-

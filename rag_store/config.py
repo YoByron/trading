@@ -26,4 +26,3 @@ def ensure_directories() -> None:
     """Ensure required directories exist."""
     RAG_ROOT.mkdir(parents=True, exist_ok=True)
     VECTOR_PATH.mkdir(parents=True, exist_ok=True)
-

@@ -186,4 +186,3 @@ All automation via GitHub Actions workflows.
 
 **Last Updated**: November 26, 2025
 **For detailed protocols and agent coordination, see `.claude/CLAUDE.md`**
-

@@ -46,4 +46,3 @@ class AlpacaExecutor:
             tier="T1_CORE",
         )
         return order
-

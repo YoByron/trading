@@ -42,4 +42,3 @@ jobs:
 
       - name: Run targeted pytest suite
         run: python -m pytest tests/test_adk_client.py tests/test_adk_integration.py
-

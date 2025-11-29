@@ -245,7 +245,6 @@ Before going live tomorrow:
 
 ---
 
-**Deployed:** November 6, 2025  
-**Status:** Ready for production  
+**Deployed:** November 6, 2025
+**Status:** Ready for production
 **First Trade:** November 7, 2025, 9:35 AM ET
-

@@ -40,14 +40,14 @@ class BrokerHealthMetrics:
     last_error: Optional[str] = None
     account_status: Optional[str] = None
     buying_power: Optional[float] = None
-    
+
     @property
     def success_rate(self) -> float:
         """Calculate success rate percentage."""
         if self.total_checks == 0:
             return 0.0
         return (self.successful_checks / self.total_checks) * 100.0
-    
+
     @property
     def is_healthy(self) -> bool:
         """Determine if broker is healthy."""
@@ -61,10 +61,10 @@ class BrokerHealthMetrics:
 class BrokerHealthMonitor:
     """
     Monitors broker health and connectivity.
-    
+
     Provides automated health checks, failure tracking, and alerting.
     """
-    
+
     def __init__(self, broker_name: str = "alpaca"):
         self.broker_name = broker_name.lower()
         self.metrics = BrokerHealthMetrics(broker_name=self.broker_name, status=BrokerStatus.UNKNOWN)
@@ -72,39 +72,39 @@ class BrokerHealthMonitor:
             os.getenv("MARKET_DATA_CACHE_DIR", "data/cache"),
             f"{self.broker_name}_health.jsonl"
         )
-    
+
     def check_health(self) -> BrokerHealthMetrics:
         """
         Perform comprehensive health check.
-        
+
         Returns:
             BrokerHealthMetrics with current status
         """
         import time
         start_time = time.time()
-        
+
         try:
             # Import here to avoid circular dependencies
             from src.core.alpaca_trader import AlpacaTrader
-            
+
             # Attempt connection
             trader = AlpacaTrader(paper=True)
             account_info = trader.get_account_info()
-            
+
             # Update metrics
             elapsed_ms = (time.time() - start_time) * 1000
             self.metrics.last_successful_connection = datetime.now()
             self.metrics.total_checks += 1
             self.metrics.successful_checks += 1
             self.metrics.avg_response_time_ms = (
-                (self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1) + elapsed_ms) 
+                (self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1) + elapsed_ms)
                 / self.metrics.total_checks
             )
             self.metrics.consecutive_failures = 0
             self.metrics.account_status = account_info.get("status", "UNKNOWN")
             self.metrics.buying_power = account_info.get("buying_power", 0.0)
             self.metrics.last_error = None
-            
+
             # Determine status
             if account_info.get("status") == "ACTIVE" and not account_info.get("trading_blocked", False):
                 self.metrics.status = BrokerStatus.HEALTHY
@@ -114,16 +114,16 @@ class BrokerHealthMonitor:
             else:
                 self.metrics.status = BrokerStatus.DEGRADED
                 self.metrics.last_error = f"Account status: {account_info.get('status')}"
-            
+
             # Log health check
             self._log_health_check(success=True, response_time_ms=elapsed_ms)
-            
+
             logger.info(
                 f"✅ Broker health check passed: {self.broker_name} "
                 f"(status: {self.metrics.status.value}, "
                 f"response: {elapsed_ms:.2f}ms)"
             )
-            
+
         except Exception as e:
             # Update failure metrics
             elapsed_ms = (time.time() - start_time) * 1000
@@ -133,23 +133,23 @@ class BrokerHealthMonitor:
             self.metrics.consecutive_failures += 1
             self.metrics.last_error = str(e)
             self.metrics.status = BrokerStatus.FAILING
-            
+
             # Log health check failure
             self._log_health_check(success=False, response_time_ms=elapsed_ms, error=str(e))
-            
+
             logger.error(
                 f"❌ Broker health check failed: {self.broker_name} "
                 f"(consecutive failures: {self.metrics.consecutive_failures}, "
                 f"error: {str(e)})"
             )
-        
+
         return self.metrics
-    
+
     def _log_health_check(self, success: bool, response_time_ms: float, error: Optional[str] = None):
         """Log health check result to file."""
         import json
         from pathlib import Path
-        
+
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "broker": self.broker_name,
@@ -161,13 +161,13 @@ class BrokerHealthMonitor:
             "account_status": self.metrics.account_status,
             "buying_power": self.metrics.buying_power,
         }
-        
+
         log_file = Path(self._health_log_file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(log_file, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
-    
+
     def get_health_summary(self) -> Dict[str, Any]:
         """Get formatted health summary."""
         return {
@@ -181,39 +181,39 @@ class BrokerHealthMonitor:
             "consecutive_failures": self.metrics.consecutive_failures,
             "avg_response_time_ms": round(self.metrics.avg_response_time_ms, 2),
             "last_successful_connection": (
-                self.metrics.last_successful_connection.isoformat() 
+                self.metrics.last_successful_connection.isoformat()
                 if self.metrics.last_successful_connection else None
             ),
             "last_failed_connection": (
-                self.metrics.last_failed_connection.isoformat() 
+                self.metrics.last_failed_connection.isoformat()
                 if self.metrics.last_failed_connection else None
             ),
             "last_error": self.metrics.last_error,
             "account_status": self.metrics.account_status,
             "buying_power": self.metrics.buying_power,
         }
-    
+
     def should_alert(self) -> bool:
         """Determine if alert should be sent."""
         # Alert if consecutive failures >= 3
         if self.metrics.consecutive_failures >= 3:
             return True
-        
+
         # Alert if status is FAILING
         if self.metrics.status == BrokerStatus.FAILING:
             return True
-        
+
         # Alert if success rate drops below 50% in recent checks
         if self.metrics.total_checks >= 10 and self.metrics.success_rate < 50.0:
             return True
-        
+
         return False
-    
+
     def get_alert_message(self) -> Optional[str]:
         """Generate alert message if needed."""
         if not self.should_alert():
             return None
-        
+
         if self.metrics.consecutive_failures >= 3:
             return (
                 f"🚨 CRITICAL: Broker {self.broker_name} has failed "
@@ -221,13 +221,12 @@ class BrokerHealthMonitor:
                 f"Last error: {self.metrics.last_error}\n"
                 f"Trading execution may be blocked."
             )
-        
+
         if self.metrics.status == BrokerStatus.FAILING:
             return (
                 f"⚠️ WARNING: Broker {self.broker_name} is in FAILING status.\n"
                 f"Success rate: {self.metrics.success_rate:.1f}%\n"
                 f"Last error: {self.metrics.last_error}"
             )
-        
-        return None
 
+        return None

@@ -14,7 +14,7 @@ jobs:
   notify-failure:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-    
+
     steps:
       - name: Create GitHub Issue on Failure
         uses: actions/github-script@v7
@@ -24,10 +24,10 @@ jobs:
             const run = context.payload.workflow_run;
             const runUrl = run.html_url;
             const runNumber = run.run_number;
-            const runDate = new Date(run.created_at).toLocaleString('en-US', { 
-              timeZone: 'America/New_York' 
+            const runDate = new Date(run.created_at).toLocaleString('en-US', {
+              timeZone: 'America/New_York'
             });
-            
+
             const issueTitle = '🚨 Daily Trading Execution Failed - Run #' + runNumber;
             const workflowRunLink = '[' + '#' + runNumber + '](' + runUrl + ')';
             const issueBody = [
@@ -49,7 +49,7 @@ jobs:
               '---',
               '*This issue was automatically created by the trading system.*'
             ].join('\n');
-            
+
             // Check if issue already exists for this run
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -57,11 +57,11 @@ jobs:
               state: 'open',
               labels: 'trading-failure'
             });
-            
-            const existingIssue = issues.data.find(issue => 
+
+            const existingIssue = issues.data.find(issue =>
               issue.title.includes(`Run #${runNumber}`)
             );
-            
+
             if (!existingIssue) {
               const newIssue = await github.rest.issues.create({
                 owner: context.repo.owner,
@@ -70,9 +70,9 @@ jobs:
                 body: issueBody + '\n\n🤖 **Autonomous Resolution**: This issue will be automatically diagnosed and resolved by AI agents within 1 hour.',
                 labels: ['trading-failure', 'automated', 'auto-resolve']
               });
-              
+
               core.info(`Created issue #${newIssue.data.number} for failed run #${runNumber}`);
-              
+
               // Trigger autonomous resolution workflow immediately
               try {
                 await github.rest.actions.createWorkflowDispatch({
@@ -93,4 +93,3 @@ jobs:
             } else {
               core.info(`Issue already exists for run #${runNumber}`);
             }
-

@@ -28,30 +28,30 @@ def test_polygon_api():
     print("\n" + "=" * 70)
     print("🧪 Testing Polygon.io API Integration")
     print("=" * 70)
-    
+
     api_key = os.getenv("POLYGON_API_KEY")
     if not api_key:
         print("❌ POLYGON_API_KEY not set in environment")
         return False
-    
+
     # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
     masked_value = mask_api_key(api_key)
     print(f"✅ Polygon.io API key found: {masked_value}")
-    
+
     try:
         calculator = DCFValuationCalculator()
-        
+
         if not calculator.polygon_api_key:
             print("❌ Polygon.io API key not initialized in calculator")
             return False
-        
+
         print("✅ DCF calculator initialized with Polygon.io")
-        
+
         # Test with a well-known stock (AAPL)
         print("\n📊 Testing DCF calculation for AAPL...")
         result = calculator.get_intrinsic_value("AAPL", force_refresh=True)
-        
+
         if result:
             print(f"✅ DCF calculation successful!")
             print(f"   Intrinsic Value: ${result.intrinsic_value:.2f}")
@@ -62,7 +62,7 @@ def test_polygon_api():
         else:
             print("⚠️  DCF calculation returned None (may need Alpha Vantage fallback)")
             return False
-            
+
     except Exception as e:
         print(f"❌ Polygon.io API test failed: {e}")
         import traceback
@@ -75,30 +75,30 @@ def test_finnhub_api():
     print("\n" + "=" * 70)
     print("🧪 Testing Finnhub API Integration")
     print("=" * 70)
-    
+
     api_key = os.getenv("FINNHUB_API_KEY")
     if not api_key:
         print("❌ FINNHUB_API_KEY not set in environment")
         return False
-    
+
     # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
     masked_value = mask_api_key(api_key)
     print(f"✅ Finnhub API key found: {masked_value}")
-    
+
     try:
         client = FinnhubClient()
-        
+
         if not client.api_key:
             print("❌ Finnhub API key not initialized in client")
             return False
-        
+
         print("✅ Finnhub client initialized")
-        
+
         # Test economic calendar
         print("\n📅 Testing economic calendar...")
         events = client.get_economic_calendar()
-        
+
         if events is not None:
             print(f"✅ Economic calendar fetched: {len(events)} events")
             if events:
@@ -107,7 +107,7 @@ def test_finnhub_api():
         else:
             print("⚠️  Economic calendar returned None")
             return False
-            
+
     except Exception as e:
         print(f"❌ Finnhub API test failed: {e}")
         import traceback
@@ -120,25 +120,25 @@ def test_finnhub_major_events():
     print("\n" + "=" * 70)
     print("🧪 Testing Finnhub Major Event Detection")
     print("=" * 70)
-    
+
     try:
         client = FinnhubClient()
-        
+
         if not client.api_key:
             print("⚠️  Finnhub API key not available, skipping test")
             return True  # Not a failure if not configured
-        
+
         has_major_event = client.has_major_event_today()
-        
+
         if has_major_event:
             print("⚠️  Major economic event detected today")
             print("   Trading should be avoided or done with caution")
         else:
             print("✅ No major economic events today")
             print("   Trading can proceed normally")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"⚠️  Major event detection test failed: {e}")
         return True  # Not critical
@@ -149,10 +149,10 @@ def test_dcf_fallback():
     print("\n" + "=" * 70)
     print("🧪 Testing DCF Calculator Fallback")
     print("=" * 70)
-    
+
     try:
         calculator = DCFValuationCalculator()
-        
+
         # Check which API is being used
         if calculator.polygon_api_key:
             print("✅ Using Polygon.io API (preferred)")
@@ -161,11 +161,11 @@ def test_dcf_fallback():
         else:
             print("❌ No API keys available")
             return False
-        
+
         # Test with a different stock
         print("\n📊 Testing DCF calculation for MSFT...")
         result = calculator.get_intrinsic_value("MSFT", force_refresh=False)  # Use cache if available
-        
+
         if result:
             print(f"✅ DCF calculation successful!")
             print(f"   Intrinsic Value: ${result.intrinsic_value:.2f}")
@@ -173,7 +173,7 @@ def test_dcf_fallback():
         else:
             print("⚠️  DCF calculation returned None")
             return False
-            
+
     except Exception as e:
         print(f"❌ DCF fallback test failed: {e}")
         import traceback
@@ -187,28 +187,28 @@ def main():
     print("🚀 Phase 1 Integration Test Suite")
     print("   Testing Polygon.io + Finnhub APIs")
     print("=" * 70)
-    
+
     results = {
         "Polygon.io API": test_polygon_api(),
         "Finnhub API": test_finnhub_api(),
         "Major Event Detection": test_finnhub_major_events(),
         "DCF Fallback": test_dcf_fallback(),
     }
-    
+
     print("\n" + "=" * 70)
     print("📊 Test Results Summary")
     print("=" * 70)
-    
+
     passed = sum(1 for v in results.values() if v)
     total = len(results)
-    
+
     for test_name, result in results.items():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"{status} - {test_name}")
-    
+
     print("=" * 70)
     print(f"\nResults: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\n✅ All tests passed! Phase 1 integration is ready for production.")
         return 0
@@ -222,4 +222,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

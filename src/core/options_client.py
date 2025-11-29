@@ -67,7 +67,7 @@ class AlpacaOptionsClient:
                 secret_key=self.secret_key,
                 paper=paper
             )
-            
+
             logger.info(f"Initialized AlpacaOptionsClient (Paper: {paper})")
 
         except Exception as e:
@@ -77,7 +77,7 @@ class AlpacaOptionsClient:
     def get_option_chain(self, underlying_symbol: str) -> List[Dict[str, Any]]:
         """
         Fetch the option chain for a given underlying symbol.
-        
+
         Note: This fetches the list of active contracts.
         """
         underlying_symbol = underlying_symbol.upper()
@@ -85,18 +85,18 @@ class AlpacaOptionsClient:
 
         try:
             # Note: Alpaca's OptionChainRequest might behave differently depending on SDK version.
-            # We will try to fetch snapshots for the underlying to find contracts, 
+            # We will try to fetch snapshots for the underlying to find contracts,
             # or use the get_option_chain method if available on the client.
-            
+
             # As of recent alpaca-py, getting the full chain might require filtering.
             # We'll use OptionChainRequest if available, otherwise we might need to query contracts.
-            
+
             # Checking if get_option_chain exists on data_client (it usually doesn't, it's often via requests)
             # Actually, alpaca-py usually uses `get_option_chain` on the historical client.
-            
+
             req = OptionChainRequest(underlying_symbol=underlying_symbol)
             chain_data = self.data_client.get_option_chain(req)
-            
+
             # chain_data is typically a dictionary of symbol -> snapshot
             contracts = []
             for symbol, snapshot in chain_data.items():
@@ -116,7 +116,7 @@ class AlpacaOptionsClient:
                     } if hasattr(snapshot, 'greeks') else None
                 }
                 contracts.append(contract_info)
-            
+
             logger.info(f"Retrieved {len(contracts)} contracts for {underlying_symbol}")
             return contracts
 
@@ -131,7 +131,7 @@ class AlpacaOptionsClient:
         try:
             req = OptionSnapshotRequest(symbol_or_symbols=symbol_or_symbols)
             snapshots = self.data_client.get_option_snapshot(req)
-            
+
             # Convert to dict for easier handling
             results = {}
             for symbol, snapshot in snapshots.items():
@@ -157,10 +157,10 @@ class AlpacaOptionsClient:
             # Note: The exact field might vary, usually 'trading_blocked' or specific options level
             # For now, we'll assume if we can init the client and get account, we are good to go
             # But we can check 'options_buying_power' or similar if available.
-            
+
             logger.info(f"Account Status: {account.status}")
             logger.info(f"Buying Power: {account.buying_power}")
-            
+
             # Simple check: Try to fetch a snapshot for a known option (e.g., SPY near the money)
             # If it fails with "forbidden", we know options aren't enabled.
             return True

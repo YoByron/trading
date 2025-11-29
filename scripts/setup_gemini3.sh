@@ -1,9 +1,9 @@
 #!/bin/bash
 # Setup Gemini 3 Integration
 
-echo "=" 
+echo "="
 echo "🔧 GEMINI 3 SETUP"
-echo "=" 
+echo "="
 
 # Check for API key
 if [ -z "$GOOGLE_API_KEY" ]; then
@@ -36,4 +36,3 @@ echo "  - Automatic trade validation"
 echo "  - Multi-agent analysis"
 echo ""
 echo "To test: python3 scripts/gemini3_trading_analysis.py"
-

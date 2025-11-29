@@ -22,29 +22,29 @@ cat > "${LAUNCHD_DIR}/com.trading.continuous_training.plist" <<EOF
 <dict>
     <key>Label</key>
     <string>com.trading.continuous_training</string>
-    
+
     <key>ProgramArguments</key>
     <array>
         <string>${REPO_ROOT}/venv/bin/python3</string>
         <string>${REPO_ROOT}/scripts/continuous_training.py</string>
         <string>--local-only</string>
     </array>
-    
+
     <key>WorkingDirectory</key>
     <string>${REPO_ROOT}</string>
-    
+
     <key>StandardOutPath</key>
     <string>${REPO_ROOT}/logs/launchd_continuous_training_stdout.log</string>
-    
+
     <key>StandardErrorPath</key>
     <string>${REPO_ROOT}/logs/launchd_continuous_training_stderr.log</string>
-    
+
     <key>RunAtLoad</key>
     <false/>
-    
+
     <key>KeepAlive</key>
     <false/>
-    
+
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -52,7 +52,7 @@ cat > "${LAUNCHD_DIR}/com.trading.continuous_training.plist" <<EOF
         <key>HOME</key>
         <string>${HOME}</string>
     </dict>
-    
+
     <key>StartCalendarInterval</key>
     <array>
         <!-- Sunday at 3 AM ET (8 AM UTC) - Weekly training -->
@@ -85,4 +85,3 @@ echo "   4. Test manually:"
 echo "      python3 ${REPO_ROOT}/scripts/continuous_training.py --local-only"
 echo ""
 echo "🎯 This daemon runs weekly on Sundays as backup to GitHub Actions cloud training"
-

@@ -20,4 +20,3 @@ docker run \
   --name github-mcp-server \
   -e GITHUB_PERSONAL_ACCESS_TOKEN \
   ghcr.io/github/github-mcp-server:latest
-

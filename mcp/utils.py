@@ -58,4 +58,3 @@ def ensure_env_var(getter: Callable[[], Any], description: str) -> Any:
         raise RuntimeError(
             f"{description} is unavailable. Original error: {exc}"
         ) from exc
-

@@ -65,4 +65,3 @@ Add alert acknowledgment/suppression:
 ---
 
 **Bottom Line**: Alerts are working as designed. They'll keep showing until conditions change or you take action.
-

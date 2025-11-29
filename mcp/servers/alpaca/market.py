@@ -54,4 +54,3 @@ def get_portfolio_positions(paper: bool = True) -> List[Dict[str, Any]]:
     trader = _get_trader(paper)
     positions = trader.get_all_positions()
     return positions
-

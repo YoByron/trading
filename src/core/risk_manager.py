@@ -86,7 +86,7 @@ class RiskManager:
         self.metrics = RiskMetrics()
         self.peak_account_value: float = 0.0
         self.alerts: list = []
-        
+
         # Initialize behavioral finance manager if enabled
         self.behavioral_manager = None
         if use_behavioral_finance:
@@ -107,9 +107,9 @@ class RiskManager:
         print(f"  - Behavioral Finance: {'Enabled' if self.use_behavioral_finance else 'Disabled'}")
 
     def can_trade(
-        self, 
-        account_value: float, 
-        daily_pl: float, 
+        self,
+        account_value: float,
+        daily_pl: float,
         account_info: Optional[Dict[str, any]] = None
     ) -> bool:
         """
@@ -131,7 +131,7 @@ class RiskManager:
             is_pdt = account_info.get("pattern_day_trader", False)
             equity = account_info.get("equity", account_value)
             daytrade_count = account_info.get("daytrade_count", 0)
-            
+
             # Critical PDT protection: Block trading if daytrade_count >= 3 and equity < $25k
             if daytrade_count >= 3 and equity < 25000.0:
                 self._send_alert(
@@ -146,7 +146,7 @@ class RiskManager:
                 )
                 self.metrics.circuit_breaker_triggered = True
                 return False
-            
+
             # Standard PDT check (if flagged as PDT and equity insufficient)
             if is_pdt and equity < 25000.0:
                 self._send_alert(
@@ -298,7 +298,7 @@ class RiskManager:
             is_pdt = account_info.get("pattern_day_trader", False)
             equity = account_info.get("equity", account_value)
             daytrade_count = account_info.get("daytrade_count", 0)
-            
+
             # Critical PDT protection: Block trade if daytrade_count >= 3 and equity < $25k
             if daytrade_count >= 3 and equity < 25000.0:
                 validation_result["valid"] = False
@@ -310,14 +310,14 @@ class RiskManager:
                     "PDT restriction: Account must maintain $25,000 equity for unlimited day trading"
                 )
                 return validation_result
-            
+
             # Warn if approaching PDT limit
             if daytrade_count >= 2 and equity < 25000.0:
                 validation_result["warnings"].append(
                     f"⚠️  Warning: Daytrade count ({daytrade_count}/3). "
                     f"Next trade will trigger PDT restriction if equity < $25,000"
                 )
-            
+
             # Standard PDT check (if flagged as PDT and equity insufficient)
             if is_pdt and equity < 25000.0:
                 validation_result["valid"] = False
@@ -352,7 +352,7 @@ class RiskManager:
             if self.metrics.losing_trades > 0:
                 # Estimate recent losses from metrics
                 recent_losses = [-self.max_daily_loss_pct / 100]  # Placeholder
-            
+
             # Check if trade should proceed based on behavioral finance
             should_proceed, behavioral_reason = self.behavioral_manager.should_proceed_with_trade(
                 symbol=symbol,
@@ -361,7 +361,7 @@ class RiskManager:
                 pattern_type=pattern_type,
                 recent_losses=recent_losses if recent_losses else None,
             )
-            
+
             if not should_proceed:
                 validation_result["valid"] = False
                 validation_result["reason"] = f"Behavioral finance check failed: {behavioral_reason}"
@@ -369,7 +369,7 @@ class RiskManager:
                 return validation_result
             elif behavioral_reason and "warning" in behavioral_reason.lower():
                 validation_result["warnings"].append(f"Behavioral: {behavioral_reason}")
-        
+
         # Validate sentiment score
         if not -1.0 <= sentiment_score <= 1.0:
             validation_result["valid"] = False
@@ -408,7 +408,7 @@ class RiskManager:
                 )
 
         return validation_result
-    
+
     def record_trade_expectation(
         self,
         symbol: str,
@@ -418,13 +418,13 @@ class RiskManager:
     ):
         """
         Record trade expectation for behavioral finance tracking.
-        
+
         Args:
             symbol: Trading symbol
             expected_return_pct: Expected return percentage
             expected_confidence: Confidence level (0-1)
             entry_price: Entry price
-            
+
         Returns:
             TradeExpectation object if behavioral finance is enabled, None otherwise
         """
@@ -436,7 +436,7 @@ class RiskManager:
                 entry_price=entry_price,
             )
         return None
-    
+
     def update_trade_outcome(
         self,
         expectation,
@@ -445,7 +445,7 @@ class RiskManager:
     ):
         """
         Update trade outcome for behavioral finance tracking.
-        
+
         Args:
             expectation: TradeExpectation object from record_trade_expectation
             exit_price: Exit price
@@ -457,11 +457,11 @@ class RiskManager:
                 exit_price=exit_price,
                 actual_return_pct=actual_return_pct,
             )
-    
+
     def get_behavioral_summary(self) -> Dict[str, any]:
         """
         Get behavioral finance summary.
-        
+
         Returns:
             Dictionary with behavioral finance metrics
         """

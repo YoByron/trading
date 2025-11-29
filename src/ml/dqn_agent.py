@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class DQNAgent:
     """
     Deep Q-Network Agent for trading.
-    
+
     Features:
     - Deep neural network for Q-value approximation
     - Experience replay for stable learning
@@ -40,7 +40,7 @@ class DQNAgent:
     - Epsilon-greedy exploration
     - Double DQN to reduce overestimation
     """
-    
+
     def __init__(
         self,
         state_dim: int,
@@ -62,7 +62,7 @@ class DQNAgent:
     ):
         """
         Initialize DQN Agent.
-        
+
         Args:
             state_dim: Dimension of state space
             action_dim: Number of actions
@@ -96,7 +96,7 @@ class DQNAgent:
         self.device = torch.device(device)
         self.model_dir = Path(model_dir)
         self.model_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Build networks
         if use_lstm:
             self.q_network = LSTMDQNNetwork(
@@ -125,14 +125,14 @@ class DQNAgent:
                 input_dim=state_dim,
                 num_actions=action_dim
             ).to(self.device)
-        
+
         # Copy weights to target network
         self.target_network.load_state_dict(self.q_network.state_dict())
         self.target_network.eval()
-        
+
         # Optimizer
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
-        
+
         # Replay buffer
         if use_prioritized_replay:
             self.replay_buffer = PrioritizedReplayBuffer(
@@ -140,16 +140,16 @@ class DQNAgent:
             )
         else:
             self.replay_buffer = deque(maxlen=replay_buffer_size)
-        
+
         # Training stats
         self.step_count = 0
         self.update_count = 0
         self.losses = deque(maxlen=1000)
-        
+
         logger.info(f"DQN Agent initialized: state_dim={state_dim}, actions={action_dim}")
         logger.info(f"  Dueling: {use_dueling}, LSTM: {use_lstm}, Double: {use_double}")
         logger.info(f"  Prioritized Replay: {use_prioritized_replay}")
-    
+
     def select_action(
         self,
         state: np.ndarray,
@@ -158,12 +158,12 @@ class DQNAgent:
     ) -> int:
         """
         Select action using epsilon-greedy policy.
-        
+
         Args:
             state: Current state
             agent_recommendation: Optional recommendation from other agents
             training: Whether in training mode
-            
+
         Returns:
             Action index (0=HOLD, 1=BUY, 2=SELL)
         """
@@ -173,16 +173,16 @@ class DQNAgent:
                 action_map = {"HOLD": 0, "BUY": 1, "SELL": 2}
                 return action_map.get(agent_recommendation, random.randint(0, self.action_dim - 1))
             return random.randint(0, self.action_dim - 1)
-        
+
         # Exploit: use Q-network
         self.q_network.eval()
         with torch.no_grad():
             state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
             q_values = self.q_network(state_tensor)
             action = q_values.argmax().item()
-        
+
         return action
-    
+
     def store_transition(
         self,
         state: np.ndarray,
@@ -206,11 +206,11 @@ class DQNAgent:
             self.replay_buffer.append((
                 state, action, reward, next_state, done
             ))
-    
+
     def train_step(self) -> Optional[float]:
         """
         Perform one training step.
-        
+
         Returns:
             Loss value if training occurred, None otherwise
         """
@@ -221,7 +221,7 @@ class DQNAgent:
         else:
             if len(self.replay_buffer) < self.batch_size:
                 return None
-        
+
         # Sample batch
         if self.use_prioritized_replay:
             batch, indices, weights = self.replay_buffer.sample(self.batch_size)
@@ -239,10 +239,10 @@ class DQNAgent:
             next_states = torch.FloatTensor(np.array([e[3] for e in batch])).to(self.device)
             dones = torch.BoolTensor(np.array([e[4] for e in batch])).to(self.device)
             weights = None
-        
+
         # Current Q-values
         current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
-        
+
         # Next Q-values
         with torch.no_grad():
             if self.use_double:
@@ -252,48 +252,48 @@ class DQNAgent:
             else:
                 # Vanilla DQN: use target network for both
                 next_q_values = self.target_network(next_states).max(1, keepdim=True)[0]
-            
+
             # Target Q-values
             target_q_values = rewards.unsqueeze(1) + (self.gamma * next_q_values * (~dones).unsqueeze(1))
-        
+
         # Compute loss
         td_errors = target_q_values - current_q_values
         loss = (td_errors ** 2)
-        
+
         if weights is not None:
             loss = loss * weights.unsqueeze(1)
-        
+
         loss = loss.mean()
-        
+
         # Update network
         self.optimizer.zero_grad()
         loss.backward()
         # Gradient clipping
         torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 10.0)
         self.optimizer.step()
-        
+
         # Update priorities if using prioritized replay
         if self.use_prioritized_replay:
             td_errors_np = td_errors.detach().cpu().numpy().flatten()
             self.replay_buffer.update_priorities(indices, td_errors_np)
-        
+
         # Update target network
         self.update_count += 1
         if self.update_count % self.target_update_freq == 0:
             self.target_network.load_state_dict(self.q_network.state_dict())
             logger.debug(f"Target network updated at step {self.update_count}")
-        
+
         # Decay epsilon
         self.epsilon = max(
             self.epsilon_end,
             self.epsilon * self.epsilon_decay
         )
-        
+
         self.losses.append(loss.item())
         self.step_count += 1
-        
+
         return loss.item()
-    
+
     def calculate_reward(
         self,
         trade_result: Dict[str, Any],
@@ -301,16 +301,16 @@ class DQNAgent:
     ) -> float:
         """
         Calculate reward from trade result.
-        
+
         Args:
             trade_result: Trade result dictionary
             market_state: Optional market state
-            
+
         Returns:
             Reward value
         """
         pl_pct = trade_result.get("pl_pct", 0)
-        
+
         # Risk-adjusted reward
         if market_state:
             volatility = market_state.get("volatility", 0.2)
@@ -318,9 +318,9 @@ class DQNAgent:
             reward = np.clip(sharpe_adjustment / 5.0, -1.0, 1.0)
         else:
             reward = np.clip(pl_pct / 0.05, -1.0, 1.0)
-        
+
         return reward
-    
+
     def get_q_values(self, state: np.ndarray) -> np.ndarray:
         """Get Q-values for a state."""
         self.q_network.eval()
@@ -328,7 +328,7 @@ class DQNAgent:
             state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
             q_values = self.q_network(state_tensor)
         return q_values.cpu().numpy().flatten()
-    
+
     def save(self, filepath: str):
         """Save model and state."""
         save_dict = {
@@ -341,13 +341,13 @@ class DQNAgent:
         }
         torch.save(save_dict, filepath)
         logger.info(f"Model saved to {filepath}")
-    
+
     def load(self, filepath: str):
         """Load model and state."""
         if not Path(filepath).exists():
             logger.warning(f"Model file not found: {filepath}")
             return
-        
+
         checkpoint = torch.load(filepath, map_location=self.device)
         self.q_network.load_state_dict(checkpoint['q_network_state_dict'])
         self.target_network.load_state_dict(checkpoint['target_network_state_dict'])
@@ -356,7 +356,7 @@ class DQNAgent:
         self.step_count = checkpoint.get('step_count', 0)
         self.update_count = checkpoint.get('update_count', 0)
         logger.info(f"Model loaded from {filepath}")
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get training statistics."""
         avg_loss = np.mean(self.losses) if self.losses else 0.0
@@ -368,4 +368,3 @@ class DQNAgent:
             'replay_buffer_size': len(self.replay_buffer),
             'target_updates': self.update_count // self.target_update_freq
         }
-

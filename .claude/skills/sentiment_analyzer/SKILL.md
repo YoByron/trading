@@ -300,4 +300,3 @@ python scripts/sentiment_analyzer.py detect_sentiment_anomalies --symbols AAPL -
 - Watch for sentiment anomalies that may indicate manipulation
 - Combine sentiment with technical analysis for best results
 - Cache results to avoid rate limiting
-

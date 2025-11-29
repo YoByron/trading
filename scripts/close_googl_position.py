@@ -42,7 +42,7 @@ print(f'   Take-profit threshold: 10.0%')
 if unrealized_pct >= 10.0:
     print(f'\n✅ TAKE-PROFIT TRIGGERED! ({unrealized_pct:.2f}% >= 10.0%)')
     print(f'🚀 Closing GOOGL position...')
-    
+
     try:
         order = client.submit_order(
             order_data=MarketOrderRequest(
@@ -62,4 +62,3 @@ if unrealized_pct >= 10.0:
         sys.exit(1)
 else:
     print(f'⚠️  Take-profit not triggered yet ({unrealized_pct:.2f}% < 10.0%)')
-

@@ -90,10 +90,10 @@ Add position management to `autonomous_trader.py`:
 2. **Call position management**:
    ```python
    # In autonomous_trader.py main()
-   
+
    # STEP 1: Manage existing positions FIRST
    manage_existing_positions()
-   
+
    # STEP 2: Then execute new BUY orders
    execute_tier1(daily_investment)
    execute_tier2(daily_investment)
@@ -130,7 +130,6 @@ Add position management to `autonomous_trader.py`:
 
 ---
 
-**Status**: 🚨 **CRITICAL BUG** - Position management not implemented  
-**Impact**: Stop-loss rules not enforced, win rate can't be calculated  
+**Status**: 🚨 **CRITICAL BUG** - Position management not implemented
+**Impact**: Stop-loss rules not enforced, win rate can't be calculated
 **Priority**: **HIGH** - Fix immediately to prevent further losses
-

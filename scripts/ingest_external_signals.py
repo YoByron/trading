@@ -252,7 +252,7 @@ def main() -> None:
     youtube_contrib = collect_youtube_signals(args.youtube_docs)
     for ticker, items in youtube_contrib.items():
         contributions[ticker].extend(items)
-    
+
     # Add Bogleheads signals
     try:
         bogleheads_contrib = collect_bogleheads_signals(args.tickers)
@@ -277,4 +277,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

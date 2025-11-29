@@ -16,19 +16,19 @@ jobs:
   validate-dependencies:
     name: Check Dependency Conflicts
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      
+
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
-      
+
       - name: Validate dependencies
         run: |
           echo "🔍 Checking for dependency conflicts..."
@@ -42,9 +42,8 @@ jobs:
             exit 1
           }
           echo "✅ No dependency conflicts detected"
-      
+
       - name: Check Python version compatibility
         run: |
           python --version
           echo "✅ Python 3.11 (CI standard)"
-

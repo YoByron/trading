@@ -1,6 +1,6 @@
 # Holiday Crypto Trading
 
-**Status**: ✅ **IMPLEMENTED**  
+**Status**: ✅ **IMPLEMENTED**
 **Date**: November 26, 2025
 
 ## Overview
@@ -33,7 +33,7 @@ Weekday + Market Open = Stock Trading Mode
 def is_market_holiday():
     """
     Check if today is a market holiday (market closed on a weekday).
-    
+
     Uses Alpaca's clock API to determine if market is closed.
     If market is closed AND it's a weekday, it's a holiday.
     """
@@ -122,4 +122,3 @@ Potential improvements:
 - [ ] Track holiday crypto performance separately
 - [ ] Adjust crypto allocation on holidays (currently same as weekends)
 - [ ] Add holiday-specific crypto strategies
-

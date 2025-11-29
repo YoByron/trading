@@ -97,4 +97,3 @@ class TradingAgent(ABC):
             else "N/A",
         )
         return result
-

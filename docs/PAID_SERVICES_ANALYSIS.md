@@ -38,7 +38,7 @@
 - Use screener for Tier 2 candidate discovery
 - Integrate ETF holdings analysis for Tier 1
 
-**Expected Impact**: 
+**Expected Impact**:
 - **DCF Quality**: +20-30% (better financial data = better valuations)
 - **Win Rate**: +3-7% (better fundamental analysis)
 - **Signal Quality**: +10-15% (earnings estimates = forward-looking)
@@ -106,7 +106,7 @@
 - Update sentiment weights (add Twitter as 4th source)
 - Add real-time sentiment monitoring for Tier 2 candidates
 
-**Expected Impact**: 
+**Expected Impact**:
 - **Signal Speed**: +20-30% (real-time reactions vs delayed)
 - **Sentiment Quality**: +10-15% (additional data source)
 - **Win Rate**: +2-5% (better sentiment timing)
@@ -138,7 +138,7 @@
 - Add options flow analysis to ADK orchestrator
 - Integrate news API into sentiment aggregator
 
-**Expected Impact**: 
+**Expected Impact**:
 - **Reliability**: +10-15% (fewer data failures)
 - **Signal Quality**: +5-10% (options flow early signals)
 - **Win Rate**: +2-5% (better data = better decisions)
@@ -379,7 +379,7 @@ import polygon
 class MarketDataProvider:
     def __init__(self):
         self.polygon_client = polygon.RESTClient(os.getenv("POLYGON_API_KEY"))
-    
+
     def get_daily_bars(self, symbol: str, lookback_days: int):
         # Polygon API call (more reliable than yfinance)
         bars = self.polygon_client.get_aggs(
@@ -406,7 +406,7 @@ def check_economic_events():
         _from=today,
         to=today
     )
-    
+
     # Skip if Fed meeting or major GDP release
     major_events = ["FOMC", "GDP", "Employment"]
     if any(event in str(events) for event in major_events):
@@ -569,18 +569,18 @@ import requests
 
 class DCFValuationCalculator:
     POLYGON_BASE_URL = "https://api.polygon.io/v2"
-    
+
     def __init__(self, polygon_api_key: Optional[str] = None):
         self.polygon_api_key = polygon_api_key or os.getenv("POLYGON_API_KEY")
         # ... existing code ...
-    
+
     def _fetch_company_overview(self, ticker: str) -> Dict:
         # Polygon API call (better than Alpha Vantage)
         url = f"{self.POLYGON_BASE_URL}/reference/tickers/{ticker}"
         params = {"apiKey": self.polygon_api_key}
         response = requests.get(url, params=params)
         return response.json()
-    
+
     def _fetch_financials(self, ticker: str) -> Dict:
         # Get financial statements (more reliable than Alpha Vantage)
         url = f"{self.POLYGON_BASE_URL}/reference/financials"
@@ -591,7 +591,7 @@ class DCFValuationCalculator:
         }
         response = requests.get(url, params=params)
         return response.json()
-    
+
     def _fetch_cash_flows(self, ticker: str) -> Dict:
         # Get cash flow statements for DCF calculation
         url = f"{self.POLYGON_BASE_URL}/reference/financials"
@@ -618,7 +618,7 @@ class NewsSentimentAggregator:
     STOCKTWITS_WEIGHT = 0.25      # Reduced from 0.30
     YAHOO_WEIGHT = 0.25           # Reduced from 0.30
     GROK_TWITTER_WEIGHT = 0.20    # NEW: Twitter sentiment
-    
+
     def __init__(self, grok_api_key: Optional[str] = None):
         # ... existing initialization ...
         self.grok_api_key = grok_api_key or os.getenv("GROK_API_KEY")
@@ -629,12 +629,12 @@ class NewsSentimentAggregator:
                 logger.info("Grok API client initialized for Twitter sentiment")
             except Exception as e:
                 logger.warning(f"Failed to initialize Grok: {e}")
-    
+
     def get_grok_twitter_sentiment(self, ticker: str) -> Dict:
         """Get real-time Twitter/X sentiment via Grok API."""
         if not self.grok_client:
             return {"score": 0, "tweets": 0, "confidence": "low", "error": "no_api_key"}
-        
+
         try:
             # Query Grok for Twitter sentiment about ticker
             query = f"Analyze Twitter/X sentiment for ${ticker} stock. " \
@@ -643,7 +643,7 @@ class NewsSentimentAggregator:
                    f"2. Number of tweets analyzed, " \
                    f"3. Key bullish/bearish themes, " \
                    f"4. Confidence level (high/medium/low)"
-            
+
             response = self.grok_client.chat.completions.create(
                 model="grok-beta",
                 messages=[
@@ -652,10 +652,10 @@ class NewsSentimentAggregator:
                 ],
                 temperature=0.3
             )
-            
+
             # Parse Grok response (JSON format)
             result = json.loads(response.choices[0].message.content)
-            
+
             return {
                 "score": result.get("sentiment_score", 0),
                 "tweets": result.get("tweet_count", 0),
@@ -666,7 +666,7 @@ class NewsSentimentAggregator:
         except Exception as e:
             logger.warning(f"Grok Twitter sentiment failed for {ticker}: {e}")
             return {"score": 0, "tweets": 0, "confidence": "low", "error": str(e)}
-    
+
     def aggregate_sentiment(self, ticker: str) -> TickerSentiment:
         """Updated aggregation with Twitter sentiment."""
         # Fetch from all sources (including Twitter)
@@ -674,7 +674,7 @@ class NewsSentimentAggregator:
         stocktwits_data = self.get_stocktwits_sentiment(ticker)
         alpha_vantage_data = self.get_alpha_vantage_sentiment(ticker)
         grok_twitter_data = self.get_grok_twitter_sentiment(ticker)  # NEW
-        
+
         # Calculate weighted average (updated weights)
         sources = {
             "yahoo": yahoo_data,
@@ -682,14 +682,14 @@ class NewsSentimentAggregator:
             "alphavantage": alpha_vantage_data,
             "grok_twitter": grok_twitter_data  # NEW
         }
-        
+
         combined_score = (
             yahoo_data.get("score", 0) * self.YAHOO_WEIGHT +
             stocktwits_data.get("score", 0) * self.STOCKTWITS_WEIGHT +
             alpha_vantage_data.get("score", 0) * self.ALPHA_VANTAGE_WEIGHT +
             grok_twitter_data.get("score", 0) * self.GROK_TWITTER_WEIGHT  # NEW
         )
-        
+
         # ... rest of aggregation logic ...
 ```
 
@@ -701,7 +701,7 @@ class GrowthStrategy:
     def __init__(self):
         # ... existing code ...
         self.morningstar_client = MorningstarClient(api_key=os.getenv("MORNINGSTAR_API_KEY"))
-    
+
     def get_morningstar_rating(self, symbol: str) -> Optional[Dict]:
         """Get Morningstar star rating and fair value."""
         try:
@@ -715,10 +715,10 @@ class GrowthStrategy:
         except Exception as e:
             logger.warning(f"Morningstar rating unavailable for {symbol}: {e}")
             return None
-    
+
     def rank_candidates(self, candidates: List[CandidateStock]) -> List[CandidateStock]:
         # ... existing ranking logic ...
-        
+
         # Add Morningstar rating modifier
         for candidate in candidates:
             ms_rating = self.get_morningstar_rating(candidate.symbol)
@@ -726,19 +726,18 @@ class GrowthStrategy:
                 # 5 stars = +10 points, 1 star = -10 points
                 star_modifier = (ms_rating["stars"] - 3) * 5
                 candidate.morningstar_modifier = star_modifier
-                
+
                 # Validate fair value vs our DCF
                 if ms_rating["fair_value"]:
                     our_dcf = candidate.dcf_result.intrinsic_value
                     ms_fair_value = ms_rating["fair_value"]
                     if abs(our_dcf - ms_fair_value) / ms_fair_value > 0.3:
                         logger.warning(f"{candidate.symbol}: DCF mismatch (ours: {our_dcf:.2f}, MS: {ms_fair_value:.2f})")
-        
+
         # ... rest of ranking ...
 ```
 
 ---
 
-*Last Updated: 2025-11-12*  
+*Last Updated: 2025-11-12*
 *Based on current system analysis and market research*
-

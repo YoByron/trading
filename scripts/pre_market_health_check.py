@@ -52,10 +52,10 @@ def check_alpaca_api() -> bool:
         # Use broker health monitor for comprehensive check
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from src.core.broker_health import BrokerHealthMonitor
-        
+
         monitor = BrokerHealthMonitor(broker_name="alpaca")
         metrics = monitor.check_health()
-        
+
         if metrics.is_healthy:
             print(f"✅ Alpaca API: Connected")
             if metrics.buying_power:
@@ -126,7 +126,7 @@ def check_market_status() -> bool:
         from src.core.alpaca_trader import AlpacaTrader
         trader = AlpacaTrader(paper=True)
         clock = trader.trading_client.get_clock()
-        
+
         if clock.is_open:
             print(f"✅ Market: OPEN")
             return True
@@ -177,10 +177,10 @@ def check_circuit_breakers() -> bool:
     """Check circuit breaker status."""
     try:
         from src.safety.circuit_breakers import CircuitBreaker
-        
+
         breaker = CircuitBreaker()
         status = breaker.get_status()
-        
+
         if status["is_tripped"]:
             print(f"🚨 Circuit Breaker: TRIPPED")
             print(f"   Reason: {status.get('trip_reason', 'Unknown')}")
@@ -202,12 +202,12 @@ def check_data_access() -> bool:
     try:
         data_dir = Path("data")
         data_dir.mkdir(exist_ok=True)
-        
+
         # Test write
         test_file = data_dir / ".health_check"
         test_file.write_text(datetime.now().isoformat())
         test_file.unlink()
-        
+
         print(f"✅ Data Directory: Writable")
         return True
     except Exception as e:
@@ -225,7 +225,7 @@ def check_dependencies() -> bool:
             __import__(pkg)
         except ImportError:
             missing.append(pkg)
-    
+
     if missing:
         print(f"❌ Dependencies: MISSING - {', '.join(missing)}")
         return False
@@ -237,30 +237,30 @@ def check_dependencies() -> bool:
 def check_strategy_execution() -> bool:
     """
     Check if strategies have executed trades when they should have.
-    
+
     Flags strategies with 0 trades that are marked as 'active' and should have executed.
     """
     try:
         data_dir = Path("data")
         system_state_file = data_dir / "system_state.json"
-        
+
         if not system_state_file.exists():
             print("⚠️  Strategy Execution: Cannot check - system_state.json not found")
             return True  # Don't fail health check for missing file
-        
+
         import json
         with open(system_state_file, 'r') as f:
             system_state = json.load(f)
-        
+
         strategies = system_state.get('strategies', {})
         issues = []
-        
+
         # Check each strategy
         for tier_id, strategy in strategies.items():
             status = strategy.get('status', 'unknown')
             trades_executed = strategy.get('trades_executed', 0)
             name = strategy.get('name', tier_id)
-            
+
             # Only check 'active' strategies
             if status == 'active':
                 # Crypto strategy (tier5) should have executed on weekends
@@ -269,14 +269,14 @@ def check_strategy_execution() -> bool:
                     # (weekends happen weekly, so should have at least 1-2 trades)
                     if trades_executed == 0:
                         issues.append(f"{name}: 0 trades executed (should execute weekends)")
-                
+
                 # Stock strategies (tier1, tier2) should have executed on weekdays
                 elif tier_id in ['tier1', 'tier2']:
                     # Check if it's been active for more than 3 days without trades
                     # (should execute daily on weekdays)
                     if trades_executed == 0:
                         issues.append(f"{name}: 0 trades executed (should execute daily)")
-        
+
         if issues:
             print(f"⚠️  Strategy Execution: ISSUES DETECTED")
             for issue in issues:
@@ -286,7 +286,7 @@ def check_strategy_execution() -> bool:
         else:
             print(f"✅ Strategy Execution: All active strategies have executed trades")
             return True
-            
+
     except Exception as e:
         print(f"⚠️  Strategy Execution: CHECK FAILED - {e}")
         return True  # Don't fail health check for check errors
@@ -360,4 +360,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

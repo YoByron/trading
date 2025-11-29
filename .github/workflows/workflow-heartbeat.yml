@@ -33,4 +33,3 @@ jobs:
           echo "  - All other scheduled workflows"
           echo ""
           echo "✅ Repository is active - workflows will continue running"
-

@@ -84,4 +84,3 @@ def run(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
     sys.exit(run())
-

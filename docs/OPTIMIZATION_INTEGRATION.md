@@ -166,6 +166,5 @@ rl_learner.update_policy(
 
 ---
 
-**Last Updated**: November 24, 2025  
+**Last Updated**: November 24, 2025
 **Status**: ✅ Integrated and Ready for Testing
-

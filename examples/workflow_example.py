@@ -13,7 +13,7 @@ from src.orchestration.workflow_orchestrator import WorkflowOrchestrator
 async def example_email_workflow():
     """Example: Email monitoring and processing workflow."""
     orchestrator = WorkflowOrchestrator()
-    
+
     workflow = {
         "name": "Client Report Processing",
         "description": "Monitor email, process CSV, update dashboard",
@@ -69,7 +69,7 @@ async def example_email_workflow():
             }
         ]
     }
-    
+
     result = await orchestrator.execute_workflow(workflow)
     print(f"Workflow completed: {result['status']}")
     return result
@@ -78,7 +78,7 @@ async def example_email_workflow():
 async def example_report_workflow():
     """Example: Automated report generation with approval."""
     orchestrator = WorkflowOrchestrator()
-    
+
     workflow = {
         "name": "Daily Trading Report",
         "description": "Generate and distribute daily trading report",
@@ -131,7 +131,7 @@ async def example_report_workflow():
             },
         ]
     }
-    
+
     result = await orchestrator.execute_workflow(workflow)
     print(f"Report workflow completed: {result['status']}")
     return result
@@ -140,7 +140,7 @@ async def example_report_workflow():
 async def example_trading_workflow():
     """Example: Multi-step trading workflow with approval gates."""
     orchestrator = WorkflowOrchestrator()
-    
+
     workflow = {
         "name": "High-Value Trade Execution",
         "description": "Execute high-value trade with approval gates",
@@ -207,7 +207,7 @@ async def example_trading_workflow():
             }
         ]
     }
-    
+
     result = await orchestrator.execute_workflow(workflow)
     print(f"Trading workflow completed: {result['status']}")
     return result
@@ -216,11 +216,10 @@ async def example_trading_workflow():
 if __name__ == "__main__":
     print("Workflow Automation Examples")
     print("=" * 50)
-    
+
     # Run examples
     asyncio.run(example_email_workflow())
     print()
     asyncio.run(example_report_workflow())
     print()
     asyncio.run(example_trading_workflow())
-

@@ -26,4 +26,3 @@ echo "   Reason: $(${VENV_PYTHON} ${CHECK_SCRIPT} daily-trading.yml 2>&1 | grep 
 
 # Execute the trader
 exec "${VENV_PYTHON}" "${TRADER_SCRIPT}" "$@"
-

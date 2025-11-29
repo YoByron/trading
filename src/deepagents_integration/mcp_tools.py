@@ -25,12 +25,12 @@ def call_mcp_tool(
 ) -> str:
     """
     Call a tool from an MCP server.
-    
+
     Args:
         server: MCP server identifier (e.g., 'alpaca-trading', 'trade-agent')
         tool_name: Name of the tool to call on the server
         payload: Dictionary of parameters for the tool
-    
+
     Returns:
         JSON string with the tool's response
     """
@@ -47,16 +47,16 @@ def call_mcp_tool(
 def get_mcp_servers() -> str:
     """
     List all available MCP servers and their tools.
-    
+
     Returns:
         JSON string listing all registered MCP servers and their available tools
     """
     try:
         from mcp.registry import load_registry
-        
+
         registry = load_registry()
         servers_info = []
-        
+
         for server_config in registry.servers:
             servers_info.append(
                 {
@@ -65,7 +65,7 @@ def get_mcp_servers() -> str:
                     "tools": list(server_config.get("tools", {}).keys()),
                 }
             )
-        
+
         return json.dumps({"servers": servers_info}, indent=2)
     except Exception as e:
         logger.exception("Error listing MCP servers")
@@ -75,7 +75,7 @@ def get_mcp_servers() -> str:
 def build_mcp_tools_for_deepagents() -> List:
     """
     Build MCP-related tools for deepagents.
-    
+
     Returns:
         List of MCP tool objects compatible with deepagents
     """
@@ -83,4 +83,3 @@ def build_mcp_tools_for_deepagents() -> List:
         call_mcp_tool,
         get_mcp_servers,
     ]
-

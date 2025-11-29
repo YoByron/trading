@@ -13,7 +13,7 @@ LangSmith automatically creates example traces when you first set up a project. 
 ### Option 1: Delete in LangSmith UI (Recommended)
 
 1. Go to your LangSmith project: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b
-2. Find the "Sample Agent Trace" 
+2. Find the "Sample Agent Trace"
 3. Click on it
 4. Use the delete/archive option (usually in the top right)
 5. Confirm deletion
@@ -72,4 +72,3 @@ After running trading/RL training, check LangSmith:
 ## Project Name Note
 
 The project may show as **"default"** in the LangSmith UI, but the project ID (`04fa554e-f155-4039-bb7f-e866f082103b`) is correct. This is a LangSmith quirk - the project name can't be changed after creation, but all your traces are going to the right place.
-

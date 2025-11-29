@@ -28,10 +28,10 @@ print("=" * 70)
 
 try:
     from src.utils.langsmith_wrapper import get_traced_openai_client
-    
+
     # Create a traced client
     client = get_traced_openai_client()
-    
+
     # Make a real trading-related LLM call
     print("📊 Making trading analysis call...")
     response = client.chat.completions.create(
@@ -42,7 +42,7 @@ try:
         ],
         max_tokens=200
     )
-    
+
     result = response.choices[0].message.content
     print(f"✅ Real trading trace created!")
     print(f"   Analysis: {result[:150]}...")
@@ -51,10 +51,9 @@ try:
     print(f"\n   ✅ This is a REAL trace from your trading system!")
     print(f"   ✅ It will appear in the 'default' project (that's correct)")
     print(f"   ✅ Look for ChatOpenAI trace with SPY analysis")
-    
+
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
-

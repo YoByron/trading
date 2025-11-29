@@ -102,4 +102,3 @@ def market_outlook() -> Dict[str, Any]:
     """
 
     return run_sync(market_outlook_async())
-

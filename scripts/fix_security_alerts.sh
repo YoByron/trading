@@ -90,17 +90,17 @@ echo ""
 if [ "$DEPENDABOT_COUNT" -gt 0 ] || [ "$CODEQL_COUNT" -gt 0 ]; then
     echo "💡 Recommendations:"
     echo ""
-    
+
     if [ "$DEPENDABOT_COUNT" -gt 0 ]; then
         echo "  1. Review Dependabot PRs: https://github.com/$REPO/pulls?q=is:pr+is:open+label:dependencies"
         echo "  2. Merge security updates automatically (if safe)"
     fi
-    
+
     if [ "$CODEQL_COUNT" -gt 0 ]; then
         echo "  3. Review CodeQL alerts: https://github.com/$REPO/security/code-scanning"
         echo "  4. Fix or dismiss false positives"
     fi
-    
+
     echo ""
     echo "🔗 View all alerts: https://github.com/$REPO/security"
 else
@@ -108,4 +108,3 @@ else
 fi
 
 echo ""
-

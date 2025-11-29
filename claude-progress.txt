@@ -24,4 +24,3 @@ When starting a new session, agents should:
 3. Read git logs (`git log --oneline -20`) to see recent commits
 4. Choose ONE feature to work on
 5. Update this file at the end of the session
-

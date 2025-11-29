@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 class WorkflowAgent(BaseAgent):
     """
     Workflow automation agent that orchestrates multi-step processes.
-    
+
     Capabilities:
     - Email monitoring and processing
     - Automated report generation
     - File processing (CSV, JSON, etc.)
     - Multi-step workflow execution
     """
-    
+
     def __init__(self):
         super().__init__(
             name="WorkflowAgent",
@@ -39,19 +39,19 @@ class WorkflowAgent(BaseAgent):
         self.workflow_queue: List[Dict[str, Any]] = []
         self.data_dir = Path("data/workflows")
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        
+
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process a workflow request.
-        
+
         Args:
             data: Workflow request with type and parameters
-            
+
         Returns:
             Workflow execution result
         """
         workflow_type = data.get("type", "unknown")
-        
+
         try:
             if workflow_type == "email_monitor":
                 return self._process_email_workflow(data)
@@ -72,11 +72,11 @@ class WorkflowAgent(BaseAgent):
                 "success": False,
                 "error": str(e)
             }
-    
+
     def _process_email_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process email monitoring workflow.
-        
+
         Example workflow:
         1. Monitor email for client CSV reports
         2. Download attachment
@@ -85,10 +85,10 @@ class WorkflowAgent(BaseAgent):
         5. Send confirmation
         """
         logger.info("Processing email workflow")
-        
+
         # This would integrate with Gmail MCP when available
         # For now, simulate the workflow
-        
+
         workflow_steps = [
             {"step": "monitor_email", "status": "pending"},
             {"step": "download_attachment", "status": "pending"},
@@ -97,24 +97,24 @@ class WorkflowAgent(BaseAgent):
             {"step": "update_dashboard", "status": "pending"},
             {"step": "send_confirmation", "status": "pending"},
         ]
-        
+
         # Simulate workflow execution
         for step in workflow_steps:
             step["status"] = "completed"
             step["timestamp"] = datetime.now().isoformat()
             logger.info(f"Completed step: {step['step']}")
-        
+
         return {
             "success": True,
             "workflow_type": "email_monitor",
             "steps": workflow_steps,
             "result": "Email workflow completed successfully"
         }
-    
+
     def _process_report_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process automated report generation workflow.
-        
+
         Example workflow:
         1. Gather trading data
         2. Generate report
@@ -123,10 +123,10 @@ class WorkflowAgent(BaseAgent):
         5. Archive report
         """
         logger.info("Processing report generation workflow")
-        
+
         report_type = data.get("report_type", "daily")
         recipients = data.get("recipients", [])
-        
+
         workflow_steps = [
             {"step": "gather_data", "status": "completed"},
             {"step": "generate_report", "status": "completed"},
@@ -134,7 +134,7 @@ class WorkflowAgent(BaseAgent):
             {"step": "send_to_stakeholders", "status": "pending", "recipients": recipients},
             {"step": "archive_report", "status": "pending"},
         ]
-        
+
         # Generate report file
         report_path = self.data_dir / f"report_{datetime.now().strftime('%Y%m%d')}.json"
         report_data = {
@@ -142,10 +142,10 @@ class WorkflowAgent(BaseAgent):
             "generated_at": datetime.now().isoformat(),
             "summary": "Daily trading report generated",
         }
-        
+
         with open(report_path, "w") as f:
             json.dump(report_data, f, indent=2)
-        
+
         return {
             "success": True,
             "workflow_type": "report_generation",
@@ -153,11 +153,11 @@ class WorkflowAgent(BaseAgent):
             "steps": workflow_steps,
             "result": f"Report generated: {report_path}"
         }
-    
+
     def _process_file_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process file processing workflow.
-        
+
         Example workflow:
         1. Detect new file
         2. Validate format
@@ -166,16 +166,16 @@ class WorkflowAgent(BaseAgent):
         5. Archive processed file
         """
         logger.info("Processing file workflow")
-        
+
         file_path = data.get("file_path")
         file_type = data.get("file_type", "csv")
-        
+
         if not file_path:
             return {
                 "success": False,
                 "error": "file_path required"
             }
-        
+
         workflow_steps = [
             {"step": "detect_file", "status": "completed", "file": file_path},
             {"step": "validate_format", "status": "completed", "type": file_type},
@@ -183,7 +183,7 @@ class WorkflowAgent(BaseAgent):
             {"step": "import_to_system", "status": "completed"},
             {"step": "archive_file", "status": "completed"},
         ]
-        
+
         return {
             "success": True,
             "workflow_type": "file_processing",
@@ -191,33 +191,33 @@ class WorkflowAgent(BaseAgent):
             "steps": workflow_steps,
             "result": f"File processed: {file_path}"
         }
-    
+
     def _process_multi_step_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process a custom multi-step workflow.
-        
+
         Args:
             data: Contains 'steps' list with workflow steps
-            
+
         Returns:
             Execution result with step-by-step status
         """
         logger.info("Processing multi-step workflow")
-        
+
         steps = data.get("steps", [])
         if not steps:
             return {
                 "success": False,
                 "error": "No steps provided"
             }
-        
+
         executed_steps = []
         for i, step in enumerate(steps):
             step_name = step.get("name", f"step_{i}")
             step_action = step.get("action", "unknown")
-            
+
             logger.info(f"Executing step {i+1}/{len(steps)}: {step_name}")
-            
+
             # Execute step (simplified - would call actual MCP tools)
             executed_steps.append({
                 "name": step_name,
@@ -226,7 +226,7 @@ class WorkflowAgent(BaseAgent):
                 "timestamp": datetime.now().isoformat(),
                 "result": f"Step {step_name} completed"
             })
-        
+
         return {
             "success": True,
             "workflow_type": "multi_step",
@@ -234,26 +234,26 @@ class WorkflowAgent(BaseAgent):
             "executed_steps": executed_steps,
             "result": f"Multi-step workflow completed: {len(steps)} steps"
         }
-    
+
     async def execute_workflow_async(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute workflow asynchronously.
-        
+
         Args:
             workflow: Workflow definition
-            
+
         Returns:
             Execution result
         """
         return await asyncio.to_thread(self.analyze, workflow)
-    
+
     def queue_workflow(self, workflow: Dict[str, Any]) -> str:
         """
         Queue a workflow for execution.
-        
+
         Args:
             workflow: Workflow definition
-            
+
         Returns:
             Workflow ID
         """
@@ -261,7 +261,6 @@ class WorkflowAgent(BaseAgent):
         workflow["id"] = workflow_id
         workflow["queued_at"] = datetime.now().isoformat()
         self.workflow_queue.append(workflow)
-        
+
         logger.info(f"Workflow queued: {workflow_id}")
         return workflow_id
-

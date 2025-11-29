@@ -7,4 +7,3 @@ try:
     pydantic.BaseSettings = _BaseSettings  # type: ignore[attr-defined]
 except Exception:
     pass
-

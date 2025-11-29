@@ -31,17 +31,17 @@ logger = logging.getLogger(__name__)
 class EvaluationRAGStorage:
     """
     Store evaluation results in RAG system for semantic search.
-    
+
     FREE - Uses existing ChromaDB, no additional costs.
     """
-    
+
     def __init__(self):
         """Initialize RAG storage."""
         if not RAG_AVAILABLE:
             logger.warning("RAG not available - evaluation storage disabled")
             self.enabled = False
             return
-        
+
         try:
             self.db = TradingRAGDatabase()
             self.embedder = NewsEmbedder()
@@ -50,7 +50,7 @@ class EvaluationRAGStorage:
         except Exception as e:
             logger.error(f"Failed to initialize RAG storage: {e}")
             self.enabled = False
-    
+
     def store_evaluation(
         self,
         evaluation: Dict[str, Any],
@@ -58,21 +58,21 @@ class EvaluationRAGStorage:
     ) -> bool:
         """
         Store evaluation result in RAG system.
-        
+
         Args:
             evaluation: TradeEvaluation as dict
             trade_result: Original trade result
-        
+
         Returns:
             True if stored successfully
         """
         if not self.enabled:
             return False
-        
+
         try:
             # Create document text from evaluation
             doc_text = self._create_document_text(evaluation, trade_result)
-            
+
             # Create metadata
             metadata = {
                 "type": "evaluation",
@@ -83,24 +83,24 @@ class EvaluationRAGStorage:
                 "passed": evaluation.get("passed", False),
                 "dimensions": list(evaluation.get("evaluation", {}).keys())
             }
-            
+
             # Create unique ID
             doc_id = f"eval_{evaluation.get('trade_id', 'unknown')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-            
+
             # Store in ChromaDB
             result = self.db.add_documents(
                 documents=[doc_text],
                 metadatas=[metadata],
                 ids=[doc_id]
             )
-            
+
             logger.info(f"Stored evaluation {doc_id} in RAG system")
             return result.get("status") == "success"
-        
+
         except Exception as e:
             logger.error(f"Error storing evaluation in RAG: {e}")
             return False
-    
+
     def _create_document_text(
         self,
         evaluation: Dict[str, Any],
@@ -108,14 +108,14 @@ class EvaluationRAGStorage:
     ) -> str:
         """Create searchable text from evaluation."""
         lines = []
-        
+
         # Trade info
         lines.append(f"Trade: {evaluation.get('symbol', 'UNKNOWN')}")
         lines.append(f"Trade ID: {evaluation.get('trade_id', 'unknown')}")
         lines.append(f"Timestamp: {evaluation.get('timestamp', 'unknown')}")
         lines.append(f"Overall Score: {evaluation.get('overall_score', 0.0):.2f}")
         lines.append(f"Passed: {evaluation.get('passed', False)}")
-        
+
         # Evaluation dimensions
         eval_data = evaluation.get("evaluation", {})
         for dimension, result in eval_data.items():
@@ -125,21 +125,21 @@ class EvaluationRAGStorage:
             issues = result.get("issues", [])
             if issues:
                 lines.append(f"  Issues: {', '.join(issues)}")
-        
+
         # Critical issues
         critical_issues = evaluation.get("critical_issues", [])
         if critical_issues:
             lines.append(f"\nCRITICAL ISSUES:")
             for issue in critical_issues:
                 lines.append(f"  - {issue}")
-        
+
         # Trade result context
         lines.append(f"\nTrade Result:")
         lines.append(f"  Amount: ${trade_result.get('amount', 0.0):.2f}")
         lines.append(f"  Status: {trade_result.get('status', 'unknown')}")
-        
+
         return "\n".join(lines)
-    
+
     def query_similar_evaluations(
         self,
         query: str,
@@ -147,17 +147,17 @@ class EvaluationRAGStorage:
     ) -> List[Dict[str, Any]]:
         """
         Query similar evaluations using semantic search.
-        
+
         Args:
             query: Natural language query (e.g., "order size errors")
             n_results: Number of results to return
-        
+
         Returns:
             List of similar evaluations
         """
         if not self.enabled:
             return []
-        
+
         try:
             results = self.db.query_documents(
                 query_text=query,
@@ -168,4 +168,3 @@ class EvaluationRAGStorage:
         except Exception as e:
             logger.error(f"Error querying evaluations: {e}")
             return []
-

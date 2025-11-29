@@ -188,7 +188,7 @@ Metrics:
 **Everything is automated:**
 
 1. ✅ **Trading**: Runs daily automatically
-2. ✅ **RL Training**: Runs every 2 hours automatically  
+2. ✅ **RL Training**: Runs every 2 hours automatically
 3. ✅ **Dashboard**: Updates daily automatically
 4. ✅ **LangSmith**: Traces everything automatically
 5. ✅ **Charts**: Generated automatically
@@ -200,4 +200,3 @@ Metrics:
 - Let the system learn and improve
 
 **That's it!** 🎉
-

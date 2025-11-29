@@ -48,7 +48,7 @@ python scripts/test_langsmith.py
 **Expected Output:**
 ```
 ✅ PASSED: Basic LangSmith
-✅ PASSED: OpenAI Wrapper  
+✅ PASSED: OpenAI Wrapper
 ✅ PASSED: RL Training
 
 ✅ All tests passed! LangSmith integration is working.
@@ -185,4 +185,3 @@ The Pydantic warning is harmless - LangSmith still works correctly.
 - ✅ Dashboard accessible
 
 **All LLM calls and RL training will now be automatically traced to LangSmith!**
-

@@ -33,12 +33,12 @@ class SkillsIntegration:
     def _initialize_skills(self):
         """Lazy load skill modules"""
         skills_path = project_root / ".claude" / "skills"
-        
+
         # Add all skill script directories to path
         for skill_dir in skills_path.iterdir():
             if skill_dir.is_dir() and (skill_dir / "scripts").exists():
                 sys.path.insert(0, str(skill_dir / "scripts"))
-        
+
         try:
             # Sentiment Analyzer
             import sentiment_analyzer
@@ -103,7 +103,7 @@ class SkillsIntegration:
             **kwargs
         )
 
-    def detect_execution_anomalies(self, order_id: str, expected_price: float, 
+    def detect_execution_anomalies(self, order_id: str, expected_price: float,
                                    actual_fill_price: float, quantity: float,
                                    order_type: str, timestamp: str) -> Dict[str, Any]:
         """Detect execution anomalies"""
@@ -153,4 +153,3 @@ def get_skills() -> SkillsIntegration:
     if _skills_instance is None:
         _skills_instance = SkillsIntegration()
     return _skills_instance
-

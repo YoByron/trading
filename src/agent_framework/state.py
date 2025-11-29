@@ -44,4 +44,3 @@ class FileStateProvider(StateProvider):
         tmp_path = self.path.with_suffix(".tmp")
         tmp_path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
         tmp_path.replace(self.path)
-
