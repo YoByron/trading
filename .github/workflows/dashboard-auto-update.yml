@@ -4,7 +4,8 @@ on:
   schedule:
     # Run daily at 10:00 AM ET (after trading execution at 9:35 AM)
     # AUTOMATIC DST HANDLING: Runs at both times
-    - cron: '0 14,15 * * 1-5'   # 10:00 AM Eastern (covers both EST and EDT)
+    # Updated to run every day (including weekends) so dashboard always shows latest data
+    - cron: '0 14,15 * * *'   # 10:00 AM Eastern daily (covers both EST and EDT)
   workflow_dispatch:
   workflow_run:
     # Also trigger after daily trading completes

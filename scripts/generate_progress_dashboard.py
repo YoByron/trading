@@ -18,6 +18,7 @@ The dashboard shows:
 import os
 import sys
 import json
+import logging
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from collections import defaultdict
@@ -27,6 +28,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from scripts.dashboard_metrics import TradingMetricsCalculator
 from src.utils.data_validator import DataValidator
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
 
