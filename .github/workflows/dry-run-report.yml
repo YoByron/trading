@@ -164,6 +164,8 @@ jobs:
           mkdir -p badges
           TS=$(date -u +"%Y-%m-%d %H:%M UTC")
           printf '{\n  "schemaVersion": 1,\n  "label": "dry run",\n  "message": "Updated: %s",\n  "color": "blue"\n}\n' "$TS" > badges/dryrun.json
+          printf '{\n  "schemaVersion": 1,\n  "label": "dashboard",\n  "message": "Updated: %s",\n  "color": "success"\n}\n' "$TS" > badges/progress.json
           git add badges/dryrun.json
+          git add badges/progress.json
           git commit -m "chore: update dry run badge timestamp (${TS})" || echo "No changes"
           git push
