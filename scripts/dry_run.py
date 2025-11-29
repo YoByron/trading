@@ -12,7 +12,7 @@ Notes:
 """
 import argparse
 import json
-import os
+import os  # noqa: F401
 from typing import List
 
 try:
@@ -31,6 +31,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.orchestration.elite_orchestrator import EliteOrchestrator
+from src.rag.sentiment_store import SentimentRAGStore
 
 
 def dry_run(symbols: List[str], args) -> int:
@@ -111,6 +112,20 @@ def dry_run(symbols: List[str], args) -> int:
         lines = []
         lines.append(f"# Dry Run Report: {', '.join(symbols)}")
         lines.append("")
+        # Optional: include latest Bogleheads snapshot summary from RAG
+        try:
+            store = SentimentRAGStore()
+            bh = store.get_ticker_history("MARKET", limit=1)
+            if bh:
+                lines.append("## Bogleheads Snapshot (Latest)")
+                md = bh[0]
+                meta = md.get("metadata", {})
+                lines.append(
+                    f"- Date: `{meta.get('snapshot_date', 'n/a')}` | Regime: `{meta.get('market_regime', 'unknown')}` | Confidence: `{meta.get('confidence', 'n/a')}`"
+                )
+                lines.append("")
+        except Exception:
+            pass
         lines.append(f"Plan ID: `{plan.plan_id}`")
         lines.append("")
         lines.append("## Ensemble Consensus")
