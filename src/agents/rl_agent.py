@@ -21,9 +21,7 @@ class RLFilter:
     """
 
     def __init__(self, weights_path: str | Path | None = None) -> None:
-        self.weights_path = Path(
-            weights_path or "models/ml/rl_filter_weights.json"
-        )
+        self.weights_path = Path(weights_path or "models/ml/rl_filter_weights.json")
         self.weights = self._load_weights()
 
     def _load_weights(self) -> Dict[str, Any]:
@@ -120,4 +118,3 @@ class RLFilter:
             "volume_premium": volume_premium,
             "sma_ratio": sma_ratio,
         }
-

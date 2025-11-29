@@ -50,14 +50,16 @@ def execute_crypto_trading() -> None:
         crypto_strategy = CryptoStrategy(
             trader=trader,
             risk_manager=risk_manager,
-            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50"))
+            daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.50")),
         )
 
         # Execute crypto trading
         order = crypto_strategy.execute_daily()
 
         if order:
-            logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
+            logger.info(
+                f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}"
+            )
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
 
@@ -84,10 +86,14 @@ def main() -> None:
     logger = setup_logging()
 
     crypto_allowed = crypto_enabled()
-    should_run_crypto = not args.skip_crypto and crypto_allowed and (args.crypto_only or is_weekend())
+    should_run_crypto = (
+        not args.skip_crypto and crypto_allowed and (args.crypto_only or is_weekend())
+    )
 
     if args.crypto_only and not crypto_allowed:
-        logger.warning("Crypto-only requested but ENABLE_CRYPTO_AGENT is not true. Skipping crypto branch.")
+        logger.warning(
+            "Crypto-only requested but ENABLE_CRYPTO_AGENT is not true. Skipping crypto branch."
+        )
 
     if should_run_crypto:
         logger.info("Crypto branch enabled - executing crypto trading.")
@@ -96,7 +102,9 @@ def main() -> None:
         if args.crypto_only:
             return
     elif is_weekend() and not args.skip_crypto:
-        logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
+        logger.info(
+            "Weekend detected but crypto branch disabled. Proceeding with hybrid funnel."
+        )
 
     # Normal stock trading - import only when needed
     from src.orchestrator.main import TradingOrchestrator

@@ -31,8 +31,14 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          GROK_API_KEY1: ${{ secrets.GROK_API_KEY1 }}
+          GROK_API_KEY2: ${{ secrets.GROK_API_KEY2 }}
         run: |
           set -e
+          # Normalize Grok key if alt names are used
+          if [ -z "$GROK_API_KEY" ] && [ -n "$GROK_API_KEY1" ]; then export GROK_API_KEY="$GROK_API_KEY1"; fi
+          if [ -z "$GROK_API_KEY" ] && [ -n "$GROK_API_KEY2" ]; then export GROK_API_KEY="$GROK_API_KEY2"; fi
           if [ -n "$OPENROUTER_API_KEY" ]; then
             # OpenAI client is used with OpenRouter base URL
             pip install openai
@@ -53,9 +59,14 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          GROK_API_KEY1: ${{ secrets.GROK_API_KEY1 }}
+          GROK_API_KEY2: ${{ secrets.GROK_API_KEY2 }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           INCLUDE_LIST=""
+          # Normalize Grok key if alt names are used
+          if [ -z "$GROK_API_KEY" ] && [ -n "$GROK_API_KEY1" ]; then export GROK_API_KEY="$GROK_API_KEY1"; fi
+          if [ -z "$GROK_API_KEY" ] && [ -n "$GROK_API_KEY2" ]; then export GROK_API_KEY="$GROK_API_KEY2"; fi
           [ -n "$OPENROUTER_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST mcp"
           [ -n "$ANTHROPIC_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST langchain"
           [ -n "$GROK_API_KEY" ] && INCLUDE_LIST="$INCLUDE_LIST grok_twitter"
@@ -99,8 +110,10 @@ jobs:
       - name: Publish latest report to Wiki
         env:
           WIKI_PAT: ${{ secrets.WIKI_PAT }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
+          if [ -z "$WIKI_PAT" ] && [ -n "$PAT_TOKEN" ]; then WIKI_PAT="$PAT_TOKEN"; fi
           if [ -z "$WIKI_PAT" ]; then
             echo "WIKI_PAT secret not set; skipping wiki publish." >&2
             exit 0

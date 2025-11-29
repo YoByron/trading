@@ -32,7 +32,9 @@ class LangChainSentimentAgent:
 
     def _build_llm(self) -> ChatAnthropic:
         temperature = float(os.getenv("HYBRID_LLM_TEMPERATURE", "0.3"))
-        logger.info("Initializing analyst LLM (%s, temp=%s)", self.model_name, temperature)
+        logger.info(
+            "Initializing analyst LLM (%s, temp=%s)", self.model_name, temperature
+        )
         return ChatAnthropic(model=self.model_name, temperature=temperature)
 
     def _get_executor(self):
@@ -57,12 +59,14 @@ class LangChainSentimentAgent:
             "keys score (-1 to 1) and reason. Negative score means avoid the trade.\n\n"
             f"Ticker: {symbol}\n"
             f"Technical context: {json.dumps(indicators, default=str)[:800]}\n\n"
-            "Respond strictly as JSON, e.g. {\"score\": 0.1, \"reason\": \"...\"}"
+            'Respond strictly as JSON, e.g. {"score": 0.1, "reason": "..."}'
         )
 
         executor = self._get_executor()
         result = executor.invoke({"input": prompt})
-        raw_output = result.get("output", "") if isinstance(result, dict) else str(result)
+        raw_output = (
+            result.get("output", "") if isinstance(result, dict) else str(result)
+        )
 
         try:
             parsed = json.loads(raw_output)
@@ -84,4 +88,3 @@ class LangChainSentimentAgent:
             "cost": cost_estimate,
             "model": self.model_name,
         }
-
