@@ -183,11 +183,12 @@ class CoreStrategy:
     TAKE_PROFIT_PCT = 0.05  # 5% profit target (conservative for Day 9 R&D)
 
     # Diversification allocation (guaranteed minimums)
-    # 70% momentum equity, 15% bonds, 15% REITs
-    EQUITY_ALLOCATION_PCT = 0.70  # SPY/QQQ/VOO (momentum-selected)
-    BOND_ALLOCATION_PCT = 0.15  # BND (Vanguard Total Bond Market)
-    REIT_ALLOCATION_PCT = 0.15  # VNQ (Vanguard Real Estate)
-    DIVERSIFICATION_SYMBOLS = {"bond": "BND", "reit": "VNQ"}
+    # 60% equity, 15% bonds, 15% REITs, 10% treasuries
+    EQUITY_ALLOCATION_PCT = 0.60    # SPY/QQQ/VOO (momentum-selected)
+    BOND_ALLOCATION_PCT = 0.15      # BND (Vanguard Total Bond Market)
+    REIT_ALLOCATION_PCT = 0.15      # VNQ (Vanguard Real Estate)
+    TREASURY_ALLOCATION_PCT = 0.10  # TLT (iShares 20+ Year Treasury)
+    DIVERSIFICATION_SYMBOLS = {"bond": "BND", "reit": "VNQ", "treasury": "TLT"}
 
     def __init__(
         self,
@@ -562,11 +563,15 @@ class CoreStrategy:
                     logger.warning(f"LLM Council validation error (proceeding): {e}")
                     # Fail-open: continue with trade if Council unavailable
 
-            # Step 6: Calculate diversified allocation (70% equity, 15% bonds, 15% REITs)
+            # Step 6: Calculate diversified allocation (60% equity, 15% bonds, 15% REITs, 10% treasuries)
             equity_amount = self.daily_allocation * self.EQUITY_ALLOCATION_PCT
             bond_amount = self.daily_allocation * self.BOND_ALLOCATION_PCT
             reit_amount = self.daily_allocation * self.REIT_ALLOCATION_PCT
-            logger.info(f"Diversified: Equity=${equity_amount:.2f}, Bonds=${bond_amount:.2f}, REITs=${reit_amount:.2f}")
+            treasury_amount = self.daily_allocation * self.TREASURY_ALLOCATION_PCT
+            logger.info(
+                f"Diversified: Equity=${equity_amount:.2f}, Bonds=${bond_amount:.2f}, "
+                f"REITs=${reit_amount:.2f}, Treasuries=${treasury_amount:.2f}"
+            )
 
             quantity = equity_amount / current_price
 
@@ -593,13 +598,18 @@ class CoreStrategy:
                         side="buy",
                         tier="T1_CORE",
                     )
-                    logger.info(f"Momentum ETF: {executed_order['id']} - {best_etf} ${equity_amount:.2f}")
+                    logger.info(
+                        f"Momentum ETF: {executed_order['id']} - {best_etf} ${equity_amount:.2f}"
+                    )
 
                     # 9b: BND - Bonds (15%)
                     if bond_amount >= 1.0:
                         try:
                             self.alpaca_trader.execute_order(
-                                symbol="BND", amount_usd=bond_amount, side="buy", tier="T1_CORE"
+                                symbol="BND",
+                                amount_usd=bond_amount,
+                                side="buy",
+                                tier="T1_CORE",
                             )
                             logger.info(f"Bond ETF: BND ${bond_amount:.2f}")
                         except Exception as e:
@@ -609,11 +619,27 @@ class CoreStrategy:
                     if reit_amount >= 1.0:
                         try:
                             self.alpaca_trader.execute_order(
-                                symbol="VNQ", amount_usd=reit_amount, side="buy", tier="T1_CORE"
+                                symbol="VNQ",
+                                amount_usd=reit_amount,
+                                side="buy",
+                                tier="T1_CORE",
                             )
                             logger.info(f"REIT ETF: VNQ ${reit_amount:.2f}")
                         except Exception as e:
                             logger.warning(f"REIT order failed: {e}")
+
+                    # 9d: TLT - Treasuries (10%)
+                    if treasury_amount >= 1.0:
+                        try:
+                            self.alpaca_trader.execute_order(
+                                symbol="TLT",
+                                amount_usd=treasury_amount,
+                                side="buy",
+                                tier="T1_CORE",
+                            )
+                            logger.info(f"Treasury ETF: TLT ${treasury_amount:.2f}")
+                        except Exception as e:
+                            logger.warning(f"Treasury order failed: {e}")
 
                     # Set stop-loss for momentum ETF
                     if order.stop_loss:
