@@ -94,6 +94,33 @@ def calculate_basic_metrics():
     today_trades = load_json_file(today_trades_file)
     today_trade_count = len(today_trades) if isinstance(today_trades, list) else 0
 
+    # Calculate today's performance metrics
+    today_str = date.today().isoformat()
+    today_perf = None
+    today_equity = current_equity
+    today_pl = 0.0
+    today_pl_pct = 0.0
+
+    if isinstance(perf_log, list) and perf_log:
+        # Find today's entry in performance log
+        for entry in reversed(perf_log):
+            if entry.get("date") == today_str:
+                today_perf = entry
+                today_equity = entry.get("equity", current_equity)
+                today_pl = entry.get("pl", 0.0)
+                today_pl_pct = entry.get("pl_pct", 0.0) * 100  # Convert to percentage
+                break
+
+        # If no entry for today, calculate from yesterday
+        if today_perf is None and len(perf_log) > 0:
+            yesterday_perf = perf_log[-1]
+            yesterday_equity = yesterday_perf.get("equity", starting_balance)
+            today_equity = current_equity
+            today_pl = current_equity - yesterday_equity
+            today_pl_pct = (
+                ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
+            )
+
     days_remaining = total_days - current_day
     progress_pct_challenge = (current_day / total_days * 100) if total_days > 0 else 0.0
 
@@ -115,6 +142,10 @@ def calculate_basic_metrics():
         "total_trades": total_trades,
         "automation_status": automation_status,
         "today_trade_count": today_trade_count,
+        "today_equity": today_equity,
+        "today_pl": today_pl,
+        "today_pl_pct": today_pl_pct,
+        "today_perf_available": today_perf is not None,
     }
 
 
@@ -177,12 +208,28 @@ def generate_world_class_dashboard() -> str:
 
     status_emoji = "✅" if basic_metrics["total_pl"] > 0 else "⚠️"
 
+    # Get today's date string for display
+    today_display = date.today().strftime("%Y-%m-%d (%A)")
+
     # Build dashboard
     dashboard = f"""# 📊 World-Class Trading Dashboard
 
 **Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: Enhanced World-Class (v2.0)
+
+---
+
+## 📅 Today's Performance
+
+**Date**: {today_display}
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | ${basic_metrics.get('today_equity', basic_metrics['current_equity']):,.2f} |
+| **P/L** | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
+| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |
+| **Status** | {'✅ Active' if basic_metrics.get('today_trade_count', 0) > 0 or abs(basic_metrics.get('today_pl', 0)) > 0.01 else '⏸️ No activity yet'} |
 
 ---
 
@@ -210,11 +257,14 @@ def generate_world_class_dashboard() -> str:
 |--------|-------|--------|--------|
 | **Max Drawdown** | {risk.get('max_drawdown_pct', 0):.2f}% | <10% | {'✅' if risk.get('max_drawdown_pct', 0) < 10 else '⚠️'} |
 | **Current Drawdown** | {risk.get('current_drawdown_pct', 0):.2f}% | <5% | {'✅' if risk.get('current_drawdown_pct', 0) < 5 else '⚠️'} |
+| **Ulcer Index** | {risk.get('ulcer_index', 0):.2f} | <5.0 | {'✅' if risk.get('ulcer_index', 0) < 5.0 else '⚠️'} |
 | **Sharpe Ratio** | {risk.get('sharpe_ratio', 0):.2f} | >1.0 | {'✅' if risk.get('sharpe_ratio', 0) >= 1.0 else '⚠️'} |
 | **Sortino Ratio** | {risk.get('sortino_ratio', 0):.2f} | >1.5 | {'✅' if risk.get('sortino_ratio', 0) >= 1.5 else '⚠️'} |
+| **Calmar Ratio** | {risk.get('calmar_ratio', 0):.2f} | >1.0 | {'✅' if risk.get('calmar_ratio', 0) >= 1.0 else '⚠️'} |
 | **Volatility (Annualized)** | {risk.get('volatility_annualized', 0):.2f}% | <20% | {'✅' if risk.get('volatility_annualized', 0) < 20 else '⚠️'} |
-| **VaR (95th percentile)** | {risk.get('var_95', 0):.2f}% | >-3% | {'✅' if risk.get('var_95', 0) > -3 else '⚠️'} |
-| **Conditional VaR (95th)** | {enhanced_risk.get('conditional_var_95', 0):.2f}% | >-5% | {'✅' if enhanced_risk.get('conditional_var_95', 0) > -5 else '⚠️'} |
+| **VaR (95%)** | {abs(risk.get('var_95', 0)):.2f}% | <3% | {'✅' if abs(risk.get('var_95', 0)) < 3 else '⚠️'} |
+| **VaR (99%)** | {abs(risk.get('var_99', 0)):.2f}% | <5% | {'✅' if abs(risk.get('var_99', 0)) < 5 else '⚠️'} |
+| **CVaR (95%)** | {risk.get('cvar_95', enhanced_risk.get('conditional_var_95', 0)):.2f}% | <5% | {'✅' if risk.get('cvar_95', enhanced_risk.get('conditional_var_95', 0)) < 5 else '⚠️'} |
 | **Kelly Fraction** | {enhanced_risk.get('kelly_fraction', 0):.2f}% | 5-10% | {'✅' if 5 <= enhanced_risk.get('kelly_fraction', 0) <= 10 else '⚠️'} |
 | **Margin Usage** | {enhanced_risk.get('margin_usage_pct', 0):.2f}% | <50% | {'✅' if enhanced_risk.get('margin_usage_pct', 0) < 50 else '⚠️'} |
 | **Leverage** | {enhanced_risk.get('leverage', 1.0):.2f}x | <2.0x | {'✅' if enhanced_risk.get('leverage', 1.0) < 2.0 else '⚠️'} |

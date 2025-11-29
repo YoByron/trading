@@ -4,7 +4,6 @@
 ![Win Rate](https://img.shields.io/badge/win_rate-62.2%25-success.svg)
 ![Sharpe Ratio](https://img.shields.io/badge/sharpe-2.18-success.svg)
 [![Progress Dashboard](https://img.shields.io/badge/Progress-Dashboard-success)](https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard)
-[![Dashboard Updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/IgorGanapolsky/trading/main/badges/progress.json)](https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard)
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![Automated Dry Run](https://img.shields.io/badge/Automated%20Dry%20Run-View%20Latest-blue)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
 [![Dry Run Updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/IgorGanapolsky/trading/main/badges/dryrun.json)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
@@ -36,15 +35,16 @@ PAPER_TRADING=true
 DAILY_INVESTMENT=10.0
 ```
 
-### 3. Test Run
+### 3. Smoke Test the Hybrid Funnel
 
 ```bash
-# Legacy single-script flow
-python scripts/autonomous_trader.py
-
-# New agent-based orchestrator (paper mode)
-PYTHONPATH=src python3 -m orchestrator.main --mode paper
+# Point the orchestrator at a ticker list and use the built-in Alpaca simulator
+export TARGET_TICKERS="SPY,QQQ,VOO"
+export ALPACA_SIMULATED=1  # omit to hit real Alpaca with your keys
+PYTHONPATH=src python3 scripts/autonomous_trader.py
 ```
+
+The entrypoint now bootstraps the funnel orchestrator (Momentum → RL → LLM → Risk) and writes telemetry to `data/audit_trail/hybrid_funnel_runs.jsonl`.
 
 **Done!** System is ready for autonomous execution.
 
@@ -118,28 +118,28 @@ These documents contain critical protocols and context for understanding how the
 ## 📊 Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│       GitHub Actions (Cloud Scheduler)      │
-│         Triggers: Mon-Fri 9:35 AM EST       │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────┐
-│       autonomous_trader.py (Main Script)    │
-│   1. Fetch market data (SPY, QQQ, VOO)     │
-│   2. Calculate momentum scores             │
-│   3. Select best performer                 │
-│   4. Execute $10/day trades                │
-└──────────────────┬──────────────────────────┘
-                   │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-    ┌──────┐  ┌──────┐  ┌──────────┐
-    │ Tier │  │ Tier │  │  Alpaca  │
-    │  1   │  │  2   │  │ Trading  │
-    │ $6/d │  │ $2/d │  │   API    │
-    └──────┘  └──────┘  └──────────┘
+┌──────────────────────────────────────────────┐
+│ scripts/autonomous_trader.py (stateless CLI) │
+└───────────────────────┬──────────────────────┘
+                        ▼
+┌──────────────────────────────────────────────┐
+│        TradingOrchestrator Funnel            │
+│  Gate 1: MomentumAgent (math, pandas)        │
+│  Gate 2: RLFilter (JSON weights, local)      │
+│  Gate 3: LangChainSentimentAgent (Haiku)     │
+│  Gate 4: RiskManager (deterministic sizing)  │
+│             │                                 │
+│             ▼                                 │
+│        AlpacaExecutor                         │
+│   (real keys or simulator fallback)          │
+└──────────────────────────────────────────────┘
+                        │
+                        ▼
+      data/audit_trail/hybrid_funnel_runs.jsonl
+         (gate telemetry + execution receipts)
 ```
+
+Set `HYBRID_LLM_MODEL=claude-3-5-haiku-20241022` (default) or `gpt-4o-mini` to control LLM spend, and tune `ALPACA_SIMULATED`/`SIMULATED_EQUITY` for dry-runs in CI.
 
 ---
 

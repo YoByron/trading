@@ -180,6 +180,7 @@ class IPOStrategy:
         # Anthropic (Claude) with fallback to CLAUDE_API_KEY
         if not anthropic_api_key:
             from src.utils.self_healing import get_anthropic_api_key
+
             anthropic_api_key = get_anthropic_api_key()
         if anthropic_api_key:
             try:

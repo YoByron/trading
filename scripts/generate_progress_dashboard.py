@@ -231,19 +231,26 @@ def generate_dashboard() -> str:
     # Generate charts (PNG images)
     try:
         from scripts.dashboard_charts import generate_all_charts
-        
+
         perf_log = load_json_file(DATA_DIR / "performance_log.json")
         if not isinstance(perf_log, list):
             perf_log = []
-        
+
         # Get strategy data for attribution chart
         strategy_metrics_data = world_class_metrics.get("strategy_metrics", {})
-        if isinstance(strategy_metrics_data, dict) and "by_strategy" in strategy_metrics_data:
+        if (
+            isinstance(strategy_metrics_data, dict)
+            and "by_strategy" in strategy_metrics_data
+        ):
             strategy_data = strategy_metrics_data.get("by_strategy", {})
         else:
-            strategy_data = strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
-        
-        chart_paths = generate_all_charts(perf_log, strategy_data if strategy_data else None)
+            strategy_data = (
+                strategy_metrics_data if isinstance(strategy_metrics_data, dict) else {}
+            )
+
+        chart_paths = generate_all_charts(
+            perf_log, strategy_data if strategy_data else None
+        )
     except Exception as e:
         logger.warning(f"Chart generation failed: {e}")
         chart_paths = {}
@@ -448,11 +455,11 @@ def generate_dashboard() -> str:
 ### Per-Strategy Performance
 
 """
-    
+
     # Add conditional logic for trade volume thresholds
     total_trades = basic_metrics.get("total_trades", 0)
     min_trades_for_attribution = 10
-    
+
     if total_trades < min_trades_for_attribution:
         dashboard += f"*Performance attribution analysis requires at least {min_trades_for_attribution} trades (currently have {total_trades}).*\n\n"
     else:
@@ -715,7 +722,7 @@ def generate_dashboard() -> str:
 ### Visual Charts
 
 """
-    
+
     # Add chart images if generated
     charts_generated = any(chart_paths.values()) if chart_paths else False
     if charts_generated:
@@ -724,11 +731,17 @@ def generate_dashboard() -> str:
         if chart_paths.get("daily_pl"):
             dashboard += f"![Daily P/L]({chart_paths['daily_pl']})\n\n"
         if chart_paths.get("rolling_sharpe_7d"):
-            dashboard += f"![Rolling Sharpe 7-Day]({chart_paths['rolling_sharpe_7d']})\n\n"
+            dashboard += (
+                f"![Rolling Sharpe 7-Day]({chart_paths['rolling_sharpe_7d']})\n\n"
+            )
         if chart_paths.get("attribution_bar"):
-            dashboard += f"![Performance Attribution]({chart_paths['attribution_bar']})\n\n"
+            dashboard += (
+                f"![Performance Attribution]({chart_paths['attribution_bar']})\n\n"
+            )
         if chart_paths.get("regime_timeline"):
-            dashboard += f"![Market Regime Timeline]({chart_paths['regime_timeline']})\n\n"
+            dashboard += (
+                f"![Market Regime Timeline]({chart_paths['regime_timeline']})\n\n"
+            )
     else:
         perf_log_count = len(perf_log) if isinstance(perf_log, list) else 0
         if perf_log_count < 2:
@@ -916,7 +929,7 @@ def generate_dashboard() -> str:
 ## ⚡ Execution Quality Metrics
 
 """
-    
+
     # Execution quality metrics (only show if we have trades)
     if total_trades >= 5:  # Show execution metrics after 5 trades
         execution = world_class_metrics.get("execution_metrics", {})
@@ -932,7 +945,7 @@ def generate_dashboard() -> str:
         order_reject_rate = execution.get("order_reject_rate", 0.0)
         avg_fill_time_ms = execution.get("avg_fill_time_ms", 0.0)
         broker_latency_ms = execution.get("broker_latency_ms", 0.0)
-        
+
         dashboard += f"| **Avg Slippage** | {avg_slippage:.3f}% | <0.5% | {'✅' if avg_slippage < 0.5 else '⚠️'} |\n"
         dashboard += f"| **Fill Quality** | {fill_quality:.1f}/100 | >90 | {'✅' if fill_quality > 90 else '⚠️'} |\n"
         dashboard += f"| **Order Success Rate** | {order_success_rate:.1f}% | >95% | {'✅' if order_success_rate > 95 else '⚠️'} |\n"

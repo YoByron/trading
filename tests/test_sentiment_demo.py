@@ -6,11 +6,7 @@ Shows functionality with example data and real API calls where available.
 
 import json
 from datetime import datetime
-from src.utils.news_sentiment import (
-    NewsSentimentAggregator,
-    TickerSentiment,
-    SentimentReport,
-)
+from src.utils.news_sentiment import NewsSentimentAggregator
 
 
 def create_mock_report():
@@ -175,14 +171,14 @@ def test_real_apis():
 
     # Test single ticker
     ticker = "AAPL"
-    print(f"\nTesting sentiment aggregation for {ticker}...")
+    print("\n=== Running Sentiment Analysis Demo ===")
 
     try:
         sentiment = aggregator.aggregate_sentiment(ticker)
-        print(f"\nResults for {ticker}:")
+        print(f"Results for {ticker}:")
         print(f"  Combined Score: {sentiment.score:+.1f}")
         print(f"  Confidence: {sentiment.confidence}")
-        print(f"\n  Source Breakdown:")
+        print("\n  Source Breakdown:")
 
         for source_name, source_data in sentiment.sources.items():
             score = source_data.get("score", 0)
@@ -218,7 +214,7 @@ def show_integration_guide():
     integration_code = """
 # Integration with Trading System
 
-from src.utils.news_sentiment import NewsSentimentAggregator
+from src.utils.news_sentiment import NewsSentimentAnalyzer
 
 # Initialize aggregator (add API key to .env first)
 aggregator = NewsSentimentAggregator()

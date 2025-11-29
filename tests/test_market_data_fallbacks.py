@@ -256,7 +256,7 @@ class TestAlpacaFallback:
         mock_bar = Mock()
         mock_bar.o = 100.0
         mock_bar.h = 101.0
-        mock_bar.l = 99.0
+        mock_bar.l = 99.0  # noqa: E741
         mock_bar.c = 100.5
         mock_bar.v = 1000
         mock_bar.t = datetime(2025, 1, 1)
@@ -285,7 +285,7 @@ class TestAlpacaFallback:
             mock_bar = Mock()
             mock_bar.o = 100.0
             mock_bar.h = 101.0
-            mock_bar.l = 99.0
+            mock_bar.l = 99.0  # noqa: E741
             mock_bar.c = 100.5
             mock_bar.v = 1000
             mock_bar.t = datetime(2025, 1, 1)
@@ -427,17 +427,6 @@ class TestFullFallbackChain:
 
     def test_fallback_chain_yfinance_fails_alpaca_succeeds(self, mock_provider):
         """Test fallback from yfinance to Alpaca."""
-        mock_data = pd.DataFrame(
-            {
-                "Open": [100] * 30,
-                "High": [101] * 30,
-                "Low": [99] * 30,
-                "Close": [100.5] * 30,
-                "Volume": [1000] * 30,
-            },
-            index=pd.date_range("2025-01-01", periods=30),
-        )
-
         # Mock Alpaca API
         mock_api = MagicMock()
         mock_bars = []
@@ -445,7 +434,7 @@ class TestFullFallbackChain:
             mock_bar = Mock()
             mock_bar.o = 100.0
             mock_bar.h = 101.0
-            mock_bar.l = 99.0
+            mock_bar.l = 99.0  # noqa: E741
             mock_bar.c = 100.5
             mock_bar.v = 1000
             mock_bar.t = datetime(2025, 1, 1) + timedelta(days=i)
@@ -495,7 +484,7 @@ class TestHealthLogging:
         )
 
         with patch.object(mock_provider, "_fetch_yfinance", return_value=mock_data):
-            result = mock_provider.get_daily_bars("SPY", 30)
+            mock_provider.get_daily_bars("SPY", 30)
 
             # Check that health log file was created
             health_log = mock_provider._health_log_file

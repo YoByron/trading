@@ -5,13 +5,12 @@ Tests the hierarchical memory structure and multi-timescale retrieval.
 """
 
 import pytest
-from datetime import datetime, timedelta
+
 from src.agent_framework.context_engine import (
     ContextEngine,
     ContextMemory,
     MemoryTimescale,
     MultiTimescaleMemory,
-    ContextType,
 )
 
 

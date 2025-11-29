@@ -23,7 +23,7 @@ def main():
     print("Testing BTC signal...")
     btc = get_btc_signal(max_age_days=7)
     if btc:
-        print(f"✅ BTC Signal Found:")
+        print("✅ BTC Signal Found:")
         print(f"   Sentiment: {btc.sentiment.upper()}")
         print(f"   Confidence: {btc.confidence:.0%}")
         if btc.target_price:
@@ -41,7 +41,7 @@ def main():
     print("Testing ETH signal...")
     eth = get_eth_signal(max_age_days=7)
     if eth:
-        print(f"✅ ETH Signal Found:")
+        print("✅ ETH Signal Found:")
         print(f"   Sentiment: {eth.sentiment.upper()}")
         print(f"   Confidence: {eth.confidence:.0%}")
     else:

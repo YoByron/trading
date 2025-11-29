@@ -184,9 +184,9 @@ class CoreStrategy:
 
     # Diversification allocation (guaranteed minimums)
     # 60% equity, 15% bonds, 15% REITs, 10% treasuries
-    EQUITY_ALLOCATION_PCT = 0.60    # SPY/QQQ/VOO (momentum-selected)
-    BOND_ALLOCATION_PCT = 0.15      # BND (Vanguard Total Bond Market)
-    REIT_ALLOCATION_PCT = 0.15      # VNQ (Vanguard Real Estate)
+    EQUITY_ALLOCATION_PCT = 0.60  # SPY/QQQ/VOO (momentum-selected)
+    BOND_ALLOCATION_PCT = 0.15  # BND (Vanguard Total Bond Market)
+    REIT_ALLOCATION_PCT = 0.15  # VNQ (Vanguard Real Estate)
     TREASURY_ALLOCATION_PCT = 0.10  # TLT (iShares 20+ Year Treasury)
     DIVERSIFICATION_SYMBOLS = {"bond": "BND", "reit": "VNQ", "treasury": "TLT"}
 

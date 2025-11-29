@@ -26,8 +26,33 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
+      - name: Check if security update
+        id: is_security
+        run: |
+          # Check if this PR fixes a security vulnerability
+          ALERT_COUNT=$(gh api repos/${{ github.repository }}/dependabot/alerts --jq '[.[] | select(.state=="open" and .dependency.package.name==$pkg)] | length' --arg pkg "${{ steps.metadata.outputs.dependency-names }}" || echo "0")
+          if [ "$ALERT_COUNT" -gt 0 ]; then
+            echo "is_security=true" >> $GITHUB_OUTPUT
+            echo "🔒 Security update detected for ${{ steps.metadata.outputs.dependency-names }}"
+          else
+            echo "is_security=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge security updates
+        if: steps.is_security.outputs.is_security == 'true'
+        run: |
+          echo "🔒 Auto-merging security update for ${{ steps.metadata.outputs.dependency-names }}"
+          gh pr merge --auto --squash "$PR_URL"
+          echo "✅ Enabled auto-merge for security update"
+          echo "Merge will complete automatically once CI passes"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Auto-merge patches and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        if: steps.is_security.outputs.is_security != 'true' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
         run: |
           gh pr merge --auto --squash "$PR_URL"
           echo "✅ Enabled auto-merge for ${{ steps.metadata.outputs.dependency-names }} (${{ steps.metadata.outputs.update-type }})"

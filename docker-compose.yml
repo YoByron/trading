@@ -4,6 +4,26 @@ version: '3.8'
 # This orchestrates the trading bot and dashboard services
 
 services:
+  # Go ADK Service (High-speed execution)
+  adk_service:
+    build:
+      context: ./go/adk_trading
+      dockerfile: Dockerfile
+    container_name: adk-service
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+      - "8091:8091"
+    restart: unless-stopped
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Main trading bot service
   trading_bot:
     build:
@@ -20,6 +40,7 @@ services:
     # Additional environment variables
     environment:
       - PYTHONUNBUFFERED=1
+      - ADK_BASE_URL=http://adk-service:8080/api
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TRADING_MODE=${TRADING_MODE:-paper}
       - TZ=${TZ:-America/New_York}
@@ -60,6 +81,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+    depends_on:
+      adk_service:
+        condition: service_healthy
 
     # Network configuration
     networks:

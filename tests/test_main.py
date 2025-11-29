@@ -20,17 +20,26 @@ def test_imports():
     try:
         from main import TradingOrchestrator, setup_logging
 
+        assert TradingOrchestrator
+        assert setup_logging
+
         print("✓ Successfully imported TradingOrchestrator and setup_logging")
 
         from strategies.core_strategy import CoreStrategy
+
+        assert CoreStrategy
 
         print("✓ Successfully imported CoreStrategy")
 
         from strategies.growth_strategy import GrowthStrategy
 
+        assert GrowthStrategy
+
         print("✓ Successfully imported GrowthStrategy")
 
         from strategies.ipo_strategy import IPOStrategy
+
+        assert IPOStrategy
 
         print("✓ Successfully imported IPOStrategy")
 

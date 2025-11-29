@@ -525,7 +525,9 @@ class EliteOrchestrator:
         try:
             if analysis_result is None:
                 logger.error("Cannot execute trades: analysis phase failed")
-                results["errors"].append("Execution: Analysis phase failed, skipping execution")
+                results["errors"].append(
+                    "Execution: Analysis phase failed, skipping execution"
+                )
             else:
                 exec_result = self._execute_trades(plan, analysis_result)
             results["phases"][PlanningPhase.EXECUTION.value] = exec_result

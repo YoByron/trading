@@ -1,8 +1,9 @@
-# Environment
+I don# Environment
 .env
 .env.local
 .env.*.local
 venv/
+.pc-venv/
 env/
 ENV/
 *.pyc
