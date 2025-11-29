@@ -125,6 +125,31 @@ def calculate_metrics():
     else:
         today_trade_count = 0
 
+    # Calculate today's performance metrics
+    today_str = date.today().isoformat()
+    today_perf = None
+    today_equity = current_equity
+    today_pl = 0.0
+    today_pl_pct = 0.0
+    
+    if isinstance(perf_log, list) and perf_log:
+        # Find today's entry in performance log
+        for entry in reversed(perf_log):
+            if entry.get('date') == today_str:
+                today_perf = entry
+                today_equity = entry.get('equity', current_equity)
+                today_pl = entry.get('pl', 0.0)
+                today_pl_pct = entry.get('pl_pct', 0.0) * 100  # Convert to percentage
+                break
+        
+        # If no entry for today, calculate from yesterday
+        if today_perf is None and len(perf_log) > 0:
+            yesterday_perf = perf_log[-1]
+            yesterday_equity = yesterday_perf.get('equity', starting_balance)
+            today_equity = current_equity
+            today_pl = current_equity - yesterday_equity
+            today_pl_pct = ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
+
     # Calculate days remaining
     days_remaining = total_days - current_day
     progress_pct_challenge = (current_day / total_days * 100) if total_days > 0 else 0.0
@@ -150,6 +175,10 @@ def calculate_metrics():
         'automation_status': automation_status,
         'last_execution': last_execution,
         'today_trade_count': today_trade_count,
+        'today_equity': today_equity,
+        'today_pl': today_pl,
+        'today_pl_pct': today_pl_pct,
+        'today_perf_available': today_perf is not None,
     }
 
 
@@ -304,13 +333,13 @@ def generate_dashboard() -> str:
 
 ### Account Summary
 
-| Metric | Value |
-|--------|-------|
-| **Starting Balance** | ${account.get('starting_balance', basic_metrics['starting_balance']):,.2f} |
-| **Current Equity** | ${account.get('current_equity', basic_metrics['current_equity']):,.2f} |
-| **Total P/L** | ${account.get('total_pl', basic_metrics['total_pl']):+,.2f} ({account.get('total_pl_pct', basic_metrics['total_pl_pct']):+.2f}%) |
-| **Average Daily Profit** | ${basic_metrics['avg_daily_profit']:+.2f} |
-| **Peak Equity** | ${risk.get('peak_equity', account.get('current_equity', 0)):,.2f} |
+| Metric | Overall | Today |
+|--------|---------|-------|
+| **Equity** | ${account.get('current_equity', basic_metrics['current_equity']):,.2f} | ${basic_metrics.get('today_equity', account.get('current_equity', basic_metrics['current_equity'])):,.2f} |
+| **P/L** | ${account.get('total_pl', basic_metrics['total_pl']):+,.2f} ({account.get('total_pl_pct', basic_metrics['total_pl_pct']):+.2f}%) | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
+| **Starting Balance** | ${account.get('starting_balance', basic_metrics['starting_balance']):,.2f} | - |
+| **Average Daily Profit** | ${basic_metrics['avg_daily_profit']:+.2f} | - |
+| **Peak Equity** | ${risk.get('peak_equity', account.get('current_equity', 0)):,.2f} | - |
 
 ### Trading Performance
 
