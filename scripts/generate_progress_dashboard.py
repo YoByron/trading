@@ -294,6 +294,19 @@ def generate_dashboard() -> str:
 
 ---
 
+## 📅 Today's Performance
+
+**Date**: {today_display}
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | ${basic_metrics.get('today_equity', account.get('current_equity', basic_metrics['current_equity'])):,.2f} |
+| **P/L** | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
+| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |
+| **Status** | {'✅ Active' if basic_metrics.get('today_trade_count', 0) > 0 or abs(basic_metrics.get('today_pl', 0)) > 0.01 else '⏸️ No activity yet'} |
+
+---
+
 ## 🎯 North Star Goal
 
 **Target**: **$100+/day profit**
@@ -357,19 +370,6 @@ def generate_dashboard() -> str:
 ---
 
 ## 💰 Financial Performance
-
-### 📅 Today's Performance
-
-**Date**: {today_display}
-
-| Metric | Value |
-|--------|-------|
-| **Equity** | ${basic_metrics.get('today_equity', account.get('current_equity', basic_metrics['current_equity'])):,.2f} |
-| **P/L** | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
-| **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |
-| **Status** | {'✅ Active' if basic_metrics.get('today_trade_count', 0) > 0 or abs(basic_metrics.get('today_pl', 0)) > 0.01 else '⏸️ No activity yet'} |
-
----
 
 ### Account Summary
 
