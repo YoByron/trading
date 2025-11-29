@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 04:34 PM ET
+**Last Updated**: 2025-11-29 04:36 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -52,8 +52,8 @@
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+0.75 | $-154.80 to $+169.60 |
-| **30 Days** | $+5.62 | See 7-day CI scaled |
+| **7 Days** | $+1.29 | $-155.44 to $+164.05 |
+| **30 Days** | $+3.99 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%

@@ -35,7 +35,16 @@ PAPER_TRADING=true
 DAILY_INVESTMENT=10.0
 ```
 
-### 3. Smoke Test the Hybrid Funnel
+### 3. Smoke Test the System
+
+```bash
+# Quick smoke tests (< 30 seconds) - verifies critical paths work
+python3 tests/test_smoke.py
+
+# Expected: ✅ ALL SMOKE TESTS PASSED
+```
+
+### 4. Run Trading System
 
 ```bash
 # Point the orchestrator at a ticker list and use the built-in Alpaca simulator

@@ -63,7 +63,14 @@ func main() {
 	}
 
 	launcher := full.NewLauncher()
-	if err := launcher.Execute(ctx, cfgADK, flag.Args()); err != nil {
+	
+	args := flag.Args()
+	if len(args) == 0 {
+		// Default to running the server if no args are provided
+		args = []string{"server", "--http_port=8080"}
+	}
+
+	if err := launcher.Execute(ctx, cfgADK, args); err != nil {
 		log.Fatalf("run failed: %v\n\n%s", err, launcher.CommandLineSyntax())
 	}
 }
