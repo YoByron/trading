@@ -23,7 +23,7 @@ import os
 import sys
 import json
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 from collections import defaultdict
@@ -565,6 +565,40 @@ def generate_world_class_dashboard() -> str:
     current_day = challenge.get("current_day", 1)
     total_days = challenge.get("total_days", 90)
 
+    # Calculate today's performance metrics
+    today_str = date.today().isoformat()
+    today_trades_file = DATA_DIR / f"trades_{today_str}.json"
+    today_trades = load_json_file(today_trades_file)
+    today_trade_count = len(today_trades) if isinstance(today_trades, list) else 0
+
+    today_perf = None
+    today_equity = current_equity
+    today_pl = 0.0
+    today_pl_pct = 0.0
+
+    if isinstance(perf_log, list) and perf_log:
+        # Find today's entry in performance log
+        for entry in reversed(perf_log):
+            if entry.get("date") == today_str:
+                today_perf = entry
+                today_equity = entry.get("equity", current_equity)
+                today_pl = entry.get("pl", 0.0)
+                today_pl_pct = entry.get("pl_pct", 0.0) * 100  # Convert to percentage
+                break
+
+        # If no entry for today, calculate from yesterday
+        if today_perf is None and len(perf_log) > 0:
+            yesterday_perf = perf_log[-1]
+            yesterday_equity = yesterday_perf.get("equity", starting_balance)
+            today_equity = current_equity
+            today_pl = current_equity - yesterday_equity
+            today_pl_pct = (
+                ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
+            )
+
+    # Get today's date string for display
+    today_display = date.today().strftime("%Y-%m-%d (%A)")
+
     # Generate dashboard
     now = datetime.now()
 
@@ -628,6 +662,19 @@ def generate_world_class_dashboard() -> str:
 **Last Updated**: {now.strftime('%Y-%m-%d %I:%M %p ET')}
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
+
+---
+
+## 📅 Today's Performance
+
+**Date**: {today_display}
+
+| Metric | Value |
+|--------|-------|
+| **Equity** | ${today_equity:,.2f} |
+| **P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
+| **Trades Today** | {today_trade_count} |
+| **Status** | {'✅ Active' if today_trade_count > 0 or abs(today_pl) > 0.01 else '⏸️ No activity yet'} |
 
 ---
 
