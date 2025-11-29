@@ -41,6 +41,17 @@ except ImportError:
 
 DATA_DIR = Path("data")
 
+# Statistical significance thresholds
+STAT_THRESHOLDS = {
+    "sharpe_sortino": 30,  # Need 30+ closed trades
+    "win_rate": 30,  # Need 30+ closed trades
+    "profit_factor": 30,  # Need 30+ closed trades
+    "per_strategy": 10,  # Need 10+ trades per strategy
+    "cohort_analysis": 20,  # Need 20+ trades per cohort
+    "alpha": 50,  # Need 50+ closed trades
+    "capital_efficiency": 20,  # Need 20+ closed trades
+}
+
 
 def load_json_file(filepath: Path) -> dict:
     """Load JSON file, return empty dict if not found."""
@@ -690,32 +701,8 @@ def generate_world_class_dashboard() -> str:
     # Risk alerts
     risk_alerts = generate_risk_alerts(risk_metrics_dict, win_rate, total_closed_trades)
 
-    # Market regime detection
-    current_regime = "UNKNOWN"
-    regime_playbook = {}
-    try:
-        from scripts.dashboard_metrics import TradingMetricsCalculator
-
-        calculator = TradingMetricsCalculator()
-        regime_data = calculator._calculate_market_regime(
-            perf_log if isinstance(perf_log, list) else []
-        )
-        current_regime = regime_data.get("regime", "UNKNOWN")
-
-        # Get regime adaptation playbook
-        from src.utils.regime_adaptation import RegimeAdaptation
-
-        adapter = RegimeAdaptation()
-        regime_playbook = adapter.get_regime_playbook(current_regime)
-    except Exception:
-        # Silently fail - regime adaptation is optional
-        regime_playbook = {
-            "position_sizing_multiplier": 1.0,
-            "stop_loss_pct": 3.0,
-            "take_profit_pct": 5.0,
-            "entry_aggressiveness": "medium",
-            "preferred_strategies": ["momentum"],
-        }
+    # Market regime detection (optional - for future regime-specific adjustments)
+    # Would be used for regime-specific position sizing adjustments
 
     # Performance metrics
     performance = system_state.get("performance", {})
@@ -890,8 +877,8 @@ def generate_world_class_dashboard() -> str:
         monitor = TrainingMonitor()
         if monitor.langsmith_monitor and monitor.langsmith_monitor.client is None:
             critical_issues.append(
-                f"⚠️ **LANGSMITH NOT INITIALIZED**: RL training observability broken. "
-                f"**Action**: Verify LANGCHAIN_API_KEY is set in GitHub Secrets."
+                "⚠️ **LANGSMITH NOT INITIALIZED**: RL training observability broken. "
+                "**Action**: Verify LANGCHAIN_API_KEY is set in GitHub Secrets."
             )
     except Exception:
         pass
@@ -1011,19 +998,36 @@ def generate_world_class_dashboard() -> str:
 
 ## ⚖️ Comprehensive Risk Metrics
 
-| Metric | Value | Status |
+"""
+
+    # Calculate thresholds and formatted values before f-string
+    sharpe_threshold = STAT_THRESHOLDS["sharpe_sortino"]
+    sharpe_display = format_statistically_significant(
+        risk_metrics_dict.get("sharpe_ratio", 0.0),
+        sharpe_threshold,
+        total_closed_trades,
+        "{:.2f}",
+    )
+    sortino_display = format_statistically_significant(
+        risk_metrics_dict.get("sortino_ratio", 0.0),
+        sharpe_threshold,
+        total_closed_trades,
+        "{:.2f}",
+    )
+
+    dashboard += f"""| Metric | Value | Status |
 |--------|-------|--------|
 | **Max Drawdown** | {risk_metrics_dict.get('max_drawdown_pct', 0.0):.2f}% | {'✅' if risk_metrics_dict.get('max_drawdown_pct', 0.0) < 5.0 else '⚠️' if risk_metrics_dict.get('max_drawdown_pct', 0.0) < 10.0 else '🚨'} |
 | **Ulcer Index** | {risk_metrics_dict.get('ulcer_index', 0.0):.2f} | {'✅' if risk_metrics_dict.get('ulcer_index', 0.0) < 5.0 else '⚠️'} |
-| **Sharpe Ratio** | {risk_metrics_dict.get('sharpe_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('sharpe_ratio', 0.0) > 1.0 else '⚠️' if risk_metrics_dict.get('sharpe_ratio', 0.0) > 0.5 else '🚨'} |
-| **Sortino Ratio** | {risk_metrics_dict.get('sortino_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('sortino_ratio', 0.0) > 1.0 else '⚠️'} |
+| **Sharpe Ratio** | {sharpe_display} | {'✅' if total_closed_trades >= sharpe_threshold and risk_metrics_dict.get('sharpe_ratio', 0.0) > 1.0 else '⚠️' if total_closed_trades >= sharpe_threshold and risk_metrics_dict.get('sharpe_ratio', 0.0) > 0.5 else ''} |
+| **Sortino Ratio** | {sortino_display} | {'✅' if total_closed_trades >= sharpe_threshold and risk_metrics_dict.get('sortino_ratio', 0.0) > 1.0 else ''} |
 | **Calmar Ratio** | {risk_metrics_dict.get('calmar_ratio', 0.0):.2f} | {'✅' if risk_metrics_dict.get('calmar_ratio', 0.0) > 1.0 else '⚠️'} |
 | **VaR (95%)** | {risk_metrics_dict.get('var_95', 0.0):.2f}% | Risk level |
 | **VaR (99%)** | {risk_metrics_dict.get('var_99', 0.0):.2f}% | Extreme risk |
 | **CVaR (95%)** | {risk_metrics_dict.get('cvar_95', 0.0):.2f}% | Expected tail loss |
 | **Volatility (Annualized)** | {risk_metrics_dict.get('volatility', 0.0):.2f}% | {'✅' if risk_metrics_dict.get('volatility', 0.0) < 20.0 else '⚠️'} |
 
-**Note**: Sharpe/Sortino ratios require ≥30 closed trades for statistical significance. Current: {total_closed_trades} trades.
+**Note**: Sharpe/Sortino ratios require ≥{sharpe_threshold} closed trades for statistical significance. Current: {total_closed_trades} trades.
 
 ### Risk Heatmap
 
