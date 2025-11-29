@@ -27,7 +27,12 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, GetOrdersRequest
+from alpaca.trading.requests import (
+    MarketOrderRequest,
+    LimitOrderRequest,
+    StopOrderRequest,
+    GetOrdersRequest,
+)
 from alpaca.trading.enums import OrderSide, TimeInForce, OrderClass, OrderStatus
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
@@ -36,7 +41,8 @@ from alpaca.common.exceptions import APIError
 
 # Import retry decorator
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from src.utils.retry_decorator import retry_with_backoff
 
 
@@ -92,10 +98,10 @@ class AlpacaTrader:
 
     # Tier allocation mapping (must match .env and strategy configuration)
     TIER_ALLOCATIONS = {
-        "T1_CORE": 0.60,      # 60% of daily investment
-        "T2_GROWTH": 0.20,    # 20% of daily investment
-        "T3_IPO": 0.10,       # 10% of daily investment
-        "T4_CROWD": 0.10,     # 10% of daily investment
+        "T1_CORE": 0.60,  # 60% of daily investment
+        "T2_GROWTH": 0.20,  # 20% of daily investment
+        "T3_IPO": 0.10,  # 10% of daily investment
+        "T4_CROWD": 0.10,  # 10% of daily investment
     }
 
     # Safety multiplier: reject orders >10x expected amount
@@ -135,15 +141,12 @@ class AlpacaTrader:
         try:
             # Initialize Alpaca Trading Client
             self.trading_client = TradingClient(
-                api_key=api_key,
-                secret_key=secret_key,
-                paper=paper
+                api_key=api_key, secret_key=secret_key, paper=paper
             )
 
             # Initialize Alpaca Data Client
             self.data_client = StockHistoricalDataClient(
-                api_key=api_key,
-                secret_key=secret_key
+                api_key=api_key, secret_key=secret_key
             )
 
             # Verify connection by fetching account
@@ -228,7 +231,9 @@ class AlpacaTrader:
                 f"(expected: ${expected_amount:.2f}, tier: {tier_name})"
             )
 
-    @retry_with_backoff(max_retries=3, initial_delay=1.0, exceptions=(APIError, ConnectionError))
+    @retry_with_backoff(
+        max_retries=3, initial_delay=1.0, exceptions=(APIError, ConnectionError)
+    )
     def get_account_info(self) -> Dict[str, Any]:
         """
         Retrieve account information including buying power, equity, and cash.
@@ -276,9 +281,9 @@ class AlpacaTrader:
             }
 
             # Add daytrade_count if available
-            if hasattr(account, 'daytrade_count'):
+            if hasattr(account, "daytrade_count"):
                 account_info["daytrade_count"] = account.daytrade_count
-            elif hasattr(account, 'day_trade_count'):
+            elif hasattr(account, "day_trade_count"):
                 account_info["daytrade_count"] = account.day_trade_count
             else:
                 account_info["daytrade_count"] = 0
@@ -292,9 +297,15 @@ class AlpacaTrader:
             logger.error(f"Failed to retrieve account information: {e}")
             raise AccountError(f"Account retrieval failed: {e}") from e
 
-    @retry_with_backoff(max_retries=3, initial_delay=2.0, exceptions=(APIError, ConnectionError))
+    @retry_with_backoff(
+        max_retries=3, initial_delay=2.0, exceptions=(APIError, ConnectionError)
+    )
     def execute_order(
-        self, symbol: str, amount_usd: float, side: str = "buy", tier: Optional[str] = None
+        self,
+        symbol: str,
+        amount_usd: float,
+        side: str = "buy",
+        tier: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute a market order with fractional shares based on USD amount.
@@ -356,11 +367,15 @@ class AlpacaTrader:
             # Place market order with notional (dollar) amount
             logger.info(f"Executing {side} order: {symbol} for ${amount_usd:.2f}")
 
+            # Crypto orders require GTC (good-til-canceled), stocks use DAY
+            is_crypto = symbol.endswith("USD") and symbol.replace("USD", "") in ["BTC", "ETH", "LTC", "DOGE", "SOL"]
+            tif = TimeInForce.GTC if is_crypto else TimeInForce.DAY
+
             req = MarketOrderRequest(
                 symbol=symbol,
                 notional=amount_usd,
                 side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
-                time_in_force=TimeInForce.DAY
+                time_in_force=tif,
             )
 
             order = self.trading_client.submit_order(req)
@@ -390,9 +405,10 @@ class AlpacaTrader:
             # Trigger trade tracking for online learning (if available)
             try:
                 from src.ml.trade_tracker import TradeTracker
+
                 # Get global trade tracker instance if it exists
                 # This will be set up by the orchestrator
-                if hasattr(self, '_trade_tracker') and self._trade_tracker:
+                if hasattr(self, "_trade_tracker") and self._trade_tracker:
                     action = 1 if side == "buy" else 2  # 1=Buy, 2=Sell
                     # Note: Entry state would need to be passed from orchestrator
                     # For now, we just log the trade
@@ -445,7 +461,7 @@ class AlpacaTrader:
                 qty=qty,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.GTC,
-                stop_price=stop_price
+                stop_price=stop_price,
             )
 
             order = self.trading_client.submit_order(req)
@@ -511,7 +527,7 @@ class AlpacaTrader:
                 qty=qty,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.GTC,
-                limit_price=limit_price
+                limit_price=limit_price,
             )
 
             order = self.trading_client.submit_order(req)
@@ -694,10 +710,10 @@ class AlpacaTrader:
         """
         valid_timeframes = {
             "1Min": TimeFrame.Minute,
-            "5Min": TimeFrame.Minute, # Alpaca-py handles multipliers differently, but for simplicity mapping to Minute
+            "5Min": TimeFrame.Minute,  # Alpaca-py handles multipliers differently, but for simplicity mapping to Minute
             "15Min": TimeFrame.Minute,
             "1Hour": TimeFrame.Hour,
-            "1Day": TimeFrame.Day
+            "1Day": TimeFrame.Day,
         }
 
         # Note: Alpaca-py TimeFrame is an object, not just a string.
@@ -712,9 +728,11 @@ class AlpacaTrader:
         elif timeframe == "1Day":
             tf = TimeFrame.Day
         else:
-             # Fallback or error - for now defaulting to Day if unknown to avoid crash, but logging warning
-             if timeframe not in valid_timeframes:
-                 logger.warning(f"Timeframe {timeframe} not fully supported in simple mapping, defaulting to Day")
+            # Fallback or error - for now defaulting to Day if unknown to avoid crash, but logging warning
+            if timeframe not in valid_timeframes:
+                logger.warning(
+                    f"Timeframe {timeframe} not fully supported in simple mapping, defaulting to Day"
+                )
 
         if limit <= 0 or limit > 10000:
             raise ValueError(f"Limit must be between 1 and 10000. Got {limit}")
@@ -724,11 +742,7 @@ class AlpacaTrader:
         try:
             logger.info(f"Fetching {limit} {timeframe} bars for {symbol}")
 
-            req = StockBarsRequest(
-                symbol_or_symbols=symbol,
-                timeframe=tf,
-                limit=limit
-            )
+            req = StockBarsRequest(symbol_or_symbols=symbol, timeframe=tf, limit=limit)
 
             # Get bars from Alpaca API
             barset = self.data_client.get_stock_bars(req)
