@@ -27,7 +27,7 @@ import sys
 import signal
 import logging
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Dict, Optional, Any
 from logging.handlers import RotatingFileHandler
@@ -56,6 +56,42 @@ from src.deepagents_integration.adapter import (
     create_analysis_agent_adapter,
 )  # noqa: E402
 from src.agent_framework import RunContext  # noqa: E402
+
+
+# Helper function to save trades to daily trade files
+def save_trade_to_daily_file(trade_data: Dict[str, Any], data_dir: Path = Path("data")) -> None:
+    """
+    Save trade to daily trade file (trades_YYYY-MM-DD.json).
+
+    Args:
+        trade_data: Dictionary containing trade information
+        data_dir: Data directory path (default: data/)
+    """
+    import json
+
+    today = date.today().isoformat()
+    trade_file = data_dir / f"trades_{today}.json"
+
+    # Load existing trades for today
+    trades = []
+    if trade_file.exists():
+        try:
+            with open(trade_file, "r") as f:
+                trades = json.load(f)
+                if not isinstance(trades, list):
+                    trades = [trades] if trades else []
+        except Exception:
+            trades = []
+
+    # Add new trade
+    trades.append(trade_data)
+
+    # Save updated trades
+    try:
+        with open(trade_file, "w") as f:
+            json.dump(trades, f, indent=2, default=str)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Failed to save trade to daily file: {e}")
 
 
 # Configure logging with rotation

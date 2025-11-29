@@ -436,11 +436,14 @@ def generate_world_class_dashboard() -> str:
 
     # Extract equity curve
     equity_curve = []
-    if isinstance(perf_log, list):
-        equity_curve = [entry.get("equity", 100000.0) for entry in perf_log]
+    if isinstance(perf_log, list) and len(perf_log) > 0:
+        equity_curve = [entry.get("equity", 100000.0) for entry in perf_log if entry.get("equity") is not None]
 
+    # Fallback: if no equity curve data, try to get from system state
     if not equity_curve:
-        equity_curve = [system_state.get("account", {}).get("current_equity", 100000.0)]
+        current_equity = system_state.get("account", {}).get("current_equity", 100000.0)
+        if current_equity:
+            equity_curve = [current_equity]
 
     # Initialize analytics
     analytics = WorldClassAnalytics() if WorldClassAnalytics else None
@@ -524,7 +527,6 @@ def generate_world_class_dashboard() -> str:
         }
     else:
         # Fallback to backtest-based projections (62.2% win rate, 2.18 Sharpe)
-        daily_investment = 10.0  # Daily investment amount
         expected_daily_profit = 0.28  # ~$0.28/day based on backtest
         forecast_dict = {
             "expected_profit_7d": expected_daily_profit * 7,  # ~$1.96/week

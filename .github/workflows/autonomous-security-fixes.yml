@@ -89,8 +89,7 @@ jobs:
 
             git push origin "$BRANCH"
 
-            BODY=$(cat <<EOF
-## 🤖 Autonomous Security Fixes
+            PR_BODY="## 🤖 Autonomous Security Fixes
 
 This PR was automatically created by the Autonomous Security Fix Agent to fix security vulnerabilities.
 
@@ -104,12 +103,11 @@ This PR was automatically created by the Autonomous Security Fix Agent to fix se
 
 ### Next Steps
 - Review the changes
-- Merge if tests pass
-EOF
-)
+- Merge if tests pass"
+
             gh pr create \
               --title "chore(security): Autonomous security fixes" \
-              --body "$BODY" \
+              --body "$PR_BODY" \
               --label "dependencies,security,automated" \
               --base main
           else
