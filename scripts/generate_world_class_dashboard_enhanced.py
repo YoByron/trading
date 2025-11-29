@@ -465,12 +465,52 @@ def generate_world_class_dashboard() -> str:
 - ✅ Benchmark comparison vs S&P 500
 - ✅ Market regime classification
 
-**Current Strategy**: 
-- TURBO MODE: ADK orchestrator tries first, falls back to rule-based (MACD + RSI + Volume)
-- Allocation: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)
-- Daily Investment: $10/day fixed
+"""
 
+    # Determine active strategy
+    is_crypto_mode = False
+    try:
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        log_files = [
+            Path("logs/trading_system.log"), 
+            Path("logs/launchd_stdout.log"),
+            Path("logs/launchd_stderr.log")
+        ]
+        
+        for log_file in log_files:
+            if log_file.exists():
+                # Check last 1000 lines for today's execution mode
+                with open(log_file, 'r') as f:
+                    try:
+                        lines = f.readlines()[-1000:]
+                        for line in lines:
+                            if today_str in line and "CRYPTO STRATEGY - Daily Execution" in line:
+                                is_crypto_mode = True
+                                break
+                    except Exception:
+                        continue
+            if is_crypto_mode:
+                break
+    except Exception:
+        pass
+
+    dashboard += f"""
+**Current Strategy**: 
+"""
+    if is_crypto_mode:
+        dashboard += "- **MODE**: 🌐 CRYPTO (Weekend/Holiday)\n"
+        dashboard += "- **Strategy**: Tier 5 - Cryptocurrency 24/7 (BTC/ETH)\n"
+        dashboard += "- **Allocation**: $10/day fixed (Crypto only)\n"
+        dashboard += "- **Status**: ✅ Active (Monitoring BTC/ETH)\n"
+    else:
+        dashboard += "- **MODE**: 📈 STANDARD (Weekday)\n"
+        dashboard += "- **Strategy**: Momentum (MACD + RSI + Volume)\n"
+        dashboard += "- **Allocation**: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)\n"
+        dashboard += "- **Daily Investment**: $10/day fixed\n"
+
+    dashboard += f"""
 ---
+
 
 ## 🤖 AI & ML System Status
 

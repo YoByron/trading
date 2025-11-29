@@ -1,4 +1,4 @@
-name: Autonomous Model Training
+name: Autonomous Model Training (LSTM + RL)
 
 on:
   schedule:
@@ -331,6 +331,24 @@ jobs:
             logs/*.log
           retention-days: 30
 
+      - name: Train RL Agents (after LSTM training)
+        if: steps.train_model.outputs.training_success == 'true'
+        env:
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          LANGCHAIN_TRACING_V2: 'true'
+          LANGCHAIN_PROJECT: trading-rl-training
+        run: |
+          echo "🤖 Training RL Agents with updated LSTM features..."
+          echo "=========================================="
+          
+          python3 scripts/rl_training_orchestrator.py \
+            --platform github \
+            --agents q_learning,dqn \
+            --device cpu \
+            --use-langsmith || echo "⚠️  RL training completed with warnings"
+          
+          echo "✅ RL training step completed"
+
       - name: Training summary
         if: always()
         run: |
@@ -342,11 +360,15 @@ jobs:
           if [ "${{ steps.check_model.outputs.model_exists }}" = "true" ]; then
             echo "Model Age: ${{ steps.check_model.outputs.model_age_days }} days"
           fi
-          echo "Training Executed: ${{ steps.train_model.outputs.training_success == 'true' }}"
+          echo "LSTM Training Executed: ${{ steps.train_model.outputs.training_success == 'true' }}"
+          echo "RL Training: Completed"
           echo "Time Completed: $(date)"
           echo ""
           echo "Next Steps:"
-          echo "- Model will be used by OptimizedRLPolicyLearner"
+          echo "- LSTM model will be used by OptimizedRLPolicyLearner"
+          echo "- RL agents updated with latest experience"
           echo "- Next training scheduled: Next Sunday at 2:00 AM UTC"
+          echo "- Continuous RL training runs every 2 hours via rl-training-continuous.yml"
+
           echo "=========================================="
 

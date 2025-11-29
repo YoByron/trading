@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-11-27 12:12 PM ET  
+**Last Updated**: 2025-11-29 01:08 PM ET  
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -52,7 +52,7 @@
 - [x] System reliability 99%+ ✅
 - [ ] Win rate >55% (0.0%)
 - [ ] 30 days of clean data (9/30 days)
-- [ ] Sharpe ratio >1.0 (-16.37)
+- [ ] Sharpe ratio >1.0 (-16.60)
 - [ ] Strategy validated via backtesting
 
 ### R&D Metrics Summary
@@ -61,7 +61,7 @@
 |--------|-------|
 | **Days Completed** | 9 |
 | **Trades Collected** | 7 |
-| **Current Sharpe (R&D)** | -16.37 |
+| **Current Sharpe (R&D)** | -16.60 |
 | **Max Drawdown (R&D)** | 0.06% |
 
 ---
@@ -98,8 +98,8 @@
 |--------|-------|--------|
 | **Max Drawdown** | 0.06% | <10% |
 | **Current Drawdown** | 0.01% | <5% |
-| **Sharpe Ratio** | -16.37 | >1.0 |
-| **Sortino Ratio** | -23.16 | >1.5 |
+| **Sharpe Ratio** | -16.60 | >1.0 |
+| **Sortino Ratio** | -23.17 | >1.5 |
 | **Volatility (Annualized)** | 0.24% | <20% |
 | **Worst Daily Loss** | -0.03% | >-5% |
 | **VaR (95th percentile)** | -0.03% | >-3% |
@@ -209,7 +209,7 @@
 | **Uptime** | 100.0% |
 | **Reliability Streak** | 1 executions |
 | **Last Execution** | 2025-11-11T21:11:00 |
-| **Days Since Execution** | 15 days |
+| **Days Since Execution** | 17 days |
 | **Total Executions** | 1 |
 | **Failures** | 0 |
 | **Health Checks** | ✅ Integrated |
@@ -234,7 +234,6 @@
 
 | Date | Equity | P/L | P/L % |
 |------|--------|-----|-------|
-| 2025-11-24 | $100,001.72 | $+1.72 | +0.17% |
 | 2025-11-24 | $100,001.69 | $+1.69 | +0.17% |
 | 2025-11-24 | $100,001.69 | $+1.69 | +0.17% |
 | 2025-11-24 | $100,001.43 | $+1.43 | +0.14% |
@@ -244,14 +243,15 @@
 | 2025-11-25 | $100,011.62 | $+11.62 | +1.16% |
 | 2025-11-26 | $100,005.48 | $+5.48 | +0.55% |
 | 2025-11-27 | $100,005.48 | $+5.48 | +0.55% |
+| 2025-11-28 | $100,005.48 | $+5.48 | +0.55% |
 
 ### Equity Curve Summary
 
 | Metric | Value |
 |--------|-------|
-| **Trading Days Tracked** | 35 |
-| **Rolling Sharpe (7d)** | -56.58 |
-| **Rolling Sharpe (30d)** | -14.82 |
+| **Trading Days Tracked** | 36 |
+| **Rolling Sharpe (7d)** | -56.52 |
+| **Rolling Sharpe (30d)** | -14.78 |
 | **Rolling Max DD (30d)** | 0.06% |
 
 ### Cohort Analysis
@@ -356,7 +356,7 @@
 
 | Metric | Value |
 |--------|-------|
-| **Audit Trail Entries** | 8 |
+| **Audit Trail Entries** | 9 |
 | **Audit Trail Available** | ✅ Yes |
 
 ---
@@ -372,7 +372,7 @@
 - Win Rate: 0.0% (Target: >55%) ⚠️
 - Average Daily: $+0.15 (Target: $100/day)
 - System Reliability: ✅
-- Sharpe Ratio: -16.37 (Target: >1.0) ⚠️
+- Sharpe Ratio: -16.60 (Target: >1.0) ⚠️
 - Market Regime: SIDEWAYS (0 confidence)
 - Benchmark Alpha: +0.00% vs S&P 500
 
@@ -384,7 +384,6 @@
 | **Status** | ✅ OPERATIONAL |
 | **Last Trade Execution** | Never |
 | **Trades Today** | 0 |
-| **GitHub Actions** | ❌ Failure (2025-11-27) |
 
 ### Infrastructure Health
 | **Training Monitor** | ✅ Active |
@@ -402,10 +401,7 @@
 | **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
 
 ### LangSmith Monitoring
-| **Status** | ✅ Healthy |
-| **Total Runs** (7d) | 6 |
-| **Success Rate** | 0.0% |
-| **Avg Duration** | 0.0s |
+| **Status** | ✅ Healthy (no stats available) |
 | **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
@@ -413,8 +409,8 @@
 ## 📊 Recent Activity & Trends
 
 ### Last 7 Days Summary
-| **Total P/L** | $+30.24 |
-| **Avg Daily** | $+4.32 |
+| **Total P/L** | $+34.29 |
+| **Avg Daily** | $+4.90 |
 | **Trend** | 📈 Improving |
 
 ### Key Insights
@@ -444,6 +440,54 @@
 - [Documentation](https://github.com/IgorGanapolsky/trading/tree/main/docs)
 - [LangSmith RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)
 - [Vertex AI Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)
+
+
+---
+
+## 🤖 RL Training Status
+
+**Last Updated**: 2025-11-29 14:18:28
+
+### Cloud RL Jobs
+
+**Active Jobs**: 8
+**Completed Jobs**: 0
+**Total Jobs**: 8
+
+#### Active Training Jobs
+
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195082`)
+  - Submitted: 2025-11-26T17:11:22.825921
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195087`)
+  - Submitted: 2025-11-26T17:11:27.277334
+- **QQQ**: submitted (Job ID: `vertex_ai_lstm_ppo_qqq_1764195087`)
+  - Submitted: 2025-11-26T17:11:27.277583
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.760844
+- **QQQ**: submitted (Job ID: `vertex_ai_lstm_ppo_qqq_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.761480
+- **NVDA**: submitted (Job ID: `vertex_ai_lstm_ppo_nvda_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.761860
+- **GOOGL**: submitted (Job ID: `vertex_ai_lstm_ppo_googl_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.762364
+- **AMZN**: submitted (Job ID: `vertex_ai_lstm_ppo_amzn_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.762723
+
+#### Last Training Times
+
+- **SPY**: 2025-11-26T17:11:31.760848
+- **QQQ**: 2025-11-26T17:11:31.761486
+- **NVDA**: 2025-11-26T17:11:31.761863
+- **GOOGL**: 2025-11-26T17:11:31.762367
+- **AMZN**: 2025-11-26T17:11:31.762727
+
+#### Next Retrain Schedule
+
+- **SPY**: 2025-12-03T17:11:31.760848
+- **QQQ**: 2025-12-03T17:11:31.761486
+- **NVDA**: 2025-12-03T17:11:31.761863
+- **GOOGL**: 2025-12-03T17:11:31.762367
+- **AMZN**: 2025-12-03T17:11:31.762727
 
 ---
 
