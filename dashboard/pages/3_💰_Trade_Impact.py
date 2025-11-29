@@ -15,7 +15,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from dashboard.utils.chart_builders import (
     create_performance_comparison_table,
     create_roi_attribution_waterfall,
-    COLORS
+    COLORS,
 )
 
 st.set_page_config(page_title="Trade Impact", page_icon="💰", layout="wide")
@@ -27,7 +27,7 @@ st.markdown("Analyze how sentiment analysis affects trade outcomes and ROI")
 @st.cache_data(ttl=300)
 def load_trade_data(data_dir: Path):
     """Load historical trade data."""
-    trade_files = sorted(data_dir.glob('trades_*.json'))
+    trade_files = sorted(data_dir.glob("trades_*.json"))
 
     all_trades = []
     for file in trade_files:
@@ -55,11 +55,11 @@ def calculate_performance_metrics(trades: list, with_sentiment: bool = True):
     """Calculate performance metrics for trades with/without sentiment."""
     if not trades:
         return {
-            'total_trades': 0,
-            'win_rate': 0,
-            'avg_return': 0,
-            'total_pl': 0,
-            'sharpe_ratio': 0
+            "total_trades": 0,
+            "win_rate": 0,
+            "avg_return": 0,
+            "total_pl": 0,
+            "sharpe_ratio": 0,
         }
 
     # Filter trades based on sentiment availability (for future implementation)
@@ -67,25 +67,27 @@ def calculate_performance_metrics(trades: list, with_sentiment: bool = True):
     filtered_trades = trades
 
     total_trades = len(filtered_trades)
-    winning_trades = sum(1 for t in filtered_trades if t.get('pl', 0) > 0)
+    winning_trades = sum(1 for t in filtered_trades if t.get("pl", 0) > 0)
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
 
-    returns = [t.get('pl_pct', 0) for t in filtered_trades]
+    returns = [t.get("pl_pct", 0) for t in filtered_trades]
     avg_return = np.mean(returns) if returns else 0
-    total_pl = sum(t.get('pl', 0) for t in filtered_trades)
+    total_pl = sum(t.get("pl", 0) for t in filtered_trades)
 
     # Calculate Sharpe ratio (simplified)
     if returns and len(returns) > 1:
-        sharpe_ratio = (np.mean(returns) / np.std(returns)) if np.std(returns) != 0 else 0
+        sharpe_ratio = (
+            (np.mean(returns) / np.std(returns)) if np.std(returns) != 0 else 0
+        )
     else:
         sharpe_ratio = 0
 
     return {
-        'total_trades': total_trades,
-        'win_rate': win_rate,
-        'avg_return': avg_return,
-        'total_pl': total_pl,
-        'sharpe_ratio': sharpe_ratio
+        "total_trades": total_trades,
+        "win_rate": win_rate,
+        "avg_return": avg_return,
+        "total_pl": total_pl,
+        "sharpe_ratio": sharpe_ratio,
     }
 
 
@@ -101,7 +103,8 @@ def main():
         st.warning("System state data not available.")
         return
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style='background: {COLORS['grid']}; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;'>
             <h3 style='color: {COLORS['text']}; margin-top: 0;'>Impact Analysis Overview</h3>
             <p style='color: {COLORS['secondary']}; margin-bottom: 0;'>
@@ -109,30 +112,32 @@ def main():
                 As the system evolves, sentiment integration will show measurable ROI improvements.
             </p>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Current system performance
     st.subheader("📊 Current System Performance")
 
-    perf = system_state.get('performance', {})
+    perf = system_state.get("performance", {})
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_trades = perf.get('total_trades', 0)
+        total_trades = perf.get("total_trades", 0)
         st.metric("Total Trades", total_trades)
 
     with col2:
-        win_rate = perf.get('win_rate', 0)
+        win_rate = perf.get("win_rate", 0)
         st.metric("Win Rate", f"{win_rate:.1f}%")
 
     with col3:
-        total_pl = system_state.get('account', {}).get('total_pl', 0)
-        pl_color = COLORS['bullish'] if total_pl > 0 else COLORS['bearish']
+        total_pl = system_state.get("account", {}).get("total_pl", 0)
+        pl_color = COLORS["bullish"] if total_pl > 0 else COLORS["bearish"]
         st.metric("Total P/L", f"${total_pl:.2f}")
 
     with col4:
-        avg_return = perf.get('avg_return', 0)
+        avg_return = perf.get("avg_return", 0)
         st.metric("Avg Return", f"{avg_return:.2f}%")
 
     st.markdown("---")
@@ -140,48 +145,46 @@ def main():
     # Performance comparison (with vs without sentiment)
     st.subheader("📈 Performance Comparison")
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style='background: {COLORS['neutral']}20; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid {COLORS['neutral']}'>
             <strong>⚠️ Note:</strong> Sentiment integration is currently in development.
             Below shows projected improvements once fully implemented.
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Create comparison data (current vs projected with sentiment)
-    comparison_data = pd.DataFrame({
-        'Metric': [
-            'Win Rate',
-            'Average Return',
-            'Sharpe Ratio',
-            'Max Drawdown',
-            'Total P/L',
-            'Trades Executed'
-        ],
-        'Without Sentiment (Current)': [
-            f"{perf.get('win_rate', 0):.1f}%",
-            f"{perf.get('avg_return', 0):.2f}%",
-            f"{system_state.get('heuristics', {}).get('sharpe_ratio', 0):.2f}",
-            f"{abs(system_state.get('heuristics', {}).get('max_drawdown', 0)):.2f}%",
-            f"${total_pl:.2f}",
-            str(total_trades)
-        ],
-        'With Sentiment (Projected)': [
-            f"{min(perf.get('win_rate', 0) + 10, 100):.1f}%",  # +10% win rate improvement
-            f"{perf.get('avg_return', 0) * 1.25:.2f}%",  # 25% better returns
-            f"{max(system_state.get('heuristics', {}).get('sharpe_ratio', 0) + 0.5, 0.5):.2f}",
-            f"{abs(system_state.get('heuristics', {}).get('max_drawdown', 0)) * 0.8:.2f}%",  # 20% less drawdown
-            f"${total_pl * 1.25:.2f}",
-            str(total_trades)
-        ],
-        'Expected Improvement': [
-            '+10%',
-            '+25%',
-            '+0.5',
-            '-20%',
-            '+25%',
-            '0'
-        ]
-    })
+    comparison_data = pd.DataFrame(
+        {
+            "Metric": [
+                "Win Rate",
+                "Average Return",
+                "Sharpe Ratio",
+                "Max Drawdown",
+                "Total P/L",
+                "Trades Executed",
+            ],
+            "Without Sentiment (Current)": [
+                f"{perf.get('win_rate', 0):.1f}%",
+                f"{perf.get('avg_return', 0):.2f}%",
+                f"{system_state.get('heuristics', {}).get('sharpe_ratio', 0):.2f}",
+                f"{abs(system_state.get('heuristics', {}).get('max_drawdown', 0)):.2f}%",
+                f"${total_pl:.2f}",
+                str(total_trades),
+            ],
+            "With Sentiment (Projected)": [
+                f"{min(perf.get('win_rate', 0) + 10, 100):.1f}%",  # +10% win rate improvement
+                f"{perf.get('avg_return', 0) * 1.25:.2f}%",  # 25% better returns
+                f"{max(system_state.get('heuristics', {}).get('sharpe_ratio', 0) + 0.5, 0.5):.2f}",
+                f"{abs(system_state.get('heuristics', {}).get('max_drawdown', 0)) * 0.8:.2f}%",  # 20% less drawdown
+                f"${total_pl * 1.25:.2f}",
+                str(total_trades),
+            ],
+            "Expected Improvement": ["+10%", "+25%", "+0.5", "-20%", "+25%", "0"],
+        }
+    )
 
     fig_comparison = create_performance_comparison_table(comparison_data)
     st.plotly_chart(fig_comparison, use_container_width=True)
@@ -191,23 +194,26 @@ def main():
     # ROI Attribution
     st.subheader("💡 ROI Attribution Analysis")
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style='background: {COLORS['grid']}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
             <p style='color: {COLORS['text']}; margin: 0;'>
                 <strong>Attribution Breakdown:</strong> Shows how different factors contribute to overall ROI.
                 Sentiment analysis is expected to add significant alpha once integrated.
             </p>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # ROI attribution data
     attribution_data = {
-        'Base Strategy': 2.0,
-        'Market Timing': -1.5,
-        'Position Sizing': 0.8,
-        'Sentiment Analysis': 3.5,  # Projected
-        'Risk Management': 1.2,
-        'Total ROI': 6.0
+        "Base Strategy": 2.0,
+        "Market Timing": -1.5,
+        "Position Sizing": 0.8,
+        "Sentiment Analysis": 3.5,  # Projected
+        "Risk Management": 1.2,
+        "Total ROI": 6.0,
     }
 
     fig_attribution = create_roi_attribution_waterfall(attribution_data)
@@ -218,30 +224,37 @@ def main():
     # Sentiment-driven trade examples
     st.subheader("📝 Sentiment-Driven Trade Examples")
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style='background: {COLORS['grid']}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
             <p style='color: {COLORS['text']}; margin: 0;'>
                 Once sentiment integration is active, this section will show specific trades
                 that were influenced by sentiment signals and their outcomes.
             </p>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Sample sentiment-driven trades (placeholder)
-    sample_trades = pd.DataFrame({
-        'Date': ['2025-11-09', '2025-11-08', '2025-11-07'],
-        'Ticker': ['NVDA', 'SPY', 'GOOGL'],
-        'Sentiment Score': [65.0, 35.0, -25.0],
-        'Action': ['BUY', 'BUY', 'AVOID'],
-        'Entry Price': [145.20, 587.50, 178.30],
-        'Current Price': [147.50, 589.20, 176.80],
-        'P/L': ['+$2.30', '+$1.70', 'N/A (Avoided)'],
-        'Outcome': ['✅ Win', '✅ Win', '✅ Saved Loss']
-    })
+    sample_trades = pd.DataFrame(
+        {
+            "Date": ["2025-11-09", "2025-11-08", "2025-11-07"],
+            "Ticker": ["NVDA", "SPY", "GOOGL"],
+            "Sentiment Score": [65.0, 35.0, -25.0],
+            "Action": ["BUY", "BUY", "AVOID"],
+            "Entry Price": [145.20, 587.50, 178.30],
+            "Current Price": [147.50, 589.20, 176.80],
+            "P/L": ["+$2.30", "+$1.70", "N/A (Avoided)"],
+            "Outcome": ["✅ Win", "✅ Win", "✅ Saved Loss"],
+        }
+    )
 
     st.dataframe(sample_trades, use_container_width=True, hide_index=True)
 
-    st.info("Note: These are example trades. Real sentiment-driven trades will appear once the system is integrated.")
+    st.info(
+        "Note: These are example trades. Real sentiment-driven trades will appear once the system is integrated."
+    )
 
     st.markdown("---")
 
@@ -251,7 +264,8 @@ def main():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div style='background: {COLORS['bullish']}20; padding: 1.5rem; border-radius: 10px; border-left: 5px solid {COLORS['bullish']}'>
                 <h4 style='color: {COLORS['bullish']}; margin-top: 0;'>Phase 1: Data Collection ✅</h4>
                 <ul style='color: {COLORS['text']}; margin-bottom: 0;'>
@@ -261,10 +275,13 @@ def main():
                     <li>Dashboard visualization</li>
                 </ul>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with col2:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div style='background: {COLORS['neutral']}20; padding: 1.5rem; border-radius: 10px; border-left: 5px solid {COLORS['neutral']}'>
                 <h4 style='color: {COLORS['neutral']}; margin-top: 0;'>Phase 2: Integration 🔄</h4>
                 <ul style='color: {COLORS['text']}; margin-bottom: 0;'>
@@ -274,10 +291,13 @@ def main():
                     <li>Backtesting validation</li>
                 </ul>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with col3:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div style='background: {COLORS['secondary']}40; padding: 1.5rem; border-radius: 10px; border-left: 5px solid {COLORS['secondary']}'>
                 <h4 style='color: {COLORS['text']}; margin-top: 0;'>Phase 3: Optimization ⏳</h4>
                 <ul style='color: {COLORS['text']}; margin-bottom: 0;'>
@@ -287,7 +307,9 @@ def main():
                     <li>Performance tracking</li>
                 </ul>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
 
@@ -296,24 +318,25 @@ def main():
 
     insights = [
         {
-            'title': 'Sentiment as Risk Filter',
-            'description': 'Extreme negative sentiment can help avoid stocks before major drops',
-            'impact': 'Expected to reduce losing trades by 15-20%'
+            "title": "Sentiment as Risk Filter",
+            "description": "Extreme negative sentiment can help avoid stocks before major drops",
+            "impact": "Expected to reduce losing trades by 15-20%",
         },
         {
-            'title': 'Momentum Confirmation',
-            'description': 'Strong positive sentiment confirms technical momentum signals',
-            'impact': 'Expected to increase win rate by 8-12%'
+            "title": "Momentum Confirmation",
+            "description": "Strong positive sentiment confirms technical momentum signals",
+            "impact": "Expected to increase win rate by 8-12%",
         },
         {
-            'title': 'Early Warning System',
-            'description': 'Sudden sentiment shifts can predict price movements 1-2 days ahead',
-            'impact': 'Expected to improve entry/exit timing'
-        }
+            "title": "Early Warning System",
+            "description": "Sudden sentiment shifts can predict price movements 1-2 days ahead",
+            "impact": "Expected to improve entry/exit timing",
+        },
     ]
 
     for insight in insights:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div style='background: {COLORS['grid']}; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem;'>
                 <h4 style='color: {COLORS['bullish']}; margin-top: 0;'>✨ {insight['title']}</h4>
                 <p style='color: {COLORS['text']}; margin-bottom: 0.5rem;'>{insight['description']}</p>
@@ -321,16 +344,21 @@ def main():
                     <strong>Impact:</strong> {insight['impact']}
                 </p>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
 
 if __name__ == "__main__":
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <style>
         .stApp {{
             background-color: {COLORS['background']};
         }}
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     main()

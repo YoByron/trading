@@ -17,6 +17,7 @@ from typing import List
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except Exception:
     pass
@@ -44,7 +45,9 @@ def dry_run(symbols: List[str]) -> int:
 
     print("\n=== Ensemble Vote ===")
     for sym, vote in analysis.get("ensemble_vote", {}).items():
-        print(f"{sym}: consensus={vote.get('consensus')} buy_votes={vote.get('buy_votes')}/{vote.get('total_votes')}")
+        print(
+            f"{sym}: consensus={vote.get('consensus')} buy_votes={vote.get('buy_votes')}/{vote.get('total_votes')}"
+        )
 
     print("\n=== Agent Recommendations (top 5) ===")
     agent_results = analysis.get("agent_results", [])
@@ -61,8 +64,12 @@ def dry_run(symbols: List[str]) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Dry run trading analysis without execution")
-    parser.add_argument("--symbols", nargs="*", default=["SPY", "QQQ"], help="Symbols to analyze")
+    parser = argparse.ArgumentParser(
+        description="Dry run trading analysis without execution"
+    )
+    parser.add_argument(
+        "--symbols", nargs="*", default=["SPY", "QQQ"], help="Symbols to analyze"
+    )
     args = parser.parse_args()
     return dry_run(args.symbols)
 

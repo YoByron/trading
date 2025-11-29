@@ -24,6 +24,7 @@ sys.path.insert(0, str(project_root))
 try:
     import requests
     from bs4 import BeautifulSoup
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -51,6 +52,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ForumPost:
     """Forum post data structure"""
+
     title: str
     content: str
     author: str
@@ -64,6 +66,7 @@ class ForumPost:
 @dataclass
 class InvestingInsight:
     """Extracted investing insight"""
+
     insight_type: str  # market_regime, risk_management, strategy, sentiment
     insight_text: str
     confidence: float
@@ -117,9 +120,10 @@ class BogleheadsLearner:
                 else:
                     # Create empty vectorstore
                     from langchain.docstore.document import Document
+
                     self.vectorstore = FAISS.from_documents(
                         [Document(page_content="Initial Bogleheads insights")],
-                        embeddings
+                        embeddings,
                     )
                     logger.info("✅ Created new Bogleheads RAG store")
         except Exception as e:
@@ -137,7 +141,7 @@ class BogleheadsLearner:
         topics: Optional[List[str]] = None,
         keywords: Optional[List[str]] = None,
         max_posts: int = 50,
-        min_replies: int = 5
+        min_replies: int = 5,
     ) -> Dict[str, Any]:
         """
         Monitor Bogleheads forum for new discussions.
@@ -154,13 +158,22 @@ class BogleheadsLearner:
         if not REQUESTS_AVAILABLE:
             return {
                 "success": False,
-                "error": "Missing dependencies: requests, beautifulsoup4"
+                "error": "Missing dependencies: requests, beautifulsoup4",
             }
 
-        topics = topics or ["Personal Investments", "Investing - Theory, News & General"]
+        topics = topics or [
+            "Personal Investments",
+            "Investing - Theory, News & General",
+        ]
         keywords = keywords or [
-            "market timing", "rebalancing", "risk", "volatility",
-            "bear market", "bull market", "diversification", "allocation"
+            "market timing",
+            "rebalancing",
+            "risk",
+            "volatility",
+            "bear market",
+            "bull market",
+            "diversification",
+            "allocation",
         ]
 
         logger.info(f"🔍 Monitoring Bogleheads forum for topics: {topics}")
@@ -192,16 +205,18 @@ class BogleheadsLearner:
             for rss_url in rss_urls:
                 try:
                     self._rate_limit()
-                    rss_resp = requests.get(rss_url, headers={'User-Agent': 'TradingBot/1.0'}, timeout=10)
+                    rss_resp = requests.get(
+                        rss_url, headers={"User-Agent": "TradingBot/1.0"}, timeout=10
+                    )
                     if rss_resp.status_code == 200:
                         # Parse RSS
-                        soup = BeautifulSoup(rss_resp.content, 'xml')
-                        items = soup.find_all('item')
+                        soup = BeautifulSoup(rss_resp.content, "xml")
+                        items = soup.find_all("item")
 
                         for item in items[:max_posts]:
-                            title = item.find('title')
-                            description = item.find('description')
-                            link = item.find('link')
+                            title = item.find("title")
+                            description = item.find("description")
+                            link = item.find("link")
 
                             if title and description:
                                 title_text = title.get_text()
@@ -210,12 +225,20 @@ class BogleheadsLearner:
                                 # Check if matches keywords
                                 content_lower = (title_text + " " + desc_text).lower()
                                 if any(kw.lower() in content_lower for kw in keywords):
-                                    posts_found.append({
-                                        'title': title_text,
-                                        'content': desc_text[:1000],  # Limit content
-                                        'url': link.get_text() if link else '',
-                                        'date': item.find('pubDate').get_text() if item.find('pubDate') else ''
-                                    })
+                                    posts_found.append(
+                                        {
+                                            "title": title_text,
+                                            "content": desc_text[
+                                                :1000
+                                            ],  # Limit content
+                                            "url": link.get_text() if link else "",
+                                            "date": (
+                                                item.find("pubDate").get_text()
+                                                if item.find("pubDate")
+                                                else ""
+                                            ),
+                                        }
+                                    )
 
                         if posts_found:
                             logger.info(f"✅ Found {len(posts_found)} posts via RSS")
@@ -230,40 +253,62 @@ class BogleheadsLearner:
                     self._rate_limit()
                     resp = requests.get(
                         self.forum_url,
-                        headers={'User-Agent': 'TradingBot/1.0'},
-                        timeout=10
+                        headers={"User-Agent": "TradingBot/1.0"},
+                        timeout=10,
                     )
                     resp.raise_for_status()
 
-                    soup = BeautifulSoup(resp.text, 'html.parser')
+                    soup = BeautifulSoup(resp.text, "html.parser")
 
                     # Find topic links (phpBB structure)
-                    topic_links = soup.find_all('a', class_=['topictitle', 'forumtitle'], href=True)
+                    topic_links = soup.find_all(
+                        "a", class_=["topictitle", "forumtitle"], href=True
+                    )
 
                     for link in topic_links[:max_posts]:
                         title = link.get_text(strip=True)
-                        href = link.get('href', '')
+                        href = link.get("href", "")
 
                         # Check if matches keywords
                         if any(kw.lower() in title.lower() for kw in keywords):
                             # Get full post content
                             try:
                                 self._rate_limit()
-                                post_url = href if href.startswith('http') else f"{self.forum_url}/{href}"
-                                post_resp = requests.get(post_url, headers={'User-Agent': 'TradingBot/1.0'}, timeout=5)
+                                post_url = (
+                                    href
+                                    if href.startswith("http")
+                                    else f"{self.forum_url}/{href}"
+                                )
+                                post_resp = requests.get(
+                                    post_url,
+                                    headers={"User-Agent": "TradingBot/1.0"},
+                                    timeout=5,
+                                )
 
                                 if post_resp.status_code == 200:
-                                    post_soup = BeautifulSoup(post_resp.text, 'html.parser')
-                                    content_div = post_soup.find('div', class_='content')
-                                    content = content_div.get_text(strip=True) if content_div else ''
+                                    post_soup = BeautifulSoup(
+                                        post_resp.text, "html.parser"
+                                    )
+                                    content_div = post_soup.find(
+                                        "div", class_="content"
+                                    )
+                                    content = (
+                                        content_div.get_text(strip=True)
+                                        if content_div
+                                        else ""
+                                    )
 
-                                    if len(content) > 100:  # Only if substantial content
-                                        posts_found.append({
-                                            'title': title,
-                                            'content': content[:1000],
-                                            'url': post_url,
-                                            'date': ''
-                                        })
+                                    if (
+                                        len(content) > 100
+                                    ):  # Only if substantial content
+                                        posts_found.append(
+                                            {
+                                                "title": title,
+                                                "content": content[:1000],
+                                                "url": post_url,
+                                                "date": "",
+                                            }
+                                        )
                             except:
                                 continue  # Skip if can't fetch post
 
@@ -271,7 +316,9 @@ class BogleheadsLearner:
                                 break
 
                     if posts_found:
-                        logger.info(f"✅ Found {len(posts_found)} posts via HTML scraping")
+                        logger.info(
+                            f"✅ Found {len(posts_found)} posts via HTML scraping"
+                        )
                 except Exception as e:
                     logger.warning(f"HTML scraping failed: {e}")
 
@@ -282,13 +329,13 @@ class BogleheadsLearner:
                 all_insights = []
                 for post in posts_found:
                     insights = self.extract_investing_insights(
-                        post['content'],
+                        post["content"],
                         {
-                            'title': post['title'],
-                            'url': post['url'],
-                            'date': post.get('date', ''),
-                            'replies': 0  # Would need to parse from HTML
-                        }
+                            "title": post["title"],
+                            "url": post["url"],
+                            "date": post.get("date", ""),
+                            "replies": 0,  # Would need to parse from HTML
+                        },
                     )
                     all_insights.extend(insights)
 
@@ -297,27 +344,24 @@ class BogleheadsLearner:
                 # Store insights in RAG
                 if all_insights:
                     store_result = self.store_insights_to_rag(all_insights)
-                    logger.info(f"✅ Stored {store_result.get('stored_count', 0)} insights to RAG")
+                    logger.info(
+                        f"✅ Stored {store_result.get('stored_count', 0)} insights to RAG"
+                    )
 
             return {
                 "success": True,
                 "posts_analyzed": posts_analyzed,
                 "insights_extracted": insights_extracted,
-                "topics_found": [p['title'] for p in posts_found[:10]],
-                "posts": posts_found[:5]  # Return sample posts
+                "topics_found": [p["title"] for p in posts_found[:10]],
+                "posts": posts_found[:5],  # Return sample posts
             }
 
         except Exception as e:
             logger.error(f"Error monitoring forum: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def extract_investing_insights(
-        self,
-        post_content: str,
-        post_metadata: Dict[str, Any]
+        self, post_content: str, post_metadata: Dict[str, Any]
     ) -> List[InvestingInsight]:
         """
         Extract investing insights from forum post using Claude.
@@ -366,27 +410,29 @@ Return JSON array of insights:
             response = self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             # Parse JSON from response
             content = response.content[0].text
-            json_match = re.search(r'\[.*\]', content, re.DOTALL)
+            json_match = re.search(r"\[.*\]", content, re.DOTALL)
 
             if json_match:
                 insights_data = json.loads(json_match.group())
                 insights = []
 
                 for insight_data in insights_data:
-                    insights.append(InvestingInsight(
-                        insight_type=insight_data.get("insight_type", "unknown"),
-                        insight_text=insight_data.get("insight_text", ""),
-                        confidence=insight_data.get("confidence", 0.5),
-                        relevance_score=insight_data.get("relevance_score", 0.5),
-                        actionable=insight_data.get("actionable", False),
-                        source_post=post_metadata.get("url", ""),
-                        extracted_at=datetime.now().isoformat()
-                    ))
+                    insights.append(
+                        InvestingInsight(
+                            insight_type=insight_data.get("insight_type", "unknown"),
+                            insight_text=insight_data.get("insight_text", ""),
+                            confidence=insight_data.get("confidence", 0.5),
+                            relevance_score=insight_data.get("relevance_score", 0.5),
+                            actionable=insight_data.get("actionable", False),
+                            source_post=post_metadata.get("url", ""),
+                            extracted_at=datetime.now().isoformat(),
+                        )
+                    )
 
                 return insights
             else:
@@ -400,7 +446,7 @@ Return JSON array of insights:
     def store_insights_to_rag(
         self,
         insights: List[InvestingInsight],
-        embedding_model: str = "text-embedding-3-small"
+        embedding_model: str = "text-embedding-3-small",
     ) -> Dict[str, Any]:
         """
         Store insights in RAG vector store.
@@ -430,17 +476,19 @@ Actionable: {insight.actionable}
 Source: {insight.source_post}
 Extracted: {insight.extracted_at}
 """
-                documents.append(Document(
-                    page_content=doc_content,
-                    metadata={
-                        "type": insight.insight_type,
-                        "confidence": insight.confidence,
-                        "relevance": insight.relevance_score,
-                        "actionable": insight.actionable,
-                        "source": insight.source_post,
-                        "extracted_at": insight.extracted_at
-                    }
-                ))
+                documents.append(
+                    Document(
+                        page_content=doc_content,
+                        metadata={
+                            "type": insight.insight_type,
+                            "confidence": insight.confidence,
+                            "relevance": insight.relevance_score,
+                            "actionable": insight.actionable,
+                            "source": insight.source_post,
+                            "extracted_at": insight.extracted_at,
+                        },
+                    )
+                )
 
             # Add to vectorstore
             self.vectorstore.add_documents(documents)
@@ -451,20 +499,14 @@ Extracted: {insight.extracted_at}
 
             logger.info(f"✅ Stored {len(insights)} insights to RAG")
 
-            return {
-                "stored_count": len(insights),
-                "rag_path": str(rag_path)
-            }
+            return {"stored_count": len(insights), "rag_path": str(rag_path)}
 
         except Exception as e:
             logger.error(f"Error storing insights: {e}")
             return {"stored_count": 0, "error": str(e)}
 
     def get_bogleheads_signal(
-        self,
-        symbol: str,
-        market_context: Dict[str, Any],
-        query: Optional[str] = None
+        self, symbol: str, market_context: Dict[str, Any], query: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get trading signal based on Bogleheads forum wisdom.
@@ -482,13 +524,15 @@ Extracted: {insight.extracted_at}
                 "signal": "HOLD",
                 "confidence": 0.0,
                 "reasoning": "RAG not available",
-                "insights_used": []
+                "insights_used": [],
             }
 
         try:
             # Build query
             if not query:
-                query = f"What do Bogleheads recommend for {symbol} given: {market_context}"
+                query = (
+                    f"What do Bogleheads recommend for {symbol} given: {market_context}"
+                )
 
             # Search RAG
             docs = self.vectorstore.similarity_search(query, k=5)
@@ -498,7 +542,7 @@ Extracted: {insight.extracted_at}
                     "signal": "HOLD",
                     "confidence": 0.0,
                     "reasoning": "No relevant Bogleheads insights found",
-                    "insights_used": []
+                    "insights_used": [],
                 }
 
             # Analyze insights with Claude
@@ -531,11 +575,11 @@ Return JSON:
                 response = self.anthropic_client.messages.create(
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=1000,
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[{"role": "user", "content": prompt}],
                 )
 
                 content = response.content[0].text
-                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                json_match = re.search(r"\{.*\}", content, re.DOTALL)
 
                 if json_match:
                     signal_data = json.loads(json_match.group())
@@ -543,7 +587,7 @@ Return JSON:
                         "signal": signal_data.get("signal", "HOLD"),
                         "confidence": signal_data.get("confidence", 0.5),
                         "reasoning": signal_data.get("reasoning", ""),
-                        "insights_used": signal_data.get("key_insights", [])
+                        "insights_used": signal_data.get("key_insights", []),
                     }
 
             # Fallback: Simple analysis
@@ -551,7 +595,7 @@ Return JSON:
                 "signal": "HOLD",
                 "confidence": 0.5,
                 "reasoning": f"Found {len(docs)} relevant insights, but analysis unavailable",
-                "insights_used": [doc.page_content[:100] for doc in docs]
+                "insights_used": [doc.page_content[:100] for doc in docs],
             }
 
         except Exception as e:
@@ -560,12 +604,11 @@ Return JSON:
                 "signal": "HOLD",
                 "confidence": 0.0,
                 "reasoning": f"Error: {str(e)}",
-                "insights_used": []
+                "insights_used": [],
             }
 
     def analyze_market_regime_bogleheads(
-        self,
-        timeframe: str = "30d"
+        self, timeframe: str = "30d"
     ) -> Dict[str, Any]:
         """
         Analyze market regime based on Bogleheads discussions.
@@ -581,7 +624,7 @@ Return JSON:
                 "regime": "unknown",
                 "sentiment": "neutral",
                 "key_themes": [],
-                "risk_level": "medium"
+                "risk_level": "medium",
             }
 
         try:
@@ -594,7 +637,7 @@ Return JSON:
                     "regime": "unknown",
                     "sentiment": "neutral",
                     "key_themes": [],
-                    "risk_level": "medium"
+                    "risk_level": "medium",
                 }
 
             # Analyze with Claude
@@ -624,11 +667,11 @@ Return JSON:
                 response = self.anthropic_client.messages.create(
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=1000,
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[{"role": "user", "content": prompt}],
                 )
 
                 content = response.content[0].text
-                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                json_match = re.search(r"\{.*\}", content, re.DOTALL)
 
                 if json_match:
                     return json.loads(json_match.group())
@@ -638,7 +681,7 @@ Return JSON:
                 "regime": "uncertain",
                 "sentiment": "neutral",
                 "key_themes": ["Found insights but analysis unavailable"],
-                "risk_level": "medium"
+                "risk_level": "medium",
             }
 
         except Exception as e:
@@ -647,7 +690,7 @@ Return JSON:
                 "regime": "unknown",
                 "sentiment": "neutral",
                 "key_themes": [],
-                "risk_level": "medium"
+                "risk_level": "medium",
             }
 
 
@@ -663,8 +706,7 @@ def main():
 
     # Test signal generation
     signal = learner.get_bogleheads_signal(
-        symbol="SPY",
-        market_context={"volatility": "high", "trend": "bullish"}
+        symbol="SPY", market_context={"volatility": "high", "trend": "bullish"}
     )
     print(f"Signal: {signal}")
 

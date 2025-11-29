@@ -7,7 +7,7 @@ Tracks all heuristics, profits, trades, and system state
 import json
 from datetime import datetime, date
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 DATA_DIR = Path("data")
 STATE_FILE = DATA_DIR / "system_state.json"
@@ -33,7 +33,7 @@ class StateManager:
             state = self._add_staleness_metadata(state)
 
             # CRITICAL: Evaluate state quality and print warnings
-            evaluation = self._evaluate_state_quality(state)
+            self._evaluate_state_quality(state)
 
             # BLOCK if EXPIRED (>7 days old)
             if state["meta"]["staleness_status"] == "EXPIRED":
@@ -43,7 +43,7 @@ class StateManager:
 ╚════════════════════════════════════════════════════════════════╝
 
 State last updated: {state['meta']['last_updated']}
-Staleness: {state['meta']['staleness_hours']:.1f} hours ({state['meta']['staleness_hours']/24:.1f} days)
+Staleness: {state['meta']['staleness_hours']:.1f} hours ({state['meta']['staleness_hours'] / 24:.1f} days)
 Status: {state['meta']['staleness_status']}
 
 ⛔ REFUSING TO LOAD EXPIRED DATA ⛔
@@ -184,8 +184,15 @@ ACTION REQUIRED:
         self.state["challenge"]["current_day"] = day
         self.save_state()
 
-    def record_trade(self, tier: str, symbol: str, amount: float, order_id: str):
-        """Record a trade execution (opening a position)"""
+    def record_trade(
+        self,
+        tier: str,
+        symbol: str,
+        amount: float,
+        order_id: str,
+        attribution_metadata: Optional[Dict[str, Any]] = None,
+    ):
+        """Record a trade execution (opening a position) with attribution metadata"""
         # Update strategy stats
         if tier in ["tier1", "tier2"]:
             self.state["strategies"][tier]["trades_executed"] += 1
@@ -205,22 +212,35 @@ ACTION REQUIRED:
         if "open_positions" not in self.state["performance"]:
             self.state["performance"]["open_positions"] = []
 
-        self.state["performance"]["open_positions"].append({
+        position_data = {
             "tier": tier,
             "symbol": symbol,
             "amount": amount,
             "order_id": order_id,
             "entry_date": datetime.now().isoformat(),
             "entry_price": None,  # Will be updated when we get fill price
-        })
+        }
+
+        # Store attribution metadata for performance analysis
+        if attribution_metadata:
+            position_data["attribution_metadata"] = attribution_metadata
+
+        self.state["performance"]["open_positions"].append(position_data)
 
         # Add note
         self.add_note(f"Trade executed: {tier.upper()} - {symbol} ${amount}")
 
         self.save_state()
 
-    def record_closed_trade(self, symbol: str, entry_price: float, exit_price: float,
-                           quantity: float, entry_date: str, exit_date: str = None):
+    def record_closed_trade(
+        self,
+        symbol: str,
+        entry_price: float,
+        exit_price: float,
+        quantity: float,
+        entry_date: str,
+        exit_date: str = None,
+    ):
         """
         Record a closed trade with realized P/L.
 
@@ -237,7 +257,9 @@ ACTION REQUIRED:
 
         # Calculate realized P/L
         pl = (exit_price - entry_price) * quantity
-        pl_pct = ((exit_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
+        pl_pct = (
+            ((exit_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
+        )
 
         # Find and remove from open_positions
         if "open_positions" not in self.state["performance"]:
@@ -266,6 +288,13 @@ ACTION REQUIRED:
             "pl_pct": pl_pct,
             "tier": matching_position.get("tier") if matching_position else "unknown",
         }
+
+        # Preserve attribution metadata from original position
+        if matching_position and "attribution_metadata" in matching_position:
+            closed_trade["attribution_metadata"] = matching_position[
+                "attribution_metadata"
+            ]
+
         self.state["performance"]["closed_trades"].append(closed_trade)
 
         # Update win/loss counts
@@ -284,13 +313,17 @@ ACTION REQUIRED:
             self.state["performance"]["win_rate"] = 0.0
 
         # Update best/worst trade
-        if not self.state["performance"]["best_trade"] or pl > self.state["performance"]["best_trade"].get("pl", -float("inf")):
+        if not self.state["performance"]["best_trade"] or pl > self.state[
+            "performance"
+        ]["best_trade"].get("pl", -float("inf")):
             self.state["performance"]["best_trade"] = {
                 "symbol": symbol,
                 "pl": pl,
                 "pl_pct": pl_pct,
             }
-        if not self.state["performance"]["worst_trade"] or pl < self.state["performance"]["worst_trade"].get("pl", float("inf")):
+        if not self.state["performance"]["worst_trade"] or pl < self.state[
+            "performance"
+        ]["worst_trade"].get("pl", float("inf")):
             self.state["performance"]["worst_trade"] = {
                 "symbol": symbol,
                 "pl": pl,
@@ -299,10 +332,14 @@ ACTION REQUIRED:
 
         # Calculate average return
         if total_closed > 0:
-            total_return = sum(t["pl_pct"] for t in self.state["performance"]["closed_trades"])
+            total_return = sum(
+                t["pl_pct"] for t in self.state["performance"]["closed_trades"]
+            )
             self.state["performance"]["avg_return"] = total_return / total_closed
 
-        self.add_note(f"Position closed: {symbol} - Entry: ${entry_price:.2f}, Exit: ${exit_price:.2f}, P/L: ${pl:.2f} ({pl_pct:+.2f}%)")
+        self.add_note(
+            f"Position closed: {symbol} - Entry: ${entry_price:.2f}, Exit: ${exit_price:.2f}, P/L: ${pl:.2f} ({pl_pct:+.2f}%)"
+        )
         self.save_state()
 
     def update_open_positions(self, positions: list):
@@ -331,7 +368,11 @@ ACTION REQUIRED:
                     # Update with current price and unrealized P/L
                     open_pos["current_price"] = current_price
                     open_pos["unrealized_pl"] = (current_price - entry_price) * qty
-                    open_pos["unrealized_pl_pct"] = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+                    open_pos["unrealized_pl_pct"] = (
+                        ((current_price - entry_price) / entry_price * 100)
+                        if entry_price > 0
+                        else 0
+                    )
                     open_pos["last_updated"] = datetime.now().isoformat()
                     break
 
@@ -362,7 +403,9 @@ ACTION REQUIRED:
             self.state["notes"] = self.state["notes"][-100:]
         self.save_state()
 
-    def record_video_analysis(self, video_title: str, analyst: str, stocks_added: List[str]):
+    def record_video_analysis(
+        self, video_title: str, analyst: str, stocks_added: List[str]
+    ):
         """Record a YouTube video analysis"""
         if "video_analysis" not in self.state:
             self.state["video_analysis"] = {
@@ -387,17 +430,23 @@ ACTION REQUIRED:
         }
         self.state["video_analysis"]["video_sources"].append(video_entry)
         if len(self.state["video_analysis"]["video_sources"]) > 20:
-            self.state["video_analysis"]["video_sources"] = self.state["video_analysis"]["video_sources"][-20:]
+            self.state["video_analysis"]["video_sources"] = self.state[
+                "video_analysis"
+            ]["video_sources"][-20:]
 
         # Add to watchlist additions
         for ticker in stocks_added:
-            self.state["video_analysis"]["watchlist_additions"].append({
-                "ticker": ticker,
-                "source": f"{analyst} - {video_title}",
-                "date_added": datetime.now().isoformat(),
-            })
+            self.state["video_analysis"]["watchlist_additions"].append(
+                {
+                    "ticker": ticker,
+                    "source": f"{analyst} - {video_title}",
+                    "date_added": datetime.now().isoformat(),
+                }
+            )
 
-        self.add_note(f"Video analysis: {analyst} - {len(stocks_added)} stocks added to watchlist")
+        self.add_note(
+            f"Video analysis: {analyst} - {len(stocks_added)} stocks added to watchlist"
+        )
         self.save_state()
 
     def get_summary(self) -> Dict[str, Any]:
@@ -453,23 +502,33 @@ ACTION REQUIRED:
             confidence = 0.95
         elif status == "AGING":
             confidence = 0.70
-            warnings.append(f"State is {staleness_days:.1f} days old - account balance may not reflect recent trades")
+            warnings.append(
+                f"State is {staleness_days:.1f} days old - account balance may not reflect recent trades"
+            )
             recommendations.append("Run daily_checkin.py to refresh state")
         elif status == "STALE":
             confidence = 0.30
-            warnings.append(f"State is {staleness_days:.1f} days old - HIGH RISK of using stale data")
-            warnings.append("Account balance not updated in several days - may not reflect current positions")
+            warnings.append(
+                f"State is {staleness_days:.1f} days old - HIGH RISK of using stale data"
+            )
+            warnings.append(
+                "Account balance not updated in several days - may not reflect current positions"
+            )
             recommendations.append("URGENT: Run daily_checkin.py to refresh state")
         else:  # EXPIRED
             confidence = 0.05
-            warnings.append(f"State is {staleness_days:.1f} days old - CRITICAL STALENESS")
+            warnings.append(
+                f"State is {staleness_days:.1f} days old - CRITICAL STALENESS"
+            )
             warnings.append("Data is severely outdated and CANNOT be trusted")
             warnings.append("Using this data WILL cause hallucinations")
             recommendations.append("REQUIRED: Run daily_checkin.py immediately")
 
         # Check if challenge day calculation would be wrong
         if staleness_days >= 1:
-            warnings.append(f"Challenge day calculation may be off by {int(staleness_days)} days")
+            warnings.append(
+                f"Challenge day calculation may be off by {int(staleness_days)} days"
+            )
 
         evaluation = {
             "warnings": warnings,
@@ -477,16 +536,16 @@ ACTION REQUIRED:
             "confidence_in_state": confidence,
             "staleness_hours": staleness_hours,
             "staleness_days": staleness_days,
-            "status": status
+            "status": status,
         }
 
         state["meta"]["self_evaluation"] = evaluation
 
         # PRINT WARNINGS TO CONSOLE
         if status != "FRESH":
-            print("\n" + "="*70)
+            print("\n" + "=" * 70)
             print(f"⚠️  SYSTEM STATE WARNINGS ⚠️  [{status}]")
-            print("="*70)
+            print("=" * 70)
             for warning in warnings:
                 print(f"  ⚠️  {warning}")
             print()
@@ -494,14 +553,14 @@ ACTION REQUIRED:
             for rec in recommendations:
                 print(f"  → {rec}")
             print()
-            print(f"Confidence in state: {confidence*100:.0f}% ", end="")
+            print(f"Confidence in state: {confidence * 100:.0f}% ", end="")
             if confidence < 0.3:
                 print("(VERY LOW)")
             elif confidence < 0.7:
                 print("(LOW)")
             else:
                 print("(MODERATE)")
-            print("="*70)
+            print("=" * 70)
             print()
 
         return evaluation
@@ -518,7 +577,7 @@ ACTION REQUIRED:
             - hours_since_last_trade: Hours since last trade
             - recommended_action: What to do about it
         """
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         # Get last trade date from performance
         last_trade_date = None
@@ -550,7 +609,7 @@ ACTION REQUIRED:
                 "message": "No trades found in system history",
                 "last_trade_date": None,
                 "hours_since_last_trade": None,
-                "recommended_action": "Check if system has ever executed trades successfully"
+                "recommended_action": "Check if system has ever executed trades successfully",
             }
 
         # Calculate hours since last trade
@@ -563,15 +622,17 @@ ACTION REQUIRED:
         # Determine status based on time since last trade
         if hours_since > 120:  # 5 days
             status = "ERROR"
-            message = f"CRITICAL: No trades for {hours_since/24:.1f} days - automation likely broken"
+            message = f"CRITICAL: No trades for {hours_since / 24:.1f} days - automation likely broken"
             action = "URGENT: Check GitHub Actions workflow and system logs immediately"
         elif hours_since > 48:  # 2 days
             status = "ERROR"
-            message = f"No trades for {hours_since/24:.1f} days on weekday - automation may be broken"
+            message = f"No trades for {hours_since / 24:.1f} days on weekday - automation may be broken"
             action = "Check GitHub Actions workflow status and logs"
         elif is_weekday and hours_since > 24:
             status = "WARNING"
-            message = f"No trades for {hours_since:.1f} hours on weekday - check automation"
+            message = (
+                f"No trades for {hours_since:.1f} hours on weekday - check automation"
+            )
             action = "Verify GitHub Actions workflow is running daily at 9:35 AM ET"
         else:
             status = "OK"
@@ -583,7 +644,7 @@ ACTION REQUIRED:
             "message": message,
             "last_trade_date": last_trade_date.isoformat(),
             "hours_since_last_trade": hours_since,
-            "recommended_action": action
+            "recommended_action": action,
         }
 
     def export_for_context(self) -> str:
@@ -599,7 +660,7 @@ ACTION REQUIRED:
 ⚠️  DATA STALENESS WARNING ⚠️
 Status: {eval_data['status']}
 Age: {eval_data['staleness_days']:.1f} days
-Confidence: {eval_data['confidence_in_state']*100:.0f}%
+Confidence: {eval_data['confidence_in_state'] * 100:.0f}%
 Warnings: {len(eval_data['warnings'])} issues detected
 """
 

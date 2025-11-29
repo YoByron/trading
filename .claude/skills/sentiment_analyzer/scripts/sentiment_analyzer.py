@@ -24,6 +24,7 @@ try:
     from src.utils.news_sentiment import NewsSentimentAggregator
     from src.utils.sentiment_loader import load_latest_sentiment, get_ticker_sentiment
     from src.utils.reddit_sentiment import RedditSentiment
+
     SENTIMENT_AVAILABLE = True
 except ImportError:
     SENTIMENT_AVAILABLE = False
@@ -79,13 +80,25 @@ class SentimentAnalyzer:
                     ticker_sentiment = self.news_aggregator.aggregate_sentiment(symbol)
 
                     # Convert to standard format
-                    score = ticker_sentiment.score / 100.0 if ticker_sentiment.score > 1.0 else ticker_sentiment.score
+                    score = (
+                        ticker_sentiment.score / 100.0
+                        if ticker_sentiment.score > 1.0
+                        else ticker_sentiment.score
+                    )
                     score = (score - 0.5) * 2  # Convert 0-100 to -1 to +1 scale
 
                     sentiment_results[symbol] = {
                         "overall_score": score,
-                        "label": "positive" if score > 0.3 else "negative" if score < -0.3 else "neutral",
-                        "confidence": 0.8 if ticker_sentiment.confidence == "high" else 0.6 if ticker_sentiment.confidence == "medium" else 0.4,
+                        "label": (
+                            "positive"
+                            if score > 0.3
+                            else "negative" if score < -0.3 else "neutral"
+                        ),
+                        "confidence": (
+                            0.8
+                            if ticker_sentiment.confidence == "high"
+                            else 0.6 if ticker_sentiment.confidence == "medium" else 0.4
+                        ),
                         "article_count": ticker_sentiment.news_count or 0,
                         "breakdown": {
                             "positive": ticker_sentiment.positive_count or 0,
@@ -93,9 +106,21 @@ class SentimentAnalyzer:
                             "negative": ticker_sentiment.negative_count or 0,
                         },
                         "sources": {
-                            "yahoo": ticker_sentiment.yahoo_score / 100.0 if ticker_sentiment.yahoo_score else 0.5,
-                            "stocktwits": ticker_sentiment.stocktwits_score / 100.0 if ticker_sentiment.stocktwits_score else 0.5,
-                            "alphavantage": ticker_sentiment.alpha_vantage_score / 100.0 if ticker_sentiment.alpha_vantage_score else 0.5,
+                            "yahoo": (
+                                ticker_sentiment.yahoo_score / 100.0
+                                if ticker_sentiment.yahoo_score
+                                else 0.5
+                            ),
+                            "stocktwits": (
+                                ticker_sentiment.stocktwits_score / 100.0
+                                if ticker_sentiment.stocktwits_score
+                                else 0.5
+                            ),
+                            "alphavantage": (
+                                ticker_sentiment.alpha_vantage_score / 100.0
+                                if ticker_sentiment.alpha_vantage_score
+                                else 0.5
+                            ),
                         },
                         "trends": {
                             "direction": "improving" if score > 0.5 else "declining",
@@ -109,13 +134,17 @@ class SentimentAnalyzer:
                         "label": "neutral",
                     }
 
-            return success_response({
-                "sentiment": sentiment_results,
-                "timestamp": datetime.now().isoformat(),
-            })
+            return success_response(
+                {
+                    "sentiment": sentiment_results,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error analyzing news sentiment: {str(e)}", "ANALYSIS_ERROR")
+            return error_response(
+                f"Error analyzing news sentiment: {str(e)}", "ANALYSIS_ERROR"
+            )
 
     def analyze_social_sentiment(
         self,
@@ -147,18 +176,35 @@ class SentimentAnalyzer:
                     reddit_data = self.reddit_sentiment.get_sentiment(symbol)
 
                     sentiment_results[symbol] = {
-                        "overall_score": reddit_data.get("score", 0.5) / 100.0 if reddit_data.get("score", 0) > 1.0 else reddit_data.get("score", 0.5),
-                        "label": "positive" if reddit_data.get("score", 50) > 60 else "negative" if reddit_data.get("score", 50) < 40 else "neutral",
+                        "overall_score": (
+                            reddit_data.get("score", 0.5) / 100.0
+                            if reddit_data.get("score", 0) > 1.0
+                            else reddit_data.get("score", 0.5)
+                        ),
+                        "label": (
+                            "positive"
+                            if reddit_data.get("score", 50) > 60
+                            else (
+                                "negative"
+                                if reddit_data.get("score", 50) < 40
+                                else "neutral"
+                            )
+                        ),
                         "confidence": 0.7,
                         "total_mentions": reddit_data.get("mentions", 0),
                         "platforms": {
                             "reddit": {
                                 "score": reddit_data.get("score", 50) / 100.0,
                                 "mentions": reddit_data.get("mentions", 0),
-                                "trending": reddit_data.get("mentions", 0) > min_mentions,
+                                "trending": reddit_data.get("mentions", 0)
+                                > min_mentions,
                             },
                         },
-                        "volume_trend": "increasing" if reddit_data.get("mentions", 0) > min_mentions else "stable",
+                        "volume_trend": (
+                            "increasing"
+                            if reddit_data.get("mentions", 0) > min_mentions
+                            else "stable"
+                        ),
                         "anomalies": [],
                     }
                 except Exception as e:
@@ -168,13 +214,17 @@ class SentimentAnalyzer:
                         "label": "neutral",
                     }
 
-            return success_response({
-                "sentiment": sentiment_results,
-                "timestamp": datetime.now().isoformat(),
-            })
+            return success_response(
+                {
+                    "sentiment": sentiment_results,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error analyzing social sentiment: {str(e)}", "SOCIAL_ERROR")
+            return error_response(
+                f"Error analyzing social sentiment: {str(e)}", "SOCIAL_ERROR"
+            )
 
     def get_composite_sentiment(
         self,
@@ -204,11 +254,17 @@ class SentimentAnalyzer:
 
             # Get news sentiment
             news_result = self.analyze_news_sentiment(symbols)
-            news_sentiment = news_result.get("sentiment", {}) if news_result.get("success") else {}
+            news_sentiment = (
+                news_result.get("sentiment", {}) if news_result.get("success") else {}
+            )
 
             # Get social sentiment
             social_result = self.analyze_social_sentiment(symbols)
-            social_sentiment = social_result.get("sentiment", {}) if social_result.get("success") else {}
+            social_sentiment = (
+                social_result.get("sentiment", {})
+                if social_result.get("success")
+                else {}
+            )
 
             composite_results = {}
             for symbol in symbols:
@@ -221,14 +277,18 @@ class SentimentAnalyzer:
 
                 # Calculate weighted composite
                 composite_score = (
-                    news_score * weights["news_sentiment"] +
-                    social_score * weights["social_sentiment"] +
-                    market_score * weights["market_sentiment"]
+                    news_score * weights["news_sentiment"]
+                    + social_score * weights["social_sentiment"]
+                    + market_score * weights["market_sentiment"]
                 )
 
                 composite_results[symbol] = {
                     "score": composite_score,
-                    "label": "positive" if composite_score > 0.3 else "negative" if composite_score < -0.3 else "neutral",
+                    "label": (
+                        "positive"
+                        if composite_score > 0.3
+                        else "negative" if composite_score < -0.3 else "neutral"
+                    ),
                     "confidence": 0.8,
                     "components": {
                         "news_sentiment": {
@@ -247,18 +307,30 @@ class SentimentAnalyzer:
                             "contribution": market_score * weights["market_sentiment"],
                         },
                     },
-                    "signal_strength": "strong" if abs(composite_score) > 0.6 else "moderate" if abs(composite_score) > 0.3 else "weak",
-                    "recommendation": "buy" if composite_score > 0.6 else "sell" if composite_score < -0.6 else "hold",
+                    "signal_strength": (
+                        "strong"
+                        if abs(composite_score) > 0.6
+                        else "moderate" if abs(composite_score) > 0.3 else "weak"
+                    ),
+                    "recommendation": (
+                        "buy"
+                        if composite_score > 0.6
+                        else "sell" if composite_score < -0.6 else "hold"
+                    ),
                     "risk_factors": [],
                 }
 
-            return success_response({
-                "composite_sentiment": composite_results,
-                "timestamp": datetime.now().isoformat(),
-            })
+            return success_response(
+                {
+                    "composite_sentiment": composite_results,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error calculating composite sentiment: {str(e)}", "COMPOSITE_ERROR")
+            return error_response(
+                f"Error calculating composite sentiment: {str(e)}", "COMPOSITE_ERROR"
+            )
 
     def detect_sentiment_anomalies(
         self,
@@ -284,31 +356,43 @@ class SentimentAnalyzer:
             anomalies = []
             for symbol in symbols:
                 try:
-                    current_score, confidence, _ = get_ticker_sentiment(symbol, sentiment_data)
-                    current_score_norm = (current_score - 50) / 50.0  # Convert to -1 to +1
+                    current_score, confidence, _ = get_ticker_sentiment(
+                        symbol, sentiment_data
+                    )
+                    current_score_norm = (
+                        current_score - 50
+                    ) / 50.0  # Convert to -1 to +1
 
                     # Simple anomaly detection: rapid shift detection
                     # In production, would compare with historical data
                     if abs(current_score_norm) > 0.7:
-                        anomalies.append({
-                            "symbol": symbol,
-                            "type": "extreme_sentiment",
-                            "severity": "high" if sensitivity == "high" else "medium",
-                            "description": f"Sentiment score {current_score_norm:.2f} is extreme",
-                            "current_sentiment": current_score_norm,
-                            "recommendation": "Monitor closely before trading",
-                            "timestamp": datetime.now().isoformat(),
-                        })
+                        anomalies.append(
+                            {
+                                "symbol": symbol,
+                                "type": "extreme_sentiment",
+                                "severity": (
+                                    "high" if sensitivity == "high" else "medium"
+                                ),
+                                "description": f"Sentiment score {current_score_norm:.2f} is extreme",
+                                "current_sentiment": current_score_norm,
+                                "recommendation": "Monitor closely before trading",
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        )
                 except Exception:
                     pass
 
-            return success_response({
-                "anomalies": anomalies,
-                "timestamp": datetime.now().isoformat(),
-            })
+            return success_response(
+                {
+                    "anomalies": anomalies,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error detecting anomalies: {str(e)}", "ANOMALY_ERROR")
+            return error_response(
+                f"Error detecting anomalies: {str(e)}", "ANOMALY_ERROR"
+            )
 
 
 def main():
@@ -317,27 +401,55 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # analyze_news_sentiment command
-    news_parser = subparsers.add_parser("analyze_news_sentiment", help="Analyze news sentiment")
-    news_parser.add_argument("--symbols", nargs="+", required=True, help="Ticker symbols")
-    news_parser.add_argument("--time-window-hours", type=int, default=24, help="Time window in hours")
+    news_parser = subparsers.add_parser(
+        "analyze_news_sentiment", help="Analyze news sentiment"
+    )
+    news_parser.add_argument(
+        "--symbols", nargs="+", required=True, help="Ticker symbols"
+    )
+    news_parser.add_argument(
+        "--time-window-hours", type=int, default=24, help="Time window in hours"
+    )
     news_parser.add_argument("--sources", nargs="+", help="News sources")
 
     # analyze_social_sentiment command
-    social_parser = subparsers.add_parser("analyze_social_sentiment", help="Analyze social sentiment")
-    social_parser.add_argument("--symbols", nargs="+", required=True, help="Ticker symbols")
+    social_parser = subparsers.add_parser(
+        "analyze_social_sentiment", help="Analyze social sentiment"
+    )
+    social_parser.add_argument(
+        "--symbols", nargs="+", required=True, help="Ticker symbols"
+    )
     social_parser.add_argument("--platforms", nargs="+", help="Platforms to analyze")
-    social_parser.add_argument("--time-window-hours", type=int, default=6, help="Time window in hours")
+    social_parser.add_argument(
+        "--time-window-hours", type=int, default=6, help="Time window in hours"
+    )
 
     # get_composite_sentiment command
-    composite_parser = subparsers.add_parser("get_composite_sentiment", help="Get composite sentiment")
-    composite_parser.add_argument("--symbols", nargs="+", required=True, help="Ticker symbols")
-    composite_parser.add_argument("--include-market-sentiment", action="store_true", help="Include market sentiment")
+    composite_parser = subparsers.add_parser(
+        "get_composite_sentiment", help="Get composite sentiment"
+    )
+    composite_parser.add_argument(
+        "--symbols", nargs="+", required=True, help="Ticker symbols"
+    )
+    composite_parser.add_argument(
+        "--include-market-sentiment",
+        action="store_true",
+        help="Include market sentiment",
+    )
 
     # detect_sentiment_anomalies command
-    anomaly_parser = subparsers.add_parser("detect_sentiment_anomalies", help="Detect sentiment anomalies")
-    anomaly_parser.add_argument("--symbols", nargs="+", required=True, help="Ticker symbols")
-    anomaly_parser.add_argument("--lookback-hours", type=int, default=72, help="Lookback window")
-    anomaly_parser.add_argument("--sensitivity", choices=["low", "medium", "high"], default="medium")
+    anomaly_parser = subparsers.add_parser(
+        "detect_sentiment_anomalies", help="Detect sentiment anomalies"
+    )
+    anomaly_parser.add_argument(
+        "--symbols", nargs="+", required=True, help="Ticker symbols"
+    )
+    anomaly_parser.add_argument(
+        "--lookback-hours", type=int, default=72, help="Lookback window"
+    )
+    anomaly_parser.add_argument(
+        "--sensitivity", choices=["low", "medium", "high"], default="medium"
+    )
 
     args = parser.parse_args()
 

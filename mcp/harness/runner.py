@@ -63,8 +63,10 @@ def run(argv: Optional[list[str]] = None) -> int:
 
     registry = load_registry()
     if args.server not in registry:
-        parser.error(f"Unknown server '{args.server}'. "
-                     "Update mcp/registry.json if this is a new server.")
+        parser.error(
+            f"Unknown server '{args.server}'. "
+            "Update mcp/registry.json if this is a new server."
+        )
 
     payload = _load_payload(args.payload)
 

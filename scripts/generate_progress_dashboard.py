@@ -229,7 +229,7 @@ def generate_dashboard() -> str:
     world_class_metrics = calculator.calculate_all_metrics()
 
     now = datetime.now()
-    
+
     # Get today's date string for display
     today_display = date.today().strftime('%Y-%m-%d (%A)')
 

@@ -47,9 +47,13 @@ def analyze_and_recommend():
         print(f"  Total Portfolio: ${total_value:,.2f}")
 
         if spy_pct > 60:
-            print(f"\n  ⚠️  CRITICAL: SPY is {spy_pct:.1f}% of portfolio (exceeds 60% limit)")
+            print(
+                f"\n  ⚠️  CRITICAL: SPY is {spy_pct:.1f}% of portfolio (exceeds 60% limit)"
+            )
             print(f"  🎯 ACTION REQUIRED:")
-            print(f"     1. Reduce SPY position by ${(spy_value - total_value * 0.5):,.2f}")
+            print(
+                f"     1. Reduce SPY position by ${(spy_value - total_value * 0.5):,.2f}"
+            )
             print(f"     2. Diversify into QQQ/VOO")
             print(f"     3. Target: SPY < 50% of portfolio")
         else:
@@ -66,7 +70,9 @@ def analyze_and_recommend():
         pl_pct = pos.get("unrealized_pl_pct", 0)
 
         if pl_pct < -2:
-            print(f"  {symbol}: Entered at ${entry:.2f}, now ${current:.2f} ({pl_pct:.2f}%)")
+            print(
+                f"  {symbol}: Entered at ${entry:.2f}, now ${current:.2f} ({pl_pct:.2f}%)"
+            )
             print(f"    ⚠️  Entry was {abs(pl_pct):.2f}% above current price")
             print(f"    💡 RECOMMENDATION:")
             print(f"       - Add pullback filter: Wait for RSI < 40")
@@ -109,7 +115,9 @@ def analyze_and_recommend():
         "spy_concentration": spy_pct if spy_pos else 0,
         "needs_rebalancing": spy_pct > 60 if spy_pos else False,
         "entry_improvements": ["pullback_filter", "volume_confirmation", "ma_filter"],
-        "profit_taking_needed": googl_pos.get("unrealized_pl_pct", 0) > 2 if googl_pos else False,
+        "profit_taking_needed": (
+            googl_pos.get("unrealized_pl_pct", 0) > 2 if googl_pos else False
+        ),
     }
 
 

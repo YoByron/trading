@@ -16,10 +16,16 @@ from datetime import datetime, timedelta
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.utils.newsletter_analyzer import get_btc_signal, get_eth_signal, NewsletterAnalyzer
+from src.utils.newsletter_analyzer import (
+    get_btc_signal,
+    get_eth_signal,
+    NewsletterAnalyzer,
+)
 
 
-def should_trade_crypto(ticker: str, min_confidence: float = 0.7, max_signal_age_days: int = 7) -> tuple[bool, str]:
+def should_trade_crypto(
+    ticker: str, min_confidence: float = 0.7, max_signal_age_days: int = 7
+) -> tuple[bool, str]:
     """
     Determine if we should trade a crypto based on newsletter signals.
 
@@ -57,9 +63,11 @@ def should_trade_crypto(ticker: str, min_confidence: float = 0.7, max_signal_age
         return False, f"Not bullish (sentiment: {signal.sentiment})"
 
     # All checks passed
-    reason = (f"Newsletter signal: {signal.sentiment} "
-              f"(confidence: {signal.confidence:.2f}, "
-              f"age: {signal_age} days)")
+    reason = (
+        f"Newsletter signal: {signal.sentiment} "
+        f"(confidence: {signal.confidence:.2f}, "
+        f"age: {signal_age} days)"
+    )
     return True, reason
 
 
@@ -92,14 +100,14 @@ def get_trading_parameters(ticker: str) -> dict:
         "timeframe": signal.timeframe,
         "sentiment": signal.sentiment,
         "confidence": signal.confidence,
-        "reasoning": signal.reasoning
+        "reasoning": signal.reasoning,
     }
 
 
 def calculate_position_size_with_newsletter(
     ticker: str,
     account_value: float,
-    max_risk_pct: float = 0.02  # 2% max risk per trade
+    max_risk_pct: float = 0.02,  # 2% max risk per trade
 ) -> float:
     """
     Calculate position size using newsletter stop-loss.
@@ -136,9 +144,9 @@ def example_daily_trading_workflow():
     """
     Example: How to integrate newsletter signals into daily trading
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("DAILY TRADING WORKFLOW - NEWSLETTER INTEGRATION EXAMPLE")
-    print("="*80)
+    print("=" * 80)
 
     # Example account parameters
     account_value = 100000  # $100k
@@ -148,9 +156,9 @@ def example_daily_trading_workflow():
     print(f"Cryptos to Check: {', '.join(cryptos_to_check)}")
     print(f"Max Risk per Trade: 2% (${account_value * 0.02:,.0f})")
 
-    print("\n" + "-"*80)
+    print("\n" + "-" * 80)
     print("CHECKING NEWSLETTER SIGNALS")
-    print("-"*80)
+    print("-" * 80)
 
     for ticker in cryptos_to_check:
         print(f"\n{ticker}:")
@@ -203,9 +211,9 @@ def example_risk_management():
     """
     Example: Using newsletter signals for risk management
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("RISK MANAGEMENT - NEWSLETTER INTEGRATION EXAMPLE")
-    print("="*80)
+    print("=" * 80)
 
     analyzer = NewsletterAnalyzer()
     signals = analyzer.get_latest_signals(max_age_days=7)
@@ -249,9 +257,9 @@ def example_signal_monitoring():
     """
     Example: Monitoring signal freshness and quality
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SIGNAL MONITORING - NEWSLETTER INTEGRATION EXAMPLE")
-    print("="*80)
+    print("=" * 80)
 
     analyzer = NewsletterAnalyzer()
 
@@ -267,8 +275,12 @@ def example_signal_monitoring():
                 signal = get_eth_signal(max_age_days=max_age)
 
             if signal:
-                age = (datetime.now(signal.source_date.tzinfo) - signal.source_date).days
-                print(f"  ✅ Signal found (age: {age} days, confidence: {signal.confidence:.2f})")
+                age = (
+                    datetime.now(signal.source_date.tzinfo) - signal.source_date
+                ).days
+                print(
+                    f"  ✅ Signal found (age: {age} days, confidence: {signal.confidence:.2f})"
+                )
                 break
             elif max_age == 14:
                 print(f"  ❌ No signal found (checked last {max_age} days)")
@@ -276,17 +288,17 @@ def example_signal_monitoring():
 
 def main():
     """Run all examples"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("NEWSLETTER ANALYZER - INTEGRATION EXAMPLES")
-    print("="*80)
+    print("=" * 80)
 
     example_daily_trading_workflow()
     example_risk_management()
     example_signal_monitoring()
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXAMPLES COMPLETE")
-    print("="*80)
+    print("=" * 80)
     print("\nNext Steps:")
     print("1. Review docs/newsletter_analyzer_integration.md")
     print("2. Integrate into your trading script (autonomous_trader.py)")

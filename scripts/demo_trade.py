@@ -16,7 +16,9 @@ ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
 
 # Connect to Alpaca
 api = tradeapi.REST(

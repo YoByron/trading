@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from src.core.alpaca_trader import AlpacaTrader
 
@@ -37,12 +37,28 @@ class AlpacaExecutor:
             or 0.0
         )
 
-    def place_order(self, symbol: str, notional: float, side: str = "buy") -> Dict[str, Any]:
-        logger.debug("Submitting %s order via AlpacaExecutor: %s for $%.2f", side, symbol, notional)
+    def place_order(
+        self,
+        symbol: str,
+        notional: float,
+        side: str = "buy",
+        attribution_metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        logger.debug(
+            "Submitting %s order via AlpacaExecutor: %s for $%.2f",
+            side,
+            symbol,
+            notional,
+        )
         order = self.trader.execute_order(
             symbol=symbol,
             amount_usd=notional,
             side=side,
             tier="T1_CORE",
         )
+
+        # Attach attribution metadata to order result
+        if attribution_metadata:
+            order["attribution_metadata"] = attribution_metadata
+
         return order

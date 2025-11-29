@@ -18,7 +18,9 @@ except ImportError:
     sys.exit(1)
 
 
-def identify_test_traces(client: Client, project_name: str = "default", limit: int = 50):
+def identify_test_traces(
+    client: Client, project_name: str = "default", limit: int = 50
+):
     """Identify test/demo traces."""
     test_keywords = [
         "sample",
@@ -48,7 +50,7 @@ def identify_test_traces(client: Client, project_name: str = "default", limit: i
                     break
 
         # Check inputs
-        if hasattr(run, 'inputs') and run.inputs:
+        if hasattr(run, "inputs") and run.inputs:
             inputs_str = str(run.inputs).lower()
             for keyword in test_keywords:
                 if keyword in inputs_str:
@@ -57,7 +59,7 @@ def identify_test_traces(client: Client, project_name: str = "default", limit: i
                     break
 
         # Check outputs
-        if hasattr(run, 'outputs') and run.outputs:
+        if hasattr(run, "outputs") and run.outputs:
             outputs_str = str(run.outputs).lower()
             for keyword in test_keywords:
                 if keyword in outputs_str:
@@ -66,10 +68,7 @@ def identify_test_traces(client: Client, project_name: str = "default", limit: i
                     break
 
         if is_test:
-            test_traces.append({
-                "run": run,
-                "reasons": reason
-            })
+            test_traces.append({"run": run, "reasons": reason})
 
     return test_traces
 
@@ -94,15 +93,21 @@ def generate_deletion_guide(test_traces: list, project_name: str):
 
     if parent_trace:
         print(f"🎯 EASIEST METHOD: Delete the parent trace")
-        print(f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b")
+        print(
+            f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b"
+        )
         print(f"   2. Find: 'Sample Agent Trace' (ID: {parent_trace.id})")
         print(f"   3. Click on it")
         print(f"   4. Click the delete/archive button (usually top right)")
-        print(f"   5. This will delete the parent and all {len(test_traces)} sub-traces")
+        print(
+            f"   5. This will delete the parent and all {len(test_traces)} sub-traces"
+        )
         print(f"\n   ✅ This removes all test traces at once!")
     else:
         print(f"📝 Delete individual traces:")
-        print(f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b")
+        print(
+            f"   1. Go to: https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b"
+        )
         print(f"   2. Find each trace listed above")
         print(f"   3. Click delete/archive for each")
 
@@ -113,9 +118,20 @@ def main():
     """Main function."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Clean up test/demo traces from LangSmith")
-    parser.add_argument("--delete", action="store_true", help="Actually delete test traces (default: dry run)")
-    parser.add_argument("--project", type=str, default=None, help="Specific project to clean (default: all)")
+    parser = argparse.ArgumentParser(
+        description="Clean up test/demo traces from LangSmith"
+    )
+    parser.add_argument(
+        "--delete",
+        action="store_true",
+        help="Actually delete test traces (default: dry run)",
+    )
+    parser.add_argument(
+        "--project",
+        type=str,
+        default=None,
+        help="Specific project to clean (default: all)",
+    )
     args = parser.parse_args()
 
     api_key = os.getenv("LANGCHAIN_API_KEY")
@@ -166,6 +182,7 @@ def main():
         except Exception as e:
             print(f"\n⚠️  Error checking '{project_name}': {e}")
             import traceback
+
             traceback.print_exc()
 
     print("\n" + "=" * 70)
@@ -179,7 +196,9 @@ def main():
         print("   python scripts/clean_langsmith_test_traces.py --delete")
 
     print("\n💡 To generate REAL trading traces:")
-    print("   python scripts/rl_training_orchestrator.py --platform local --use-langsmith")
+    print(
+        "   python scripts/rl_training_orchestrator.py --platform local --use-langsmith"
+    )
     print("   OR run your trading system - traces will appear automatically")
 
 

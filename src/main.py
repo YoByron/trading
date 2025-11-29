@@ -40,17 +40,17 @@ from dotenv import load_dotenv
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.orchestration.adk_integration import ADKTradeAdapter, summarize_adk_decision
-from src.orchestration.elite_orchestrator import EliteOrchestrator
-from src.strategies.core_strategy import CoreStrategy
-from src.strategies.growth_strategy import GrowthStrategy
-from src.strategies.ipo_strategy import IPOStrategy
-from src.strategies.options_strategy import OptionsStrategy
-from src.core.alpaca_trader import AlpacaTrader
-from src.core.risk_manager import RiskManager
-from src.core.skills_integration import get_skills
-from src.deepagents_integration.adapter import create_analysis_agent_adapter
-from src.agent_framework import RunContext
+from src.orchestration.adk_integration import ADKTradeAdapter, summarize_adk_decision  # noqa: E402
+from src.orchestration.elite_orchestrator import EliteOrchestrator  # noqa: E402
+from src.strategies.core_strategy import CoreStrategy  # noqa: E402
+from src.strategies.growth_strategy import GrowthStrategy  # noqa: E402
+from src.strategies.ipo_strategy import IPOStrategy  # noqa: E402
+from src.strategies.options_strategy import OptionsStrategy  # noqa: E402
+from src.core.alpaca_trader import AlpacaTrader  # noqa: E402
+from src.core.risk_manager import RiskManager  # noqa: E402
+from src.core.skills_integration import get_skills  # noqa: E402
+from src.deepagents_integration.adapter import create_analysis_agent_adapter  # noqa: E402
+from src.agent_framework import RunContext  # noqa: E402
 
 
 # Configure logging with rotation
@@ -1333,10 +1333,10 @@ Output your recommendation in JSON format for easy parsing."""
                     f"  Sharpe Ratio: {risk_metrics.get('sharpe_ratio', 0):.2f}"
                 )
                 self.logger.info(
-                    f"  Max Drawdown: {risk_metrics.get('max_drawdown', 0)*100:.2f}%"
+                    f"  Max Drawdown: {risk_metrics.get('max_drawdown', 0) * 100:.2f}%"
                 )
                 self.logger.info(
-                    f"  Win Rate: {trade_stats.get('win_rate', 0)*100:.1f}%"
+                    f"  Win Rate: {trade_stats.get('win_rate', 0) * 100:.1f}%"
                 )
                 self.logger.info(
                     f"  Total Trades: {trade_stats.get('total_trades', 0)}"

@@ -41,16 +41,17 @@ except ImportError as e:
 # Optional: AI analysis support
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
     from openai import OpenAI
+
     AI_AVAILABLE = True
 except ImportError:
     AI_AVAILABLE = False
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -71,14 +72,13 @@ class YouTubeAnalyzer:
         self.use_ai = use_ai and AI_AVAILABLE
 
         if self.use_ai:
-            api_key = os.getenv('OPENROUTER_API_KEY')
+            api_key = os.getenv("OPENROUTER_API_KEY")
             if not api_key:
                 logger.warning("OPENROUTER_API_KEY not found - AI analysis disabled")
                 self.use_ai = False
             else:
                 self.ai_client = OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key=api_key
+                    base_url="https://openrouter.ai/api/v1", api_key=api_key
                 )
 
     def extract_video_id(self, url: str) -> Optional[str]:
@@ -92,9 +92,9 @@ class YouTubeAnalyzer:
             Video ID or None if not found
         """
         patterns = [
-            r'(?:v=|/)([0-9A-Za-z_-]{11}).*',
-            r'(?:embed/)([0-9A-Za-z_-]{11})',
-            r'^([0-9A-Za-z_-]{11})$'
+            r"(?:v=|/)([0-9A-Za-z_-]{11}).*",
+            r"(?:embed/)([0-9A-Za-z_-]{11})",
+            r"^([0-9A-Za-z_-]{11})$",
         ]
 
         for pattern in patterns:
@@ -117,29 +117,28 @@ class YouTubeAnalyzer:
         logger.info(f"Fetching metadata for video: {video_id}")
 
         ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': False,
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": False,
         }
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(
-                    f"https://www.youtube.com/watch?v={video_id}",
-                    download=False
+                    f"https://www.youtube.com/watch?v={video_id}", download=False
                 )
 
                 metadata = {
-                    'video_id': video_id,
-                    'title': info.get('title', 'Unknown'),
-                    'channel': info.get('channel', 'Unknown'),
-                    'channel_id': info.get('channel_id', 'Unknown'),
-                    'upload_date': info.get('upload_date', 'Unknown'),
-                    'duration': info.get('duration', 0),
-                    'view_count': info.get('view_count', 0),
-                    'like_count': info.get('like_count', 0),
-                    'description': info.get('description', ''),
-                    'url': f"https://www.youtube.com/watch?v={video_id}"
+                    "video_id": video_id,
+                    "title": info.get("title", "Unknown"),
+                    "channel": info.get("channel", "Unknown"),
+                    "channel_id": info.get("channel_id", "Unknown"),
+                    "upload_date": info.get("upload_date", "Unknown"),
+                    "duration": info.get("duration", 0),
+                    "view_count": info.get("view_count", 0),
+                    "like_count": info.get("like_count", 0),
+                    "description": info.get("description", ""),
+                    "url": f"https://www.youtube.com/watch?v={video_id}",
                 }
 
                 logger.info(f"Metadata fetched: {metadata['title']}")
@@ -164,11 +163,13 @@ class YouTubeAnalyzer:
         try:
             # Use the new API: create instance and fetch
             api = YouTubeTranscriptApi()
-            fetched = api.fetch(video_id, languages=['en'])
+            fetched = api.fetch(video_id, languages=["en"])
 
             # Convert to list of dicts for compatibility
-            transcript = [{'start': s.start, 'duration': s.duration, 'text': s.text}
-                          for s in fetched.snippets]
+            transcript = [
+                {"start": s.start, "duration": s.duration, "text": s.text}
+                for s in fetched.snippets
+            ]
 
             logger.info(f"Transcript fetched: {len(transcript)} segments")
             return transcript
@@ -198,10 +199,10 @@ class YouTubeAnalyzer:
         """
         formatted = []
         for segment in transcript:
-            timestamp = int(segment['start'])
+            timestamp = int(segment["start"])
             minutes = timestamp // 60
             seconds = timestamp % 60
-            text = segment['text'].strip()
+            text = segment["text"].strip()
             formatted.append(f"[{minutes:02d}:{seconds:02d}] {text}")
 
         return "\n".join(formatted)
@@ -218,7 +219,7 @@ class YouTubeAnalyzer:
             Dictionary with analysis results
         """
         if not self.use_ai:
-            return {'error': 'AI analysis not available'}
+            return {"error": "AI analysis not available"}
 
         logger.info("Analyzing content with AI...")
 
@@ -264,24 +265,19 @@ If no trading content is found, clearly state that.
         try:
             response = self.ai_client.chat.completions.create(
                 model="anthropic/claude-3.5-sonnet",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             analysis = response.choices[0].message.content
             logger.info("AI analysis complete")
-            return {'analysis': analysis}
+            return {"analysis": analysis}
 
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     def generate_report(
-        self,
-        metadata: Dict,
-        transcript: List[Dict],
-        ai_analysis: Optional[Dict] = None
+        self, metadata: Dict, transcript: List[Dict], ai_analysis: Optional[Dict] = None
     ) -> str:
         """
         Generate markdown report.
@@ -310,30 +306,27 @@ If no trading content is found, clearly state that.
             f"- **URL**: {metadata['url']}",
             "",
             "---",
-            ""
+            "",
         ]
 
         # Add AI analysis if available
-        if ai_analysis and 'analysis' in ai_analysis:
-            report_lines.extend([
-                "## AI Analysis",
-                "",
-                ai_analysis['analysis'],
-                "",
-                "---",
-                ""
-            ])
+        if ai_analysis and "analysis" in ai_analysis:
+            report_lines.extend(
+                ["## AI Analysis", "", ai_analysis["analysis"], "", "---", ""]
+            )
 
         # Add full transcript
-        report_lines.extend([
-            "## Full Transcript",
-            "",
-            transcript_text,
-            "",
-            "---",
-            "",
-            f"*Analysis generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*"
-        ])
+        report_lines.extend(
+            [
+                "## Full Transcript",
+                "",
+                transcript_text,
+                "",
+                "---",
+                "",
+                f"*Analysis generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+            ]
+        )
 
         return "\n".join(report_lines)
 
@@ -349,15 +342,15 @@ If no trading content is found, clearly state that.
             Path to saved file
         """
         # Create safe filename
-        title = re.sub(r'[^\w\s-]', '', metadata['title'])
-        title = re.sub(r'[-\s]+', '_', title)
+        title = re.sub(r"[^\w\s-]", "", metadata["title"])
+        title = re.sub(r"[-\s]+", "_", title)
         title = title[:50]  # Limit length
 
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"youtube_{title}_{timestamp}.md"
         filepath = self.output_dir / filename
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(report)
 
         logger.info(f"Report saved: {filepath}")
@@ -407,29 +400,19 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze YouTube videos for trading insights"
     )
+    parser.add_argument("--url", help="YouTube video URL")
+    parser.add_argument("--video-id", help="YouTube video ID (alternative to --url)")
     parser.add_argument(
-        '--url',
-        help='YouTube video URL'
+        "--output",
+        default="docs/youtube_analysis",
+        help="Output directory (default: docs/youtube_analysis)",
     )
     parser.add_argument(
-        '--video-id',
-        help='YouTube video ID (alternative to --url)'
+        "--analyze",
+        action="store_true",
+        help="Enable AI analysis (requires OpenRouter API key)",
     )
-    parser.add_argument(
-        '--output',
-        default='docs/youtube_analysis',
-        help='Output directory (default: docs/youtube_analysis)'
-    )
-    parser.add_argument(
-        '--analyze',
-        action='store_true',
-        help='Enable AI analysis (requires OpenRouter API key)'
-    )
-    parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Enable verbose logging'
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -451,10 +434,7 @@ def main():
 
     try:
         # Create analyzer
-        analyzer = YouTubeAnalyzer(
-            output_dir=args.output,
-            use_ai=args.analyze
-        )
+        analyzer = YouTubeAnalyzer(output_dir=args.output, use_ai=args.analyze)
 
         # Analyze video
         report_path = analyzer.analyze_video(video_input)
@@ -470,5 +450,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

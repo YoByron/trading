@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from alpaca.tradeapi import REST
@@ -65,7 +66,9 @@ def implement_stop_loss():
         if unrealized_pl_pct < -5:
             # Critical loss - immediate stop-loss at -5%
             stop_price = entry_price * 0.95
-            print(f"  🚨 CRITICAL: Loss exceeds 5% - Setting stop-loss at ${stop_price:.2f}")
+            print(
+                f"  🚨 CRITICAL: Loss exceeds 5% - Setting stop-loss at ${stop_price:.2f}"
+            )
 
             try:
                 # Place stop-loss order
@@ -77,25 +80,31 @@ def implement_stop_loss():
                     stop_price=stop_price,
                     time_in_force="gtc",
                 )
-                actions_taken.append({
-                    "symbol": symbol,
-                    "action": "stop_loss_placed",
-                    "stop_price": stop_price,
-                    "order_id": order.id,
-                })
+                actions_taken.append(
+                    {
+                        "symbol": symbol,
+                        "action": "stop_loss_placed",
+                        "stop_price": stop_price,
+                        "order_id": order.id,
+                    }
+                )
                 print(f"  ✅ Stop-loss order placed: {order.id}")
             except Exception as e:
                 print(f"  ❌ Failed to place stop-loss: {e}")
-                actions_taken.append({
-                    "symbol": symbol,
-                    "action": "stop_loss_failed",
-                    "error": str(e),
-                })
+                actions_taken.append(
+                    {
+                        "symbol": symbol,
+                        "action": "stop_loss_failed",
+                        "error": str(e),
+                    }
+                )
 
         elif unrealized_pl_pct < -2:
             # Warning loss - set stop-loss at -2%
             stop_price = entry_price * 0.98
-            print(f"  ⚠️  WARNING: Loss exceeds 2% - Setting stop-loss at ${stop_price:.2f}")
+            print(
+                f"  ⚠️  WARNING: Loss exceeds 2% - Setting stop-loss at ${stop_price:.2f}"
+            )
 
             try:
                 order = api.submit_order(
@@ -106,12 +115,14 @@ def implement_stop_loss():
                     stop_price=stop_price,
                     time_in_force="gtc",
                 )
-                actions_taken.append({
-                    "symbol": symbol,
-                    "action": "stop_loss_placed",
-                    "stop_price": stop_price,
-                    "order_id": order.id,
-                })
+                actions_taken.append(
+                    {
+                        "symbol": symbol,
+                        "action": "stop_loss_placed",
+                        "stop_price": stop_price,
+                        "order_id": order.id,
+                    }
+                )
                 print(f"  ✅ Stop-loss order placed: {order.id}")
             except Exception as e:
                 print(f"  ❌ Failed to place stop-loss: {e}")
@@ -124,7 +135,9 @@ def implement_stop_loss():
     print("=" * 80)
     print("📋 SUMMARY")
     print("=" * 80)
-    print(f"Actions taken: {len([a for a in actions_taken if 'placed' in a.get('action', '')])}")
+    print(
+        f"Actions taken: {len([a for a in actions_taken if 'placed' in a.get('action', '')])}"
+    )
 
     for action in actions_taken:
         if "placed" in action.get("action", ""):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import List
 
 from src.agents.momentum_agent import MomentumAgent
@@ -111,12 +112,71 @@ class TradingOrchestrator:
         )
 
         if order_size <= 0:
-            logger.info("Gate 4 (%s): REJECTED (position size calculated as 0).", ticker)
+            logger.info(
+                "Gate 4 (%s): REJECTED (position size calculated as 0).", ticker
+            )
             return
 
         logger.info("Executing BUY %s for $%.2f", ticker, order_size)
-        self.executor.place_order(
+
+        # Capture attribution metadata for performance analysis
+        attribution_metadata = {
+            "gate1_momentum": {
+                "passed": True,
+                "strength": momentum_signal.strength,
+                "indicators": (
+                    momentum_signal.indicators
+                    if hasattr(momentum_signal, "indicators")
+                    else {}
+                ),
+            },
+            "gate2_rl": {
+                "passed": True,
+                "confidence": rl_decision.get("confidence", 0.0),
+                "action": rl_decision.get("action"),
+                "multiplier": rl_decision.get("suggested_multiplier", 1.0),
+            },
+            "gate3_llm": {
+                "passed": (
+                    sentiment_score >= -0.2
+                    if self.budget_controller.can_afford_execution()
+                    else None
+                ),
+                "sentiment_score": sentiment_score,
+                "skipped": not self.budget_controller.can_afford_execution(),
+            },
+            "gate4_risk": {
+                "passed": order_size > 0,
+                "calculated_size": order_size,
+                "account_equity": self.executor.account_equity,
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        order_result = self.executor.place_order(
             ticker,
             order_size,
             side="buy",
+            attribution_metadata=attribution_metadata,
         )
+
+        # Record trade with attribution metadata for performance analysis
+        if order_result and order_result.get("id"):
+            try:
+                from scripts.state_manager import StateManager
+
+                state_manager = StateManager()
+                # Determine tier based on ticker (simplified - could be enhanced)
+                tier = "tier1" if ticker in ["SPY", "QQQ", "VOO"] else "tier2"
+                state_manager.record_trade(
+                    tier=tier,
+                    symbol=ticker,
+                    amount=order_size,
+                    order_id=str(order_result.get("id")),
+                    attribution_metadata=attribution_metadata,
+                )
+                logger.info(f"✅ Trade recorded with attribution metadata: {ticker}")
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to record trade with attribution: {e}")
+
+        return order_result

@@ -21,6 +21,7 @@ load_dotenv()
 try:
     from src.core.risk_manager import RiskManager
     from src.agents.risk_agent import RiskAgent
+
     RISK_AVAILABLE = True
 except ImportError:
     RISK_AVAILABLE = False
@@ -90,13 +91,19 @@ class PositionSizer:
             volatility_adjusted_position = fixed_position * (target_vol / volatility)
 
             # Kelly Criterion
-            kelly_fraction = (win_rate * avg_win_loss_ratio - (1 - win_rate)) / avg_win_loss_ratio
+            kelly_fraction = (
+                win_rate * avg_win_loss_ratio - (1 - win_rate)
+            ) / avg_win_loss_ratio
             kelly_fraction = max(0, min(kelly_fraction, 0.25))  # Cap at 25%
             kelly_position = account_value * kelly_fraction * 0.25  # Use 25% Kelly
 
             # ATR-based (simplified)
             atr_multiplier = 2.0
-            atr_position = fixed_position / atr_multiplier if stop_loss_price and current_price else fixed_position
+            atr_position = (
+                fixed_position / atr_multiplier
+                if stop_loss_price and current_price
+                else fixed_position
+            )
 
             # Select primary method
             if method == "fixed_pct":
@@ -113,60 +120,83 @@ class PositionSizer:
                 primary_method = "volatility_adjusted"
 
             # Calculate shares if price provided
-            position_shares = int(primary_position / current_price) if current_price else None
+            position_shares = (
+                int(primary_position / current_price) if current_price else None
+            )
 
             # Constraints
             max_position_dollars = account_value * 0.10  # 10% max
             min_position_dollars = 100.0
-            constrained_position = max(min_position_dollars, min(primary_position, max_position_dollars))
+            constrained_position = max(
+                min_position_dollars, min(primary_position, max_position_dollars)
+            )
 
-            return success_response({
-                "symbol": symbol,
-                "recommendations": {
-                    "primary_method": {
-                        "method": primary_method,
-                        "position_size_dollars": round(constrained_position, 2),
-                        "position_size_shares": position_shares,
-                        "rationale": f"Using {primary_method} method",
+            return success_response(
+                {
+                    "symbol": symbol,
+                    "recommendations": {
+                        "primary_method": {
+                            "method": primary_method,
+                            "position_size_dollars": round(constrained_position, 2),
+                            "position_size_shares": position_shares,
+                            "rationale": f"Using {primary_method} method",
+                        },
+                        "alternative_methods": {
+                            "fixed_percentage": {
+                                "position_size_dollars": round(fixed_position, 2),
+                                "position_size_shares": (
+                                    int(fixed_position / current_price)
+                                    if current_price
+                                    else None
+                                ),
+                            },
+                            "kelly_criterion": {
+                                "position_size_dollars": round(kelly_position, 2),
+                                "position_size_shares": (
+                                    int(kelly_position / current_price)
+                                    if current_price
+                                    else None
+                                ),
+                                "kelly_fraction": round(kelly_fraction, 4),
+                            },
+                            "atr_based": {
+                                "position_size_dollars": round(atr_position, 2),
+                                "position_size_shares": (
+                                    int(atr_position / current_price)
+                                    if current_price
+                                    else None
+                                ),
+                            },
+                        },
                     },
-                    "alternative_methods": {
-                        "fixed_percentage": {
-                            "position_size_dollars": round(fixed_position, 2),
-                            "position_size_shares": int(fixed_position / current_price) if current_price else None,
-                        },
-                        "kelly_criterion": {
-                            "position_size_dollars": round(kelly_position, 2),
-                            "position_size_shares": int(kelly_position / current_price) if current_price else None,
-                            "kelly_fraction": round(kelly_fraction, 4),
-                        },
-                        "atr_based": {
-                            "position_size_dollars": round(atr_position, 2),
-                            "position_size_shares": int(atr_position / current_price) if current_price else None,
-                        },
+                    "risk_metrics": {
+                        "dollar_risk": round(risk_amount, 2),
+                        "risk_pct": risk_per_trade_pct,
+                        "position_value_pct": round(
+                            (constrained_position / account_value) * 100, 2
+                        ),
+                        "estimated_volatility": volatility,
+                        "max_loss_at_stop": round(risk_amount, 2),
                     },
-                },
-                "risk_metrics": {
-                    "dollar_risk": round(risk_amount, 2),
-                    "risk_pct": risk_per_trade_pct,
-                    "position_value_pct": round((constrained_position / account_value) * 100, 2),
-                    "estimated_volatility": volatility,
-                    "max_loss_at_stop": round(risk_amount, 2),
-                },
-                "constraints": {
-                    "max_position_size_dollars": max_position_dollars,
-                    "max_position_size_pct": 10.0,
-                    "min_position_size_dollars": min_position_dollars,
-                    "constrained": constrained_position != primary_position,
-                },
-                "validation": {
-                    "within_risk_limits": constrained_position <= max_position_dollars,
-                    "sufficient_buying_power": True,
-                    "liquidity_adequate": True,
-                },
-            })
+                    "constraints": {
+                        "max_position_size_dollars": max_position_dollars,
+                        "max_position_size_pct": 10.0,
+                        "min_position_size_dollars": min_position_dollars,
+                        "constrained": constrained_position != primary_position,
+                    },
+                    "validation": {
+                        "within_risk_limits": constrained_position
+                        <= max_position_dollars,
+                        "sufficient_buying_power": True,
+                        "liquidity_adequate": True,
+                    },
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error calculating position size: {str(e)}", "CALCULATION_ERROR")
+            return error_response(
+                f"Error calculating position size: {str(e)}", "CALCULATION_ERROR"
+            )
 
     def calculate_portfolio_heat(
         self,
@@ -195,38 +225,58 @@ class PositionSizer:
                 risk_dollars = position_value * (risk_pct / 100)
                 total_risk += risk_dollars
 
-                individual_positions.append({
-                    "symbol": pos.get("symbol", "UNKNOWN"),
-                    "position_value": position_value,
-                    "risk_dollars": risk_dollars,
-                    "risk_pct": (risk_dollars / account_value) * 100 if account_value > 0 else 0,
-                    "stop_loss": pos.get("stop_loss"),
-                })
+                individual_positions.append(
+                    {
+                        "symbol": pos.get("symbol", "UNKNOWN"),
+                        "position_value": position_value,
+                        "risk_dollars": risk_dollars,
+                        "risk_pct": (
+                            (risk_dollars / account_value) * 100
+                            if account_value > 0
+                            else 0
+                        ),
+                        "stop_loss": pos.get("stop_loss"),
+                    }
+                )
 
-            total_risk_pct = (total_risk / account_value) * 100 if account_value > 0 else 0
+            total_risk_pct = (
+                (total_risk / account_value) * 100 if account_value > 0 else 0
+            )
             max_total_risk_pct = 5.0
-            remaining_capacity = max(0, (max_total_risk_pct - total_risk_pct) / 100 * account_value)
+            remaining_capacity = max(
+                0, (max_total_risk_pct - total_risk_pct) / 100 * account_value
+            )
 
-            return success_response({
-                "portfolio_heat": {
-                    "total_risk_dollars": round(total_risk, 2),
-                    "total_risk_pct": round(total_risk_pct, 2),
-                    "individual_positions": individual_positions,
-                    "capacity": {
-                        "max_total_risk_pct": max_total_risk_pct,
-                        "remaining_capacity_pct": round(max_total_risk_pct - total_risk_pct, 2),
-                        "remaining_capacity_dollars": round(remaining_capacity, 2),
+            return success_response(
+                {
+                    "portfolio_heat": {
+                        "total_risk_dollars": round(total_risk, 2),
+                        "total_risk_pct": round(total_risk_pct, 2),
+                        "individual_positions": individual_positions,
+                        "capacity": {
+                            "max_total_risk_pct": max_total_risk_pct,
+                            "remaining_capacity_pct": round(
+                                max_total_risk_pct - total_risk_pct, 2
+                            ),
+                            "remaining_capacity_dollars": round(remaining_capacity, 2),
+                        },
                     },
-                },
-                "recommendations": {
-                    "can_add_position": total_risk_pct < max_total_risk_pct,
-                    "max_new_position_dollars": round(remaining_capacity, 2),
-                    "warnings": [] if total_risk_pct < max_total_risk_pct else ["Portfolio heat approaching limit"],
-                },
-            })
+                    "recommendations": {
+                        "can_add_position": total_risk_pct < max_total_risk_pct,
+                        "max_new_position_dollars": round(remaining_capacity, 2),
+                        "warnings": (
+                            []
+                            if total_risk_pct < max_total_risk_pct
+                            else ["Portfolio heat approaching limit"]
+                        ),
+                    },
+                }
+            )
 
         except Exception as e:
-            return error_response(f"Error calculating portfolio heat: {str(e)}", "HEAT_ERROR")
+            return error_response(
+                f"Error calculating portfolio heat: {str(e)}", "HEAT_ERROR"
+            )
 
     def calculate_kelly_fraction(
         self,
@@ -246,27 +296,35 @@ class PositionSizer:
             Dict with Kelly calculation
         """
         try:
-            raw_kelly = (win_rate * avg_win_loss_ratio - (1 - win_rate)) / avg_win_loss_ratio
+            raw_kelly = (
+                win_rate * avg_win_loss_ratio - (1 - win_rate)
+            ) / avg_win_loss_ratio
             raw_kelly = max(0, min(raw_kelly, 1.0))  # Clamp between 0 and 1
             adjusted_kelly = raw_kelly * kelly_multiplier
 
-            return success_response({
-                "kelly_calculation": {
-                    "raw_kelly_pct": round(raw_kelly * 100, 2),
-                    "adjusted_kelly_pct": round(adjusted_kelly * 100, 2),
-                    "kelly_multiplier": kelly_multiplier,
-                    "inputs": {
-                        "win_rate": win_rate,
-                        "avg_win_loss_ratio": avg_win_loss_ratio,
+            return success_response(
+                {
+                    "kelly_calculation": {
+                        "raw_kelly_pct": round(raw_kelly * 100, 2),
+                        "adjusted_kelly_pct": round(adjusted_kelly * 100, 2),
+                        "kelly_multiplier": kelly_multiplier,
+                        "inputs": {
+                            "win_rate": win_rate,
+                            "avg_win_loss_ratio": avg_win_loss_ratio,
+                        },
+                        "formula": "(win_rate * avg_win_loss_ratio - (1 - win_rate)) / avg_win_loss_ratio",
                     },
-                    "formula": "(win_rate * avg_win_loss_ratio - (1 - win_rate)) / avg_win_loss_ratio",
-                },
-                "recommendation": {
-                    "position_size_pct": round(adjusted_kelly * 100, 2),
-                    "rationale": f"Using {kelly_multiplier * 100}% Kelly for conservative approach",
-                    "warnings": ["Full Kelly is aggressive - using fractional Kelly"] if raw_kelly > 0.25 else [],
-                },
-            })
+                    "recommendation": {
+                        "position_size_pct": round(adjusted_kelly * 100, 2),
+                        "rationale": f"Using {kelly_multiplier * 100}% Kelly for conservative approach",
+                        "warnings": (
+                            ["Full Kelly is aggressive - using fractional Kelly"]
+                            if raw_kelly > 0.25
+                            else []
+                        ),
+                    },
+                }
+            )
 
         except Exception as e:
             return error_response(f"Error calculating Kelly: {str(e)}", "KELLY_ERROR")
@@ -278,26 +336,55 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # calculate_position_size command
-    size_parser = subparsers.add_parser("calculate_position_size", help="Calculate position size")
+    size_parser = subparsers.add_parser(
+        "calculate_position_size", help="Calculate position size"
+    )
     size_parser.add_argument("--symbol", required=True, help="Ticker symbol")
-    size_parser.add_argument("--account-value", type=float, required=True, help="Account value")
-    size_parser.add_argument("--risk-per-trade-pct", type=float, default=1.0, help="Risk per trade %")
-    size_parser.add_argument("--method", choices=["fixed_pct", "volatility_adjusted", "kelly", "atr"], default="volatility_adjusted")
+    size_parser.add_argument(
+        "--account-value", type=float, required=True, help="Account value"
+    )
+    size_parser.add_argument(
+        "--risk-per-trade-pct", type=float, default=1.0, help="Risk per trade %"
+    )
+    size_parser.add_argument(
+        "--method",
+        choices=["fixed_pct", "volatility_adjusted", "kelly", "atr"],
+        default="volatility_adjusted",
+    )
     size_parser.add_argument("--current-price", type=float, help="Current price")
     size_parser.add_argument("--stop-loss-price", type=float, help="Stop loss price")
-    size_parser.add_argument("--win-rate", type=float, default=0.55, help="Win rate (for Kelly)")
-    size_parser.add_argument("--avg-win-loss-ratio", type=float, default=1.5, help="Avg win/loss ratio (for Kelly)")
+    size_parser.add_argument(
+        "--win-rate", type=float, default=0.55, help="Win rate (for Kelly)"
+    )
+    size_parser.add_argument(
+        "--avg-win-loss-ratio",
+        type=float,
+        default=1.5,
+        help="Avg win/loss ratio (for Kelly)",
+    )
 
     # calculate_portfolio_heat command
-    heat_parser = subparsers.add_parser("calculate_portfolio_heat", help="Calculate portfolio heat")
-    heat_parser.add_argument("--account-value", type=float, required=True, help="Account value")
+    heat_parser = subparsers.add_parser(
+        "calculate_portfolio_heat", help="Calculate portfolio heat"
+    )
+    heat_parser.add_argument(
+        "--account-value", type=float, required=True, help="Account value"
+    )
     heat_parser.add_argument("--positions-file", help="JSON file with positions")
 
     # calculate_kelly_fraction command
-    kelly_parser = subparsers.add_parser("calculate_kelly_fraction", help="Calculate Kelly fraction")
-    kelly_parser.add_argument("--win-rate", type=float, required=True, help="Win rate (0-1)")
-    kelly_parser.add_argument("--avg-win-loss-ratio", type=float, required=True, help="Avg win/loss ratio")
-    kelly_parser.add_argument("--kelly-multiplier", type=float, default=0.25, help="Kelly multiplier")
+    kelly_parser = subparsers.add_parser(
+        "calculate_kelly_fraction", help="Calculate Kelly fraction"
+    )
+    kelly_parser.add_argument(
+        "--win-rate", type=float, required=True, help="Win rate (0-1)"
+    )
+    kelly_parser.add_argument(
+        "--avg-win-loss-ratio", type=float, required=True, help="Avg win/loss ratio"
+    )
+    kelly_parser.add_argument(
+        "--kelly-multiplier", type=float, default=0.25, help="Kelly multiplier"
+    )
 
     args = parser.parse_args()
 

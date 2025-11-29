@@ -62,7 +62,8 @@ def main() -> None:
     output_path = (
         Path(args.output)
         if args.output
-        else Path("reports") / f"price_action_{args.ticker.lower()}_{datetime.now().date()}.txt"
+        else Path("reports")
+        / f"price_action_{args.ticker.lower()}_{datetime.now().date()}.txt"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(report, encoding="utf-8")

@@ -73,9 +73,7 @@ async def analyze_market():
 
     try:
         # Invoke agent
-        result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": query}]}
-        )
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": query}]})
 
         # Extract and display results
         print("=" * 80)
@@ -105,6 +103,7 @@ async def analyze_market():
     except Exception as e:
         print(f"\n❌ Analysis failed: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -120,6 +119,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Fatal error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

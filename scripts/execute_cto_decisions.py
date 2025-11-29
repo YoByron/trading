@@ -28,6 +28,7 @@ def execute_decisions():
     try:
         # Check if we can load state
         from scripts.state_manager import StateManager
+
         state_manager = StateManager()
         state = state_manager.state
 

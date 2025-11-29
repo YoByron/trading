@@ -1,6 +1,7 @@
 import yfinance as yf
 import pandas as pd
 
+
 def test_yfinance():
     symbol = "GOOGL"
     print(f"Fetching data for {symbol}...")
@@ -38,6 +39,7 @@ def test_yfinance():
 
     except Exception as e:
         print(f"Error in MACD logic: {e}")
+
 
 if __name__ == "__main__":
     test_yfinance()

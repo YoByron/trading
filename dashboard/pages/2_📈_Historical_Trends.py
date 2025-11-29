@@ -16,7 +16,7 @@ from dashboard.utils.chart_builders import (
     create_sentiment_timeline,
     create_correlation_heatmap,
     create_win_rate_by_sentiment_bar,
-    COLORS
+    COLORS,
 )
 
 st.set_page_config(page_title="Historical Trends", page_icon="📈", layout="wide")
@@ -32,7 +32,7 @@ def load_historical_sentiment(data_dir: Path, days: int = 30):
     end_date = datetime.now()
 
     for i in range(days):
-        date = (end_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        date = (end_date - timedelta(days=i)).strftime("%Y-%m-%d")
 
         reddit_file = data_dir / f"reddit_{date}.json"
         news_file = data_dir / f"news_{date}.json"
@@ -40,30 +40,38 @@ def load_historical_sentiment(data_dir: Path, days: int = 30):
         if not reddit_file.exists() and not news_file.exists():
             continue
 
-        day_data = {'date': date, 'tickers': {}}
+        day_data = {"date": date, "tickers": {}}
 
         # Load Reddit data
         if reddit_file.exists():
             with open(reddit_file) as f:
                 reddit_data = json.load(f)
-                for ticker, data in reddit_data['sentiment_by_ticker'].items():
-                    if ticker not in day_data['tickers']:
-                        day_data['tickers'][ticker] = {'reddit_score': 0, 'news_score': 0}
-                    day_data['tickers'][ticker]['reddit_score'] = min(100, max(-100, data.get('score', 0) / 2))
+                for ticker, data in reddit_data["sentiment_by_ticker"].items():
+                    if ticker not in day_data["tickers"]:
+                        day_data["tickers"][ticker] = {
+                            "reddit_score": 0,
+                            "news_score": 0,
+                        }
+                    day_data["tickers"][ticker]["reddit_score"] = min(
+                        100, max(-100, data.get("score", 0) / 2)
+                    )
 
         # Load news data
         if news_file.exists():
             with open(news_file) as f:
                 news_data = json.load(f)
-                for ticker, data in news_data['sentiment_by_ticker'].items():
-                    if ticker not in day_data['tickers']:
-                        day_data['tickers'][ticker] = {'reddit_score': 0, 'news_score': 0}
-                    day_data['tickers'][ticker]['news_score'] = data.get('score', 0)
+                for ticker, data in news_data["sentiment_by_ticker"].items():
+                    if ticker not in day_data["tickers"]:
+                        day_data["tickers"][ticker] = {
+                            "reddit_score": 0,
+                            "news_score": 0,
+                        }
+                    day_data["tickers"][ticker]["news_score"] = data.get("score", 0)
 
         # Calculate combined scores
-        for ticker, scores in day_data['tickers'].items():
-            combined = (scores['reddit_score'] * 0.4) + (scores['news_score'] * 0.6)
-            day_data['tickers'][ticker]['combined_score'] = combined
+        for ticker, scores in day_data["tickers"].items():
+            combined = (scores["reddit_score"] * 0.4) + (scores["news_score"] * 0.6)
+            day_data["tickers"][ticker]["combined_score"] = combined
 
         sentiment_history.append(day_data)
 
@@ -82,30 +90,27 @@ def load_performance_data(data_dir: Path):
         return json.load(f)
 
 
-def calculate_correlation(sentiment_df: pd.DataFrame, returns_df: pd.DataFrame) -> pd.DataFrame:
+def calculate_correlation(
+    sentiment_df: pd.DataFrame, returns_df: pd.DataFrame
+) -> pd.DataFrame:
     """Calculate correlation between sentiment and returns."""
     # Merge on date and ticker
-    merged = pd.merge(
-        sentiment_df,
-        returns_df,
-        on=['date', 'ticker'],
-        how='inner'
-    )
+    merged = pd.merge(sentiment_df, returns_df, on=["date", "ticker"], how="inner")
 
     if merged.empty:
         return pd.DataFrame()
 
     # Calculate correlation by ticker
     correlations = {}
-    for ticker in merged['ticker'].unique():
-        ticker_data = merged[merged['ticker'] == ticker]
+    for ticker in merged["ticker"].unique():
+        ticker_data = merged[merged["ticker"] == ticker]
         if len(ticker_data) > 1:
-            corr = ticker_data['sentiment'].corr(ticker_data['return'])
+            corr = ticker_data["sentiment"].corr(ticker_data["return"])
             correlations[ticker] = corr
 
     # Create correlation matrix
     if correlations:
-        return pd.DataFrame([correlations], index=['Correlation'])
+        return pd.DataFrame([correlations], index=["Correlation"])
     return pd.DataFrame()
 
 
@@ -132,12 +137,14 @@ def main():
     # Convert to DataFrame for timeline
     timeline_data = []
     for day in sentiment_history:
-        for ticker, scores in day['tickers'].items():
-            timeline_data.append({
-                'date': datetime.strptime(day['date'], '%Y-%m-%d'),
-                'ticker': ticker,
-                'score': scores['combined_score']
-            })
+        for ticker, scores in day["tickers"].items():
+            timeline_data.append(
+                {
+                    "date": datetime.strptime(day["date"], "%Y-%m-%d"),
+                    "ticker": ticker,
+                    "score": scores["combined_score"],
+                }
+            )
 
     if not timeline_data:
         st.warning("No data to display")
@@ -146,13 +153,13 @@ def main():
     df_timeline = pd.DataFrame(timeline_data)
 
     # Get top tickers by frequency
-    ticker_counts = df_timeline['ticker'].value_counts()
+    ticker_counts = df_timeline["ticker"].value_counts()
     top_tickers = ticker_counts.head(top_n_tickers).index.tolist()
 
     # Sentiment timeline chart
     st.subheader(f"📊 Sentiment Timeline - Top {top_n_tickers} Tickers")
 
-    filtered_df = df_timeline[df_timeline['ticker'].isin(top_tickers)]
+    filtered_df = df_timeline[df_timeline["ticker"].isin(top_tickers)]
     fig_timeline = create_sentiment_timeline(filtered_df, top_tickers)
     st.plotly_chart(fig_timeline, use_container_width=True)
 
@@ -165,24 +172,48 @@ def main():
 
     with col1:
         st.markdown("**Average Sentiment by Ticker**")
-        avg_sentiment = df_timeline.groupby('ticker')['score'].mean().sort_values(ascending=False).head(10)
+        avg_sentiment = (
+            df_timeline.groupby("ticker")["score"]
+            .mean()
+            .sort_values(ascending=False)
+            .head(10)
+        )
 
-        stats_df = pd.DataFrame({
-            'Ticker': avg_sentiment.index,
-            'Avg Sentiment': avg_sentiment.values.round(1),
-            'Trend': ['🟢 Bullish' if x > 20 else '🔴 Bearish' if x < -20 else '🟡 Neutral' for x in avg_sentiment.values]
-        })
+        stats_df = pd.DataFrame(
+            {
+                "Ticker": avg_sentiment.index,
+                "Avg Sentiment": avg_sentiment.values.round(1),
+                "Trend": [
+                    (
+                        "🟢 Bullish"
+                        if x > 20
+                        else "🔴 Bearish" if x < -20 else "🟡 Neutral"
+                    )
+                    for x in avg_sentiment.values
+                ],
+            }
+        )
         st.dataframe(stats_df, use_container_width=True, hide_index=True)
 
     with col2:
         st.markdown("**Sentiment Volatility (Std Dev)**")
-        volatility = df_timeline.groupby('ticker')['score'].std().sort_values(ascending=False).head(10)
+        volatility = (
+            df_timeline.groupby("ticker")["score"]
+            .std()
+            .sort_values(ascending=False)
+            .head(10)
+        )
 
-        vol_df = pd.DataFrame({
-            'Ticker': volatility.index,
-            'Volatility': volatility.values.round(1),
-            'Stability': ['⚠️ High' if x > 30 else '✅ Low' if x < 15 else '➡️ Medium' for x in volatility.values]
-        })
+        vol_df = pd.DataFrame(
+            {
+                "Ticker": volatility.index,
+                "Volatility": volatility.values.round(1),
+                "Stability": [
+                    "⚠️ High" if x > 30 else "✅ Low" if x < 15 else "➡️ Medium"
+                    for x in volatility.values
+                ],
+            }
+        )
         st.dataframe(vol_df, use_container_width=True, hide_index=True)
 
     st.markdown("---")
@@ -195,34 +226,37 @@ def main():
     if perf_data and len(perf_data) > 1:
         # Calculate daily returns
         perf_df = pd.DataFrame(perf_data)
-        perf_df['date'] = pd.to_datetime(perf_df['date'])
-        perf_df = perf_df.sort_values('date')
-        perf_df['daily_return'] = perf_df['pl_pct'].pct_change() * 100
+        perf_df["date"] = pd.to_datetime(perf_df["date"])
+        perf_df = perf_df.sort_values("date")
+        perf_df["daily_return"] = perf_df["pl_pct"].pct_change() * 100
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div style='background: {COLORS['grid']}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
                 <p style='color: {COLORS['text']}; margin: 0;'>
                     <strong>Correlation Analysis:</strong> Comparing sentiment scores with actual portfolio returns.
                     High positive correlation indicates sentiment is a good predictor of returns.
                 </p>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         # Calculate overall correlation
         if len(perf_df) > 2:
             # Simple correlation between average sentiment and returns
-            daily_sentiment = df_timeline.groupby('date')['score'].mean().reset_index()
-            daily_sentiment['date'] = pd.to_datetime(daily_sentiment['date'])
+            daily_sentiment = df_timeline.groupby("date")["score"].mean().reset_index()
+            daily_sentiment["date"] = pd.to_datetime(daily_sentiment["date"])
 
             merged_data = pd.merge(
                 daily_sentiment,
-                perf_df[['date', 'daily_return']],
-                on='date',
-                how='inner'
+                perf_df[["date", "daily_return"]],
+                on="date",
+                how="inner",
             )
 
             if len(merged_data) > 2:
-                overall_corr = merged_data['score'].corr(merged_data['daily_return'])
+                overall_corr = merged_data["score"].corr(merged_data["daily_return"])
 
                 col1, col2, col3 = st.columns(3)
 
@@ -230,7 +264,11 @@ def main():
                     st.metric("Overall Correlation", f"{overall_corr:.3f}")
 
                 with col2:
-                    corr_strength = "Strong" if abs(overall_corr) > 0.7 else "Moderate" if abs(overall_corr) > 0.4 else "Weak"
+                    corr_strength = (
+                        "Strong"
+                        if abs(overall_corr) > 0.7
+                        else "Moderate" if abs(overall_corr) > 0.4 else "Weak"
+                    )
                     st.metric("Correlation Strength", corr_strength)
 
                 with col3:
@@ -242,19 +280,22 @@ def main():
 
                 fig_scatter = px.scatter(
                     merged_data,
-                    x='score',
-                    y='daily_return',
-                    trendline='ols',
-                    title='Sentiment vs Daily Returns',
-                    labels={'score': 'Sentiment Score', 'daily_return': 'Daily Return (%)'}
+                    x="score",
+                    y="daily_return",
+                    trendline="ols",
+                    title="Sentiment vs Daily Returns",
+                    labels={
+                        "score": "Sentiment Score",
+                        "daily_return": "Daily Return (%)",
+                    },
                 )
 
                 fig_scatter.update_layout(
-                    paper_bgcolor=COLORS['background'],
-                    plot_bgcolor=COLORS['background'],
-                    font={'color': COLORS['text']},
-                    xaxis=dict(gridcolor=COLORS['grid']),
-                    yaxis=dict(gridcolor=COLORS['grid'])
+                    paper_bgcolor=COLORS["background"],
+                    plot_bgcolor=COLORS["background"],
+                    font={"color": COLORS["text"]},
+                    xaxis=dict(gridcolor=COLORS["grid"]),
+                    yaxis=dict(gridcolor=COLORS["grid"]),
                 )
 
                 st.plotly_chart(fig_scatter, use_container_width=True)
@@ -263,39 +304,48 @@ def main():
         else:
             st.info("Not enough performance data for correlation analysis.")
     else:
-        st.info("Performance data not available. Correlation analysis will be available after trades are executed.")
+        st.info(
+            "Performance data not available. Correlation analysis will be available after trades are executed."
+        )
 
     st.markdown("---")
 
     # Win rate by sentiment level (simulated for now)
     st.subheader("🎯 Win Rate by Sentiment Level")
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div style='background: {COLORS['grid']}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
             <p style='color: {COLORS['text']}; margin: 0;'>
                 <strong>Analysis:</strong> Breakdown of trading success rate by sentiment strength.
                 This helps validate whether stronger sentiment signals lead to better outcomes.
             </p>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Generate sample win rate data (will be replaced with real data)
-    win_rate_data = pd.DataFrame({
-        'sentiment_range': [
-            'Very Bearish (< -50)',
-            'Bearish (-50 to -20)',
-            'Neutral (-20 to 20)',
-            'Bullish (20 to 50)',
-            'Very Bullish (> 50)'
-        ],
-        'win_rate': [45.0, 48.0, 52.0, 58.0, 65.0],
-        'trade_count': [5, 12, 25, 18, 8]
-    })
+    win_rate_data = pd.DataFrame(
+        {
+            "sentiment_range": [
+                "Very Bearish (< -50)",
+                "Bearish (-50 to -20)",
+                "Neutral (-20 to 20)",
+                "Bullish (20 to 50)",
+                "Very Bullish (> 50)",
+            ],
+            "win_rate": [45.0, 48.0, 52.0, 58.0, 65.0],
+            "trade_count": [5, 12, 25, 18, 8],
+        }
+    )
 
     fig_winrate = create_win_rate_by_sentiment_bar(win_rate_data)
     st.plotly_chart(fig_winrate, use_container_width=True)
 
-    st.info("Note: Win rate data shown is simulated. Real data will appear once sufficient trades are executed.")
+    st.info(
+        "Note: Win rate data shown is simulated. Real data will appear once sufficient trades are executed."
+    )
 
     st.markdown("---")
 
@@ -309,7 +359,7 @@ def main():
         st.metric("Days of Data", total_days)
 
     with col2:
-        total_tickers = df_timeline['ticker'].nunique()
+        total_tickers = df_timeline["ticker"].nunique()
         st.metric("Unique Tickers", total_tickers)
 
     with col3:
@@ -318,12 +368,15 @@ def main():
 
 
 if __name__ == "__main__":
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <style>
         .stApp {{
             background-color: {COLORS['background']};
         }}
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     main()
