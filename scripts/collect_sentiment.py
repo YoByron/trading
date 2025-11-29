@@ -15,7 +15,6 @@ Or run manually:
     python scripts/collect_sentiment.py --test  # Test with minimal data
 """
 
-import os
 import sys
 import logging
 import argparse
@@ -29,7 +28,14 @@ sys.path.insert(0, str(project_root))
 
 from src.utils.reddit_sentiment import RedditSentiment
 from src.utils.news_sentiment import NewsSentimentAggregator
-from rag_store import ingest_news_snapshot, ingest_reddit_snapshot
+
+# Optional RAG store ingestion (graceful degradation if not available)
+try:
+    from rag_store import ingest_news_snapshot, ingest_reddit_snapshot
+
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
 
 from src.utils.sentiment_loader import (
     load_latest_sentiment,
@@ -39,6 +45,9 @@ from src.utils.sentiment_loader import (
 
 
 logger = logging.getLogger(__name__)
+
+if not RAG_AVAILABLE:
+    logger.warning("RAG store not available - skipping sentiment ingestion")
 
 
 def collect_reddit_sentiment(
@@ -78,7 +87,7 @@ def collect_reddit_sentiment(
 
         # Log summary
         meta = sentiment_data.get("meta", {})
-        logger.info(f"✓ Reddit sentiment collected successfully")
+        logger.info("✓ Reddit sentiment collected successfully")
         logger.info(f"  Date: {meta.get('date')}")
         logger.info(f"  Total Posts: {meta.get('total_posts')}")
         logger.info(f"  Total Tickers: {meta.get('total_tickers')}")
@@ -86,13 +95,14 @@ def collect_reddit_sentiment(
             f"  Subreddits: {', '.join(['r/' + s for s in meta.get('subreddits', [])])}"
         )
 
-        try:
-            ingest_reddit_snapshot(sentiment_data)
-            logger.info("✓ Reddit sentiment ingested into RAG store")
-        except Exception as ingest_error:  # noqa: BLE001
-            logger.error(
-                f"Failed to ingest Reddit sentiment: {ingest_error}", exc_info=True
-            )
+        if RAG_AVAILABLE:
+            try:
+                ingest_reddit_snapshot(sentiment_data)
+                logger.info("✓ Reddit sentiment ingested into RAG store")
+            except Exception as ingest_error:  # noqa: BLE001
+                logger.error(
+                    f"Failed to ingest Reddit sentiment: {ingest_error}", exc_info=True
+                )
 
         return True
 
@@ -140,27 +150,28 @@ def collect_news_sentiment(tickers: list, test_mode: bool = False) -> bool:
         filepath = aggregator.save_report(report)
 
         # Log summary
-        logger.info(f"✓ News sentiment collected successfully")
+        logger.info("✓ News sentiment collected successfully")
         logger.info(f"  Date: {report.meta['date']}")
         logger.info(f"  Tickers Analyzed: {report.meta['tickers_analyzed']}")
         logger.info(f"  Sources: {', '.join(report.meta['sources'])}")
         logger.info(f"  Saved to: {filepath}")
 
-        try:
-            # Convert dataclasses to plain dict for ingestion
-            report_dict = {
-                "meta": report.meta,
-                "sentiment_by_ticker": {
-                    ticker: asdict(sentiment)
-                    for ticker, sentiment in report.sentiment_by_ticker.items()
-                },
-            }
-            ingest_news_snapshot(report_dict)
-            logger.info("✓ News sentiment ingested into RAG store")
-        except Exception as ingest_error:  # noqa: BLE001
-            logger.error(
-                f"Failed to ingest news sentiment: {ingest_error}", exc_info=True
-            )
+        if RAG_AVAILABLE:
+            try:
+                # Convert dataclasses to plain dict for ingestion
+                report_dict = {
+                    "meta": report.meta,
+                    "sentiment_by_ticker": {
+                        ticker: asdict(sentiment)
+                        for ticker, sentiment in report.sentiment_by_ticker.items()
+                    },
+                }
+                ingest_news_snapshot(report_dict)
+                logger.info("✓ News sentiment ingested into RAG store")
+            except Exception as ingest_error:  # noqa: BLE001
+                logger.error(
+                    f"Failed to ingest news sentiment: {ingest_error}", exc_info=True
+                )
 
         return True
 
@@ -202,7 +213,7 @@ def main():
     )
 
     print("\n" + "=" * 80)
-    print(f"PRE-MARKET SENTIMENT COLLECTION")
+    print("PRE-MARKET SENTIMENT COLLECTION")
     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     if args.test:
         print("MODE: TEST (minimal data)")
