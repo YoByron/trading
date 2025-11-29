@@ -26,6 +26,7 @@ from collections import defaultdict
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from scripts.dashboard_metrics import TradingMetricsCalculator
+from src.utils.data_validator import DataValidator
 
 DATA_DIR = Path("data")
 
@@ -149,8 +150,33 @@ def calculate_metrics():
 
 def generate_dashboard() -> str:
     """Generate the world-class progress dashboard markdown."""
+    # Initialize data validator
+    validator = DataValidator()
+    
+    # Validate data consistency before generating dashboard
+    consistency_results = validator.check_data_consistency()
+    if consistency_results:
+        logger.warning("Data consistency issues found:")
+        for result in consistency_results:
+            logger.warning(f"  {result.error_message}")
+    
     # Get basic metrics
     basic_metrics = calculate_metrics()
+    
+    # Validate calculated metrics against actual data
+    calculated_total_pl = basic_metrics.get('total_pl', 0.0)
+    actual_total_pl = validator.get_current_total_profit()
+    
+    if abs(calculated_total_pl - actual_total_pl) >= 0.01:
+        logger.error(f"CRITICAL: Dashboard metric mismatch!")
+        logger.error(f"  Calculated total P/L: ${calculated_total_pl:.2f}")
+        logger.error(f"  Actual total P/L: ${actual_total_pl:.2f}")
+        logger.error(f"  Difference: ${abs(calculated_total_pl - actual_total_pl):.2f}")
+        # Use actual value to prevent false claims
+        basic_metrics['total_pl'] = actual_total_pl
+        # Recalculate percentage
+        starting_balance = basic_metrics.get('starting_balance', 100000.0)
+        basic_metrics['total_pl_pct'] = (actual_total_pl / starting_balance * 100) if starting_balance > 0 else 0.0
     
     # Get comprehensive world-class metrics
     calculator = TradingMetricsCalculator(DATA_DIR)
