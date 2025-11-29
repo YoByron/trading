@@ -14,7 +14,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 import asyncio
@@ -23,7 +23,6 @@ from src.core.skills_integration import get_skills
 from src.agent_framework.context_engine import (
     get_context_engine,
     ContextType,
-    ContextMessage,
 )
 from src.agent_framework import agent_blueprints
 
@@ -848,15 +847,21 @@ class EliteOrchestrator:
                 )
 
         # BogleHeads Agent (long-term sanity check / sentiment)
-        if getattr(self, "bogleheads_agent", None) and self._agent_enabled("bogleheads"):
+        if getattr(self, "bogleheads_agent", None) and self._agent_enabled(
+            "bogleheads"
+        ):
             for symbol in plan.symbols:
                 try:
                     analysis = self.bogleheads_agent.analyze({"symbol": symbol})
-                    decision = (analysis.get("signal") or analysis.get("decision") or "HOLD").upper()
+                    decision = (
+                        analysis.get("signal") or analysis.get("decision") or "HOLD"
+                    ).upper()
                     confidence = float(analysis.get("confidence", 0.5))
                     recommendations[f"{symbol}_bogleheads"] = {
                         "agent": "bogleheads_agent",
-                        "recommendation": decision if decision in {"BUY", "SELL"} else "HOLD",
+                        "recommendation": (
+                            decision if decision in {"BUY", "SELL"} else "HOLD"
+                        ),
                         "confidence": max(0.0, min(1.0, confidence)),
                         "reasoning": (analysis.get("reasoning") or "")[:200],
                     }

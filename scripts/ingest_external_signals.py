@@ -121,7 +121,7 @@ def collect_alpha_vantage_signals(
             continue
 
         avg_sent = statistics.mean(sentiments)
-        score = max(-100.0, min(100.0, (avg_sent - 0.5) * 200))
+            score = max(-100.0, min(100.0, (avg_sent - 0.5) * 200))
         confidence = min(1.0, len(sentiments) / 10.0)
 
         contributions[ticker.upper()].append(
@@ -261,10 +261,25 @@ def main() -> None:
 
     # Add Bogleheads signals
     try:
-        bogleheads_contrib = collect_bogleheads_signals(args.tickers)
+        bogleheads_contrib: Dict[str, List[Dict]] = defaultdict(list)
+        for t in args.tickers:
+            try:
+                sig = get_bogleheads_signal_for_symbol(t)
+                bogleheads_contrib[t].append(
+                    {
+                        "score": sig.get("score", 0.0) / 100.0,
+                        "confidence": sig.get("confidence", 0.0),
+                        "source": "bogleheads",
+                        "signal_type": "forum_longterm",
+                        "notes": sig.get("reasoning"),
+                    }
+                )
+            except Exception as e:
+                logger.debug(f"Bogleheads signal failed for {t}: {e}")
         for ticker, items in bogleheads_contrib.items():
             contributions[ticker].extend(items)
-        logger.info("✅ Bogleheads signals collected")
+        if bogleheads_contrib:
+            logger.info("✅ Bogleheads signals collected")
     except Exception as e:
         logger.warning(f"⚠️  Could not collect Bogleheads signals: {e}")
 
