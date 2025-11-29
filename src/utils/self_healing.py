@@ -158,10 +158,10 @@ def self_heal() -> None:
         # Action 1: Re-initialize Anthropic client
         from anthropic import Anthropic
 
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = get_anthropic_api_key()
 
         if not api_key:
-            logger.error("ANTHROPIC_API_KEY not found in environment")
+            logger.error("ANTHROPIC_API_KEY or CLAUDE_API_KEY not found in environment")
             raise ValueError("Missing API key")
 
         new_client = Anthropic(api_key=api_key)
