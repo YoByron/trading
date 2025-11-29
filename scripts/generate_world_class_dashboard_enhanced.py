@@ -512,7 +512,42 @@ def generate_world_class_dashboard() -> str:
 ---
 
 
+    dashboard += f"""
+---
+
+## 💰 Options Income (Yield Generation)
+
+"""
+    # Check for options activity in logs
+    options_activity = []
+    try:
+        log_files = [Path("logs/trading_system.log")]
+        for log_file in log_files:
+            if log_file.exists():
+                with open(log_file, 'r') as f:
+                    lines = f.readlines()[-2000:] # Check last 2000 lines
+                    for line in lines:
+                        if "EXECUTING OPTIONS STRATEGY" in line:
+                            options_activity = [] # Reset on new execution start
+                        if "Proposed: Sell" in line:
+                            parts = line.split("Proposed: Sell ")[1].strip()
+                            options_activity.append(f"- 🎯 **Opportunity**: Sell {parts}")
+                        if "Options Strategy: No opportunities found" in line:
+                            options_activity = ["- ℹ️ No covered call opportunities found today (need 100+ shares)"]
+    except Exception:
+        pass
+
+    if options_activity:
+        for activity in options_activity[-5:]: # Show last 5
+            dashboard += f"{activity}\n"
+    else:
+        dashboard += "- ℹ️ Strategy active (Monitoring for 100+ share positions)\n"
+
+    dashboard += f"""
+---
+
 ## 🤖 AI & ML System Status
+
 
 ### RL Training Status
 """
