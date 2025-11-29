@@ -49,6 +49,8 @@ jobs:
           if [ -n "$GOOGLE_API_KEY" ]; then
             pip install google-generativeai
           fi
+          # For Bogleheads learner/agent fallback scraping
+          pip install beautifulsoup4 lxml requests || true
           # Gemini is only needed if enabled elsewhere; skip by default
 
       - name: Run dry run (auto-detect agents by secrets)
@@ -63,6 +65,8 @@ jobs:
           GROK_API_KEY2: ${{ secrets.GROK_API_KEY2 }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
+          # Prime latest Bogleheads snapshot into local RAG for this run (non-fatal)
+          python scripts/bogleheads_ingest_once.py || true
           INCLUDE_LIST=""
           # Normalize Grok key if alt names are used
           if [ -z "$GROK_API_KEY" ] && [ -n "$GROK_API_KEY1" ]; then export GROK_API_KEY="$GROK_API_KEY1"; fi
