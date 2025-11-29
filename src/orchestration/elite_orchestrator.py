@@ -149,12 +149,18 @@ class EliteOrchestrator:
         logger.info(f"   Mode: {'PAPER' if paper else 'LIVE'}")
 
         # Ensemble voting configuration and agent filters
-        self.ensemble_weights = self._load_ensemble_weights()
         self.ensemble_buy_threshold = float(os.getenv("ENSEMBLE_BUY_THRESHOLD", "0.15"))
-        self.ensemble_sell_threshold = float(os.getenv("ENSEMBLE_SELL_THRESHOLD", "-0.15"))
+        self.ensemble_sell_threshold = float(
+            os.getenv("ENSEMBLE_SELL_THRESHOLD", "-0.15")
+        )
+
         # Execution sizing scale bounds
         self.size_scale_min = float(os.getenv("ENSEMBLE_SIZE_SCALE_MIN", "0.5"))
         self.size_scale_max = float(os.getenv("ENSEMBLE_SIZE_SCALE_MAX", "1.0"))
+
+        # Load weights and override thresholds from YAML if present
+        self.ensemble_weights = self._load_ensemble_weights()
+
         # Optional analysis agent filter (can be set by CLI/scripts)
         self._analysis_agent_filter = None
 
@@ -172,10 +178,12 @@ class EliteOrchestrator:
         config_path = os.getenv("ENSEMBLE_CONFIG_PATH", "profiles/ensemble-config.yaml")
         try:
             from pathlib import Path as _Path
+
             p = _Path(config_path)
             if p.exists():
                 try:
                     import yaml  # type: ignore
+
                     with open(p, "r") as f:
                         cfg = yaml.safe_load(f) or {}
                     if isinstance(cfg, dict):
@@ -483,6 +491,7 @@ class EliteOrchestrator:
             results["errors"].append(f"Data Collection: {str(e)}")
 
         # Phase 3: Analysis (ensemble voting)
+        analysis_result = None  # Initialize to prevent NameError if Phase 3 fails
         try:
             analysis_result = self._execute_analysis(
                 plan, data_result
@@ -493,6 +502,8 @@ class EliteOrchestrator:
         except Exception as e:
             logger.error(f"Phase 3 failed: {e}")
             results["errors"].append(f"Analysis: {str(e)}")
+            # Set empty analysis_result to prevent downstream errors
+            analysis_result = {"agent_results": [], "ensemble_vote": {}}
 
         # Phase 4: Risk Assessment
         try:
@@ -512,7 +523,11 @@ class EliteOrchestrator:
 
         # Phase 5: Execution
         try:
-            exec_result = self._execute_trades(plan, analysis_result)
+            if analysis_result is None:
+                logger.error("Cannot execute trades: analysis phase failed")
+                results["errors"].append("Execution: Analysis phase failed, skipping execution")
+            else:
+                exec_result = self._execute_trades(plan, analysis_result)
             results["phases"][PlanningPhase.EXECUTION.value] = exec_result
             plan.phases[PlanningPhase.EXECUTION.value]["status"] = "completed"
             results["final_decision"] = exec_result.get("decision")
@@ -953,7 +968,10 @@ class EliteOrchestrator:
                         ) or position_result.get("position_size_dollars", 0.0)
                         weighted_score = float(vote.get("weighted_score", 0.15))
                         # Scale execution size by confidence within configured bounds
-                        scale = max(self.size_scale_min, min(self.size_scale_max, abs(weighted_score)))
+                        scale = max(
+                            self.size_scale_min,
+                            min(self.size_scale_max, abs(weighted_score)),
+                        )
                         desired_position_dollars = round(base_dollars * scale, 2)
 
                         # Use ADK for execution
