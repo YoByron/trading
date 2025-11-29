@@ -129,6 +129,8 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           DAILY_INVESTMENT: ${{ secrets.DAILY_INVESTMENT || '10.0' }}
           PAPER_TRADING: 'true'
+          ENABLE_CRYPTO_AGENT: 'true'
+          CRYPTO_DAILY_AMOUNT: ${{ secrets.CRYPTO_DAILY_AMOUNT || '0.50' }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           LANGCHAIN_ENABLE_MCP: ${{ secrets.LANGCHAIN_ENABLE_MCP || 'true' }}
           LANGCHAIN_MODEL: ${{ secrets.LANGCHAIN_MODEL || 'claude-3-5-sonnet-20241022' }}
