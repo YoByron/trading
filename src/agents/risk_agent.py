@@ -9,6 +9,7 @@ Responsibilities:
 
 Ensures we never blow up the account
 """
+
 import logging
 from typing import Dict, Any
 from .base_agent import BaseAgent
@@ -27,10 +28,11 @@ class RiskAgent(BaseAgent):
     - Circuit breakers
     """
 
-    def __init__(self, max_portfolio_risk: float = 0.02, max_position_size: float = 0.05):
+    def __init__(
+        self, max_portfolio_risk: float = 0.02, max_position_size: float = 0.05
+    ):
         super().__init__(
-            name="RiskAgent",
-            role="Portfolio risk management and position sizing"
+            name="RiskAgent", role="Portfolio risk management and position sizing"
         )
         self.max_portfolio_risk = max_portfolio_risk  # Max 2% risk per trade
         self.max_position_size = max_position_size  # Max 5% per position
@@ -118,7 +120,7 @@ RECOMMENDATION: [APPROVE/REJECT]"""
         portfolio_value: float,
         confidence: float,
         volatility: float,
-        win_rate: float
+        win_rate: float,
     ) -> float:
         """
         Calculate position size using Kelly Criterion with safety adjustments.
@@ -185,7 +187,7 @@ RECOMMENDATION: [APPROVE/REJECT]"""
             "position_size": 0,
             "stop_loss": 0.05,
             "risks": "",
-            "action": "APPROVE"
+            "action": "APPROVE",
         }
 
         for line in lines:
@@ -201,7 +203,9 @@ RECOMMENDATION: [APPROVE/REJECT]"""
                     analysis["position_approval"] = approval
             elif line.startswith("POSITION_SIZE:"):
                 try:
-                    size_str = line.split(":")[1].strip().replace("$", "").replace(",", "")
+                    size_str = (
+                        line.split(":")[1].strip().replace("$", "").replace(",", "")
+                    )
                     analysis["position_size"] = float(size_str)
                 except:
                     pass

@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ToolResult:
     """Result from a tool execution"""
+
     tool_name: str
     success: bool
     result: Any
@@ -40,6 +41,7 @@ class ToolResult:
 @dataclass
 class TaskSolution:
     """Solution to a trading task"""
+
     task_id: str
     executor_agent: str
     solution: Dict[str, Any]
@@ -61,9 +63,7 @@ class ExecutorAgent(TradingAgent):
     """
 
     def __init__(
-        self,
-        storage_dir: Optional[Path] = None,
-        curriculum_agent: Optional[Any] = None
+        self, storage_dir: Optional[Path] = None, curriculum_agent: Optional[Any] = None
     ):
         super().__init__("ExecutorAgent")
         self.storage_dir = storage_dir or Path("data/agent_context/executor")
@@ -92,13 +92,15 @@ class ExecutorAgent(TradingAgent):
                 from src.ml.multi_step_learning import NStepDQNAgent
 
                 # State dimension based on task features
-                state_dim = 20  # Task features: difficulty, category, objectives count, etc.
+                state_dim = (
+                    20  # Task features: difficulty, category, objectives count, etc.
+                )
                 dqn = DQNAgent(
                     state_dim=state_dim,
                     action_dim=len(self.available_tools) if self.available_tools else 3,
                     use_dueling=True,
                     use_double=True,
-                    use_prioritized_replay=True
+                    use_prioritized_replay=True,
                 )
                 self.dqn_agent = NStepDQNAgent(dqn, n=3)
                 logger.info("✅ Executor Agent DQN initialized")
@@ -108,7 +110,9 @@ class ExecutorAgent(TradingAgent):
         # Initialize tools
         self._initialize_tools()
 
-        logger.info(f"✅ Executor Agent initialized: {len(self.available_tools)} tools available")
+        logger.info(
+            f"✅ Executor Agent initialized: {len(self.available_tools)} tools available"
+        )
 
     def execute(self, context: RunContext) -> AgentResult:
         """
@@ -122,12 +126,14 @@ class ExecutorAgent(TradingAgent):
         """
         try:
             # Extract task from context (check both config.data and state_cache)
-            task_data = context.config.data.get("task") or context.state_cache.get("task")
+            task_data = context.config.data.get("task") or context.state_cache.get(
+                "task"
+            )
             if not task_data:
                 return AgentResult(
                     name=self.agent_name,
                     succeeded=False,
-                    error="No task provided in context"
+                    error="No task provided in context",
                 )
 
             task = TradingTask.from_dict(task_data)
@@ -162,17 +168,13 @@ class ExecutorAgent(TradingAgent):
                 payload={
                     "solution": asdict(solution),
                     "performance": asdict(performance),
-                    "execution_time_seconds": execution_time
-                }
+                    "execution_time_seconds": execution_time,
+                },
             )
 
         except Exception as e:
             logger.exception(f"❌ Executor Agent failed: {e}")
-            return AgentResult(
-                name=self.agent_name,
-                succeeded=False,
-                error=str(e)
-            )
+            return AgentResult(name=self.agent_name, succeeded=False, error=str(e))
 
     def _solve_task(self, task: TradingTask, context: RunContext) -> TaskSolution:
         """
@@ -210,13 +212,15 @@ class ExecutorAgent(TradingAgent):
                     )
             else:
                 reasoning_parts.append(f"⚠️ Tool {tool_name} not available")
-                tool_results.append(ToolResult(
-                    tool_name=tool_name,
-                    success=False,
-                    result=None,
-                    execution_time_ms=0.0,
-                    error=f"Tool {tool_name} not available"
-                ))
+                tool_results.append(
+                    ToolResult(
+                        tool_name=tool_name,
+                        success=False,
+                        result=None,
+                        execution_time_ms=0.0,
+                        error=f"Tool {tool_name} not available",
+                    )
+                )
 
         # Step 3: Synthesize solution
         solution = self._synthesize_solution(task, tool_results, solution_data)
@@ -230,14 +234,11 @@ class ExecutorAgent(TradingAgent):
             solution=solution,
             tool_results=tool_results,
             reasoning="\n".join(reasoning_parts),
-            confidence=confidence
+            confidence=confidence,
         )
 
     def _execute_tool(
-        self,
-        tool_name: str,
-        task: TradingTask,
-        context: RunContext
+        self, tool_name: str, task: TradingTask, context: RunContext
     ) -> ToolResult:
         """Execute a specific tool"""
         start_time = time.time()
@@ -250,7 +251,7 @@ class ExecutorAgent(TradingAgent):
                     success=False,
                     result=None,
                     execution_time_ms=0.0,
-                    error=f"Tool {tool_name} not found"
+                    error=f"Tool {tool_name} not found",
                 )
 
             # Execute tool with task context
@@ -271,7 +272,7 @@ class ExecutorAgent(TradingAgent):
                 tool_name=tool_name,
                 success=True,
                 result=result,
-                execution_time_ms=execution_time
+                execution_time_ms=execution_time,
             )
 
         except Exception as e:
@@ -292,14 +293,14 @@ class ExecutorAgent(TradingAgent):
                 success=False,
                 result=None,
                 execution_time_ms=execution_time,
-                error=str(e)
+                error=str(e),
             )
 
     def _synthesize_solution(
         self,
         task: TradingTask,
         tool_results: List[ToolResult],
-        solution_data: Dict[str, Any]
+        solution_data: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Synthesize tool results into a complete solution.
@@ -312,7 +313,7 @@ class ExecutorAgent(TradingAgent):
             "category": task.category.value,
             "objectives_met": [],
             "results": solution_data,
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Check which objectives were met
@@ -327,11 +328,17 @@ class ExecutorAgent(TradingAgent):
 
         # Generate recommendations based on task category
         if task.category.value == "market_analysis":
-            solution["recommendations"] = self._generate_market_recommendations(solution_data)
+            solution["recommendations"] = self._generate_market_recommendations(
+                solution_data
+            )
         elif task.category.value == "risk_management":
-            solution["recommendations"] = self._generate_risk_recommendations(solution_data)
+            solution["recommendations"] = self._generate_risk_recommendations(
+                solution_data
+            )
         elif task.category.value == "execution_optimization":
-            solution["recommendations"] = self._generate_execution_recommendations(solution_data)
+            solution["recommendations"] = self._generate_execution_recommendations(
+                solution_data
+            )
         else:
             solution["recommendations"] = ["Task completed"]
 
@@ -342,7 +349,9 @@ class ExecutorAgent(TradingAgent):
         # Simple heuristic: all required tools are needed
         return set(task.required_tools)
 
-    def _generate_market_recommendations(self, solution_data: Dict[str, Any]) -> List[str]:
+    def _generate_market_recommendations(
+        self, solution_data: Dict[str, Any]
+    ) -> List[str]:
         """Generate trading recommendations from market analysis"""
         recommendations = []
 
@@ -361,7 +370,9 @@ class ExecutorAgent(TradingAgent):
 
         return recommendations
 
-    def _generate_risk_recommendations(self, solution_data: Dict[str, Any]) -> List[str]:
+    def _generate_risk_recommendations(
+        self, solution_data: Dict[str, Any]
+    ) -> List[str]:
         """Generate risk management recommendations"""
         recommendations = []
 
@@ -377,7 +388,9 @@ class ExecutorAgent(TradingAgent):
 
         return recommendations
 
-    def _generate_execution_recommendations(self, solution_data: Dict[str, Any]) -> List[str]:
+    def _generate_execution_recommendations(
+        self, solution_data: Dict[str, Any]
+    ) -> List[str]:
         """Generate execution optimization recommendations"""
         recommendations = []
 
@@ -395,7 +408,7 @@ class ExecutorAgent(TradingAgent):
         self,
         task: TradingTask,
         tool_results: List[ToolResult],
-        solution: Dict[str, Any]
+        solution: Dict[str, Any],
     ) -> float:
         """
         Calculate confidence score for the solution.
@@ -415,18 +428,17 @@ class ExecutorAgent(TradingAgent):
         # Objectives met
         objectives_met = len(solution.get("objectives_met", []))
         objectives_total = len(task.objectives)
-        objective_confidence = objectives_met / objectives_total if objectives_total > 0 else 0.0
+        objective_confidence = (
+            objectives_met / objectives_total if objectives_total > 0 else 0.0
+        )
 
         # Combined confidence
-        confidence = (tool_confidence * 0.6 + objective_confidence * 0.4)
+        confidence = tool_confidence * 0.6 + objective_confidence * 0.4
 
         return min(confidence, 1.0)
 
     def _evaluate_performance(
-        self,
-        task: TradingTask,
-        solution: TaskSolution,
-        execution_time: float
+        self, task: TradingTask, solution: TaskSolution, execution_time: float
     ) -> TaskPerformance:
         """
         Evaluate performance on the task.
@@ -437,26 +449,28 @@ class ExecutorAgent(TradingAgent):
         - Solution is complete and actionable
         """
         # Check tool success
-        tool_success_rate = sum(
-            1 for r in solution.tool_results if r.success
-        ) / len(solution.tool_results) if solution.tool_results else 0.0
+        tool_success_rate = (
+            sum(1 for r in solution.tool_results if r.success)
+            / len(solution.tool_results)
+            if solution.tool_results
+            else 0.0
+        )
 
         # Check objectives met
         objectives_met = len(solution.solution.get("objectives_met", []))
         objectives_total = len(task.objectives)
-        objective_rate = objectives_met / objectives_total if objectives_total > 0 else 0.0
+        objective_rate = (
+            objectives_met / objectives_total if objectives_total > 0 else 0.0
+        )
 
         # Determine success
         success = tool_success_rate > 0.7 and objective_rate > 0.6
 
         # Calculate quality score
-        quality_score = (tool_success_rate * 0.5 + objective_rate * 0.5)
+        quality_score = tool_success_rate * 0.5 + objective_rate * 0.5
 
         # Collect errors
-        errors = [
-            r.error for r in solution.tool_results
-            if not r.success and r.error
-        ]
+        errors = [r.error for r in solution.tool_results if not r.success and r.error]
 
         # Generate feedback
         feedback = self._generate_feedback(task, solution, success, quality_score)
@@ -469,7 +483,7 @@ class ExecutorAgent(TradingAgent):
             quality_score=quality_score,
             tool_usage={r.tool_name: 1 for r in solution.tool_results},
             errors=errors,
-            feedback=feedback
+            feedback=feedback,
         )
 
     def _generate_feedback(
@@ -477,7 +491,7 @@ class ExecutorAgent(TradingAgent):
         task: TradingTask,
         solution: TaskSolution,
         success: bool,
-        quality_score: float
+        quality_score: float,
     ) -> str:
         """Generate feedback on task execution"""
         if success:
@@ -494,10 +508,7 @@ class ExecutorAgent(TradingAgent):
             )
 
     def _learn_from_experience(
-        self,
-        task: TradingTask,
-        solution: TaskSolution,
-        performance: TaskPerformance
+        self, task: TradingTask, solution: TaskSolution, performance: TaskPerformance
     ) -> None:
         """Learn patterns from task execution"""
         pattern = {
@@ -506,7 +517,7 @@ class ExecutorAgent(TradingAgent):
             "tools_used": [r.tool_name for r in solution.tool_results],
             "success": performance.success,
             "quality_score": performance.quality_score,
-            "learned_at": datetime.now().isoformat()
+            "learned_at": datetime.now().isoformat(),
         }
 
         self.learned_patterns.append(pattern)
@@ -530,7 +541,9 @@ class ExecutorAgent(TradingAgent):
         self.available_tools["portfolio_analyzer"] = self._tool_portfolio_analyzer
 
         # Analysis tools
-        self.available_tools["correlation_calculator"] = self._tool_correlation_calculator
+        self.available_tools["correlation_calculator"] = (
+            self._tool_correlation_calculator
+        )
         self.available_tools["regime_detector"] = self._tool_regime_detector
         self.available_tools["statistical_analysis"] = self._tool_statistical_analysis
 
@@ -549,133 +562,118 @@ class ExecutorAgent(TradingAgent):
 
     # Tool implementations (simplified - would integrate with actual systems)
 
-    def _tool_market_data(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_market_data(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Fetch market data"""
         symbols = task.context.get("symbols", ["SPY"])
         return {
             "symbols": symbols,
             "data_available": True,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
-    def _tool_technical_indicators(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_technical_indicators(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Calculate technical indicators"""
         return {
             "macd_bullish": True,
             "rsi": 45.0,
             "rsi_oversold": False,
-            "rsi_overbought": False
+            "rsi_overbought": False,
         }
 
-    def _tool_multi_timeframe(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_multi_timeframe(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Multi-timeframe analysis"""
-        return {
-            "timeframes": ["1h", "4h", "daily"],
-            "alignment": "bullish"
-        }
+        return {"timeframes": ["1h", "4h", "daily"], "alignment": "bullish"}
 
-    def _tool_risk_calculator(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_risk_calculator(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Calculate risk metrics"""
-        return {
-            "portfolio_risk": 0.015,
-            "position_risk": 0.01,
-            "max_loss": 0.02
-        }
+        return {"portfolio_risk": 0.015, "position_risk": 0.01, "max_loss": 0.02}
 
-    def _tool_position_sizer(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_position_sizer(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Calculate position size"""
         return {
             "position_size": 100.0,
             "kelly_fraction": 0.25,
-            "volatility_adjusted": True
+            "volatility_adjusted": True,
         }
 
-    def _tool_portfolio_analyzer(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_portfolio_analyzer(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Analyze portfolio"""
-        return {
-            "positions": 3,
-            "total_value": 1000.0,
-            "diversification_score": 0.7
-        }
+        return {"positions": 3, "total_value": 1000.0, "diversification_score": 0.7}
 
-    def _tool_correlation_calculator(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_correlation_calculator(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Calculate correlations"""
-        return {
-            "correlation_matrix": {},
-            "avg_correlation": 0.5
-        }
+        return {"correlation_matrix": {}, "avg_correlation": 0.5}
 
-    def _tool_regime_detector(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_regime_detector(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Detect market regime"""
-        return {
-            "regime": "bull",
-            "confidence": 0.75
-        }
+        return {"regime": "bull", "confidence": 0.75}
 
-    def _tool_statistical_analysis(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_statistical_analysis(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Statistical analysis"""
-        return {
-            "volatility": 0.2,
-            "mean_return": 0.001,
-            "sharpe_ratio": 1.5
-        }
+        return {"volatility": 0.2, "mean_return": 0.001, "sharpe_ratio": 1.5}
 
-    def _tool_execution_analyzer(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_execution_analyzer(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Analyze execution"""
-        return {
-            "execution_method": "limit",
-            "optimal_timing": "market_open"
-        }
+        return {"execution_method": "limit", "optimal_timing": "market_open"}
 
-    def _tool_slippage_calculator(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_slippage_calculator(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Calculate slippage"""
-        return {
-            "expected_slippage": 0.0001,
-            "spread": 0.0002
-        }
+        return {"expected_slippage": 0.0001, "spread": 0.0002}
 
-    def _tool_sentiment_analyzer(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_sentiment_analyzer(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Analyze sentiment"""
-        return {
-            "sentiment_score": 0.6,
-            "sources": ["news", "social"]
-        }
+        return {"sentiment_score": 0.6, "sources": ["news", "social"]}
 
-    def _tool_news_fetcher(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_news_fetcher(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Fetch news"""
-        return {
-            "articles": [],
-            "sentiment": "neutral"
-        }
+        return {"articles": [], "sentiment": "neutral"}
 
-    def _tool_pattern_detector(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_pattern_detector(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Detect patterns"""
-        return {
-            "pattern": "continuation",
-            "confidence": 0.7
-        }
+        return {"pattern": "continuation", "confidence": 0.7}
 
-    def _tool_stress_tester(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_stress_tester(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Stress testing"""
-        return {
-            "max_drawdown": 0.05,
-            "stress_scenarios": []
-        }
+        return {"max_drawdown": 0.05, "stress_scenarios": []}
 
-    def _tool_portfolio_optimizer(self, task: TradingTask, context: RunContext) -> Dict[str, Any]:
+    def _tool_portfolio_optimizer(
+        self, task: TradingTask, context: RunContext
+    ) -> Dict[str, Any]:
         """Optimize portfolio"""
-        return {
-            "optimal_weights": {},
-            "expected_return": 0.001,
-            "risk": 0.015
-        }
+        return {"optimal_weights": {}, "expected_return": 0.001, "risk": 0.015}
 
     def _learn_tool_selection(
-        self,
-        task: TradingTask,
-        tool_name: str,
-        success: bool,
-        result: Any
+        self, task: TradingTask, tool_name: str, success: bool, result: Any
     ):
         """Learn optimal tool selection using DQN."""
         if not self.dqn_agent:
@@ -711,7 +709,7 @@ class ExecutorAgent(TradingAgent):
                 action=action_idx,
                 reward=reward,
                 next_state=next_state,
-                done=False
+                done=False,
             )
 
             # Train periodically
@@ -736,10 +734,14 @@ class ExecutorAgent(TradingAgent):
 
         # Category (one-hot encoded)
         category_map = {
-            "market_analysis": 0, "risk_management": 1,
-            "execution_optimization": 2, "portfolio_optimization": 3,
-            "regime_detection": 4, "sentiment_integration": 5,
-            "multi_timeframe": 6, "edge_case": 7
+            "market_analysis": 0,
+            "risk_management": 1,
+            "execution_optimization": 2,
+            "portfolio_optimization": 3,
+            "regime_detection": 4,
+            "sentiment_integration": 5,
+            "multi_timeframe": 6,
+            "edge_case": 7,
         }
         category_onehot = [0.0] * 8
         category_onehot[category_map.get(task.category.value, 0)] = 1.0

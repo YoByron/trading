@@ -16,7 +16,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from anthropic import Anthropic
 from datetime import datetime
@@ -33,11 +33,14 @@ ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
 
 
 class TimeoutError(Exception):
     """Custom timeout exception."""
+
     pass
 
 
@@ -50,7 +53,7 @@ def check_alpaca_api() -> bool:
     """Check Alpaca API connectivity and account access."""
     try:
         # Use broker health monitor for comprehensive check
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
         from src.core.broker_health import BrokerHealthMonitor
 
         monitor = BrokerHealthMonitor(broker_name="alpaca")
@@ -99,7 +102,7 @@ def check_anthropic_api() -> bool:
         response = client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=10,
-            messages=[{"role": "user", "content": "test"}]
+            messages=[{"role": "user", "content": "test"}],
         )
 
         signal.alarm(0)  # Cancel timeout
@@ -124,6 +127,7 @@ def check_market_status() -> bool:
     """Check if market is open."""
     try:
         from src.core.alpaca_trader import AlpacaTrader
+
         trader = AlpacaTrader(paper=True)
         clock = trader.trading_client.get_clock()
 
@@ -131,7 +135,7 @@ def check_market_status() -> bool:
             print(f"✅ Market: OPEN")
             return True
         else:
-            next_open = clock.next_open if hasattr(clock, 'next_open') else None
+            next_open = clock.next_open if hasattr(clock, "next_open") else None
             print(f"⚠️  Market: CLOSED (opens at {next_open})")
             print(f"   Trading will execute when market opens")
             return True  # Not a failure - orders will queue
@@ -152,7 +156,9 @@ def check_economic_calendar() -> bool:
         client = FinnhubClient()
         if not client.api_key:
             signal.alarm(0)  # Cancel timeout
-            print("⚠️  Finnhub API key not configured - skipping economic calendar check")
+            print(
+                "⚠️  Finnhub API key not configured - skipping economic calendar check"
+            )
             return True  # Not critical if not configured
 
         if client.has_major_event_today():
@@ -172,6 +178,7 @@ def check_economic_calendar() -> bool:
         signal.alarm(0)  # Cancel timeout
         print(f"⚠️  Economic calendar check failed: {e}")
         return True  # Don't block trading if check fails
+
 
 def check_circuit_breakers() -> bool:
     """Check circuit breaker status."""
@@ -249,33 +256,38 @@ def check_strategy_execution() -> bool:
             return True  # Don't fail health check for missing file
 
         import json
-        with open(system_state_file, 'r') as f:
+
+        with open(system_state_file, "r") as f:
             system_state = json.load(f)
 
-        strategies = system_state.get('strategies', {})
+        strategies = system_state.get("strategies", {})
         issues = []
 
         # Check each strategy
         for tier_id, strategy in strategies.items():
-            status = strategy.get('status', 'unknown')
-            trades_executed = strategy.get('trades_executed', 0)
-            name = strategy.get('name', tier_id)
+            status = strategy.get("status", "unknown")
+            trades_executed = strategy.get("trades_executed", 0)
+            name = strategy.get("name", tier_id)
 
             # Only check 'active' strategies
-            if status == 'active':
+            if status == "active":
                 # Crypto strategy (tier5) should have executed on weekends
-                if tier_id == 'tier5':
+                if tier_id == "tier5":
                     # Check if it's been active for more than 1 week without trades
                     # (weekends happen weekly, so should have at least 1-2 trades)
                     if trades_executed == 0:
-                        issues.append(f"{name}: 0 trades executed (should execute weekends)")
+                        issues.append(
+                            f"{name}: 0 trades executed (should execute weekends)"
+                        )
 
                 # Stock strategies (tier1, tier2) should have executed on weekdays
-                elif tier_id in ['tier1', 'tier2']:
+                elif tier_id in ["tier1", "tier2"]:
                     # Check if it's been active for more than 3 days without trades
                     # (should execute daily on weekdays)
                     if trades_executed == 0:
-                        issues.append(f"{name}: 0 trades executed (should execute daily)")
+                        issues.append(
+                            f"{name}: 0 trades executed (should execute daily)"
+                        )
 
         if issues:
             print(f"⚠️  Strategy Execution: ISSUES DETECTED")
@@ -312,7 +324,7 @@ def main():
             "Anthropic API": check_anthropic_api(),
             "Economic Calendar": check_economic_calendar(),
             "Circuit Breakers": check_circuit_breakers(),
-            "Strategy Execution": check_strategy_execution()
+            "Strategy Execution": check_strategy_execution(),
         }
 
         signal.alarm(0)  # Cancel global timeout
@@ -321,12 +333,14 @@ def main():
         print("📊 HEALTH CHECK SUMMARY")
         print("=" * 70)
 
-        critical_passed = all([
-            checks["Dependencies"],
-            checks["Data Access"],
-            checks["Alpaca API"],
-            checks["Circuit Breakers"]
-        ])
+        critical_passed = all(
+            [
+                checks["Dependencies"],
+                checks["Data Access"],
+                checks["Alpaca API"],
+                checks["Circuit Breakers"],
+            ]
+        )
 
         for name, passed in checks.items():
             status = "✅ PASS" if passed else "❌ FAIL"

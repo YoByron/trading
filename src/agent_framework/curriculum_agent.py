@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class TaskDifficulty(Enum):
     """Task difficulty levels"""
+
     EASY = "easy"  # Basic tasks within current capabilities
     MEDIUM = "medium"  # Slightly challenging
     HARD = "hard"  # Pushes boundaries
@@ -35,6 +36,7 @@ class TaskDifficulty(Enum):
 
 class TaskCategory(Enum):
     """Categories of trading tasks"""
+
     MARKET_ANALYSIS = "market_analysis"  # Complex market condition analysis
     RISK_MANAGEMENT = "risk_management"  # Advanced risk scenarios
     EXECUTION_OPTIMIZATION = "execution_optimization"  # Optimal execution strategies
@@ -53,6 +55,7 @@ class TradingTask:
     Tasks are designed to challenge the Executor Agent and push
     the boundaries of system capabilities.
     """
+
     task_id: str = field(default_factory=lambda: str(uuid4()))
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     difficulty: TaskDifficulty = TaskDifficulty.MEDIUM
@@ -78,7 +81,7 @@ class TradingTask:
             "required_tools": self.required_tools,
             "expected_capabilities": self.expected_capabilities,
             "context": self.context,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -95,13 +98,14 @@ class TradingTask:
             required_tools=data.get("required_tools", []),
             expected_capabilities=data.get("expected_capabilities", []),
             context=data.get("context", {}),
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
 @dataclass
 class TaskPerformance:
     """Performance metrics for a completed task"""
+
     task_id: str
     executor_agent: str
     success: bool
@@ -142,7 +146,9 @@ class CurriculumAgent(TradingAgent):
         # Load history
         self._load_history()
 
-        logger.info(f"✅ Curriculum Agent initialized: {len(self.generated_tasks)} tasks in history")
+        logger.info(
+            f"✅ Curriculum Agent initialized: {len(self.generated_tasks)} tasks in history"
+        )
 
     def execute(self, context: RunContext) -> AgentResult:
         """
@@ -163,16 +169,16 @@ class CurriculumAgent(TradingAgent):
 
             # Generate task
             task = self._generate_task(
-                context=context,
-                difficulty=target_difficulty,
-                capabilities=capabilities
+                context=context, difficulty=target_difficulty, capabilities=capabilities
             )
 
             # Store task
             self.generated_tasks[task.task_id] = task
             self._save_task(task)
 
-            logger.info(f"📚 Generated task: {task.task_id} ({target_difficulty.value})")
+            logger.info(
+                f"📚 Generated task: {task.task_id} ({target_difficulty.value})"
+            )
             logger.info(f"   Category: {task.category.value}")
             logger.info(f"   Objectives: {len(task.objectives)}")
 
@@ -182,17 +188,13 @@ class CurriculumAgent(TradingAgent):
                 payload={
                     "task": task.to_dict(),
                     "capabilities_analyzed": list(capabilities),
-                    "target_difficulty": target_difficulty.value
-                }
+                    "target_difficulty": target_difficulty.value,
+                },
             )
 
         except Exception as e:
             logger.exception(f"❌ Curriculum Agent failed: {e}")
-            return AgentResult(
-                name=self.agent_name,
-                succeeded=False,
-                error=str(e)
-            )
+            return AgentResult(name=self.agent_name, succeeded=False, error=str(e))
 
     def _analyze_capabilities(self, context: RunContext) -> Set[str]:
         """
@@ -205,9 +207,10 @@ class CurriculumAgent(TradingAgent):
 
         # Analyze recent successes
         recent_performances = [
-            p for p in self.task_performances
-            if p.success and p.quality_score > 0.7
-        ][-10:]  # Last 10 successful tasks
+            p for p in self.task_performances if p.success and p.quality_score > 0.7
+        ][
+            -10:
+        ]  # Last 10 successful tasks
 
         for perf in recent_performances:
             if perf.task_id in self.generated_tasks:
@@ -216,12 +219,14 @@ class CurriculumAgent(TradingAgent):
                 capabilities.update(task.required_tools)
 
         # Add baseline capabilities
-        capabilities.update([
-            "market_data_fetching",
-            "technical_analysis",
-            "risk_calculation",
-            "order_execution"
-        ])
+        capabilities.update(
+            [
+                "market_data_fetching",
+                "technical_analysis",
+                "risk_calculation",
+                "order_execution",
+            ]
+        )
 
         return capabilities
 
@@ -253,7 +258,12 @@ class CurriculumAgent(TradingAgent):
                 success_by_difficulty[task.difficulty].append(perf.success)
 
         # Determine next difficulty
-        for difficulty in [TaskDifficulty.FRONTIER, TaskDifficulty.HARD, TaskDifficulty.MEDIUM, TaskDifficulty.EASY]:
+        for difficulty in [
+            TaskDifficulty.FRONTIER,
+            TaskDifficulty.HARD,
+            TaskDifficulty.MEDIUM,
+            TaskDifficulty.EASY,
+        ]:
             successes = success_by_difficulty.get(difficulty, [])
             if not successes:
                 continue
@@ -275,10 +285,7 @@ class CurriculumAgent(TradingAgent):
         return TaskDifficulty.MEDIUM
 
     def _generate_task(
-        self,
-        context: RunContext,
-        difficulty: TaskDifficulty,
-        capabilities: Set[str]
+        self, context: RunContext, difficulty: TaskDifficulty, capabilities: Set[str]
     ) -> TradingTask:
         """
         Generate a specific trading task.
@@ -310,9 +317,7 @@ class CurriculumAgent(TradingAgent):
             return self._generate_edge_case_task(difficulty, context)
 
     def _select_category(
-        self,
-        difficulty: TaskDifficulty,
-        capabilities: Set[str]
+        self, difficulty: TaskDifficulty, capabilities: Set[str]
     ) -> TaskCategory:
         """Select task category based on difficulty and capabilities"""
         # For frontier tasks, prefer complex categories
@@ -320,28 +325,24 @@ class CurriculumAgent(TradingAgent):
             categories = [
                 TaskCategory.PORTFOLIO_OPTIMIZATION,
                 TaskCategory.MULTI_TIMEFRAME,
-                TaskCategory.SENTIMENT_INTEGRATION
+                TaskCategory.SENTIMENT_INTEGRATION,
             ]
         elif difficulty == TaskDifficulty.HARD:
             categories = [
                 TaskCategory.RISK_MANAGEMENT,
                 TaskCategory.EXECUTION_OPTIMIZATION,
-                TaskCategory.REGIME_DETECTION
+                TaskCategory.REGIME_DETECTION,
             ]
         else:
-            categories = [
-                TaskCategory.MARKET_ANALYSIS,
-                TaskCategory.RISK_MANAGEMENT
-            ]
+            categories = [TaskCategory.MARKET_ANALYSIS, TaskCategory.RISK_MANAGEMENT]
 
         # Select category that requires capabilities we have
         import random
+
         return random.choice(categories)
 
     def _generate_market_analysis_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate market analysis task"""
         if difficulty == TaskDifficulty.FRONTIER:
@@ -354,9 +355,13 @@ class CurriculumAgent(TradingAgent):
                 "Calculate correlation matrix across 10+ assets",
                 "Detect regime shifts using statistical methods",
                 "Generate signals that account for correlations",
-                "Validate signals against historical regime transitions"
+                "Validate signals against historical regime transitions",
             ]
-            required_tools = ["market_data", "statistical_analysis", "correlation_calculator"]
+            required_tools = [
+                "market_data",
+                "statistical_analysis",
+                "correlation_calculator",
+            ]
         elif difficulty == TaskDifficulty.HARD:
             description = (
                 "Perform comprehensive technical analysis combining MACD, RSI, Bollinger Bands, "
@@ -366,7 +371,7 @@ class CurriculumAgent(TradingAgent):
             objectives = [
                 "Calculate indicators across 3 timeframes",
                 "Identify confluence zones",
-                "Generate entry signals with confidence scores"
+                "Generate entry signals with confidence scores",
             ]
             required_tools = ["market_data", "technical_indicators", "multi_timeframe"]
         else:  # MEDIUM/EASY
@@ -377,7 +382,7 @@ class CurriculumAgent(TradingAgent):
             objectives = [
                 "Fetch current market data",
                 "Calculate MACD and RSI",
-                "Generate BUY/SELL/HOLD signal"
+                "Generate BUY/SELL/HOLD signal",
             ]
             required_tools = ["market_data", "technical_indicators"]
 
@@ -388,13 +393,11 @@ class CurriculumAgent(TradingAgent):
             objectives=objectives,
             required_tools=required_tools,
             expected_capabilities=["market_analysis", "signal_generation"],
-            context={"symbols": ["SPY", "QQQ", "VOO"]}
+            context={"symbols": ["SPY", "QQQ", "VOO"]},
         )
 
     def _generate_risk_management_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate risk management task"""
         if difficulty == TaskDifficulty.FRONTIER:
@@ -407,7 +410,7 @@ class CurriculumAgent(TradingAgent):
                 "Calculate portfolio-level risk metrics",
                 "Adjust position sizes dynamically",
                 "Implement correlation-based risk limits",
-                "Perform stress testing scenarios"
+                "Perform stress testing scenarios",
             ]
             required_tools = ["risk_calculator", "portfolio_analyzer", "stress_tester"]
         elif difficulty == TaskDifficulty.HARD:
@@ -419,7 +422,7 @@ class CurriculumAgent(TradingAgent):
             objectives = [
                 "Calculate Kelly Criterion for each position",
                 "Adjust for volatility",
-                "Ensure portfolio-level risk limits"
+                "Ensure portfolio-level risk limits",
             ]
             required_tools = ["risk_calculator", "position_sizer"]
         else:
@@ -427,10 +430,7 @@ class CurriculumAgent(TradingAgent):
                 "Calculate appropriate position size for a $100 trade with 5% stop-loss, "
                 "ensuring risk per trade is limited to 1% of portfolio."
             )
-            objectives = [
-                "Calculate position size",
-                "Validate against risk limits"
-            ]
+            objectives = ["Calculate position size", "Validate against risk limits"]
             required_tools = ["risk_calculator"]
 
         return TradingTask(
@@ -439,13 +439,11 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["risk_management", "position_sizing"]
+            expected_capabilities=["risk_management", "position_sizing"],
         )
 
     def _generate_execution_optimization_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate execution optimization task"""
         description = (
@@ -456,7 +454,7 @@ class CurriculumAgent(TradingAgent):
             "Analyze current spread and volume",
             "Determine optimal execution method",
             "Calculate expected slippage",
-            "Execute with optimal timing"
+            "Execute with optimal timing",
         ]
         required_tools = ["market_data", "execution_analyzer", "slippage_calculator"]
 
@@ -466,13 +464,11 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["execution_optimization"]
+            expected_capabilities=["execution_optimization"],
         )
 
     def _generate_portfolio_optimization_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate portfolio optimization task"""
         description = (
@@ -484,9 +480,13 @@ class CurriculumAgent(TradingAgent):
             "Calculate correlation matrix",
             "Optimize allocation weights",
             "Validate risk constraints",
-            "Generate rebalancing plan"
+            "Generate rebalancing plan",
         ]
-        required_tools = ["portfolio_optimizer", "correlation_calculator", "risk_calculator"]
+        required_tools = [
+            "portfolio_optimizer",
+            "correlation_calculator",
+            "risk_calculator",
+        ]
 
         return TradingTask(
             difficulty=TaskDifficulty.FRONTIER,
@@ -494,13 +494,11 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["portfolio_optimization"]
+            expected_capabilities=["portfolio_optimization"],
         )
 
     def _generate_regime_detection_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate regime detection task"""
         description = (
@@ -510,7 +508,7 @@ class CurriculumAgent(TradingAgent):
         objectives = [
             "Calculate regime indicators",
             "Classify current regime",
-            "Adapt strategy parameters"
+            "Adapt strategy parameters",
         ]
         required_tools = ["market_data", "regime_detector"]
 
@@ -520,13 +518,11 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["regime_detection"]
+            expected_capabilities=["regime_detection"],
         )
 
     def _generate_sentiment_integration_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate sentiment integration task"""
         description = (
@@ -536,7 +532,7 @@ class CurriculumAgent(TradingAgent):
         objectives = [
             "Fetch sentiment from multiple sources",
             "Aggregate and weight sentiment",
-            "Combine with technical signals"
+            "Combine with technical signals",
         ]
         required_tools = ["sentiment_analyzer", "news_fetcher", "options_analyzer"]
 
@@ -546,13 +542,11 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["sentiment_analysis"]
+            expected_capabilities=["sentiment_analysis"],
         )
 
     def _generate_multi_timeframe_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate multi-timeframe analysis task"""
         description = (
@@ -562,7 +556,7 @@ class CurriculumAgent(TradingAgent):
         objectives = [
             "Analyze 4+ timeframes",
             "Identify confluence zones",
-            "Generate high-probability signals"
+            "Generate high-probability signals",
         ]
         required_tools = ["market_data", "multi_timeframe_analyzer"]
 
@@ -572,13 +566,11 @@ class CurriculumAgent(TradingAgent):
             description=objectives,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["multi_timeframe_analysis"]
+            expected_capabilities=["multi_timeframe_analysis"],
         )
 
     def _generate_edge_case_task(
-        self,
-        difficulty: TaskDifficulty,
-        context: RunContext
+        self, difficulty: TaskDifficulty, context: RunContext
     ) -> TradingTask:
         """Generate edge case task"""
         description = (
@@ -588,7 +580,7 @@ class CurriculumAgent(TradingAgent):
         objectives = [
             "Analyze gap pattern",
             "Determine continuation vs exhaustion",
-            "Make trading decision"
+            "Make trading decision",
         ]
         required_tools = ["market_data", "pattern_detector"]
 
@@ -598,7 +590,7 @@ class CurriculumAgent(TradingAgent):
             description=description,
             objectives=objectives,
             required_tools=required_tools,
-            expected_capabilities=["edge_case_handling"]
+            expected_capabilities=["edge_case_handling"],
         )
 
     def record_performance(self, performance: TaskPerformance) -> None:
@@ -629,7 +621,11 @@ class CurriculumAgent(TradingAgent):
 
     def _save_performance(self, performance: TaskPerformance) -> None:
         """Save performance to disk"""
-        perf_file = self.storage_dir / "performances" / f"{performance.task_id}_{performance.completed_at}.json"
+        perf_file = (
+            self.storage_dir
+            / "performances"
+            / f"{performance.task_id}_{performance.completed_at}.json"
+        )
         perf_file.parent.mkdir(parents=True, exist_ok=True)
 
         with open(perf_file, "w") as f:

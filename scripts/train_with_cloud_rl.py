@@ -25,18 +25,16 @@ def main():
         "--symbols",
         nargs="+",
         default=["SPY", "QQQ"],
-        help="Stock symbols to train (default: SPY QQQ)"
+        help="Stock symbols to train (default: SPY QQQ)",
     )
     parser.add_argument(
         "--provider",
         default="vertex_ai",
         choices=["vertex_ai", "azure_ml", "aws_sagemaker", "paperspace"],
-        help="RL service provider (default: vertex_ai)"
+        help="RL service provider (default: vertex_ai)",
     )
     parser.add_argument(
-        "--local",
-        action="store_true",
-        help="Use local training instead of cloud RL"
+        "--local", action="store_true", help="Use local training instead of cloud RL"
     )
 
     args = parser.parse_args()
@@ -58,10 +56,7 @@ def main():
     print(f"   Provider: {args.provider if not args.local else 'N/A'}")
     print()
 
-    trainer = ModelTrainer(
-        use_cloud_rl=not args.local,
-        rl_provider=args.provider
-    )
+    trainer = ModelTrainer(use_cloud_rl=not args.local, rl_provider=args.provider)
 
     # Train each symbol
     results = {}
@@ -81,9 +76,13 @@ def main():
                     print(f"   Provider: {result.get('provider')}")
                 else:
                     print(f"✅ Local training completed for {symbol}")
-                    print(f"   Final validation loss: {result.get('final_val_loss', 'N/A'):.4f}")
+                    print(
+                        f"   Final validation loss: {result.get('final_val_loss', 'N/A'):.4f}"
+                    )
             else:
-                print(f"❌ Training failed for {symbol}: {result.get('error', 'Unknown error')}")
+                print(
+                    f"❌ Training failed for {symbol}: {result.get('error', 'Unknown error')}"
+                )
 
         except Exception as e:
             print(f"❌ Error training {symbol}: {e}")

@@ -8,6 +8,7 @@ Inspired by AlphaQuanter framework:
 
 Simple RL implementation using Q-learning
 """
+
 import logging
 import json
 import numpy as np
@@ -30,7 +31,7 @@ class RLPolicyLearner:
         learning_rate: float = 0.1,
         discount_factor: float = 0.95,
         exploration_rate: float = 0.2,
-        state_file: str = "data/rl_policy_state.json"
+        state_file: str = "data/rl_policy_state.json",
     ):
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -38,12 +39,16 @@ class RLPolicyLearner:
         self.state_file = Path(state_file)
 
         # Q-table: state -> action -> Q-value
-        self.q_table: Dict[str, Dict[str, float]] = defaultdict(lambda: {"BUY": 0.0, "SELL": 0.0, "HOLD": 0.0})
+        self.q_table: Dict[str, Dict[str, float]] = defaultdict(
+            lambda: {"BUY": 0.0, "SELL": 0.0, "HOLD": 0.0}
+        )
 
         # Load existing Q-table if available
         self._load_state()
 
-        logger.info(f"RL Policy Learner initialized (α={learning_rate}, γ={discount_factor}, ε={exploration_rate})")
+        logger.info(
+            f"RL Policy Learner initialized (α={learning_rate}, γ={discount_factor}, ε={exploration_rate})"
+        )
 
     def get_state_key(self, market_state: Dict[str, Any]) -> str:
         """
@@ -71,7 +76,9 @@ class RLPolicyLearner:
 
         return f"{regime}_{rsi_bin}_{macd_bin}_{trend}"
 
-    def select_action(self, market_state: Dict[str, Any], agent_recommendation: str) -> str:
+    def select_action(
+        self, market_state: Dict[str, Any], agent_recommendation: str
+    ) -> str:
         """
         Select action using epsilon-greedy policy.
 
@@ -103,7 +110,7 @@ class RLPolicyLearner:
         action: str,
         reward: float,
         new_state: Dict[str, Any],
-        done: bool = False
+        done: bool = False,
     ) -> None:
         """
         Update Q-values based on observed reward.
@@ -128,16 +135,24 @@ class RLPolicyLearner:
             max_next_q = max(self.q_table[new_key].values())
 
         # Q-learning update: Q(s,a) = Q(s,a) + α * [r + γ * max(Q(s',a')) - Q(s,a)]
-        new_q = current_q + self.learning_rate * (reward + self.discount_factor * max_next_q - current_q)
+        new_q = current_q + self.learning_rate * (
+            reward + self.discount_factor * max_next_q - current_q
+        )
 
         self.q_table[prev_key][action] = new_q
 
-        logger.info(f"RL UPDATE: State={prev_key}, Action={action}, Reward={reward:.4f}, Q: {current_q:.4f} -> {new_q:.4f}")
+        logger.info(
+            f"RL UPDATE: State={prev_key}, Action={action}, Reward={reward:.4f}, Q: {current_q:.4f} -> {new_q:.4f}"
+        )
 
         # Save updated state
         self._save_state()
 
-    def calculate_reward(self, trade_result: Dict[str, Any], market_state: Optional[Dict[str, Any]] = None) -> float:
+    def calculate_reward(
+        self,
+        trade_result: Dict[str, Any],
+        market_state: Optional[Dict[str, Any]] = None,
+    ) -> float:
         """
         Calculate reward from trade result using world-class risk-adjusted reward function.
 
@@ -151,11 +166,16 @@ class RLPolicyLearner:
         # Use world-class risk-adjusted reward function if available
         try:
             from src.ml.reward_functions import RiskAdjustedReward
+
             reward_calculator = RiskAdjustedReward()
-            return reward_calculator.calculate_from_trade_result(trade_result, market_state)
+            return reward_calculator.calculate_from_trade_result(
+                trade_result, market_state
+            )
         except ImportError:
             # Fallback to simple reward
-            logger.debug("Using simple reward function (reward_functions module not available)")
+            logger.debug(
+                "Using simple reward function (reward_functions module not available)"
+            )
 
         # Fallback: Simple P/L-based reward
         pl_pct = trade_result.get("pl_pct", 0)
@@ -175,10 +195,10 @@ class RLPolicyLearner:
                 "q_table": q_table_dict,
                 "learning_rate": self.learning_rate,
                 "discount_factor": self.discount_factor,
-                "exploration_rate": self.exploration_rate
+                "exploration_rate": self.exploration_rate,
             }
 
-            with open(self.state_file, 'w') as f:
+            with open(self.state_file, "w") as f:
                 json.dump(state, f, indent=2)
 
             logger.debug(f"RL state saved to {self.state_file}")
@@ -193,7 +213,7 @@ class RLPolicyLearner:
             return
 
         try:
-            with open(self.state_file, 'r') as f:
+            with open(self.state_file, "r") as f:
                 state = json.load(f)
 
             # Load Q-table
@@ -219,5 +239,5 @@ class RLPolicyLearner:
         return {
             "total_states_learned": total_states,
             "action_distribution": action_counts,
-            "exploration_rate": self.exploration_rate
+            "exploration_rate": self.exploration_rate,
         }

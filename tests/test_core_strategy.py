@@ -3,6 +3,7 @@ Unit tests for core trading strategy.
 
 Tests strategy logic, signal generation, and risk management integration.
 """
+
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import pandas as pd
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 # Import strategy classes
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 

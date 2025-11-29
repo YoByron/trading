@@ -183,7 +183,9 @@ class BacktestEngine:
         alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
 
         if not alpaca_key or not alpaca_secret:
-            logger.error("Alpaca API credentials not found. Set ALPACA_API_KEY and ALPACA_SECRET_KEY")
+            logger.error(
+                "Alpaca API credentials not found. Set ALPACA_API_KEY and ALPACA_SECRET_KEY"
+            )
             return
 
         client = StockHistoricalDataClient(alpaca_key, alpaca_secret)
@@ -194,15 +196,19 @@ class BacktestEngine:
             try:
                 # Get historical bars from Alpaca
                 # Add 200 day buffer for momentum calculations
-                start_with_buffer = datetime.strptime(self.start_date.strftime("%Y-%m-%d"), "%Y-%m-%d") - timedelta(days=200)
-                end_with_buffer = datetime.strptime(self.end_date.strftime("%Y-%m-%d"), "%Y-%m-%d") + timedelta(days=1)
+                start_with_buffer = datetime.strptime(
+                    self.start_date.strftime("%Y-%m-%d"), "%Y-%m-%d"
+                ) - timedelta(days=200)
+                end_with_buffer = datetime.strptime(
+                    self.end_date.strftime("%Y-%m-%d"), "%Y-%m-%d"
+                ) + timedelta(days=1)
 
                 req = StockBarsRequest(
                     symbol_or_symbols=symbol,
                     timeframe=TimeFrame.Day,
                     start=start_with_buffer,
                     end=end_with_buffer,
-                    adjustment='all'
+                    adjustment="all",
                 )
 
                 bars = client.get_stock_bars(req).df
@@ -212,17 +218,19 @@ class BacktestEngine:
                     # Alpaca-py returns MultiIndex (symbol, timestamp) or just timestamp if single symbol?
                     # Usually MultiIndex. Let's check.
 
-                    if 'symbol' in bars.index.names:
-                        bars = bars.droplevel('symbol')
+                    if "symbol" in bars.index.names:
+                        bars = bars.droplevel("symbol")
 
                     # Rename columns to match yfinance format
-                    bars = bars.rename(columns={
-                        'open': 'Open',
-                        'high': 'High',
-                        'low': 'Low',
-                        'close': 'Close',
-                        'volume': 'Volume'
-                    })
+                    bars = bars.rename(
+                        columns={
+                            "open": "Open",
+                            "high": "High",
+                            "low": "Low",
+                            "close": "Close",
+                            "volume": "Volume",
+                        }
+                    )
 
                     self.price_cache[symbol] = bars
                     logger.info(f"Loaded {len(bars)} bars for {symbol} from Alpaca")
@@ -276,7 +284,9 @@ class BacktestEngine:
                         logger.warning(f"{date_str}: No historical data for {symbol}")
                         continue
                     if len(hist) < 50:
-                        logger.warning(f"{date_str}: Insufficient data for {symbol}: {len(hist)} bars (need 50)")
+                        logger.warning(
+                            f"{date_str}: Insufficient data for {symbol}: {len(hist)} bars (need 50)"
+                        )
                         continue
 
                     # Calculate momentum score using strategy's method
@@ -286,7 +296,9 @@ class BacktestEngine:
                         momentum_scores.append({"symbol": symbol, "score": score})
                         logger.info(f"{date_str}: {symbol} momentum={score:.2f}")
                     else:
-                        logger.warning(f"{date_str}: Momentum calculation returned None for {symbol}")
+                        logger.warning(
+                            f"{date_str}: Momentum calculation returned None for {symbol}"
+                        )
 
                 except Exception as e:
                     logger.warning(f"Failed to calculate momentum for {symbol}: {e}")
@@ -342,7 +354,9 @@ class BacktestEngine:
         self.equity_curve.append(self.portfolio_value)
         self.dates.append(date_str)
 
-    def _get_historical_data(self, symbol: str, date: datetime) -> Optional[pd.DataFrame]:
+    def _get_historical_data(
+        self, symbol: str, date: datetime
+    ) -> Optional[pd.DataFrame]:
         """
         Get historical data for a symbol up to a specific date.
 
@@ -361,6 +375,7 @@ class BacktestEngine:
         # Convert date to timezone-aware datetime for comparison with Alpaca data
         if date.tzinfo is None:
             import pytz
+
             date = pytz.UTC.localize(date)
 
         # Filter to only include data up to the simulation date
@@ -368,7 +383,9 @@ class BacktestEngine:
 
         return hist_filtered if len(hist_filtered) > 0 else None
 
-    def _calculate_momentum_for_date(self, symbol: str, date: datetime) -> Optional[float]:
+    def _calculate_momentum_for_date(
+        self, symbol: str, date: datetime
+    ) -> Optional[float]:
         """
         Calculate momentum score for a symbol at a specific date.
 
@@ -390,9 +407,7 @@ class BacktestEngine:
             returns_3m = self._calculate_period_return(hist, 63)
             returns_6m = self._calculate_period_return(hist, 126)
 
-            momentum = (
-                returns_1m * 0.5 + returns_3m * 0.3 + returns_6m * 0.2
-            ) * 100
+            momentum = (returns_1m * 0.5 + returns_3m * 0.3 + returns_6m * 0.2) * 100
 
             return momentum
 
@@ -492,7 +507,11 @@ class BacktestEngine:
 
         # Win rate
         positive_days = np.sum(daily_returns > 0)
-        win_rate = (positive_days / len(daily_returns) * 100) if len(daily_returns) > 0 else 0.0
+        win_rate = (
+            (positive_days / len(daily_returns) * 100)
+            if len(daily_returns) > 0
+            else 0.0
+        )
 
         # Trade statistics
         total_trades = len(self.trades)
@@ -507,7 +526,9 @@ class BacktestEngine:
             if final_price and final_price > buy_price:
                 profitable_trades += 1
 
-        average_trade_return = (total_return / total_trades) if total_trades > 0 else 0.0
+        average_trade_return = (
+            (total_return / total_trades) if total_trades > 0 else 0.0
+        )
 
         results = BacktestResults(
             trades=self.trades,

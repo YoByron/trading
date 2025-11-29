@@ -65,7 +65,9 @@ class DeepAgentsAdapter(TradingAgent):
                 payload={
                     "query": query,
                     "response": result,
-                    "messages": result.get("messages", []) if isinstance(result, dict) else [],
+                    "messages": (
+                        result.get("messages", []) if isinstance(result, dict) else []
+                    ),
                 },
             )
         except Exception as e:

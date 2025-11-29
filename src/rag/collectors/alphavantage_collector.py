@@ -27,11 +27,15 @@ class AlphaVantageCollector(BaseNewsCollector):
         # Get API key from environment
         self.api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
         if not self.api_key:
-            logger.warning("ALPHA_VANTAGE_API_KEY not found - collector will be disabled")
+            logger.warning(
+                "ALPHA_VANTAGE_API_KEY not found - collector will be disabled"
+            )
 
         self.base_url = "https://www.alphavantage.co/query"
 
-    def collect_ticker_news(self, ticker: str, days_back: int = 7) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Collect news and sentiment for a ticker from Alpha Vantage.
 
@@ -52,7 +56,7 @@ class AlphaVantageCollector(BaseNewsCollector):
                 "function": "NEWS_SENTIMENT",
                 "tickers": ticker,
                 "apikey": self.api_key,
-                "limit": 50  # Max 50 articles per call
+                "limit": 50,  # Max 50 articles per call
             }
 
             response = requests.get(self.base_url, params=params, timeout=30)
@@ -97,16 +101,20 @@ class AlphaVantageCollector(BaseNewsCollector):
                     url=item.get("url", ""),
                     published_date=pub_date.strftime("%Y-%m-%d"),
                     ticker=ticker,
-                    sentiment=ticker_score
+                    sentiment=ticker_score,
                 )
 
                 # Add additional metadata
-                article["overall_sentiment_score"] = item.get("overall_sentiment_score", 0)
+                article["overall_sentiment_score"] = item.get(
+                    "overall_sentiment_score", 0
+                )
                 article["relevance_score"] = item.get("relevance_score", 0)
 
                 articles.append(article)
 
-            logger.info(f"Collected {len(articles)} articles for {ticker} from Alpha Vantage")
+            logger.info(
+                f"Collected {len(articles)} articles for {ticker} from Alpha Vantage"
+            )
             return articles
 
         except Exception as e:
@@ -129,11 +137,7 @@ class AlphaVantageCollector(BaseNewsCollector):
 
         try:
             # Call NEWS_SENTIMENT without ticker filter
-            params = {
-                "function": "NEWS_SENTIMENT",
-                "apikey": self.api_key,
-                "limit": 50
-            }
+            params = {"function": "NEWS_SENTIMENT", "apikey": self.api_key, "limit": 50}
 
             response = requests.get(self.base_url, params=params, timeout=30)
             response.raise_for_status()
@@ -169,7 +173,7 @@ class AlphaVantageCollector(BaseNewsCollector):
                     content=item.get("summary", ""),
                     url=item.get("url", ""),
                     published_date=pub_date.strftime("%Y-%m-%d"),
-                    sentiment=sentiment
+                    sentiment=sentiment,
                 )
 
                 articles.append(article)

@@ -16,7 +16,10 @@ import sys
 from datetime import datetime, timezone, timedelta
 import pytz
 
-def get_utc_cron(eastern_hour: int, eastern_minute: int, day_of_week: str = None) -> str:
+
+def get_utc_cron(
+    eastern_hour: int, eastern_minute: int, day_of_week: str = None
+) -> str:
     """
     Calculate UTC cron expression for Eastern Time, handling DST automatically.
 
@@ -28,14 +31,16 @@ def get_utc_cron(eastern_hour: int, eastern_minute: int, day_of_week: str = None
     Returns:
         Cron expression string (minute hour * * day_of_week)
     """
-    eastern = pytz.timezone('America/New_York')
+    eastern = pytz.timezone("America/New_York")
     utc = pytz.UTC
 
     # Get current date to determine DST status
     now = datetime.now(eastern)
 
     # Create a time object for Eastern Time
-    et_time = now.replace(hour=eastern_hour, minute=eastern_minute, second=0, microsecond=0)
+    et_time = now.replace(
+        hour=eastern_hour, minute=eastern_minute, second=0, microsecond=0
+    )
 
     # Convert to UTC
     utc_time = eastern.localize(et_time).astimezone(utc)
@@ -54,6 +59,7 @@ def get_utc_cron(eastern_hour: int, eastern_minute: int, day_of_week: str = None
 
     return " ".join(cron_parts)
 
+
 def get_utc_time_info(eastern_hour: int, eastern_minute: int) -> dict:
     """
     Get detailed timezone information for Eastern Time conversion.
@@ -61,11 +67,13 @@ def get_utc_time_info(eastern_hour: int, eastern_minute: int) -> dict:
     Returns:
         Dictionary with UTC time, DST status, and cron expression
     """
-    eastern = pytz.timezone('America/New_York')
+    eastern = pytz.timezone("America/New_York")
     utc = pytz.UTC
 
     now = datetime.now(eastern)
-    et_time = now.replace(hour=eastern_hour, minute=eastern_minute, second=0, microsecond=0)
+    et_time = now.replace(
+        hour=eastern_hour, minute=eastern_minute, second=0, microsecond=0
+    )
     et_localized = eastern.localize(et_time)
     utc_time = et_localized.astimezone(utc)
 
@@ -79,12 +87,15 @@ def get_utc_time_info(eastern_hour: int, eastern_minute: int) -> dict:
         "utc_offset": f"UTC{'+' if is_dst else ''}{et_localized.utcoffset().total_seconds() / 3600:.0f}",
     }
 
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python3 scripts/get_utc_time.py <hour> <minute> [day_of_week]")
         print("\nExamples:")
         print("  python3 scripts/get_utc_time.py 9 35        # 9:35 AM ET")
-        print("  python3 scripts/get_utc_time.py 10 0 0,6     # 10:00 AM ET on weekends")
+        print(
+            "  python3 scripts/get_utc_time.py 10 0 0,6     # 10:00 AM ET on weekends"
+        )
         sys.exit(1)
 
     try:
@@ -102,10 +113,14 @@ def main():
         cron = get_utc_cron(hour, minute, day_of_week)
         info = get_utc_time_info(hour, minute)
 
-        print(f"Eastern Time: {info['eastern_time']} {info['timezone_name']} ({info['utc_offset']})")
+        print(
+            f"Eastern Time: {info['eastern_time']} {info['timezone_name']} ({info['utc_offset']})"
+        )
         print(f"UTC Time: {info['utc_time']} UTC")
         print(f"Cron Expression: '{cron}'")
-        print(f"\nCurrent DST Status: {'Daylight Saving Time (EDT)' if info['is_dst'] else 'Standard Time (EST)'}")
+        print(
+            f"\nCurrent DST Status: {'Daylight Saving Time (EDT)' if info['is_dst'] else 'Standard Time (EST)'}"
+        )
 
         # Output cron for easy copy-paste
         print(f"\n# Copy this to your workflow:")
@@ -117,6 +132,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

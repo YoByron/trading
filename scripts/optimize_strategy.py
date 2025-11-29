@@ -65,12 +65,14 @@ def analyze_strategy_performance():
 
     # Entry timing
     if losing_count > profitable_count:
-        recommendations.append({
-            "category": "Entry Timing",
-            "issue": "More losing positions than profitable",
-            "recommendation": "Wait for better entry points - use pullbacks",
-            "action": "Add entry filters: RSI < 40, MACD histogram > 0, price above MA",
-        })
+        recommendations.append(
+            {
+                "category": "Entry Timing",
+                "issue": "More losing positions than profitable",
+                "recommendation": "Wait for better entry points - use pullbacks",
+                "action": "Add entry filters: RSI < 40, MACD histogram > 0, price above MA",
+            }
+        )
 
     # Position sizing
     spy_pos = next((p for p in positions if p.get("symbol") == "SPY"), None)
@@ -80,21 +82,25 @@ def analyze_strategy_performance():
         spy_pct = (spy_value / total_value * 100) if total_value > 0 else 0
 
         if spy_pct > 70:
-            recommendations.append({
-                "category": "Position Sizing",
-                "issue": f"SPY is {spy_pct:.1f}% of portfolio",
-                "recommendation": "Diversify - SPY position too large",
-                "action": "Reduce SPY allocation, add QQQ/VOO",
-            })
+            recommendations.append(
+                {
+                    "category": "Position Sizing",
+                    "issue": f"SPY is {spy_pct:.1f}% of portfolio",
+                    "recommendation": "Diversify - SPY position too large",
+                    "action": "Reduce SPY allocation, add QQQ/VOO",
+                }
+            )
 
     # Stop-loss strategy
     if any(p.get("unrealized_pl_pct", 0) < -2 for p in positions):
-        recommendations.append({
-            "category": "Risk Management",
-            "issue": "Positions down > 2%",
-            "recommendation": "Tighter stop-losses (already implemented)",
-            "action": "✅ Stop-losses active - monitor closely",
-        })
+        recommendations.append(
+            {
+                "category": "Risk Management",
+                "issue": "Positions down > 2%",
+                "recommendation": "Tighter stop-losses (already implemented)",
+                "action": "✅ Stop-losses active - monitor closely",
+            }
+        )
 
     # Display recommendations
     for i, rec in enumerate(recommendations, 1):

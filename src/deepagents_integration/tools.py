@@ -18,11 +18,13 @@ from src.utils.market_data import get_market_data_provider
 
 logger = logging.getLogger(__name__)
 
+
 # Lazy import to avoid breaking crypto trading when RAG dependencies aren't installed
 def _get_sentiment_store():
     """Lazy import of SentimentRAGStore."""
     try:
         from src.rag.sentiment_store import SentimentRAGStore
+
         return SentimentRAGStore
     except ImportError as e:
         logger.warning(f"SentimentRAGStore not available: {e}")
@@ -99,7 +101,11 @@ def query_sentiment(
     try:
         SentimentRAGStore = _get_sentiment_store()
         if SentimentRAGStore is None:
-            return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
+            return json.dumps(
+                {
+                    "error": "SentimentRAGStore not available - RAG dependencies not installed"
+                }
+            )
 
         store = SentimentRAGStore()
         results = store.query(query=query, ticker=ticker, top_k=limit)
@@ -147,7 +153,11 @@ def get_sentiment_history(
     try:
         SentimentRAGStore = _get_sentiment_store()
         if SentimentRAGStore is None:
-            return json.dumps({"error": "SentimentRAGStore not available - RAG dependencies not installed"})
+            return json.dumps(
+                {
+                    "error": "SentimentRAGStore not available - RAG dependencies not installed"
+                }
+            )
 
         store = SentimentRAGStore()
         results = store.get_ticker_history(ticker=ticker, limit=limit)
@@ -205,7 +215,9 @@ def analyze_technical_indicators(
             return json.dumps({"error": f"No data available for {symbol}"})
 
         if len(df) < 26:
-            return json.dumps({"error": f"Insufficient data for {symbol} (need at least 26 bars)"})
+            return json.dumps(
+                {"error": f"Insufficient data for {symbol} (need at least 26 bars)"}
+            )
 
         # Calculate indicators
         macd_value, macd_signal, macd_histogram = calculate_macd(df["Close"])

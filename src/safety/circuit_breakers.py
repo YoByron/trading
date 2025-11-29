@@ -8,6 +8,7 @@ Prevents catastrophic losses by automatically halting trading when:
 - API errors exceed limit
 - Position size anomalies
 """
+
 import logging
 import json
 from pathlib import Path
@@ -35,7 +36,7 @@ class CircuitBreaker:
         max_consecutive_losses: int = 3,
         max_api_errors: int = 5,
         max_position_size_pct: float = 0.10,  # 10% max per position
-        state_file: str = "data/circuit_breaker_state.json"
+        state_file: str = "data/circuit_breaker_state.json",
     ):
         self.max_daily_loss_pct = max_daily_loss_pct
         self.max_consecutive_losses = max_consecutive_losses
@@ -47,14 +48,16 @@ class CircuitBreaker:
         self.state = self._load_state()
         self.is_tripped = self.state.get("is_tripped", False)
 
-        logger.info(f"Circuit Breaker initialized: max_loss={max_daily_loss_pct:.1%}, "
-                   f"max_consec={max_consecutive_losses}, tripped={self.is_tripped}")
+        logger.info(
+            f"Circuit Breaker initialized: max_loss={max_daily_loss_pct:.1%}, "
+            f"max_consec={max_consecutive_losses}, tripped={self.is_tripped}"
+        )
 
     def check_before_trade(
         self,
         portfolio_value: float,
         proposed_position_size: float,
-        current_pl_today: float
+        current_pl_today: float,
     ) -> Dict[str, Any]:
         """
         Check if trading should be allowed.
@@ -75,39 +78,48 @@ class CircuitBreaker:
                 "allowed": False,
                 "reason": "🚨 CIRCUIT BREAKER TRIPPED - Manual reset required",
                 "severity": "CRITICAL",
-                "breaker": "KILL_SWITCH"
+                "breaker": "KILL_SWITCH",
             }
 
         # Check 2: Daily loss limit
-        daily_loss_pct = abs(current_pl_today) / portfolio_value if portfolio_value > 0 else 0
+        daily_loss_pct = (
+            abs(current_pl_today) / portfolio_value if portfolio_value > 0 else 0
+        )
         if current_pl_today < 0 and daily_loss_pct > self.max_daily_loss_pct:
-            self._trip_breaker("DAILY_LOSS_LIMIT", f"Daily loss {daily_loss_pct:.2%} exceeds {self.max_daily_loss_pct:.2%}")
+            self._trip_breaker(
+                "DAILY_LOSS_LIMIT",
+                f"Daily loss {daily_loss_pct:.2%} exceeds {self.max_daily_loss_pct:.2%}",
+            )
             return {
                 "allowed": False,
                 "reason": f"🛑 Daily loss limit exceeded: {daily_loss_pct:.2%} > {self.max_daily_loss_pct:.2%}",
                 "severity": "CRITICAL",
-                "breaker": "DAILY_LOSS"
+                "breaker": "DAILY_LOSS",
             }
 
         # Check 3: Consecutive losses
         consecutive_losses = self.state.get("consecutive_losses", 0)
         if consecutive_losses >= self.max_consecutive_losses:
-            self._trip_breaker("CONSECUTIVE_LOSSES", f"{consecutive_losses} consecutive losses")
+            self._trip_breaker(
+                "CONSECUTIVE_LOSSES", f"{consecutive_losses} consecutive losses"
+            )
             return {
                 "allowed": False,
                 "reason": f"🛑 Too many consecutive losses: {consecutive_losses}",
                 "severity": "CRITICAL",
-                "breaker": "CONSECUTIVE_LOSS"
+                "breaker": "CONSECUTIVE_LOSS",
             }
 
         # Check 4: Position size anomaly
-        position_pct = proposed_position_size / portfolio_value if portfolio_value > 0 else 0
+        position_pct = (
+            proposed_position_size / portfolio_value if portfolio_value > 0 else 0
+        )
         if position_pct > self.max_position_size_pct:
             return {
                 "allowed": False,
                 "reason": f"🛑 Position size too large: {position_pct:.2%} > {self.max_position_size_pct:.2%}",
                 "severity": "HIGH",
-                "breaker": "POSITION_SIZE"
+                "breaker": "POSITION_SIZE",
             }
 
         # Check 5: API error rate
@@ -118,7 +130,7 @@ class CircuitBreaker:
                 "allowed": False,
                 "reason": f"🛑 Too many API errors: {api_errors_today}",
                 "severity": "HIGH",
-                "breaker": "API_ERROR"
+                "breaker": "API_ERROR",
             }
 
         # All checks passed
@@ -130,15 +142,19 @@ class CircuitBreaker:
                 "daily_loss": f"{daily_loss_pct:.2%} / {self.max_daily_loss_pct:.2%}",
                 "consecutive_losses": f"{consecutive_losses} / {self.max_consecutive_losses}",
                 "position_size": f"{position_pct:.2%} / {self.max_position_size_pct:.2%}",
-                "api_errors": f"{api_errors_today} / {self.max_api_errors}"
-            }
+                "api_errors": f"{api_errors_today} / {self.max_api_errors}",
+            },
         }
 
     def record_trade_outcome(self, profit_loss: float) -> None:
         """Record trade outcome for consecutive loss tracking."""
         if profit_loss < 0:
-            self.state["consecutive_losses"] = self.state.get("consecutive_losses", 0) + 1
-            logger.warning(f"Loss recorded: {self.state['consecutive_losses']} consecutive")
+            self.state["consecutive_losses"] = (
+                self.state.get("consecutive_losses", 0) + 1
+            )
+            logger.warning(
+                f"Loss recorded: {self.state['consecutive_losses']} consecutive"
+            )
         else:
             self.state["consecutive_losses"] = 0  # Reset on win
             logger.info("Win recorded: consecutive losses reset to 0")
@@ -193,11 +209,11 @@ class CircuitBreaker:
                 "is_tripped": False,
                 "consecutive_losses": 0,
                 "api_errors_today": 0,
-                "last_reset": date.today().isoformat()
+                "last_reset": date.today().isoformat(),
             }
 
         try:
-            with open(self.state_file, 'r') as f:
+            with open(self.state_file, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error loading circuit breaker state: {e}")
@@ -207,7 +223,7 @@ class CircuitBreaker:
         """Save state to disk."""
         try:
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.state_file, 'w') as f:
+            with open(self.state_file, "w") as f:
                 json.dump(self.state, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving circuit breaker state: {e}")
@@ -220,5 +236,5 @@ class CircuitBreaker:
             "api_errors_today": self.state.get("api_errors_today", 0),
             "last_reset": self.state.get("last_reset", "unknown"),
             "trip_reason": self.state.get("trip_reason", None),
-            "trip_details": self.state.get("trip_details", None)
+            "trip_details": self.state.get("trip_details", None),
         }

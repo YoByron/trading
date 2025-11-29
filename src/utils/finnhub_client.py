@@ -35,7 +35,9 @@ class FinnhubClient:
     def __init__(self, api_key: Optional[str] = None) -> None:
         self.api_key = api_key or os.getenv("FINNHUB_API_KEY")
         if not self.api_key:
-            logger.warning("FINNHUB_API_KEY not set. Economic calendar checks will be unavailable.")
+            logger.warning(
+                "FINNHUB_API_KEY not set. Economic calendar checks will be unavailable."
+            )
 
     def get_economic_calendar(
         self, start_date: Optional[date] = None, end_date: Optional[date] = None
@@ -75,7 +77,9 @@ class FinnhubClient:
             if "error" in data:
                 error_msg = data.get("error", "Unknown error")
                 if "access" in error_msg.lower() or "permission" in error_msg.lower():
-                    logger.warning("Finnhub economic calendar requires premium plan - feature unavailable")
+                    logger.warning(
+                        "Finnhub economic calendar requires premium plan - feature unavailable"
+                    )
                     return []
                 logger.warning("Finnhub API error: %s", error_msg)
                 return []
@@ -112,7 +116,9 @@ class FinnhubClient:
                 for major_type in self.MAJOR_EVENT_TYPES:
                     if major_type.upper() in event_type.upper():
                         logger.warning(
-                            "Major economic event today: %s (%s)", event_type, event_date
+                            "Major economic event today: %s (%s)",
+                            event_type,
+                            event_date,
                         )
                         return True
 

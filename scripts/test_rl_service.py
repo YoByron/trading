@@ -49,13 +49,11 @@ def main():
             "action_space": "discrete",
             "actions": ["BUY", "SELL", "HOLD"],
             "state_dim": 10,  # Market indicators
-            "reward_function": "profit_based"
+            "reward_function": "profit_based",
         }
 
         job_info = client.start_training(
-            env_spec=env_spec,
-            algorithm="DQN",
-            job_name="dqn_trading_v1"
+            env_spec=env_spec, algorithm="DQN", job_name="dqn_trading_v1"
         )
 
         print(f"✅ Training job submitted successfully")
@@ -76,6 +74,7 @@ def main():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

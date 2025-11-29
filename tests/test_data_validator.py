@@ -1,6 +1,7 @@
 """
 Tests for data validator to ensure false claims are caught.
 """
+
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -57,7 +58,7 @@ class TestDataValidator(unittest.TestCase):
         """Test getting profit for a specific date."""
         # Get a date that should exist
         if self.validator.perf_log:
-            test_date = self.validator.perf_log[-1].get('date')
+            test_date = self.validator.perf_log[-1].get("date")
             profit = self.validator.get_profit_for_date(test_date)
 
             self.assertIsNotNone(profit, "Should return profit for existing date")
@@ -71,5 +72,5 @@ class TestDataValidator(unittest.TestCase):
         self.assertIsNone(profit, "Should return None for nonexistent date")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

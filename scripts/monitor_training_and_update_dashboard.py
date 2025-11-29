@@ -22,18 +22,28 @@ load_dotenv()
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler('logs/training_monitor.log'),
-        logging.StreamHandler()
-    ]
+        logging.FileHandler("logs/training_monitor.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
 # Import Claude Skills
 try:
-    sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "performance_monitor" / "scripts"))
+    sys.path.insert(
+        0,
+        str(
+            Path(__file__).parent.parent
+            / ".claude"
+            / "skills"
+            / "performance_monitor"
+            / "scripts"
+        ),
+    )
     from performance_monitor import PerformanceMonitor
+
     PERFORMANCE_MONITOR_AVAILABLE = True
 except ImportError:
     logger.warning("Performance Monitor skill not available")
@@ -41,8 +51,18 @@ except ImportError:
 
 # Import LangSmith Monitor
 try:
-    sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "langsmith_monitor" / "scripts"))
+    sys.path.insert(
+        0,
+        str(
+            Path(__file__).parent.parent
+            / ".claude"
+            / "skills"
+            / "langsmith_monitor"
+            / "scripts"
+        ),
+    )
     from langsmith_monitor import LangSmithMonitor
+
     LANGSMITH_MONITOR_AVAILABLE = True
 except ImportError:
     logger.warning("LangSmith Monitor skill not available")
@@ -89,18 +109,22 @@ class TrainingMonitor:
         for job_id, job_info in cloud_jobs.items():
             job_status = job_info.get("status", "unknown")
             if job_status in ["submitted", "running", "in_progress"]:
-                active_jobs.append({
-                    "job_id": job_id,
-                    "symbol": job_info.get("symbol"),
-                    "status": job_status,
-                    "submitted_at": job_info.get("submitted_at")
-                })
+                active_jobs.append(
+                    {
+                        "job_id": job_id,
+                        "symbol": job_info.get("symbol"),
+                        "status": job_status,
+                        "submitted_at": job_info.get("submitted_at"),
+                    }
+                )
             elif job_status in ["completed", "success"]:
-                completed_jobs.append({
-                    "job_id": job_id,
-                    "symbol": job_info.get("symbol"),
-                    "status": job_status
-                })
+                completed_jobs.append(
+                    {
+                        "job_id": job_id,
+                        "symbol": job_info.get("symbol"),
+                        "status": job_status,
+                    }
+                )
 
         return {
             "timestamp": datetime.now().isoformat(),
@@ -108,7 +132,7 @@ class TrainingMonitor:
             "next_retrain": status.get("next_retrain", {}),
             "active_jobs": active_jobs,
             "completed_jobs": completed_jobs,
-            "total_jobs": len(cloud_jobs)
+            "total_jobs": len(cloud_jobs),
         }
 
     def check_vertex_ai_jobs(self) -> Dict[str, Any]:
@@ -128,15 +152,14 @@ class TrainingMonitor:
                 try:
                     job_status = client.get_job_status(job_id)
                     job_statuses[job_id] = job_status
-                    logger.info(f"   {job['symbol']} ({job_id}): {job_status.get('status', 'unknown')}")
+                    logger.info(
+                        f"   {job['symbol']} ({job_id}): {job_status.get('status', 'unknown')}"
+                    )
                 except Exception as e:
                     logger.warning(f"   Failed to check {job_id}: {e}")
                     job_statuses[job_id] = {"status": "unknown", "error": str(e)}
 
-            return {
-                "checked_at": datetime.now().isoformat(),
-                "jobs": job_statuses
-            }
+            return {"checked_at": datetime.now().isoformat(), "jobs": job_statuses}
 
         except Exception as e:
             logger.error(f"❌ Failed to check Vertex AI jobs: {e}")
@@ -148,7 +171,9 @@ class TrainingMonitor:
 
         try:
             # Import dashboard generator
-            from scripts.generate_progress_dashboard import main as generate_dashboard_main
+            from scripts.generate_progress_dashboard import (
+                main as generate_dashboard_main,
+            )
 
             # Generate dashboard (this saves to wiki/Progress-Dashboard.md)
             generate_dashboard_main()
@@ -169,6 +194,7 @@ class TrainingMonitor:
         except Exception as e:
             logger.error(f"❌ Failed to update dashboard: {e}")
             import traceback
+
             traceback.print_exc()
             return False
 
@@ -179,7 +205,7 @@ class TrainingMonitor:
             vertex_status = self.check_vertex_ai_jobs()
 
             # Read current dashboard
-            with open(dashboard_path, 'r') as f:
+            with open(dashboard_path, "r") as f:
                 content = f.read()
 
             # Create training status section
@@ -202,7 +228,9 @@ class TrainingMonitor:
 
             for job in status.get("active_jobs", [])[:10]:  # Show top 10
                 training_section += f"- **{job['symbol']}**: {job['status']} (Job ID: `{job['job_id']}`)\n"
-                training_section += f"  - Submitted: {job.get('submitted_at', 'Unknown')}\n"
+                training_section += (
+                    f"  - Submitted: {job.get('submitted_at', 'Unknown')}\n"
+                )
 
             training_section += "\n#### Last Training Times\n\n"
             for symbol, last_time in list(status.get("last_training", {}).items())[:10]:
@@ -215,15 +243,23 @@ class TrainingMonitor:
             # Add LangSmith monitoring section
             if self.langsmith_monitor:
                 try:
-                    langsmith_stats = self.langsmith_monitor.get_project_stats("trading-rl-training", days=7)
+                    langsmith_stats = self.langsmith_monitor.get_project_stats(
+                        "trading-rl-training", days=7
+                    )
                     if langsmith_stats.get("success"):
                         stats = langsmith_stats
                         training_section += f"\n### LangSmith Monitoring\n\n"
                         training_section += f"**Project**: trading-rl-training\n"
-                        training_section += f"**Total Runs** (7 days): {stats.get('total_runs', 0)}\n"
-                        training_section += f"**Success Rate**: {stats.get('success_rate', 0):.1f}%\n"
+                        training_section += (
+                            f"**Total Runs** (7 days): {stats.get('total_runs', 0)}\n"
+                        )
+                        training_section += (
+                            f"**Success Rate**: {stats.get('success_rate', 0):.1f}%\n"
+                        )
                         training_section += f"**Average Duration**: {stats.get('average_duration_seconds', 0):.1f}s\n"
-                        training_section += f"\n**View Dashboard**: https://smith.langchain.com\n"
+                        training_section += (
+                            f"\n**View Dashboard**: https://smith.langchain.com\n"
+                        )
                 except Exception as e:
                     logger.debug(f"Failed to add LangSmith stats: {e}")
 
@@ -235,7 +271,7 @@ class TrainingMonitor:
                 content += training_section
 
             # Write back
-            with open(dashboard_path, 'w') as f:
+            with open(dashboard_path, "w") as f:
                 f.write(content)
 
             logger.info("✅ Training status added to dashboard")
@@ -263,7 +299,9 @@ class TrainingMonitor:
         while True:
             iteration += 1
             logger.info(f"\n{'='*80}")
-            logger.info(f"📊 MONITORING CYCLE #{iteration} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(
+                f"📊 MONITORING CYCLE #{iteration} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             logger.info(f"{'='*80}\n")
 
             try:
@@ -271,7 +309,9 @@ class TrainingMonitor:
                 status = self.check_training_status()
                 logger.info(f"✅ Training status checked")
                 logger.info(f"   Active jobs: {len(status.get('active_jobs', []))}")
-                logger.info(f"   Completed jobs: {len(status.get('completed_jobs', []))}")
+                logger.info(
+                    f"   Completed jobs: {len(status.get('completed_jobs', []))}"
+                )
 
                 # Check Vertex AI jobs
                 vertex_status = self.check_vertex_ai_jobs()
@@ -282,13 +322,19 @@ class TrainingMonitor:
                 if self.langsmith_monitor:
                     langsmith_health = self.langsmith_monitor.monitor_health()
                     if langsmith_health.get("success"):
-                        logger.info(f"✅ LangSmith health checked: {langsmith_health.get('status')}")
+                        logger.info(
+                            f"✅ LangSmith health checked: {langsmith_health.get('status')}"
+                        )
 
-                    langsmith_stats = self.langsmith_monitor.get_project_stats("trading-rl-training", days=7)
+                    langsmith_stats = self.langsmith_monitor.get_project_stats(
+                        "trading-rl-training", days=7
+                    )
                     if langsmith_stats.get("success"):
                         stats = langsmith_stats
-                        logger.info(f"✅ LangSmith stats: {stats.get('total_runs', 0)} runs, "
-                                  f"{stats.get('success_rate', 0):.1f}% success rate")
+                        logger.info(
+                            f"✅ LangSmith stats: {stats.get('total_runs', 0)} runs, "
+                            f"{stats.get('success_rate', 0):.1f}% success rate"
+                        )
 
                 # Update dashboard
                 if self.update_dashboard():
@@ -298,11 +344,15 @@ class TrainingMonitor:
 
                 # Check if we should stop
                 if max_iterations and iteration >= max_iterations:
-                    logger.info(f"\n🏁 Reached max iterations ({max_iterations}), stopping...")
+                    logger.info(
+                        f"\n🏁 Reached max iterations ({max_iterations}), stopping..."
+                    )
                     break
 
                 # Wait for next check
-                logger.info(f"\n⏳ Waiting {interval_minutes} minutes until next check...")
+                logger.info(
+                    f"\n⏳ Waiting {interval_minutes} minutes until next check..."
+                )
                 time.sleep(interval_minutes * 60)
 
             except KeyboardInterrupt:
@@ -311,6 +361,7 @@ class TrainingMonitor:
             except Exception as e:
                 logger.error(f"❌ Error in monitoring cycle: {e}")
                 import traceback
+
                 traceback.print_exc()
                 logger.info(f"⏳ Waiting {interval_minutes} minutes before retry...")
                 time.sleep(interval_minutes * 60)
@@ -320,28 +371,28 @@ def main():
     """CLI entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Monitor RL Training & Update Dashboard")
+    parser = argparse.ArgumentParser(
+        description="Monitor RL Training & Update Dashboard"
+    )
     parser.add_argument(
         "--interval",
         type=int,
         default=60,
-        help="Check interval in minutes (default: 60)"
+        help="Check interval in minutes (default: 60)",
     )
     parser.add_argument(
-        "--once",
-        action="store_true",
-        help="Run once and exit (don't loop)"
+        "--once", action="store_true", help="Run once and exit (don't loop)"
     )
     parser.add_argument(
         "--max-iterations",
         type=int,
         default=None,
-        help="Maximum iterations (default: infinite)"
+        help="Maximum iterations (default: infinite)",
     )
     parser.add_argument(
         "--status-only",
         action="store_true",
-        help="Only check status, don't update dashboard"
+        help="Only check status, don't update dashboard",
     )
 
     args = parser.parse_args()
@@ -361,8 +412,7 @@ def main():
 
     # Run continuous monitoring
     monitor.monitor_loop(
-        interval_minutes=args.interval,
-        max_iterations=args.max_iterations
+        interval_minutes=args.interval, max_iterations=args.max_iterations
     )
 
     return 0

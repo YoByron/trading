@@ -15,6 +15,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.core.skills_integration import get_skills
@@ -43,7 +44,9 @@ def test_skill_loading():
         status = "✅" if loaded else "❌"
         print(f"{status} {skill_name}: {'Loaded' if loaded else 'Failed to load'}")
 
-    print(f"\n{'✅ ALL SKILLS LOADED' if all_loaded else '❌ SOME SKILLS FAILED TO LOAD'}")
+    print(
+        f"\n{'✅ ALL SKILLS LOADED' if all_loaded else '❌ SOME SKILLS FAILED TO LOAD'}"
+    )
     return all_loaded, results
 
 
@@ -71,8 +74,8 @@ def test_portfolio_risk_assessment():
             print(f"   Risk Score: {data.get('risk_score', 0)}")
             return True
         else:
-            error = result.get('error', 'Unknown error')
-            if 'Alpaca' in error or 'not available' in error:
+            error = result.get("error", "Unknown error")
+            if "Alpaca" in error or "not available" in error:
                 print(f"⚠️ Health check requires Alpaca API (expected in test): {error}")
                 print("   ✅ Skill is loaded and functional (needs API for full test)")
                 return True  # Skill works, just needs API
@@ -104,7 +107,7 @@ def test_anomaly_detector():
             actual_fill_price=155.15,
             quantity=100,
             order_type="market",
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
         if result.get("success"):
@@ -113,16 +116,23 @@ def test_anomaly_detector():
             quality = analysis.get("execution_quality", {})
 
             print(f"✅ Execution anomaly detection successful")
-            print(f"   Slippage: {slippage.get('percentage', 0):.3f}% ({slippage.get('severity', 'unknown')})")
-            print(f"   Quality Score: {quality.get('score', 0)} ({quality.get('grade', 'N/A')})")
+            print(
+                f"   Slippage: {slippage.get('percentage', 0):.3f}% ({slippage.get('severity', 'unknown')})"
+            )
+            print(
+                f"   Quality Score: {quality.get('score', 0)} ({quality.get('grade', 'N/A')})"
+            )
             print(f"   Anomalies Detected: {analysis.get('anomalies_detected', False)}")
             return True
         else:
-            print(f"❌ Anomaly detection failed: {result.get('error', 'Unknown error')}")
+            print(
+                f"❌ Anomaly detection failed: {result.get('error', 'Unknown error')}"
+            )
             return False
     except Exception as e:
         print(f"❌ Error testing Anomaly Detector: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -144,9 +154,7 @@ def test_performance_monitor():
         start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
 
         result = skills.get_performance_metrics(
-            start_date=start_date,
-            end_date=end_date,
-            benchmark_symbol="SPY"
+            start_date=start_date, end_date=end_date, benchmark_symbol="SPY"
         )
 
         if result.get("success"):
@@ -162,11 +170,14 @@ def test_performance_monitor():
             print(f"   Total Trades: {trade_stats.get('total_trades', 0)}")
             return True
         else:
-            print(f"❌ Performance monitoring failed: {result.get('error', 'Unknown error')}")
+            print(
+                f"❌ Performance monitoring failed: {result.get('error', 'Unknown error')}"
+            )
             return False
     except Exception as e:
         print(f"❌ Error testing Performance Monitor: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -197,12 +208,15 @@ def test_sentiment_analyzer():
                 print(f"   {symbol}: Score={score:.2f} ({label}) → {recommendation}")
             return True
         else:
-            print(f"⚠️ Sentiment analysis returned error (may be expected if no data): {result.get('error', 'Unknown error')}")
+            print(
+                f"⚠️ Sentiment analysis returned error (may be expected if no data): {result.get('error', 'Unknown error')}"
+            )
             # This is OK - sentiment may not have data, but skill is loaded
             return True
     except Exception as e:
         print(f"❌ Error testing Sentiment Analyzer: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -226,7 +240,7 @@ def test_position_sizer():
             risk_per_trade_pct=1.0,
             method="volatility_adjusted",
             current_price=155.00,
-            stop_loss_price=150.00
+            stop_loss_price=150.00,
         )
 
         if result.get("success"):
@@ -245,6 +259,7 @@ def test_position_sizer():
     except Exception as e:
         print(f"❌ Error testing Position Sizer: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -262,11 +277,7 @@ def test_financial_data_fetcher():
         return False
 
     try:
-        result = skills.get_price_data(
-            symbols=["SPY"],
-            timeframe="1Day",
-            limit=5
-        )
+        result = skills.get_price_data(symbols=["SPY"], timeframe="1Day", limit=5)
 
         if result.get("success"):
             data = result.get("data", {})
@@ -276,17 +287,22 @@ def test_financial_data_fetcher():
                 if isinstance(price_data, list) and len(price_data) > 0:
                     latest = price_data[0]
                     print(f"   {symbol}: {len(price_data)} bars retrieved")
-                    print(f"   Latest: Close=${latest.get('close', 0):.2f} at {latest.get('timestamp', 'N/A')}")
+                    print(
+                        f"   Latest: Close=${latest.get('close', 0):.2f} at {latest.get('timestamp', 'N/A')}"
+                    )
                 else:
                     print(f"   {symbol}: No data (may be expected if API unavailable)")
             return True
         else:
-            print(f"⚠️ Data fetch returned error (may be expected if API unavailable): {result.get('error', 'Unknown error')}")
+            print(
+                f"⚠️ Data fetch returned error (may be expected if API unavailable): {result.get('error', 'Unknown error')}"
+            )
             # This is OK - API may not be available, but skill is loaded
             return True
     except Exception as e:
         print(f"❌ Error testing Financial Data Fetcher: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -316,7 +332,8 @@ def test_orchestrator_integration():
 
         # Check for skill usage in code
         skill_usage_checks = {
-            "assess_portfolio_health": "Portfolio Risk Assessment usage" in main_content or "portfolio_risk_assessor" in main_content,
+            "assess_portfolio_health": "Portfolio Risk Assessment usage" in main_content
+            or "portfolio_risk_assessor" in main_content,
             "detect_execution_anomalies": "detect_execution_anomalies" in main_content,
             "get_performance_metrics": "_daily_performance_monitoring" in main_content,
         }

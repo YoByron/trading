@@ -3,6 +3,7 @@ Ensemble RL Agent for Trading
 Combines multiple RL algorithms (PPO, A2C, SAC) for robust performance.
 Based on 2024-2025 research showing ensembles outperform single models.
 """
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -39,7 +40,7 @@ class EnsembleRLAgent:
         num_layers: int = 2,
         device: str = "cpu",
         ensemble_weights: Optional[Dict[str, float]] = None,
-        models_dir: str = "models/ml"
+        models_dir: str = "models/ml",
     ):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -50,9 +51,9 @@ class EnsembleRLAgent:
 
         # Ensemble weights (default: PPO-heavy)
         self.ensemble_weights = ensemble_weights or {
-            'ppo': 0.50,
-            'a2c': 0.30,
-            'sac': 0.20
+            "ppo": 0.50,
+            "a2c": 0.30,
+            "sac": 0.20,
         }
 
         # Initialize models
@@ -62,16 +63,18 @@ class EnsembleRLAgent:
         # Reward calculator
         self.reward_calculator = RiskAdjustedReward()
 
-        logger.info(f"✅ Ensemble RL Agent initialized with weights: {self.ensemble_weights}")
+        logger.info(
+            f"✅ Ensemble RL Agent initialized with weights: {self.ensemble_weights}"
+        )
 
     def _initialize_models(self):
         """Initialize all ensemble models."""
         # PPO Model (primary)
         try:
-            self.models['ppo'] = LSTMPPO(
+            self.models["ppo"] = LSTMPPO(
                 input_dim=self.input_dim,
                 hidden_dim=self.hidden_dim,
-                num_layers=self.num_layers
+                num_layers=self.num_layers,
             ).to(self.device)
             logger.info("✅ PPO model initialized")
         except Exception as e:
@@ -80,10 +83,10 @@ class EnsembleRLAgent:
         # A2C Model (stability)
         try:
             # For now, use same architecture as PPO (can be replaced with A2C-specific)
-            self.models['a2c'] = LSTMPPO(
+            self.models["a2c"] = LSTMPPO(
                 input_dim=self.input_dim,
                 hidden_dim=self.hidden_dim,
-                num_layers=self.num_layers
+                num_layers=self.num_layers,
             ).to(self.device)
             logger.info("✅ A2C model initialized")
         except Exception as e:
@@ -92,19 +95,17 @@ class EnsembleRLAgent:
         # SAC Model (risk-adjusted)
         try:
             # For now, use same architecture as PPO (can be replaced with SAC-specific)
-            self.models['sac'] = LSTMPPO(
+            self.models["sac"] = LSTMPPO(
                 input_dim=self.input_dim,
                 hidden_dim=self.hidden_dim,
-                num_layers=self.num_layers
+                num_layers=self.num_layers,
             ).to(self.device)
             logger.info("✅ SAC model initialized")
         except Exception as e:
             logger.warning(f"⚠️  Failed to initialize SAC: {e}")
 
     def predict(
-        self,
-        state: torch.Tensor,
-        deterministic: bool = False
+        self, state: torch.Tensor, deterministic: bool = False
     ) -> Tuple[int, float, Dict[str, Any]]:
         """
         Get ensemble prediction.
@@ -145,9 +146,9 @@ class EnsembleRLAgent:
                     confidence = float(action_probs[action_idx])
 
                     predictions[name] = {
-                        'action': int(action_idx),
-                        'confidence': confidence,
-                        'probs': action_probs.tolist()
+                        "action": int(action_idx),
+                        "confidence": confidence,
+                        "probs": action_probs.tolist(),
                     }
 
                     # Weighted contribution
@@ -161,7 +162,7 @@ class EnsembleRLAgent:
 
         if len(action_probs_list) == 0:
             # Fallback: random action
-            return 0, 0.5, {'error': 'All models failed'}
+            return 0, 0.5, {"error": "All models failed"}
 
         # Ensemble: Weighted average of action probabilities
         ensemble_probs = np.sum(action_probs_list, axis=0)
@@ -171,15 +172,21 @@ class EnsembleRLAgent:
         if deterministic:
             ensemble_action = int(np.argmax(ensemble_probs))
         else:
-            ensemble_action = int(np.random.choice(len(ensemble_probs), p=ensemble_probs))
+            ensemble_action = int(
+                np.random.choice(len(ensemble_probs), p=ensemble_probs)
+            )
 
         ensemble_confidence = float(ensemble_probs[ensemble_action])
 
-        return ensemble_action, ensemble_confidence, {
-            'ensemble_probs': ensemble_probs.tolist(),
-            'individual_predictions': predictions,
-            'weights': self.ensemble_weights
-        }
+        return (
+            ensemble_action,
+            ensemble_confidence,
+            {
+                "ensemble_probs": ensemble_probs.tolist(),
+                "individual_predictions": predictions,
+                "weights": self.ensemble_weights,
+            },
+        )
 
     def update(
         self,
@@ -188,7 +195,7 @@ class EnsembleRLAgent:
         rewards: torch.Tensor,
         next_states: torch.Tensor,
         dones: torch.Tensor,
-        model_name: Optional[str] = None
+        model_name: Optional[str] = None,
     ):
         """
         Update ensemble models.
@@ -224,27 +231,35 @@ class EnsembleRLAgent:
 
         # Save ensemble configuration
         config_path = self.models_dir / f"{symbol}_ensemble_config.json"
-        with open(config_path, 'w') as f:
-            json.dump({
-                'ensemble_weights': self.ensemble_weights,
-                'input_dim': self.input_dim,
-                'hidden_dim': self.hidden_dim,
-                'num_layers': self.num_layers
-            }, f, indent=2)
+        with open(config_path, "w") as f:
+            json.dump(
+                {
+                    "ensemble_weights": self.ensemble_weights,
+                    "input_dim": self.input_dim,
+                    "hidden_dim": self.hidden_dim,
+                    "num_layers": self.num_layers,
+                },
+                f,
+                indent=2,
+            )
 
     def load(self, symbol: str):
         """Load all ensemble models."""
         config_path = self.models_dir / f"{symbol}_ensemble_config.json"
         if config_path.exists():
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 config = json.load(f)
-                self.ensemble_weights = config.get('ensemble_weights', self.ensemble_weights)
+                self.ensemble_weights = config.get(
+                    "ensemble_weights", self.ensemble_weights
+                )
 
         for name in self.models.keys():
             path = self.models_dir / f"{symbol}_ensemble_{name}.pt"
             if path.exists():
                 try:
-                    self.models[name].load_state_dict(torch.load(path, map_location=self.device))
+                    self.models[name].load_state_dict(
+                        torch.load(path, map_location=self.device)
+                    )
                     logger.info(f"Loaded {name} model from {path}")
                 except Exception as e:
                     logger.warning(f"⚠️  Failed to load {name}: {e}")

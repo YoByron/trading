@@ -9,6 +9,7 @@ from src.ml.trainer import ModelTrainer
 
 logger = logging.getLogger(__name__)
 
+
 class MLPredictor:
     """
     Inference engine for the LSTM-PPO model.
@@ -18,7 +19,7 @@ class MLPredictor:
     def __init__(self, models_dir: str = "models/ml"):
         self.trainer = ModelTrainer(models_dir=models_dir)
         self.data_processor = DataProcessor()
-        self.models = {} # Cache loaded models
+        self.models = {}  # Cache loaded models
 
     def get_signal(self, symbol: str) -> Dict[str, Any]:
         """
@@ -43,11 +44,7 @@ class MLPredictor:
 
         if input_tensor is None:
             logger.warning(f"Could not generate inference data for {symbol}")
-            return {
-                "action": "HOLD",
-                "confidence": 0.0,
-                "reason": "Insufficient data"
-            }
+            return {"action": "HOLD", "confidence": 0.0, "reason": "Insufficient data"}
 
         # 3. Inference
         with torch.no_grad():
@@ -55,7 +52,7 @@ class MLPredictor:
             # state_value: [1, 1]
             action_probs, state_value, _ = model(input_tensor)
 
-        probs = action_probs.squeeze().tolist() # [p_hold, p_buy, p_sell]
+        probs = action_probs.squeeze().tolist()  # [p_hold, p_buy, p_sell]
         value = state_value.item()
 
         # 4. Decode Action
@@ -65,15 +62,13 @@ class MLPredictor:
         best_action = actions[best_action_idx]
         confidence = probs[best_action_idx]
 
-        logger.info(f"ML Signal for {symbol}: {best_action} ({confidence:.2f}), Value: {value:.2f}")
+        logger.info(
+            f"ML Signal for {symbol}: {best_action} ({confidence:.2f}), Value: {value:.2f}"
+        )
 
         return {
             "action": best_action,
             "confidence": confidence,
             "value_estimate": value,
-            "probs": {
-                "HOLD": probs[0],
-                "BUY": probs[1],
-                "SELL": probs[2]
-            }
+            "probs": {"HOLD": probs[0], "BUY": probs[1], "SELL": probs[2]},
         }

@@ -15,7 +15,8 @@ import subprocess
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 
 def main():
     print("=" * 70)
@@ -26,6 +27,7 @@ def main():
     print("\n1️⃣  Generating dashboard...")
     try:
         from scripts.generate_progress_dashboard import main as generate_dashboard
+
         generate_dashboard()
         print("   ✅ Dashboard generated successfully")
     except Exception as e:
@@ -76,6 +78,7 @@ def main():
     print(f"   Location: {dashboard_file.absolute()}")
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

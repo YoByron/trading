@@ -24,7 +24,7 @@ from alpaca.data.requests import (
     OptionChainRequest,
     OptionSnapshotRequest,
     OptionBarsRequest,
-    OptionLatestQuoteRequest
+    OptionLatestQuoteRequest,
 )
 from alpaca.data.timeframe import TimeFrame
 from alpaca.common.exceptions import APIError
@@ -34,6 +34,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class AlpacaOptionsClient:
     """
@@ -57,15 +58,12 @@ class AlpacaOptionsClient:
         try:
             # Initialize Data Client (for chains, snapshots, history)
             self.data_client = OptionHistoricalDataClient(
-                api_key=self.api_key,
-                secret_key=self.secret_key
+                api_key=self.api_key, secret_key=self.secret_key
             )
 
             # Initialize Trading Client (for orders, account info)
             self.trading_client = TradingClient(
-                api_key=self.api_key,
-                secret_key=self.secret_key,
-                paper=paper
+                api_key=self.api_key, secret_key=self.secret_key, paper=paper
             )
 
             logger.info(f"Initialized AlpacaOptionsClient (Paper: {paper})")
@@ -103,17 +101,31 @@ class AlpacaOptionsClient:
                 # Extract relevant info
                 contract_info = {
                     "symbol": symbol,
-                    "latest_trade_price": snapshot.latest_trade.price if snapshot.latest_trade else None,
-                    "latest_quote_bid": snapshot.latest_quote.bid_price if snapshot.latest_quote else None,
-                    "latest_quote_ask": snapshot.latest_quote.ask_price if snapshot.latest_quote else None,
+                    "latest_trade_price": (
+                        snapshot.latest_trade.price if snapshot.latest_trade else None
+                    ),
+                    "latest_quote_bid": (
+                        snapshot.latest_quote.bid_price
+                        if snapshot.latest_quote
+                        else None
+                    ),
+                    "latest_quote_ask": (
+                        snapshot.latest_quote.ask_price
+                        if snapshot.latest_quote
+                        else None
+                    ),
                     "implied_volatility": snapshot.implied_volatility,
-                    "greeks": {
-                        "delta": snapshot.greeks.delta if snapshot.greeks else None,
-                        "gamma": snapshot.greeks.gamma if snapshot.greeks else None,
-                        "theta": snapshot.greeks.theta if snapshot.greeks else None,
-                        "vega": snapshot.greeks.vega if snapshot.greeks else None,
-                        "rho": snapshot.greeks.rho if snapshot.greeks else None,
-                    } if hasattr(snapshot, 'greeks') else None
+                    "greeks": (
+                        {
+                            "delta": snapshot.greeks.delta if snapshot.greeks else None,
+                            "gamma": snapshot.greeks.gamma if snapshot.greeks else None,
+                            "theta": snapshot.greeks.theta if snapshot.greeks else None,
+                            "vega": snapshot.greeks.vega if snapshot.greeks else None,
+                            "rho": snapshot.greeks.rho if snapshot.greeks else None,
+                        }
+                        if hasattr(snapshot, "greeks")
+                        else None
+                    ),
                 }
                 contracts.append(contract_info)
 
@@ -124,7 +136,9 @@ class AlpacaOptionsClient:
             logger.error(f"Error fetching option chain for {underlying_symbol}: {e}")
             raise
 
-    def get_option_snapshot(self, symbol_or_symbols: Union[str, List[str]]) -> Dict[str, Any]:
+    def get_option_snapshot(
+        self, symbol_or_symbols: Union[str, List[str]]
+    ) -> Dict[str, Any]:
         """
         Get snapshot data (price, greeks, IV) for specific option contract(s).
         """
@@ -136,11 +150,21 @@ class AlpacaOptionsClient:
             results = {}
             for symbol, snapshot in snapshots.items():
                 results[symbol] = {
-                    "price": snapshot.latest_trade.price if snapshot.latest_trade else None,
-                    "bid": snapshot.latest_quote.bid_price if snapshot.latest_quote else None,
-                    "ask": snapshot.latest_quote.ask_price if snapshot.latest_quote else None,
+                    "price": (
+                        snapshot.latest_trade.price if snapshot.latest_trade else None
+                    ),
+                    "bid": (
+                        snapshot.latest_quote.bid_price
+                        if snapshot.latest_quote
+                        else None
+                    ),
+                    "ask": (
+                        snapshot.latest_quote.ask_price
+                        if snapshot.latest_quote
+                        else None
+                    ),
                     "iv": snapshot.implied_volatility,
-                    "delta": snapshot.greeks.delta if snapshot.greeks else None
+                    "delta": snapshot.greeks.delta if snapshot.greeks else None,
                 }
             return results
         except Exception as e:

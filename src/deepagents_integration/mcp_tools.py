@@ -61,7 +61,9 @@ def get_mcp_servers() -> str:
             servers_info.append(
                 {
                     "id": server_config["id"],
-                    "display_name": server_config.get("display_name", server_config["id"]),
+                    "display_name": server_config.get(
+                        "display_name", server_config["id"]
+                    ),
                     "tools": list(server_config.get("tools", {}).keys()),
                 }
             )

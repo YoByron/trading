@@ -7,6 +7,7 @@ Responsibilities:
 - Adapt strategy based on market conditions
 - Learn which agents to trust in different market states
 """
+
 import logging
 from typing import Dict, List, Any
 from .base_agent import BaseAgent
@@ -26,8 +27,7 @@ class MetaAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(
-            name="MetaAgent",
-            role="Hierarchical coordinator and market regime detector"
+            name="MetaAgent", role="Hierarchical coordinator and market regime detector"
         )
         self.agents: Dict[str, BaseAgent] = {}
         self.market_regime = "UNKNOWN"  # LOW_VOL, HIGH_VOL, TRENDING, RANGING
@@ -83,7 +83,7 @@ Provide your reasoning and agent activation strategy."""
             "meta_agent_reasoning": response["reasoning"],
             "market_regime": regime,
             "agent_activations": self._parse_activations(response["reasoning"]),
-            "coordinated_decision": None
+            "coordinated_decision": None,
         }
 
         # Step 5: Collect agent recommendations
@@ -92,10 +92,7 @@ Provide your reasoning and agent activation strategy."""
             if agent_name in self.agents and weight > 0:
                 agent = self.agents[agent_name]
                 rec = agent.analyze(data)
-                recommendations[agent_name] = {
-                    "recommendation": rec,
-                    "weight": weight
-                }
+                recommendations[agent_name] = {"recommendation": rec, "weight": weight}
 
         # Step 6: Synthesize final decision
         final_decision = self._synthesize_decision(recommendations)
@@ -143,28 +140,28 @@ Provide your reasoning and agent activation strategy."""
                 "ResearchAgent": 0.4,
                 "SignalAgent": 0.3,
                 "RiskAgent": 0.2,
-                "ExecutionAgent": 0.1
+                "ExecutionAgent": 0.1,
             }
         elif self.market_regime == "HIGH_VOL":
             activations = {
                 "ResearchAgent": 0.2,
                 "SignalAgent": 0.2,
                 "RiskAgent": 0.5,  # High risk focus in volatile markets
-                "ExecutionAgent": 0.1
+                "ExecutionAgent": 0.1,
             }
         elif self.market_regime == "TRENDING":
             activations = {
                 "ResearchAgent": 0.2,
                 "SignalAgent": 0.5,  # High signal focus in trends
                 "RiskAgent": 0.2,
-                "ExecutionAgent": 0.1
+                "ExecutionAgent": 0.1,
             }
         else:  # RANGING
             activations = {
                 "ResearchAgent": 0.3,
                 "SignalAgent": 0.3,
                 "RiskAgent": 0.3,
-                "ExecutionAgent": 0.1
+                "ExecutionAgent": 0.1,
             }
 
         return activations
@@ -215,5 +212,5 @@ Provide your reasoning and agent activation strategy."""
             "buy_weight": total_buy_weight,
             "sell_weight": total_sell_weight,
             "hold_weight": total_hold_weight,
-            "agent_recommendations": recommendations
+            "agent_recommendations": recommendations,
         }

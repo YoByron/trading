@@ -47,7 +47,7 @@ jobs:
           python3 -c "
           from src.rag.vector_db import embedder
           print('✅ embedder module imports successfully')
-          
+
           # Should fail gracefully when trying to use it
           try:
               embedder._get_sentence_transformer()
@@ -67,7 +67,7 @@ jobs:
           import sys
           import scripts.autonomous_trader
           print('✅ autonomous_trader imports successfully')
-          
+
           # Verify sentiment_store was NOT imported
           if 'src.rag.sentiment_store' in sys.modules:
               print('⚠️  WARNING: sentiment_store was imported (should be lazy)')
@@ -82,7 +82,7 @@ jobs:
           python3 -c "
           from src.strategies.crypto_strategy import CryptoStrategy
           print('✅ CryptoStrategy imports successfully')
-          
+
           # Should be able to create instance
           strategy = CryptoStrategy(daily_amount=0.50)
           assert strategy.daily_amount == 0.50
@@ -98,18 +98,17 @@ jobs:
           echo "Verifying RAG dependencies are NOT required..."
           python3 -c "
           import sys
-          
+
           # Check that we can import everything without RAG
           from scripts.autonomous_trader import execute_crypto_trading, is_weekend
           from src.strategies.crypto_strategy import CryptoStrategy
           from src.core.risk_manager import RiskManager
-          
+
           # Verify sentiment_store is NOT in sys.modules
           if 'src.rag.sentiment_store' in sys.modules:
               print('❌ FAILED: sentiment_store was imported')
               exit(1)
-          
+
           print('✅ All imports work without RAG dependencies')
           print('✅ Crypto trading is independent of RAG system')
           "
-

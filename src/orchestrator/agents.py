@@ -62,7 +62,9 @@ class StrategyAgent(TradingAgent):
 
         scored.sort(key=lambda item: item["score"], reverse=True)
         top_signal = scored[0]
-        allocation = float(context.config.get("daily_allocation", self.default_allocation))
+        allocation = float(
+            context.config.get("daily_allocation", self.default_allocation)
+        )
 
         intent = {
             "symbol": top_signal["symbol"],

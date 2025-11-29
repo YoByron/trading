@@ -25,6 +25,7 @@ def test_imports():
             create_market_analysis_agent,
             create_trading_research_agent,
         )
+
         print("✓ All imports successful")
         return True
     except Exception as e:
@@ -36,7 +37,10 @@ def test_tools():
     """Test that tools can be built."""
     print("\nTesting tool building...")
     try:
-        from deepagents_integration import build_trading_tools, build_mcp_tools_for_deepagents
+        from deepagents_integration import (
+            build_trading_tools,
+            build_mcp_tools_for_deepagents,
+        )
 
         trading_tools = build_trading_tools()
         mcp_tools = build_mcp_tools_for_deepagents()
@@ -57,6 +61,7 @@ def test_tools():
     except Exception as e:
         print(f"✗ Tool building failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -96,6 +101,7 @@ def test_agent_creation():
     except Exception as e:
         print(f"✗ Agent creation failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -142,6 +148,7 @@ async def test_simple_query():
     except Exception as e:
         print(f"✗ Query test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

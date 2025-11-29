@@ -4,6 +4,7 @@ Human-in-the-Loop Approval Agent
 Implements approval workflows for high-value trades and critical decisions.
 Based on AgentKit pattern with human approval gates.
 """
+
 import os
 import json
 import logging
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class ApprovalStatus(Enum):
     """Approval status enumeration."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -32,6 +34,7 @@ class ApprovalStatus(Enum):
 @dataclass
 class ApprovalRequest:
     """Represents a human approval request."""
+
     id: str
     type: str  # "trade", "risk_override", "circuit_breaker", etc.
     context: Dict[str, Any]
@@ -58,18 +61,19 @@ class ApprovalAgent(BaseAgent):
     """
 
     def __init__(self):
-        super().__init__(
-            name="ApprovalAgent",
-            role="Human Approval Coordinator"
-        )
+        super().__init__(name="ApprovalAgent", role="Human Approval Coordinator")
         self.pending_approvals: Dict[str, ApprovalRequest] = {}
         self.approval_history: List[ApprovalRequest] = []
         self.approval_dir = Path("data/approvals")
         self.approval_dir.mkdir(parents=True, exist_ok=True)
 
         # Configuration
-        self.high_value_threshold = float(os.getenv("APPROVAL_HIGH_VALUE_THRESHOLD", "1000.0"))
-        self.notification_channels = os.getenv("APPROVAL_NOTIFICATION_CHANNELS", "email").split(",")
+        self.high_value_threshold = float(
+            os.getenv("APPROVAL_HIGH_VALUE_THRESHOLD", "1000.0")
+        )
+        self.notification_channels = os.getenv(
+            "APPROVAL_NOTIFICATION_CHANNELS", "email"
+        ).split(",")
 
     def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -90,10 +94,7 @@ class ApprovalAgent(BaseAgent):
         elif request_type == "submit_decision":
             return self._submit_decision(data)
         else:
-            return {
-                "success": False,
-                "error": f"Unknown approval type: {request_type}"
-            }
+            return {"success": False, "error": f"Unknown approval type: {request_type}"}
 
     def _request_approval(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -117,7 +118,7 @@ class ApprovalAgent(BaseAgent):
                 return {
                     "success": True,
                     "approval_required": False,
-                    "reason": f"Trade value ${trade_value} below threshold ${self.high_value_threshold}"
+                    "reason": f"Trade value ${trade_value} below threshold ${self.high_value_threshold}",
                 }
 
         # Create approval request
@@ -127,7 +128,7 @@ class ApprovalAgent(BaseAgent):
             type=approval_type,
             context=context,
             priority=priority,
-            timeout_seconds=timeout
+            timeout_seconds=timeout,
         )
 
         self.pending_approvals[approval_id] = request
@@ -146,7 +147,7 @@ class ApprovalAgent(BaseAgent):
             "approval_id": approval_id,
             "status": ApprovalStatus.PENDING.value,
             "timeout_at": (datetime.now() + timedelta(seconds=timeout)).isoformat(),
-            "notification_channels": self.notification_channels
+            "notification_channels": self.notification_channels,
         }
 
     def _check_approval_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -161,10 +162,7 @@ class ApprovalAgent(BaseAgent):
         """
         approval_id = data.get("approval_id")
         if not approval_id:
-            return {
-                "success": False,
-                "error": "approval_id required"
-            }
+            return {"success": False, "error": "approval_id required"}
 
         if approval_id in self.pending_approvals:
             request = self.pending_approvals[approval_id]
@@ -179,7 +177,7 @@ class ApprovalAgent(BaseAgent):
                 return {
                     "success": True,
                     "status": ApprovalStatus.TIMEOUT.value,
-                    "reason": "Approval request timed out"
+                    "reason": "Approval request timed out",
                 }
 
             return {
@@ -187,7 +185,7 @@ class ApprovalAgent(BaseAgent):
                 "status": request.status,
                 "created_at": request.created_at,
                 "timeout_at": timeout_at.isoformat(),
-                "context": request.context
+                "context": request.context,
             }
         else:
             # Check history
@@ -197,12 +195,12 @@ class ApprovalAgent(BaseAgent):
                         "success": True,
                         "status": req.status,
                         "decision": req.decision,
-                        "created_at": req.created_at
+                        "created_at": req.created_at,
                     }
 
             return {
                 "success": False,
-                "error": f"Approval request {approval_id} not found"
+                "error": f"Approval request {approval_id} not found",
             }
 
     def _submit_decision(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -221,26 +219,27 @@ class ApprovalAgent(BaseAgent):
         decision_by = data.get("decision_by", "human")
 
         if not approval_id:
-            return {
-                "success": False,
-                "error": "approval_id required"
-            }
+            return {"success": False, "error": "approval_id required"}
 
         if approval_id not in self.pending_approvals:
             return {
                 "success": False,
-                "error": f"Approval request {approval_id} not found or already processed"
+                "error": f"Approval request {approval_id} not found or already processed",
             }
 
         request = self.pending_approvals[approval_id]
 
         # Update request
-        request.status = ApprovalStatus.APPROVED.value if decision == "approved" else ApprovalStatus.REJECTED.value
+        request.status = (
+            ApprovalStatus.APPROVED.value
+            if decision == "approved"
+            else ApprovalStatus.REJECTED.value
+        )
         request.decision = {
             "decision": decision,
             "reason": reason,
             "decision_by": decision_by,
-            "decided_at": datetime.now().isoformat()
+            "decided_at": datetime.now().isoformat(),
         }
 
         # Finalize
@@ -252,7 +251,7 @@ class ApprovalAgent(BaseAgent):
             "success": True,
             "approval_id": approval_id,
             "status": request.status,
-            "decision": request.decision
+            "decision": request.decision,
         }
 
     def _finalize_approval(self, request: ApprovalRequest):
@@ -289,7 +288,9 @@ class ApprovalAgent(BaseAgent):
         with open(file_path, "w") as f:
             json.dump(asdict(request), f, indent=2)
 
-    async def wait_for_approval(self, approval_id: str, check_interval: int = 5) -> Dict[str, Any]:
+    async def wait_for_approval(
+        self, approval_id: str, check_interval: int = 5
+    ) -> Dict[str, Any]:
         """
         Wait for approval decision (async).
 

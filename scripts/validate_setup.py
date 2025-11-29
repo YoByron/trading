@@ -7,7 +7,7 @@ import sys
 from dotenv import load_dotenv
 
 # Add project root to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Import security utilities
 from src.utils.security import mask_api_key

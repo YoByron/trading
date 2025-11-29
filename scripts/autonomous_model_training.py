@@ -28,14 +28,15 @@ from datetime import datetime, timedelta
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(project_root / ".claude" / "skills" / "model_trainer" / "scripts"))
+sys.path.insert(
+    0, str(project_root / ".claude" / "skills" / "model_trainer" / "scripts")
+)
 
 from model_trainer import ModelTrainerSkill
 from src.utils.data_collector import DataCollector
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -46,24 +47,21 @@ def main():
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="Only check data availability, don't train"
+        help="Only check data availability, don't train",
     )
     parser.add_argument(
         "--force-retrain",
         action="store_true",
-        help="Force retraining even if model exists"
+        help="Force retraining even if model exists",
     )
     parser.add_argument(
         "--symbols",
         type=str,
         default="SPY,QQQ,VOO",
-        help="Comma-separated symbols (default: SPY,QQQ,VOO)"
+        help="Comma-separated symbols (default: SPY,QQQ,VOO)",
     )
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=50,
-        help="Training epochs (default: 50)"
+        "--epochs", type=int, default=50, help="Training epochs (default: 50)"
     )
 
     args = parser.parse_args()
@@ -111,7 +109,9 @@ def main():
     existing_model = list(models_dir.glob("lstm_feature_extractor*.pt"))
 
     if existing_model and not args.force_retrain:
-        model_age = datetime.now() - datetime.fromtimestamp(existing_model[0].stat().st_mtime)
+        model_age = datetime.now() - datetime.fromtimestamp(
+            existing_model[0].stat().st_mtime
+        )
         print(f"\n[Step 2] Existing model found: {existing_model[0].name}")
         print(f"   Age: {model_age.days} days")
 
@@ -128,7 +128,7 @@ def main():
         epochs=args.epochs,
         batch_size=32,
         learning_rate=0.001,
-        device="cpu"
+        device="cpu",
     )
 
     if result["success"]:

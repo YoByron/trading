@@ -13,6 +13,7 @@ from urllib.error import HTTPError
 # Load environment variables
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -34,11 +35,11 @@ def make_request(url, method="GET", data=None):
     req.add_header("Content-Type", "application/json")
 
     if method == "POST" and data:
-        req.data = json.dumps(data).encode('utf-8')
+        req.data = json.dumps(data).encode("utf-8")
         req.get_method = lambda: "POST"
 
     with urlopen(req) as response:
-        return json.loads(response.read().decode('utf-8'))
+        return json.loads(response.read().decode("utf-8"))
 
 
 def get_positions():
@@ -79,14 +80,14 @@ def place_stop_order(symbol, qty, stop_price):
         req.add_header("APCA-API-KEY-ID", ALPACA_KEY)
         req.add_header("APCA-API-SECRET-KEY", ALPACA_SECRET)
         req.add_header("Content-Type", "application/json")
-        req.data = json.dumps(data).encode('utf-8')
+        req.data = json.dumps(data).encode("utf-8")
         req.get_method = lambda: "POST"
 
         with urlopen(req) as response:
-            result = json.loads(response.read().decode('utf-8'))
+            result = json.loads(response.read().decode("utf-8"))
             return result
     except HTTPError as e:
-        error_body = e.read().decode('utf-8') if hasattr(e, 'read') else str(e)
+        error_body = e.read().decode("utf-8") if hasattr(e, "read") else str(e)
         print(f"  ❌ API Error {e.code}: {error_body[:200]}")
         return None
     except Exception as e:
@@ -106,7 +107,9 @@ def implement_stop_losses():
         return
 
     existing_orders = get_existing_orders()
-    existing_stops = {o["symbol"]: o for o in existing_orders if o.get("type") == "stop"}
+    existing_stops = {
+        o["symbol"]: o for o in existing_orders if o.get("type") == "stop"
+    }
 
     print(f"\n📊 Analyzing {len(positions)} positions...\n")
 
@@ -117,7 +120,11 @@ def implement_stop_losses():
         qty = float(pos["qty"])
         entry_price = float(pos["avg_entry_price"])
         current_price = float(pos["current_price"])
-        unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+        unrealized_pl_pct = (
+            ((current_price - entry_price) / entry_price * 100)
+            if entry_price > 0
+            else 0
+        )
 
         print(f"{symbol}:")
         print(f"  Entry: ${entry_price:.2f}, Current: ${current_price:.2f}")
@@ -148,7 +155,13 @@ def implement_stop_losses():
         order = place_stop_order(symbol, qty, stop_price)
 
         if order:
-            actions_taken.append({"symbol": symbol, "stop_price": stop_price, "order_id": order.get("id")})
+            actions_taken.append(
+                {
+                    "symbol": symbol,
+                    "stop_price": stop_price,
+                    "order_id": order.get("id"),
+                }
+            )
             print(f"  ✅ Stop-loss placed: {order.get('id')}")
         print()
 
@@ -168,5 +181,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

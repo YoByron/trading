@@ -7,6 +7,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
 class ExplainabilityTracer:
     """
     Provides deep 'why' tracing for all agent decisions.
@@ -29,12 +30,14 @@ class ExplainabilityTracer:
             "timestamp": datetime.now().isoformat(),
             "context": context,
             "steps": [],
-            "final_decision": None
+            "final_decision": None,
         }
         self.trace_stack.append(trace_entry)
         return trace_id
 
-    def log_step(self, agent: str, action: str, reasoning: str, data: Optional[Dict] = None):
+    def log_step(
+        self, agent: str, action: str, reasoning: str, data: Optional[Dict] = None
+    ):
         """Log a specific step/thought in the decision process."""
         if not self.trace_stack:
             return
@@ -44,7 +47,7 @@ class ExplainabilityTracer:
             "agent": agent,
             "action": action,
             "reasoning": reasoning,
-            "data_snapshot": data
+            "data_snapshot": data,
         }
         self.trace_stack[-1]["steps"].append(step)
         logger.info(f"🔍 Trace [{agent}]: {action} - {reasoning}")
@@ -56,7 +59,9 @@ class ExplainabilityTracer:
 
         trace_data = self.trace_stack.pop()
         trace_data["final_decision"] = final_decision
-        trace_data["duration_ms"] = (datetime.now() - datetime.fromisoformat(trace_data["timestamp"])).total_seconds() * 1000
+        trace_data["duration_ms"] = (
+            datetime.now() - datetime.fromisoformat(trace_data["timestamp"])
+        ).total_seconds() * 1000
 
         # Save to file
         filename = self.trace_dir / f"trace_{trace_data['trace_id']}.json"
@@ -65,6 +70,7 @@ class ExplainabilityTracer:
 
         logger.info(f"📝 Decision trace saved: {filename}")
         return trace_data["trace_id"]
+
 
 # Global instance
 tracer = ExplainabilityTracer()

@@ -19,7 +19,7 @@ from pathlib import Path
 from datetime import date, datetime
 from typing import List, Dict, Any
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import alpaca_trade_api as tradeapi
 
@@ -28,7 +28,9 @@ ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    raise ValueError(
+        "ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
 
 DATA_DIR = Path("data")
 REPORTS_DIR = Path("reports")
@@ -44,7 +46,7 @@ def load_todays_trades() -> List[Dict[str, Any]]:
         return []
 
     try:
-        with open(trades_file, 'r') as f:
+        with open(trades_file, "r") as f:
             return json.load(f)
     except:
         return []
@@ -53,14 +55,16 @@ def load_todays_trades() -> List[Dict[str, Any]]:
 def get_portfolio_status() -> Dict[str, Any]:
     """Get current portfolio status from Alpaca."""
     try:
-        api = tradeapi.REST(ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets")
+        api = tradeapi.REST(
+            ALPACA_KEY, ALPACA_SECRET, "https://paper-api.alpaca.markets"
+        )
         account = api.get_account()
 
         return {
             "equity": float(account.equity),
             "cash": float(account.cash),
             "buying_power": float(account.buying_power),
-            "pl_today": float(account.equity) - 100000.0  # Assuming $100K start
+            "pl_today": float(account.equity) - 100000.0,  # Assuming $100K start
         }
     except Exception as e:
         return {"error": str(e)}
@@ -74,7 +78,7 @@ def get_rl_stats() -> Dict[str, Any]:
         return {"states_learned": 0, "action_distribution": {}}
 
     try:
-        with open(rl_file, 'r') as f:
+        with open(rl_file, "r") as f:
             data = json.load(f)
             q_table = data.get("q_table", {})
 
@@ -87,7 +91,7 @@ def get_rl_stats() -> Dict[str, Any]:
             return {
                 "states_learned": len(q_table),
                 "action_distribution": action_counts,
-                "exploration_rate": data.get("exploration_rate", 0.2)
+                "exploration_rate": data.get("exploration_rate", 0.2),
             }
     except:
         return {"states_learned": 0, "action_distribution": {}}
@@ -98,15 +102,10 @@ def get_manual_trading_status() -> Dict[str, Any]:
     manual_trades_file = DATA_DIR / "manual_trades.json"
 
     if not manual_trades_file.exists():
-        return {
-            "positions": [],
-            "total_equity": 0.0,
-            "total_pl": 0.0,
-            "trade_count": 0
-        }
+        return {"positions": [], "total_equity": 0.0, "total_pl": 0.0, "trade_count": 0}
 
     try:
-        with open(manual_trades_file, 'r') as f:
+        with open(manual_trades_file, "r") as f:
             data = json.load(f)
             positions = data.get("positions", [])
 
@@ -117,27 +116,23 @@ def get_manual_trading_status() -> Dict[str, Any]:
                 value = pos["quantity"] * pos["current_price"]
                 cost = pos["quantity"] * pos["avg_price"]
                 total_equity += value
-                total_pl += (value - cost)
+                total_pl += value - cost
 
             return {
                 "positions": positions,
                 "total_equity": total_equity,
                 "total_pl": total_pl,
-                "trade_count": len(data.get("trades", []))
+                "trade_count": len(data.get("trades", [])),
             }
     except:
-        return {
-            "positions": [],
-            "total_equity": 0.0,
-            "total_pl": 0.0,
-            "trade_count": 0
-        }
+        return {"positions": [], "total_equity": 0.0, "total_pl": 0.0, "trade_count": 0}
 
 
 def get_circuit_breaker_status() -> Dict[str, Any]:
     """Get circuit breaker status."""
     try:
         from src.safety.circuit_breakers import CircuitBreaker
+
         breaker = CircuitBreaker()
         return breaker.get_status()
     except:
@@ -200,7 +195,7 @@ Total Trades: {len(trades)}
             report += f"  Action: {trade.get('action', 'N/A')}\n"
             report += f"  Amount: ${trade.get('position_size', 0):,.2f}\n"
             report += f"  Time: {trade.get('timestamp', 'N/A')}\n"
-            if 'order_id' in trade:
+            if "order_id" in trade:
                 report += f"  Order ID: {trade['order_id']}\n"
     else:
         report += "No trades executed today\n"
@@ -212,19 +207,19 @@ Total Trades: {len(trades)}
 {'=' * 80}
 """
 
-    if manual_trading['positions']:
+    if manual_trading["positions"]:
         # Platform mapping
         platform_names = {
             "sofi": "SoFi",
             "wefunder": "Wefunder",
             "republic": "Republic",
-            "startengine": "StartEngine"
+            "startengine": "StartEngine",
         }
 
-        for pos in manual_trading['positions']:
-            platform = platform_names.get(pos['platform'], pos['platform'])
-            value = pos['quantity'] * pos['current_price']
-            cost = pos['quantity'] * pos['avg_price']
+        for pos in manual_trading["positions"]:
+            platform = platform_names.get(pos["platform"], pos["platform"])
+            value = pos["quantity"] * pos["current_price"]
+            cost = pos["quantity"] * pos["avg_price"]
             pl = value - cost
             pl_pct = (pl / cost * 100) if cost > 0 else 0
             status = "✅" if pl > 0 else "❌" if pl < 0 else "➖"
@@ -239,7 +234,9 @@ Total Trades: {len(trades)}
 """
     else:
         report += "No manual positions yet\n"
-        report += "\n💡 Use 'python scripts/manual_trade_entry.py' to log manual trades\n"
+        report += (
+            "\n💡 Use 'python scripts/manual_trade_entry.py' to log manual trades\n"
+        )
 
     report += f"""
 {'=' * 80}
@@ -260,7 +257,7 @@ Consecutive Losses: {cb_status.get('consecutive_losses', 0)}
 API Errors Today:   {cb_status.get('api_errors_today', 0)}
 """
 
-    if cb_status.get('is_tripped'):
+    if cb_status.get("is_tripped"):
         report += f"\n⚠️  TRIP REASON: {cb_status.get('trip_reason', 'Unknown')}\n"
         report += f"⚠️  DETAILS: {cb_status.get('trip_details', 'N/A')}\n"
         report += f"⚠️  ACTION REQUIRED: Manual reset needed\n"
@@ -292,7 +289,7 @@ def main():
 
     # Save to file
     report_file = REPORTS_DIR / f"daily_report_{today}.txt"
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write(report)
 
     print(f"\n📁 Report saved to: {report_file}\n")

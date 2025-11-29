@@ -1,12 +1,14 @@
 """
 PR Agent - Intelligent Pull Request Handler
 """
+
 import logging
 import os
 from typing import Dict, Any, List
 from src.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
+
 
 class PRAgent(BaseAgent):
     """
@@ -56,7 +58,7 @@ class PRAgent(BaseAgent):
             "action": action,
             "risk_score": risk_score,
             "comment": comment,
-            "analysis": f"Analyzed {len(files)} files. Risk score: {risk_score}"
+            "analysis": f"Analyzed {len(files)} files. Risk score: {risk_score}",
         }
 
     def _calculate_risk(self, title: str, files: List[str]) -> int:

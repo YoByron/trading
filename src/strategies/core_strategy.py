@@ -66,6 +66,7 @@ from src.safety.graham_buffett_safety import (
 # Optional LLM Council integration
 try:
     from src.core.llm_council_integration import TradingCouncil
+
     LLM_COUNCIL_AVAILABLE = True
 except ImportError:
     LLM_COUNCIL_AVAILABLE = False
@@ -257,7 +258,9 @@ class CoreStrategy:
 
         # Initialize LLM Council (ENABLED BY DEFAULT per CEO directive Nov 24, 2025)
         # CEO directive: Enable all systems with $100/mo budget - move fast towards North Star
-        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "true"
+        self.llm_council_enabled = (
+            os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "true"
+        )
         self._llm_council = None
         if self.llm_council_enabled and LLM_COUNCIL_AVAILABLE and TradingCouncil:
             try:
@@ -299,7 +302,9 @@ class CoreStrategy:
             # Step 0: Manage existing positions (take-profit exits)
             closed_positions = self.manage_positions()
             if closed_positions:
-                logger.info(f"Closed {len(closed_positions)} positions at take-profit target")
+                logger.info(
+                    f"Closed {len(closed_positions)} positions at take-profit target"
+                )
 
             # Step 1: Get market sentiment from AI
             sentiment = self._get_market_sentiment()
@@ -325,20 +330,28 @@ class CoreStrategy:
                 return None
 
             # Step 4.5: Gemini 3 AI Validation (if enabled)
-            if self.gemini3_enabled and self._gemini3_integration and self._gemini3_integration.enabled:
+            if (
+                self.gemini3_enabled
+                and self._gemini3_integration
+                and self._gemini3_integration.enabled
+            ):
                 try:
                     logger.info("Validating trade with Gemini 3 AI...")
                     market_context = {
                         "symbol": best_etf,
                         "sentiment": sentiment.value,
-                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
+                        "momentum_scores": {
+                            ms.symbol: ms.score for ms in momentum_scores
+                        },
                         "timestamp": datetime.now().isoformat(),
                     }
 
-                    gemini_recommendation = self._gemini3_integration.get_trading_recommendation(
-                        symbol=best_etf,
-                        market_context=market_context,
-                        thinking_level="high",  # Deep analysis for trade validation
+                    gemini_recommendation = (
+                        self._gemini3_integration.get_trading_recommendation(
+                            symbol=best_etf,
+                            market_context=market_context,
+                            thinking_level="high",  # Deep analysis for trade validation
+                        )
                     )
 
                     if gemini_recommendation.get("decision"):
@@ -350,7 +363,9 @@ class CoreStrategy:
                             logger.warning(
                                 f"Gemini 3 AI rejected trade: {action} (confidence: {confidence:.2f})"
                             )
-                            logger.info(f"Gemini reasoning: {decision.get('reasoning', 'N/A')}")
+                            logger.info(
+                                f"Gemini reasoning: {decision.get('reasoning', 'N/A')}"
+                            )
                             logger.info("SKIPPING TRADE - AI validation failed")
                             return None
                         else:
@@ -383,7 +398,9 @@ class CoreStrategy:
                         logger.warning(
                             f"❌ {best_etf} REJECTED by Intelligent Investor principles"
                         )
-                        logger.warning(f"   Safety Rating: {safety_analysis.safety_rating.value}")
+                        logger.warning(
+                            f"   Safety Rating: {safety_analysis.safety_rating.value}"
+                        )
                         if safety_analysis.reasons:
                             for reason in safety_analysis.reasons:
                                 logger.warning(f"   Reason: {reason}")
@@ -405,14 +422,18 @@ class CoreStrategy:
                                 f"   Value Score: {safety_analysis.value_score:.1f}/100"
                             )
 
-                        logger.info("SKIPPING TRADE - Intelligent Investor safety check failed")
+                        logger.info(
+                            "SKIPPING TRADE - Intelligent Investor safety check failed"
+                        )
                         logger.info("=" * 80)
                         return None
                     else:
                         logger.info(
                             f"✅ {best_etf} PASSED Intelligent Investor Safety Check"
                         )
-                        logger.info(f"   Safety Rating: {safety_analysis.safety_rating.value}")
+                        logger.info(
+                            f"   Safety Rating: {safety_analysis.safety_rating.value}"
+                        )
                         if safety_analysis.margin_of_safety_pct is not None:
                             logger.info(
                                 f"   Margin of Safety: {safety_analysis.margin_of_safety_pct*100:.1f}%"
@@ -445,20 +466,29 @@ class CoreStrategy:
             if self.llm_council_enabled and self._llm_council:
                 try:
                     import asyncio
+
                     logger.info("=" * 80)
                     logger.info("Validating trade with LLM Council consensus...")
 
                     # Prepare comprehensive market data for council
-                    etf_momentum = next((ms for ms in momentum_scores if ms.symbol == best_etf), None)
+                    etf_momentum = next(
+                        (ms for ms in momentum_scores if ms.symbol == best_etf), None
+                    )
                     market_data = {
                         "symbol": best_etf,
                         "price": current_price,
                         "sentiment": sentiment.value,
                         "momentum_score": etf_momentum.score if etf_momentum else None,
                         "rsi": etf_momentum.rsi if etf_momentum else None,
-                        "macd_histogram": etf_momentum.macd_histogram if etf_momentum else None,
-                        "volume_ratio": etf_momentum.volume_ratio if etf_momentum else None,
-                        "momentum_scores": {ms.symbol: ms.score for ms in momentum_scores},
+                        "macd_histogram": (
+                            etf_momentum.macd_histogram if etf_momentum else None
+                        ),
+                        "volume_ratio": (
+                            etf_momentum.volume_ratio if etf_momentum else None
+                        ),
+                        "momentum_scores": {
+                            ms.symbol: ms.score for ms in momentum_scores
+                        },
                     }
 
                     # Include Intelligent Investor safety analysis if available
@@ -469,12 +499,20 @@ class CoreStrategy:
 
                     if safety_analysis:
                         context["intelligent_investor_analysis"] = {
-                            "safety_rating": safety_analysis.safety_rating.value if hasattr(safety_analysis.safety_rating, 'value') else str(safety_analysis.safety_rating),
+                            "safety_rating": (
+                                safety_analysis.safety_rating.value
+                                if hasattr(safety_analysis.safety_rating, "value")
+                                else str(safety_analysis.safety_rating)
+                            ),
                             "defensive_investor_score": safety_analysis.defensive_investor_score,
                             "value_score": safety_analysis.value_score,
                             "margin_of_safety_pct": safety_analysis.margin_of_safety_pct,
                             "mr_market_sentiment": safety_analysis.mr_market_sentiment,
-                            "quality_score": safety_analysis.quality.quality_score if safety_analysis.quality else None,
+                            "quality_score": (
+                                safety_analysis.quality.quality_score
+                                if safety_analysis.quality
+                                else None
+                            ),
                             "reasons": safety_analysis.reasons,
                             "warnings": safety_analysis.warnings,
                         }
@@ -493,21 +531,25 @@ class CoreStrategy:
                     loop.close()
 
                     if not council_result.get("approved", True):
+                        logger.warning(f"❌ LLM Council REJECTED trade: {best_etf}")
                         logger.warning(
-                            f"❌ LLM Council REJECTED trade: {best_etf}"
+                            f"   Council reasoning: {council_result.get('reasoning', 'N/A')[:300]}..."
                         )
-                        logger.warning(f"   Council reasoning: {council_result.get('reasoning', 'N/A')[:300]}...")
-                        logger.info(f"   Council confidence: {council_result.get('confidence', 0):.2%}")
+                        logger.info(
+                            f"   Council confidence: {council_result.get('confidence', 0):.2%}"
+                        )
                         logger.info("SKIPPING TRADE - LLM Council consensus rejected")
                         logger.info("=" * 80)
                         return None
                     else:
+                        logger.info(f"✅ LLM Council APPROVED trade: {best_etf}")
                         logger.info(
-                            f"✅ LLM Council APPROVED trade: {best_etf}"
+                            f"   Council confidence: {council_result.get('confidence', 0):.2%}"
                         )
-                        logger.info(f"   Council confidence: {council_result.get('confidence', 0):.2%}")
                         if council_result.get("council_response"):
-                            logger.debug(f"   Council reasoning: {council_result['reasoning'][:300]}...")
+                            logger.debug(
+                                f"   Council reasoning: {council_result['reasoning'][:300]}..."
+                            )
                         logger.info("=" * 80)
                 except Exception as e:
                     logger.warning(f"LLM Council validation error (proceeding): {e}")
@@ -533,7 +575,10 @@ class CoreStrategy:
             if self.alpaca_trader:
                 try:
                     executed_order = self.alpaca_trader.execute_order(
-                        symbol=best_etf, amount_usd=self.daily_allocation, side="buy", tier="T1_CORE"
+                        symbol=best_etf,
+                        amount_usd=self.daily_allocation,
+                        side="buy",
+                        tier="T1_CORE",
                     )
                     logger.info(f"Alpaca order executed: {executed_order['id']}")
 
@@ -611,25 +656,35 @@ class CoreStrategy:
                 logger.info(f"  Quantity: {qty:.4f}")
                 logger.info(f"  Entry Price: ${avg_entry_price:.2f}")
                 logger.info(f"  Current Price: ${current_price:.2f}")
-                logger.info(f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)")
+                logger.info(
+                    f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)"
+                )
 
                 # Check if position has reached take-profit target
                 if unrealized_plpc >= self.take_profit_pct:
-                    logger.info(f"  🎯 TAKE-PROFIT TRIGGERED: {unrealized_plpc*100:.2f}% >= {self.take_profit_pct*100:.1f}%")
+                    logger.info(
+                        f"  🎯 TAKE-PROFIT TRIGGERED: {unrealized_plpc*100:.2f}% >= {self.take_profit_pct*100:.1f}%"
+                    )
 
                     try:
                         # Close the position (sell 100%)
-                        logger.info(f"  Closing position: Selling {qty:.4f} shares at ${current_price:.2f}")
+                        logger.info(
+                            f"  Closing position: Selling {qty:.4f} shares at ${current_price:.2f}"
+                        )
 
                         executed_order = self.alpaca_trader.execute_order(
                             symbol=symbol,
                             amount_usd=market_value,
                             side="sell",
-                            tier="T1_CORE"
+                            tier="T1_CORE",
                         )
 
-                        logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
-                        logger.info(f"  Realized profit: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)")
+                        logger.info(
+                            f"  ✅ Position closed: Order ID {executed_order['id']}"
+                        )
+                        logger.info(
+                            f"  Realized profit: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)"
+                        )
 
                         # Create TradeOrder record for the exit
                         exit_order = TradeOrder(
@@ -641,7 +696,7 @@ class CoreStrategy:
                             order_type="market",
                             stop_loss=None,
                             timestamp=datetime.now(),
-                            reason=f"Take-profit exit at {unrealized_plpc*100:.2f}% profit"
+                            reason=f"Take-profit exit at {unrealized_plpc*100:.2f}% profit",
                         )
 
                         closed_positions.append(exit_order)
@@ -653,7 +708,9 @@ class CoreStrategy:
                     except Exception as e:
                         logger.error(f"  ❌ Failed to close position {symbol}: {e}")
                 else:
-                    logger.info(f"  ✅ Holding position (P/L {unrealized_plpc*100:.2f}% < target {self.take_profit_pct*100:.1f}%)")
+                    logger.info(
+                        f"  ✅ Holding position (P/L {unrealized_plpc*100:.2f}% < target {self.take_profit_pct*100:.1f}%)"
+                    )
 
             logger.info("=" * 80)
             if closed_positions:
@@ -702,10 +759,14 @@ class CoreStrategy:
             hist = ticker.history(start=start_date, end=end_date)
 
             if hist.empty or len(hist) < lookback_days * 0.7:
-                logger.warning(f"yfinance returned insufficient data for {symbol}, trying Alpaca API")
+                logger.warning(
+                    f"yfinance returned insufficient data for {symbol}, trying Alpaca API"
+                )
                 hist = None
         except Exception as e:
-            logger.warning(f"yfinance failed for {symbol}: {str(e)}, trying Alpaca API fallback")
+            logger.warning(
+                f"yfinance failed for {symbol}: {str(e)}, trying Alpaca API fallback"
+            )
             hist = None
 
         # Fallback to Alpaca API if yfinance failed
@@ -714,35 +775,47 @@ class CoreStrategy:
                 if self.alpaca_trader:
                     logger.info(f"Fetching historical data from Alpaca for {symbol}")
                     bars = self.alpaca_trader.get_historical_bars(
-                        symbol=symbol,
-                        timeframe="1Day",
-                        limit=lookback_days
+                        symbol=symbol, timeframe="1Day", limit=lookback_days
                     )
 
                     if bars and len(bars) >= lookback_days * 0.7:
                         # Convert Alpaca bars to pandas DataFrame
                         import pandas as pd
-                        dates = [pd.Timestamp(bar['timestamp']) for bar in bars]
-                        hist = pd.DataFrame({
-                            'Open': [bar['open'] for bar in bars],
-                            'High': [bar['high'] for bar in bars],
-                            'Low': [bar['low'] for bar in bars],
-                            'Close': [bar['close'] for bar in bars],
-                            'Volume': [bar['volume'] for bar in bars]
-                        }, index=dates)
-                        hist.index.name = 'Date'
+
+                        dates = [pd.Timestamp(bar["timestamp"]) for bar in bars]
+                        hist = pd.DataFrame(
+                            {
+                                "Open": [bar["open"] for bar in bars],
+                                "High": [bar["high"] for bar in bars],
+                                "Low": [bar["low"] for bar in bars],
+                                "Close": [bar["close"] for bar in bars],
+                                "Volume": [bar["volume"] for bar in bars],
+                            },
+                            index=dates,
+                        )
+                        hist.index.name = "Date"
                         hist.sort_index(inplace=True)
-                        logger.info(f"Successfully loaded {len(hist)} bars from Alpaca for {symbol}")
+                        logger.info(
+                            f"Successfully loaded {len(hist)} bars from Alpaca for {symbol}"
+                        )
                     else:
-                        raise ValueError(f"Alpaca returned insufficient data for {symbol}")
+                        raise ValueError(
+                            f"Alpaca returned insufficient data for {symbol}"
+                        )
                 else:
-                    raise ValueError(f"No Alpaca trader available and yfinance failed for {symbol}")
+                    raise ValueError(
+                        f"No Alpaca trader available and yfinance failed for {symbol}"
+                    )
             except Exception as e:
                 logger.error(f"Alpaca API fallback also failed for {symbol}: {str(e)}")
-                raise ValueError(f"Failed to fetch historical data for {symbol} from both yfinance and Alpaca: {str(e)}") from e
+                raise ValueError(
+                    f"Failed to fetch historical data for {symbol} from both yfinance and Alpaca: {str(e)}"
+                ) from e
 
         if hist.empty or len(hist) < lookback_days * 0.7:
-            raise ValueError(f"Insufficient data for {symbol} (got {len(hist)} bars, need {int(lookback_days * 0.7)})")
+            raise ValueError(
+                f"Insufficient data for {symbol} (got {len(hist)} bars, need {int(lookback_days * 0.7)})"
+            )
 
         # Calculate returns for different periods
         returns_1m = self._calculate_period_return(
@@ -830,10 +903,16 @@ class CoreStrategy:
         # CTO Decision Nov 20, 2025: Skip entries during high volatility periods
         try:
             from src.utils.technical_indicators import calculate_atr
+
             atr = calculate_atr(hist, period=14)
             if atr > 0:
                 atr_pct = (atr / current_price) * 100
-                avg_atr_pct = (hist["High"].iloc[-14:].max() - hist["Low"].iloc[-14:].min()) / current_price * 100 / 14
+                avg_atr_pct = (
+                    (hist["High"].iloc[-14:].max() - hist["Low"].iloc[-14:].min())
+                    / current_price
+                    * 100
+                    / 14
+                )
 
                 # Reject if ATR > 2x average volatility (too volatile)
                 if atr_pct > avg_atr_pct * 2.0:
@@ -843,7 +922,9 @@ class CoreStrategy:
                     )
                     return -1
         except Exception as e:
-            logger.debug(f"{symbol}: ATR calculation failed, skipping volatility filter: {e}")
+            logger.debug(
+                f"{symbol}: ATR calculation failed, skipping volatility filter: {e}"
+            )
             # Fail-open: continue if ATR unavailable
 
         # RSI adjustment (bonus if in healthy range, prefer pullbacks)
@@ -906,9 +987,7 @@ class CoreStrategy:
             logger.warning(
                 "🚫 NO VALID ENTRIES TODAY - All symbols rejected by hard filters"
             )
-            logger.warning(
-                "Either all symbols have bearish MACD or overbought RSI"
-            )
+            logger.warning("Either all symbols have bearish MACD or overbought RSI")
             logger.warning(
                 "SKIPPING TRADE - Better to sit in cash than fight the trend"
             )
@@ -1477,7 +1556,9 @@ class CoreStrategy:
                 rsi = self._calculate_rsi(hist["Close"], self.RSI_PERIOD)
 
                 # Calculate MACD and volume
-                macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
+                macd_value, macd_signal, macd_histogram = self._calculate_macd(
+                    hist["Close"]
+                )
                 volume_ratio = self._calculate_volume_ratio(hist)
 
                 score_obj = MomentumScore(
@@ -1587,9 +1668,7 @@ class CoreStrategy:
 
         return float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
 
-    def _calculate_macd(
-        self, prices: pd.Series
-    ) -> Tuple[float, float, float]:
+    def _calculate_macd(self, prices: pd.Series) -> Tuple[float, float, float]:
         """
         Calculate MACD (Moving Average Convergence Divergence).
 
@@ -1655,7 +1734,9 @@ class CoreStrategy:
         if total_portfolio_value > 0:
             current_position_value = self.current_holdings.get(symbol, 0) * price
             new_position_value = current_position_value + trade_value
-            position_pct = (new_position_value / (total_portfolio_value + trade_value)) * 100
+            position_pct = (
+                new_position_value / (total_portfolio_value + trade_value)
+            ) * 100
 
             # Graham's diversification rule: Max 30% per position (defensive investor)
             MAX_POSITION_PCT = 30.0  # Intelligent Investor: defensive investor max 25%, we use 30% for ETFs
@@ -1670,7 +1751,13 @@ class CoreStrategy:
             # Additional check: Ensure at least 3-4 positions for proper diversification
             # Graham recommended minimum 10-30 stocks for defensive investor
             # For ETFs, we require at least 2 different ETFs
-            current_positions_count = len([s for s in self.current_holdings.keys() if self.current_holdings[s] > 0])
+            current_positions_count = len(
+                [
+                    s
+                    for s in self.current_holdings.keys()
+                    if self.current_holdings[s] > 0
+                ]
+            )
             if current_positions_count < 2 and symbol not in self.current_holdings:
                 logger.info(
                     f"Diversification: Adding {symbol} to portfolio "
@@ -1692,7 +1779,9 @@ class CoreStrategy:
                 if self.alpaca_trader:
                     try:
                         account_info = self.alpaca_trader.get_account_info()
-                        account_value = account_info.get("portfolio_value", account_value)
+                        account_value = account_info.get(
+                            "portfolio_value", account_value
+                        )
                     except Exception:
                         pass  # Fall back to calculated value
 
@@ -1740,7 +1829,9 @@ class CoreStrategy:
                 logger.error(f"Error in risk validation: {e}")
                 # Fall through to basic validation
 
-        if self.langchain_guard_enabled and not self._langchain_guard(symbol, sentiment):
+        if self.langchain_guard_enabled and not self._langchain_guard(
+            symbol, sentiment
+        ):
             logger.warning("LangChain approval gate rejected trade for %s", symbol)
             return False
 

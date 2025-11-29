@@ -14,7 +14,7 @@ import logging
 from src.agent_framework.context_engine import (
     SemanticBlueprint,
     ContextPriority,
-    get_context_engine
+    get_context_engine,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,57 +43,57 @@ def register_trading_agent_blueprints():
             "News sentiment analysis",
             "Social media signal processing",
             "Alternative data integration",
-            "Market regime detection"
+            "Market regime detection",
         ],
         inputs={
             "symbol": {
                 "type": "string",
                 "required": True,
-                "description": "Stock symbol to research"
+                "description": "Stock symbol to research",
             },
             "timeframe": {
                 "type": "string",
                 "required": False,
                 "default": "1Day",
-                "description": "Data timeframe"
+                "description": "Data timeframe",
             },
             "include_sentiment": {
                 "type": "boolean",
                 "required": False,
                 "default": True,
-                "description": "Include sentiment analysis"
-            }
+                "description": "Include sentiment analysis",
+            },
         },
         outputs={
             "market_regime": {
                 "type": "string",
-                "description": "Detected market regime (bullish, bearish, range-bound)"
+                "description": "Detected market regime (bullish, bearish, range-bound)",
             },
             "narrative": {
                 "type": "string",
-                "description": "Two-sentence market narrative"
+                "description": "Two-sentence market narrative",
             },
             "supporting_metrics": {
                 "type": "object",
-                "description": "Key metrics supporting the analysis"
+                "description": "Key metrics supporting the analysis",
             },
             "sentiment_score": {
                 "type": "float",
-                "description": "Sentiment score (-1 to 1)"
+                "description": "Sentiment score (-1 to 1)",
             },
             "confidence": {
                 "type": "float",
-                "description": "Confidence in analysis (0 to 1)"
-            }
+                "description": "Confidence in analysis (0 to 1)",
+            },
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "research_result",
-            "async": False
+            "async": False,
         },
         dependencies=[],
         context_window_size=4000,
-        priority=ContextPriority.HIGH
+        priority=ContextPriority.HIGH,
     )
     engine.register_blueprint(research_blueprint)
 
@@ -111,56 +111,47 @@ def register_trading_agent_blueprints():
             "Momentum scoring",
             "Pattern recognition",
             "Entry quality assessment",
-            "Exit target calculation"
+            "Exit target calculation",
         ],
         inputs={
             "research_data": {
                 "type": "object",
                 "required": True,
-                "description": "Output from research_agent"
+                "description": "Output from research_agent",
             },
             "price_history": {
                 "type": "dataframe",
                 "required": True,
-                "description": "Historical price data"
+                "description": "Historical price data",
             },
             "market_features": {
                 "type": "object",
                 "required": False,
-                "description": "Computed market features"
-            }
+                "description": "Computed market features",
+            },
         },
         outputs={
             "action": {
                 "type": "string",
                 "enum": ["BUY", "SELL", "HOLD"],
-                "description": "Recommended action"
+                "description": "Recommended action",
             },
-            "conviction": {
-                "type": "float",
-                "description": "Conviction score (0 to 1)"
-            },
-            "entry_window": {
-                "type": "object",
-                "description": "Price range for entry"
-            },
+            "conviction": {"type": "float", "description": "Conviction score (0 to 1)"},
+            "entry_window": {"type": "object", "description": "Price range for entry"},
             "exit_plan": {
                 "type": "object",
-                "description": "Target prices and stop-loss"
+                "description": "Target prices and stop-loss",
             },
-            "reasoning": {
-                "type": "string",
-                "description": "Explanation of signal"
-            }
+            "reasoning": {"type": "string", "description": "Explanation of signal"},
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "trading_signal",
-            "async": False
+            "async": False,
         },
         dependencies=["research_agent"],
         context_window_size=3000,
-        priority=ContextPriority.CRITICAL
+        priority=ContextPriority.CRITICAL,
     )
     engine.register_blueprint(signal_blueprint)
 
@@ -178,62 +169,53 @@ def register_trading_agent_blueprints():
             "Position sizing (Kelly Criterion)",
             "Stop-loss calculation",
             "Circuit breaker checks",
-            "Volatility-adjusted allocations"
+            "Volatility-adjusted allocations",
         ],
         inputs={
             "signal": {
                 "type": "object",
                 "required": True,
-                "description": "Output from signal_agent"
+                "description": "Output from signal_agent",
             },
             "portfolio_value": {
                 "type": "float",
                 "required": True,
-                "description": "Current portfolio value"
+                "description": "Current portfolio value",
             },
             "volatility": {
                 "type": "float",
                 "required": False,
-                "description": "Asset volatility"
+                "description": "Asset volatility",
             },
             "historical_win_rate": {
                 "type": "float",
                 "required": False,
                 "default": 0.60,
-                "description": "Historical win rate"
-            }
+                "description": "Historical win rate",
+            },
         },
         outputs={
             "decision": {
                 "type": "string",
                 "enum": ["APPROVE", "REVIEW", "REJECT"],
-                "description": "Risk decision"
+                "description": "Risk decision",
             },
             "position_size": {
                 "type": "float",
-                "description": "Calculated position size"
+                "description": "Calculated position size",
             },
-            "stop_loss": {
-                "type": "float",
-                "description": "Stop-loss price"
-            },
-            "rationale": {
-                "type": "string",
-                "description": "Risk assessment rationale"
-            },
-            "risk_metrics": {
-                "type": "object",
-                "description": "Detailed risk metrics"
-            }
+            "stop_loss": {"type": "float", "description": "Stop-loss price"},
+            "rationale": {"type": "string", "description": "Risk assessment rationale"},
+            "risk_metrics": {"type": "object", "description": "Detailed risk metrics"},
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "risk_assessment",
-            "async": False
+            "async": False,
         },
         dependencies=["signal_agent"],
         context_window_size=2000,
-        priority=ContextPriority.CRITICAL
+        priority=ContextPriority.CRITICAL,
     )
     engine.register_blueprint(risk_blueprint)
 
@@ -251,61 +233,55 @@ def register_trading_agent_blueprints():
             "Execution timing optimization",
             "Anomaly detection",
             "Trade logging",
-            "Execution monitoring"
+            "Execution monitoring",
         ],
         inputs={
             "risk_assessment": {
                 "type": "object",
                 "required": True,
-                "description": "Output from risk_agent"
+                "description": "Output from risk_agent",
             },
             "market_conditions": {
                 "type": "object",
                 "required": True,
-                "description": "Current market conditions"
+                "description": "Current market conditions",
             },
             "symbol": {
                 "type": "string",
                 "required": True,
-                "description": "Symbol to trade"
+                "description": "Symbol to trade",
             },
             "action": {
                 "type": "string",
                 "required": True,
                 "enum": ["BUY", "SELL"],
-                "description": "Trade action"
-            }
+                "description": "Trade action",
+            },
         },
         outputs={
             "venue_preference": {
                 "type": "string",
-                "description": "Preferred execution venue"
+                "description": "Preferred execution venue",
             },
-            "order_type": {
-                "type": "string",
-                "description": "Recommended order type"
-            },
-            "timing_notes": {
-                "type": "string",
-                "description": "Timing recommendations"
-            },
+            "order_type": {"type": "string", "description": "Recommended order type"},
+            "timing_notes": {"type": "string", "description": "Timing recommendations"},
             "execution_plan": {
                 "type": "object",
-                "description": "Detailed execution plan"
+                "description": "Detailed execution plan",
             },
             "logging_status": {
                 "type": "string",
-                "description": "Status of trade logging"
-            }
+                "description": "Status of trade logging",
+            },
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "execution_plan",
-            "async": True
+            "async": True,
         },
         dependencies=["risk_agent", "signal_agent"],
         context_window_size=2000,
-        priority=ContextPriority.HIGH
+        priority=ContextPriority.HIGH,
     )
     engine.register_blueprint(execution_blueprint)
 
@@ -324,50 +300,49 @@ def register_trading_agent_blueprints():
             "Agent coordination",
             "Dynamic recommendation weighting",
             "Decision synthesis",
-            "Workflow orchestration"
+            "Workflow orchestration",
         ],
         inputs={
             "symbol": {
                 "type": "string",
                 "required": True,
-                "description": "Symbol to analyze"
+                "description": "Symbol to analyze",
             },
             "market_payload": {
                 "type": "object",
                 "required": True,
-                "description": "Complete market context"
-            }
+                "description": "Complete market context",
+            },
         },
         outputs={
             "coordinated_decision": {
                 "type": "object",
-                "description": "Final coordinated decision"
+                "description": "Final coordinated decision",
             },
             "market_regime": {
                 "type": "string",
-                "description": "Detected market regime"
+                "description": "Detected market regime",
             },
             "agent_weights": {
                 "type": "object",
-                "description": "Weights assigned to each agent"
+                "description": "Weights assigned to each agent",
             },
-            "confidence": {
-                "type": "float",
-                "description": "Overall confidence"
-            },
-            "reasoning": {
-                "type": "string",
-                "description": "Decision reasoning"
-            }
+            "confidence": {"type": "float", "description": "Overall confidence"},
+            "reasoning": {"type": "string", "description": "Decision reasoning"},
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "coordinated_decision",
-            "async": False
+            "async": False,
         },
-        dependencies=["research_agent", "signal_agent", "risk_agent", "execution_agent"],
+        dependencies=[
+            "research_agent",
+            "signal_agent",
+            "risk_agent",
+            "execution_agent",
+        ],
         context_window_size=10000,
-        priority=ContextPriority.CRITICAL
+        priority=ContextPriority.CRITICAL,
     )
     engine.register_blueprint(meta_blueprint)
 
@@ -385,52 +360,46 @@ def register_trading_agent_blueprints():
             "Fundamental analysis",
             "Portfolio fit assessment",
             "Trend analysis",
-            "Multi-modal reasoning"
+            "Multi-modal reasoning",
         ],
         inputs={
             "symbol": {
                 "type": "string",
                 "required": True,
-                "description": "Symbol to analyze"
+                "description": "Symbol to analyze",
             },
             "research_prompt": {
                 "type": "string",
                 "required": True,
-                "description": "Research query"
+                "description": "Research query",
             },
             "context": {
                 "type": "object",
                 "required": False,
-                "description": "Additional context"
-            }
+                "description": "Additional context",
+            },
         },
         outputs={
             "decision": {
                 "type": "string",
                 "enum": ["BUY", "SELL", "HOLD"],
-                "description": "Recommendation"
+                "description": "Recommendation",
             },
-            "reasoning": {
-                "type": "string",
-                "description": "Detailed reasoning"
-            },
-            "confidence": {
-                "type": "float",
-                "description": "Confidence score"
-            },
+            "reasoning": {"type": "string", "description": "Detailed reasoning"},
+            "confidence": {"type": "float", "description": "Confidence score"},
             "time_horizon": {
                 "type": "string",
-                "description": "Recommended time horizon"
-            }
+                "description": "Recommended time horizon",
+            },
         },
         communication_protocol={
             "format": "MCP",
             "message_schema": "research_result",
-            "async": False
+            "async": False,
         },
         dependencies=[],
         context_window_size=8000,
-        priority=ContextPriority.HIGH
+        priority=ContextPriority.HIGH,
     )
     engine.register_blueprint(gemini_blueprint)
 
@@ -448,42 +417,33 @@ def register_trading_agent_blueprints():
             "Multi-modal data fusion",
             "Sentiment analysis",
             "Price action validation",
-            "News integration"
+            "News integration",
         ],
         inputs={
             "input": {
                 "type": "string",
                 "required": True,
-                "description": "Query or prompt"
+                "description": "Query or prompt",
             },
             "symbol": {
                 "type": "string",
                 "required": False,
-                "description": "Symbol context"
-            }
+                "description": "Symbol context",
+            },
         },
         outputs={
-            "response": {
-                "type": "string",
-                "description": "Agent response"
-            },
-            "sources": {
-                "type": "array",
-                "description": "Information sources used"
-            },
-            "confidence": {
-                "type": "float",
-                "description": "Confidence in response"
-            }
+            "response": {"type": "string", "description": "Agent response"},
+            "sources": {"type": "array", "description": "Information sources used"},
+            "confidence": {"type": "float", "description": "Confidence in response"},
         },
         communication_protocol={
             "format": "LangChain",
             "message_schema": "agent_response",
-            "async": False
+            "async": False,
         },
         dependencies=[],
         context_window_size=6000,
-        priority=ContextPriority.MEDIUM
+        priority=ContextPriority.MEDIUM,
     )
     engine.register_blueprint(langchain_blueprint)
 

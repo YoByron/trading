@@ -98,9 +98,7 @@ class SafetyAnalysisAgent(BaseAgent):
                 "confidence": 0.0,
             }
 
-    def _build_analysis_prompt(
-        self, safety_analysis: Any, memory_context: str
-    ) -> str:
+    def _build_analysis_prompt(self, safety_analysis: Any, memory_context: str) -> str:
         """Build LLM prompt for safety analysis reasoning."""
 
         margin_info = ""

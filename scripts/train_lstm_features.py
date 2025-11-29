@@ -33,14 +33,13 @@ sys.path.insert(0, str(project_root))
 from src.agents.lstm_feature_extractor import (
     LSTMTradingFeatureExtractor,
     MarketDataDataset,
-    LSTMPPOWrapper
+    LSTMPPOWrapper,
 )
 from src.utils.data_collector import DataCollector
 from src.utils.technical_indicators import calculate_all_features
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ def prepare_training_data(
     hist_data: pd.DataFrame,
     seq_length: int = 60,
     prediction_horizon: int = 5,
-    min_window_size: int = 200  # Minimum data needed for feature calculation
+    min_window_size: int = 200,  # Minimum data needed for feature calculation
 ) -> tuple:
     """
     Prepare sequences for LSTM training with proper sliding windows.
@@ -71,14 +70,16 @@ def prepare_training_data(
     sequences = []
     labels = []
 
-    close_prices = hist_data['Close'].values
+    close_prices = hist_data["Close"].values
 
     # Need enough data to calculate features for each timestep in sequence
     # Each timestep needs min_window_size bars to calculate indicators
     start_idx = min_window_size
     end_idx = len(hist_data) - prediction_horizon
 
-    logger.info(f"Preparing sequences: {end_idx - start_idx - seq_length} samples from {len(hist_data)} bars")
+    logger.info(
+        f"Preparing sequences: {end_idx - start_idx - seq_length} samples from {len(hist_data)} bars"
+    )
 
     # Create sliding window sequences
     for i in range(start_idx, end_idx - seq_length + 1):
@@ -90,7 +91,7 @@ def prepare_training_data(
             # Use a window ending at timestep t for feature calculation
             # Need at least min_window_size bars before t
             window_start = max(0, t - min_window_size)
-            window_data = hist_data.iloc[window_start:t+1]
+            window_data = hist_data.iloc[window_start : t + 1]
 
             if len(window_data) < 50:  # Minimum for basic indicators
                 # Skip this sequence if not enough data
@@ -106,7 +107,9 @@ def prepare_training_data(
             sequences.append(sequence_features)
 
             # Label: future return (for supervised learning)
-            future_return = (close_prices[i + prediction_horizon] - close_prices[i]) / close_prices[i]
+            future_return = (
+                close_prices[i + prediction_horizon] - close_prices[i]
+            ) / close_prices[i]
             labels.append(future_return)
 
     if not sequences:
@@ -127,12 +130,41 @@ def prepare_training_data(
 def _features_to_array(features: Dict[str, float]) -> np.ndarray:
     """Convert features dict to array in consistent order."""
     feature_order = [
-        'close', 'open', 'high', 'low', 'return_1d', 'return_5d', 'return_20d',
-        'volatility_20d', 'ma_20', 'ma_50', 'ma_200', 'price_vs_ma20',
-        'price_vs_ma50', 'price_vs_ma200', 'macd', 'macd_signal', 'macd_histogram',
-        'adx', 'plus_di', 'minus_di', 'rsi', 'roc_10', 'roc_20',
-        'bb_upper', 'bb_middle', 'bb_lower', 'bb_width', 'bb_position',
-        'atr', 'atr_pct', 'volume', 'volume_ratio', 'obv', 'obv_ma', 'volume_roc'
+        "close",
+        "open",
+        "high",
+        "low",
+        "return_1d",
+        "return_5d",
+        "return_20d",
+        "volatility_20d",
+        "ma_20",
+        "ma_50",
+        "ma_200",
+        "price_vs_ma20",
+        "price_vs_ma50",
+        "price_vs_ma200",
+        "macd",
+        "macd_signal",
+        "macd_histogram",
+        "adx",
+        "plus_di",
+        "minus_di",
+        "rsi",
+        "roc_10",
+        "roc_20",
+        "bb_upper",
+        "bb_middle",
+        "bb_lower",
+        "bb_width",
+        "bb_position",
+        "atr",
+        "atr_pct",
+        "volume",
+        "volume_ratio",
+        "obv",
+        "obv_ma",
+        "volume_roc",
     ]
 
     array = np.array([features.get(key, 0.0) for key in feature_order])
@@ -149,7 +181,7 @@ def train_lstm_model(
     epochs: int = 50,
     batch_size: int = 32,
     learning_rate: float = 0.001,
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> LSTMTradingFeatureExtractor:
     """
     Train LSTM feature extractor.
@@ -191,11 +223,7 @@ def train_lstm_model(
 
     # Initialize model
     model = LSTMTradingFeatureExtractor(
-        input_dim=input_dim,
-        hidden_dim=128,
-        num_layers=2,
-        output_dim=50,
-        dropout=0.2
+        input_dim=input_dim, hidden_dim=128, num_layers=2, output_dim=50, dropout=0.2
     ).to(device)
 
     # Loss and optimizer
@@ -247,44 +275,35 @@ def main():
         "--symbols",
         type=str,
         default="SPY,QQQ,VOO",
-        help="Comma-separated list of symbols (default: SPY,QQQ,VOO)"
+        help="Comma-separated list of symbols (default: SPY,QQQ,VOO)",
     )
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=50,
-        help="Number of training epochs (default: 50)"
+        "--epochs", type=int, default=50, help="Number of training epochs (default: 50)"
     )
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=32,
-        help="Batch size (default: 32)"
+        "--batch-size", type=int, default=32, help="Batch size (default: 32)"
     )
     parser.add_argument(
         "--learning-rate",
         type=float,
         default=0.001,
-        help="Learning rate (default: 0.001)"
+        help="Learning rate (default: 0.001)",
     )
     parser.add_argument(
-        "--seq-length",
-        type=int,
-        default=60,
-        help="Sequence length (default: 60)"
+        "--seq-length", type=int, default=60, help="Sequence length (default: 60)"
     )
     parser.add_argument(
         "--output",
         type=str,
         default="data/models/lstm_feature_extractor.pt",
-        help="Output model path"
+        help="Output model path",
     )
     parser.add_argument(
         "--device",
         type=str,
         default="cpu",
         choices=["cpu", "cuda"],
-        help="Device to train on (default: cpu)"
+        help="Device to train on (default: cpu)",
     )
 
     args = parser.parse_args()
@@ -313,14 +332,14 @@ def main():
             continue
 
         if len(hist_data) < args.seq_length + 10:
-            logger.warning(f"Insufficient data for {symbol} ({len(hist_data)} bars), skipping")
+            logger.warning(
+                f"Insufficient data for {symbol} ({len(hist_data)} bars), skipping"
+            )
             continue
 
         # Prepare training data
         sequences, labels = prepare_training_data(
-            hist_data,
-            seq_length=args.seq_length,
-            prediction_horizon=5
+            hist_data, seq_length=args.seq_length, prediction_horizon=5
         )
 
         if len(sequences) > 0:
@@ -329,7 +348,9 @@ def main():
             logger.info(f"{symbol}: {len(sequences)} sequences")
 
     if not all_sequences:
-        logger.error("No training data available. Run populate_historical_data.py first.")
+        logger.error(
+            "No training data available. Run populate_historical_data.py first."
+        )
         sys.exit(1)
 
     # Combine all symbols
@@ -346,7 +367,7 @@ def main():
         epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.learning_rate,
-        device=args.device
+        device=args.device,
     )
 
     # Save model

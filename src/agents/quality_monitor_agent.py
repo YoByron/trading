@@ -246,7 +246,9 @@ class QualityMonitorAgent(BaseAgent):
         alerts_summary = ""
         if alerts:
             for alert in alerts:
-                alerts_summary += f"- {alert['message']} (Severity: {alert['severity']})\n"
+                alerts_summary += (
+                    f"- {alert['message']} (Severity: {alert['severity']})\n"
+                )
         else:
             alerts_summary = "No quality alerts"
 

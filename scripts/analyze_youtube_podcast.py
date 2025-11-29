@@ -56,23 +56,25 @@ class YouTubePodcastAnalyzer:
         print(f"\n[INFO] Fetching metadata for video {video_id}...")
 
         ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': True,
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
         }
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                info = ydl.extract_info(
+                    f"https://www.youtube.com/watch?v={video_id}", download=False
+                )
 
                 metadata = {
-                    'video_id': video_id,
-                    'title': info.get('title', 'Unknown'),
-                    'channel': info.get('channel', 'Unknown'),
-                    'upload_date': info.get('upload_date', 'Unknown'),
-                    'duration': info.get('duration', 0),
-                    'description': info.get('description', ''),
-                    'view_count': info.get('view_count', 0),
+                    "video_id": video_id,
+                    "title": info.get("title", "Unknown"),
+                    "channel": info.get("channel", "Unknown"),
+                    "upload_date": info.get("upload_date", "Unknown"),
+                    "duration": info.get("duration", 0),
+                    "description": info.get("description", ""),
+                    "view_count": info.get("view_count", 0),
                 }
 
                 print(f"[SUCCESS] Title: {metadata['title']}")
@@ -84,10 +86,10 @@ class YouTubePodcastAnalyzer:
         except Exception as e:
             print(f"[ERROR] Failed to get metadata: {e}")
             return {
-                'video_id': video_id,
-                'title': 'Unknown',
-                'channel': 'Unknown',
-                'error': str(e)
+                "video_id": video_id,
+                "title": "Unknown",
+                "channel": "Unknown",
+                "error": str(e),
             }
 
     def get_transcript(self, video_id: str) -> Optional[str]:
@@ -111,7 +113,7 @@ class YouTubePodcastAnalyzer:
         try:
             # Create instance and fetch transcript
             api = _YouTubeTranscriptApi()
-            fetched = api.fetch(video_id, languages=['en'])
+            fetched = api.fetch(video_id, languages=["en"])
 
             # Extract text from fetched transcript snippets
             transcript_text = " ".join([snippet.text for snippet in fetched.snippets])
@@ -138,16 +140,65 @@ class YouTubePodcastAnalyzer:
         """
         # Define trading-related keywords and patterns
         keywords = {
-            'strategies': ['momentum', 'trend following', 'mean reversion', 'breakout', 'swing trading',
-                          'day trading', 'scalping', 'position trading', 'long term', 'short term'],
-            'indicators': ['macd', 'rsi', 'moving average', 'bollinger', 'stochastic', 'volume',
-                          'ema', 'sma', 'fibonacci', 'pivot', 'support', 'resistance'],
-            'risk_management': ['stop loss', 'position sizing', 'risk reward', 'drawdown',
-                              'risk management', 'portfolio', 'diversification', 'correlation'],
-            'tools': ['python', 'algorithm', 'backtest', 'machine learning', 'ai', 'neural',
-                     'reinforcement learning', 'api', 'automation', 'bot'],
-            'performance': ['sharpe', 'sortino', 'win rate', 'profit factor', 'expectancy',
-                          'returns', 'alpha', 'beta', 'volatility'],
+            "strategies": [
+                "momentum",
+                "trend following",
+                "mean reversion",
+                "breakout",
+                "swing trading",
+                "day trading",
+                "scalping",
+                "position trading",
+                "long term",
+                "short term",
+            ],
+            "indicators": [
+                "macd",
+                "rsi",
+                "moving average",
+                "bollinger",
+                "stochastic",
+                "volume",
+                "ema",
+                "sma",
+                "fibonacci",
+                "pivot",
+                "support",
+                "resistance",
+            ],
+            "risk_management": [
+                "stop loss",
+                "position sizing",
+                "risk reward",
+                "drawdown",
+                "risk management",
+                "portfolio",
+                "diversification",
+                "correlation",
+            ],
+            "tools": [
+                "python",
+                "algorithm",
+                "backtest",
+                "machine learning",
+                "ai",
+                "neural",
+                "reinforcement learning",
+                "api",
+                "automation",
+                "bot",
+            ],
+            "performance": [
+                "sharpe",
+                "sortino",
+                "win rate",
+                "profit factor",
+                "expectancy",
+                "returns",
+                "alpha",
+                "beta",
+                "volatility",
+            ],
         }
 
         # Count keyword occurrences
@@ -161,7 +212,9 @@ class YouTubePodcastAnalyzer:
                 if count > 0:
                     found[word] = count
             if found:
-                results[category] = sorted(found.items(), key=lambda x: x[1], reverse=True)
+                results[category] = sorted(
+                    found.items(), key=lambda x: x[1], reverse=True
+                )
 
         return results
 
@@ -182,35 +235,34 @@ class YouTubePodcastAnalyzer:
 
 """
 
-        if keyword_results.get('strategies'):
+        if keyword_results.get("strategies"):
             analysis += "\n**Trading Strategies Mentioned**:\n"
-            for keyword, count in keyword_results['strategies'][:5]:
+            for keyword, count in keyword_results["strategies"][:5]:
                 analysis += f"- {keyword.title()}: {count} mentions\n"
 
-        if keyword_results.get('indicators'):
+        if keyword_results.get("indicators"):
             analysis += "\n**Technical Indicators**:\n"
-            for keyword, count in keyword_results['indicators'][:5]:
+            for keyword, count in keyword_results["indicators"][:5]:
                 analysis += f"- {keyword.upper()}: {count} mentions\n"
 
-        if keyword_results.get('risk_management'):
+        if keyword_results.get("risk_management"):
             analysis += "\n**Risk Management Topics**:\n"
-            for keyword, count in keyword_results['risk_management'][:5]:
+            for keyword, count in keyword_results["risk_management"][:5]:
                 analysis += f"- {keyword.title()}: {count} mentions\n"
 
-        if keyword_results.get('tools'):
+        if keyword_results.get("tools"):
             analysis += "\n**Tools & Technology**:\n"
-            for keyword, count in keyword_results['tools'][:5]:
+            for keyword, count in keyword_results["tools"][:5]:
                 analysis += f"- {keyword.title()}: {count} mentions\n"
 
-        if keyword_results.get('performance'):
+        if keyword_results.get("performance"):
             analysis += "\n**Performance Metrics**:\n"
-            for keyword, count in keyword_results['performance'][:5]:
+            for keyword, count in keyword_results["performance"][:5]:
                 analysis += f"- {keyword.title()}: {count} mentions\n"
 
         # Summary
         total_mentions = sum(
-            sum(count for _, count in items)
-            for items in keyword_results.values()
+            sum(count for _, count in items) for items in keyword_results.values()
         )
 
         analysis += f"""
@@ -226,12 +278,14 @@ Based on keyword frequency, this video appears to focus on:
         sorted_categories = sorted(
             keyword_results.items(),
             key=lambda x: sum(count for _, count in x[1]),
-            reverse=True
+            reverse=True,
         )
 
         for category, items in sorted_categories[:3]:
-            top_item = items[0][0] if items else 'N/A'
-            analysis += f"- **{category.replace('_', ' ').title()}**: Focus on {top_item}\n"
+            top_item = items[0][0] if items else "N/A"
+            analysis += (
+                f"- **{category.replace('_', ' ').title()}**: Focus on {top_item}\n"
+            )
 
         return analysis
 
@@ -274,23 +328,23 @@ Based on keyword frequency, this video appears to focus on:
             print(f"[SUCCESS] Keyword analysis complete")
 
             return {
-                'video_id': metadata['video_id'],
-                'title': metadata['title'],
-                'channel': metadata['channel'],
-                'analysis': analysis_text,
-                'analysis_type': 'keyword',
-                'timestamp': datetime.now().isoformat()
+                "video_id": metadata["video_id"],
+                "title": metadata["title"],
+                "channel": metadata["channel"],
+                "analysis": analysis_text,
+                "analysis_type": "keyword",
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
             print(f"[ERROR] Analysis failed: {e}")
             return {
-                'video_id': metadata['video_id'],
-                'title': metadata['title'],
-                'channel': metadata['channel'],
-                'analysis': f"ERROR: {str(e)}",
-                'analysis_type': 'error',
-                'timestamp': datetime.now().isoformat()
+                "video_id": metadata["video_id"],
+                "title": metadata["title"],
+                "channel": metadata["channel"],
+                "analysis": f"ERROR: {str(e)}",
+                "analysis_type": "error",
+                "timestamp": datetime.now().isoformat(),
             }
 
     def _llm_analysis(self, metadata: Dict, transcript: str) -> Dict:
@@ -307,7 +361,9 @@ Based on keyword frequency, this video appears to focus on:
         # Truncate transcript if too long (max ~15k chars for API limits)
         max_chars = 15000
         if len(transcript) > max_chars:
-            print(f"[INFO] Truncating transcript from {len(transcript)} to {max_chars} chars")
+            print(
+                f"[INFO] Truncating transcript from {len(transcript)} to {max_chars} chars"
+            )
             transcript = transcript[:max_chars] + "..."
 
         analysis_prompt = f"""
@@ -366,36 +422,35 @@ Format as structured markdown with clear sections.
         try:
             # Use MultiLLM for comprehensive analysis
             analysis = self.llm_analyzer.analyze_sentiment(
-                symbol="YOUTUBE_ANALYSIS",
-                context=analysis_prompt
+                symbol="YOUTUBE_ANALYSIS", context=analysis_prompt
             )
 
             # Extract the analysis text
-            if isinstance(analysis, dict) and 'summary' in analysis:
-                analysis_text = analysis['summary']
+            if isinstance(analysis, dict) and "summary" in analysis:
+                analysis_text = analysis["summary"]
             else:
                 analysis_text = str(analysis)
 
             print(f"[SUCCESS] LLM analysis complete ({len(analysis_text)} chars)")
 
             return {
-                'video_id': metadata['video_id'],
-                'title': metadata['title'],
-                'channel': metadata['channel'],
-                'analysis': analysis_text,
-                'analysis_type': 'llm',
-                'timestamp': datetime.now().isoformat()
+                "video_id": metadata["video_id"],
+                "title": metadata["title"],
+                "channel": metadata["channel"],
+                "analysis": analysis_text,
+                "analysis_type": "llm",
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
             print(f"[ERROR] LLM analysis failed: {e}")
             return {
-                'video_id': metadata['video_id'],
-                'title': metadata['title'],
-                'channel': metadata['channel'],
-                'analysis': f"ERROR: {str(e)}",
-                'analysis_type': 'error',
-                'timestamp': datetime.now().isoformat()
+                "video_id": metadata["video_id"],
+                "title": metadata["title"],
+                "channel": metadata["channel"],
+                "analysis": f"ERROR: {str(e)}",
+                "analysis_type": "error",
+                "timestamp": datetime.now().isoformat(),
             }
 
     def analyze_video(self, video_id: str) -> Dict:
@@ -420,20 +475,20 @@ Format as structured markdown with clear sections.
 
         if transcript is None:
             return {
-                'video_id': video_id,
-                'metadata': metadata,
-                'error': 'Transcript unavailable',
-                'analysis': None
+                "video_id": video_id,
+                "metadata": metadata,
+                "error": "Transcript unavailable",
+                "analysis": None,
             }
 
         # Step 3: Analyze
         analysis = self.analyze_transcript(metadata, transcript)
 
         return {
-            'video_id': video_id,
-            'metadata': metadata,
-            'transcript_length': len(transcript),
-            'analysis': analysis
+            "video_id": video_id,
+            "metadata": metadata,
+            "transcript_length": len(transcript),
+            "analysis": analysis,
         }
 
     def analyze_multiple_videos(self, video_ids: List[str]) -> Dict:
@@ -466,11 +521,11 @@ Format as structured markdown with clear sections.
         cross_analysis = self.generate_cross_video_analysis(results)
 
         return {
-            'individual_analyses': results,
-            'cross_video_analysis': cross_analysis,
-            'total_videos': len(video_ids),
-            'successful_analyses': sum(1 for r in results if r.get('analysis')),
-            'timestamp': datetime.now().isoformat()
+            "individual_analyses": results,
+            "cross_video_analysis": cross_analysis,
+            "total_videos": len(video_ids),
+            "successful_analyses": sum(1 for r in results if r.get("analysis")),
+            "timestamp": datetime.now().isoformat(),
         }
 
     def generate_cross_video_analysis(self, results: List[Dict]) -> str:
@@ -487,7 +542,7 @@ Format as structured markdown with clear sections.
         analyses = [
             f"VIDEO: {r['metadata']['title']}\nCHANNEL: {r['metadata']['channel']}\n\n{r['analysis']['analysis']}"
             for r in results
-            if r.get('analysis') and 'analysis' in r['analysis']
+            if r.get("analysis") and "analysis" in r["analysis"]
         ]
 
         if not analyses:
@@ -546,12 +601,11 @@ Format as structured markdown with clear sections and actionable recommendations
         try:
             # Use MultiLLM for cross-video analysis
             cross_analysis = self.llm_analyzer.analyze_sentiment(
-                symbol="CROSS_VIDEO_ANALYSIS",
-                context=cross_analysis_prompt
+                symbol="CROSS_VIDEO_ANALYSIS", context=cross_analysis_prompt
             )
 
-            if isinstance(cross_analysis, dict) and 'summary' in cross_analysis:
-                return cross_analysis['summary']
+            if isinstance(cross_analysis, dict) and "summary" in cross_analysis:
+                return cross_analysis["summary"]
             else:
                 return str(cross_analysis)
 
@@ -570,17 +624,22 @@ Format as structured markdown with clear sections and actionable recommendations
         """
         # Aggregate all transcripts
         all_keywords = {
-            'strategies': {},
-            'indicators': {},
-            'risk_management': {},
-            'tools': {},
-            'performance': {},
+            "strategies": {},
+            "indicators": {},
+            "risk_management": {},
+            "tools": {},
+            "performance": {},
         }
 
         for result in results:
-            if result.get('analysis') and result['analysis'].get('analysis_type') == 'keyword':
+            if (
+                result.get("analysis")
+                and result["analysis"].get("analysis_type") == "keyword"
+            ):
                 # Re-analyze transcript to get keyword counts
-                transcript_cache = self.cache_dir / f"{result['video_id']}_transcript.txt"
+                transcript_cache = (
+                    self.cache_dir / f"{result['video_id']}_transcript.txt"
+                )
                 if transcript_cache.exists():
                     transcript = transcript_cache.read_text()
                     keywords = self.keyword_analysis(transcript)
@@ -601,7 +660,9 @@ Format as structured markdown with clear sections and actionable recommendations
 
         for category in all_keywords:
             if all_keywords[category]:
-                sorted_items = sorted(all_keywords[category].items(), key=lambda x: x[1], reverse=True)
+                sorted_items = sorted(
+                    all_keywords[category].items(), key=lambda x: x[1], reverse=True
+                )
                 analysis += f"\n### {category.replace('_', ' ').title()}\n"
                 for keyword, count in sorted_items[:10]:
                     analysis += f"- **{keyword.title()}**: {count} total mentions across all videos\n"
@@ -615,23 +676,27 @@ Based on keyword frequency across all videos, prioritize:
 """
 
         # Top strategies
-        if all_keywords['strategies']:
-            top_strategy = max(all_keywords['strategies'].items(), key=lambda x: x[1])
+        if all_keywords["strategies"]:
+            top_strategy = max(all_keywords["strategies"].items(), key=lambda x: x[1])
             analysis += f"1. **{top_strategy[0].title()} Strategy**: Mentioned {top_strategy[1]} times - investigate implementation\n"
 
         # Top indicators
-        if all_keywords['indicators']:
-            top_indicators = sorted(all_keywords['indicators'].items(), key=lambda x: x[1], reverse=True)[:3]
+        if all_keywords["indicators"]:
+            top_indicators = sorted(
+                all_keywords["indicators"].items(), key=lambda x: x[1], reverse=True
+            )[:3]
             analysis += f"2. **Technical Indicators**: Focus on {', '.join(i[0].upper() for i in top_indicators)}\n"
 
         # Top risk management
-        if all_keywords['risk_management']:
-            top_risk = max(all_keywords['risk_management'].items(), key=lambda x: x[1])
+        if all_keywords["risk_management"]:
+            top_risk = max(all_keywords["risk_management"].items(), key=lambda x: x[1])
             analysis += f"3. **Risk Management**: Implement {top_risk[0]} (mentioned {top_risk[1]} times)\n"
 
         # Top tools
-        if all_keywords['tools']:
-            top_tools = sorted(all_keywords['tools'].items(), key=lambda x: x[1], reverse=True)[:3]
+        if all_keywords["tools"]:
+            top_tools = sorted(
+                all_keywords["tools"].items(), key=lambda x: x[1], reverse=True
+            )[:3]
             analysis += f"4. **Tools/Technology**: Consider {', '.join(t[0] for t in top_tools)}\n"
 
         analysis += """
@@ -674,15 +739,15 @@ Based on keyword frequency across all videos, prioritize:
 
 """
 
-        for i, result in enumerate(analysis_results['individual_analyses'], 1):
-            metadata = result['metadata']
-            analysis = result.get('analysis')
+        for i, result in enumerate(analysis_results["individual_analyses"], 1):
+            metadata = result["metadata"]
+            analysis = result.get("analysis")
 
             # Handle None analysis
             if analysis is None:
-                analysis_text = result.get('error', 'ERROR: Analysis unavailable')
+                analysis_text = result.get("error", "ERROR: Analysis unavailable")
             elif isinstance(analysis, dict):
-                analysis_text = analysis.get('analysis', 'ERROR: Analysis unavailable')
+                analysis_text = analysis.get("analysis", "ERROR: Analysis unavailable")
             else:
                 analysis_text = str(analysis)
 
@@ -711,7 +776,7 @@ Based on keyword frequency across all videos, prioritize:
         print(f"[SUCCESS] Report saved to: {output_path}")
 
         # Also save JSON for programmatic access
-        json_path = output_path.with_suffix('.json')
+        json_path = output_path.with_suffix(".json")
         json_path.write_text(json.dumps(analysis_results, indent=2))
 
         print(f"[SUCCESS] JSON saved to: {json_path}")
@@ -726,12 +791,12 @@ def main():
         "zIiTLWLEym4",
         "KvfZI964TEM",
         "m_rPOUJprKU",
-        "mr4Pw66_490"
+        "mr4Pw66_490",
     ]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("YOUTUBE PODCAST ANALYZER")
-    print("="*80)
+    print("=" * 80)
     print(f"\nAnalyzing {len(video_ids)} videos for trading insights...")
 
     # Initialize analyzer
@@ -741,12 +806,16 @@ def main():
     results = analyzer.analyze_multiple_videos(video_ids)
 
     # Save report
-    report_path = Path(__file__).parent.parent / "docs" / f"youtube_podcast_analysis_{datetime.now().strftime('%Y-%m-%d')}.md"
+    report_path = (
+        Path(__file__).parent.parent
+        / "docs"
+        / f"youtube_podcast_analysis_{datetime.now().strftime('%Y-%m-%d')}.md"
+    )
     analyzer.save_report(results, report_path)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("ANALYSIS COMPLETE")
-    print("="*80)
+    print("=" * 80)
     print(f"\nReport: {report_path}")
     print(f"JSON: {report_path.with_suffix('.json')}")
     print("\nNext steps:")

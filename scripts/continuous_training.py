@@ -25,11 +25,11 @@ from src.ml.rl_service_client import RLServiceClient
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler('logs/continuous_training.log'),
-        logging.StreamHandler()
-    ]
+        logging.FileHandler("logs/continuous_training.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class ContinuousTrainer:
         symbols: List[str] = None,
         train_local: bool = True,
         train_cloud: bool = True,
-        retrain_interval_days: int = 7
+        retrain_interval_days: int = 7,
     ):
         """
         Initialize continuous trainer.
@@ -72,7 +72,9 @@ class ContinuousTrainer:
 
         if self.train_cloud:
             try:
-                self.cloud_trainer = ModelTrainer(use_cloud_rl=True, rl_provider="vertex_ai")
+                self.cloud_trainer = ModelTrainer(
+                    use_cloud_rl=True, rl_provider="vertex_ai"
+                )
                 logger.info("✅ Cloud trainer initialized")
             except Exception as e:
                 logger.warning(f"⚠️  Cloud trainer initialization failed: {e}")
@@ -85,21 +87,17 @@ class ContinuousTrainer:
         """Load training status from file."""
         if TRAINING_STATUS_FILE.exists():
             try:
-                with open(TRAINING_STATUS_FILE, 'r') as f:
+                with open(TRAINING_STATUS_FILE, "r") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load training status: {e}")
 
-        return {
-            "last_training": {},
-            "training_history": [],
-            "cloud_jobs": {}
-        }
+        return {"last_training": {}, "training_history": [], "cloud_jobs": {}}
 
     def _save_status(self):
         """Save training status to file."""
         TRAINING_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(TRAINING_STATUS_FILE, 'w') as f:
+        with open(TRAINING_STATUS_FILE, "w") as f:
             json.dump(self.status, f, indent=2, default=str)
 
     def _should_retrain(self, symbol: str) -> bool:
@@ -128,9 +126,13 @@ class ContinuousTrainer:
 
             if result.get("success"):
                 logger.info(f"✅ Local training completed for {symbol}")
-                logger.info(f"   Validation loss: {result.get('final_val_loss', 'N/A'):.4f}")
+                logger.info(
+                    f"   Validation loss: {result.get('final_val_loss', 'N/A'):.4f}"
+                )
             else:
-                logger.error(f"❌ Local training failed for {symbol}: {result.get('error')}")
+                logger.error(
+                    f"❌ Local training failed for {symbol}: {result.get('error')}"
+                )
 
             return result
 
@@ -159,10 +161,12 @@ class ContinuousTrainer:
                     "symbol": symbol,
                     "submitted_at": datetime.now().isoformat(),
                     "status": result.get("status", "submitted"),
-                    "provider": result.get("provider")
+                    "provider": result.get("provider"),
                 }
             else:
-                logger.error(f"❌ Cloud training failed for {symbol}: {result.get('error')}")
+                logger.error(
+                    f"❌ Cloud training failed for {symbol}: {result.get('error')}"
+                )
 
             return result
 
@@ -196,8 +200,8 @@ class ContinuousTrainer:
                 "local_success": 0,
                 "cloud_success": 0,
                 "local_failed": 0,
-                "cloud_failed": 0
-            }
+                "cloud_failed": 0,
+            },
         }
 
         for symbol in self.symbols:
@@ -236,7 +240,9 @@ class ContinuousTrainer:
                     results["summary"]["cloud_failed"] += 1
 
             # Update last training time
-            if symbol_results.get("local", {}).get("success") or symbol_results.get("cloud", {}).get("success"):
+            if symbol_results.get("local", {}).get("success") or symbol_results.get(
+                "cloud", {}
+            ).get("success"):
                 self.status["last_training"][symbol] = datetime.now().isoformat()
 
             results["symbols"][symbol] = symbol_results
@@ -254,8 +260,12 @@ class ContinuousTrainer:
         logger.info("📊 TRAINING SUMMARY")
         logger.info("=" * 80)
         logger.info(f"Total symbols: {results['summary']['total']}")
-        logger.info(f"Local: {results['summary']['local_success']} success, {results['summary']['local_failed']} failed")
-        logger.info(f"Cloud: {results['summary']['cloud_success']} success, {results['summary']['cloud_failed']} failed")
+        logger.info(
+            f"Local: {results['summary']['local_success']} success, {results['summary']['local_failed']} failed"
+        )
+        logger.info(
+            f"Cloud: {results['summary']['cloud_success']} success, {results['summary']['cloud_failed']} failed"
+        )
         logger.info("")
 
         return results
@@ -267,12 +277,15 @@ class ContinuousTrainer:
             "cloud_jobs": self.status.get("cloud_jobs", {}),
             "next_retrain": {
                 symbol: (
-                    datetime.fromisoformat(self.status["last_training"][symbol]) +
-                    timedelta(days=self.retrain_interval_days)
-                ).isoformat()
-                if symbol in self.status.get("last_training", {}) else "immediately"
+                    (
+                        datetime.fromisoformat(self.status["last_training"][symbol])
+                        + timedelta(days=self.retrain_interval_days)
+                    ).isoformat()
+                    if symbol in self.status.get("last_training", {})
+                    else "immediately"
+                )
                 for symbol in self.symbols
-            }
+            },
         }
 
 
@@ -283,33 +296,22 @@ def main():
         "--symbols",
         nargs="+",
         default=TRAINING_SYMBOLS,
-        help="Symbols to train (default: SPY QQQ NVDA GOOGL AMZN)"
+        help="Symbols to train (default: SPY QQQ NVDA GOOGL AMZN)",
     )
     parser.add_argument(
-        "--local-only",
-        action="store_true",
-        help="Train only locally (skip cloud)"
+        "--local-only", action="store_true", help="Train only locally (skip cloud)"
     )
     parser.add_argument(
-        "--cloud-only",
-        action="store_true",
-        help="Train only in cloud (skip local)"
+        "--cloud-only", action="store_true", help="Train only in cloud (skip local)"
     )
     parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force retraining even if not due"
+        "--force", action="store_true", help="Force retraining even if not due"
     )
     parser.add_argument(
-        "--status",
-        action="store_true",
-        help="Show training status and exit"
+        "--status", action="store_true", help="Show training status and exit"
     )
     parser.add_argument(
-        "--interval",
-        type=int,
-        default=7,
-        help="Days between retraining (default: 7)"
+        "--interval", type=int, default=7, help="Days between retraining (default: 7)"
     )
 
     args = parser.parse_args()
@@ -323,7 +325,7 @@ def main():
         symbols=args.symbols,
         train_local=train_local,
         train_cloud=train_cloud,
-        retrain_interval_days=args.interval
+        retrain_interval_days=args.interval,
     )
 
     # Show status if requested
@@ -339,16 +341,22 @@ def main():
         # Save results summary
         results_file = Path("data/training_results.json")
         results_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
         logger.info(f"✅ Training complete - results saved to {results_file}")
 
-        return 0 if results["summary"]["local_success"] + results["summary"]["cloud_success"] > 0 else 1
+        return (
+            0
+            if results["summary"]["local_success"] + results["summary"]["cloud_success"]
+            > 0
+            else 1
+        )
 
     except Exception as e:
         logger.error(f"❌ Training failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

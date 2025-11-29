@@ -10,16 +10,18 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # Add project root to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Import security utilities
 from src.utils.security import mask_api_key
+
 
 def print_section(title):
     """Print formatted section header"""
     print(f"\n{'=' * 80}")
     print(f"  {title}")
     print(f"{'=' * 80}\n")
+
 
 def test_alpaca_connection():
     """Test 1: Verify Alpaca API credentials and connection"""
@@ -32,9 +34,9 @@ def test_alpaca_connection():
 
         # Load environment variables
         load_dotenv()
-        api_key = os.getenv('ALPACA_API_KEY')
-        secret_key = os.getenv('ALPACA_SECRET_KEY')
-        paper_trading = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
+        api_key = os.getenv("ALPACA_API_KEY")
+        secret_key = os.getenv("ALPACA_SECRET_KEY")
+        paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
 
         # Mask API key for security (CodeQL-safe pattern)
         masked = mask_api_key(api_key)
@@ -71,8 +73,12 @@ def test_alpaca_connection():
         for pos in positions:
             unrealized_pl = float(pos.unrealized_pl)
             unrealized_pl_pct = float(pos.unrealized_plpc) * 100
-            print(f"   {pos.symbol}: {pos.qty} shares @ ${float(pos.avg_entry_price):.2f}")
-            print(f"      Current: ${float(pos.current_price):.2f} | P/L: ${unrealized_pl:+.2f} ({unrealized_pl_pct:+.2f}%)")
+            print(
+                f"   {pos.symbol}: {pos.qty} shares @ ${float(pos.avg_entry_price):.2f}"
+            )
+            print(
+                f"      Current: ${float(pos.current_price):.2f} | P/L: ${unrealized_pl:+.2f} ({unrealized_pl_pct:+.2f}%)"
+            )
 
         # Test 4: Check market status
         clock = client.get_clock()
@@ -87,8 +93,10 @@ def test_alpaca_connection():
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False, None
+
 
 def test_market_data():
     """Test 2: Verify market data access via yfinance"""
@@ -102,8 +110,11 @@ def test_market_data():
 
         # Set user agent to avoid 403 errors
         import requests
+
         session = requests.Session()
-        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        session.headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
 
         spy = yf.Ticker("SPY", session=session)
         hist = spy.history(period="5d")
@@ -120,7 +131,7 @@ def test_market_data():
 
         # Test MACD calculation
         print("\nCalculating MACD...")
-        closes = hist['Close']
+        closes = hist["Close"]
         ema12 = closes.ewm(span=12, adjust=False).mean()
         ema26 = closes.ewm(span=26, adjust=False).mean()
         macd = ema12 - ema26
@@ -137,8 +148,10 @@ def test_market_data():
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_strategies():
     """Test 3: Verify strategy imports and initialization"""
@@ -168,8 +181,10 @@ def test_strategies():
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_order_submission(client):
     """Test 4: Submit and cancel a test order"""
@@ -195,7 +210,7 @@ def test_order_submission(client):
             symbol="SPY",
             notional=1.0,  # $1 worth of SPY
             side=OrderSide.BUY,
-            time_in_force=TimeInForce.DAY
+            time_in_force=TimeInForce.DAY,
         )
 
         # Submit order
@@ -209,6 +224,7 @@ def test_order_submission(client):
 
         # Wait a moment then cancel
         import time
+
         time.sleep(1)
 
         print("\nCanceling test order...")
@@ -220,15 +236,17 @@ def test_order_submission(client):
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_autonomous_trader():
     """Test 5: Verify autonomous trader script structure"""
     print_section("TEST 5: Autonomous Trader Script")
 
     try:
-        script_path = os.path.join(os.path.dirname(__file__), 'autonomous_trader.py')
+        script_path = os.path.join(os.path.dirname(__file__), "autonomous_trader.py")
 
         if not os.path.exists(script_path):
             print(f"❌ FAILED: Script not found at {script_path}")
@@ -237,7 +255,7 @@ def test_autonomous_trader():
         print(f"✅ Script exists: {script_path}")
 
         # Read script to check for dry-run capability
-        with open(script_path, 'r') as f:
+        with open(script_path, "r") as f:
             content = f.read()
 
         print(f"   Size: {len(content)} bytes")
@@ -245,10 +263,20 @@ def test_autonomous_trader():
 
         # Check for key components
         checks = {
-            "CoreStrategy import": "from src.strategies.core_strategy import CoreStrategy" in content,
-            "GrowthStrategy import": "from src.strategies.growth_strategy import GrowthStrategy" in content,
-            "Alpaca client": ("TradingClient" in content or "alpaca_trade_api" in content or "tradeapi" in content),
-            "Environment variables": ("load_dotenv" in content or "os.getenv" in content or "os.environ" in content),
+            "CoreStrategy import": "from src.strategies.core_strategy import CoreStrategy"
+            in content,
+            "GrowthStrategy import": "from src.strategies.growth_strategy import GrowthStrategy"
+            in content,
+            "Alpaca client": (
+                "TradingClient" in content
+                or "alpaca_trade_api" in content
+                or "tradeapi" in content
+            ),
+            "Environment variables": (
+                "load_dotenv" in content
+                or "os.getenv" in content
+                or "os.environ" in content
+            ),
         }
 
         print("\n   Component checks:")
@@ -261,8 +289,10 @@ def test_autonomous_trader():
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def verify_system_state():
     """Verify current system state from JSON"""
@@ -271,20 +301,26 @@ def verify_system_state():
     try:
         import json
 
-        state_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'system_state.json')
+        state_path = os.path.join(
+            os.path.dirname(__file__), "..", "data", "system_state.json"
+        )
 
-        with open(state_path, 'r') as f:
+        with open(state_path, "r") as f:
             state = json.load(f)
 
         print("📊 Current System State:")
-        print(f"   Challenge Day: {state['challenge']['current_day']} / {state['challenge']['total_days']}")
+        print(
+            f"   Challenge Day: {state['challenge']['current_day']} / {state['challenge']['total_days']}"
+        )
         print(f"   Phase: {state['challenge']['phase']}")
         print(f"   Status: {state['challenge']['status']}")
 
         print(f"\n💰 Account Summary:")
         print(f"   Starting Balance: ${state['account']['starting_balance']:,.2f}")
         print(f"   Current Equity: ${state['account']['current_equity']:,.2f}")
-        print(f"   Total P/L: ${state['account']['total_pl']:,.2f} ({state['account']['total_pl_pct']:.2f}%)")
+        print(
+            f"   Total P/L: ${state['account']['total_pl']:,.2f} ({state['account']['total_pl_pct']:.2f}%)"
+        )
 
         print(f"\n📈 Performance:")
         print(f"   Total Trades: {state['performance']['total_trades']}")
@@ -293,8 +329,12 @@ def verify_system_state():
         print(f"   Losing Trades: {state['performance']['losing_trades']}")
 
         print(f"\n🎯 Strategies:")
-        print(f"   Tier 1 (Core): ${state['strategies']['tier1']['total_invested']:,.2f} invested")
-        print(f"   Tier 2 (Growth): ${state['strategies']['tier2']['total_invested']:,.2f} invested")
+        print(
+            f"   Tier 1 (Core): ${state['strategies']['tier1']['total_invested']:,.2f} invested"
+        )
+        print(
+            f"   Tier 2 (Growth): ${state['strategies']['tier2']['total_invested']:,.2f} invested"
+        )
         print(f"   Tier 2 Stocks: {', '.join(state['strategies']['tier2']['stocks'])}")
 
         print(f"\n🤖 Automation:")
@@ -307,7 +347,9 @@ def verify_system_state():
 
         print(f"\n📹 Video Analysis:")
         print(f"   Enabled: {state['video_analysis']['enabled']}")
-        print(f"   Autonomous Monitoring: {state['video_analysis']['autonomous_monitoring']}")
+        print(
+            f"   Autonomous Monitoring: {state['video_analysis']['autonomous_monitoring']}"
+        )
         print(f"   Channels Monitored: {state['video_analysis']['channels_monitored']}")
         print(f"   Videos Analyzed: {state['video_analysis']['videos_analyzed']}")
 
@@ -316,8 +358,10 @@ def verify_system_state():
     except Exception as e:
         print(f"❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run all system verification tests"""
@@ -329,12 +373,12 @@ def main():
     results = {}
 
     # Run tests
-    results['state'] = verify_system_state()
-    results['alpaca'], client = test_alpaca_connection()
-    results['market_data'] = test_market_data()
-    results['strategies'] = test_strategies()
-    results['order_test'] = test_order_submission(client)
-    results['trader_script'] = test_autonomous_trader()
+    results["state"] = verify_system_state()
+    results["alpaca"], client = test_alpaca_connection()
+    results["market_data"] = test_market_data()
+    results["strategies"] = test_strategies()
+    results["order_test"] = test_order_submission(client)
+    results["trader_script"] = test_autonomous_trader()
 
     # Summary
     print_section("VERIFICATION SUMMARY")
@@ -360,6 +404,7 @@ def main():
         print("❌ SYSTEM NOT READY - Critical issues detected")
 
     return score
+
 
 if __name__ == "__main__":
     score = main()

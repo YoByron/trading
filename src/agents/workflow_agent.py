@@ -7,6 +7,7 @@ This agent implements the AgentKit-style workflow automation pattern:
 - File processing (CSV imports/exports)
 - Multi-step workflow orchestration
 """
+
 import os
 import json
 import logging
@@ -32,10 +33,7 @@ class WorkflowAgent(BaseAgent):
     """
 
     def __init__(self):
-        super().__init__(
-            name="WorkflowAgent",
-            role="Workflow Automation Orchestrator"
-        )
+        super().__init__(name="WorkflowAgent", role="Workflow Automation Orchestrator")
         self.workflow_queue: List[Dict[str, Any]] = []
         self.data_dir = Path("data/workflows")
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -64,14 +62,11 @@ class WorkflowAgent(BaseAgent):
             else:
                 return {
                     "success": False,
-                    "error": f"Unknown workflow type: {workflow_type}"
+                    "error": f"Unknown workflow type: {workflow_type}",
                 }
         except Exception as e:
             logger.error(f"Workflow execution error: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _process_email_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -108,7 +103,7 @@ class WorkflowAgent(BaseAgent):
             "success": True,
             "workflow_type": "email_monitor",
             "steps": workflow_steps,
-            "result": "Email workflow completed successfully"
+            "result": "Email workflow completed successfully",
         }
 
     def _process_report_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -131,7 +126,11 @@ class WorkflowAgent(BaseAgent):
             {"step": "gather_data", "status": "completed"},
             {"step": "generate_report", "status": "completed"},
             {"step": "format_report", "status": "completed"},
-            {"step": "send_to_stakeholders", "status": "pending", "recipients": recipients},
+            {
+                "step": "send_to_stakeholders",
+                "status": "pending",
+                "recipients": recipients,
+            },
             {"step": "archive_report", "status": "pending"},
         ]
 
@@ -151,7 +150,7 @@ class WorkflowAgent(BaseAgent):
             "workflow_type": "report_generation",
             "report_path": str(report_path),
             "steps": workflow_steps,
-            "result": f"Report generated: {report_path}"
+            "result": f"Report generated: {report_path}",
         }
 
     def _process_file_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -171,10 +170,7 @@ class WorkflowAgent(BaseAgent):
         file_type = data.get("file_type", "csv")
 
         if not file_path:
-            return {
-                "success": False,
-                "error": "file_path required"
-            }
+            return {"success": False, "error": "file_path required"}
 
         workflow_steps = [
             {"step": "detect_file", "status": "completed", "file": file_path},
@@ -189,7 +185,7 @@ class WorkflowAgent(BaseAgent):
             "workflow_type": "file_processing",
             "file_path": file_path,
             "steps": workflow_steps,
-            "result": f"File processed: {file_path}"
+            "result": f"File processed: {file_path}",
         }
 
     def _process_multi_step_workflow(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -206,10 +202,7 @@ class WorkflowAgent(BaseAgent):
 
         steps = data.get("steps", [])
         if not steps:
-            return {
-                "success": False,
-                "error": "No steps provided"
-            }
+            return {"success": False, "error": "No steps provided"}
 
         executed_steps = []
         for i, step in enumerate(steps):
@@ -219,20 +212,22 @@ class WorkflowAgent(BaseAgent):
             logger.info(f"Executing step {i+1}/{len(steps)}: {step_name}")
 
             # Execute step (simplified - would call actual MCP tools)
-            executed_steps.append({
-                "name": step_name,
-                "action": step_action,
-                "status": "completed",
-                "timestamp": datetime.now().isoformat(),
-                "result": f"Step {step_name} completed"
-            })
+            executed_steps.append(
+                {
+                    "name": step_name,
+                    "action": step_action,
+                    "status": "completed",
+                    "timestamp": datetime.now().isoformat(),
+                    "result": f"Step {step_name} completed",
+                }
+            )
 
         return {
             "success": True,
             "workflow_type": "multi_step",
             "total_steps": len(steps),
             "executed_steps": executed_steps,
-            "result": f"Multi-step workflow completed: {len(steps)} steps"
+            "result": f"Multi-step workflow completed: {len(steps)} steps",
         }
 
     async def execute_workflow_async(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
@@ -257,7 +252,9 @@ class WorkflowAgent(BaseAgent):
         Returns:
             Workflow ID
         """
-        workflow_id = f"wf_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{len(self.workflow_queue)}"
+        workflow_id = (
+            f"wf_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{len(self.workflow_queue)}"
+        )
         workflow["id"] = workflow_id
         workflow["queued_at"] = datetime.now().isoformat()
         self.workflow_queue.append(workflow)

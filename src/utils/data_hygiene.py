@@ -29,17 +29,16 @@ class DataHygieneChecker:
     MODEL_MAX_AGE_DAYS = 30  # Models older than 30 days are stale
     MODEL_MIN_PERFORMANCE = 0.6  # Models below 60% accuracy need retraining
 
-    def __init__(self, data_dir: str = "data/historical", models_dir: str = "data/models"):
+    def __init__(
+        self, data_dir: str = "data/historical", models_dir: str = "data/models"
+    ):
         self.data_dir = Path(data_dir)
         self.models_dir = Path(models_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
     def validate_historical_data_quality(
-        self,
-        symbol: str,
-        hist_data: pd.DataFrame,
-        min_days: int = 252
+        self, symbol: str, hist_data: pd.DataFrame, min_days: int = 252
     ) -> Dict[str, Any]:
         """
         Validate historical data quality and completeness.
@@ -62,7 +61,7 @@ class DataHygieneChecker:
                 "symbol": symbol,
                 "issues": ["No data available"],
                 "warnings": [],
-                "quality_score": 0.0
+                "quality_score": 0.0,
             }
 
         # Check 2: Minimum days requirement
@@ -85,7 +84,9 @@ class DataHygieneChecker:
             if max_gap > self.MAX_GAP_DAYS:
                 issues.append(f"Large date gap: {max_gap} days")
             else:
-                warnings.append(f"Date gaps detected: {len(gaps)} gaps (max {max_gap} days)")
+                warnings.append(
+                    f"Date gaps detected: {len(gaps)} gaps (max {max_gap} days)"
+                )
 
         # Check 5: Missing required columns
         required_cols = ["Open", "High", "Low", "Close", "Volume"]
@@ -95,11 +96,17 @@ class DataHygieneChecker:
 
         # Check 6: Data freshness (most recent date)
         if not hist_data.empty:
-            latest_date = hist_data.index[-1] if isinstance(hist_data.index[0], pd.Timestamp) else pd.to_datetime(hist_data.index[-1])
+            latest_date = (
+                hist_data.index[-1]
+                if isinstance(hist_data.index[0], pd.Timestamp)
+                else pd.to_datetime(hist_data.index[-1])
+            )
             age_days = (datetime.now() - latest_date.to_pydatetime()).days
 
             if age_days > 30:
-                warnings.append(f"Data is {age_days} days old (most recent: {latest_date.date()})")
+                warnings.append(
+                    f"Data is {age_days} days old (most recent: {latest_date.date()})"
+                )
 
         # Check 7: Outlier detection
         outliers = self._detect_outliers(hist_data)
@@ -118,8 +125,10 @@ class DataHygieneChecker:
         quality_score = self._calculate_quality_score(
             completeness=completeness,
             has_issues=len(issues) > 0,
-            outlier_ratio=outliers["count"] / len(hist_data) if not hist_data.empty else 0,
-            gap_count=len(gaps)
+            outlier_ratio=(
+                outliers["count"] / len(hist_data) if not hist_data.empty else 0
+            ),
+            gap_count=len(gaps),
         )
 
         return {
@@ -133,18 +142,16 @@ class DataHygieneChecker:
                 "completeness": completeness,
                 "date_range": {
                     "start": str(hist_data.index[0]) if not hist_data.empty else None,
-                    "end": str(hist_data.index[-1]) if not hist_data.empty else None
+                    "end": str(hist_data.index[-1]) if not hist_data.empty else None,
                 },
                 "gaps": len(gaps),
                 "outliers": outliers["count"],
-                "age_days": age_days if not hist_data.empty else None
-            }
+                "age_days": age_days if not hist_data.empty else None,
+            },
         }
 
     def rotate_old_historical_data(
-        self,
-        max_age_days: int = None,
-        dry_run: bool = False
+        self, max_age_days: int = None, dry_run: bool = False
     ) -> Dict[str, Any]:
         """
         Rotate (delete) historical data older than threshold.
@@ -171,7 +178,11 @@ class DataHygieneChecker:
                 # Also check data inside file
                 df = pd.read_csv(csv_file, index_col=0, parse_dates=True, nrows=1)
                 if not df.empty:
-                    file_latest_date = df.index[-1] if isinstance(df.index[0], pd.Timestamp) else pd.to_datetime(df.index[-1])
+                    file_latest_date = (
+                        df.index[-1]
+                        if isinstance(df.index[0], pd.Timestamp)
+                        else pd.to_datetime(df.index[-1])
+                    )
                     file_latest_date = file_latest_date.to_pydatetime()
 
                     # Delete if file is old OR data inside is old
@@ -181,12 +192,16 @@ class DataHygieneChecker:
                         if not dry_run:
                             csv_file.unlink()
 
-                        deleted_files.append({
-                            "file": csv_file.name,
-                            "file_age_days": (datetime.now() - file_mtime).days,
-                            "data_age_days": (datetime.now() - file_latest_date).days,
-                            "size_kb": round(file_size / 1024, 2)
-                        })
+                        deleted_files.append(
+                            {
+                                "file": csv_file.name,
+                                "file_age_days": (datetime.now() - file_mtime).days,
+                                "data_age_days": (
+                                    datetime.now() - file_latest_date
+                                ).days,
+                                "size_kb": round(file_size / 1024, 2),
+                            }
+                        )
                         deleted_size += file_size
             except Exception as e:
                 logger.warning(f"Error processing {csv_file}: {e}")
@@ -197,13 +212,10 @@ class DataHygieneChecker:
             "cutoff_date": cutoff_date.isoformat(),
             "files_deleted": len(deleted_files),
             "space_freed_mb": round(deleted_size / (1024 * 1024), 2),
-            "deleted_files": deleted_files[:20]  # Limit to first 20
+            "deleted_files": deleted_files[:20],  # Limit to first 20
         }
 
-    def check_model_staleness(
-        self,
-        model_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def check_model_staleness(self, model_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Check if model is stale and needs retraining.
 
@@ -221,7 +233,7 @@ class DataHygieneChecker:
                     "stale": True,
                     "reason": "No model found",
                     "model_path": None,
-                    "age_days": None
+                    "age_days": None,
                 }
 
             model_path = max(model_files, key=lambda p: p.stat().st_mtime)
@@ -233,7 +245,7 @@ class DataHygieneChecker:
                 "stale": True,
                 "reason": "Model file not found",
                 "model_path": str(model_path),
-                "age_days": None
+                "age_days": None,
             }
 
         # Check file age
@@ -248,14 +260,11 @@ class DataHygieneChecker:
             "model_path": str(model_path),
             "age_days": age_days,
             "max_age_days": self.MODEL_MAX_AGE_DAYS,
-            "needs_retraining": stale
+            "needs_retraining": stale,
         }
 
     def cleanup_stale_models(
-        self,
-        max_age_days: int = None,
-        keep_latest: bool = True,
-        dry_run: bool = False
+        self, max_age_days: int = None, keep_latest: bool = True, dry_run: bool = False
     ) -> Dict[str, Any]:
         """
         Clean up stale model files.
@@ -278,7 +287,7 @@ class DataHygieneChecker:
             return {
                 "success": True,
                 "files_deleted": 0,
-                "message": "No model files found"
+                "message": "No model files found",
             }
 
         # Sort by modification time (newest first)
@@ -300,11 +309,13 @@ class DataHygieneChecker:
                 if not dry_run:
                     model_file.unlink()
 
-                deleted_files.append({
-                    "file": model_file.name,
-                    "age_days": (datetime.now() - file_mtime).days,
-                    "size_mb": round(file_size / (1024 * 1024), 2)
-                })
+                deleted_files.append(
+                    {
+                        "file": model_file.name,
+                        "age_days": (datetime.now() - file_mtime).days,
+                        "size_mb": round(file_size / (1024 * 1024), 2),
+                    }
+                )
                 deleted_size += file_size
 
         return {
@@ -313,12 +324,11 @@ class DataHygieneChecker:
             "files_deleted": len(deleted_files),
             "space_freed_mb": round(deleted_size / (1024 * 1024), 2),
             "deleted_files": deleted_files,
-            "kept_latest": keep_latest
+            "kept_latest": keep_latest,
         }
 
     def run_full_hygiene_check(
-        self,
-        symbols: Optional[List[str]] = None
+        self, symbols: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Run comprehensive hygiene check on all data and models.
@@ -333,7 +343,7 @@ class DataHygieneChecker:
             "timestamp": datetime.now().isoformat(),
             "data_validation": {},
             "model_staleness": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Find symbols if not provided
@@ -343,6 +353,7 @@ class DataHygieneChecker:
 
         # Validate each symbol's data
         from src.utils.data_collector import DataCollector
+
         collector = DataCollector(data_dir=str(self.data_dir))
 
         for symbol in symbols:
@@ -360,9 +371,7 @@ class DataHygieneChecker:
         report["model_staleness"] = model_check
 
         if model_check["stale"]:
-            report["recommendations"].append(
-                f"Retrain model: {model_check['reason']}"
-            )
+            report["recommendations"].append(f"Retrain model: {model_check['reason']}")
 
         return report
 
@@ -373,8 +382,16 @@ class DataHygieneChecker:
         if hist_data.empty:
             return 0
 
-        start_date = hist_data.index[0] if isinstance(hist_data.index[0], pd.Timestamp) else pd.to_datetime(hist_data.index[0])
-        end_date = hist_data.index[-1] if isinstance(hist_data.index[-1], pd.Timestamp) else pd.to_datetime(hist_data.index[-1])
+        start_date = (
+            hist_data.index[0]
+            if isinstance(hist_data.index[0], pd.Timestamp)
+            else pd.to_datetime(hist_data.index[0])
+        )
+        end_date = (
+            hist_data.index[-1]
+            if isinstance(hist_data.index[-1], pd.Timestamp)
+            else pd.to_datetime(hist_data.index[-1])
+        )
 
         # Approximate: ~252 trading days per year
         days_diff = (end_date - start_date).days
@@ -394,11 +411,13 @@ class DataHygieneChecker:
             gap_days = (dates.iloc[i + 1] - dates.iloc[i]).days
 
             if gap_days > 1:  # More than 1 day gap
-                gaps.append({
-                    "start": str(dates.iloc[i]),
-                    "end": str(dates.iloc[i + 1]),
-                    "days": gap_days
-                })
+                gaps.append(
+                    {
+                        "start": str(dates.iloc[i]),
+                        "end": str(dates.iloc[i + 1]),
+                        "days": gap_days,
+                    }
+                )
 
         return gaps
 
@@ -419,10 +438,7 @@ class DataHygieneChecker:
         z_scores = np.abs((prices - mean_price) / std_price)
         outliers = z_scores > self.MAX_OUTLIER_ZSCORE
 
-        return {
-            "count": int(np.sum(outliers)),
-            "max_zscore": float(np.max(z_scores))
-        }
+        return {"count": int(np.sum(outliers)), "max_zscore": float(np.max(z_scores))}
 
     def _validate_ohlc_consistency(self, hist_data: pd.DataFrame) -> List[str]:
         """Validate OHLC data consistency."""
@@ -456,7 +472,7 @@ class DataHygieneChecker:
         completeness: float,
         has_issues: bool,
         outlier_ratio: float,
-        gap_count: int
+        gap_count: int,
     ) -> float:
         """Calculate overall data quality score (0.0 to 1.0)."""
         score = completeness * 0.5  # Base score from completeness

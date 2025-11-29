@@ -9,6 +9,7 @@ Based on LangChain DeepAgents demo:
 - Prompt engineering with action limits
 - Middleware for human-in-the-loop verification
 """
+
 import os
 import json
 import logging
@@ -88,16 +89,12 @@ class DeepAgentsTradingOrchestrator:
                 "cycle_id": cycle_id,
                 "plan": plan,
                 "results": results,
-                "status": "completed"
+                "status": "completed",
             }
 
         except Exception as e:
             logger.error(f"Trading cycle failed: {e}")
-            return {
-                "cycle_id": cycle_id,
-                "status": "failed",
-                "error": str(e)
-            }
+            return {"cycle_id": cycle_id, "status": "failed", "error": str(e)}
 
     async def _create_trading_plan(self, cycle_id: str) -> Dict[str, Any]:
         """
@@ -110,8 +107,7 @@ class DeepAgentsTradingOrchestrator:
 
             if not self._research_agent:
                 self._research_agent = create_trading_research_agent(
-                    include_mcp_tools=True,
-                    temperature=0.2
+                    include_mcp_tools=True, temperature=0.2
                 )
 
             planning_prompt = f"""Create a trading plan for today's market analysis.
@@ -131,9 +127,9 @@ Save the plan to a file for tracking progress.
 Limit each step to maximum 5 tool calls.
 """
 
-            result = await self._research_agent.ainvoke({
-                "messages": [{"role": "user", "content": planning_prompt}]
-            })
+            result = await self._research_agent.ainvoke(
+                {"messages": [{"role": "user", "content": planning_prompt}]}
+            )
 
             # Extract plan from result
             plan = self._extract_plan_from_result(result)
@@ -164,8 +160,8 @@ Limit each step to maximum 5 tool calls.
                 {"name": "generate_signals", "type": "signal", "symbols": self.symbols},
                 {"name": "validate_risk", "type": "risk"},
                 {"name": "execute_trades", "type": "execution"},
-                {"name": "generate_report", "type": "report"}
-            ]
+                {"name": "generate_report", "type": "report"},
+            ],
         }
 
     def _extract_plan_from_result(self, result: Any) -> Dict[str, Any]:
@@ -178,7 +174,7 @@ Limit each step to maximum 5 tool calls.
                     # Parse plan from content
                     return {
                         "created_at": datetime.now().isoformat(),
-                        "steps": self._parse_steps_from_content(str(content))
+                        "steps": self._parse_steps_from_content(str(content)),
                     }
 
         # Default plan structure
@@ -188,44 +184,46 @@ Limit each step to maximum 5 tool calls.
                 {"name": "research", "type": "research"},
                 {"name": "signal", "type": "signal"},
                 {"name": "risk", "type": "risk"},
-                {"name": "execution", "type": "execution"}
-            ]
+                {"name": "execution", "type": "execution"},
+            ],
         }
 
     def _parse_steps_from_content(self, content: str) -> List[Dict[str, Any]]:
         """Parse steps from agent content (simplified)."""
         steps = []
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         for i, line in enumerate(lines):
-            if any(marker in line.lower() for marker in ['1.', 'step', 'todo', '-']):
-                step_name = line.strip().split('.', 1)[-1].strip()
+            if any(marker in line.lower() for marker in ["1.", "step", "todo", "-"]):
+                step_name = line.strip().split(".", 1)[-1].strip()
                 step_type = self._infer_step_type(step_name)
-                steps.append({
-                    "name": f"step_{i}",
-                    "type": step_type,
-                    "description": step_name
-                })
+                steps.append(
+                    {"name": f"step_{i}", "type": step_type, "description": step_name}
+                )
 
-        return steps if steps else [
-            {"name": "research", "type": "research"},
-            {"name": "signal", "type": "signal"},
-            {"name": "risk", "type": "risk"},
-            {"name": "execution", "type": "execution"}
-        ]
+        return (
+            steps
+            if steps
+            else [
+                {"name": "research", "type": "research"},
+                {"name": "signal", "type": "signal"},
+                {"name": "risk", "type": "risk"},
+                {"name": "execution", "type": "execution"},
+            ]
+        )
 
     def _infer_step_type(self, description: str) -> str:
         """Infer step type from description."""
         desc_lower = description.lower()
-        if any(word in desc_lower for word in ['gather', 'fetch', 'data', 'research']):
+        if any(word in desc_lower for word in ["gather", "fetch", "data", "research"]):
             return "research"
-        elif any(word in desc_lower for word in ['signal', 'generate', 'recommend']):
+        elif any(word in desc_lower for word in ["signal", "generate", "recommend"]):
             return "signal"
-        elif any(word in desc_lower for word in ['risk', 'validate', 'check']):
+        elif any(word in desc_lower for word in ["risk", "validate", "check"]):
             return "risk"
-        elif any(word in desc_lower for word in ['execute', 'trade', 'order']):
+        elif any(word in desc_lower for word in ["execute", "trade", "order"]):
             return "execution"
-        elif any(word in desc_lower for word in ['report', 'summary']):
+        elif any(word in desc_lower for word in ["report", "summary"]):
             return "report"
         return "research"
 
@@ -251,22 +249,15 @@ Save your analysis to a file.
 Limit to 5 tool calls per symbol.
 """
 
-            result = await self._research_agent.ainvoke({
-                "messages": [{"role": "user", "content": research_prompt}]
-            })
+            result = await self._research_agent.ainvoke(
+                {"messages": [{"role": "user", "content": research_prompt}]}
+            )
 
-            return {
-                "success": True,
-                "type": "research",
-                "result": result
-            }
+            return {"success": True, "type": "research", "result": result}
 
         except Exception as e:
             logger.error(f"Research step failed: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def _execute_signal_generation(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute signal generation step."""
@@ -275,8 +266,7 @@ Limit to 5 tool calls per symbol.
 
             if not self._signal_agent:
                 self._signal_agent = create_market_analysis_agent(
-                    include_mcp_tools=True,
-                    temperature=0.2
+                    include_mcp_tools=True, temperature=0.2
                 )
 
             signal_prompt = f"""Generate trading signals for: {', '.join(self.symbols)}
@@ -290,22 +280,15 @@ For each symbol:
 Save signals to a file.
 """
 
-            result = await self._signal_agent.ainvoke({
-                "messages": [{"role": "user", "content": signal_prompt}]
-            })
+            result = await self._signal_agent.ainvoke(
+                {"messages": [{"role": "user", "content": signal_prompt}]}
+            )
 
-            return {
-                "success": True,
-                "type": "signal",
-                "result": result
-            }
+            return {"success": True, "type": "signal", "result": result}
 
         except Exception as e:
             logger.error(f"Signal generation failed: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def _execute_risk_validation(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute risk validation step."""
@@ -315,11 +298,7 @@ Save signals to a file.
         risk_agent = RiskAgent()
 
         # This would validate signals from previous step
-        return {
-            "success": True,
-            "type": "risk",
-            "result": "Risk validation completed"
-        }
+        return {"success": True, "type": "risk", "result": "Risk validation completed"}
 
     async def _execute_trade(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute trade step (with approval gates)."""
@@ -331,30 +310,32 @@ Save signals to a file.
         return {
             "success": True,
             "type": "execution",
-            "result": "Trade execution completed"
+            "result": "Trade execution completed",
         }
 
-    async def _generate_report(self, step: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_report(
+        self, step: Dict[str, Any], results: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate final report using filesystem."""
-        report_path = self.plan_file / f"report_{datetime.now().strftime('%Y%m%d')}.json"
+        report_path = (
+            self.plan_file / f"report_{datetime.now().strftime('%Y%m%d')}.json"
+        )
 
         report = {
             "date": datetime.now().isoformat(),
             "symbols": self.symbols,
             "results": results,
-            "summary": "Trading cycle completed"
+            "summary": "Trading cycle completed",
         }
 
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        return {
-            "success": True,
-            "type": "report",
-            "report_path": str(report_path)
-        }
+        return {"success": True, "type": "report", "report_path": str(report_path)}
 
-    def _save_cycle_results(self, cycle_id: str, plan: Dict[str, Any], results: Dict[str, Any]):
+    def _save_cycle_results(
+        self, cycle_id: str, plan: Dict[str, Any], results: Dict[str, Any]
+    ):
         """Save cycle results to filesystem."""
         results_path = self.plan_file / f"{cycle_id}_results.json"
 
@@ -362,7 +343,7 @@ Save signals to a file.
             "cycle_id": cycle_id,
             "plan": plan,
             "results": results,
-            "completed_at": datetime.now().isoformat()
+            "completed_at": datetime.now().isoformat(),
         }
 
         with open(results_path, "w") as f:

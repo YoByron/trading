@@ -17,6 +17,7 @@ import base64
 # Load environment variables
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -30,7 +31,9 @@ ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 ALPACA_BASE_URL = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    print("ERROR: ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    print(
+        "ERROR: ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
     sys.exit(1)
 
 
@@ -42,14 +45,14 @@ def make_request(url, method="GET", data=None):
     req.add_header("Content-Type", "application/json")
 
     if method == "POST" and data:
-        req.data = json.dumps(data).encode('utf-8')
+        req.data = json.dumps(data).encode("utf-8")
         req.get_method = lambda: "POST"
 
     try:
         with urlopen(req) as response:
-            return json.loads(response.read().decode('utf-8'))
+            return json.loads(response.read().decode("utf-8"))
     except HTTPError as e:
-        error_body = e.read().decode('utf-8')
+        error_body = e.read().decode("utf-8")
         raise Exception(f"API Error {e.code}: {error_body}")
 
 
@@ -108,21 +111,27 @@ def update_system_state():
             market_value = float(pos.get("market_value", 0))
 
             unrealized_pl = (current_price - entry_price) * qty
-            unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+            unrealized_pl_pct = (
+                ((current_price - entry_price) / entry_price * 100)
+                if entry_price > 0
+                else 0
+            )
 
-            state["performance"]["open_positions"].append({
-                "symbol": pos["symbol"],
-                "tier": "unknown",
-                "amount": market_value,
-                "order_id": None,
-                "entry_date": datetime.now().isoformat(),
-                "entry_price": entry_price,
-                "current_price": current_price,
-                "quantity": qty,
-                "unrealized_pl": unrealized_pl,
-                "unrealized_pl_pct": unrealized_pl_pct,
-                "last_updated": datetime.now().isoformat(),
-            })
+            state["performance"]["open_positions"].append(
+                {
+                    "symbol": pos["symbol"],
+                    "tier": "unknown",
+                    "amount": market_value,
+                    "order_id": None,
+                    "entry_date": datetime.now().isoformat(),
+                    "entry_price": entry_price,
+                    "current_price": current_price,
+                    "quantity": qty,
+                    "unrealized_pl": unrealized_pl,
+                    "unrealized_pl_pct": unrealized_pl_pct,
+                    "last_updated": datetime.now().isoformat(),
+                }
+            )
 
         # Update meta
         state["meta"]["last_updated"] = datetime.now().isoformat()
@@ -148,6 +157,7 @@ def update_system_state():
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

@@ -147,13 +147,21 @@ class TestYFinanceFallback:
     def test_yfinance_success_first_attempt(self, mock_provider):
         """Test successful fetch on first attempt."""
         mock_data = pd.DataFrame(
-            {"Open": [100], "High": [101], "Low": [99], "Close": [100.5], "Volume": [1000]},
+            {
+                "Open": [100],
+                "High": [101],
+                "Low": [99],
+                "Close": [100.5],
+                "Volume": [1000],
+            },
             index=pd.date_range("2025-01-01", periods=1),
         )
 
         with patch.object(mock_provider, "_fetch_yfinance", return_value=mock_data):
             result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
-            data = mock_provider._fetch_yfinance_with_retries("SPY", datetime.now(), datetime.now(), result)
+            data = mock_provider._fetch_yfinance_with_retries(
+                "SPY", datetime.now(), datetime.now(), result
+            )
 
             assert data is not None
             assert len(data) == 1
@@ -164,7 +172,13 @@ class TestYFinanceFallback:
     def test_yfinance_retry_then_success(self, mock_provider):
         """Test retry logic with eventual success."""
         mock_data = pd.DataFrame(
-            {"Open": [100], "High": [101], "Low": [99], "Close": [100.5], "Volume": [1000]},
+            {
+                "Open": [100],
+                "High": [101],
+                "Low": [99],
+                "Close": [100.5],
+                "Volume": [1000],
+            },
             index=pd.date_range("2025-01-01", periods=1),
         )
 
@@ -179,7 +193,9 @@ class TestYFinanceFallback:
 
         with patch.object(mock_provider, "_fetch_yfinance", side_effect=mock_fetch):
             result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
-            data = mock_provider._fetch_yfinance_with_retries("SPY", datetime.now(), datetime.now(), result)
+            data = mock_provider._fetch_yfinance_with_retries(
+                "SPY", datetime.now(), datetime.now(), result
+            )
 
             assert data is not None
             assert result.total_attempts == 2
@@ -188,9 +204,15 @@ class TestYFinanceFallback:
 
     def test_yfinance_all_retries_fail(self, mock_provider):
         """Test exhausting all retries without success."""
-        with patch.object(mock_provider, "_fetch_yfinance", side_effect=Exception("Persistent failure")):
+        with patch.object(
+            mock_provider,
+            "_fetch_yfinance",
+            side_effect=Exception("Persistent failure"),
+        ):
             result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
-            data = mock_provider._fetch_yfinance_with_retries("SPY", datetime.now(), datetime.now(), result)
+            data = mock_provider._fetch_yfinance_with_retries(
+                "SPY", datetime.now(), datetime.now(), result
+            )
 
             assert data is None
             # Note: YFINANCE_MAX_RETRIES is class attribute loaded at import, not from fixture env
@@ -199,10 +221,14 @@ class TestYFinanceFallback:
 
     def test_yfinance_exponential_backoff(self, mock_provider):
         """Test that exponential backoff is applied between retries."""
-        with patch.object(mock_provider, "_fetch_yfinance", side_effect=Exception("Fail")):
+        with patch.object(
+            mock_provider, "_fetch_yfinance", side_effect=Exception("Fail")
+        ):
             start_time = time.time()
             result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
-            mock_provider._fetch_yfinance_with_retries("SPY", datetime.now(), datetime.now(), result)
+            mock_provider._fetch_yfinance_with_retries(
+                "SPY", datetime.now(), datetime.now(), result
+            )
             elapsed = time.time() - start_time
 
             # First retry: 0.1s backoff
@@ -292,11 +318,19 @@ class TestAlphaVantageFallback:
         """Test successful Alpha Vantage fetch."""
         mock_provider.alpha_vantage_key = "test_key"
         mock_data = pd.DataFrame(
-            {"Open": [100], "High": [101], "Low": [99], "Close": [100.5], "Volume": [1000]},
+            {
+                "Open": [100],
+                "High": [101],
+                "Low": [99],
+                "Close": [100.5],
+                "Volume": [1000],
+            },
             index=pd.date_range("2025-01-01", periods=1),
         )
 
-        with patch.object(mock_provider, "_fetch_alpha_vantage", return_value=mock_data):
+        with patch.object(
+            mock_provider, "_fetch_alpha_vantage", return_value=mock_data
+        ):
             result = MarketDataResult(data=pd.DataFrame(), source=DataSource.UNKNOWN)
             data = mock_provider._fetch_alpha_vantage_with_retries("SPY", result)
 
@@ -320,7 +354,13 @@ class TestCachedDataFallback:
         # Create cached data file
         cache_file = temp_cache_dir / "SPY_2025-01-01.csv"
         mock_data = pd.DataFrame(
-            {"Open": [100], "High": [101], "Low": [99], "Close": [100.5], "Volume": [1000]},
+            {
+                "Open": [100],
+                "High": [101],
+                "Low": [99],
+                "Close": [100.5],
+                "Volume": [1000],
+            },
             index=pd.DatetimeIndex([datetime(2025, 1, 1)], name="Date"),
         )
         mock_data.to_csv(cache_file)
@@ -340,7 +380,13 @@ class TestCachedDataFallback:
         # Create cached data file
         cache_file = temp_cache_dir / "SPY_2025-01-01.csv"
         mock_data = pd.DataFrame(
-            {"Open": [100], "High": [101], "Low": [99], "Close": [100.5], "Volume": [1000]},
+            {
+                "Open": [100],
+                "High": [101],
+                "Low": [99],
+                "Close": [100.5],
+                "Volume": [1000],
+            },
             index=pd.DatetimeIndex([datetime(2025, 1, 1)], name="Date"),
         )
         mock_data.to_csv(cache_file)
@@ -407,7 +453,9 @@ class TestFullFallbackChain:
         mock_api.get_bars.return_value = mock_bars
         mock_provider._alpaca_api = mock_api
 
-        with patch.object(mock_provider, "_fetch_yfinance", side_effect=Exception("yfinance failed")):
+        with patch.object(
+            mock_provider, "_fetch_yfinance", side_effect=Exception("yfinance failed")
+        ):
             result = mock_provider.get_daily_bars("SPY", 30)
 
             assert result.source == DataSource.ALPACA
@@ -419,7 +467,9 @@ class TestFullFallbackChain:
 
     def test_fallback_chain_all_fail(self, mock_provider):
         """Test complete failure when all sources are unavailable."""
-        with patch.object(mock_provider, "_fetch_yfinance", side_effect=Exception("yfinance failed")):
+        with patch.object(
+            mock_provider, "_fetch_yfinance", side_effect=Exception("yfinance failed")
+        ):
             with pytest.raises(ValueError) as exc_info:
                 mock_provider.get_daily_bars("SPY", 30)
 

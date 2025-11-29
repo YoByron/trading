@@ -12,7 +12,8 @@ Tests:
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.rag.ingestion_pipeline import get_pipeline
 from src.rag.vector_db.retriever import get_retriever
@@ -21,8 +22,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 def test_news_collection():
     """Test collecting news for NVDA."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 1: News Collection")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     pipeline = get_pipeline()
 
@@ -55,9 +55,9 @@ def test_news_collection():
 
 def test_rag_ingestion():
     """Test ingesting news into RAG database."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 2: RAG Ingestion")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     pipeline = get_pipeline()
 
@@ -74,9 +74,9 @@ def test_rag_ingestion():
 
 def test_semantic_search():
     """Test semantic search in RAG database."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 3: Semantic Search")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     retriever = get_retriever()
 
@@ -99,9 +99,9 @@ def test_semantic_search():
 
 def test_ticker_context():
     """Test getting ticker context for LLM."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 4: Ticker Context")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     retriever = get_retriever()
 
@@ -116,9 +116,9 @@ def test_ticker_context():
 
 def test_research_agent_integration():
     """Test ResearchAgent RAG integration."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 5: ResearchAgent Integration")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     agent = ResearchAgent()
 
@@ -133,13 +133,13 @@ def test_research_agent_integration():
                 "pe_ratio": 40.5,
                 "growth_rate": 0.35,
                 "profit_margin": 0.25,
-                "market_cap": "1.2T"
+                "market_cap": "1.2T",
             },
             "market_context": {
                 "sector": "Technology",
                 "market_trend": "bullish",
-                "volatility": "moderate"
-            }
+                "volatility": "moderate",
+            },
         }
 
         # This should query RAG internally
@@ -156,9 +156,9 @@ def test_research_agent_integration():
 
 def test_database_stats():
     """Test database statistics."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST 6: Database Statistics")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     retriever = get_retriever()
     stats = retriever.get_stats()
@@ -170,14 +170,14 @@ def test_database_stats():
     logger.info(f"  Sources: {', '.join(stats.get('sources', []))}")
     logger.info(f"  Date range: {stats.get('date_range', 'N/A')}")
 
-    return stats.get('total_documents', 0) > 0
+    return stats.get("total_documents", 0) > 0
 
 
 def main():
     """Run all tests."""
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("🚀 RAG SYSTEM END-TO-END TEST")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     tests = [
         ("News Collection", test_news_collection),
@@ -185,7 +185,7 @@ def main():
         ("Semantic Search", test_semantic_search),
         ("Ticker Context", test_ticker_context),
         ("ResearchAgent Integration", test_research_agent_integration),
-        ("Database Stats", test_database_stats)
+        ("Database Stats", test_database_stats),
     ]
 
     results = {}
@@ -198,9 +198,9 @@ def main():
             results[test_name] = "❌ FAIL"
 
     # Summary
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("TEST SUMMARY")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     for test_name, result in results.items():
         logger.info(f"{test_name}: {result}")

@@ -24,7 +24,9 @@ WATCHLIST_PATH = Path("data/tier2_watchlist.json")
 class DataAgent(TradingAgent):
     """Loads market data for the configured symbol universe."""
 
-    def __init__(self, lookback_days: int = 60, symbols: Iterable[str] | None = None) -> None:
+    def __init__(
+        self, lookback_days: int = 60, symbols: Iterable[str] | None = None
+    ) -> None:
         super().__init__("data-agent")
         self.lookback_days = lookback_days
         self._default_symbols: List[str] = list(symbols) if symbols else DEFAULT_SYMBOLS
@@ -89,7 +91,9 @@ class DataAgent(TradingAgent):
 
         for symbol in symbols:
             try:
-                result = self._provider.get_daily_bars(symbol, lookback_days=self.lookback_days)
+                result = self._provider.get_daily_bars(
+                    symbol, lookback_days=self.lookback_days
+                )
                 df = result.data
                 if df.empty:
                     warnings.append(f"{symbol}: received empty dataframe")

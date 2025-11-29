@@ -28,7 +28,9 @@ ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
 ALPACA_BASE_URL = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
 if not ALPACA_KEY or not ALPACA_SECRET:
-    print("ERROR: ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set")
+    print(
+        "ERROR: ALPACA_API_KEY and ALPACA_SECRET_KEY environment variables must be set"
+    )
     sys.exit(1)
 
 
@@ -46,7 +48,9 @@ def get_account_data():
         account = response.json()
 
         # Get positions
-        positions_response = requests.get(f"{ALPACA_BASE_URL}/v2/positions", headers=headers)
+        positions_response = requests.get(
+            f"{ALPACA_BASE_URL}/v2/positions", headers=headers
+        )
         positions_response.raise_for_status()
         positions = positions_response.json()
 
@@ -81,17 +85,23 @@ def get_positions_summary(positions):
         market_value = float(pos.get("market_value", 0))
 
         unrealized_pl = (current_price - entry_price) * qty
-        unrealized_pl_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+        unrealized_pl_pct = (
+            ((current_price - entry_price) / entry_price * 100)
+            if entry_price > 0
+            else 0
+        )
 
-        summary.append({
-            "symbol": pos["symbol"],
-            "quantity": qty,
-            "entry_price": entry_price,
-            "current_price": current_price,
-            "market_value": market_value,
-            "unrealized_pl": unrealized_pl,
-            "unrealized_pl_pct": unrealized_pl_pct,
-        })
+        summary.append(
+            {
+                "symbol": pos["symbol"],
+                "quantity": qty,
+                "entry_price": entry_price,
+                "current_price": current_price,
+                "market_value": market_value,
+                "unrealized_pl": unrealized_pl,
+                "unrealized_pl_pct": unrealized_pl_pct,
+            }
+        )
 
     return summary
 
@@ -163,5 +173,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

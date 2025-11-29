@@ -22,10 +22,12 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()  # Load environment variables from .env
 
 from src.utils.data_collector import DataCollector
 from src.strategies.core_strategy import CoreStrategy
+
 
 def main():
     """Collect historical data for backtesting."""
@@ -75,6 +77,7 @@ def main():
         print("3. Or configure POLYGON_API_KEY for alternative data source")
         print("4. See docs/ENVIRONMENT_VARIABLES.md for details")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -15,10 +15,11 @@ from datetime import datetime, timedelta
 import json
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.evaluation.trading_evaluator import TradingSystemEvaluator
 from src.evaluation.rag_storage import EvaluationRAGStorage
+
 
 def test_mistake_1():
     """Test Mistake #1: $1,600 order instead of $8 (200x error)"""
@@ -40,13 +41,11 @@ def test_mistake_1():
         "system_state_age_hours": 1.0,
         "data_source": "alpaca",
         "api_errors": [],
-        "execution_time_ms": 500
+        "execution_time_ms": 500,
     }
 
     evaluation = evaluator.evaluate_trade_execution(
-        trade_result=trade_result,
-        expected_amount=8.0,
-        daily_allocation=10.0
+        trade_result=trade_result, expected_amount=8.0, daily_allocation=10.0
     )
 
     print(f"Overall Score: {evaluation.overall_score:.2f}")
@@ -71,8 +70,10 @@ def test_mistake_1():
     # Verify it caught the mistake
     assert not evaluation.passed, "Should FAIL - order size is 200x expected"
     assert accuracy.score == 0.0, "Accuracy should be 0.0 for 200x error"
-    assert any("10x" in issue.lower() or "order size" in issue.lower()
-               for issue in accuracy.issues), "Should detect order size error"
+    assert any(
+        "10x" in issue.lower() or "order size" in issue.lower()
+        for issue in accuracy.issues
+    ), "Should detect order size error"
 
     print("\n✅ TEST PASSED - Mistake #1 detected correctly")
     return evaluation
@@ -98,13 +99,11 @@ def test_mistake_2():
         "system_state_age_hours": 120.0,  # 5 days = 120 hours
         "data_source": "alpaca",
         "api_errors": [],
-        "execution_time_ms": 500
+        "execution_time_ms": 500,
     }
 
     evaluation = evaluator.evaluate_trade_execution(
-        trade_result=trade_result,
-        expected_amount=2.0,
-        daily_allocation=10.0
+        trade_result=trade_result, expected_amount=2.0, daily_allocation=10.0
     )
 
     print(f"Overall Score: {evaluation.overall_score:.2f}")
@@ -120,9 +119,10 @@ def test_mistake_2():
     # Verify it caught the mistake
     assert not reliability.passed, "Should FAIL - system state is stale"
     assert reliability.score == 0.0, "Reliability should be 0.0 for stale state"
-    assert any("stale" in issue.lower() or "hours old" in issue.lower()
-               for issue in reliability.issues), \
-        "Should detect stale system state"
+    assert any(
+        "stale" in issue.lower() or "hours old" in issue.lower()
+        for issue in reliability.issues
+    ), "Should detect stale system state"
 
     print("\n✅ TEST PASSED - Mistake #2 detected correctly")
     return evaluation
@@ -148,13 +148,11 @@ def test_mistake_3():
         "system_state_age_hours": 1.0,
         "data_source": "alpaca",
         "api_errors": ["Network error: Connection refused", "DNS resolution failed"],
-        "execution_time_ms": 30000
+        "execution_time_ms": 30000,
     }
 
     evaluation = evaluator.evaluate_trade_execution(
-        trade_result=trade_result,
-        expected_amount=2.0,
-        daily_allocation=10.0
+        trade_result=trade_result, expected_amount=2.0, daily_allocation=10.0
     )
 
     print(f"Overall Score: {evaluation.overall_score:.2f}")
@@ -168,8 +166,9 @@ def test_mistake_3():
             print(f"  - {issue}")
 
     # Verify it caught the mistake
-    assert any("network" in issue.lower() or "dns" in issue.lower()
-               for issue in errors.issues), "Should detect network/DNS errors"
+    assert any(
+        "network" in issue.lower() or "dns" in issue.lower() for issue in errors.issues
+    ), "Should detect network/DNS errors"
 
     print("\n✅ TEST PASSED - Mistake #3 detected correctly")
     return evaluation
@@ -197,13 +196,11 @@ def test_mistake_5():
         "system_state_age_hours": 1.0,
         "data_source": "alpaca",
         "api_errors": [],
-        "execution_time_ms": 500
+        "execution_time_ms": 500,
     }
 
     evaluation = evaluator.evaluate_trade_execution(
-        trade_result=trade_result,
-        expected_amount=6.0,
-        daily_allocation=10.0
+        trade_result=trade_result, expected_amount=6.0, daily_allocation=10.0
     )
 
     print(f"Overall Score: {evaluation.overall_score:.2f}")
@@ -217,8 +214,10 @@ def test_mistake_5():
             print(f"  - {issue}")
 
     # Verify it caught the mistake
-    assert any("weekend" in issue.lower() or "saturday" in issue.lower()
-               for issue in errors.issues), "Should detect weekend trade"
+    assert any(
+        "weekend" in issue.lower() or "saturday" in issue.lower()
+        for issue in errors.issues
+    ), "Should detect weekend trade"
 
     print("\n✅ TEST PASSED - Mistake #5 detected correctly")
     return evaluation
@@ -244,19 +243,12 @@ def test_rag_storage():
         "overall_score": 0.5,
         "passed": False,
         "evaluation": {
-            "accuracy": {
-                "score": 0.0,
-                "passed": False,
-                "issues": ["Order size error"]
-            }
+            "accuracy": {"score": 0.0, "passed": False, "issues": ["Order size error"]}
         },
-        "critical_issues": ["Order size >10x expected"]
+        "critical_issues": ["Order size >10x expected"],
     }
 
-    trade_result = {
-        "amount": 1600.0,
-        "status": "filled"
-    }
+    trade_result = {"amount": 1600.0, "status": "filled"}
 
     success = storage.store_evaluation(evaluation, trade_result)
 
@@ -302,6 +294,7 @@ def main():
             print(f"\n❌ TEST ERROR: {test_name}")
             print(f"   Error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 

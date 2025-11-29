@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class EmotionalState(Enum):
     """Emotional states that can affect trading decisions."""
+
     FEAR = "fear"
     GREED = "greed"
     OVERCONFIDENCE = "overconfidence"
@@ -42,6 +43,7 @@ class EmotionalState(Enum):
 
 class BiasType(Enum):
     """Types of behavioral biases to detect and prevent."""
+
     PATTERN_RECOGNITION = "pattern_recognition"
     LOSS_AVERSION = "loss_aversion"
     CONFIRMATION_BIAS = "confirmation_bias"
@@ -54,6 +56,7 @@ class BiasType(Enum):
 @dataclass
 class TradeExpectation:
     """Track expected vs actual trade outcomes."""
+
     symbol: str
     expected_return_pct: float
     expected_confidence: float
@@ -69,6 +72,7 @@ class TradeExpectation:
 @dataclass
 class EmotionalRecord:
     """Record emotional responses to trading decisions."""
+
     timestamp: datetime
     event_type: str  # "trade_execution", "loss", "gain", "decision_point"
     symbol: Optional[str] = None
@@ -82,6 +86,7 @@ class EmotionalRecord:
 @dataclass
 class PatternCheck:
     """Check for false pattern recognition."""
+
     pattern_type: str
     detected_pattern: str
     confidence: float
@@ -194,7 +199,9 @@ class BehavioralFinanceManager:
         expectation.exit_price = exit_price
         expectation.exit_date = datetime.now()
         expectation.actual_return_pct = actual_return_pct
-        expectation.expectation_gap = actual_return_pct - expectation.expected_return_pct
+        expectation.expectation_gap = (
+            actual_return_pct - expectation.expected_return_pct
+        )
 
         # Record emotional response based on gap
         if expectation.expectation_gap < -0.05:  # Much worse than expected
@@ -294,7 +301,10 @@ class BehavioralFinanceManager:
         pattern_checks = self.pattern_history[pattern_type]
 
         # If confidence is too high without validation, flag as potential bias
-        if confidence > self.max_pattern_confidence and len(pattern_checks) < self.min_pattern_sample_size:
+        if (
+            confidence > self.max_pattern_confidence
+            and len(pattern_checks) < self.min_pattern_sample_size
+        ):
             warning = (
                 f"High pattern confidence ({confidence:.2f}) without sufficient "
                 f"historical validation (only {len(pattern_checks)} samples). "
@@ -325,7 +335,8 @@ class BehavioralFinanceManager:
             confidence=confidence,
             historical_success_rate=(
                 sum(1 for p in pattern_checks if p.is_valid) / len(pattern_checks)
-                if pattern_checks else 0.0
+                if pattern_checks
+                else 0.0
             ),
             sample_size=len(pattern_checks),
             is_valid=True,  # Will be updated later based on outcome
@@ -383,7 +394,8 @@ class BehavioralFinanceManager:
         if max_loss < self.loss_aversion_threshold:
             # Check if we're becoming too conservative
             recent_emotions = [
-                e for e in self.emotional_registry[-10:]
+                e
+                for e in self.emotional_registry[-10:]
                 if e.emotional_state == EmotionalState.FEAR
             ]
 
@@ -437,8 +449,7 @@ class BehavioralFinanceManager:
 
         # Find dominant emotion
         dominant_emotion = max(
-            emotion_counts.items(),
-            key=lambda x: x[1][0]  # Sort by count
+            emotion_counts.items(), key=lambda x: x[1][0]  # Sort by count
         )[0]
 
         # Calculate average intensity
@@ -521,7 +532,8 @@ class BehavioralFinanceManager:
         ]
         avg_expectation_gap = (
             np.mean([e.expectation_gap for e in completed_expectations])
-            if completed_expectations else 0.0
+            if completed_expectations
+            else 0.0
         )
 
         # Get emotional state
@@ -561,20 +573,24 @@ class BehavioralFinanceManager:
         # Load expectations
         if expectations_file.exists():
             try:
-                with open(expectations_file, 'r') as f:
+                with open(expectations_file, "r") as f:
                     data = json.load(f)
                     self.expectations = [
                         TradeExpectation(
-                            symbol=e['symbol'],
-                            expected_return_pct=e['expected_return_pct'],
-                            expected_confidence=e['expected_confidence'],
-                            entry_price=e['entry_price'],
-                            entry_date=datetime.fromisoformat(e['entry_date']),
-                            exit_price=e.get('exit_price'),
-                            exit_date=datetime.fromisoformat(e['exit_date']) if e.get('exit_date') else None,
-                            actual_return_pct=e.get('actual_return_pct'),
-                            actual_confidence=e.get('actual_confidence'),
-                            expectation_gap=e.get('expectation_gap'),
+                            symbol=e["symbol"],
+                            expected_return_pct=e["expected_return_pct"],
+                            expected_confidence=e["expected_confidence"],
+                            entry_price=e["entry_price"],
+                            entry_date=datetime.fromisoformat(e["entry_date"]),
+                            exit_price=e.get("exit_price"),
+                            exit_date=(
+                                datetime.fromisoformat(e["exit_date"])
+                                if e.get("exit_date")
+                                else None
+                            ),
+                            actual_return_pct=e.get("actual_return_pct"),
+                            actual_confidence=e.get("actual_confidence"),
+                            expectation_gap=e.get("expectation_gap"),
                         )
                         for e in data
                     ]
@@ -585,18 +601,18 @@ class BehavioralFinanceManager:
         # Load emotional registry
         if emotions_file.exists():
             try:
-                with open(emotions_file, 'r') as f:
+                with open(emotions_file, "r") as f:
                     data = json.load(f)
                     self.emotional_registry = [
                         EmotionalRecord(
-                            timestamp=datetime.fromisoformat(e['timestamp']),
-                            event_type=e['event_type'],
-                            symbol=e.get('symbol'),
-                            emotional_state=EmotionalState(e['emotional_state']),
-                            intensity=e['intensity'],
-                            decision_made=e['decision_made'],
-                            outcome=e.get('outcome'),
-                            notes=e.get('notes', ''),
+                            timestamp=datetime.fromisoformat(e["timestamp"]),
+                            event_type=e["event_type"],
+                            symbol=e.get("symbol"),
+                            emotional_state=EmotionalState(e["emotional_state"]),
+                            intensity=e["intensity"],
+                            decision_made=e["decision_made"],
+                            outcome=e.get("outcome"),
+                            notes=e.get("notes", ""),
                         )
                         for e in data
                     ]
@@ -607,22 +623,24 @@ class BehavioralFinanceManager:
         # Load pattern history
         if patterns_file.exists():
             try:
-                with open(patterns_file, 'r') as f:
+                with open(patterns_file, "r") as f:
                     data = json.load(f)
                     self.pattern_history = {}
                     for pattern_type, patterns in data.items():
                         self.pattern_history[pattern_type] = [
                             PatternCheck(
-                                pattern_type=p['pattern_type'],
-                                detected_pattern=p['detected_pattern'],
-                                confidence=p['confidence'],
-                                historical_success_rate=p['historical_success_rate'],
-                                sample_size=p['sample_size'],
-                                is_valid=p['is_valid'],
+                                pattern_type=p["pattern_type"],
+                                detected_pattern=p["detected_pattern"],
+                                confidence=p["confidence"],
+                                historical_success_rate=p["historical_success_rate"],
+                                sample_size=p["sample_size"],
+                                is_valid=p["is_valid"],
                             )
                             for p in patterns
                         ]
-                logger.info(f"Loaded pattern history for {len(self.pattern_history)} pattern types")
+                logger.info(
+                    f"Loaded pattern history for {len(self.pattern_history)} pattern types"
+                )
             except Exception as e:
                 logger.warning(f"Failed to load pattern history: {e}")
 
@@ -632,20 +650,20 @@ class BehavioralFinanceManager:
         try:
             data = [
                 {
-                    'symbol': e.symbol,
-                    'expected_return_pct': e.expected_return_pct,
-                    'expected_confidence': e.expected_confidence,
-                    'entry_price': e.entry_price,
-                    'entry_date': e.entry_date.isoformat(),
-                    'exit_price': e.exit_price,
-                    'exit_date': e.exit_date.isoformat() if e.exit_date else None,
-                    'actual_return_pct': e.actual_return_pct,
-                    'actual_confidence': e.actual_confidence,
-                    'expectation_gap': e.expectation_gap,
+                    "symbol": e.symbol,
+                    "expected_return_pct": e.expected_return_pct,
+                    "expected_confidence": e.expected_confidence,
+                    "entry_price": e.entry_price,
+                    "entry_date": e.entry_date.isoformat(),
+                    "exit_price": e.exit_price,
+                    "exit_date": e.exit_date.isoformat() if e.exit_date else None,
+                    "actual_return_pct": e.actual_return_pct,
+                    "actual_confidence": e.actual_confidence,
+                    "expectation_gap": e.expectation_gap,
                 }
                 for e in self.expectations
             ]
-            with open(expectations_file, 'w') as f:
+            with open(expectations_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save expectations: {e}")
@@ -656,18 +674,18 @@ class BehavioralFinanceManager:
         try:
             data = [
                 {
-                    'timestamp': e.timestamp.isoformat(),
-                    'event_type': e.event_type,
-                    'symbol': e.symbol,
-                    'emotional_state': e.emotional_state.value,
-                    'intensity': e.intensity,
-                    'decision_made': e.decision_made,
-                    'outcome': e.outcome,
-                    'notes': e.notes,
+                    "timestamp": e.timestamp.isoformat(),
+                    "event_type": e.event_type,
+                    "symbol": e.symbol,
+                    "emotional_state": e.emotional_state.value,
+                    "intensity": e.intensity,
+                    "decision_made": e.decision_made,
+                    "outcome": e.outcome,
+                    "notes": e.notes,
                 }
                 for e in self.emotional_registry
             ]
-            with open(emotions_file, 'w') as f:
+            with open(emotions_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save emotional registry: {e}")
@@ -679,18 +697,18 @@ class BehavioralFinanceManager:
             data = {
                 pattern_type: [
                     {
-                        'pattern_type': p.pattern_type,
-                        'detected_pattern': p.detected_pattern,
-                        'confidence': p.confidence,
-                        'historical_success_rate': p.historical_success_rate,
-                        'sample_size': p.sample_size,
-                        'is_valid': p.is_valid,
+                        "pattern_type": p.pattern_type,
+                        "detected_pattern": p.detected_pattern,
+                        "confidence": p.confidence,
+                        "historical_success_rate": p.historical_success_rate,
+                        "sample_size": p.sample_size,
+                        "is_valid": p.is_valid,
                     }
                     for p in patterns
                 ]
                 for pattern_type, patterns in self.pattern_history.items()
             }
-            with open(patterns_file, 'w') as f:
+            with open(patterns_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save pattern history: {e}")

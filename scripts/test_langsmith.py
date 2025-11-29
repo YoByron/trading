@@ -24,9 +24,11 @@ except ImportError:
 
 from langsmith import traceable
 
+
 @traceable
 def my_test_function(text: str):
     return f"Processed: {text}"
+
 
 def main() -> None:
     api_key = os.getenv("LANGCHAIN_API_KEY")
@@ -48,6 +50,7 @@ def main() -> None:
         print("Check your LangSmith dashboard for the trace.")
     except Exception as e:
         print(f"❌ Failed to run traceable function: {e}")
+
 
 if __name__ == "__main__":
     main()

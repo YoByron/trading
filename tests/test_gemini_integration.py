@@ -4,26 +4,30 @@ import sys
 import os
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Try to import GeminiAgent, skip tests if google-generativeai is not available
 try:
     from src.agents.gemini_agent import GeminiAgent
+
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
     GeminiAgent = None
 
+
 class TestGeminiIntegration(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures. Skips if google-generativeai is not available."""
         if not GEMINI_AVAILABLE:
-            self.skipTest("google-generativeai package not available - install with: pip install google-generativeai")
+            self.skipTest(
+                "google-generativeai package not available - install with: pip install google-generativeai"
+            )
         self.agent = GeminiAgent(
             name="TestGemini",
             role="Tester",
             model="gemini-3-pro-preview",
-            default_thinking_level="low" # Low for faster tests
+            default_thinking_level="low",  # Low for faster tests
         )
 
     @unittest.skipUnless(GEMINI_AVAILABLE, "google-generativeai not installed")
@@ -34,7 +38,7 @@ class TestGeminiIntegration(unittest.TestCase):
         self.assertEqual(self.agent.model, "gemini-3-pro-preview")
 
     @unittest.skipUnless(GEMINI_AVAILABLE, "google-generativeai not installed")
-    @patch('src.agents.gemini_agent.genai.GenerativeModel')
+    @patch("src.agents.gemini_agent.genai.GenerativeModel")
     def test_reason_mocked(self, mock_model_class):
         """Test the reason method with a mocked Gemini API."""
         # Setup mock
@@ -58,5 +62,6 @@ class TestGeminiIntegration(unittest.TestCase):
         # It should return True initially as there are no errors
         self.assertTrue(self.agent.health_check())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

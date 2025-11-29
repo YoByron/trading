@@ -18,18 +18,23 @@ load_dotenv()
 DATA_DIR = Path(__file__).parent.parent / "data"
 PERF_FILE = DATA_DIR / "performance_log.json"
 
+
 def get_account_summary():
     """Get current account performance from Alpaca API"""
-    api_key = os.getenv('ALPACA_API_KEY')
-    secret_key = os.getenv('ALPACA_SECRET_KEY')
-    paper_trading = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
+    api_key = os.getenv("ALPACA_API_KEY")
+    secret_key = os.getenv("ALPACA_SECRET_KEY")
+    paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
 
     if not api_key or not secret_key:
         print("ERROR: Missing ALPACA_API_KEY or ALPACA_SECRET_KEY in .env")
         sys.exit(1)
 
-    base_url = 'https://paper-api.alpaca.markets' if paper_trading else 'https://api.alpaca.markets'
-    api = tradeapi.REST(api_key, secret_key, base_url, api_version='v2')
+    base_url = (
+        "https://paper-api.alpaca.markets"
+        if paper_trading
+        else "https://api.alpaca.markets"
+    )
+    api = tradeapi.REST(api_key, secret_key, base_url, api_version="v2")
 
     account = api.get_account()
     starting_balance = 100000.0  # From challenge_start.json
@@ -70,8 +75,12 @@ def update_performance_log():
 
     if existing_today:
         print(f"⚠️  Entry for today ({today}) already exists")
-        print(f"   Existing: Equity ${existing_today[0]['equity']:,.2f}, P/L ${existing_today[0]['pl']:+,.2f}")
-        print(f"   New:      Equity ${summary['equity']:,.2f}, P/L ${summary['pl']:+,.2f}")
+        print(
+            f"   Existing: Equity ${existing_today[0]['equity']:,.2f}, P/L ${existing_today[0]['pl']:+,.2f}"
+        )
+        print(
+            f"   New:      Equity ${summary['equity']:,.2f}, P/L ${summary['pl']:+,.2f}"
+        )
 
         # Update existing entry
         for i, entry in enumerate(perf_data):
@@ -109,5 +118,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error updating performance log: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

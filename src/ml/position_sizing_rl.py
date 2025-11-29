@@ -2,6 +2,7 @@
 Position Sizing RL Agent
 RL agent that learns both action (BUY/SELL/HOLD) and optimal position size.
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -34,7 +35,7 @@ class PositionSizingLSTMPPO(nn.Module):
         hidden_dim: int = 128,
         num_layers: int = 2,
         action_dim: int = 3,
-        max_position_pct: float = 0.10  # Max 10% per trade
+        max_position_pct: float = 0.10,  # Max 10% per trade
     ):
         super(PositionSizingLSTMPPO, self).__init__()
 
@@ -48,7 +49,7 @@ class PositionSizingLSTMPPO(nn.Module):
             hidden_size=hidden_dim,
             num_layers=num_layers,
             batch_first=True,
-            dropout=0.2 if num_layers > 1 else 0
+            dropout=0.2 if num_layers > 1 else 0,
         )
 
         # Actor Head: Action probabilities + Position size
@@ -56,7 +57,7 @@ class PositionSizingLSTMPPO(nn.Module):
             nn.Linear(hidden_dim, 64),
             nn.ReLU(),
             nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1)
+            nn.Softmax(dim=-1),
         )
 
         # Position size head (sigmoid outputs 0-1, scaled to max_position_pct)
@@ -64,17 +65,19 @@ class PositionSizingLSTMPPO(nn.Module):
             nn.Linear(hidden_dim, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
-            nn.Sigmoid()  # Outputs 0-1
+            nn.Sigmoid(),  # Outputs 0-1
         )
 
         # Critic Head (Value)
         self.critic = nn.Sequential(
-            nn.Linear(hidden_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(hidden_dim, 64), nn.ReLU(), nn.Linear(64, 1)
         )
 
-    def forward(self, x: torch.Tensor, hidden: Optional[Tuple[torch.Tensor, torch.Tensor]] = None):
+    def forward(
+        self,
+        x: torch.Tensor,
+        hidden: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    ):
         """
         Forward pass.
 
@@ -110,7 +113,7 @@ class PositionSizingLSTMPPO(nn.Module):
         self,
         x: torch.Tensor,
         hidden: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
-        deterministic: bool = False
+        deterministic: bool = False,
     ) -> Tuple[int, float, float, Tuple[torch.Tensor, torch.Tensor]]:
         """
         Select action and position size.
@@ -161,7 +164,7 @@ class PositionSizingRLAgent:
         hidden_dim: int = 128,
         num_layers: int = 2,
         device: str = "cpu",
-        max_position_pct: float = 0.10
+        max_position_pct: float = 0.10,
     ):
         self.device = torch.device(device)
         self.max_position_pct = max_position_pct
@@ -170,15 +173,15 @@ class PositionSizingRLAgent:
             input_dim=input_dim,
             hidden_dim=hidden_dim,
             num_layers=num_layers,
-            max_position_pct=max_position_pct
+            max_position_pct=max_position_pct,
         ).to(self.device)
 
-        logger.info(f"✅ Position Sizing RL Agent initialized (max position: {max_position_pct*100:.1f}%)")
+        logger.info(
+            f"✅ Position Sizing RL Agent initialized (max position: {max_position_pct*100:.1f}%)"
+        )
 
     def predict(
-        self,
-        state: torch.Tensor,
-        deterministic: bool = False
+        self, state: torch.Tensor, deterministic: bool = False
     ) -> Tuple[int, float, float, Dict[str, Any]]:
         """
         Get action and position size prediction.
@@ -194,8 +197,7 @@ class PositionSizingRLAgent:
             details: Additional prediction details
         """
         action, position_size_pct, value, _ = self.model.get_action(
-            state.to(self.device),
-            deterministic=deterministic
+            state.to(self.device), deterministic=deterministic
         )
 
         # Get action probabilities for confidence
@@ -204,17 +206,22 @@ class PositionSizingRLAgent:
             action_probs, _, _, _ = self.model.forward(state.to(self.device))
             confidence = float(action_probs[0, action].item())
 
-        return action, position_size_pct, confidence, {
-            'action_probs': action_probs[0].cpu().numpy().tolist(),
-            'state_value': float(value),
-            'position_size_pct': position_size_pct
-        }
+        return (
+            action,
+            position_size_pct,
+            confidence,
+            {
+                "action_probs": action_probs[0].cpu().numpy().tolist(),
+                "state_value": float(value),
+                "position_size_pct": position_size_pct,
+            },
+        )
 
     def calculate_position_size(
         self,
         portfolio_value: float,
         position_size_pct: float,
-        price_per_share: Optional[float] = None
+        price_per_share: Optional[float] = None,
     ) -> float:
         """
         Calculate actual position size in dollars or shares.

@@ -9,6 +9,7 @@ Consolidates duplicate logic from:
 - src/strategies/core_strategy.py
 - src/strategies/growth_strategy.py
 """
+
 import logging
 from typing import Tuple, Optional, Dict
 import pandas as pd
@@ -136,9 +137,7 @@ def calculate_rsi(prices: pd.Series, period: int = 14) -> float:
     return float(rsi_value)
 
 
-def calculate_volume_ratio(
-    hist: pd.DataFrame, window: int = 20
-) -> float:
+def calculate_volume_ratio(hist: pd.DataFrame, window: int = 20) -> float:
     """
     Calculate volume ratio (current vs N-day average).
 
@@ -233,10 +232,7 @@ def calculate_technical_score(
     # Calculate composite score (price weighted by technical strength)
     price = hist["Close"].iloc[-1]
     technical_score = (
-        price
-        * (1 + macd_histogram / 10)
-        * (1 + (70 - rsi_val) / 100)
-        * volume_ratio
+        price * (1 + macd_histogram / 10) * (1 + (70 - rsi_val) / 100) * volume_ratio
     )
 
     logger.info(
@@ -247,10 +243,7 @@ def calculate_technical_score(
     return (technical_score, indicators)
 
 
-def calculate_atr(
-    hist: pd.DataFrame,
-    period: int = 14
-) -> float:
+def calculate_atr(hist: pd.DataFrame, period: int = 14) -> float:
     """
     Calculate Average True Range (ATR) for dynamic stop-loss placement.
 
@@ -278,14 +271,14 @@ def calculate_atr(
         )
         return 0.0
 
-    if not all(col in hist.columns for col in ['High', 'Low', 'Close']):
+    if not all(col in hist.columns for col in ["High", "Low", "Close"]):
         logger.warning("Missing required columns for ATR: High, Low, Close")
         return 0.0
 
     # Calculate True Range for each period
-    high = hist['High']
-    low = hist['Low']
-    close = hist['Close']
+    high = hist["High"]
+    low = hist["Low"]
+    close = hist["Close"]
 
     # True Range = max of:
     # 1. High - Low
@@ -312,10 +305,7 @@ def calculate_atr(
 
 
 def calculate_atr_stop_loss(
-    entry_price: float,
-    atr: float,
-    multiplier: float = 2.0,
-    direction: str = 'long'
+    entry_price: float, atr: float, multiplier: float = 2.0, direction: str = "long"
 ) -> float:
     """
     Calculate ATR-based stop-loss price.
@@ -340,14 +330,14 @@ def calculate_atr_stop_loss(
     """
     if atr <= 0:
         # Fallback to percentage-based stop if ATR unavailable
-        if direction == 'long':
+        if direction == "long":
             return entry_price * 0.97  # 3% stop-loss
         else:
             return entry_price * 1.03  # 3% stop-loss
 
     stop_distance = multiplier * atr
 
-    if direction == 'long':
+    if direction == "long":
         stop_price = entry_price - stop_distance
     else:  # short
         stop_price = entry_price + stop_distance
@@ -356,9 +346,7 @@ def calculate_atr_stop_loss(
 
 
 def calculate_bollinger_bands(
-    prices: pd.Series,
-    period: int = 20,
-    num_std: float = 2.0
+    prices: pd.Series, period: int = 20, num_std: float = 2.0
 ) -> Tuple[float, float, float]:
     """
     Calculate Bollinger Bands (upper, middle, lower).
@@ -417,10 +405,7 @@ def calculate_bollinger_bands(
     )
 
 
-def calculate_adx(
-    hist: pd.DataFrame,
-    period: int = 14
-) -> Tuple[float, float, float]:
+def calculate_adx(hist: pd.DataFrame, period: int = 14) -> Tuple[float, float, float]:
     """
     Calculate ADX (Average Directional Index) and Directional Movement Indicators.
 
@@ -448,13 +433,13 @@ def calculate_adx(
         )
         return (0.0, 0.0, 0.0)
 
-    if not all(col in hist.columns for col in ['High', 'Low', 'Close']):
+    if not all(col in hist.columns for col in ["High", "Low", "Close"]):
         logger.warning("Missing required columns for ADX: High, Low, Close")
         return (0.0, 0.0, 0.0)
 
-    high = hist['High']
-    low = hist['Low']
-    close = hist['Close']
+    high = hist["High"]
+    low = hist["Low"]
+    close = hist["Close"]
 
     # Calculate Directional Movement
     plus_dm = high.diff()
@@ -471,15 +456,15 @@ def calculate_adx(
     true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
     # Smooth the values using Wilder's smoothing (similar to EMA)
-    atr = true_range.ewm(alpha=1/period, adjust=False).mean()
-    plus_di = 100 * (plus_dm.ewm(alpha=1/period, adjust=False).mean() / atr)
-    minus_di = 100 * (minus_dm.ewm(alpha=1/period, adjust=False).mean() / atr)
+    atr = true_range.ewm(alpha=1 / period, adjust=False).mean()
+    plus_di = 100 * (plus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr)
+    minus_di = 100 * (minus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr)
 
     # Calculate DX (Directional Index)
     dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di).replace(0, np.nan)
 
     # Calculate ADX as smoothed average of DX
-    adx = dx.ewm(alpha=1/period, adjust=False).mean()
+    adx = dx.ewm(alpha=1 / period, adjust=False).mean()
 
     # Helper to safely get scalar float
     def get_scalar(val):
@@ -495,10 +480,7 @@ def calculate_adx(
     )
 
 
-def calculate_all_features(
-    hist: pd.DataFrame,
-    symbol: str = ""
-) -> Dict[str, float]:
+def calculate_all_features(hist: pd.DataFrame, symbol: str = "") -> Dict[str, float]:
     """
     Calculate comprehensive feature set (30-50 features) for deep learning models.
 
@@ -520,95 +502,143 @@ def calculate_all_features(
         Dictionary of feature values (normalized where appropriate)
     """
     if hist.empty or len(hist) < 200:
-        logger.warning(f"{symbol}: Insufficient data for feature extraction ({len(hist)} bars)")
+        logger.warning(
+            f"{symbol}: Insufficient data for feature extraction ({len(hist)} bars)"
+        )
         return {}
 
-    close = hist['Close']
-    high = hist['High'] if 'High' in hist.columns else close
-    low = hist['Low'] if 'Low' in hist.columns else close
-    volume = hist['Volume'] if 'Volume' in hist.columns else pd.Series([1.0] * len(hist))
+    close = hist["Close"]
+    high = hist["High"] if "High" in hist.columns else close
+    low = hist["Low"] if "Low" in hist.columns else close
+    volume = (
+        hist["Volume"] if "Volume" in hist.columns else pd.Series([1.0] * len(hist))
+    )
 
     features = {}
 
     # Price Features (10 features)
-    features['close'] = float(close.iloc[-1])
-    features['open'] = float(hist['Open'].iloc[-1]) if 'Open' in hist.columns else features['close']
-    features['high'] = float(high.iloc[-1])
-    features['low'] = float(low.iloc[-1])
+    features["close"] = float(close.iloc[-1])
+    features["open"] = (
+        float(hist["Open"].iloc[-1]) if "Open" in hist.columns else features["close"]
+    )
+    features["high"] = float(high.iloc[-1])
+    features["low"] = float(low.iloc[-1])
 
     # Returns (log returns for better normalization)
     returns_1d = np.log(close.iloc[-1] / close.iloc[-2]) if len(close) > 1 else 0.0
     returns_5d = np.log(close.iloc[-1] / close.iloc[-6]) if len(close) > 5 else 0.0
     returns_20d = np.log(close.iloc[-1] / close.iloc[-21]) if len(close) > 20 else 0.0
-    features['return_1d'] = returns_1d
-    features['return_5d'] = returns_5d
-    features['return_20d'] = returns_20d
+    features["return_1d"] = returns_1d
+    features["return_5d"] = returns_5d
+    features["return_20d"] = returns_20d
 
     # Volatility (rolling std of returns)
     daily_returns = close.pct_change().dropna()
-    volatility_20d = daily_returns.iloc[-20:].std() * np.sqrt(252) if len(daily_returns) >= 20 else 0.0
-    features['volatility_20d'] = volatility_20d
+    volatility_20d = (
+        daily_returns.iloc[-20:].std() * np.sqrt(252)
+        if len(daily_returns) >= 20
+        else 0.0
+    )
+    features["volatility_20d"] = volatility_20d
 
     # Trend Indicators (15 features)
     # Moving Averages
     ma_20 = close.rolling(20).mean()
     ma_50 = close.rolling(50).mean()
     ma_200 = close.rolling(200).mean() if len(close) >= 200 else ma_50
-    features['ma_20'] = float(ma_20.iloc[-1]) if not pd.isna(ma_20.iloc[-1]) else features['close']
-    features['ma_50'] = float(ma_50.iloc[-1]) if not pd.isna(ma_50.iloc[-1]) else features['close']
-    features['ma_200'] = float(ma_200.iloc[-1]) if not pd.isna(ma_200.iloc[-1]) else features['close']
-    features['price_vs_ma20'] = (features['close'] - features['ma_20']) / features['ma_20'] if features['ma_20'] > 0 else 0.0
-    features['price_vs_ma50'] = (features['close'] - features['ma_50']) / features['ma_50'] if features['ma_50'] > 0 else 0.0
-    features['price_vs_ma200'] = (features['close'] - features['ma_200']) / features['ma_200'] if features['ma_200'] > 0 else 0.0
+    features["ma_20"] = (
+        float(ma_20.iloc[-1]) if not pd.isna(ma_20.iloc[-1]) else features["close"]
+    )
+    features["ma_50"] = (
+        float(ma_50.iloc[-1]) if not pd.isna(ma_50.iloc[-1]) else features["close"]
+    )
+    features["ma_200"] = (
+        float(ma_200.iloc[-1]) if not pd.isna(ma_200.iloc[-1]) else features["close"]
+    )
+    features["price_vs_ma20"] = (
+        (features["close"] - features["ma_20"]) / features["ma_20"]
+        if features["ma_20"] > 0
+        else 0.0
+    )
+    features["price_vs_ma50"] = (
+        (features["close"] - features["ma_50"]) / features["ma_50"]
+        if features["ma_50"] > 0
+        else 0.0
+    )
+    features["price_vs_ma200"] = (
+        (features["close"] - features["ma_200"]) / features["ma_200"]
+        if features["ma_200"] > 0
+        else 0.0
+    )
 
     # MACD
     macd_val, macd_signal, macd_hist = calculate_macd(close)
-    features['macd'] = macd_val
-    features['macd_signal'] = macd_signal
-    features['macd_histogram'] = macd_hist
+    features["macd"] = macd_val
+    features["macd_signal"] = macd_signal
+    features["macd_histogram"] = macd_hist
 
     # ADX
     adx, plus_di, minus_di = calculate_adx(hist)
-    features['adx'] = adx
-    features['plus_di'] = plus_di
-    features['minus_di'] = minus_di
+    features["adx"] = adx
+    features["plus_di"] = plus_di
+    features["minus_di"] = minus_di
 
     # Momentum Indicators (5 features)
-    features['rsi'] = calculate_rsi(close)
+    features["rsi"] = calculate_rsi(close)
 
     # Rate of Change (ROC)
-    roc_10 = ((close.iloc[-1] - close.iloc[-11]) / close.iloc[-11] * 100) if len(close) > 10 else 0.0
-    roc_20 = ((close.iloc[-1] - close.iloc[-21]) / close.iloc[-21] * 100) if len(close) > 20 else 0.0
-    features['roc_10'] = roc_10
-    features['roc_20'] = roc_20
+    roc_10 = (
+        ((close.iloc[-1] - close.iloc[-11]) / close.iloc[-11] * 100)
+        if len(close) > 10
+        else 0.0
+    )
+    roc_20 = (
+        ((close.iloc[-1] - close.iloc[-21]) / close.iloc[-21] * 100)
+        if len(close) > 20
+        else 0.0
+    )
+    features["roc_10"] = roc_10
+    features["roc_20"] = roc_20
 
     # Volatility Indicators (8 features)
     # Bollinger Bands
     bb_upper, bb_middle, bb_lower = calculate_bollinger_bands(close)
-    features['bb_upper'] = bb_upper
-    features['bb_middle'] = bb_middle
-    features['bb_lower'] = bb_lower
-    features['bb_width'] = (bb_upper - bb_lower) / bb_middle if bb_middle > 0 else 0.0
-    features['bb_position'] = (features['close'] - bb_lower) / (bb_upper - bb_lower) if (bb_upper - bb_lower) > 0 else 0.5
+    features["bb_upper"] = bb_upper
+    features["bb_middle"] = bb_middle
+    features["bb_lower"] = bb_lower
+    features["bb_width"] = (bb_upper - bb_lower) / bb_middle if bb_middle > 0 else 0.0
+    features["bb_position"] = (
+        (features["close"] - bb_lower) / (bb_upper - bb_lower)
+        if (bb_upper - bb_lower) > 0
+        else 0.5
+    )
 
     # ATR
     atr = calculate_atr(hist)
-    features['atr'] = atr
-    features['atr_pct'] = (atr / features['close'] * 100) if features['close'] > 0 else 0.0
+    features["atr"] = atr
+    features["atr_pct"] = (
+        (atr / features["close"] * 100) if features["close"] > 0 else 0.0
+    )
 
     # Volume Indicators (5 features)
-    features['volume'] = float(volume.iloc[-1])
-    features['volume_ratio'] = calculate_volume_ratio(hist)
+    features["volume"] = float(volume.iloc[-1])
+    features["volume_ratio"] = calculate_volume_ratio(hist)
 
     # On-Balance Volume (OBV) - simplified
     price_change = close.diff()
     obv = (volume * np.sign(price_change)).fillna(0).cumsum()
-    features['obv'] = float(obv.iloc[-1])
-    features['obv_ma'] = float(obv.rolling(20).mean().iloc[-1]) if len(obv) >= 20 else features['obv']
+    features["obv"] = float(obv.iloc[-1])
+    features["obv_ma"] = (
+        float(obv.rolling(20).mean().iloc[-1]) if len(obv) >= 20 else features["obv"]
+    )
 
     # Volume Rate of Change
-    vol_roc = ((volume.iloc[-1] - volume.iloc[-10]) / volume.iloc[-10] * 100) if len(volume) > 10 and volume.iloc[-10] > 0 else 0.0
-    features['volume_roc'] = vol_roc
+    vol_roc = (
+        ((volume.iloc[-1] - volume.iloc[-10]) / volume.iloc[-10] * 100)
+        if len(volume) > 10 and volume.iloc[-10] > 0
+        else 0.0
+    )
+    features["volume_roc"] = vol_roc
 
     logger.debug(f"{symbol}: Extracted {len(features)} features")
 

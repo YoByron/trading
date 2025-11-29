@@ -52,7 +52,9 @@ def main(argv: List[str] | None = None) -> int:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    symbols = [symbol.strip().upper() for symbol in args.symbols.split(",") if symbol.strip()]
+    symbols = [
+        symbol.strip().upper() for symbol in args.symbols.split(",") if symbol.strip()
+    ]
 
     orchestrator = MCPTradingOrchestrator(symbols=symbols, paper=not args.live)
     summary = orchestrator.run_once(execute_orders=args.execute)

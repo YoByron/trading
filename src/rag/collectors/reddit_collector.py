@@ -20,7 +20,9 @@ class RedditCollector(BaseNewsCollector):
     def __init__(self):
         super().__init__(source_name="reddit")
 
-    def collect_ticker_news(self, ticker: str, days_back: int = 7) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Collect Reddit posts mentioning a ticker.
 
@@ -59,7 +61,7 @@ class RedditCollector(BaseNewsCollector):
                     url=post.get("url", ""),
                     published_date=created_date.strftime("%Y-%m-%d"),
                     ticker=ticker,
-                    sentiment=sentiment_data.get("overall_sentiment", 0.5)
+                    sentiment=sentiment_data.get("overall_sentiment", 0.5),
                 )
 
                 articles.append(article)

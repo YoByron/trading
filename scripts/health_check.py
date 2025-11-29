@@ -29,11 +29,7 @@ class HealthCheckResult:
     """Result of a single health check."""
 
     def __init__(
-        self,
-        check_name: str,
-        status: str,
-        message: str,
-        details: Optional[Dict] = None
+        self, check_name: str, status: str, message: str, details: Optional[Dict] = None
     ):
         self.check_name = check_name
         self.status = status  # HEALTHY, WARNING, CRITICAL
@@ -96,17 +92,26 @@ class HealthChecker:
         try:
             # Query GitHub API for last 3 workflow runs
             result = subprocess.run(
-                ["gh", "run", "list", "--workflow=daily-trading.yml", "--limit", "3", "--json", "conclusion,createdAt,displayTitle"],
+                [
+                    "gh",
+                    "run",
+                    "list",
+                    "--workflow=daily-trading.yml",
+                    "--limit",
+                    "3",
+                    "--json",
+                    "conclusion,createdAt,displayTitle",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode != 0:
                 return HealthCheckResult(
                     check_name="github_actions_status",
                     status="WARNING",
-                    message=f"Cannot query GitHub API: {result.stderr[:100]}"
+                    message=f"Cannot query GitHub API: {result.stderr[:100]}",
                 )
 
             runs = json.loads(result.stdout)
@@ -115,7 +120,7 @@ class HealthChecker:
                 return HealthCheckResult(
                     check_name="github_actions_status",
                     status="CRITICAL",
-                    message="No workflow runs found"
+                    message="No workflow runs found",
                 )
 
             # Check last 3 runs
@@ -131,8 +136,8 @@ class HealthChecker:
                     details={
                         "consecutive_failures": 3,
                         "last_run": runs[0].get("createdAt"),
-                        "action": "Check GitHub Actions logs immediately"
-                    }
+                        "action": "Check GitHub Actions logs immediately",
+                    },
                 )
 
             # WARNING: 2 failures
@@ -144,8 +149,8 @@ class HealthChecker:
                     details={
                         "failures": len(failures),
                         "successes": len(successes),
-                        "last_run": runs[0].get("createdAt")
-                    }
+                        "last_run": runs[0].get("createdAt"),
+                    },
                 )
 
             # WARNING: Latest run failed
@@ -156,8 +161,8 @@ class HealthChecker:
                     message="Latest workflow run FAILED",
                     details={
                         "last_run": runs[0].get("createdAt"),
-                        "action": "Check GitHub Actions logs"
-                    }
+                        "action": "Check GitHub Actions logs",
+                    },
                 )
 
             # HEALTHY: Recent successes
@@ -167,21 +172,21 @@ class HealthChecker:
                 message=f"Last 3 workflow runs: {len(successes)} success, {len(failures)} failure",
                 details={
                     "last_run": runs[0].get("createdAt"),
-                    "last_conclusion": runs[0].get("conclusion")
-                }
+                    "last_conclusion": runs[0].get("conclusion"),
+                },
             )
 
         except subprocess.TimeoutExpired:
             return HealthCheckResult(
                 check_name="github_actions_status",
                 status="WARNING",
-                message="GitHub API query timed out"
+                message="GitHub API query timed out",
             )
         except Exception as e:
             return HealthCheckResult(
                 check_name="github_actions_status",
                 status="WARNING",
-                message=f"Failed to check workflow status: {str(e)[:100]}"
+                message=f"Failed to check workflow status: {str(e)[:100]}",
             )
 
     def check_trade_file_exists(self) -> HealthCheckResult:
@@ -197,14 +202,14 @@ class HealthChecker:
                 return HealthCheckResult(
                     check_name="trade_file_exists",
                     status="HEALTHY",
-                    message=f"Market closed (weekend) - no trades expected"
+                    message=f"Market closed (weekend) - no trades expected",
                 )
 
             return HealthCheckResult(
                 check_name="trade_file_exists",
                 status="CRITICAL",
                 message=f"No trades file found for {today}",
-                details={"expected_file": str(trade_file)}
+                details={"expected_file": str(trade_file)},
             )
 
         # File exists - check if it has content
@@ -217,14 +222,14 @@ class HealthChecker:
                     check_name="trade_file_exists",
                     status="WARNING",
                     message=f"Trades file exists but is empty",
-                    details={"file": str(trade_file)}
+                    details={"file": str(trade_file)},
                 )
 
             return HealthCheckResult(
                 check_name="trade_file_exists",
                 status="HEALTHY",
                 message=f"Trades file found with {len(trades)} entries",
-                details={"file": str(trade_file), "trade_count": len(trades)}
+                details={"file": str(trade_file), "trade_count": len(trades)},
             )
 
         except json.JSONDecodeError as e:
@@ -232,7 +237,7 @@ class HealthChecker:
                 check_name="trade_file_exists",
                 status="CRITICAL",
                 message=f"Trades file is corrupted: {e}",
-                details={"file": str(trade_file)}
+                details={"file": str(trade_file)},
             )
 
     def check_system_state_freshness(self) -> HealthCheckResult:
@@ -245,7 +250,7 @@ class HealthChecker:
             return HealthCheckResult(
                 check_name="system_state_freshness",
                 status="CRITICAL",
-                message="system_state.json does not exist"
+                message="system_state.json does not exist",
             )
 
         try:
@@ -257,7 +262,7 @@ class HealthChecker:
                 return HealthCheckResult(
                     check_name="system_state_freshness",
                     status="CRITICAL",
-                    message="system_state.json missing last_updated timestamp"
+                    message="system_state.json missing last_updated timestamp",
                 )
 
             last_updated = datetime.fromisoformat(last_updated_str)
@@ -268,7 +273,7 @@ class HealthChecker:
                     check_name="system_state_freshness",
                     status="CRITICAL",
                     message=f"system_state.json is {age_hours:.1f}h old (stale)",
-                    details={"last_updated": str(last_updated), "age_hours": age_hours}
+                    details={"last_updated": str(last_updated), "age_hours": age_hours},
                 )
 
             if age_hours > 24:
@@ -276,21 +281,21 @@ class HealthChecker:
                     check_name="system_state_freshness",
                     status="WARNING",
                     message=f"system_state.json is {age_hours:.1f}h old",
-                    details={"last_updated": str(last_updated), "age_hours": age_hours}
+                    details={"last_updated": str(last_updated), "age_hours": age_hours},
                 )
 
             return HealthCheckResult(
                 check_name="system_state_freshness",
                 status="HEALTHY",
                 message=f"system_state.json is {age_hours:.1f}h old (fresh)",
-                details={"last_updated": str(last_updated), "age_hours": age_hours}
+                details={"last_updated": str(last_updated), "age_hours": age_hours},
             )
 
         except Exception as e:
             return HealthCheckResult(
                 check_name="system_state_freshness",
                 status="CRITICAL",
-                message=f"Failed to read system_state.json: {e}"
+                message=f"Failed to read system_state.json: {e}",
             )
 
     def check_market_data_errors(self) -> HealthCheckResult:
@@ -303,7 +308,7 @@ class HealthChecker:
             return HealthCheckResult(
                 check_name="market_data_errors",
                 status="WARNING",
-                message="workflow_stderr.log does not exist"
+                message="workflow_stderr.log does not exist",
             )
 
         try:
@@ -336,20 +341,20 @@ class HealthChecker:
                     check_name="market_data_errors",
                     status="CRITICAL" if len(unique_errors) > 3 else "WARNING",
                     message=f"Found {len(errors_found)} market data errors in logs",
-                    details={"errors": unique_errors, "total_count": len(errors_found)}
+                    details={"errors": unique_errors, "total_count": len(errors_found)},
                 )
 
             return HealthCheckResult(
                 check_name="market_data_errors",
                 status="HEALTHY",
-                message="No market data errors found in logs"
+                message="No market data errors found in logs",
             )
 
         except Exception as e:
             return HealthCheckResult(
                 check_name="market_data_errors",
                 status="WARNING",
-                message=f"Failed to parse error logs: {e}"
+                message=f"Failed to parse error logs: {e}",
             )
 
     def check_portfolio_accuracy(self) -> HealthCheckResult:
@@ -362,7 +367,7 @@ class HealthChecker:
             return HealthCheckResult(
                 check_name="portfolio_accuracy",
                 status="WARNING",
-                message="Cannot verify - system_state.json missing"
+                message="Cannot verify - system_state.json missing",
             )
 
         try:
@@ -381,21 +386,21 @@ class HealthChecker:
                     check_name="portfolio_accuracy",
                     status="WARNING",
                     message=f"Portfolio value unusual: ${equity:,.2f}",
-                    details={"equity": equity, "pl": pl}
+                    details={"equity": equity, "pl": pl},
                 )
 
             return HealthCheckResult(
                 check_name="portfolio_accuracy",
                 status="HEALTHY",
                 message=f"Portfolio: ${equity:,.2f} (P/L: ${pl:+,.2f})",
-                details={"equity": equity, "pl": pl}
+                details={"equity": equity, "pl": pl},
             )
 
         except Exception as e:
             return HealthCheckResult(
                 check_name="portfolio_accuracy",
                 status="WARNING",
-                message=f"Failed to read portfolio data: {e}"
+                message=f"Failed to read portfolio data: {e}",
             )
 
     def calculate_overall_status(self, results: List[HealthCheckResult]) -> str:
@@ -419,11 +424,9 @@ class HealthChecker:
         output = []
 
         for result in results:
-            status_emoji = {
-                "HEALTHY": "✅",
-                "WARNING": "⚠️",
-                "CRITICAL": "❌"
-            }.get(result.status, "❓")
+            status_emoji = {"HEALTHY": "✅", "WARNING": "⚠️", "CRITICAL": "❌"}.get(
+                result.status, "❓"
+            )
 
             output.append(f"{status_emoji} {result.check_name}: {result.message}")
 

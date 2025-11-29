@@ -26,7 +26,7 @@ from src.agents.signal_agent import SignalAgent
 from src.agent_framework.context_engine import (
     get_context_engine,
     ContextType,
-    ContextMessage
+    ContextMessage,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,9 +67,11 @@ def _compute_market_features(price_history: pd.DataFrame) -> Dict[str, Any]:
     price = float(close.iloc[-1])
 
     returns = close.pct_change().dropna()
-    volatility = float(returns.std() * (252 ** 0.5)) if not returns.empty else 0.0
+    volatility = float(returns.std() * (252**0.5)) if not returns.empty else 0.0
 
-    ma_short = close.rolling(window=20).mean().iloc[-1] if len(close) >= 20 else close.iloc[-1]
+    ma_short = (
+        close.rolling(window=20).mean().iloc[-1] if len(close) >= 20 else close.iloc[-1]
+    )
     ma_long = close.rolling(window=50).mean().iloc[-1] if len(close) >= 50 else ma_short
     trend_strength = float((ma_short - ma_long) / ma_long) if ma_long else 0.0
 
@@ -175,9 +177,7 @@ class MCPTradingOrchestrator:
             summary["error"] = f"Market data unavailable: {exc}"
             return summary
 
-        portfolio_value = (
-            account_info.get("portfolio_value") if account_info else None
-        )
+        portfolio_value = account_info.get("portfolio_value") if account_info else None
 
         for symbol in self.symbols:
             result = MCPTradingResult(symbol=symbol)
@@ -210,7 +210,9 @@ class MCPTradingOrchestrator:
 
             try:
                 # Get context for research agent
-                research_context = self.context_engine.get_agent_context("research_agent")
+                research_context = self.context_engine.get_agent_context(
+                    "research_agent"
+                )
 
                 sentiment = openrouter_tools.detailed_sentiment(
                     market_payload, market_payload["news"]
@@ -226,9 +228,9 @@ class MCPTradingOrchestrator:
                         "symbol": symbol,
                         "sentiment": sentiment,
                         "sentiment_score": sentiment_score,
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     },
-                    tags={symbol, "sentiment", "research"}
+                    tags={symbol, "sentiment", "research"},
                 )
 
                 logger.info(
@@ -248,10 +250,12 @@ class MCPTradingOrchestrator:
                 is_valid, errors = self.context_engine.validate_context_flow(
                     from_agent="research_agent",
                     to_agent="meta_agent",
-                    context=market_payload
+                    context=market_payload,
                 )
                 if not is_valid:
-                    logger.warning(f"Context validation warnings for {symbol}: {errors}")
+                    logger.warning(
+                        f"Context validation warnings for {symbol}: {errors}"
+                    )
 
                 # Get context for meta agent
                 meta_context = self.context_engine.get_agent_context("meta_agent")
@@ -266,10 +270,10 @@ class MCPTradingOrchestrator:
                     payload={
                         "symbol": symbol,
                         "market_payload": market_payload,
-                        "sentiment": sentiment_score
+                        "sentiment": sentiment_score,
                     },
                     context_type=ContextType.TASK_CONTEXT,
-                    metadata={"symbol": symbol}
+                    metadata={"symbol": symbol},
                 )
             except Exception as exc:  # noqa: BLE001
                 error_msg = f"Meta-agent analysis failed: {exc}"
@@ -326,9 +330,7 @@ class MCPTradingOrchestrator:
                     }
 
                     try:
-                        execution_plan = self.execution_agent.analyze(
-                            execution_payload
-                        )
+                        execution_plan = self.execution_agent.analyze(execution_payload)
                         result.execution_plan = execution_plan
                     except Exception as exc:  # noqa: BLE001
                         error_msg = f"Execution planning failed: {exc}"

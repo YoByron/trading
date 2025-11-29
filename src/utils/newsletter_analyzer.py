@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 try:
     import feedparser
+
     FEEDPARSER_AVAILABLE = True
 except ImportError:
     FEEDPARSER_AVAILABLE = False
@@ -75,11 +76,17 @@ class CryptoSignal:
             sentiment=data["sentiment"],
             confidence=float(data["confidence"]),
             entry_price=float(data["entry_price"]) if data.get("entry_price") else None,
-            target_price=float(data["target_price"]) if data.get("target_price") else None,
+            target_price=(
+                float(data["target_price"]) if data.get("target_price") else None
+            ),
             stop_loss=float(data["stop_loss"]) if data.get("stop_loss") else None,
             timeframe=data.get("timeframe"),
             reasoning=data.get("reasoning"),
-            source_date=datetime.fromisoformat(data["source_date"]) if data.get("source_date") else None,
+            source_date=(
+                datetime.fromisoformat(data["source_date"])
+                if data.get("source_date")
+                else None
+            ),
         )
 
 
@@ -98,22 +105,58 @@ class NewsletterAnalyzer:
 
         # Bullish/bearish keywords for sentiment analysis
         self.bullish_keywords = [
-            "bullish", "buy", "long", "breakout", "rally", "uptrend",
-            "accumulate", "support", "bottom", "undervalued", "pump",
-            "moon", "calls", "strong", "momentum", "reversal up"
+            "bullish",
+            "buy",
+            "long",
+            "breakout",
+            "rally",
+            "uptrend",
+            "accumulate",
+            "support",
+            "bottom",
+            "undervalued",
+            "pump",
+            "moon",
+            "calls",
+            "strong",
+            "momentum",
+            "reversal up",
         ]
 
         self.bearish_keywords = [
-            "bearish", "sell", "short", "breakdown", "dump", "downtrend",
-            "distribute", "resistance", "top", "overvalued", "crash",
-            "puts", "weak", "consolidation", "reversal down"
+            "bearish",
+            "sell",
+            "short",
+            "breakdown",
+            "dump",
+            "downtrend",
+            "distribute",
+            "resistance",
+            "top",
+            "overvalued",
+            "crash",
+            "puts",
+            "weak",
+            "consolidation",
+            "reversal down",
         ]
 
         # Technical indicator keywords
         self.technical_keywords = [
-            "rsi", "macd", "moving average", "ma", "ema", "sma",
-            "volume", "fibonacci", "golden cross", "death cross",
-            "bollinger", "support", "resistance", "trendline"
+            "rsi",
+            "macd",
+            "moving average",
+            "ma",
+            "ema",
+            "sma",
+            "volume",
+            "fibonacci",
+            "golden cross",
+            "death cross",
+            "bollinger",
+            "support",
+            "resistance",
+            "trendline",
         ]
 
     def get_latest_signals(self, max_age_days: int = 7) -> Dict[str, CryptoSignal]:
@@ -158,14 +201,16 @@ class NewsletterAnalyzer:
         signal_files = sorted(
             self.data_dir.glob("newsletter_signals_*.json"),
             key=lambda p: p.stat().st_mtime,
-            reverse=True
+            reverse=True,
         )
 
         for signal_file in signal_files:
             try:
                 # Extract date from filename
                 date_str = signal_file.stem.replace("newsletter_signals_", "")
-                file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                file_date = datetime.strptime(date_str, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc
+                )
 
                 # Skip if too old
                 if file_date < cutoff_date:
@@ -212,8 +257,10 @@ class NewsletterAnalyzer:
             for entry in feed.entries:
                 try:
                     # Parse entry date
-                    if hasattr(entry, 'published_parsed'):
-                        entry_date = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+                    if hasattr(entry, "published_parsed"):
+                        entry_date = datetime(
+                            *entry.published_parsed[:6], tzinfo=timezone.utc
+                        )
                     else:
                         entry_date = datetime.now(timezone.utc)
 
@@ -222,15 +269,20 @@ class NewsletterAnalyzer:
                         continue
 
                     # Extract article content
-                    content = entry.get('summary', '') or entry.get('description', '')
-                    title = entry.get('title', '')
+                    content = entry.get("summary", "") or entry.get("description", "")
+                    title = entry.get("title", "")
 
                     # Parse article for BTC and ETH signals
-                    article_signals = self.parse_article(title + "\n\n" + content, entry_date)
+                    article_signals = self.parse_article(
+                        title + "\n\n" + content, entry_date
+                    )
 
                     # Update signals dictionary (newer signals override older ones)
                     for ticker, signal in article_signals.items():
-                        if ticker not in signals or signal.source_date > signals[ticker].source_date:
+                        if (
+                            ticker not in signals
+                            or signal.source_date > signals[ticker].source_date
+                        ):
                             signals[ticker] = signal
 
                 except Exception as e:
@@ -243,7 +295,9 @@ class NewsletterAnalyzer:
             logger.error(f"Error fetching RSS feed: {e}")
             return {}
 
-    def parse_article(self, article_text: str, source_date: Optional[datetime] = None) -> Dict[str, CryptoSignal]:
+    def parse_article(
+        self, article_text: str, source_date: Optional[datetime] = None
+    ) -> Dict[str, CryptoSignal]:
         """
         Extract crypto recommendations from article text.
 
@@ -262,14 +316,20 @@ class NewsletterAnalyzer:
             ticker_lower = ticker.lower()
 
             # Check if ticker is mentioned
-            if ticker_lower not in article_lower and "bitcoin" not in article_lower and "ethereum" not in article_lower:
+            if (
+                ticker_lower not in article_lower
+                and "bitcoin" not in article_lower
+                and "ethereum" not in article_lower
+            ):
                 continue
 
             # Extract sentiment
             sentiment, confidence = self._extract_sentiment(article_text, ticker)
 
             # Extract price targets
-            entry_price, target_price, stop_loss = self._extract_price_targets(article_text, ticker)
+            entry_price, target_price, stop_loss = self._extract_price_targets(
+                article_text, ticker
+            )
 
             # Extract timeframe
             timeframe = self._extract_timeframe(article_text)
@@ -287,11 +347,13 @@ class NewsletterAnalyzer:
                 stop_loss=stop_loss,
                 timeframe=timeframe,
                 reasoning=reasoning,
-                source_date=source_date or datetime.now(timezone.utc)
+                source_date=source_date or datetime.now(timezone.utc),
             )
 
             signals[ticker] = signal
-            logger.info(f"Extracted {ticker} signal: {sentiment} (confidence: {confidence:.2f})")
+            logger.info(
+                f"Extracted {ticker} signal: {sentiment} (confidence: {confidence:.2f})"
+            )
 
         return signals
 
@@ -306,26 +368,38 @@ class NewsletterAnalyzer:
         text_lower = text.lower()
 
         # Count bullish and bearish keywords
-        bullish_count = sum(1 for keyword in self.bullish_keywords if keyword in text_lower)
-        bearish_count = sum(1 for keyword in self.bearish_keywords if keyword in text_lower)
+        bullish_count = sum(
+            1 for keyword in self.bullish_keywords if keyword in text_lower
+        )
+        bearish_count = sum(
+            1 for keyword in self.bearish_keywords if keyword in text_lower
+        )
 
         # Check for technical indicators (increases confidence)
-        technical_count = sum(1 for keyword in self.technical_keywords if keyword in text_lower)
+        technical_count = sum(
+            1 for keyword in self.technical_keywords if keyword in text_lower
+        )
 
         # Determine sentiment
         if bullish_count > bearish_count:
             sentiment = "bullish"
-            confidence = min(0.5 + (bullish_count * 0.1) + (technical_count * 0.05), 1.0)
+            confidence = min(
+                0.5 + (bullish_count * 0.1) + (technical_count * 0.05), 1.0
+            )
         elif bearish_count > bullish_count:
             sentiment = "bearish"
-            confidence = min(0.5 + (bearish_count * 0.1) + (technical_count * 0.05), 1.0)
+            confidence = min(
+                0.5 + (bearish_count * 0.1) + (technical_count * 0.05), 1.0
+            )
         else:
             sentiment = "neutral"
             confidence = 0.3
 
         return sentiment, confidence
 
-    def _extract_price_targets(self, text: str, ticker: str) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    def _extract_price_targets(
+        self, text: str, ticker: str
+    ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
         """
         Extract entry price, target price, and stop loss from article.
 
@@ -339,9 +413,9 @@ class NewsletterAnalyzer:
         # Look for price patterns like "$45,000", "$45k", "45000"
         # Match prices with at least 2 digits to avoid matching random numbers
         price_patterns = [
-            r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*k\b',  # $45k or $45.5k
-            r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\b',      # $45,000 or $45000.50
-            r'(\d{4,}(?:\.\d+)?)\s*k\b',                # 45k (at least 4 digits before k)
+            r"\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*k\b",  # $45k or $45.5k
+            r"\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\b",  # $45,000 or $45000.50
+            r"(\d{4,}(?:\.\d+)?)\s*k\b",  # 45k (at least 4 digits before k)
         ]
 
         # Search for entry/target/stop keywords near prices
@@ -351,15 +425,15 @@ class NewsletterAnalyzer:
 
         for pattern in price_patterns:
             for match in re.finditer(pattern, text, re.IGNORECASE):
-                price_str = match.group(1).replace(',', '').strip()
+                price_str = match.group(1).replace(",", "").strip()
 
                 # Skip empty or invalid strings
-                if not price_str or price_str == '.':
+                if not price_str or price_str == ".":
                     continue
 
                 try:
                     # Handle 'k' suffix (thousands)
-                    if 'k' in match.group(0).lower():
+                    if "k" in match.group(0).lower():
                         price = float(price_str) * 1000
                     else:
                         price = float(price_str)
@@ -390,7 +464,14 @@ class NewsletterAnalyzer:
         """
         text_lower = text.lower()
 
-        short_keywords = ["short-term", "day trade", "swing", "days", "hours", "intraday"]
+        short_keywords = [
+            "short-term",
+            "day trade",
+            "swing",
+            "days",
+            "hours",
+            "intraday",
+        ]
         medium_keywords = ["medium-term", "weeks", "months", "intermediate"]
         long_keywords = ["long-term", "hold", "hodl", "year", "years", "accumulation"]
 
@@ -410,18 +491,18 @@ class NewsletterAnalyzer:
         Returns first paragraph mentioning the ticker (max 500 chars).
         """
         # Split text into paragraphs
-        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
         ticker_lower = ticker.lower()
-        ticker_names = {
-            "BTC": ["btc", "bitcoin"],
-            "ETH": ["eth", "ethereum"]
-        }
+        ticker_names = {"BTC": ["btc", "bitcoin"], "ETH": ["eth", "ethereum"]}
 
         # Find first paragraph mentioning the ticker
         for paragraph in paragraphs:
             paragraph_lower = paragraph.lower()
-            if any(name in paragraph_lower for name in ticker_names.get(ticker, [ticker_lower])):
+            if any(
+                name in paragraph_lower
+                for name in ticker_names.get(ticker, [ticker_lower])
+            ):
                 # Truncate to 500 chars
                 if len(paragraph) > 500:
                     return paragraph[:497] + "..."
@@ -429,7 +510,9 @@ class NewsletterAnalyzer:
 
         return None
 
-    def save_signals(self, signals: Dict[str, CryptoSignal], date: Optional[datetime] = None) -> Path:
+    def save_signals(
+        self, signals: Dict[str, CryptoSignal], date: Optional[datetime] = None
+    ) -> Path:
         """
         Save extracted signals to JSON file (for MCP to populate or manual caching).
 
@@ -448,10 +531,7 @@ class NewsletterAnalyzer:
         file_path = self.data_dir / f"newsletter_signals_{date_str}.json"
 
         # Convert signals to JSON-serializable format
-        data = {
-            ticker: signal.to_dict()
-            for ticker, signal in signals.items()
-        }
+        data = {ticker: signal.to_dict() for ticker, signal in signals.items()}
 
         with file_path.open("w") as f:
             json.dump(data, f, indent=2)
@@ -459,7 +539,9 @@ class NewsletterAnalyzer:
         logger.info(f"Saved {len(signals)} newsletter signals to {file_path}")
         return file_path
 
-    def get_signal_for_ticker(self, ticker: str, max_age_days: int = 7) -> Optional[CryptoSignal]:
+    def get_signal_for_ticker(
+        self, ticker: str, max_age_days: int = 7
+    ) -> Optional[CryptoSignal]:
         """
         Get signal for specific ticker (BTC or ETH).
 
@@ -475,6 +557,7 @@ class NewsletterAnalyzer:
 
 
 # Convenience functions for quick access
+
 
 def get_btc_signal(max_age_days: int = 7) -> Optional[CryptoSignal]:
     """Get latest BTC trading signal from newsletter"""
@@ -520,8 +603,22 @@ if __name__ == "__main__":
     for ticker, signal in signals.items():
         print(f"\n{ticker} Signal:")
         print(f"  Sentiment: {signal.sentiment} ({signal.confidence:.2f} confidence)")
-        print(f"  Entry: ${signal.entry_price:,.0f}" if signal.entry_price else "  Entry: N/A")
-        print(f"  Target: ${signal.target_price:,.0f}" if signal.target_price else "  Target: N/A")
-        print(f"  Stop Loss: ${signal.stop_loss:,.0f}" if signal.stop_loss else "  Stop Loss: N/A")
+        print(
+            f"  Entry: ${signal.entry_price:,.0f}"
+            if signal.entry_price
+            else "  Entry: N/A"
+        )
+        print(
+            f"  Target: ${signal.target_price:,.0f}"
+            if signal.target_price
+            else "  Target: N/A"
+        )
+        print(
+            f"  Stop Loss: ${signal.stop_loss:,.0f}"
+            if signal.stop_loss
+            else "  Stop Loss: N/A"
+        )
         print(f"  Timeframe: {signal.timeframe or 'N/A'}")
-        print(f"  Reasoning: {signal.reasoning[:100] if signal.reasoning else 'N/A'}...")
+        print(
+            f"  Reasoning: {signal.reasoning[:100] if signal.reasoning else 'N/A'}..."
+        )

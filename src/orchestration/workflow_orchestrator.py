@@ -7,6 +7,7 @@ Implements AgentKit-style workflow automation:
 - Error handling and retries
 - Workflow state management
 """
+
 import os
 import json
 import logging
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowStatus(Enum):
     """Workflow execution status."""
+
     PENDING = "pending"
     RUNNING = "running"
     WAITING_APPROVAL = "waiting_approval"
@@ -54,9 +56,7 @@ class WorkflowOrchestrator:
         self.workflow_dir.mkdir(parents=True, exist_ok=True)
 
     async def execute_workflow(
-        self,
-        workflow_definition: Dict[str, Any],
-        workflow_id: Optional[str] = None
+        self, workflow_definition: Dict[str, Any], workflow_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute a multi-step workflow.
@@ -77,7 +77,7 @@ class WorkflowOrchestrator:
             "status": WorkflowStatus.PENDING.value,
             "created_at": datetime.now().isoformat(),
             "steps": [],
-            "current_step": 0
+            "current_step": 0,
         }
 
         self.active_workflows[workflow_id] = workflow
@@ -97,9 +97,7 @@ class WorkflowOrchestrator:
                 # Check if step requires approval
                 if step.get("requires_approval", False):
                     approval_result = await self._handle_approval_gate(
-                        workflow_id,
-                        step,
-                        step_result
+                        workflow_id, step, step_result
                     )
 
                     if not approval_result.get("approved", False):
@@ -111,7 +109,9 @@ class WorkflowOrchestrator:
                 if not step_result.get("success", False):
                     workflow["status"] = WorkflowStatus.FAILED.value
                     workflow["failure_step"] = i
-                    workflow["failure_reason"] = step_result.get("error", "Unknown error")
+                    workflow["failure_reason"] = step_result.get(
+                        "error", "Unknown error"
+                    )
                     break
 
             if workflow["status"] == WorkflowStatus.RUNNING.value:
@@ -133,14 +133,15 @@ class WorkflowOrchestrator:
 
         finally:
             self._save_workflow_state(workflow)
-            if workflow["status"] in [WorkflowStatus.COMPLETED, WorkflowStatus.FAILED, WorkflowStatus.CANCELLED]:
+            if workflow["status"] in [
+                WorkflowStatus.COMPLETED,
+                WorkflowStatus.FAILED,
+                WorkflowStatus.CANCELLED,
+            ]:
                 del self.active_workflows[workflow_id]
 
     async def _execute_step(
-        self,
-        workflow_id: str,
-        step: Dict[str, Any],
-        step_index: int
+        self, workflow_id: str, step: Dict[str, Any], step_index: int
     ) -> Dict[str, Any]:
         """
         Execute a single workflow step.
@@ -164,10 +165,9 @@ class WorkflowOrchestrator:
                 result = self.workflow_agent.analyze(step.get("data", {}))
             elif step_type == "approval":
                 # Request approval
-                result = self.approval_agent.analyze({
-                    "type": "request_approval",
-                    **step.get("data", {})
-                })
+                result = self.approval_agent.analyze(
+                    {"type": "request_approval", **step.get("data", {})}
+                )
             elif step_type == "notification":
                 # Send notification
                 result = self.notification_agent.analyze(step.get("data", {}))
@@ -183,10 +183,7 @@ class WorkflowOrchestrator:
                 await asyncio.sleep(delay_seconds)
                 result = {"success": True, "delayed_seconds": delay_seconds}
             else:
-                result = {
-                    "success": False,
-                    "error": f"Unknown step type: {step_type}"
-                }
+                result = {"success": False, "error": f"Unknown step type: {step_type}"}
 
             result["step_name"] = step_name
             result["step_index"] = step_index
@@ -200,14 +197,11 @@ class WorkflowOrchestrator:
                 "success": False,
                 "error": str(e),
                 "step_name": step_name,
-                "step_index": step_index
+                "step_index": step_index,
             }
 
     async def _handle_approval_gate(
-        self,
-        workflow_id: str,
-        step: Dict[str, Any],
-        step_result: Dict[str, Any]
+        self, workflow_id: str, step: Dict[str, Any], step_result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Handle approval gate in workflow.
@@ -228,17 +222,19 @@ class WorkflowOrchestrator:
             return {"approved": True, "type": "auto"}
 
         # Request human approval
-        approval_request = self.approval_agent.analyze({
-            "type": "request_approval",
-            "approval_type": step.get("type", "workflow_step"),
-            "context": {
-                "workflow_id": workflow_id,
-                "step": step,
-                "step_result": step_result
-            },
-            "priority": approval_data.get("priority", "medium"),
-            "timeout_seconds": approval_data.get("timeout_seconds", 900)
-        })
+        approval_request = self.approval_agent.analyze(
+            {
+                "type": "request_approval",
+                "approval_type": step.get("type", "workflow_step"),
+                "context": {
+                    "workflow_id": workflow_id,
+                    "step": step,
+                    "step_result": step_result,
+                },
+                "priority": approval_data.get("priority", "medium"),
+                "timeout_seconds": approval_data.get("timeout_seconds", 900),
+            }
+        )
 
         if not approval_request.get("approval_required", True):
             return {"approved": True, "type": "not_required"}
@@ -251,7 +247,7 @@ class WorkflowOrchestrator:
         return {
             "approved": approval_result.get("status") == "approved",
             "approval_id": approval_id,
-            "approval_result": approval_result
+            "approval_result": approval_result,
         }
 
     async def _train_model(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -278,16 +274,19 @@ class WorkflowOrchestrator:
                 "python",
                 ".claude/skills/model_trainer/scripts/model_trainer.py",
                 "train",
-                "--symbols", ",".join(symbols),
-                "--epochs", str(epochs),
-                "--batch-size", str(batch_size)
+                "--symbols",
+                ",".join(symbols),
+                "--epochs",
+                str(epochs),
+                "--batch-size",
+                str(batch_size),
             ]
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                cwd=str(Path(__file__).parent.parent.parent)
+                cwd=str(Path(__file__).parent.parent.parent),
             )
 
             if result.returncode == 0:
@@ -296,21 +295,18 @@ class WorkflowOrchestrator:
                     "success": training_result.get("success", False),
                     "model_path": training_result.get("model_path"),
                     "training_metrics": training_result.get("training_metrics", {}),
-                    "message": "Model training completed"
+                    "message": "Model training completed",
                 }
             else:
                 return {
                     "success": False,
                     "error": result.stderr,
-                    "message": "Model training failed"
+                    "message": "Model training failed",
                 }
 
         except Exception as e:
             logger.error(f"Model training error: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def _call_mcp_tool(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -327,10 +323,7 @@ class WorkflowOrchestrator:
         payload = data.get("payload", {})
 
         if not server or not tool:
-            return {
-                "success": False,
-                "error": "server and tool required for MCP call"
-            }
+            return {"success": False, "error": "server and tool required for MCP call"}
 
         try:
             # Import MCP client
@@ -339,20 +332,10 @@ class WorkflowOrchestrator:
             client = default_client()
             result = client.call_tool(server=server, tool=tool, payload=payload)
 
-            return {
-                "success": True,
-                "server": server,
-                "tool": tool,
-                "result": result
-            }
+            return {"success": True, "server": server, "tool": tool, "result": result}
         except Exception as e:
             logger.error(f"MCP call error: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "server": server,
-                "tool": tool
-            }
+            return {"success": False, "error": str(e), "server": server, "tool": tool}
 
     async def _send_completion_notification(self, workflow: Dict[str, Any]):
         """Send workflow completion notification."""
@@ -361,16 +344,15 @@ class WorkflowOrchestrator:
 
         message = f"Workflow {workflow_id} {status}"
 
-        self.notification_agent.analyze({
-            "message": message,
-            "channels": ["slack", "email"],
-            "priority": "medium",
-            "type": "workflow",
-            "context": {
-                "workflow_id": workflow_id,
-                "status": status
+        self.notification_agent.analyze(
+            {
+                "message": message,
+                "channels": ["slack", "email"],
+                "priority": "medium",
+                "type": "workflow",
+                "context": {"workflow_id": workflow_id, "status": status},
             }
-        })
+        )
 
     def _save_workflow_state(self, workflow: Dict[str, Any]):
         """Save workflow state to disk."""

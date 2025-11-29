@@ -28,9 +28,7 @@ class LegacyMomentumCalculator:
         self._provider = get_market_data_provider()
 
     def evaluate(self, symbol: str) -> MomentumPayload:
-        result = self._provider.get_daily_bars(
-            symbol, lookback_days=self.lookback_days
-        )
+        result = self._provider.get_daily_bars(symbol, lookback_days=self.lookback_days)
         hist = result.data
         score, indicators = calculate_technical_score(hist, symbol)
 

@@ -11,7 +11,10 @@ import os
 import logging
 from typing import Dict, Any, Optional
 
-from src.agents.gemini3_langgraph_agent import create_trading_agent, Gemini3LangGraphAgent
+from src.agents.gemini3_langgraph_agent import (
+    create_trading_agent,
+    Gemini3LangGraphAgent,
+)
 
 logger = logging.getLogger(__name__)
 

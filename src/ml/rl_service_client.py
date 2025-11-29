@@ -1,6 +1,7 @@
 """
 RL Service Client - Integration with cloud RL providers (Vertex AI RL, Azure ML, etc.)
 """
+
 import os
 import logging
 import json
@@ -59,7 +60,7 @@ class RLServiceClient:
         try:
             # Vertex AI uses Google Cloud credentials
             # The API key might be a service account JSON path or API key
-            if self.api_key.endswith('.json'):
+            if self.api_key.endswith(".json"):
                 # Service account file path
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.api_key
                 logger.info("✅ Using Vertex AI service account authentication")
@@ -73,15 +74,23 @@ class RLServiceClient:
                 from google.cloud import aiplatform
 
                 # Initialize Vertex AI (requires project and location)
-                project_id = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT")
-                location = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("GCP_LOCATION", "us-central1")
+                project_id = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv(
+                    "GCP_PROJECT"
+                )
+                location = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv(
+                    "GCP_LOCATION", "us-central1"
+                )
 
                 if project_id:
                     try:
                         aiplatform.init(project=project_id, location=location)
-                        logger.info(f"✅ Vertex AI initialized (project: {project_id}, location: {location})")
+                        logger.info(
+                            f"✅ Vertex AI initialized (project: {project_id}, location: {location})"
+                        )
                     except Exception as init_error:
-                        logger.warning(f"⚠️  Vertex AI init failed (will use API key mode): {init_error}")
+                        logger.warning(
+                            f"⚠️  Vertex AI init failed (will use API key mode): {init_error}"
+                        )
 
                 self.client = aiplatform
                 self.project_id = project_id
@@ -121,7 +130,7 @@ class RLServiceClient:
                 credential=credential,
                 subscription_id=subscription_id,
                 resource_group_name=resource_group,
-                workspace_name=workspace_name
+                workspace_name=workspace_name,
             )
             logger.info("✅ Connected to RL service (Azure ML RL)")
 
@@ -141,14 +150,11 @@ class RLServiceClient:
             import boto3
 
             # AWS credentials should be in environment or ~/.aws/credentials
-            self.client = boto3.client('sagemaker')
+            self.client = boto3.client("sagemaker")
             logger.info("✅ Connected to RL service (AWS SageMaker RL)")
 
         except ImportError:
-            logger.warning(
-                "⚠️  boto3 not installed. "
-                "Install with: pip install boto3"
-            )
+            logger.warning("⚠️  boto3 not installed. " "Install with: pip install boto3")
             self.client = None
         except Exception as e:
             logger.error(f"❌ Failed to initialize AWS SageMaker: {e}")
@@ -162,7 +168,7 @@ class RLServiceClient:
             self.api_base = "https://api.paperspace.com"
             self.headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             self.client = requests
             logger.info("✅ Connected to RL service (Paperspace)")
@@ -176,7 +182,7 @@ class RLServiceClient:
         env_spec: Dict[str, Any],
         algorithm: str = "DQN",
         job_name: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Start a training job on the cloud RL service.
@@ -191,13 +197,19 @@ class RLServiceClient:
             Job information dict with job_id, status, etc.
         """
         if self.provider == "vertex_ai":
-            return self._start_vertex_ai_training(env_spec, algorithm, job_name, **kwargs)
+            return self._start_vertex_ai_training(
+                env_spec, algorithm, job_name, **kwargs
+            )
         elif self.provider == "azure_ml":
-            return self._start_azure_ml_training(env_spec, algorithm, job_name, **kwargs)
+            return self._start_azure_ml_training(
+                env_spec, algorithm, job_name, **kwargs
+            )
         elif self.provider == "aws_sagemaker":
             return self._start_aws_training(env_spec, algorithm, job_name, **kwargs)
         elif self.provider == "paperspace":
-            return self._start_paperspace_training(env_spec, algorithm, job_name, **kwargs)
+            return self._start_paperspace_training(
+                env_spec, algorithm, job_name, **kwargs
+            )
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
@@ -228,7 +240,7 @@ class RLServiceClient:
                     "env_spec": env_spec,
                     "project_id": self.project_id,
                     "location": self.location,
-                    "message": "Training job submitted to Vertex AI Custom Jobs"
+                    "message": "Training job submitted to Vertex AI Custom Jobs",
                 }
 
                 logger.info(f"✅ Training job submitted: {job_info['job_id']}")
@@ -246,7 +258,7 @@ class RLServiceClient:
             "algorithm": algorithm,
             "env_spec": env_spec,
             "message": "Training job submitted to Vertex AI RL (API key mode)",
-            "note": "Configure GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION for full SDK integration"
+            "note": "Configure GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION for full SDK integration",
         }
 
         logger.info(f"✅ Training job submitted: {job_info['job_id']}")
@@ -262,7 +274,7 @@ class RLServiceClient:
             "job_id": f"azure_ml_{job_name}",
             "status": "submitted",
             "provider": "azure_ml",
-            "algorithm": algorithm
+            "algorithm": algorithm,
         }
 
         return job_info
@@ -277,7 +289,7 @@ class RLServiceClient:
             "job_id": f"aws_{job_name}",
             "status": "submitted",
             "provider": "aws_sagemaker",
-            "algorithm": algorithm
+            "algorithm": algorithm,
         }
 
         return job_info
@@ -299,7 +311,7 @@ class RLServiceClient:
             "job_id": f"paperspace_{job_name}",
             "status": "submitted",
             "provider": "paperspace",
-            "algorithm": algorithm
+            "algorithm": algorithm,
         }
 
         return job_info
@@ -309,12 +321,7 @@ class RLServiceClient:
         logger.info(f"📊 Checking job status: {job_id}")
 
         # Placeholder - would query provider API
-        return {
-            "job_id": job_id,
-            "status": "running",
-            "progress": 0.5,
-            "metrics": {}
-        }
+        return {"job_id": job_id, "status": "running", "progress": 0.5, "metrics": {}}
 
     def get_trained_policy(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Download trained policy from completed job."""
@@ -324,7 +331,7 @@ class RLServiceClient:
         return {
             "job_id": job_id,
             "policy": "trained_model.pkl",
-            "metrics": {"final_reward": 100.0}
+            "metrics": {"final_reward": 100.0},
         }
 
 
@@ -345,13 +352,11 @@ def test_rl_service_connection():
             "name": "trading_env",
             "state_space": "continuous",
             "action_space": "discrete",
-            "actions": ["BUY", "SELL", "HOLD"]
+            "actions": ["BUY", "SELL", "HOLD"],
         }
 
         job_info = client.start_training(
-            env_spec=env_spec,
-            algorithm="DQN",
-            job_name="test_trading_rl"
+            env_spec=env_spec, algorithm="DQN", job_name="test_trading_rl"
         )
 
         print("\n✅ Training job submitted:")

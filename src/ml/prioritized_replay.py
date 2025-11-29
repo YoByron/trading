@@ -15,9 +15,9 @@ from typing import Dict, Any, List, Tuple, Optional
 from collections import namedtuple
 import random
 
-Experience = namedtuple('Experience', [
-    'state', 'action', 'reward', 'next_state', 'done', 'td_error'
-])
+Experience = namedtuple(
+    "Experience", ["state", "action", "reward", "next_state", "done", "td_error"]
+)
 
 
 class SumTree:
@@ -100,7 +100,7 @@ class PrioritizedReplayBuffer:
         alpha: float = 0.6,  # Prioritization exponent (0 = uniform, 1 = full prioritization)
         beta: float = 0.4,  # Importance sampling exponent
         beta_increment: float = 0.001,  # Beta annealing
-        epsilon: float = 1e-6  # Small constant to avoid zero priority
+        epsilon: float = 1e-6,  # Small constant to avoid zero priority
     ):
         self.capacity = capacity
         self.alpha = alpha
@@ -118,7 +118,7 @@ class PrioritizedReplayBuffer:
         reward: float,
         next_state: np.ndarray,
         done: bool,
-        td_error: Optional[float] = None
+        td_error: Optional[float] = None,
     ):
         """
         Add experience to buffer.
@@ -142,12 +142,14 @@ class PrioritizedReplayBuffer:
             reward=reward,
             next_state=next_state,
             done=done,
-            td_error=td_error or 0.0
+            td_error=td_error or 0.0,
         )
 
         self.tree.add(priority, experience)
 
-    def sample(self, batch_size: int) -> Tuple[List[Experience], np.ndarray, np.ndarray]:
+    def sample(
+        self, batch_size: int
+    ) -> Tuple[List[Experience], np.ndarray, np.ndarray]:
         """
         Sample batch of experiences.
 

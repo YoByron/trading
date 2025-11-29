@@ -4,6 +4,7 @@ Error monitoring integration with Sentry.
 Provides centralized error tracking for the trading system.
 Integrates with GitHub Actions, workflow failures, and runtime errors.
 """
+
 import os
 import logging
 from typing import Optional
@@ -78,8 +79,12 @@ def _add_trading_context(event, hint):
 
         # Add GitHub Actions context if available
         if os.getenv("GITHUB_ACTIONS"):
-            event.setdefault("tags", {})["workflow"] = os.getenv("GITHUB_WORKFLOW", "unknown")
-            event.setdefault("tags", {})["run_id"] = os.getenv("GITHUB_RUN_ID", "unknown")
+            event.setdefault("tags", {})["workflow"] = os.getenv(
+                "GITHUB_WORKFLOW", "unknown"
+            )
+            event.setdefault("tags", {})["run_id"] = os.getenv(
+                "GITHUB_RUN_ID", "unknown"
+            )
             event.setdefault("contexts", {})["github"] = {
                 "workflow": os.getenv("GITHUB_WORKFLOW"),
                 "run_id": os.getenv("GITHUB_RUN_ID"),
@@ -140,7 +145,9 @@ def capture_workflow_failure(reason: str, context: Optional[dict] = None):
         logger.debug(f"Failed to capture workflow failure in Sentry: {e}")
 
 
-def capture_api_failure(api_name: str, error: Exception, context: Optional[dict] = None):
+def capture_api_failure(
+    api_name: str, error: Exception, context: Optional[dict] = None
+):
     """Capture API failure in Sentry."""
     if not _sentry_initialized:
         return
@@ -177,7 +184,9 @@ def capture_data_source_failure(source: str, symbol: str, error: str):
             scope.set_tag("symbol", symbol)
             scope.set_level("warning")
 
-            sentry_sdk.capture_message(f"Data source failure: {source} failed for {symbol}: {error}")
+            sentry_sdk.capture_message(
+                f"Data source failure: {source} failed for {symbol}: {error}"
+            )
 
     except Exception as e:
         logger.debug(f"Failed to capture data source failure in Sentry: {e}")

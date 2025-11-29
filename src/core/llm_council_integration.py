@@ -121,9 +121,9 @@ Market Data:
 - Mr. Market Sentiment: {ii_analysis.get('mr_market_sentiment', 'N/A')}
 - Quality Score: {ii_analysis.get('quality_score', 'N/A')}/100
 """
-                    if ii_analysis.get('reasons'):
+                    if ii_analysis.get("reasons"):
                         query += f"\nReasons: {', '.join(ii_analysis['reasons'])}\n"
-                    if ii_analysis.get('warnings'):
+                    if ii_analysis.get("warnings"):
                         query += f"\nWarnings: {', '.join(ii_analysis['warnings'])}\n"
 
             query += """
@@ -278,7 +278,9 @@ Market Data:
 """
 
         if portfolio_context:
-            query += f"\n\nPortfolio Context:\n{json.dumps(portfolio_context, indent=2)}"
+            query += (
+                f"\n\nPortfolio Context:\n{json.dumps(portfolio_context, indent=2)}"
+            )
 
         query += """
 Provide:
@@ -314,8 +316,7 @@ Be conservative - reject positions that exceed risk limits."""
                 risk_level = "MEDIUM"
 
             approved = (
-                "approve" in final_answer_lower
-                and "reject" not in final_answer_lower
+                "approve" in final_answer_lower and "reject" not in final_answer_lower
             )
 
             return {

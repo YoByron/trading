@@ -6,7 +6,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.utils.newsletter_analyzer import get_btc_signal, get_eth_signal, get_all_signals
+from src.utils.newsletter_analyzer import (
+    get_btc_signal,
+    get_eth_signal,
+    get_all_signals,
+)
+
 
 def main():
     print("=" * 80)
@@ -55,6 +60,7 @@ def main():
     else:
         print("❌ No signals available")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

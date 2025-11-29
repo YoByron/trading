@@ -15,7 +15,7 @@ from src.utils.newsletter_analyzer import (
     NewsletterAnalyzer,
     get_btc_signal,
     get_eth_signal,
-    get_all_signals
+    get_all_signals,
 )
 
 
@@ -40,8 +40,12 @@ def test_existing_mcp_files():
             print(f"{'─'*80}")
             print(f"  {ticker} Signal")
             print(f"{'─'*80}")
-            print(f"  Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)")
-            print(f"  Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S') if signal.source_date else 'Unknown'}")
+            print(
+                f"  Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)"
+            )
+            print(
+                f"  Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S') if signal.source_date else 'Unknown'}"
+            )
 
             if signal.entry_price:
                 print(f"  Entry:       ${signal.entry_price:,.0f}")
@@ -52,14 +56,16 @@ def test_existing_mcp_files():
             if signal.timeframe:
                 print(f"  Timeframe:   {signal.timeframe}")
             if signal.reasoning:
-                reasoning = signal.reasoning.replace('\n', ' ')[:150]
+                reasoning = signal.reasoning.replace("\n", " ")[:150]
                 print(f"  Reasoning:   {reasoning}...")
             print()
 
         return True
     else:
         print("❌ No signals found from MCP files")
-        print("Expected file location: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json")
+        print(
+            "Expected file location: data/newsletter_signals/newsletter_signals_YYYY-MM-DD.json"
+        )
         return False
 
 
@@ -100,12 +106,18 @@ def test_rss_fallback():
             print(f"✅ RSS parsing successful! Extracted {len(signals)} signals\n")
 
             for ticker, signal in signals.items():
-                print(f"  {ticker}: {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)")
+                print(
+                    f"  {ticker}: {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)"
+                )
 
             return True
         else:
-            print("⚠️  RSS feed accessible but no crypto signals found in recent articles")
-            print("This is normal if CoinSnacks hasn't published BTC/ETH analysis recently")
+            print(
+                "⚠️  RSS feed accessible but no crypto signals found in recent articles"
+            )
+            print(
+                "This is normal if CoinSnacks hasn't published BTC/ETH analysis recently"
+            )
             return True  # Not a failure, just no signals
 
     except Exception as e:
@@ -183,7 +195,9 @@ def test_integration_readiness():
         return False
     else:
         print("Integration Status: ✅ READY FOR WEEKEND CRYPTO TRADING\n")
-        print("Newsletter signals are available and ready for crypto_strategy.py to consume")
+        print(
+            "Newsletter signals are available and ready for crypto_strategy.py to consume"
+        )
         print("\nNext Steps:")
         print("  1. crypto_strategy.py will call get_btc_signal() and get_eth_signal()")
         print("  2. Combine newsletter signals (30%) with MACD/RSI indicators (70%)")
@@ -193,9 +207,9 @@ def test_integration_readiness():
 
 def main():
     """Run all verification tests"""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("NEWSLETTER INTEGRATION - END-TO-END VERIFICATION")
-    print("="*80)
+    print("=" * 80)
     print(f"\nTest Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Run tests
@@ -204,7 +218,7 @@ def main():
         "Convenience Functions": test_convenience_functions(),
         "RSS Fallback": test_rss_fallback(),
         "Signal Freshness": test_signal_freshness(),
-        "Integration Ready": test_integration_readiness()
+        "Integration Ready": test_integration_readiness(),
     }
 
     # Summary

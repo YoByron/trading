@@ -115,6 +115,7 @@ class OptimizedRLPolicyLearner:
         if use_multi_timescale and context_engine is None:
             try:
                 from src.agent_framework.context_engine import get_context_engine
+
                 self.context_engine = get_context_engine()
             except ImportError:
                 self.context_engine = None
@@ -215,7 +216,7 @@ class OptimizedRLPolicyLearner:
         self,
         market_state: Dict[str, Any],
         agent_recommendation: str,
-        agent_id: Optional[str] = None
+        agent_id: Optional[str] = None,
     ) -> str:
         """
         Select action using epsilon-greedy policy with adaptive exploration.
@@ -235,9 +236,7 @@ class OptimizedRLPolicyLearner:
         # Get multi-timescale context if available
         historical_bias = None
         if self.use_multi_timescale and self.context_engine and agent_id:
-            historical_bias = self._get_historical_action_bias(
-                market_state, agent_id
-            )
+            historical_bias = self._get_historical_action_bias(market_state, agent_id)
             if historical_bias:
                 logger.debug(
                     f"RL: Multi-timescale context bias: {historical_bias} "
@@ -248,7 +247,9 @@ class OptimizedRLPolicyLearner:
         if np.random.random() < self.exploration_rate:
             # Explore: Use agent recommendation (learning phase)
             action = agent_recommendation
-            logger.debug(f"RL: EXPLORE (ε={self.exploration_rate:.3f}) - using agent rec: {action}")
+            logger.debug(
+                f"RL: EXPLORE (ε={self.exploration_rate:.3f}) - using agent rec: {action}"
+            )
         else:
             # Exploit: Use learned Q-values with historical bias
             q_values = self.q_table[state_key].copy()
@@ -268,9 +269,7 @@ class OptimizedRLPolicyLearner:
         return action
 
     def _get_historical_action_bias(
-        self,
-        market_state: Dict[str, Any],
-        agent_id: str
+        self, market_state: Dict[str, Any], agent_id: str
     ) -> Optional[Dict[str, float]]:
         """
         Get action bias from multi-timescale historical memories.
@@ -293,7 +292,7 @@ class OptimizedRLPolicyLearner:
                 agent_id=agent_id,
                 limit=20,
                 min_importance=0.3,  # Only use important memories
-                use_multi_timescale=True
+                use_multi_timescale=True,
             )
 
             if not memories:
@@ -303,7 +302,7 @@ class OptimizedRLPolicyLearner:
             action_outcomes: Dict[str, List[float]] = {
                 "BUY": [],
                 "SELL": [],
-                "HOLD": []
+                "HOLD": [],
             }
 
             current_regime = market_state.get("market_regime", "UNKNOWN")
@@ -364,11 +363,16 @@ class OptimizedRLPolicyLearner:
         # Use world-class risk-adjusted reward function
         try:
             from src.ml.reward_functions import RiskAdjustedReward
+
             reward_calculator = RiskAdjustedReward()
-            return reward_calculator.calculate_from_trade_result(trade_result, market_state)
+            return reward_calculator.calculate_from_trade_result(
+                trade_result, market_state
+            )
         except ImportError:
             # Fallback to original implementation
-            logger.warning("⚠️  Using fallback reward function (install reward_functions module)")
+            logger.warning(
+                "⚠️  Using fallback reward function (install reward_functions module)"
+            )
 
         # Fallback: Original implementation
         pl = trade_result.get("pl", 0)
@@ -529,9 +533,7 @@ class OptimizedRLPolicyLearner:
             replay_lr = self.base_learning_rate * 0.1
 
             new_q = current_q + replay_lr * (
-                experience.reward
-                + self.discount_factor * max_next_q
-                - current_q
+                experience.reward + self.discount_factor * max_next_q - current_q
             )
 
             self.q_table[prev_key][experience.action] = new_q
@@ -539,7 +541,9 @@ class OptimizedRLPolicyLearner:
         logger.debug(f"Replay training: updated {len(batch)} Q-values from buffer")
 
     def calculate_reward(
-        self, trade_result: Dict[str, Any], market_state: Optional[Dict[str, Any]] = None
+        self,
+        trade_result: Dict[str, Any],
+        market_state: Optional[Dict[str, Any]] = None,
     ) -> float:
         """
         Calculate reward from trade result (with risk adjustment if state provided).
@@ -633,7 +637,9 @@ class OptimizedRLPolicyLearner:
             for state_key, actions in loaded_q_table.items():
                 self.q_table[state_key] = actions
 
-            self.exploration_rate = state.get("exploration_rate", self.initial_exploration_rate)
+            self.exploration_rate = state.get(
+                "exploration_rate", self.initial_exploration_rate
+            )
             self.update_count = state.get("update_count", 0)
             self.total_rewards = state.get("total_rewards", 0.0)
 

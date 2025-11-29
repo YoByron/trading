@@ -15,13 +15,18 @@ from .context_engine import (
     ContextMemory,
     ContextType,
     ContextPriority,
-    get_context_engine
+    get_context_engine,
 )
 from . import agent_blueprints
 
 # Agent0 Co-Evolution components
 try:
-    from .curriculum_agent import CurriculumAgent, TradingTask, TaskDifficulty, TaskCategory
+    from .curriculum_agent import (
+        CurriculumAgent,
+        TradingTask,
+        TaskDifficulty,
+        TaskCategory,
+    )
     from .executor_agent import ExecutorAgent, TaskSolution
     from .coevolution_engine import CoEvolutionEngine, EvolutionStage, EvolutionMetrics
 except ImportError:

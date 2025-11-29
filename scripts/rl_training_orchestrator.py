@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from scripts.dashboard_metrics import load_json_file
 
@@ -40,32 +40,39 @@ DATA_DIR = Path("data")
 class RLTrainingOrchestrator:
     """Unified orchestrator for RL training across platforms."""
 
-    def __init__(self, platform: str = 'local'):
+    def __init__(self, platform: str = "local"):
         self.platform = platform
         self.results = {
-            'platform': platform,
-            'timestamp': datetime.now().isoformat(),
-            'agents': {},
-            'errors': []
+            "platform": platform,
+            "timestamp": datetime.now().isoformat(),
+            "agents": {},
+            "errors": [],
         }
 
     def train_q_learning(self) -> Dict[str, Any]:
         """Train Q-learning agent."""
         try:
-            from src.agents.reinforcement_learning_optimized import OptimizedRLPolicyLearner
+            from src.agents.reinforcement_learning_optimized import (
+                OptimizedRLPolicyLearner,
+            )
 
             rl_state_file = DATA_DIR / "rl_policy_state.json"
             if not rl_state_file.exists():
                 return {
-                    'success': False,
-                    'message': 'No RL state file found - agent will initialize on first trade',
-                    'agent': 'q_learning'
+                    "success": False,
+                    "message": "No RL state file found - agent will initialize on first trade",
+                    "agent": "q_learning",
                 }
 
             agent = OptimizedRLPolicyLearner()
 
-            if agent.enable_replay and len(agent.replay_buffer) >= agent.replay_batch_size:
-                training_iterations = min(20, len(agent.replay_buffer) // agent.replay_batch_size)
+            if (
+                agent.enable_replay
+                and len(agent.replay_buffer) >= agent.replay_batch_size
+            ):
+                training_iterations = min(
+                    20, len(agent.replay_buffer) // agent.replay_batch_size
+                )
                 total_updates = 0
 
                 for _ in range(training_iterations):
@@ -75,31 +82,31 @@ class RLTrainingOrchestrator:
                 agent._save_state()
 
                 return {
-                    'success': True,
-                    'agent': 'q_learning',
-                    'training_iterations': total_updates,
-                    'replay_buffer_size': len(agent.replay_buffer),
-                    'message': f'Trained Q-learning agent: {total_updates} iterations'
+                    "success": True,
+                    "agent": "q_learning",
+                    "training_iterations": total_updates,
+                    "replay_buffer_size": len(agent.replay_buffer),
+                    "message": f"Trained Q-learning agent: {total_updates} iterations",
                 }
             else:
                 return {
-                    'success': True,
-                    'agent': 'q_learning',
-                    'training_iterations': 0,
-                    'replay_buffer_size': len(agent.replay_buffer),
-                    'message': f'Replay buffer has {len(agent.replay_buffer)} samples (need {agent.replay_batch_size})'
+                    "success": True,
+                    "agent": "q_learning",
+                    "training_iterations": 0,
+                    "replay_buffer_size": len(agent.replay_buffer),
+                    "message": f"Replay buffer has {len(agent.replay_buffer)} samples (need {agent.replay_batch_size})",
                 }
         except Exception as e:
-            error_msg = f'Q-learning training failed: {e}'
-            self.results['errors'].append(error_msg)
+            error_msg = f"Q-learning training failed: {e}"
+            self.results["errors"].append(error_msg)
             return {
-                'success': False,
-                'agent': 'q_learning',
-                'error': str(e),
-                'message': error_msg
+                "success": False,
+                "agent": "q_learning",
+                "error": str(e),
+                "message": error_msg,
             }
 
-    def train_dqn(self, device: str = 'cpu', episodes: int = 10) -> Dict[str, Any]:
+    def train_dqn(self, device: str = "cpu", episodes: int = 10) -> Dict[str, Any]:
         """Train DQN agent."""
         try:
             from src.ml.dqn_agent import DQNAgent
@@ -113,9 +120,9 @@ class RLTrainingOrchestrator:
 
             if len(all_trades) < 32:
                 return {
-                    'success': False,
-                    'agent': 'dqn',
-                    'message': f'Insufficient trade data: {len(all_trades)} trades (need 32+)'
+                    "success": False,
+                    "agent": "dqn",
+                    "message": f"Insufficient trade data: {len(all_trades)} trades (need 32+)",
                 }
 
             model_path = DATA_DIR / "models" / "dqn_agent.pt"
@@ -123,9 +130,9 @@ class RLTrainingOrchestrator:
                 agent = DQNAgent.load(str(model_path))
             else:
                 return {
-                    'success': False,
-                    'agent': 'dqn',
-                    'message': 'DQN agent not initialized - need to configure input/output dimensions'
+                    "success": False,
+                    "agent": "dqn",
+                    "message": "DQN agent not initialized - need to configure input/output dimensions",
                 }
 
             total_loss = 0.0
@@ -142,44 +149,44 @@ class RLTrainingOrchestrator:
                 avg_loss = total_loss / training_steps
 
                 return {
-                    'success': True,
-                    'agent': 'dqn',
-                    'episodes': episodes,
-                    'training_steps': training_steps,
-                    'avg_loss': avg_loss,
-                    'message': f'Trained DQN agent: {training_steps} steps, avg loss: {avg_loss:.4f}'
+                    "success": True,
+                    "agent": "dqn",
+                    "episodes": episodes,
+                    "training_steps": training_steps,
+                    "avg_loss": avg_loss,
+                    "message": f"Trained DQN agent: {training_steps} steps, avg loss: {avg_loss:.4f}",
                 }
             else:
                 return {
-                    'success': False,
-                    'agent': 'dqn',
-                    'message': 'No training occurred - insufficient samples in replay buffer'
+                    "success": False,
+                    "agent": "dqn",
+                    "message": "No training occurred - insufficient samples in replay buffer",
                 }
         except Exception as e:
-            error_msg = f'DQN training failed: {e}'
-            self.results['errors'].append(error_msg)
+            error_msg = f"DQN training failed: {e}"
+            self.results["errors"].append(error_msg)
             return {
-                'success': False,
-                'agent': 'dqn',
-                'error': str(e),
-                'message': error_msg
+                "success": False,
+                "agent": "dqn",
+                "error": str(e),
+                "message": error_msg,
             }
 
     def train_with_langsmith(self, agent_type: str) -> Dict[str, Any]:
         """Train agent with LangSmith monitoring."""
         try:
             # Check if LangSmith is configured
-            langsmith_api_key = os.getenv('LANGCHAIN_API_KEY')
+            langsmith_api_key = os.getenv("LANGCHAIN_API_KEY")
             if not langsmith_api_key:
                 return {
-                    'success': False,
-                    'agent': agent_type,
-                    'message': 'LangSmith not configured - set LANGCHAIN_API_KEY environment variable'
+                    "success": False,
+                    "agent": agent_type,
+                    "message": "LangSmith not configured - set LANGCHAIN_API_KEY environment variable",
                 }
 
             # Set up LangSmith tracing
-            os.environ['LANGCHAIN_TRACING_V2'] = 'true'
-            os.environ['LANGCHAIN_PROJECT'] = 'trading-rl-training'
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_PROJECT"] = "trading-rl-training"
 
             from langsmith import Client
 
@@ -187,58 +194,67 @@ class RLTrainingOrchestrator:
 
             # Train the agent (LangSmith will auto-trace via wrapper)
             try:
-                if agent_type == 'q_learning':
+                if agent_type == "q_learning":
                     result = self.train_q_learning()
-                elif agent_type == 'dqn':
+                elif agent_type == "dqn":
                     result = self.train_dqn()
                 else:
-                    result = {'success': False, 'message': f'Unknown agent type: {agent_type}'}
+                    result = {
+                        "success": False,
+                        "message": f"Unknown agent type: {agent_type}",
+                    }
 
                 # LangSmith automatically traces via wrapper - no manual run creation needed
                 return result
             except Exception as e:
                 raise
         except Exception as e:
-            error_msg = f'LangSmith training failed: {e}'
-            self.results['errors'].append(error_msg)
+            error_msg = f"LangSmith training failed: {e}"
+            self.results["errors"].append(error_msg)
             return {
-                'success': False,
-                'agent': agent_type,
-                'error': str(e),
-                'message': error_msg
+                "success": False,
+                "agent": agent_type,
+                "error": str(e),
+                "message": error_msg,
             }
 
-    def train_all(self, agents: List[str], device: str = 'cpu', use_langsmith: bool = False) -> Dict[str, Any]:
+    def train_all(
+        self, agents: List[str], device: str = "cpu", use_langsmith: bool = False
+    ) -> Dict[str, Any]:
         """Train all specified agents."""
         for agent in agents:
-            if agent == 'q_learning':
+            if agent == "q_learning":
                 if use_langsmith:
-                    self.results['agents']['q_learning'] = self.train_with_langsmith('q_learning')
+                    self.results["agents"]["q_learning"] = self.train_with_langsmith(
+                        "q_learning"
+                    )
                 else:
-                    self.results['agents']['q_learning'] = self.train_q_learning()
+                    self.results["agents"]["q_learning"] = self.train_q_learning()
 
-            elif agent == 'dqn':
+            elif agent == "dqn":
                 if use_langsmith:
-                    self.results['agents']['dqn'] = self.train_with_langsmith('dqn')
+                    self.results["agents"]["dqn"] = self.train_with_langsmith("dqn")
                 else:
-                    self.results['agents']['dqn'] = self.train_dqn(device=device)
+                    self.results["agents"]["dqn"] = self.train_dqn(device=device)
 
-            elif agent == 'ppo':
-                self.results['agents']['ppo'] = {
-                    'success': False,
-                    'agent': 'ppo',
-                    'message': 'PPO training requires full environment setup - use model-training.yml workflow'
+            elif agent == "ppo":
+                self.results["agents"]["ppo"] = {
+                    "success": False,
+                    "agent": "ppo",
+                    "message": "PPO training requires full environment setup - use model-training.yml workflow",
                 }
 
         # Calculate summary
-        successful = sum(1 for r in self.results['agents'].values() if r.get('success', False))
-        total = len(self.results['agents'])
+        successful = sum(
+            1 for r in self.results["agents"].values() if r.get("success", False)
+        )
+        total = len(self.results["agents"])
 
-        self.results['summary'] = {
-            'successful': successful,
-            'total': total,
-            'success_rate': successful / total if total > 0 else 0.0,
-            'platform': self.platform
+        self.results["summary"] = {
+            "successful": successful,
+            "total": total,
+            "success_rate": successful / total if total > 0 else 0.0,
+            "platform": self.platform,
         }
 
         return self.results
@@ -248,7 +264,7 @@ class RLTrainingOrchestrator:
         results_file = DATA_DIR / "rl_training_log.json"
 
         if results_file.exists():
-            with open(results_file, 'r') as f:
+            with open(results_file, "r") as f:
                 log = json.load(f)
         else:
             log = []
@@ -259,45 +275,45 @@ class RLTrainingOrchestrator:
         if len(log) > 200:
             log = log[-200:]
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(log, f, indent=2)
 
         return results_file
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Unified RL Training Orchestrator')
+    parser = argparse.ArgumentParser(description="Unified RL Training Orchestrator")
     parser.add_argument(
-        '--platform',
+        "--platform",
         type=str,
-        default='local',
-        choices=['local', 'langsmith', 'github'],
-        help='Platform to train on (default: local)'
+        default="local",
+        choices=["local", "langsmith", "github"],
+        help="Platform to train on (default: local)",
     )
     parser.add_argument(
-        '--agents',
+        "--agents",
         type=str,
-        default='q_learning',
-        help='Comma-separated list of agents: q_learning,dqn,ppo,all (default: q_learning)'
+        default="q_learning",
+        help="Comma-separated list of agents: q_learning,dqn,ppo,all (default: q_learning)",
     )
     parser.add_argument(
-        '--device',
+        "--device",
         type=str,
-        default='cpu',
-        choices=['cpu', 'cuda'],
-        help='Device for deep RL (default: cpu)'
+        default="cpu",
+        choices=["cpu", "cuda"],
+        help="Device for deep RL (default: cpu)",
     )
     parser.add_argument(
-        '--use-langsmith',
-        action='store_true',
-        help='Enable LangSmith monitoring (requires LANGCHAIN_API_KEY)'
+        "--use-langsmith",
+        action="store_true",
+        help="Enable LangSmith monitoring (requires LANGCHAIN_API_KEY)",
     )
 
     args = parser.parse_args()
 
-    agents = [a.strip() for a in args.agents.split(',')]
-    if 'all' in agents:
-        agents = ['q_learning', 'dqn']
+    agents = [a.strip() for a in args.agents.split(",")]
+    if "all" in agents:
+        agents = ["q_learning", "dqn"]
 
     print("=" * 70)
     print("RL TRAINING ORCHESTRATOR")
@@ -310,27 +326,31 @@ def main():
     print()
 
     orchestrator = RLTrainingOrchestrator(platform=args.platform)
-    results = orchestrator.train_all(agents, device=args.device, use_langsmith=args.use_langsmith)
+    results = orchestrator.train_all(
+        agents, device=args.device, use_langsmith=args.use_langsmith
+    )
 
     # Print results
     print("\n📊 Training Results:")
     print("-" * 70)
-    for agent_name, result in results['agents'].items():
-        status = '✅' if result.get('success', False) else '❌'
+    for agent_name, result in results["agents"].items():
+        status = "✅" if result.get("success", False) else "❌"
         print(f"{status} {agent_name}: {result.get('message', 'Unknown')}")
 
-    if results.get('errors'):
+    if results.get("errors"):
         print("\n⚠️ Errors:")
-        for error in results['errors']:
+        for error in results["errors"]:
             print(f"  - {error}")
 
-    print(f"\n📈 Summary: {results['summary']['successful']}/{results['summary']['total']} agents trained successfully")
+    print(
+        f"\n📈 Summary: {results['summary']['successful']}/{results['summary']['total']} agents trained successfully"
+    )
 
     # Save results
     results_file = orchestrator.save_results()
     print(f"\n✅ Results saved to {results_file}")
 
-    return 0 if results['summary']['success_rate'] > 0 else 1
+    return 0 if results["summary"]["success_rate"] > 0 else 1
 
 
 if __name__ == "__main__":

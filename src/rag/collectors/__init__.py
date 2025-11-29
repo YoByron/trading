@@ -10,5 +10,5 @@ __all__ = [
     "NewsOrchestrator",
     "YahooFinanceCollector",
     "RedditCollector",
-    "AlphaVantageCollector"
+    "AlphaVantageCollector",
 ]

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ContextEntry:
     """Context entry for persistent storage"""
+
     key: str
     data: Dict[str, Any]
     timestamp: str
@@ -55,8 +56,13 @@ class ContextEngine:
         self.agent_decisions_dir = self.base_dir / "decisions"
 
         # Create directories
-        for dir_path in [self.trade_logs_dir, self.backtest_dir, self.audit_dir,
-                        self.market_data_dir, self.agent_decisions_dir]:
+        for dir_path in [
+            self.trade_logs_dir,
+            self.backtest_dir,
+            self.audit_dir,
+            self.market_data_dir,
+            self.agent_decisions_dir,
+        ]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"✅ Context Engine initialized: {self.base_dir}")
@@ -81,7 +87,7 @@ class ContextEngine:
             data=trade_data,
             timestamp=datetime.now().isoformat(),
             agent_type=trade_data.get("agent_type", "unknown"),
-            tags=["trade", symbol]
+            tags=["trade", symbol],
         )
 
         with open(filepath, "w") as f:
@@ -110,7 +116,7 @@ class ContextEngine:
             data=backtest_data,
             timestamp=datetime.now().isoformat(),
             agent_type="backtest",
-            tags=["backtest", strategy]
+            tags=["backtest", strategy],
         )
 
         with open(filepath, "w") as f:
@@ -140,7 +146,7 @@ class ContextEngine:
             data=decision_data,
             timestamp=datetime.now().isoformat(),
             agent_type=agent_type,
-            tags=["decision", agent_type, symbol]
+            tags=["decision", agent_type, symbol],
         )
 
         with open(filepath, "w") as f:
@@ -149,7 +155,9 @@ class ContextEngine:
         logger.debug(f"Saved agent decision: {filepath}")
         return str(filepath)
 
-    def load_recent_trades(self, symbol: Optional[str] = None, days: int = 7) -> List[Dict[str, Any]]:
+    def load_recent_trades(
+        self, symbol: Optional[str] = None, days: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Load recent trades from storage
 
@@ -177,9 +185,12 @@ class ContextEngine:
 
         return sorted(trades, key=lambda x: x.get("timestamp", ""), reverse=True)
 
-    def load_agent_decisions(self, agent_type: Optional[str] = None,
-                            symbol: Optional[str] = None,
-                            days: int = 7) -> List[Dict[str, Any]]:
+    def load_agent_decisions(
+        self,
+        agent_type: Optional[str] = None,
+        symbol: Optional[str] = None,
+        days: int = 7,
+    ) -> List[Dict[str, Any]]:
         """
         Load recent agent decisions
 
@@ -202,8 +213,9 @@ class ContextEngine:
 
                     if entry_timestamp >= cutoff_date:
                         data = entry["data"]
-                        if (agent_type is None or data.get("agent_type") == agent_type) and \
-                           (symbol is None or data.get("symbol") == symbol):
+                        if (
+                            agent_type is None or data.get("agent_type") == agent_type
+                        ) and (symbol is None or data.get("symbol") == symbol):
                             decisions.append(data)
             except Exception as e:
                 logger.warning(f"Error loading decision {filepath}: {e}")
@@ -247,17 +259,19 @@ class ContextEngine:
                 "winning_trades": winning_trades,
                 "win_rate_pct": win_rate,
                 "total_pnl": total_pnl,
-                "agent_decisions_count": len(decisions)
+                "agent_decisions_count": len(decisions),
             },
             "recent_trades": trades[:10],  # Last 10 trades
             "agent_decisions": agent_decisions,
             "context_files": {
                 "trade_logs": len(list(self.trade_logs_dir.glob(f"{symbol}_*.json"))),
-                "decisions": len([d for d in decisions if d.get("symbol") == symbol])
-            }
+                "decisions": len([d for d in decisions if d.get("symbol") == symbol]),
+            },
         }
 
-    def export_context(self, output_file: Path, symbol: Optional[str] = None, days: int = 30) -> str:
+    def export_context(
+        self, output_file: Path, symbol: Optional[str] = None, days: int = 30
+    ) -> str:
         """
         Export context for analysis (bulk import/export)
 
@@ -274,7 +288,7 @@ class ContextEngine:
             "symbol": symbol,
             "days": days,
             "trades": self.load_recent_trades(symbol=symbol, days=days),
-            "decisions": self.load_agent_decisions(symbol=symbol, days=days)
+            "decisions": self.load_agent_decisions(symbol=symbol, days=days),
         }
 
         with open(output_file, "w") as f:
@@ -293,8 +307,13 @@ class ContextEngine:
         cutoff_date = datetime.now() - timedelta(days=days)
         deleted_count = 0
 
-        for dir_path in [self.trade_logs_dir, self.backtest_dir, self.audit_dir,
-                        self.market_data_dir, self.agent_decisions_dir]:
+        for dir_path in [
+            self.trade_logs_dir,
+            self.backtest_dir,
+            self.audit_dir,
+            self.market_data_dir,
+            self.agent_decisions_dir,
+        ]:
             for filepath in dir_path.glob("*.json"):
                 try:
                     file_time = datetime.fromtimestamp(filepath.stat().st_mtime)

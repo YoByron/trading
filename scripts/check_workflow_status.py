@@ -10,6 +10,7 @@ import json
 import sys
 from datetime import datetime
 
+
 def run_command(cmd):
     """Run shell command and return output."""
     try:
@@ -17,6 +18,7 @@ def run_command(cmd):
         return result.stdout.strip(), result.returncode
     except Exception as e:
         return str(e), 1
+
 
 def check_workflow_status():
     """Check workflow status and diagnose issues."""
@@ -49,7 +51,9 @@ def check_workflow_status():
 
     # Check last run details
     print("\n🔍 Last Run Details:")
-    stdout, code = run_command("gh run list --workflow=daily-trading.yml --limit 1 --json conclusion,createdAt,displayTitle")
+    stdout, code = run_command(
+        "gh run list --workflow=daily-trading.yml --limit 1 --json conclusion,createdAt,displayTitle"
+    )
     if code == 0:
         try:
             runs = json.loads(stdout)
@@ -81,7 +85,9 @@ def check_workflow_status():
     print("=" * 80)
 
     print("\n1. Check Workflow Status:")
-    print("   Visit: https://github.com/IgorGanapolsky/trading/actions/workflows/daily-trading.yml")
+    print(
+        "   Visit: https://github.com/IgorGanapolsky/trading/actions/workflows/daily-trading.yml"
+    )
     print("   Look for yellow 'disabled' banner")
 
     print("\n2. If Disabled:")
@@ -96,6 +102,7 @@ def check_workflow_status():
     print("   gh run view <run-id> --log")
 
     print("\n" + "=" * 80)
+
 
 if __name__ == "__main__":
     check_workflow_status()

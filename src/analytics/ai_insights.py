@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DailyBriefing:
     """AI-generated daily briefing"""
+
     summary: str
     key_changes: List[str]
     anomalies: List[str]
@@ -28,6 +29,7 @@ class DailyBriefing:
 @dataclass
 class TradeCritique:
     """AI critique of a trade"""
+
     trade_id: str
     entry_timing_score: float  # -1 to 1
     exit_timing_score: float
@@ -40,6 +42,7 @@ class TradeCritique:
 @dataclass
 class StrategyHealth:
     """Strategy health scoring"""
+
     overall_score: float  # 0-100
     performance_score: float
     risk_score: float
@@ -69,7 +72,7 @@ class AIInsightGenerator:
         self,
         metrics: Dict[str, Any],
         recent_trades: List[Dict[str, Any]],
-        risk_metrics: Dict[str, Any]
+        risk_metrics: Dict[str, Any],
     ) -> DailyBriefing:
         """
         Generate natural language daily briefing.
@@ -83,10 +86,10 @@ class AIInsightGenerator:
             DailyBriefing with AI-generated insights
         """
         # Extract key metrics
-        total_pl = metrics.get('total_pl', 0.0)
-        win_rate = metrics.get('win_rate', 0.0)
-        avg_daily = metrics.get('avg_daily_profit', 0.0)
-        max_dd = risk_metrics.get('max_drawdown_pct', 0.0)
+        total_pl = metrics.get("total_pl", 0.0)
+        win_rate = metrics.get("win_rate", 0.0)
+        avg_daily = metrics.get("avg_daily_profit", 0.0)
+        max_dd = risk_metrics.get("max_drawdown_pct", 0.0)
 
         # Generate summary
         if total_pl > 0:
@@ -123,7 +126,9 @@ class AIInsightGenerator:
         # Recommendations
         recommendations = []
         if avg_daily < 1.0:
-            recommendations.append("Consider increasing position sizes if win rate is stable")
+            recommendations.append(
+                "Consider increasing position sizes if win rate is stable"
+            )
 
         if win_rate < 40:
             recommendations.append("Review entry signals - may need tighter filters")
@@ -138,14 +143,14 @@ class AIInsightGenerator:
             key_changes=key_changes,
             anomalies=anomalies,
             recommendations=recommendations,
-            confidence_score=confidence
+            confidence_score=confidence,
         )
 
     def detect_anomalies(
         self,
         equity_curve: List[float],
         trades: List[Dict[str, Any]],
-        metrics: Dict[str, Any]
+        metrics: Dict[str, Any],
     ) -> List[str]:
         """
         Detect anomalies in trading performance.
@@ -160,7 +165,7 @@ class AIInsightGenerator:
 
         # Check for sudden drops
         recent_returns = [
-            (equity_curve[i] - equity_curve[i-1]) / equity_curve[i-1]
+            (equity_curve[i] - equity_curve[i - 1]) / equity_curve[i - 1]
             for i in range(1, len(equity_curve))
         ]
 
@@ -173,22 +178,28 @@ class AIInsightGenerator:
             # Check for outliers
             for i, ret in enumerate(recent_returns[-5:]):
                 if abs(ret - avg_return) > 3 * std_return:
-                    anomalies.append(f"Outlier return detected: {ret*100:.2f}% on day {len(equity_curve)-5+i}")
+                    anomalies.append(
+                        f"Outlier return detected: {ret*100:.2f}% on day {len(equity_curve)-5+i}"
+                    )
 
         # Check for unusual trade patterns
         if len(trades) > 10:
             recent_trades = trades[-10:]
-            trade_amounts = [t.get('amount', 0) for t in recent_trades]
+            trade_amounts = [t.get("amount", 0) for t in recent_trades]
             avg_amount = sum(trade_amounts) / len(trade_amounts)
 
             for trade in recent_trades:
-                amount = trade.get('amount', 0)
+                amount = trade.get("amount", 0)
                 if amount > avg_amount * 2:
-                    anomalies.append(f"Unusually large trade: ${amount:.2f} (avg: ${avg_amount:.2f})")
+                    anomalies.append(
+                        f"Unusually large trade: ${amount:.2f} (avg: ${avg_amount:.2f})"
+                    )
 
         return anomalies
 
-    def critique_trade(self, trade: Dict[str, Any], market_data: Dict[str, Any]) -> TradeCritique:
+    def critique_trade(
+        self, trade: Dict[str, Any], market_data: Dict[str, Any]
+    ) -> TradeCritique:
         """
         AI critique of a specific trade.
 
@@ -199,10 +210,10 @@ class AIInsightGenerator:
         Returns:
             TradeCritique with scores and suggestions
         """
-        trade_id = trade.get('order_id', 'unknown')
-        pl = trade.get('pl', 0.0)
-        entry_price = trade.get('entry_price', 0.0)
-        exit_price = trade.get('exit_price', 0.0)
+        trade_id = trade.get("order_id", "unknown")
+        pl = trade.get("pl", 0.0)
+        entry_price = trade.get("entry_price", 0.0)
+        exit_price = trade.get("exit_price", 0.0)
 
         # Entry timing (simplified - would use market regime)
         entry_score = 0.5  # Placeholder
@@ -211,7 +222,7 @@ class AIInsightGenerator:
         exit_score = 0.5  # Placeholder
 
         # Position sizing
-        amount = trade.get('amount', 0.0)
+        amount = trade.get("amount", 0.0)
         sizing_score = 0.5  # Placeholder
 
         # Overall score
@@ -238,14 +249,14 @@ class AIInsightGenerator:
             position_sizing_score=sizing_score,
             overall_score=overall,
             critique=critique,
-            suggestions=suggestions
+            suggestions=suggestions,
         )
 
     def assess_strategy_health(
         self,
         metrics: Dict[str, Any],
         risk_metrics: Dict[str, Any],
-        forecast: Dict[str, Any]
+        forecast: Dict[str, Any],
     ) -> StrategyHealth:
         """
         Assess overall strategy health.
@@ -254,13 +265,13 @@ class AIInsightGenerator:
             StrategyHealth with scores and diagnosis
         """
         # Performance score (0-100)
-        win_rate = metrics.get('win_rate', 0.0)
-        avg_daily = metrics.get('avg_daily_profit', 0.0)
+        win_rate = metrics.get("win_rate", 0.0)
+        avg_daily = metrics.get("avg_daily_profit", 0.0)
         perf_score = min(100, (win_rate / 55 * 50) + (avg_daily / 10 * 50))
 
         # Risk score (0-100, higher is better)
-        max_dd = risk_metrics.get('max_drawdown_pct', 0.0)
-        sharpe = risk_metrics.get('sharpe_ratio', 0.0)
+        max_dd = risk_metrics.get("max_drawdown_pct", 0.0)
+        sharpe = risk_metrics.get("sharpe_ratio", 0.0)
         risk_score = max(0, 100 - (max_dd * 5) + (sharpe * 20))
         risk_score = min(100, risk_score)
 
@@ -268,7 +279,7 @@ class AIInsightGenerator:
         consistency = 70.0  # Placeholder
 
         # Edge score (from forecast)
-        edge_drift = forecast.get('edge_drift_score', 0.0)
+        edge_drift = forecast.get("edge_drift_score", 0.0)
         edge_score = 50 + (edge_drift * 50)  # Convert -1 to 1 into 0-100
 
         # Overall score
@@ -298,5 +309,5 @@ class AIInsightGenerator:
             consistency_score=consistency,
             edge_score=edge_score,
             diagnosis=diagnosis,
-            action_items=action_items
+            action_items=action_items,
         )

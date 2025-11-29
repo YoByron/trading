@@ -242,5 +242,5 @@ class BacktestResults:
         Args:
             filepath: Path to save the JSON file
         """
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.to_dict(), f, indent=2)

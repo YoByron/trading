@@ -13,8 +13,10 @@ Exit codes:
 import sys
 from pathlib import Path
 from datetime import datetime
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.state_manager import StateManager
+
 
 def main():
     print(f"\n{'='*70}")
@@ -39,10 +41,15 @@ def main():
         if staleness.get("recommended_action"):
             print(f"Action: {staleness['recommended_action']}\n")
 
-        return 2 if staleness["status"] == "ERROR" else (1 if staleness["status"] == "WARNING" else 0)
+        return (
+            2
+            if staleness["status"] == "ERROR"
+            else (1 if staleness["status"] == "WARNING" else 0)
+        )
     except Exception as e:
         print(f"❌ ERROR: {e}\n")
         return 2
+
 
 if __name__ == "__main__":
     sys.exit(main())

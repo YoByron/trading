@@ -18,6 +18,7 @@ from src.utils.security import mask_api_key
 
 load_dotenv()
 
+
 def verify_grok_credentials():
     """Verify Grok API credentials."""
     print("=" * 70)

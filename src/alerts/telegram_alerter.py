@@ -43,10 +43,7 @@ class TelegramAlerter:
             self.api_url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
 
     def send_alert(
-        self,
-        message: str,
-        level: str = "INFO",
-        include_timestamp: bool = True
+        self, message: str, level: str = "INFO", include_timestamp: bool = True
     ) -> bool:
         """
         Send alert to CEO via Telegram.
@@ -64,12 +61,7 @@ class TelegramAlerter:
             return False
 
         # Map severity to emoji
-        emoji_map = {
-            "INFO": "ℹ️",
-            "WARNING": "⚠️",
-            "ERROR": "❌",
-            "CRITICAL": "🚨"
-        }
+        emoji_map = {"INFO": "ℹ️", "WARNING": "⚠️", "ERROR": "❌", "CRITICAL": "🚨"}
 
         emoji = emoji_map.get(level.upper(), "📢")
 
@@ -79,9 +71,7 @@ class TelegramAlerter:
             timestamp_str = f"\n⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S ET')}"
 
         formatted_message = (
-            f"{emoji} *{level.upper()}*\n\n"
-            f"{message}"
-            f"{timestamp_str}"
+            f"{emoji} *{level.upper()}*\n\n" f"{message}" f"{timestamp_str}"
         )
 
         # Send to Telegram
@@ -89,7 +79,7 @@ class TelegramAlerter:
             payload = {
                 "chat_id": self.chat_id,
                 "text": formatted_message,
-                "parse_mode": "Markdown"
+                "parse_mode": "Markdown",
             }
 
             response = requests.post(self.api_url, json=payload, timeout=10)
@@ -108,9 +98,7 @@ class TelegramAlerter:
             return False
 
     def send_trade_failure(
-        self,
-        error: str,
-        context: Optional[Dict[str, Any]] = None
+        self, error: str, context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Send trading-specific failure alert.
@@ -135,12 +123,7 @@ class TelegramAlerter:
 
         return self.send_alert(message, level="CRITICAL")
 
-    def send_market_data_failure(
-        self,
-        symbol: str,
-        error: str,
-        attempts: int
-    ) -> bool:
+    def send_market_data_failure(self, symbol: str, error: str, attempts: int) -> bool:
         """
         Send market data fetch failure alert.
 
@@ -163,10 +146,7 @@ class TelegramAlerter:
         return self.send_alert(message, level="CRITICAL")
 
     def send_no_trades_alert(
-        self,
-        reason: str,
-        day: int,
-        portfolio_value: float
+        self, reason: str, day: int, portfolio_value: float
     ) -> bool:
         """
         Send alert when no trades executed.
@@ -202,10 +182,7 @@ class TelegramAlerter:
         return self.send_alert(report, level="INFO")
 
     def send_health_alert(
-        self,
-        status: str,
-        failed_checks: list,
-        portfolio_value: float
+        self, status: str, failed_checks: list, portfolio_value: float
     ) -> bool:
         """
         Send health check failure alert.
@@ -218,10 +195,7 @@ class TelegramAlerter:
         Returns:
             True if sent successfully
         """
-        message = (
-            f"*HEALTH CHECK {status}*\n\n"
-            f"Failed Checks:\n"
-        )
+        message = f"*HEALTH CHECK {status}*\n\n" f"Failed Checks:\n"
 
         for check in failed_checks:
             message += f"❌ {check}\n"

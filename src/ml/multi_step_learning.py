@@ -22,6 +22,7 @@ from dataclasses import dataclass
 @dataclass
 class NStepTransition:
     """N-step transition."""
+
     state: np.ndarray
     action: int
     rewards: List[float]  # n rewards
@@ -55,7 +56,7 @@ class NStepBuffer:
         action: int,
         reward: float,
         next_state: np.ndarray,
-        done: bool
+        done: bool,
     ) -> Optional[NStepTransition]:
         """
         Add transition and return n-step transition if ready.
@@ -87,7 +88,7 @@ class NStepBuffer:
                 rewards=rewards,
                 next_state=final_next_state,
                 done=final_done,
-                n=len(self.buffer)
+                n=len(self.buffer),
             )
 
             # Clear buffer if done
@@ -103,7 +104,7 @@ class NStepBuffer:
 
     def _compute_n_step_return(self, rewards: List[float], done: bool) -> float:
         """Compute n-step return."""
-        return sum(r * (self.gamma ** i) for i, r in enumerate(rewards))
+        return sum(r * (self.gamma**i) for i, r in enumerate(rewards))
 
     def flush(self) -> Optional[NStepTransition]:
         """Flush remaining transitions."""
@@ -118,7 +119,7 @@ class NStepBuffer:
                 rewards=rewards,
                 next_state=final_next_state,
                 done=final_done,
-                n=len(self.buffer)
+                n=len(self.buffer),
             )
 
             self.buffer.clear()
@@ -152,16 +153,18 @@ class NStepDQNAgent:
         action: int,
         reward: float,
         next_state: np.ndarray,
-        done: bool
+        done: bool,
     ):
         """Store transition and train on n-step returns."""
         # Add to n-step buffer
-        n_step_transition = self.n_step_buffer.add(state, action, reward, next_state, done)
+        n_step_transition = self.n_step_buffer.add(
+            state, action, reward, next_state, done
+        )
 
         if n_step_transition:
             # Compute n-step return
             n_step_return = sum(
-                r * (self.base_agent.gamma ** i)
+                r * (self.base_agent.gamma**i)
                 for i, r in enumerate(n_step_transition.rewards)
             )
 
@@ -171,7 +174,7 @@ class NStepDQNAgent:
                 action=n_step_transition.action,
                 reward=n_step_return,  # Use n-step return
                 next_state=n_step_transition.next_state,
-                done=n_step_transition.done
+                done=n_step_transition.done,
             )
 
     def select_action(self, state: np.ndarray, **kwargs):

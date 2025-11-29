@@ -35,6 +35,7 @@ def retry_with_backoff(
         def fetch_data():
             return api.get_data()
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -62,4 +63,5 @@ def retry_with_backoff(
             return func(*args, **kwargs)
 
         return wrapper
+
     return decorator

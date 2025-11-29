@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from collections import defaultdict
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from scripts.dashboard_metrics import load_json_file
 
@@ -38,18 +38,18 @@ class AIInsightsGenerator:
         all_trades: List[Dict],
         risk_metrics: Dict[str, Any],
         performance_metrics: Dict[str, Any],
-        attribution: Dict[str, Any]
+        attribution: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Generate comprehensive daily insights."""
         insights = {
-            'summary': self._generate_summary(perf_log, all_trades),
-            'trade_analysis': self._analyze_trades(all_trades),
-            'anomalies': self._detect_anomalies(perf_log, all_trades),
-            'regime_shift': self._detect_regime_shift(perf_log),
-            'recommendations': self._generate_recommendations(
+            "summary": self._generate_summary(perf_log, all_trades),
+            "trade_analysis": self._analyze_trades(all_trades),
+            "anomalies": self._detect_anomalies(perf_log, all_trades),
+            "regime_shift": self._detect_regime_shift(perf_log),
+            "recommendations": self._generate_recommendations(
                 risk_metrics, performance_metrics, attribution
             ),
-            'strategy_health': self._score_strategy_health(
+            "strategy_health": self._score_strategy_health(
                 risk_metrics, performance_metrics
             ),
         }
@@ -62,20 +62,26 @@ class AIInsightsGenerator:
             return "No trading activity to summarize."
 
         latest = perf_log[-1]
-        equity = latest.get('equity', 100000)
-        pl = latest.get('pl', 0)
-        pl_pct = latest.get('pl_pct', 0) * 100
+        equity = latest.get("equity", 100000)
+        pl = latest.get("pl", 0)
+        pl_pct = latest.get("pl_pct", 0) * 100
 
         # Count today's trades
         today = date.today().isoformat()
-        today_trades = [t for t in all_trades if t.get('trade_date', '').startswith(today)]
+        today_trades = [
+            t for t in all_trades if t.get("trade_date", "").startswith(today)
+        ]
 
         summary_parts = []
 
         if pl > 0:
-            summary_parts.append(f"📈 Portfolio gained ${pl:.2f} ({pl_pct:+.2f}%) today.")
+            summary_parts.append(
+                f"📈 Portfolio gained ${pl:.2f} ({pl_pct:+.2f}%) today."
+            )
         elif pl < 0:
-            summary_parts.append(f"📉 Portfolio declined ${abs(pl):.2f} ({pl_pct:+.2f}%) today.")
+            summary_parts.append(
+                f"📉 Portfolio declined ${abs(pl):.2f} ({pl_pct:+.2f}%) today."
+            )
         else:
             summary_parts.append("➡️ Portfolio remained flat today.")
 
@@ -84,11 +90,15 @@ class AIInsightsGenerator:
 
         # Performance trend
         if len(perf_log) >= 3:
-            recent_pl = [e.get('pl', 0) for e in perf_log[-3:]]
+            recent_pl = [e.get("pl", 0) for e in perf_log[-3:]]
             if all(p > 0 for p in recent_pl):
-                summary_parts.append("✅ Three consecutive positive days - strong momentum.")
+                summary_parts.append(
+                    "✅ Three consecutive positive days - strong momentum."
+                )
             elif all(p < 0 for p in recent_pl):
-                summary_parts.append("⚠️ Three consecutive negative days - review strategy.")
+                summary_parts.append(
+                    "⚠️ Three consecutive negative days - review strategy."
+                )
 
         return " ".join(summary_parts) if summary_parts else "No significant activity."
 
@@ -102,7 +112,7 @@ class AIInsightsGenerator:
         # Analyze trade distribution
         symbol_counts = defaultdict(int)
         for trade in all_trades[-10:]:  # Last 10 trades
-            symbol = trade.get('symbol', '')
+            symbol = trade.get("symbol", "")
             symbol_counts[symbol] += 1
 
         # Check for over-concentration
@@ -127,17 +137,19 @@ class AIInsightsGenerator:
 
     def _is_morning_trade(self, trade: Dict) -> bool:
         """Check if trade was executed in morning hours."""
-        timestamp = trade.get('timestamp', '')
+        timestamp = trade.get("timestamp", "")
         if not timestamp:
             return False
 
         try:
-            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             return 9 <= dt.hour < 12
         except:
             return False
 
-    def _detect_anomalies(self, perf_log: List[Dict], all_trades: List[Dict]) -> List[str]:
+    def _detect_anomalies(
+        self, perf_log: List[Dict], all_trades: List[Dict]
+    ) -> List[str]:
         """Detect anomalies in trading activity."""
         anomalies = []
 
@@ -145,7 +157,7 @@ class AIInsightsGenerator:
             return anomalies
 
         # Check for unusual P/L
-        recent_pl = [e.get('pl', 0) for e in perf_log[-5:]]
+        recent_pl = [e.get("pl", 0) for e in perf_log[-5:]]
         if recent_pl:
             mean_pl = np.mean(recent_pl)
             std_pl = np.std(recent_pl) if len(recent_pl) > 1 else 0
@@ -163,7 +175,9 @@ class AIInsightsGenerator:
 
         # Check for missing trades
         today = date.today().isoformat()
-        today_trades = [t for t in all_trades if t.get('trade_date', '').startswith(today)]
+        today_trades = [
+            t for t in all_trades if t.get("trade_date", "").startswith(today)
+        ]
 
         # If we typically trade but didn't today
         if len(all_trades) > 5 and len(today_trades) == 0:
@@ -180,19 +194,19 @@ class AIInsightsGenerator:
             return None
 
         # Compare recent vs older performance
-        recent_equity = [e.get('equity', 100000) for e in perf_log[-5:]]
-        older_equity = [e.get('equity', 100000) for e in perf_log[-10:-5]]
+        recent_equity = [e.get("equity", 100000) for e in perf_log[-5:]]
+        older_equity = [e.get("equity", 100000) for e in perf_log[-10:-5]]
 
         if len(recent_equity) < 2 or len(older_equity) < 2:
             return None
 
         # Calculate returns
         recent_returns = [
-            (recent_equity[i] - recent_equity[i-1]) / recent_equity[i-1]
+            (recent_equity[i] - recent_equity[i - 1]) / recent_equity[i - 1]
             for i in range(1, len(recent_equity))
         ]
         older_returns = [
-            (older_equity[i] - older_equity[i-1]) / older_equity[i-1]
+            (older_equity[i] - older_equity[i - 1]) / older_equity[i - 1]
             for i in range(1, len(older_equity))
         ]
 
@@ -218,13 +232,13 @@ class AIInsightsGenerator:
         self,
         risk_metrics: Dict[str, Any],
         performance_metrics: Dict[str, Any],
-        attribution: Dict[str, Any]
+        attribution: Dict[str, Any],
     ) -> List[str]:
         """Generate actionable recommendations."""
         recommendations = []
 
         # Risk-based recommendations
-        sharpe = risk_metrics.get('sharpe_ratio', 0)
+        sharpe = risk_metrics.get("sharpe_ratio", 0)
         if sharpe < 0:
             recommendations.append(
                 "🔴 CRITICAL: Sharpe ratio is negative. Consider pausing trading "
@@ -236,7 +250,7 @@ class AIInsightsGenerator:
                 "through better entry/exit timing or position sizing."
             )
 
-        max_dd = risk_metrics.get('max_drawdown_pct', 0)
+        max_dd = risk_metrics.get("max_drawdown_pct", 0)
         if max_dd > 5:
             recommendations.append(
                 f"⚠️ Max drawdown ({max_dd:.2f}%) exceeds 5% threshold. "
@@ -244,7 +258,7 @@ class AIInsightsGenerator:
             )
 
         # Performance-based recommendations
-        win_rate = performance_metrics.get('win_rate', 0)
+        win_rate = performance_metrics.get("win_rate", 0)
         if win_rate < 50:
             recommendations.append(
                 f"📊 Win rate ({win_rate:.1f}%) below 50%. Consider: "
@@ -253,20 +267,27 @@ class AIInsightsGenerator:
             )
 
         # Attribution-based recommendations
-        by_symbol = attribution.get('by_symbol', {})
+        by_symbol = attribution.get("by_symbol", {})
         if by_symbol:
-            best_symbol = max(by_symbol.items(), key=lambda x: x[1].get('total_pl', 0))
-            worst_symbol = min(by_symbol.items(), key=lambda x: x[1].get('total_pl', 0))
+            best_symbol = max(by_symbol.items(), key=lambda x: x[1].get("total_pl", 0))
+            worst_symbol = min(by_symbol.items(), key=lambda x: x[1].get("total_pl", 0))
 
-            if best_symbol[1].get('total_pl', 0) > 0 and worst_symbol[1].get('total_pl', 0) < 0:
+            if (
+                best_symbol[1].get("total_pl", 0) > 0
+                and worst_symbol[1].get("total_pl", 0) < 0
+            ):
                 recommendations.append(
                     f"💡 Consider increasing allocation to {best_symbol[0]} "
                     f"(best performer) and reducing {worst_symbol[0]} exposure."
                 )
 
-        return recommendations if recommendations else [
-            "✅ No critical recommendations. System performing within acceptable parameters."
-        ]
+        return (
+            recommendations
+            if recommendations
+            else [
+                "✅ No critical recommendations. System performing within acceptable parameters."
+            ]
+        )
 
     def _score_strategy_health(
         self, risk_metrics: Dict[str, Any], performance_metrics: Dict[str, Any]
@@ -276,7 +297,7 @@ class AIInsightsGenerator:
         factors = []
 
         # Sharpe ratio component (30 points)
-        sharpe = risk_metrics.get('sharpe_ratio', 0)
+        sharpe = risk_metrics.get("sharpe_ratio", 0)
         if sharpe >= 1.0:
             sharpe_score = 30
         elif sharpe >= 0.5:
@@ -286,11 +307,11 @@ class AIInsightsGenerator:
         else:
             sharpe_score = 0
 
-        score -= (30 - sharpe_score)
+        score -= 30 - sharpe_score
         factors.append(f"Sharpe Ratio: {sharpe:.2f} ({sharpe_score}/30)")
 
         # Win rate component (25 points)
-        win_rate = performance_metrics.get('win_rate', 0)
+        win_rate = performance_metrics.get("win_rate", 0)
         if win_rate >= 60:
             win_rate_score = 25
         elif win_rate >= 50:
@@ -300,11 +321,11 @@ class AIInsightsGenerator:
         else:
             win_rate_score = 0
 
-        score -= (25 - win_rate_score)
+        score -= 25 - win_rate_score
         factors.append(f"Win Rate: {win_rate:.1f}% ({win_rate_score}/25)")
 
         # Drawdown component (25 points)
-        max_dd = risk_metrics.get('max_drawdown_pct', 0)
+        max_dd = risk_metrics.get("max_drawdown_pct", 0)
         if max_dd <= 2:
             dd_score = 25
         elif max_dd <= 5:
@@ -314,11 +335,11 @@ class AIInsightsGenerator:
         else:
             dd_score = 0
 
-        score -= (25 - dd_score)
+        score -= 25 - dd_score
         factors.append(f"Max Drawdown: {max_dd:.2f}% ({dd_score}/25)")
 
         # Profit factor component (20 points)
-        profit_factor = performance_metrics.get('profit_factor', 0)
+        profit_factor = performance_metrics.get("profit_factor", 0)
         if profit_factor >= 2.0:
             pf_score = 20
         elif profit_factor >= 1.5:
@@ -328,7 +349,7 @@ class AIInsightsGenerator:
         else:
             pf_score = 0
 
-        score -= (20 - pf_score)
+        score -= 20 - pf_score
         factors.append(f"Profit Factor: {profit_factor:.2f} ({pf_score}/20)")
 
         # Ensure score is between 0 and 100
@@ -349,10 +370,10 @@ class AIInsightsGenerator:
             emoji = "🔴"
 
         return {
-            'score': score,
-            'status': status,
-            'emoji': emoji,
-            'factors': factors,
+            "score": score,
+            "status": status,
+            "emoji": emoji,
+            "factors": factors,
         }
 
 
@@ -365,15 +386,16 @@ if __name__ == "__main__":
 
     # Load sample metrics
     from scripts.dashboard_metrics import TradingMetricsCalculator
+
     calculator = TradingMetricsCalculator()
     metrics = calculator.calculate_all_metrics()
 
     insights = generator.generate_daily_insights(
         perf_log,
         calculator._load_all_trades(),
-        metrics.get('risk_metrics', {}),
-        metrics.get('performance_metrics', {}),
-        metrics.get('performance_attribution', {})
+        metrics.get("risk_metrics", {}),
+        metrics.get("performance_metrics", {}),
+        metrics.get("performance_attribution", {}),
     )
 
     print(json.dumps(insights, indent=2, default=str))

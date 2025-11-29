@@ -2,6 +2,7 @@
 Trade Tracker for Online Learning Integration
 Tracks trades and triggers online learning updates.
 """
+
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -41,7 +42,7 @@ class TradeTracker:
         symbol: str,
         action: int,
         entry_state: Any,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Called when a trade is entered.
@@ -53,11 +54,11 @@ class TradeTracker:
             metadata: Additional metadata
         """
         trade_info = {
-            'symbol': symbol,
-            'action': action,
-            'entry_state': entry_state,
-            'entry_time': datetime.now().isoformat(),
-            'metadata': metadata or {}
+            "symbol": symbol,
+            "action": action,
+            "entry_state": entry_state,
+            "entry_time": datetime.now().isoformat(),
+            "metadata": metadata or {},
         }
 
         self.active_trades[symbol] = trade_info
@@ -68,7 +69,7 @@ class TradeTracker:
         symbol: str,
         exit_state: Any,
         trade_result: Dict[str, Any],
-        market_state: Optional[Dict[str, Any]] = None
+        market_state: Optional[Dict[str, Any]] = None,
     ):
         """
         Called when a trade is exited.
@@ -88,10 +89,10 @@ class TradeTracker:
         # Prepare complete trade record
         complete_trade = {
             **trade_info,
-            'exit_state': exit_state,
-            'exit_time': datetime.now().isoformat(),
-            'trade_result': trade_result,
-            'market_state': market_state or {}
+            "exit_state": exit_state,
+            "exit_time": datetime.now().isoformat(),
+            "trade_result": trade_result,
+            "market_state": market_state or {},
         }
 
         self.trade_history.append(complete_trade)
@@ -100,14 +101,17 @@ class TradeTracker:
         if self.online_learner:
             try:
                 from src.ml.reward_functions import RiskAdjustedReward
+
                 reward_calc = RiskAdjustedReward()
 
                 self.online_learner.on_trade_complete(
                     trade_result=trade_result,
-                    entry_state=trade_info['entry_state'],
+                    entry_state=trade_info["entry_state"],
                     exit_state=exit_state,
-                    action=trade_info['action'],
-                    reward_calculator=lambda tr, ms=None: reward_calc.calculate_from_trade_result(tr, ms or market_state)
+                    action=trade_info["action"],
+                    reward_calculator=lambda tr, ms=None: reward_calc.calculate_from_trade_result(
+                        tr, ms or market_state
+                    ),
                 )
                 logger.info(f"🔄 Online learning updated for {symbol}")
             except Exception as e:
@@ -116,18 +120,20 @@ class TradeTracker:
         # Save trade record
         self._save_trade(complete_trade)
 
-        logger.info(f"✅ Trade exit tracked: {symbol} (P/L: {trade_result.get('pl_pct', 0):.2%})")
+        logger.info(
+            f"✅ Trade exit tracked: {symbol} (P/L: {trade_result.get('pl_pct', 0):.2%})"
+        )
 
     def _save_trade(self, trade: Dict[str, Any]):
         """Save trade record to disk."""
-        symbol = trade['symbol']
-        timestamp = trade['entry_time'].replace(':', '-').split('.')[0]
+        symbol = trade["symbol"]
+        timestamp = trade["entry_time"].replace(":", "-").split(".")[0]
         trade_file = self.save_dir / f"{symbol}_{timestamp}.json"
 
         # Convert tensors to lists for JSON serialization
         trade_serializable = self._make_serializable(trade)
 
-        with open(trade_file, 'w') as f:
+        with open(trade_file, "w") as f:
             json.dump(trade_serializable, f, indent=2)
 
     def _make_serializable(self, obj):
@@ -146,7 +152,7 @@ class TradeTracker:
     def get_statistics(self) -> Dict[str, Any]:
         """Get trade tracking statistics."""
         return {
-            'active_trades': len(self.active_trades),
-            'total_trades': len(self.trade_history),
-            'symbols_tracked': list(self.active_trades.keys())
+            "active_trades": len(self.active_trades),
+            "total_trades": len(self.trade_history),
+            "symbols_tracked": list(self.active_trades.keys()),
         }

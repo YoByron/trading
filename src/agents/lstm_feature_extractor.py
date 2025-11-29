@@ -93,7 +93,7 @@ class LSTMTradingFeatureExtractor(nn.Module):
             hidden_size=hidden_dim,
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
-            batch_first=True
+            batch_first=True,
         )
 
         # Output projection layer
@@ -122,9 +122,7 @@ class LSTMTradingFeatureExtractor(nn.Module):
         return features
 
     def extract_features(
-        self,
-        hist_data: pd.DataFrame,
-        seq_length: int = 60
+        self, hist_data: pd.DataFrame, seq_length: int = 60
     ) -> np.ndarray:
         """
         Extract features from historical data.
@@ -141,7 +139,7 @@ class LSTMTradingFeatureExtractor(nn.Module):
         # Calculate features for each timestep
         sequences = []
         for i in range(seq_length, len(hist_data)):
-            window = hist_data.iloc[i-seq_length:i]
+            window = hist_data.iloc[i - seq_length : i]
             features = calculate_all_features(window)
 
             # Convert to array (ensure consistent feature order)
@@ -165,12 +163,41 @@ class LSTMTradingFeatureExtractor(nn.Module):
         """Convert features dict to array in consistent order."""
         # Define feature order (must match input_dim)
         feature_order = [
-            'close', 'open', 'high', 'low', 'return_1d', 'return_5d', 'return_20d',
-            'volatility_20d', 'ma_20', 'ma_50', 'ma_200', 'price_vs_ma20',
-            'price_vs_ma50', 'price_vs_ma200', 'macd', 'macd_signal', 'macd_histogram',
-            'adx', 'plus_di', 'minus_di', 'rsi', 'roc_10', 'roc_20',
-            'bb_upper', 'bb_middle', 'bb_lower', 'bb_width', 'bb_position',
-            'atr', 'atr_pct', 'volume', 'volume_ratio', 'obv', 'obv_ma', 'volume_roc'
+            "close",
+            "open",
+            "high",
+            "low",
+            "return_1d",
+            "return_5d",
+            "return_20d",
+            "volatility_20d",
+            "ma_20",
+            "ma_50",
+            "ma_200",
+            "price_vs_ma20",
+            "price_vs_ma50",
+            "price_vs_ma200",
+            "macd",
+            "macd_signal",
+            "macd_histogram",
+            "adx",
+            "plus_di",
+            "minus_di",
+            "rsi",
+            "roc_10",
+            "roc_20",
+            "bb_upper",
+            "bb_middle",
+            "bb_lower",
+            "bb_width",
+            "bb_position",
+            "atr",
+            "atr_pct",
+            "volume",
+            "volume_ratio",
+            "obv",
+            "obv_ma",
+            "volume_roc",
         ]
 
         # Pad with zeros if features missing
@@ -191,11 +218,7 @@ class LSTMPPOWrapper:
     instead of discrete state keys.
     """
 
-    def __init__(
-        self,
-        model_path: Optional[str] = None,
-        device: str = "cpu"
-    ):
+    def __init__(self, model_path: Optional[str] = None, device: str = "cpu"):
         """
         Initialize LSTM-PPO wrapper.
 
@@ -213,9 +236,7 @@ class LSTMPPOWrapper:
             logger.info("Train the model before using for production")
 
     def extract_state_features(
-        self,
-        hist_data: pd.DataFrame,
-        symbol: str = ""
+        self, hist_data: pd.DataFrame, symbol: str = ""
     ) -> Dict[str, Any]:
         """
         Extract deep learning features from historical data.
@@ -231,47 +252,48 @@ class LSTMPPOWrapper:
             features = self.feature_extractor.extract_features(hist_data)
 
             return {
-                'features': features.tolist(),
-                'feature_dim': len(features),
-                'extraction_method': 'lstm',
-                'symbol': symbol
+                "features": features.tolist(),
+                "feature_dim": len(features),
+                "extraction_method": "lstm",
+                "symbol": symbol,
             }
         except Exception as e:
             logger.error(f"Error extracting LSTM features for {symbol}: {e}")
             # Fallback to basic features
             basic_features = calculate_all_features(hist_data, symbol)
             return {
-                'features': list(basic_features.values()),
-                'feature_dim': len(basic_features),
-                'extraction_method': 'basic',
-                'symbol': symbol,
-                'error': str(e)
+                "features": list(basic_features.values()),
+                "feature_dim": len(basic_features),
+                "extraction_method": "basic",
+                "symbol": symbol,
+                "error": str(e),
             }
 
     def save_model(self, path: str):
         """Save LSTM model to disk."""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
-            'model_state_dict': self.feature_extractor.state_dict(),
-            'input_dim': self.feature_extractor.input_dim,
-            'hidden_dim': self.feature_extractor.hidden_dim,
-            'num_layers': self.feature_extractor.num_layers,
-            'output_dim': self.feature_extractor.output_dim,
-        }, path)
+        torch.save(
+            {
+                "model_state_dict": self.feature_extractor.state_dict(),
+                "input_dim": self.feature_extractor.input_dim,
+                "hidden_dim": self.feature_extractor.hidden_dim,
+                "num_layers": self.feature_extractor.num_layers,
+                "output_dim": self.feature_extractor.output_dim,
+            },
+            path,
+        )
         logger.info(f"LSTM model saved to {path}")
 
     def load_model(self, path: str):
         """Load LSTM model from disk."""
         checkpoint = torch.load(path, map_location=self.device)
-        self.feature_extractor.load_state_dict(checkpoint['model_state_dict'])
+        self.feature_extractor.load_state_dict(checkpoint["model_state_dict"])
         self.feature_extractor.eval()
         logger.info(f"LSTM model loaded from {path}")
 
 
 def create_lstm_ppo_integration(
-    rl_learner,
-    hist_data: pd.DataFrame,
-    symbol: str = ""
+    rl_learner, hist_data: pd.DataFrame, symbol: str = ""
 ) -> Dict[str, Any]:
     """
     Integrate LSTM features with existing RL learner.
@@ -297,10 +319,10 @@ def create_lstm_ppo_integration(
     # Note: This requires modifying OptimizedRLPolicyLearner to accept
     # continuous features instead of discrete state keys
     enhanced_state = {
-        'lstm_features': lstm_features['features'],
-        'feature_extraction_method': lstm_features['extraction_method'],
-        'symbol': symbol,
-        'timestamp': pd.Timestamp.now().isoformat()
+        "lstm_features": lstm_features["features"],
+        "feature_extraction_method": lstm_features["extraction_method"],
+        "symbol": symbol,
+        "timestamp": pd.Timestamp.now().isoformat(),
     }
 
     return enhanced_state

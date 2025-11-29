@@ -21,7 +21,7 @@ import sys
 import os
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ class EvaluationResult:
         metadata: Additional metadata about the evaluation
         timestamp: ISO format timestamp of when evaluation was performed
     """
+
     dimension: str  # "accuracy", "compliance", "reliability", "errors"
     score: float  # 0.0 to 1.0 (1.0 = perfect)
     passed: bool
@@ -61,6 +62,7 @@ class TradeEvaluation:
         passed: Whether trade passed all critical checks
         critical_issues: List of critical issues that caused failure
     """
+
     trade_id: str
     symbol: str
     timestamp: str
@@ -103,15 +105,15 @@ class TradingSystemEvaluator:
                 "component": "evaluation",
                 "action": "init",
                 "data_dir": str(self.data_dir),
-                "eval_dir": str(self.eval_dir)
-            }
+                "eval_dir": str(self.eval_dir),
+            },
         )
 
     def evaluate_trade_execution(
         self,
         trade_result: Dict[str, Any],
         expected_amount: float,
-        daily_allocation: float
+        daily_allocation: float,
     ) -> TradeEvaluation:
         """
         Evaluate a single trade execution.
@@ -136,14 +138,12 @@ class TradingSystemEvaluator:
                 "trade_id": trade_id,
                 "symbol": symbol,
                 "expected_amount": expected_amount,
-                "daily_allocation": daily_allocation
-            }
+                "daily_allocation": daily_allocation,
+            },
         )
 
         evaluation = TradeEvaluation(
-            trade_id=trade_id,
-            symbol=symbol,
-            timestamp=timestamp
+            trade_id=trade_id, symbol=symbol, timestamp=timestamp
         )
 
         # 1. ACCURACY EVALUATION
@@ -168,7 +168,8 @@ class TradingSystemEvaluator:
 
         # Determine if passed (all critical checks must pass)
         evaluation.passed = all(
-            e.passed for e in evaluation.evaluation.values()
+            e.passed
+            for e in evaluation.evaluation.values()
             if e.dimension != "errors"  # Errors are warnings, not failures
         )
 
@@ -180,9 +181,7 @@ class TradingSystemEvaluator:
         return evaluation
 
     def _evaluate_accuracy(
-        self,
-        trade_result: Dict[str, Any],
-        expected_amount: float
+        self, trade_result: Dict[str, Any], expected_amount: float
     ) -> EvaluationResult:
         """Evaluate trade execution accuracy."""
         issues = []
@@ -199,7 +198,9 @@ class TradingSystemEvaluator:
         if actual_amount == 0:
             issues.append("Order amount is zero")
             score = 0.0
-            logger.error(f"CRITICAL: Order amount is zero for {trade_result.get('symbol', 'UNKNOWN')}")
+            logger.error(
+                f"CRITICAL: Order amount is zero for {trade_result.get('symbol', 'UNKNOWN')}"
+            )
         elif actual_amount > expected_amount * self.MAX_ORDER_MULTIPLIER:
             error_msg = (
                 f"Order size {actual_amount} is >{self.MAX_ORDER_MULTIPLIER}x expected "
@@ -234,14 +235,12 @@ class TradingSystemEvaluator:
             metadata={
                 "expected_amount": expected_amount,
                 "actual_amount": actual_amount,
-                "order_status": order_status
-            }
+                "order_status": order_status,
+            },
         )
 
     def _evaluate_compliance(
-        self,
-        trade_result: Dict[str, Any],
-        daily_allocation: float
+        self, trade_result: Dict[str, Any], daily_allocation: float
     ) -> EvaluationResult:
         """
         Evaluate procedure compliance.
@@ -296,14 +295,11 @@ class TradingSystemEvaluator:
             metadata={
                 "daily_allocation": daily_allocation,
                 "validated": validated,
-                "preflight_passed": preflight_passed
-            }
+                "preflight_passed": preflight_passed,
+            },
         )
 
-    def _evaluate_reliability(
-        self,
-        trade_result: Dict[str, Any]
-    ) -> EvaluationResult:
+    def _evaluate_reliability(self, trade_result: Dict[str, Any]) -> EvaluationResult:
         """
         Evaluate system reliability.
 
@@ -366,14 +362,12 @@ class TradingSystemEvaluator:
                 "system_state_age_hours": system_state_age_hours,
                 "data_source": data_source,
                 "api_errors": api_errors,
-                "execution_time_ms": execution_time_ms
-            }
+                "execution_time_ms": execution_time_ms,
+            },
         )
 
     def _detect_errors(
-        self,
-        trade_result: Dict[str, Any],
-        expected_amount: float
+        self, trade_result: Dict[str, Any], expected_amount: float
     ) -> EvaluationResult:
         """
         Detect known error patterns from documented mistakes.
@@ -416,7 +410,9 @@ class TradingSystemEvaluator:
 
         # Pattern 3: Network/DNS errors (Mistake #3)
         api_errors = trade_result.get("api_errors", [])
-        if any("network" in str(e).lower() or "dns" in str(e).lower() for e in api_errors):
+        if any(
+            "network" in str(e).lower() or "dns" in str(e).lower() for e in api_errors
+        ):
             errors.append("ERROR PATTERN #3: Network/DNS errors detected")
             score = min(score, 0.3)
             logger.warning(
@@ -427,7 +423,11 @@ class TradingSystemEvaluator:
 
         # Pattern 4: Wrong script executed (Mistake #1)
         script_name = trade_result.get("script_name", "")
-        if script_name and "main.py" not in script_name and "autonomous_trader.py" not in script_name:
+        if (
+            script_name
+            and "main.py" not in script_name
+            and "autonomous_trader.py" not in script_name
+        ):
             errors.append(f"ERROR PATTERN #4: Wrong script executed ({script_name})")
             score = min(score, 0.5)
 
@@ -437,9 +437,7 @@ class TradingSystemEvaluator:
             try:
                 trade_dt = datetime.fromisoformat(trade_date.replace("Z", "+00:00"))
                 if trade_dt.weekday() >= 5:  # Saturday = 5, Sunday = 6
-                    errors.append(
-                        f"ERROR PATTERN #5: Trade on weekend ({trade_date})"
-                    )
+                    errors.append(f"ERROR PATTERN #5: Trade on weekend ({trade_date})")
                     score = min(score, 0.5)
             except Exception:
                 pass
@@ -449,7 +447,7 @@ class TradingSystemEvaluator:
             score=score,
             passed=len(errors) == 0,
             issues=errors,
-            metadata={"error_count": len(errors)}
+            metadata={"error_count": len(errors)},
         )
 
     def save_evaluation(self, evaluation: TradeEvaluation) -> Path:
@@ -482,7 +480,7 @@ class TradingSystemEvaluator:
         evaluations = []
         if eval_file.exists():
             try:
-                with open(eval_file, 'r') as f:
+                with open(eval_file, "r") as f:
                     evaluations = json.load(f)
             except Exception as e:
                 logger.warning(f"Error loading existing evaluations: {e}")
@@ -491,7 +489,7 @@ class TradingSystemEvaluator:
         evaluations.append(asdict(evaluation))
 
         # Save
-        with open(eval_file, 'w') as f:
+        with open(eval_file, "w") as f:
             json.dump(evaluations, f, indent=2)
 
         logger.info(f"Saved evaluation to {eval_file}")
@@ -521,7 +519,7 @@ class TradingSystemEvaluator:
             "failed": 0,
             "avg_score": 0.0,
             "critical_issues": [],
-            "error_patterns": {}
+            "error_patterns": {},
         }
 
         # Load evaluations from last N days
@@ -535,10 +533,12 @@ class TradingSystemEvaluator:
                 file_date_str = eval_file.stem.replace("evaluations_", "")
                 file_date = datetime.fromisoformat(file_date_str).date()
                 if file_date >= cutoff_date:
-                    with open(eval_file, 'r') as f:
+                    with open(eval_file, "r") as f:
                         file_evaluations = json.load(f)
                         evaluations.extend(file_evaluations)
-                        logger.debug(f"Loaded {len(file_evaluations)} evaluations from {eval_file.name}")
+                        logger.debug(
+                            f"Loaded {len(file_evaluations)} evaluations from {eval_file.name}"
+                        )
             except Exception as e:
                 logger.warning(f"Error loading {eval_file}: {e}", exc_info=True)
 
@@ -562,7 +562,11 @@ class TradingSystemEvaluator:
             error_issues = errors.get("issues", [])
             for issue in error_issues:
                 if "ERROR PATTERN" in issue:
-                    pattern_num = issue.split("#")[1].split(":")[0] if "#" in issue else "unknown"
-                    summary["error_patterns"][pattern_num] = summary["error_patterns"].get(pattern_num, 0) + 1
+                    pattern_num = (
+                        issue.split("#")[1].split(":")[0] if "#" in issue else "unknown"
+                    )
+                    summary["error_patterns"][pattern_num] = (
+                        summary["error_patterns"].get(pattern_num, 0) + 1
+                    )
 
         return summary

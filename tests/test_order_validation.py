@@ -9,19 +9,20 @@ import os
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Import validation function from autonomous_trader
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 
 def test_order_validation():
     """Test order size validation logic."""
     # Import validation function
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "autonomous_trader",
-        Path(__file__).parent.parent / "scripts" / "autonomous_trader.py"
+        Path(__file__).parent.parent / "scripts" / "autonomous_trader.py",
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -36,8 +37,9 @@ def test_order_validation():
     # Test 2: Order >10x expected (Mistake #1 scenario)
     is_valid, error_msg = validate_order_size(1600.0, 8.0, "T1_CORE")
     assert not is_valid, "Order >10x expected should be rejected"
-    assert "10x" in error_msg.lower() or "multiplier" in error_msg.lower(), \
-        "Error message should mention multiplier"
+    assert (
+        "10x" in error_msg.lower() or "multiplier" in error_msg.lower()
+    ), "Error message should mention multiplier"
 
     # Test 3: Order too small (<$10 minimum)
     is_valid, error_msg = validate_order_size(5.0, 5.0, "T1_CORE")

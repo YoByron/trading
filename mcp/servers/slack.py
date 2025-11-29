@@ -7,6 +7,7 @@ Provides tools for:
 - Posting formatted messages
 - Reading channel messages
 """
+
 from __future__ import annotations
 
 import os
@@ -18,6 +19,7 @@ from datetime import datetime
 try:
     from slack_sdk import WebClient
     from slack_sdk.errors import SlackApiError
+
     SLACK_API_AVAILABLE = True
 except ImportError:
     SLACK_API_AVAILABLE = False
@@ -58,9 +60,7 @@ def _get_slack_client():
 
 
 async def send_message_async(
-    channel: str,
-    message: str,
-    thread_ts: Optional[str] = None
+    channel: str, message: str, thread_ts: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Send message to Slack channel.
@@ -81,14 +81,11 @@ async def send_message_async(
             "success": False,
             "channel": channel,
             "message": message,
-            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN",
         }
 
     try:
-        kwargs = {
-            "channel": channel,
-            "text": message
-        }
+        kwargs = {"channel": channel, "text": message}
         if thread_ts:
             kwargs["thread_ts"] = thread_ts
 
@@ -100,7 +97,7 @@ async def send_message_async(
             "message": message,
             "ts": response["ts"],
             "timestamp": datetime.now().isoformat(),
-            "message_id": response.get("message", {}).get("ts")
+            "message_id": response.get("message", {}).get("ts"),
         }
 
     except SlackApiError as e:
@@ -109,7 +106,7 @@ async def send_message_async(
             "success": False,
             "channel": channel,
             "message": message,
-            "error": f"Slack API error: {e.response['error']}"
+            "error": f"Slack API error: {e.response['error']}",
         }
     except Exception as e:
         logger.error(f"Unexpected error sending Slack message: {e}")
@@ -117,23 +114,19 @@ async def send_message_async(
             "success": False,
             "channel": channel,
             "message": message,
-            "error": str(e)
+            "error": str(e),
         }
 
 
 def send_message(
-    channel: str,
-    message: str,
-    thread_ts: Optional[str] = None
+    channel: str, message: str, thread_ts: Optional[str] = None
 ) -> Dict[str, Any]:
     """Sync wrapper for send_message_async."""
     return run_sync(send_message_async(channel, message, thread_ts))
 
 
 async def send_formatted_message_async(
-    channel: str,
-    blocks: list[Dict[str, Any]],
-    text: Optional[str] = None
+    channel: str, blocks: list[Dict[str, Any]], text: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Send formatted message with Slack blocks.
@@ -154,14 +147,11 @@ async def send_formatted_message_async(
             "success": False,
             "channel": channel,
             "blocks": blocks,
-            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN",
         }
 
     try:
-        kwargs = {
-            "channel": channel,
-            "blocks": blocks
-        }
+        kwargs = {"channel": channel, "blocks": blocks}
         if text:
             kwargs["text"] = text
 
@@ -173,7 +163,7 @@ async def send_formatted_message_async(
             "blocks": blocks,
             "ts": response["ts"],
             "timestamp": datetime.now().isoformat(),
-            "message_id": response.get("message", {}).get("ts")
+            "message_id": response.get("message", {}).get("ts"),
         }
 
     except SlackApiError as e:
@@ -182,31 +172,21 @@ async def send_formatted_message_async(
             "success": False,
             "channel": channel,
             "blocks": blocks,
-            "error": f"Slack API error: {e.response['error']}"
+            "error": f"Slack API error: {e.response['error']}",
         }
     except Exception as e:
         logger.error(f"Unexpected error sending formatted Slack message: {e}")
-        return {
-            "success": False,
-            "channel": channel,
-            "blocks": blocks,
-            "error": str(e)
-        }
+        return {"success": False, "channel": channel, "blocks": blocks, "error": str(e)}
 
 
 def send_formatted_message(
-    channel: str,
-    blocks: list[Dict[str, Any]],
-    text: Optional[str] = None
+    channel: str, blocks: list[Dict[str, Any]], text: Optional[str] = None
 ) -> Dict[str, Any]:
     """Sync wrapper for send_formatted_message_async."""
     return run_sync(send_formatted_message_async(channel, blocks, text))
 
 
-async def send_dm_async(
-    user_id: str,
-    message: str
-) -> Dict[str, Any]:
+async def send_dm_async(user_id: str, message: str) -> Dict[str, Any]:
     """
     Send direct message to user.
 
@@ -225,7 +205,7 @@ async def send_dm_async(
             "success": False,
             "user_id": user_id,
             "message": message,
-            "error": "Slack API client not available - check SLACK_BOT_TOKEN"
+            "error": "Slack API client not available - check SLACK_BOT_TOKEN",
         }
 
     try:
@@ -234,10 +214,7 @@ async def send_dm_async(
         channel_id = conversation["channel"]["id"]
 
         # Send message to DM channel
-        response = client.chat_postMessage(
-            channel=channel_id,
-            text=message
-        )
+        response = client.chat_postMessage(channel=channel_id, text=message)
 
         return {
             "success": True,
@@ -246,7 +223,7 @@ async def send_dm_async(
             "ts": response["ts"],
             "channel_id": channel_id,
             "timestamp": datetime.now().isoformat(),
-            "message_id": response.get("message", {}).get("ts")
+            "message_id": response.get("message", {}).get("ts"),
         }
 
     except SlackApiError as e:
@@ -255,7 +232,7 @@ async def send_dm_async(
             "success": False,
             "user_id": user_id,
             "message": message,
-            "error": f"Slack API error: {e.response['error']}"
+            "error": f"Slack API error: {e.response['error']}",
         }
     except Exception as e:
         logger.error(f"Unexpected error sending DM: {e}")
@@ -263,14 +240,11 @@ async def send_dm_async(
             "success": False,
             "user_id": user_id,
             "message": message,
-            "error": str(e)
+            "error": str(e),
         }
 
 
-def send_dm(
-    user_id: str,
-    message: str
-) -> Dict[str, Any]:
+def send_dm(user_id: str, message: str) -> Dict[str, Any]:
     """Sync wrapper for send_dm_async."""
     return run_sync(send_dm_async(user_id, message))
 
@@ -293,30 +267,15 @@ def create_trade_alert_block(trade_data: Dict[str, Any]) -> list[Dict[str, Any]]
     return [
         {
             "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": f"Trade Executed: {symbol}"
-            }
+            "text": {"type": "plain_text", "text": f"Trade Executed: {symbol}"},
         },
         {
             "type": "section",
             "fields": [
-                {
-                    "type": "mrkdwn",
-                    "text": f"*Side:* {side}"
-                },
-                {
-                    "type": "mrkdwn",
-                    "text": f"*Quantity:* {quantity}"
-                },
-                {
-                    "type": "mrkdwn",
-                    "text": f"*Price:* ${price:.2f}"
-                },
-                {
-                    "type": "mrkdwn",
-                    "text": f"*Value:* ${quantity * price:.2f}"
-                }
-            ]
-        }
+                {"type": "mrkdwn", "text": f"*Side:* {side}"},
+                {"type": "mrkdwn", "text": f"*Quantity:* {quantity}"},
+                {"type": "mrkdwn", "text": f"*Price:* ${price:.2f}"},
+                {"type": "mrkdwn", "text": f"*Value:* ${quantity * price:.2f}"},
+            ],
+        },
     ]

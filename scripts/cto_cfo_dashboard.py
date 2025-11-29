@@ -74,8 +74,12 @@ def analyze_performance():
 
     best = performance.get("best_trade", {})
     worst = performance.get("worst_trade", {})
-    print(f"  Best Trade:          {best.get('symbol', 'N/A')} ${best.get('pl', 0):+,.2f}")
-    print(f"  Worst Trade:         {worst.get('symbol', 'N/A')} ${worst.get('pl', 0):+,.2f}")
+    print(
+        f"  Best Trade:          {best.get('symbol', 'N/A')} ${best.get('pl', 0):+,.2f}"
+    )
+    print(
+        f"  Worst Trade:         {worst.get('symbol', 'N/A')} ${worst.get('pl', 0):+,.2f}"
+    )
 
     # Strategy allocation
     strategies = data.get("strategies", {})
@@ -106,16 +110,22 @@ def technical_analysis():
     # Automation status
     automation = data.get("automation", {})
     print(f"\n🤖 AUTOMATION STATUS")
-    print(f"  GitHub Actions:      {'✅ ENABLED' if automation.get('github_actions_enabled') else '❌ DISABLED'}")
+    print(
+        f"  GitHub Actions:      {'✅ ENABLED' if automation.get('github_actions_enabled') else '❌ DISABLED'}"
+    )
     print(f"  Workflow Status:     {automation.get('workflow_status', 'UNKNOWN')}")
-    print(f"  Last Execution:      {automation.get('last_successful_execution', 'NEVER')}")
+    print(
+        f"  Last Execution:      {automation.get('last_successful_execution', 'NEVER')}"
+    )
     print(f"  Execution Count:     {automation.get('execution_count', 0)}")
     print(f"  Failures:            {automation.get('failures', 0)}")
 
     # Challenge status
     challenge = data.get("challenge", {})
     print(f"\n📅 CHALLENGE STATUS")
-    print(f"  Day:                 {challenge.get('current_day', 0)}/{challenge.get('total_days', 90)}")
+    print(
+        f"  Day:                 {challenge.get('current_day', 0)}/{challenge.get('total_days', 90)}"
+    )
     print(f"  Phase:               {challenge.get('phase', 'Unknown')}")
     print(f"  Status:              {challenge.get('status', 'Unknown')}")
 
@@ -158,45 +168,57 @@ def generate_recommendations(perf_data, tech_data):
     positions = perf_data.get("positions", [])
 
     if total_pl < -20:
-        recommendations.append({
-            "priority": "HIGH",
-            "category": "CFO",
-            "action": "Implement stop-loss on losing positions",
-            "reason": f"Total P/L is ${total_pl:.2f} - need risk management",
-        })
+        recommendations.append(
+            {
+                "priority": "HIGH",
+                "category": "CFO",
+                "action": "Implement stop-loss on losing positions",
+                "reason": f"Total P/L is ${total_pl:.2f} - need risk management",
+            }
+        )
 
     losing_positions = [p for p in positions if p.get("unrealized_pl", 0) < -10]
     if losing_positions:
         for pos in losing_positions:
-            recommendations.append({
-                "priority": "HIGH",
-                "category": "CFO",
-                "action": f"Review {pos.get('symbol')} position (${pos.get('unrealized_pl', 0):.2f} loss)",
-                "reason": f"Position down {pos.get('unrealized_pl_pct', 0):.2f}%",
-            })
+            recommendations.append(
+                {
+                    "priority": "HIGH",
+                    "category": "CFO",
+                    "action": f"Review {pos.get('symbol')} position (${pos.get('unrealized_pl', 0):.2f} loss)",
+                    "reason": f"Position down {pos.get('unrealized_pl_pct', 0):.2f}%",
+                }
+            )
 
     # CTO Recommendations
     automation = tech_data.get("automation", {})
     if not automation.get("github_actions_enabled"):
-        recommendations.append({
-            "priority": "CRITICAL",
-            "category": "CTO",
-            "action": "Enable GitHub Actions automation",
-            "reason": "No automated trading execution",
-        })
+        recommendations.append(
+            {
+                "priority": "CRITICAL",
+                "category": "CTO",
+                "action": "Enable GitHub Actions automation",
+                "reason": "No automated trading execution",
+            }
+        )
 
     if tech_data.get("health") == "stale":
-        recommendations.append({
-            "priority": "HIGH",
-            "category": "CTO",
-            "action": "Investigate why system state is stale",
-            "reason": "Data not updating - automation may be broken",
-        })
+        recommendations.append(
+            {
+                "priority": "HIGH",
+                "category": "CTO",
+                "action": "Investigate why system state is stale",
+                "reason": "Data not updating - automation may be broken",
+            }
+        )
 
     # Display recommendations
     if recommendations:
         for i, rec in enumerate(recommendations, 1):
-            priority_emoji = "🚨" if rec["priority"] == "CRITICAL" else "⚠️" if rec["priority"] == "HIGH" else "ℹ️"
+            priority_emoji = (
+                "🚨"
+                if rec["priority"] == "CRITICAL"
+                else "⚠️" if rec["priority"] == "HIGH" else "ℹ️"
+            )
             print(f"\n{priority_emoji} [{rec['priority']}] {rec['category']}")
             print(f"   Action: {rec['action']}")
             print(f"   Reason: {rec['reason']}")

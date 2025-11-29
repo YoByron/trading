@@ -84,7 +84,9 @@ class TradingAgent(ABC):
             try:
                 self.cleanup(context)
             except Exception:  # pragma: no cover - defensive
-                logger.exception("Agent %s cleanup raised an exception", self.agent_name)
+                logger.exception(
+                    "Agent %s cleanup raised an exception", self.agent_name
+                )
 
         result.mark_finished()
         status = "succeeded" if result.succeeded else "failed"
@@ -92,8 +94,10 @@ class TradingAgent(ABC):
             "Agent %s %s in %ss",
             self.agent_name,
             status,
-            (result.finished_at - result.started_at).total_seconds()
-            if result.finished_at
-            else "N/A",
+            (
+                (result.finished_at - result.started_at).total_seconds()
+                if result.finished_at
+                else "N/A"
+            ),
         )
         return result

@@ -74,7 +74,9 @@ def ingest_reddit_snapshot(snapshot: Dict) -> None:
     date_str = snapshot.get("meta", {}).get("date") or datetime.now().strftime(
         "%Y-%m-%d"
     )
-    created_at = snapshot.get("meta", {}).get("timestamp", datetime.utcnow().isoformat())
+    created_at = snapshot.get("meta", {}).get(
+        "timestamp", datetime.utcnow().isoformat()
+    )
     sentiments = snapshot.get("sentiment_by_ticker", {})
 
     if not sentiments:
@@ -110,9 +112,7 @@ def ingest_reddit_snapshot(snapshot: Dict) -> None:
 
 def ingest_news_snapshot(report: Dict) -> None:
     """Persist news sentiment report into the RAG store."""
-    date_str = report.get("meta", {}).get("date") or datetime.now().strftime(
-        "%Y-%m-%d"
-    )
+    date_str = report.get("meta", {}).get("date") or datetime.now().strftime("%Y-%m-%d")
     created_at = report.get("meta", {}).get("timestamp", datetime.utcnow().isoformat())
     sentiments = report.get("sentiment_by_ticker", {})
 

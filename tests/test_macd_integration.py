@@ -13,7 +13,8 @@ Test Coverage:
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import yfinance as yf
 import pandas as pd
@@ -26,9 +27,9 @@ from src.strategies.growth_strategy import GrowthStrategy
 
 def test_macd_calculation():
     """Test that MACD calculation works correctly with standard parameters."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 1: MACD Calculation (12, 26, 9)")
-    print("="*80)
+    print("=" * 80)
 
     # Get test data for SPY
     ticker = yf.Ticker("SPY")
@@ -36,7 +37,9 @@ def test_macd_calculation():
 
     # Test CoreStrategy MACD calculation
     core_strategy = CoreStrategy(daily_allocation=6.0, use_sentiment=False)
-    macd_value, macd_signal, macd_histogram = core_strategy._calculate_macd(hist["Close"])
+    macd_value, macd_signal, macd_histogram = core_strategy._calculate_macd(
+        hist["Close"]
+    )
 
     print(f"\nSPY MACD Indicators:")
     print(f"  MACD Line:      {macd_value:.4f}")
@@ -53,9 +56,9 @@ def test_macd_calculation():
 
 def test_macd_in_momentum_score():
     """Test that MACD is integrated into momentum scoring."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 2: MACD Integration in Momentum Scoring")
-    print("="*80)
+    print("=" * 80)
 
     # Create CoreStrategy instance
     core_strategy = CoreStrategy(daily_allocation=6.0, use_sentiment=False)
@@ -73,9 +76,9 @@ def test_macd_in_momentum_score():
 
 def test_macd_in_growth_strategy():
     """Test that MACD is integrated into GrowthStrategy."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 3: MACD Integration in GrowthStrategy")
-    print("="*80)
+    print("=" * 80)
 
     # Create GrowthStrategy instance
     growth_strategy = GrowthStrategy(weekly_allocation=10.0)
@@ -106,9 +109,9 @@ def test_macd_in_growth_strategy():
 
 def test_macd_scoring_logic():
     """Test MACD scoring logic (bullish vs bearish)."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 4: MACD Scoring Logic")
-    print("="*80)
+    print("=" * 80)
 
     growth_strategy = GrowthStrategy(weekly_allocation=10.0)
 
@@ -116,7 +119,9 @@ def test_macd_scoring_logic():
     test_symbols = ["SPY", "NVDA", "GOOGL", "AMZN"]
 
     print("\nMACD Analysis for Multiple Stocks:")
-    print(f"{'Symbol':<8} {'MACD':<10} {'Signal':<10} {'Histogram':<12} {'Trading Signal'}")
+    print(
+        f"{'Symbol':<8} {'MACD':<10} {'Signal':<10} {'Histogram':<12} {'Trading Signal'}"
+    )
     print("-" * 70)
 
     for symbol in test_symbols:
@@ -128,7 +133,9 @@ def test_macd_scoring_logic():
                 print(f"{symbol:<8} INSUFFICIENT DATA")
                 continue
 
-            macd_value, macd_signal, macd_histogram = growth_strategy._calculate_macd(hist)
+            macd_value, macd_signal, macd_histogram = growth_strategy._calculate_macd(
+                hist
+            )
 
             # Determine signal
             if macd_histogram > 0:
@@ -138,7 +145,9 @@ def test_macd_scoring_logic():
             else:
                 signal = "SELL (Bearish)"
 
-            print(f"{symbol:<8} {macd_value:<10.4f} {macd_signal:<10.4f} {macd_histogram:<12.4f} {signal}")
+            print(
+                f"{symbol:<8} {macd_value:<10.4f} {macd_signal:<10.4f} {macd_histogram:<12.4f} {signal}"
+            )
 
         except Exception as e:
             print(f"{symbol:<8} ERROR: {e}")
@@ -148,14 +157,15 @@ def test_macd_scoring_logic():
 
 def test_core_strategy_macd_tracking():
     """Test that CoreStrategy tracks MACD in MomentumScore dataclass."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("TEST 5: MACD Tracking in MomentumScore")
-    print("="*80)
+    print("=" * 80)
 
     core_strategy = CoreStrategy(daily_allocation=6.0, use_sentiment=False)
 
     # Calculate momentum scores for ETF universe
     from src.strategies.core_strategy import MarketSentiment
+
     sentiment = MarketSentiment.NEUTRAL
 
     momentum_scores = core_strategy._calculate_all_momentum_scores(sentiment)
@@ -172,19 +182,19 @@ def test_core_strategy_macd_tracking():
 
     # Verify MACD fields exist and are populated
     for score in momentum_scores:
-        assert hasattr(score, 'macd_value'), "MomentumScore missing macd_value"
-        assert hasattr(score, 'macd_signal'), "MomentumScore missing macd_signal"
-        assert hasattr(score, 'macd_histogram'), "MomentumScore missing macd_histogram"
+        assert hasattr(score, "macd_value"), "MomentumScore missing macd_value"
+        assert hasattr(score, "macd_signal"), "MomentumScore missing macd_signal"
+        assert hasattr(score, "macd_histogram"), "MomentumScore missing macd_histogram"
 
     print("\n✓ MACD successfully tracked in MomentumScore dataclass")
 
 
 def run_all_tests():
     """Run all MACD integration tests."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("MACD INTEGRATION TEST SUITE")
     print("Testing MACD indicator integration across CoreStrategy & GrowthStrategy")
-    print("="*80)
+    print("=" * 80)
 
     try:
         test_macd_calculation()
@@ -193,9 +203,9 @@ def run_all_tests():
         test_macd_scoring_logic()
         test_core_strategy_macd_tracking()
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("ALL TESTS PASSED ✓")
-        print("="*80)
+        print("=" * 80)
         print("\nMACD Integration Summary:")
         print("  ✓ MACD calculation working (12, 26, 9 parameters)")
         print("  ✓ MACD integrated into CoreStrategy momentum scoring")
@@ -205,11 +215,12 @@ def run_all_tests():
         print("\nProduction Ready: YES")
 
     except Exception as e:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("TEST FAILED ✗")
-        print("="*80)
+        print("=" * 80)
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

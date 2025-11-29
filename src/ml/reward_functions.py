@@ -2,6 +2,7 @@
 World-Class Risk-Adjusted Reward Functions for RL Trading
 Based on 2024-2025 research on risk-aware reinforcement learning.
 """
+
 import numpy as np
 from typing import Dict, Any, Optional
 import logging
@@ -29,7 +30,7 @@ class RiskAdjustedReward:
         drawdown_weight: float = 0.15,
         cost_weight: float = 0.05,
         risk_free_rate: float = 0.02,  # 2% annual risk-free rate
-        transaction_cost: float = 0.001  # 0.1% per trade
+        transaction_cost: float = 0.001,  # 0.1% per trade
     ):
         self.return_weight = return_weight
         self.risk_weight = risk_weight
@@ -48,7 +49,7 @@ class RiskAdjustedReward:
         holding_period_days: int = 1,
         transaction_costs: Optional[float] = None,
         returns_series: Optional[np.ndarray] = None,
-        benchmark_returns: Optional[float] = None
+        benchmark_returns: Optional[float] = None,
     ) -> float:
         """
         Calculate risk-adjusted reward from trade result.
@@ -94,7 +95,9 @@ class RiskAdjustedReward:
             elif returns_series is not None and len(returns_series) > 0:
                 vol = np.std(returns_series)
                 if vol > 0:
-                    sharpe_ratio = (np.mean(returns_series) * 252 - self.risk_free_rate) / (vol * np.sqrt(252))
+                    sharpe_ratio = (
+                        np.mean(returns_series) * 252 - self.risk_free_rate
+                    ) / (vol * np.sqrt(252))
                 else:
                     sharpe_ratio = 0.0
             else:
@@ -129,12 +132,12 @@ class RiskAdjustedReward:
 
         # Composite reward
         reward = (
-            return_component +
-            risk_component +
-            sharpe_component +
-            drawdown_penalty +
-            cost_component +
-            benchmark_bonus
+            return_component
+            + risk_component
+            + sharpe_component
+            + drawdown_penalty
+            + cost_component
+            + benchmark_bonus
         )
 
         # Normalize to [-1, 1] range
@@ -146,7 +149,7 @@ class RiskAdjustedReward:
     def calculate_from_trade_result(
         self,
         trade_result: Dict[str, Any],
-        market_state: Optional[Dict[str, Any]] = None
+        market_state: Optional[Dict[str, Any]] = None,
     ) -> float:
         """
         Calculate reward from trade result dictionary.
@@ -189,14 +192,13 @@ class RiskAdjustedReward:
             sharpe_ratio=sharpe_ratio,
             holding_period_days=holding_period,
             returns_series=returns_series,
-            benchmark_returns=benchmark_return
+            benchmark_returns=benchmark_return,
         )
 
 
 # Convenience function for backward compatibility
 def calculate_risk_adjusted_reward(
-    trade_result: Dict[str, Any],
-    market_state: Optional[Dict[str, Any]] = None
+    trade_result: Dict[str, Any], market_state: Optional[Dict[str, Any]] = None
 ) -> float:
     """
     Calculate world-class risk-adjusted reward from trade result.

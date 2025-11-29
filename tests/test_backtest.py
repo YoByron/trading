@@ -91,7 +91,9 @@ def main():
 
         # Export results to dict (could be saved to JSON)
         results_dict = results.to_dict()
-        print(f"\nResults can be exported as dictionary with {len(results_dict)} fields")
+        print(
+            f"\nResults can be exported as dictionary with {len(results_dict)} fields"
+        )
 
         print("\n" + "=" * 80)
         print("TEST COMPLETED SUCCESSFULLY")

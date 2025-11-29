@@ -49,7 +49,9 @@ def analyze_spy_loss():
     # Analysis
     print(f"\n💡 Analysis:")
     print(f"  • SPY is down {abs(unrealized_pl_pct):.2f}% from entry")
-    print(f"  • This represents a ${abs(spy_pos.get('unrealized_pl', 0)):.2f} unrealized loss")
+    print(
+        f"  • This represents a ${abs(spy_pos.get('unrealized_pl', 0)):.2f} unrealized loss"
+    )
     print(f"  • Stop-loss is set at $669.04 (will trigger if drops further)")
 
     # Recommendations
@@ -114,7 +116,9 @@ def analyze_win_rate():
 
     print(f"\n🎯 Recommendations:")
     print(f"  • Focus on position management and exit timing")
-    print(f"  • Current unrealized P/L: ${sum(p.get('unrealized_pl', 0) for p in positions):+.2f}")
+    print(
+        f"  • Current unrealized P/L: ${sum(p.get('unrealized_pl', 0) for p in positions):+.2f}"
+    )
     print(f"  • Consider taking profits on GOOGL (+2.34%)")
     print(f"  • Monitor SPY closely (-4.44%)")
 
@@ -159,7 +163,11 @@ def suggest_optimizations():
     ]
 
     for opt in optimizations:
-        priority_emoji = "🚨" if opt["priority"] == "HIGH" else "⚠️" if opt["priority"] == "MEDIUM" else "ℹ️"
+        priority_emoji = (
+            "🚨"
+            if opt["priority"] == "HIGH"
+            else "⚠️" if opt["priority"] == "MEDIUM" else "ℹ️"
+        )
         print(f"\n{priority_emoji} [{opt['priority']}] {opt['action']}")
         print(f"   Reason: {opt['reason']}")
         print(f"   Impact: {opt['impact']}")

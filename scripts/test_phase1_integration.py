@@ -12,6 +12,7 @@ from pathlib import Path
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     print("⚠️  python-dotenv not installed, using system environment variables only")
@@ -36,6 +37,7 @@ def test_polygon_api():
 
     # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
+
     masked_value = mask_api_key(api_key)
     print(f"✅ Polygon.io API key found: {masked_value}")
 
@@ -66,6 +68,7 @@ def test_polygon_api():
     except Exception as e:
         print(f"❌ Polygon.io API test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -83,6 +86,7 @@ def test_finnhub_api():
 
     # Security: Mask API key in output (CodeQL-safe: store masked value first)
     from src.utils.security import mask_api_key
+
     masked_value = mask_api_key(api_key)
     print(f"✅ Finnhub API key found: {masked_value}")
 
@@ -111,6 +115,7 @@ def test_finnhub_api():
     except Exception as e:
         print(f"❌ Finnhub API test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -164,7 +169,9 @@ def test_dcf_fallback():
 
         # Test with a different stock
         print("\n📊 Testing DCF calculation for MSFT...")
-        result = calculator.get_intrinsic_value("MSFT", force_refresh=False)  # Use cache if available
+        result = calculator.get_intrinsic_value(
+            "MSFT", force_refresh=False
+        )  # Use cache if available
 
         if result:
             print(f"✅ DCF calculation successful!")
@@ -177,6 +184,7 @@ def test_dcf_fallback():
     except Exception as e:
         print(f"❌ DCF fallback test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

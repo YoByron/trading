@@ -14,6 +14,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 print("=" * 80)
@@ -23,6 +24,7 @@ print("=" * 80)
 # Get integration
 try:
     from src.agents.gemini3_integration import get_gemini3_integration
+
     integration = get_gemini3_integration()
 
     if not integration.enabled:
@@ -113,5 +115,6 @@ except ImportError as e:
 except Exception as e:
     print(f"\n❌ Error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

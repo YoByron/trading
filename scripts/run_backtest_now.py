@@ -25,9 +25,9 @@ print()
 # Configure strategy (same as production)
 strategy = CoreStrategy(
     daily_allocation=2000.0,  # Match current 2% of $100k portfolio
-    use_sentiment=False,      # Pure technical (MACD + RSI + Volume)
+    use_sentiment=False,  # Pure technical (MACD + RSI + Volume)
     etf_universe=["SPY", "QQQ", "VOO"],
-    stop_loss_pct=0.05
+    stop_loss_pct=0.05,
 )
 
 print("📊 Strategy Configuration:")
@@ -53,7 +53,7 @@ engine = BacktestEngine(
     strategy=strategy,
     start_date=start_date,
     end_date=end_date,
-    initial_capital=100000.0
+    initial_capital=100000.0,
 )
 
 results = engine.run()
@@ -82,17 +82,23 @@ else:
 if results.sharpe_ratio >= 1.0:
     criteria_met.append(f"✅ Sharpe Ratio: {results.sharpe_ratio:.2f} (target: >1.0)")
 else:
-    criteria_failed.append(f"❌ Sharpe Ratio: {results.sharpe_ratio:.2f} (target: >1.0)")
+    criteria_failed.append(
+        f"❌ Sharpe Ratio: {results.sharpe_ratio:.2f} (target: >1.0)"
+    )
 
 if results.max_drawdown <= 10:
     criteria_met.append(f"✅ Max Drawdown: {results.max_drawdown:.1f}% (target: <10%)")
 else:
-    criteria_failed.append(f"❌ Max Drawdown: {results.max_drawdown:.1f}% (target: <10%)")
+    criteria_failed.append(
+        f"❌ Max Drawdown: {results.max_drawdown:.1f}% (target: <10%)"
+    )
 
 if results.total_return > 0:
     criteria_met.append(f"✅ Total Return: {results.total_return:.2f}% (target: >0%)")
 else:
-    criteria_failed.append(f"❌ Total Return: {results.total_return:.2f}% (target: >0%)")
+    criteria_failed.append(
+        f"❌ Total Return: {results.total_return:.2f}% (target: >0%)"
+    )
 
 print("\n📊 Criteria Met:")
 for item in criteria_met:

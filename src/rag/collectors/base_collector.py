@@ -31,7 +31,9 @@ class BaseNewsCollector(ABC):
         logger.info(f"Initialized {source_name} collector")
 
     @abstractmethod
-    def collect_ticker_news(self, ticker: str, days_back: int = 7) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Collect news for a specific ticker.
 
@@ -75,7 +77,7 @@ class BaseNewsCollector(ABC):
         url: str,
         published_date: str,
         ticker: str = None,
-        sentiment: float = None
+        sentiment: float = None,
     ) -> Dict[str, Any]:
         """
         Normalize article to standard format.
@@ -99,7 +101,7 @@ class BaseNewsCollector(ABC):
             "source": self.source_name,
             "ticker": ticker,
             "sentiment": sentiment,
-            "collected_at": datetime.now().isoformat()
+            "collected_at": datetime.now().isoformat(),
         }
 
     def save_raw(self, articles: List[Dict[str, Any]], ticker: str = None):

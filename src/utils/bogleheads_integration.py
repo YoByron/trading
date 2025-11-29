@@ -27,11 +27,14 @@ def get_bogleheads_learner():
     if _bogleheads_learner is None:
         try:
             # Add .claude/skills to path
-            skills_path = project_root / ".claude" / "skills" / "bogleheads_learner" / "scripts"
+            skills_path = (
+                project_root / ".claude" / "skills" / "bogleheads_learner" / "scripts"
+            )
             if str(skills_path) not in sys.path:
                 sys.path.insert(0, str(skills_path))
 
             from bogleheads_learner import BogleheadsLearner
+
             _bogleheads_learner = BogleheadsLearner()
             logger.info("✅ Bogleheads learner initialized")
         except Exception as e:
@@ -42,8 +45,7 @@ def get_bogleheads_learner():
 
 
 def get_bogleheads_signal_for_symbol(
-    symbol: str,
-    market_context: Optional[Dict[str, Any]] = None
+    symbol: str, market_context: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Get Bogleheads-based trading signal for a symbol.
@@ -62,7 +64,7 @@ def get_bogleheads_signal_for_symbol(
             "score": 0.0,
             "confidence": 0.0,
             "signal": "HOLD",
-            "reasoning": "Bogleheads learner unavailable"
+            "reasoning": "Bogleheads learner unavailable",
         }
 
     try:
@@ -70,20 +72,21 @@ def get_bogleheads_signal_for_symbol(
 
         # Get signal from Bogleheads
         signal = learner.get_bogleheads_signal(
-            symbol=symbol,
-            market_context=market_context
+            symbol=symbol, market_context=market_context
         )
 
         # Convert signal to score (-100 to +100)
         signal_map = {"BUY": 50, "SELL": -50, "HOLD": 0}
-        score = signal_map.get(signal.get("signal", "HOLD"), 0) * signal.get("confidence", 0.5)
+        score = signal_map.get(signal.get("signal", "HOLD"), 0) * signal.get(
+            "confidence", 0.5
+        )
 
         return {
             "score": score,
             "confidence": signal.get("confidence", 0.0),
             "signal": signal.get("signal", "HOLD"),
             "reasoning": signal.get("reasoning", ""),
-            "insights_used": signal.get("insights_used", [])
+            "insights_used": signal.get("insights_used", []),
         }
 
     except Exception as e:
@@ -92,7 +95,7 @@ def get_bogleheads_signal_for_symbol(
             "score": 0.0,
             "confidence": 0.0,
             "signal": "HOLD",
-            "reasoning": f"Error: {str(e)}"
+            "reasoning": f"Error: {str(e)}",
         }
 
 
@@ -110,7 +113,7 @@ def get_bogleheads_regime() -> Dict[str, Any]:
             "regime": "unknown",
             "sentiment": "neutral",
             "key_themes": [],
-            "risk_level": "medium"
+            "risk_level": "medium",
         }
 
     try:
@@ -121,14 +124,14 @@ def get_bogleheads_regime() -> Dict[str, Any]:
             "regime": "unknown",
             "sentiment": "neutral",
             "key_themes": [],
-            "risk_level": "medium"
+            "risk_level": "medium",
         }
 
 
 def add_bogleheads_features_to_rl_state(
     rl_state: Dict[str, Any],
     symbol: str,
-    market_context: Optional[Dict[str, Any]] = None
+    market_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Add Bogleheads features to RL state space.
@@ -154,11 +157,21 @@ def add_bogleheads_features_to_rl_state(
     rl_state["bogleheads_risk_level"] = regime.get("risk_level", "medium")
 
     # Convert regime to numeric
-    regime_map = {"bull": 1.0, "bear": -1.0, "choppy": 0.0, "uncertain": 0.0, "unknown": 0.0}
-    rl_state["bogleheads_regime_score"] = regime_map.get(regime.get("regime", "unknown"), 0.0)
+    regime_map = {
+        "bull": 1.0,
+        "bear": -1.0,
+        "choppy": 0.0,
+        "uncertain": 0.0,
+        "unknown": 0.0,
+    }
+    rl_state["bogleheads_regime_score"] = regime_map.get(
+        regime.get("regime", "unknown"), 0.0
+    )
 
     # Convert risk level to numeric
     risk_map = {"low": 0.0, "medium": 0.5, "high": 1.0}
-    rl_state["bogleheads_risk_score"] = risk_map.get(regime.get("risk_level", "medium"), 0.5)
+    rl_state["bogleheads_risk_score"] = risk_map.get(
+        regime.get("risk_level", "medium"), 0.5
+    )
 
     return rl_state

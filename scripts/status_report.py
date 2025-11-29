@@ -77,7 +77,9 @@ def generate_status_report():
 
     # Challenge Status
     challenge = state.get("challenge", {})
-    print(f"  Challenge Day:        {challenge.get('current_day', 0)}/{challenge.get('total_days', 90)}")
+    print(
+        f"  Challenge Day:        {challenge.get('current_day', 0)}/{challenge.get('total_days', 90)}"
+    )
     print(f"  Phase:                {challenge.get('phase', 'Unknown')}")
 
     # Performance Metrics
@@ -89,8 +91,12 @@ def generate_status_report():
 
     best = performance.get("best_trade", {})
     worst = performance.get("worst_trade", {})
-    print(f"  Best Trade:           {best.get('symbol', 'N/A')} ${best.get('pl', 0):+,.2f}")
-    print(f"  Worst Trade:          {worst.get('symbol', 'N/A')} ${worst.get('pl', 0):+,.2f}")
+    print(
+        f"  Best Trade:           {best.get('symbol', 'N/A')} ${best.get('pl', 0):+,.2f}"
+    )
+    print(
+        f"  Worst Trade:          {worst.get('symbol', 'N/A')} ${worst.get('pl', 0):+,.2f}"
+    )
 
     # Today's Status
     today = datetime.now().strftime("%Y-%m-%d")

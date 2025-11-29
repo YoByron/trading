@@ -400,7 +400,9 @@ class GrowthStrategy:
         if self.use_intelligent_investor:
             try:
                 self.safety_analyzer = get_global_safety_analyzer()
-                logger.info("Intelligent Investor safety analyzer initialized for GrowthStrategy")
+                logger.info(
+                    "Intelligent Investor safety analyzer initialized for GrowthStrategy"
+                )
             except Exception as e:
                 logger.warning(f"Failed to initialize safety analyzer: {e}")
                 self.safety_analyzer = None
@@ -456,10 +458,19 @@ class GrowthStrategy:
             logger.info(
                 "Loaded %d external signals (sources: %s)",
                 len(self.external_signals_cache),
-                ", ".join(sorted({sig.get("source", "unknown") for sig in self.external_signals_cache.values()})),
+                ", ".join(
+                    sorted(
+                        {
+                            sig.get("source", "unknown")
+                            for sig in self.external_signals_cache.values()
+                        }
+                    )
+                ),
             )
         else:
-            logger.info("No external signals found - proceeding with internal models only")
+            logger.info(
+                "No external signals found - proceeding with internal models only"
+            )
 
         orders = []
 
@@ -569,7 +580,12 @@ class GrowthStrategy:
                 volume_ratio = self._calculate_volume_ratio(hist)
 
                 # Apply filters (MACD histogram > 0 = bullish momentum confirmation)
-                if momentum > 0 and 30 < rsi < 70 and volume_ratio > 1.2 and macd_histogram > 0:
+                if (
+                    momentum > 0
+                    and 30 < rsi < 70
+                    and volume_ratio > 1.2
+                    and macd_histogram > 0
+                ):
                     candidate = CandidateStock(
                         symbol=symbol,
                         technical_score=score,
@@ -681,7 +697,7 @@ class GrowthStrategy:
                     sent_score, sent_confidence, _ = get_ticker_sentiment(
                         candidate.symbol,
                         self.sentiment_data,
-                        default_score=50.0  # Neutral default
+                        default_score=50.0,  # Neutral default
                     )
 
                     # Convert 0-100 sentiment to -15 to +15 point modifier
@@ -692,14 +708,18 @@ class GrowthStrategy:
 
                     # Sentiment score 70+ = +15 bonus, 30- = -15 penalty
                     # Linear scaling: score 50 (neutral) = 0 modifier
-                    sentiment_modifier = ((sent_score - 50) / 50) * 15 * confidence_weight
+                    sentiment_modifier = (
+                        ((sent_score - 50) / 50) * 15 * confidence_weight
+                    )
 
                     logger.debug(
                         f"{candidate.symbol}: sentiment={sent_score:.1f} "
                         f"(confidence={sent_confidence}) → modifier={sentiment_modifier:+.1f}"
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to get sentiment for {candidate.symbol}: {e}")
+                    logger.warning(
+                        f"Failed to get sentiment for {candidate.symbol}: {e}"
+                    )
 
             # Store sentiment modifier for logging
             candidate.sentiment_modifier = sentiment_modifier
@@ -715,7 +735,11 @@ class GrowthStrategy:
 
             intrinsic_value = dcf_result.intrinsic_value
             if intrinsic_value <= 0:
-                logger.info("Skipping %s - intrinsic value invalid (%.2f)", candidate.symbol, intrinsic_value)
+                logger.info(
+                    "Skipping %s - intrinsic value invalid (%.2f)",
+                    candidate.symbol,
+                    intrinsic_value,
+                )
                 continue
 
             discount = (intrinsic_value - candidate.current_price) / intrinsic_value
@@ -736,7 +760,9 @@ class GrowthStrategy:
             )
             if external_signal:
                 candidate.external_signal_score = external_signal.get("score", 0.0)
-                candidate.external_signal_confidence = external_signal.get("confidence", 0.0)
+                candidate.external_signal_confidence = external_signal.get(
+                    "confidence", 0.0
+                )
 
                 if candidate.external_signal_score < -20:
                     logger.info(
@@ -783,7 +809,9 @@ class GrowthStrategy:
         for i, candidate in enumerate(filtered_candidates[:5], 1):
             sentiment_mod = candidate.sentiment_modifier
             dcf_score = min(100.0, max(0.0, (candidate.dcf_discount or 0.0) * 400))
-            external_score = min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
+            external_score = min(
+                100.0, max(0.0, (candidate.external_signal_score + 100) / 2)
+            )
             combined_score = (
                 0.30 * candidate.technical_score
                 + 0.30 * candidate.consensus_score
@@ -1232,7 +1260,8 @@ class GrowthStrategy:
                     + 0.30 * candidate.consensus_score
                     + 0.15 * (50 + candidate.sentiment_modifier)
                     + 0.15 * dcf_score
-                    + 0.10 * min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
+                    + 0.10
+                    * min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
                 )
                 order = Order(
                     symbol=candidate.symbol,
@@ -1260,20 +1289,28 @@ class GrowthStrategy:
                     # Intelligent Investor Safety Check (Graham-Buffett principles)
                     if self.use_intelligent_investor and self.safety_analyzer:
                         try:
-                            logger.info(f"  Running Intelligent Investor safety check for {candidate.symbol}...")
-                            should_buy, safety_analysis = self.safety_analyzer.should_buy(
-                                symbol=candidate.symbol,
-                                market_price=candidate.current_price,
-                                force_refresh=False,
+                            logger.info(
+                                f"  Running Intelligent Investor safety check for {candidate.symbol}..."
+                            )
+                            should_buy, safety_analysis = (
+                                self.safety_analyzer.should_buy(
+                                    symbol=candidate.symbol,
+                                    market_price=candidate.current_price,
+                                    force_refresh=False,
+                                )
                             )
 
                             if not should_buy:
                                 logger.warning(
                                     f"  ❌ {candidate.symbol} REJECTED by Intelligent Investor principles"
                                 )
-                                logger.warning(f"     Safety Rating: {safety_analysis.safety_rating.value}")
+                                logger.warning(
+                                    f"     Safety Rating: {safety_analysis.safety_rating.value}"
+                                )
                                 if safety_analysis.reasons:
-                                    for reason in safety_analysis.reasons[:2]:  # Show first 2 reasons
+                                    for reason in safety_analysis.reasons[
+                                        :2
+                                    ]:  # Show first 2 reasons
                                         logger.warning(f"     Reason: {reason}")
                                 if safety_analysis.defensive_investor_score is not None:
                                     logger.info(
@@ -1288,7 +1325,9 @@ class GrowthStrategy:
                                 logger.info(
                                     f"  ✅ {candidate.symbol} PASSED Intelligent Investor Safety Check"
                                 )
-                                logger.info(f"     Safety Rating: {safety_analysis.safety_rating.value}")
+                                logger.info(
+                                    f"     Safety Rating: {safety_analysis.safety_rating.value}"
+                                )
                                 if safety_analysis.defensive_investor_score is not None:
                                     logger.info(
                                         f"     Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
@@ -1303,7 +1342,9 @@ class GrowthStrategy:
                             )
                             # Fail-open: continue with trade if safety check unavailable
 
-                    if self.langchain_guard_enabled and not self._langchain_guard(candidate.symbol):
+                    if self.langchain_guard_enabled and not self._langchain_guard(
+                        candidate.symbol
+                    ):
                         logger.warning(
                             "  LangChain approval gate rejected order for %s",
                             candidate.symbol,

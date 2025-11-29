@@ -29,30 +29,62 @@ def validate_signal(ticker: str, signal: CryptoSignal) -> list[str]:
     if signal.sentiment and signal.reasoning:
         reasoning_lower = signal.reasoning.lower()
 
-        bullish_words = ['bullish', 'buy', 'long', 'breakout', 'rally', 'uptrend', 'pump', 'calls']
-        bearish_words = ['bearish', 'sell', 'short', 'breakdown', 'dump', 'downtrend', 'crash', 'puts']
+        bullish_words = [
+            "bullish",
+            "buy",
+            "long",
+            "breakout",
+            "rally",
+            "uptrend",
+            "pump",
+            "calls",
+        ]
+        bearish_words = [
+            "bearish",
+            "sell",
+            "short",
+            "breakdown",
+            "dump",
+            "downtrend",
+            "crash",
+            "puts",
+        ]
 
         bullish_count = sum(1 for word in bullish_words if word in reasoning_lower)
         bearish_count = sum(1 for word in bearish_words if word in reasoning_lower)
 
-        if signal.sentiment == 'bullish' and bearish_count > bullish_count:
-            errors.append(f"❌ Sentiment is 'bullish' but reasoning contains more bearish language ({bearish_count} vs {bullish_count})")
-        elif signal.sentiment == 'bearish' and bullish_count > bearish_count:
-            errors.append(f"❌ Sentiment is 'bearish' but reasoning contains more bullish language ({bullish_count} vs {bearish_count})")
+        if signal.sentiment == "bullish" and bearish_count > bullish_count:
+            errors.append(
+                f"❌ Sentiment is 'bullish' but reasoning contains more bearish language ({bearish_count} vs {bullish_count})"
+            )
+        elif signal.sentiment == "bearish" and bullish_count > bearish_count:
+            errors.append(
+                f"❌ Sentiment is 'bearish' but reasoning contains more bullish language ({bullish_count} vs {bearish_count})"
+            )
 
     # Check price logic
     if signal.entry_price and signal.target_price:
-        if signal.sentiment == 'bullish' and signal.target_price <= signal.entry_price:
-            errors.append(f"❌ Bullish signal but target (${signal.target_price:,.0f}) ≤ entry (${signal.entry_price:,.0f})")
-        elif signal.sentiment == 'bearish' and signal.target_price >= signal.entry_price:
-            errors.append(f"❌ Bearish signal but target (${signal.target_price:,.0f}) ≥ entry (${signal.entry_price:,.0f})")
+        if signal.sentiment == "bullish" and signal.target_price <= signal.entry_price:
+            errors.append(
+                f"❌ Bullish signal but target (${signal.target_price:,.0f}) ≤ entry (${signal.entry_price:,.0f})"
+            )
+        elif (
+            signal.sentiment == "bearish" and signal.target_price >= signal.entry_price
+        ):
+            errors.append(
+                f"❌ Bearish signal but target (${signal.target_price:,.0f}) ≥ entry (${signal.entry_price:,.0f})"
+            )
 
     # Check stop loss logic
     if signal.entry_price and signal.stop_loss:
-        if signal.sentiment == 'bullish' and signal.stop_loss >= signal.entry_price:
-            errors.append(f"❌ Bullish signal but stop loss (${signal.stop_loss:,.0f}) ≥ entry (${signal.entry_price:,.0f})")
-        elif signal.sentiment == 'bearish' and signal.stop_loss <= signal.entry_price:
-            errors.append(f"❌ Bearish signal but stop loss (${signal.stop_loss:,.0f}) ≤ entry (${signal.entry_price:,.0f})")
+        if signal.sentiment == "bullish" and signal.stop_loss >= signal.entry_price:
+            errors.append(
+                f"❌ Bullish signal but stop loss (${signal.stop_loss:,.0f}) ≥ entry (${signal.entry_price:,.0f})"
+            )
+        elif signal.sentiment == "bearish" and signal.stop_loss <= signal.entry_price:
+            errors.append(
+                f"❌ Bearish signal but stop loss (${signal.stop_loss:,.0f}) ≤ entry (${signal.entry_price:,.0f})"
+            )
 
     # Check for missing critical fields
     if not signal.entry_price:
@@ -84,9 +116,9 @@ def validate_all_signals(max_age_days: int = 7) -> bool:
     Returns:
         True if all signals valid, False if any errors found
     """
-    print("="*80)
+    print("=" * 80)
     print("NEWSLETTER SIGNAL VALIDATION")
-    print("="*80)
+    print("=" * 80)
     print()
 
     analyzer = NewsletterAnalyzer()
@@ -94,7 +126,9 @@ def validate_all_signals(max_age_days: int = 7) -> bool:
 
     if not signals:
         print("⚠️  No signals found to validate")
-        print(f"Checked: data/newsletter_signals/newsletter_signals_*.json (last {max_age_days} days)")
+        print(
+            f"Checked: data/newsletter_signals/newsletter_signals_*.json (last {max_age_days} days)"
+        )
         print()
         return False
 
@@ -109,8 +143,12 @@ def validate_all_signals(max_age_days: int = 7) -> bool:
         print(f"{'─'*80}")
         print(f"{ticker} VALIDATION")
         print(f"{'─'*80}")
-        print(f"Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)")
-        print(f"Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S UTC') if signal.source_date else 'Unknown'}")
+        print(
+            f"Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)"
+        )
+        print(
+            f"Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S UTC') if signal.source_date else 'Unknown'}"
+        )
 
         if signal.entry_price:
             print(f"Entry:       ${signal.entry_price:,.0f}")
@@ -142,9 +180,9 @@ def validate_all_signals(max_age_days: int = 7) -> bool:
             print("✅ VALID - No issues detected")
             print()
 
-    print("="*80)
+    print("=" * 80)
     print("VALIDATION SUMMARY")
-    print("="*80)
+    print("=" * 80)
     print(f"Total Signals:  {len(signals)}")
     print(f"Total Errors:   {total_errors}")
     print(f"Total Warnings: {total_warnings}")

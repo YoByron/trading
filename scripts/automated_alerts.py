@@ -20,12 +20,12 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--suppress-known",
         action="store_true",
-        help="Suppress known/persistent alerts (not implemented yet)"
+        help="Suppress known/persistent alerts (not implemented yet)",
     )
     args = parser.parse_args()
 

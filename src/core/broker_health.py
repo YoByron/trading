@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class BrokerStatus(Enum):
     """Broker health status enumeration."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     FAILING = "failing"
@@ -28,6 +29,7 @@ class BrokerStatus(Enum):
 @dataclass
 class BrokerHealthMetrics:
     """Broker health metrics tracking."""
+
     broker_name: str
     status: BrokerStatus
     last_successful_connection: Optional[datetime] = None
@@ -67,10 +69,12 @@ class BrokerHealthMonitor:
 
     def __init__(self, broker_name: str = "alpaca"):
         self.broker_name = broker_name.lower()
-        self.metrics = BrokerHealthMetrics(broker_name=self.broker_name, status=BrokerStatus.UNKNOWN)
+        self.metrics = BrokerHealthMetrics(
+            broker_name=self.broker_name, status=BrokerStatus.UNKNOWN
+        )
         self._health_log_file = os.path.join(
             os.getenv("MARKET_DATA_CACHE_DIR", "data/cache"),
-            f"{self.broker_name}_health.jsonl"
+            f"{self.broker_name}_health.jsonl",
         )
 
     def check_health(self) -> BrokerHealthMetrics:
@@ -81,6 +85,7 @@ class BrokerHealthMonitor:
             BrokerHealthMetrics with current status
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -97,23 +102,27 @@ class BrokerHealthMonitor:
             self.metrics.total_checks += 1
             self.metrics.successful_checks += 1
             self.metrics.avg_response_time_ms = (
-                (self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1) + elapsed_ms)
-                / self.metrics.total_checks
-            )
+                self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1)
+                + elapsed_ms
+            ) / self.metrics.total_checks
             self.metrics.consecutive_failures = 0
             self.metrics.account_status = account_info.get("status", "UNKNOWN")
             self.metrics.buying_power = account_info.get("buying_power", 0.0)
             self.metrics.last_error = None
 
             # Determine status
-            if account_info.get("status") == "ACTIVE" and not account_info.get("trading_blocked", False):
+            if account_info.get("status") == "ACTIVE" and not account_info.get(
+                "trading_blocked", False
+            ):
                 self.metrics.status = BrokerStatus.HEALTHY
             elif account_info.get("trading_blocked", False):
                 self.metrics.status = BrokerStatus.DEGRADED
                 self.metrics.last_error = "Trading blocked"
             else:
                 self.metrics.status = BrokerStatus.DEGRADED
-                self.metrics.last_error = f"Account status: {account_info.get('status')}"
+                self.metrics.last_error = (
+                    f"Account status: {account_info.get('status')}"
+                )
 
             # Log health check
             self._log_health_check(success=True, response_time_ms=elapsed_ms)
@@ -135,7 +144,9 @@ class BrokerHealthMonitor:
             self.metrics.status = BrokerStatus.FAILING
 
             # Log health check failure
-            self._log_health_check(success=False, response_time_ms=elapsed_ms, error=str(e))
+            self._log_health_check(
+                success=False, response_time_ms=elapsed_ms, error=str(e)
+            )
 
             logger.error(
                 f"❌ Broker health check failed: {self.broker_name} "
@@ -145,7 +156,9 @@ class BrokerHealthMonitor:
 
         return self.metrics
 
-    def _log_health_check(self, success: bool, response_time_ms: float, error: Optional[str] = None):
+    def _log_health_check(
+        self, success: bool, response_time_ms: float, error: Optional[str] = None
+    ):
         """Log health check result to file."""
         import json
         from pathlib import Path
@@ -182,11 +195,13 @@ class BrokerHealthMonitor:
             "avg_response_time_ms": round(self.metrics.avg_response_time_ms, 2),
             "last_successful_connection": (
                 self.metrics.last_successful_connection.isoformat()
-                if self.metrics.last_successful_connection else None
+                if self.metrics.last_successful_connection
+                else None
             ),
             "last_failed_connection": (
                 self.metrics.last_failed_connection.isoformat()
-                if self.metrics.last_failed_connection else None
+                if self.metrics.last_failed_connection
+                else None
             ),
             "last_error": self.metrics.last_error,
             "account_status": self.metrics.account_status,

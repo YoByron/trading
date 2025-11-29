@@ -22,21 +22,23 @@ st.set_page_config(
     page_title="Trading Control Center",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Data directory
 DATA_DIR = Path("data")
 
+
 def load_json_file(filepath: Path, default=None):
     """Load JSON file safely."""
     if filepath.exists():
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 return json.load(f)
         except Exception as e:
             st.error(f"Error loading {filepath}: {e}")
     return default or {}
+
 
 def get_latest_trades():
     """Get latest trades from today's trade log."""
@@ -51,15 +53,18 @@ def get_latest_trades():
     trade_file = DATA_DIR / f"trades_{yesterday.isoformat()}.json"
     return load_json_file(trade_file, [])
 
+
 def get_performance_data():
     """Get performance log data."""
     perf_file = DATA_DIR / "performance_log.json"
     return load_json_file(perf_file, [])
 
+
 def get_system_state():
     """Get system state."""
     state_file = DATA_DIR / "system_state.json"
     return load_json_file(state_file, {})
+
 
 def get_account_summary():
     """Get account summary from Alpaca API."""
@@ -81,7 +86,11 @@ def get_account_summary():
             "cash": float(account.cash),
             "buying_power": float(account.buying_power),
             "portfolio_value": float(account.portfolio_value),
-            "last_equity": float(account.last_equity) if hasattr(account, 'last_equity') else float(account.equity),
+            "last_equity": (
+                float(account.last_equity)
+                if hasattr(account, "last_equity")
+                else float(account.equity)
+            ),
             "positions": [
                 {
                     "symbol": pos.symbol,
@@ -93,16 +102,25 @@ def get_account_summary():
                 }
                 for pos in positions
             ],
-            "daytrade_count": getattr(account, 'daytrade_count', getattr(account, 'day_trade_count', 0)),
-            "pattern_day_trader": account.pattern_day_trader if hasattr(account, 'pattern_day_trader') else False,
+            "daytrade_count": getattr(
+                account, "daytrade_count", getattr(account, "day_trade_count", 0)
+            ),
+            "pattern_day_trader": (
+                account.pattern_day_trader
+                if hasattr(account, "pattern_day_trader")
+                else False
+            ),
         }
     except Exception as e:
         st.error(f"Error fetching account data: {e}")
         return None
 
+
 def calculate_win_rate(trades):
     """Calculate win rate from closed trades."""
-    closed_trades = [t for t in trades if t.get("action") == "SELL" or t.get("pl") is not None]
+    closed_trades = [
+        t for t in trades if t.get("action") == "SELL" or t.get("pl") is not None
+    ]
     if not closed_trades:
         return None, 0, 0
 
@@ -111,6 +129,7 @@ def calculate_win_rate(trades):
     win_rate = (winning / total * 100) if total > 0 else 0
 
     return win_rate, winning, total
+
 
 def main():
     """Main dashboard."""
@@ -151,7 +170,9 @@ def main():
             st.rerun()
 
     # Main dashboard
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Performance", "💼 Positions", "🛡️ Risk", "📋 Trades", "🚀 Sentiment Boost"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["📈 Performance", "💼 Positions", "🛡️ Risk", "📋 Trades", "🚀 Sentiment Boost"]
+    )
 
     # Tab 1: Performance
     with tab1:
@@ -167,23 +188,35 @@ def main():
                 st.metric(
                     "Portfolio Value",
                     f"${account['equity']:,.2f}",
-                    delta=f"${account['equity'] - account['last_equity']:,.2f}" if account.get('last_equity') else None
+                    delta=(
+                        f"${account['equity'] - account['last_equity']:,.2f}"
+                        if account.get("last_equity")
+                        else None
+                    ),
                 )
 
             with col2:
-                daily_pl = account['equity'] - account['last_equity'] if account.get('last_equity') else 0
+                daily_pl = (
+                    account["equity"] - account["last_equity"]
+                    if account.get("last_equity")
+                    else 0
+                )
                 st.metric(
                     "Daily P/L",
                     f"${daily_pl:,.2f}",
-                    delta=f"{(daily_pl / account['last_equity'] * 100):.2f}%" if account.get('last_equity') and account['last_equity'] > 0 else None
+                    delta=(
+                        f"{(daily_pl / account['last_equity'] * 100):.2f}%"
+                        if account.get("last_equity") and account["last_equity"] > 0
+                        else None
+                    ),
                 )
 
             with col3:
-                total_pl = account['equity'] - 100000.0  # Starting balance
+                total_pl = account["equity"] - 100000.0  # Starting balance
                 st.metric(
                     "Total P/L",
                     f"${total_pl:,.2f}",
-                    delta=f"{(total_pl / 100000.0 * 100):.2f}%"
+                    delta=f"{(total_pl / 100000.0 * 100):.2f}%",
                 )
 
             with col4:
@@ -194,7 +227,9 @@ def main():
             win_rate, winning, total_closed = calculate_win_rate(trades)
 
             if win_rate is not None:
-                st.metric("Win Rate", f"{win_rate:.1f}%", f"{winning}/{total_closed} trades")
+                st.metric(
+                    "Win Rate", f"{win_rate:.1f}%", f"{winning}/{total_closed} trades"
+                )
             else:
                 st.metric("Win Rate", "N/A", "No closed trades yet")
 
@@ -202,11 +237,11 @@ def main():
             if perf_data:
                 st.subheader("Performance Trend")
                 df = pd.DataFrame(perf_data)
-                if 'date' in df.columns:
-                    df['date'] = pd.to_datetime(df['date'])
-                    df = df.sort_values('date')
+                if "date" in df.columns:
+                    df["date"] = pd.to_datetime(df["date"])
+                    df = df.sort_values("date")
 
-                    st.line_chart(df.set_index('date')[['equity', 'pl']])
+                    st.line_chart(df.set_index("date")[["equity", "pl"]])
         else:
             st.warning("⚠️ Unable to fetch account data. Check API credentials.")
 
@@ -215,25 +250,31 @@ def main():
         st.header("Current Positions")
 
         account = get_account_summary()
-        if account and account.get('positions'):
-            positions_df = pd.DataFrame(account['positions'])
+        if account and account.get("positions"):
+            positions_df = pd.DataFrame(account["positions"])
 
             # Format display
             display_df = positions_df.copy()
-            display_df['Entry'] = display_df['entry_price'].apply(lambda x: f"${x:.2f}")
-            display_df['Current'] = display_df['current_price'].apply(lambda x: f"${x:.2f}")
-            display_df['P/L'] = display_df['unrealized_pl'].apply(lambda x: f"${x:,.2f}")
-            display_df['P/L %'] = display_df['unrealized_plpc'].apply(lambda x: f"{x:.2f}%")
-            display_df['Qty'] = display_df['qty']
+            display_df["Entry"] = display_df["entry_price"].apply(lambda x: f"${x:.2f}")
+            display_df["Current"] = display_df["current_price"].apply(
+                lambda x: f"${x:.2f}"
+            )
+            display_df["P/L"] = display_df["unrealized_pl"].apply(
+                lambda x: f"${x:,.2f}"
+            )
+            display_df["P/L %"] = display_df["unrealized_plpc"].apply(
+                lambda x: f"{x:.2f}%"
+            )
+            display_df["Qty"] = display_df["qty"]
 
             st.dataframe(
-                display_df[['symbol', 'Entry', 'Current', 'P/L', 'P/L %', 'Qty']],
+                display_df[["symbol", "Entry", "Current", "P/L", "P/L %", "Qty"]],
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
             )
 
             # Position summary
-            total_unrealized = sum(p['unrealized_pl'] for p in account['positions'])
+            total_unrealized = sum(p["unrealized_pl"] for p in account["positions"])
             st.metric("Total Unrealized P/L", f"${total_unrealized:,.2f}")
         else:
             st.info("No open positions")
@@ -248,14 +289,18 @@ def main():
 
             with col1:
                 st.subheader("PDT Protection")
-                daytrade_count = account.get('daytrade_count', 0)
-                is_pdt = account.get('pattern_day_trader', False)
-                equity = account['equity']
+                daytrade_count = account.get("daytrade_count", 0)
+                is_pdt = account.get("pattern_day_trader", False)
+                equity = account["equity"]
 
                 if daytrade_count >= 3 and equity < 25000:
-                    st.error(f"🚨 BLOCKED: Daytrade count ({daytrade_count}) >= 3 and equity ${equity:,.2f} < $25,000")
+                    st.error(
+                        f"🚨 BLOCKED: Daytrade count ({daytrade_count}) >= 3 and equity ${equity:,.2f} < $25,000"
+                    )
                 elif is_pdt and equity < 25000:
-                    st.error(f"🚨 BLOCKED: Pattern Day Trader flag set and equity ${equity:,.2f} < $25,000")
+                    st.error(
+                        f"🚨 BLOCKED: Pattern Day Trader flag set and equity ${equity:,.2f} < $25,000"
+                    )
                 else:
                     st.success(f"✅ Trading Allowed")
                     st.caption(f"Daytrade Count: {daytrade_count}/3")
@@ -263,12 +308,20 @@ def main():
 
             with col2:
                 st.subheader("Daily Loss Limit")
-                daily_pl = account['equity'] - account['last_equity'] if account.get('last_equity') else 0
-                daily_loss_pct = (daily_pl / account['equity'] * 100) if account['equity'] > 0 else 0
+                daily_pl = (
+                    account["equity"] - account["last_equity"]
+                    if account.get("last_equity")
+                    else 0
+                )
+                daily_loss_pct = (
+                    (daily_pl / account["equity"] * 100) if account["equity"] > 0 else 0
+                )
                 max_daily_loss = 2.0  # 2% default
 
                 if daily_loss_pct < -max_daily_loss:
-                    st.error(f"🚨 BREACHED: Daily loss {daily_loss_pct:.2f}% exceeds limit {-max_daily_loss}%")
+                    st.error(
+                        f"🚨 BREACHED: Daily loss {daily_loss_pct:.2f}% exceeds limit {-max_daily_loss}%"
+                    )
                 else:
                     st.success(f"✅ Within Limits")
                     st.caption(f"Daily P/L: {daily_loss_pct:.2f}%")
@@ -276,7 +329,9 @@ def main():
 
             # Circuit breaker status
             st.subheader("Circuit Breaker Status")
-            if daily_loss_pct < -max_daily_loss or (daytrade_count >= 3 and equity < 25000):
+            if daily_loss_pct < -max_daily_loss or (
+                daytrade_count >= 3 and equity < 25000
+            ):
                 st.error("🔴 CIRCUIT BREAKER ACTIVE - Trading Blocked")
             else:
                 st.success("🟢 CIRCUIT BREAKER OK - Trading Allowed")
@@ -294,16 +349,27 @@ def main():
             df = pd.DataFrame(recent_trades)
 
             # Format display
-            if 'timestamp' in df.columns:
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                df = df.sort_values('timestamp', ascending=False)
+            if "timestamp" in df.columns:
+                df["timestamp"] = pd.to_datetime(df["timestamp"])
+                df = df.sort_values("timestamp", ascending=False)
 
             st.dataframe(df, use_container_width=True, hide_index=True)
 
             # Trade statistics
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Trades Today", len([t for t in trades if t.get('timestamp', '').startswith(str(datetime.now().date()))]))
+                st.metric(
+                    "Total Trades Today",
+                    len(
+                        [
+                            t
+                            for t in trades
+                            if t.get("timestamp", "").startswith(
+                                str(datetime.now().date())
+                            )
+                        ]
+                    ),
+                )
             with col2:
                 win_rate, winning, total = calculate_win_rate(trades)
                 if win_rate is not None:
@@ -311,7 +377,9 @@ def main():
                 else:
                     st.metric("Win Rate", "N/A")
             with col3:
-                total_amount = sum(t.get('amount', 0) for t in trades if t.get('amount'))
+                total_amount = sum(
+                    t.get("amount", 0) for t in trades if t.get("amount")
+                )
                 st.metric("Total Invested", f"${total_amount:,.2f}")
         else:
             st.info("No trades recorded yet")
@@ -321,21 +389,23 @@ def main():
         st.header("Sentiment Boost Signals")
 
         account = get_account_summary()
-        if account and account.get('positions'):
+        if account and account.get("positions"):
             st.subheader("Active Sentiment Boost Analysis")
 
             # Check for sentiment boost opportunities
             try:
                 from src.utils.sentiment_boost import calculate_sentiment_boost
 
-                positions = account['positions']
+                positions = account["positions"]
                 boost_opportunities = []
 
                 for pos in positions:
-                    symbol = pos['symbol']
-                    current_price = pos['current_price']
-                    entry_price = pos['entry_price']
-                    technical_score = 50.0  # Placeholder - would come from actual analysis
+                    symbol = pos["symbol"]
+                    current_price = pos["current_price"]
+                    entry_price = pos["entry_price"]
+                    technical_score = (
+                        50.0  # Placeholder - would come from actual analysis
+                    )
 
                     # Calculate sentiment boost
                     boost_amount, boost_info = calculate_sentiment_boost(
@@ -343,25 +413,33 @@ def main():
                         base_amount=100.0,  # Example amount
                         technical_score=technical_score,
                         sentiment_threshold=0.8,
-                        boost_multiplier=1.2
+                        boost_multiplier=1.2,
                     )
 
                     if boost_info.get("boost_applied"):
-                        boost_opportunities.append({
-                            "symbol": symbol,
-                            "boost_applied": True,
-                            "reason": boost_info.get("reason", ""),
-                            "sentiment_score": boost_info.get("sentiment_score", 0),
-                            "technical_score": technical_score,
-                        })
+                        boost_opportunities.append(
+                            {
+                                "symbol": symbol,
+                                "boost_applied": True,
+                                "reason": boost_info.get("reason", ""),
+                                "sentiment_score": boost_info.get("sentiment_score", 0),
+                                "technical_score": technical_score,
+                            }
+                        )
 
                 if boost_opportunities:
-                    st.success(f"✅ {len(boost_opportunities)} Active Sentiment Boost Signals")
+                    st.success(
+                        f"✅ {len(boost_opportunities)} Active Sentiment Boost Signals"
+                    )
                     for opp in boost_opportunities:
                         with st.expander(f"🚀 {opp['symbol']} - Boost Active"):
                             st.write(f"**Reason**: {opp['reason']}")
-                            st.write(f"**Sentiment Score**: {opp['sentiment_score']:.2f}")
-                            st.write(f"**Technical Score**: {opp['technical_score']:.2f}")
+                            st.write(
+                                f"**Sentiment Score**: {opp['sentiment_score']:.2f}"
+                            )
+                            st.write(
+                                f"**Technical Score**: {opp['technical_score']:.2f}"
+                            )
                 else:
                     st.info("No active sentiment boost signals")
 
@@ -379,6 +457,7 @@ def main():
             st.metric("Sentiment Threshold", "0.8", "80%")
         with col2:
             st.metric("Boost Multiplier", "1.2x", "+20%")
+
 
 if __name__ == "__main__":
     main()

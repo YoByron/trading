@@ -1,6 +1,7 @@
 import sys
 import logging
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.orchestration.elite_orchestrator import EliteOrchestrator
@@ -11,12 +12,13 @@ from src.safety.explainability import tracer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ChaosDrill")
 
+
 def run_chaos_drill():
     logger.info("🔥 STARTING CHAOS DRILL 🔥")
 
     # 1. Enable Chaos Monkey
     chaos_monkey.enabled = True
-    chaos_monkey.probability = 0.5 # 50% chance of failure/latency
+    chaos_monkey.probability = 0.5  # 50% chance of failure/latency
     logger.info("🐒 Chaos Monkey ENABLED (50% probability)")
 
     # 2. Initialize Orchestrator
@@ -30,8 +32,10 @@ def run_chaos_drill():
 
         logger.info("\n✅ DRILL COMPLETE: System survived chaos")
         logger.info(f"Final Decision: {results.get('final_decision')}")
-        logger.info(f"Errors encountered (and handled): {len(results.get('errors', []))}")
-        for err in results.get('errors', []):
+        logger.info(
+            f"Errors encountered (and handled): {len(results.get('errors', []))}"
+        )
+        for err in results.get("errors", []):
             logger.info(f"  - {err}")
 
     except Exception as e:
@@ -44,6 +48,7 @@ def run_chaos_drill():
         logger.info(f"\n🔍 Audit Trace Generated: {tracer.current_trace_id}")
     else:
         logger.warning("\n⚠️ No audit trace found!")
+
 
 if __name__ == "__main__":
     run_chaos_drill()

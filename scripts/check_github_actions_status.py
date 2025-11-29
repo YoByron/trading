@@ -20,10 +20,7 @@ def check_github_cli_available() -> bool:
     """Check if GitHub CLI (gh) is available."""
     try:
         result = subprocess.run(
-            ["gh", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["gh", "--version"], capture_output=True, text=True, timeout=5
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -49,15 +46,20 @@ def get_workflow_runs(workflow_name: str, limit: int = 5) -> Optional[list]:
         # Get workflow runs
         result = subprocess.run(
             [
-                "gh", "run", "list",
-                "--workflow", workflow_name,
-                "--limit", str(limit),
-                "--json", "conclusion,createdAt,displayTitle,status"
+                "gh",
+                "run",
+                "list",
+                "--workflow",
+                workflow_name,
+                "--limit",
+                str(limit),
+                "--json",
+                "conclusion,createdAt,displayTitle,status",
             ],
             capture_output=True,
             text=True,
             timeout=10,
-            cwd=Path(__file__).parent.parent
+            cwd=Path(__file__).parent.parent,
         )
 
         if result.returncode != 0:
@@ -72,7 +74,9 @@ def get_workflow_runs(workflow_name: str, limit: int = 5) -> Optional[list]:
         return None
 
 
-def check_if_ran_today(workflow_name: str, check_success_only: bool = True) -> tuple[bool, Optional[str]]:
+def check_if_ran_today(
+    workflow_name: str, check_success_only: bool = True
+) -> tuple[bool, Optional[str]]:
     """
     Check if workflow ran successfully today.
 
@@ -163,7 +167,7 @@ def _update_cache(workflow_name: str, ran_today: bool, reason: str):
         cache_data[workflow_name] = {
             "ran_today": ran_today,
             "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         cache_data["timestamp"] = datetime.now(timezone.utc).isoformat()
 

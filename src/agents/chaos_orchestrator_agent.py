@@ -9,6 +9,7 @@ from src.orchestration.elite_orchestrator import EliteOrchestrator
 
 logger = logging.getLogger(__name__)
 
+
 class ChaosOrchestratorAgent(BaseAgent):
     """
     Chaos Orchestrator Agent: Autonomous Resilience Testing.
@@ -22,7 +23,7 @@ class ChaosOrchestratorAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="ChaosOrchestratorAgent",
-            role="Resilience testing and chaos engineering orchestration"
+            role="Resilience testing and chaos engineering orchestration",
         )
 
     def analyze(self, data: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -59,26 +60,23 @@ class ChaosOrchestratorAgent(BaseAgent):
         reasoning = response.get("reasoning", "").upper()
 
         if "NO" in reasoning and "YES" not in reasoning:
-             return {
-                "action": "SKIP_DRILL",
-                "reasoning": reasoning
-            }
+            return {"action": "SKIP_DRILL", "reasoning": reasoning}
 
         # Parse intensity
         intensity = "LOW"
-        if "HIGH" in reasoning: intensity = "HIGH"
-        elif "MEDIUM" in reasoning: intensity = "MEDIUM"
+        if "HIGH" in reasoning:
+            intensity = "HIGH"
+        elif "MEDIUM" in reasoning:
+            intensity = "MEDIUM"
 
         # 2. Configure Chaos Monkey
         config = self._get_config_for_intensity(intensity)
         chaos_monkey.enabled = True
         chaos_monkey.probability = config["probability"]
 
-        self.log_decision({
-            "action": "START_DRILL",
-            "intensity": intensity,
-            "config": config
-        })
+        self.log_decision(
+            {"action": "START_DRILL", "intensity": intensity, "config": config}
+        )
 
         # 3. Execute Drill (Run a trading cycle under chaos)
         logger.info(f"🚀 STARTING {intensity} INTENSITY CHAOS DRILL")
@@ -102,7 +100,7 @@ class ChaosOrchestratorAgent(BaseAgent):
             "action": "DRILL_COMPLETE",
             "intensity": intensity,
             "result": drill_results["status"],
-            "details": drill_results
+            "details": drill_results,
         }
 
     def _get_config_for_intensity(self, intensity: str) -> Dict[str, Any]:

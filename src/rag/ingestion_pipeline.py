@@ -45,10 +45,7 @@ class RAGIngestionPipeline:
         logger.info("RAG Ingestion Pipeline initialized")
 
     def ingest_ticker_news(
-        self,
-        ticker: str,
-        days_back: int = 7,
-        save_normalized: bool = True
+        self, ticker: str, days_back: int = 7, save_normalized: bool = True
     ) -> Dict[str, Any]:
         """
         Collect, embed, and store news for a single ticker.
@@ -67,7 +64,9 @@ class RAGIngestionPipeline:
 
         # Step 1: Collect news from all sources
         logger.info(f"\n📰 Step 1: Collecting news...")
-        articles = self.orchestrator.collect_all_ticker_news(ticker, days_back=days_back)
+        articles = self.orchestrator.collect_all_ticker_news(
+            ticker, days_back=days_back
+        )
 
         if not articles:
             logger.warning(f"No articles collected for {ticker}")
@@ -90,7 +89,9 @@ class RAGIngestionPipeline:
             # Combine title and content for better embeddings
             title = article.get("title", "")
             content = article.get("content", "")
-            combined_text = f"{title}\n\n{content}" if title and content else (title or content)
+            combined_text = (
+                f"{title}\n\n{content}" if title and content else (title or content)
+            )
 
             documents.append(combined_text)
 
@@ -98,9 +99,11 @@ class RAGIngestionPipeline:
             metadata = {
                 "ticker": ticker,
                 "source": article.get("source", "unknown"),
-                "date": article.get("published_date", datetime.now().strftime("%Y-%m-%d")),
+                "date": article.get(
+                    "published_date", datetime.now().strftime("%Y-%m-%d")
+                ),
                 "url": article.get("url", ""),
-                "sentiment": article.get("sentiment", 0.5)
+                "sentiment": article.get("sentiment", 0.5),
             }
             metadatas.append(metadata)
 
@@ -113,13 +116,13 @@ class RAGIngestionPipeline:
         logger.info(f"\n💾 Step 3: Storing in ChromaDB...")
 
         result = self.db.add_documents(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
+            documents=documents, metadatas=metadatas, ids=ids
         )
 
         if result["status"] == "success":
-            logger.info(f"✅ Successfully stored {result['count']} articles in RAG database")
+            logger.info(
+                f"✅ Successfully stored {result['count']} articles in RAG database"
+            )
 
             # Get updated stats
             stats = self.db.get_stats()
@@ -128,20 +131,14 @@ class RAGIngestionPipeline:
             logger.info(f"   Unique tickers: {stats.get('unique_tickers', 0)}")
             logger.info(f"   Sources: {', '.join(stats.get('sources', []))}")
 
-            return {
-                "status": "success",
-                "count": result["count"],
-                "stats": stats
-            }
+            return {"status": "success", "count": result["count"], "stats": stats}
 
         else:
             logger.error(f"❌ Failed to store articles: {result.get('message')}")
             return {"status": "error", "message": result.get("message")}
 
     def ingest_watchlist_news(
-        self,
-        tickers: List[str],
-        days_back: int = 7
+        self, tickers: List[str], days_back: int = 7
     ) -> Dict[str, Any]:
         """
         Collect, embed, and store news for multiple tickers.
@@ -160,7 +157,9 @@ class RAGIngestionPipeline:
             results[ticker] = result
 
         total_ingested = sum(r.get("count", 0) for r in results.values())
-        logger.info(f"\n✅ Total ingested: {total_ingested} articles across {len(tickers)} tickers")
+        logger.info(
+            f"\n✅ Total ingested: {total_ingested} articles across {len(tickers)} tickers"
+        )
 
         return results
 
@@ -196,16 +195,20 @@ class RAGIngestionPipeline:
         for i, article in enumerate(articles):
             title = article.get("title", "")
             content = article.get("content", "")
-            combined_text = f"{title}\n\n{content}" if title and content else (title or content)
+            combined_text = (
+                f"{title}\n\n{content}" if title and content else (title or content)
+            )
 
             documents.append(combined_text)
 
             metadata = {
                 "ticker": "MARKET",
                 "source": article.get("source", "unknown"),
-                "date": article.get("published_date", datetime.now().strftime("%Y-%m-%d")),
+                "date": article.get(
+                    "published_date", datetime.now().strftime("%Y-%m-%d")
+                ),
                 "url": article.get("url", ""),
-                "sentiment": article.get("sentiment", 0.5)
+                "sentiment": article.get("sentiment", 0.5),
             }
             metadatas.append(metadata)
 
@@ -215,9 +218,7 @@ class RAGIngestionPipeline:
 
         # Store in database
         result = self.db.add_documents(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
+            documents=documents, metadatas=metadatas, ids=ids
         )
 
         if result["status"] == "success":

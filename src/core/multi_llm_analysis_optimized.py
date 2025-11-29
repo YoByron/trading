@@ -400,7 +400,8 @@ Provide objective, data-driven sentiment scores based on technical indicators an
         metadata = {
             "confidence": confidence,
             "individual_scores": individual_scores,
-            "cache_hit_rate": self._cache_hits / max(1, self._cache_hits + self._cache_misses),
+            "cache_hit_rate": self._cache_hits
+            / max(1, self._cache_hits + self._cache_misses),
             "tokens_saved": self._total_tokens_saved,
             "priority": priority.value,
         }
@@ -445,7 +446,9 @@ Provide objective, data-driven sentiment scores based on technical indicators an
             volatility: Market volatility (0-1)
         """
         self._current_timeout = self._calculate_adaptive_timeout(volatility)
-        logger.debug(f"Adaptive timeout set to {self._current_timeout}s (volatility: {volatility:.2%})")
+        logger.debug(
+            f"Adaptive timeout set to {self._current_timeout}s (volatility: {volatility:.2%})"
+        )
 
 
 # Convenience function

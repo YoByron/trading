@@ -13,10 +13,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.utils.newsletter_analyzer import NewsletterAnalyzer
 
+
 def main():
-    print("="*80)
+    print("=" * 80)
     print("FETCHING LATEST COINSNACKS NEWSLETTER")
-    print("="*80)
+    print("=" * 80)
     print()
 
     analyzer = NewsletterAnalyzer()
@@ -38,8 +39,12 @@ def main():
                 print(f"{'─'*80}")
                 print(f"{ticker} SIGNAL")
                 print(f"{'─'*80}")
-                print(f"Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)")
-                print(f"Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+                print(
+                    f"Sentiment:   {signal.sentiment.upper()} ({signal.confidence:.0%} confidence)"
+                )
+                print(
+                    f"Source Date: {signal.source_date.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+                )
 
                 if signal.entry_price:
                     print(f"Entry:       ${signal.entry_price:,.0f}")
@@ -50,7 +55,7 @@ def main():
                 if signal.timeframe:
                     print(f"Timeframe:   {signal.timeframe}")
                 if signal.reasoning:
-                    reasoning = signal.reasoning[:200].replace('\n', ' ')
+                    reasoning = signal.reasoning[:200].replace("\n", " ")
                     print(f"Reasoning:   {reasoning}...")
                 print()
 
@@ -75,8 +80,10 @@ def main():
     except Exception as e:
         print(f"❌ Error fetching newsletter: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

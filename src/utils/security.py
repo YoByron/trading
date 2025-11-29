@@ -65,10 +65,13 @@ def sanitize_log_message(message: str) -> str:
     """
     # Common API key patterns
     patterns = [
-        (r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{10,})(["\']?)', r'\1***\3'),
-        (r'(secret["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{10,})(["\']?)', r'\1***\3'),
-        (r'(password["\']?\s*[:=]\s*["\']?)([^\s"\']+)(["\']?)', r'\1***\3'),
-        (r'(token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{20,})(["\']?)', r'\1***\3'),
+        (
+            r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{10,})(["\']?)',
+            r"\1***\3",
+        ),
+        (r'(secret["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{10,})(["\']?)', r"\1***\3"),
+        (r'(password["\']?\s*[:=]\s*["\']?)([^\s"\']+)(["\']?)', r"\1***\3"),
+        (r'(token["\']?\s*[:=]\s*["\']?)([a-zA-Z0-9_-]{20,})(["\']?)', r"\1***\3"),
     ]
 
     sanitized = message
@@ -89,12 +92,22 @@ def is_sensitive_key(key_name: str) -> bool:
         True if the key name suggests sensitive data
     """
     sensitive_patterns = [
-        'api_key', 'apikey', 'api-key',
-        'secret', 'secret_key', 'secret-key',
-        'password', 'passwd', 'pwd',
-        'token', 'access_token', 'refresh_token',
-        'auth', 'authorization',
-        'credential', 'cred',
+        "api_key",
+        "apikey",
+        "api-key",
+        "secret",
+        "secret_key",
+        "secret-key",
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "access_token",
+        "refresh_token",
+        "auth",
+        "authorization",
+        "credential",
+        "cred",
     ]
 
     key_lower = key_name.lower()
