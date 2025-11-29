@@ -13,6 +13,7 @@ import os
 from src.rag.collectors.yahoo_collector import YahooFinanceCollector
 from src.rag.collectors.reddit_collector import RedditCollector
 from src.rag.collectors.alphavantage_collector import AlphaVantageCollector
+from src.rag.collectors.tiktok_collector import TikTokCollector
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class NewsOrchestrator:
     - Yahoo Finance (yfinance API)
     - Reddit (praw API)
     - Alpha Vantage (sentiment API)
+    - TikTok (Research API)
 
     Future additions:
     - Bloomberg (web scraping)
@@ -38,6 +40,7 @@ class NewsOrchestrator:
             "yahoo": YahooFinanceCollector(),
             "reddit": RedditCollector(),
             "alphavantage": AlphaVantageCollector(),
+            "tiktok": TikTokCollector(),
         }
 
         logger.info(f"Initialized {len(self.collectors)} news collectors")
