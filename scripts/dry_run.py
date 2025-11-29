@@ -139,7 +139,22 @@ def dry_run(symbols: List[str], args) -> int:
                 except Exception:
                     pass
         except Exception:
-            pass
+            # Last-resort: read JSON fallback if present
+            try:
+                from pathlib import Path as _P
+                import json as _J
+
+                fp = _P("data/rag/bogleheads_latest.json")
+                if fp.exists():
+                    data = _J.loads(fp.read_text(encoding="utf-8"))
+                    meta = data.get("metadata", {})
+                    lines.append("## Bogleheads Snapshot (Latest, JSON Fallback)")
+                    lines.append(
+                        f"- Date: `{meta.get('published_date', 'n/a')}` | Regime: `{meta.get('market_regime', 'unknown')}` | Confidence: `{meta.get('confidence', 'n/a')}`"
+                    )
+                    lines.append("")
+            except Exception:
+                pass
         lines.append(f"Plan ID: `{plan.plan_id}`")
         lines.append("")
         lines.append("## Ensemble Consensus")
