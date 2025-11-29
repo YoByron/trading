@@ -89,25 +89,9 @@ jobs:
 
             git push origin "$BRANCH"
 
-            PR_BODY="## 🤖 Autonomous Security Fixes
-
-This PR was automatically created by the Autonomous Security Fix Agent to fix security vulnerabilities.
-
-### Changes
-- Updated vulnerable dependencies to safe versions
-- All changes tested for dependency resolution
-
-### Testing
-- ✅ Dependency resolution verified
-- ✅ CI will run full test suite
-
-### Next Steps
-- Review the changes
-- Merge if tests pass"
-
             gh pr create \
               --title "chore(security): Autonomous security fixes" \
-              --body "$PR_BODY" \
+              --body "Autonomous Security Fixes: Updated vulnerable dependencies to safe versions. All changes tested for dependency resolution. CI will run full test suite." \
               --label "dependencies,security,automated" \
               --base main
           else
