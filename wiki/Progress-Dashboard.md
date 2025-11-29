@@ -1,8 +1,10 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 04:45 PM ET
+**Last Updated**: 2025-11-29 05:06 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
+
+> ✅ **SYSTEM STATUS: OPERATIONAL** - All monitoring systems active
 
 ---
 
@@ -15,7 +17,23 @@
 | **Equity** | $100,005.50 |
 | **P/L** | $+0.02 (+0.00%) |
 | **Trades Today** | 0 |
-| **Status** | ✅ Active |
+| **Status** | ✅ OPERATIONAL |
+
+---
+
+## 🌡️ Market Regime Detection
+
+**Current Regime**: ⚠️ Unknown (yfinance not available)
+
+| Metric | Value |
+|--------|-------|
+| **SPY 20-Day Return** | +0.00% |
+| **VIX Level** | 0.00 |
+| **Market Regime** | Unknown |
+| **Volatility Regime** | Unknown |
+
+**Regime-Specific Edge Notes**:
+Install yfinance to enable market regime detection
 
 ---
 
@@ -54,9 +72,13 @@
 
 ### 🤖 AI Attribution (Per-Agent P&L)
 
-| Agent/Decision Maker | Trades | Closed | Win Rate | Total P/L | Avg P/L | Profit Factor | Capital Efficiency | Cost |
-|---------------------|--------|-------|---------|-----------|---------|---------------|-------------------|------|
-| **Unknown** | 8 | 0 | N/A | $+0.00 | $+0.00 | N/A | $0/$ | $0.00 |
+**Decision Breakdown**: 🤖 AI: 0 (0%) | 📊 Rules: 0 (0%) | ❓ Unattributed: 8
+
+| Decision Maker | Type | Trades | Closed | Win Rate | Total P/L | Avg P/L | Cost |
+|----------------|------|--------|--------|----------|-----------|---------|------|
+| ❓ Unknown | Unattributed | 8 | 0 | N/A | $+0.00 | $+0.00 | $0.00 |
+
+*Win rates marked with * have low confidence (< 10 closed trades)*
 
 **Observability**:
 - LangSmith Traces: 0
@@ -75,8 +97,8 @@
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+1.37 | $-158.13 to $+166.13 |
-| **30 Days** | $+4.58 | See 7-day CI scaled |
+| **7 Days** | $+1.01 | $-157.09 to $+165.55 |
+| **30 Days** | $+5.43 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%
@@ -111,6 +133,82 @@
 ### 🚨 Risk Alerts
 
 ℹ️ **Data Alert**: Only 0 trades recorded. Metrics will become more reliable with more trade data.
+
+---
+
+## 📊 Strategy-Level Insights
+
+| Strategy | Win Rate | Expectancy | Avg Duration | Risk/Reward | Trades |
+|----------|----------|------------|--------------|-------------|--------|
+| **Tier 1 Core** | 62.2% (backtest) | $+0.28 (est) | 24.0h (est) | 1.50 (est) | 0 |
+| **Tier 2 Growth** | Pending | Pending | Pending | Pending | 0 |
+| **Tier 5 Crypto** | Pending | Pending | Pending | Pending | 0 |
+
+**Note**: Metrics marked with (backtest) or (est) are based on historical backtests pending live trade data.
+
+---
+
+## 📈 Distributional Analysis
+
+**P/L Distribution**: ▁▁▂▄▃▁▂▁▁▂▁▂▃█▃▁▄
+
+| Metric | Value |
+|--------|-------|
+| **Mean Daily P/L** | $-8.77 |
+| **Median Daily P/L** | $-0.08 |
+| **Std Dev** | $16.25 |
+| **Win/Loss Skew** | 0.24x (losses larger) |
+| **Tail Characteristics** | Insufficient data (κ=0.00) |
+| **Win Days** | 17/37 (45.9%) |
+| **Loss Days** | 19/37 (51.4%) |
+
+**Interpretation**:
+- **Win/Loss Skew 0.24x**: ⚠️ Average losses are larger than wins
+- **Insufficient data**: ✅ Low outlier risk
+
+---
+
+## 🧠 Psychological Indicators
+
+| Indicator | Value | Status |
+|-----------|-------|--------|
+| **Current Streak** | 1 losses | ⚠️ |
+| **Max Winning Streak** | 2 | ➡️ |
+| **Max Losing Streak** | 3 | ⚠️ |
+| **Behavior Under Drawdown** | No significant drawdowns (>2%) yet | ✅ |
+| **Equity vs Expected** | $100,005.50 vs $100,010.36 (-4.86, -0.00%) ⚠️ | |
+| **Tilt Risk** | Low | ✅ |
+
+**Notes**:
+- **Current Streak**: Consecutive winning or losing days based on daily P/L changes
+- **Max Streaks**: Historical peak winning/losing streaks (requires ≥10 days of data for significance)
+- **Drawdown Behavior**: How quickly the system recovers from equity drawdowns (>2% from peak)
+- **Equity vs Expected**: Actual equity compared to expected based on backtest ($0.28/day profit)
+- **Tilt Risk**: Psychological risk indicator based on recent losses (High if 4+ losing days in last 5, or >$50 recent loss, or losing streak >3)
+
+---
+
+## ⚡ Execution Quality
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Estimated Slippage** | <0.1% | ✅ Tracking... |
+| **Fill Rate** | ~100% | ✅ Paper trading |
+| **Average Spread Cost** | Tracking... | ⏳ Pending data |
+| **Order Latency** | <100ms | ✅ Cloud infrastructure |
+
+**Note**: Execution quality metrics are estimated during paper trading. Real slippage and spread costs will be measured when live trading begins. Fill rate is near 100% in paper trading but may vary in live markets.
+
+**Slippage Sources**:
+- Market orders: Bid-ask spread + market impact
+- Limit orders: Potential non-fill risk
+- Volatility events: Wider spreads during high volatility
+
+**Optimization Strategies**:
+- Use limit orders for non-urgent entries
+- Trade during market hours (9:30 AM - 4 PM ET) for better liquidity
+- Monitor bid-ask spreads before order submission
+- Consider VWAP/TWAP execution for larger positions
 
 
 ## 📊 Benchmark Comparison
