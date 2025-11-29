@@ -182,6 +182,13 @@ class CoreStrategy:
     # Profit-taking parameters
     TAKE_PROFIT_PCT = 0.05  # 5% profit target (conservative for Day 9 R&D)
 
+    # Diversification allocation (guaranteed minimums)
+    # 70% momentum equity, 15% bonds, 15% REITs
+    EQUITY_ALLOCATION_PCT = 0.70  # SPY/QQQ/VOO (momentum-selected)
+    BOND_ALLOCATION_PCT = 0.15  # BND (Vanguard Total Bond Market)
+    REIT_ALLOCATION_PCT = 0.15  # VNQ (Vanguard Real Estate)
+    DIVERSIFICATION_SYMBOLS = {"bond": "BND", "reit": "VNQ"}
+
     def __init__(
         self,
         daily_allocation: float = 900.0,
@@ -555,8 +562,13 @@ class CoreStrategy:
                     logger.warning(f"LLM Council validation error (proceeding): {e}")
                     # Fail-open: continue with trade if Council unavailable
 
-            # Step 6: Calculate quantity
-            quantity = self.daily_allocation / current_price
+            # Step 6: Calculate diversified allocation (70% equity, 15% bonds, 15% REITs)
+            equity_amount = self.daily_allocation * self.EQUITY_ALLOCATION_PCT
+            bond_amount = self.daily_allocation * self.BOND_ALLOCATION_PCT
+            reit_amount = self.daily_allocation * self.REIT_ALLOCATION_PCT
+            logger.info(f"Diversified: Equity=${equity_amount:.2f}, Bonds=${bond_amount:.2f}, REITs=${reit_amount:.2f}")
+
+            quantity = equity_amount / current_price
 
             # Step 7: Risk validation
             if not self._validate_trade(best_etf, quantity, current_price, sentiment):
@@ -571,18 +583,39 @@ class CoreStrategy:
                 sentiment=sentiment,
             )
 
-            # Step 9: Execute order via Alpaca
+            # Step 9: Execute orders via Alpaca (momentum ETF + BND + VNQ)
             if self.alpaca_trader:
                 try:
+                    # 9a: Momentum ETF (70%)
                     executed_order = self.alpaca_trader.execute_order(
                         symbol=best_etf,
-                        amount_usd=self.daily_allocation,
+                        amount_usd=equity_amount,
                         side="buy",
                         tier="T1_CORE",
                     )
-                    logger.info(f"Alpaca order executed: {executed_order['id']}")
+                    logger.info(f"Momentum ETF: {executed_order['id']} - {best_etf} ${equity_amount:.2f}")
 
-                    # Set stop-loss order
+                    # 9b: BND - Bonds (15%)
+                    if bond_amount >= 1.0:
+                        try:
+                            self.alpaca_trader.execute_order(
+                                symbol="BND", amount_usd=bond_amount, side="buy", tier="T1_CORE"
+                            )
+                            logger.info(f"Bond ETF: BND ${bond_amount:.2f}")
+                        except Exception as e:
+                            logger.warning(f"Bond order failed: {e}")
+
+                    # 9c: VNQ - REITs (15%)
+                    if reit_amount >= 1.0:
+                        try:
+                            self.alpaca_trader.execute_order(
+                                symbol="VNQ", amount_usd=reit_amount, side="buy", tier="T1_CORE"
+                            )
+                            logger.info(f"REIT ETF: VNQ ${reit_amount:.2f}")
+                        except Exception as e:
+                            logger.warning(f"REIT order failed: {e}")
+
+                    # Set stop-loss for momentum ETF
                     if order.stop_loss:
                         self.alpaca_trader.set_stop_loss(
                             symbol=best_etf, qty=quantity, stop_price=order.stop_loss
