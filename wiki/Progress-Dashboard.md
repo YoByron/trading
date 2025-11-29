@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 04:37 PM ET
+**Last Updated**: 2025-11-29 04:44 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -16,6 +16,18 @@
 | **P/L** | $+0.02 (+0.00%) |
 | **Trades Today** | 0 |
 | **Status** | ✅ Active |
+
+---
+
+## 🚨 CRITICAL ISSUES - IMMEDIATE ATTENTION REQUIRED
+
+### Critical Warnings
+
+🚨 **NEGATIVE SHARPE RATIO (-16.60)**: Strategy is worse than random. Taking massive risk for minimal reward. Better off with cash in savings account. **Action**: Run post-mortem on every losing trade. Check if entry/exit logic is inverted.
+
+⚠️ **INSUFFICIENT SAMPLE SIZE (0 trades)**: Need 50+ trades before metrics are meaningful. Current win rate 0.0% is statistically insignificant.
+
+⚠️ **FAR FROM TARGET**: $0.15/day vs $100/day target (0.15% of goal). Gap suggests strategy fundamentals need rethinking, not just optimization.
 
 ---
 
@@ -40,6 +52,17 @@
 
   (No trade data available for attribution analysis)
 
+### 🤖 AI Attribution (Per-Agent P&L)
+
+| Agent/Decision Maker | Trades | Closed | Win Rate | Total P/L | Avg P/L | Profit Factor | Capital Efficiency | Cost |
+|---------------------|--------|-------|---------|-----------|---------|---------------|-------------------|------|
+| **Unknown** | 8 | 0 | N/A | $+0.00 | $+0.00 | N/A | $0/$ | $0.00 |
+
+**Observability**:
+- LangSmith Traces: 0
+- Vertex AI Jobs: 0
+
+
 ### Top Performing Assets
 
   (No asset performance data available)
@@ -52,8 +75,8 @@
 
 | Horizon | Expected Profit | 95% Confidence Interval |
 |---------|----------------|-------------------------|
-| **7 Days** | $+1.32 | $-157.95 to $+163.89 |
-| **30 Days** | $+5.91 | See 7-day CI scaled |
+| **7 Days** | $+0.54 | $-157.44 to $+170.09 |
+| **30 Days** | $+6.18 | See 7-day CI scaled |
 
 **Edge Drift Score**: +1.00 (✅ Improving)
 **Drawdown Probability (>5%)**: 0.0%
@@ -74,6 +97,8 @@
 | **CVaR (95%)** | 0.03% | Expected tail loss |
 | **Volatility (Annualized)** | 0.24% | ✅ |
 
+**Note**: Sharpe/Sortino ratios require ≥30 closed trades for statistical significance. Current: 0 trades.
+
 ### Risk Heatmap
 
   Risk Level:
@@ -86,6 +111,15 @@
 ### 🚨 Risk Alerts
 
 ℹ️ **Data Alert**: Only 0 trades recorded. Metrics will become more reliable with more trade data.
+
+
+## 📊 Benchmark Comparison
+
+| Strategy | Total Return | Sharpe Ratio | Max Drawdown |
+|----------|--------------|--------------|--------------|
+| **Our Strategy** | +0.01% | -16.60 | 0.06% |
+
+---
 
 
 ---

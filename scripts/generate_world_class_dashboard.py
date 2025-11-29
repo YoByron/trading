@@ -114,6 +114,138 @@ def calculate_win_rate_from_trades(
     return win_rate, wins, total_closed
 
 
+def format_statistically_significant(
+    value: float, threshold: int, current_count: int, format_str: str = "{:.2f}"
+) -> str:
+    """
+    Format metric with statistical significance indicator.
+
+    Returns formatted value if significant, otherwise "Insufficient data" badge.
+    """
+    if current_count >= threshold:
+        return format_str.format(value)
+    else:
+        return f"⚠️ Insufficient data (need ≥{threshold}, have {current_count})"
+
+
+def calculate_ai_attribution_enhanced(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Calculate per-agent P&L attribution with enhanced metadata.
+
+    Groups trades by decision maker:
+    - RL Policy
+    - Heuristic/Rule-based
+    - Fallback Strategy
+    - LLM Analyst
+    - Meta Agent
+    """
+    agent_attribution = defaultdict(
+        lambda: {
+            "trades": 0,
+            "closed_trades": 0,
+            "winning_trades": 0,
+            "losing_trades": 0,
+            "total_pl": 0.0,
+            "avg_pl": 0.0,
+            "win_rate": 0.0,
+            "gross_profit": 0.0,
+            "gross_loss": 0.0,
+            "profit_factor": 0.0,
+            "langsmith_traces": 0,
+            "vertex_jobs": 0,
+            "estimated_cost": 0.0,
+        }
+    )
+
+    for trade in trades:
+        # Determine agent type from trade metadata
+        agent_type = "unknown"
+
+        # Check attribution_metadata first
+        attribution = trade.get("attribution_metadata", {})
+        if attribution:
+            # Check for gate/agent information
+            gate2 = attribution.get("gate2_rl", {})
+            gate3 = attribution.get("gate3_llm", {})
+            gate1 = attribution.get("gate1_momentum", {})
+
+            if gate2 and gate2.get("decision") == "APPROVE":
+                agent_type = "rl_policy"
+            elif gate3 and gate3.get("decision") == "APPROVE":
+                agent_type = "llm_analyst"
+            elif gate1 and gate1.get("decision") == "APPROVE":
+                agent_type = "momentum_heuristic"
+        else:
+            # Fallback to agent_type field
+            agent_type_raw = trade.get("agent_type", "unknown")
+            if (
+                "rl" in agent_type_raw.lower()
+                or "reinforcement" in agent_type_raw.lower()
+            ):
+                agent_type = "rl_policy"
+            elif "llm" in agent_type_raw.lower() or "claude" in agent_type_raw.lower():
+                agent_type = "llm_analyst"
+            elif "heuristic" in agent_type_raw.lower():
+                agent_type = "heuristic"
+            elif "fallback" in agent_type_raw.lower():
+                agent_type = "fallback"
+            else:
+                agent_type = "unknown"
+
+        agent_data = agent_attribution[agent_type]
+        agent_data["trades"] += 1
+
+        # Only count closed trades for P&L
+        if trade.get("pl") is not None:
+            pl = trade.get("pl", 0.0)
+            agent_data["closed_trades"] += 1
+            agent_data["total_pl"] += pl
+
+            if pl > 0:
+                agent_data["winning_trades"] += 1
+                agent_data["gross_profit"] += pl
+            else:
+                agent_data["losing_trades"] += 1
+                agent_data["gross_loss"] += abs(pl)
+
+        # Count LangSmith traces and Vertex jobs
+        if attribution:
+            if attribution.get("langsmith_trace_id"):
+                agent_data["langsmith_traces"] += 1
+            if attribution.get("vertex_job_id"):
+                agent_data["vertex_jobs"] += 1
+
+        # Estimate cost
+        if agent_type == "llm_analyst":
+            agent_data["estimated_cost"] += 0.01
+        elif agent_type == "rl_policy":
+            agent_data["estimated_cost"] += 0.001
+
+    # Calculate derived metrics
+    for agent_type, agent_data in agent_attribution.items():
+        if agent_data["closed_trades"] > 0:
+            agent_data["avg_pl"] = agent_data["total_pl"] / agent_data["closed_trades"]
+            agent_data["win_rate"] = (
+                agent_data["winning_trades"] / agent_data["closed_trades"] * 100
+            )
+            if agent_data["gross_loss"] > 0:
+                agent_data["profit_factor"] = (
+                    agent_data["gross_profit"] / agent_data["gross_loss"]
+                )
+
+        # Capital efficiency: return per $ of compute cost
+        if agent_data["estimated_cost"] > 0:
+            agent_data["capital_efficiency"] = (
+                agent_data["total_pl"] / agent_data["estimated_cost"]
+            )
+        else:
+            agent_data["capital_efficiency"] = (
+                float("inf") if agent_data["total_pl"] > 0 else 0.0
+            )
+
+    return dict(agent_attribution)
+
+
 def calculate_performance_attribution(
     trades: List[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
@@ -466,6 +598,15 @@ def generate_world_class_dashboard() -> str:
     # Performance attribution - use both strategy-level and trade-level attribution
     attribution = calculate_performance_attribution(trades)
 
+    # Enhanced AI attribution
+    # AI attribution (if available)
+    try:
+        from scripts.generate_ai_focused_dashboard import calculate_ai_attribution
+
+        ai_attribution = calculate_ai_attribution(trades)
+    except ImportError:
+        ai_attribution = {}
+
     # Enhanced trade-level attribution with gate/agent breakdown
     trade_level_attribution = {}
     if analytics and trades:
@@ -548,6 +689,33 @@ def generate_world_class_dashboard() -> str:
 
     # Risk alerts
     risk_alerts = generate_risk_alerts(risk_metrics_dict, win_rate, total_closed_trades)
+
+    # Market regime detection
+    current_regime = "UNKNOWN"
+    regime_playbook = {}
+    try:
+        from scripts.dashboard_metrics import TradingMetricsCalculator
+
+        calculator = TradingMetricsCalculator()
+        regime_data = calculator._calculate_market_regime(
+            perf_log if isinstance(perf_log, list) else []
+        )
+        current_regime = regime_data.get("regime", "UNKNOWN")
+
+        # Get regime adaptation playbook
+        from src.utils.regime_adaptation import RegimeAdaptation
+
+        adapter = RegimeAdaptation()
+        regime_playbook = adapter.get_regime_playbook(current_regime)
+    except Exception:
+        # Silently fail - regime adaptation is optional
+        regime_playbook = {
+            "position_sizing_multiplier": 1.0,
+            "stop_loss_pct": 3.0,
+            "take_profit_pct": 5.0,
+            "entry_aggressiveness": "medium",
+            "preferred_strategies": ["momentum"],
+        }
 
     # Performance metrics
     performance = system_state.get("performance", {})
@@ -682,6 +850,61 @@ def generate_world_class_dashboard() -> str:
 
 ---
 
+## 🚨 CRITICAL ISSUES - IMMEDIATE ATTENTION REQUIRED
+
+"""
+    # Check for critical issues
+    critical_issues = []
+    sharpe = risk_metrics_dict.get("sharpe_ratio", 0.0)
+
+    if sharpe < 0:
+        critical_issues.append(
+            f"🚨 **NEGATIVE SHARPE RATIO ({sharpe:.2f})**: Strategy is worse than random. "
+            f"Taking massive risk for minimal reward. Better off with cash in savings account. "
+            f"**Action**: Run post-mortem on every losing trade. Check if entry/exit logic is inverted."
+        )
+
+    if total_closed_trades > 0 and win_rate == 0.0:
+        critical_issues.append(
+            f"🚨 **0% WIN RATE ({winning_trades}/{total_closed_trades} trades)**: Zero winning trades suggests "
+            f"fundamental flaw in strategy. **Action**: Need 50+ trades for statistical significance. "
+            f"Consider paper trading at higher frequency. Debug entry/exit logic."
+        )
+    elif total_closed_trades < 50:
+        critical_issues.append(
+            f"⚠️ **INSUFFICIENT SAMPLE SIZE ({total_closed_trades} trades)**: Need 50+ trades before metrics "
+            f"are meaningful. Current win rate {win_rate:.1f}% is statistically insignificant."
+        )
+
+    if avg_daily_profit < 1.0:
+        progress_to_target = (avg_daily_profit / 100.0) * 100
+        critical_issues.append(
+            f"⚠️ **FAR FROM TARGET**: ${avg_daily_profit:.2f}/day vs $100/day target ({progress_to_target:.2f}% of goal). "
+            f"Gap suggests strategy fundamentals need rethinking, not just optimization."
+        )
+
+    # Check LangSmith status
+    try:
+        from scripts.monitor_training_and_update_dashboard import TrainingMonitor
+
+        monitor = TrainingMonitor()
+        if monitor.langsmith_monitor and monitor.langsmith_monitor.client is None:
+            critical_issues.append(
+                f"⚠️ **LANGSMITH NOT INITIALIZED**: RL training observability broken. "
+                f"**Action**: Verify LANGCHAIN_API_KEY is set in GitHub Secrets."
+            )
+    except Exception:
+        pass
+
+    if critical_issues:
+        dashboard += "### Critical Warnings\n\n"
+        for issue in critical_issues:
+            dashboard += f"{issue}\n\n"
+    else:
+        dashboard += "✅ **No critical issues detected**\n\n"
+
+    dashboard += f"""---
+
 ## 🎯 North Star Goal
 
 **Target**: **$100+/day profit**
@@ -702,6 +925,42 @@ def generate_world_class_dashboard() -> str:
 ### By Strategy
 
 {attribution_table}
+
+### 🤖 AI Attribution (Per-Agent P&L)
+
+"""
+
+    # Add AI attribution section
+    if ai_attribution:
+        dashboard += "| Agent/Decision Maker | Trades | Closed | Win Rate | Total P/L | Avg P/L | Profit Factor | Capital Efficiency | Cost |\n"
+        dashboard += "|---------------------|--------|-------|---------|-----------|---------|---------------|-------------------|------|\n"
+
+        for agent_type, data in sorted(
+            ai_attribution.items(),
+            key=lambda x: x[1].get("total_pl", 0),
+            reverse=True,
+        ):
+            agent_name = agent_type.replace("_", " ").title()
+            win_rate_display = (
+                f"{data['win_rate']:.1f}%" if data["closed_trades"] > 0 else "N/A"
+            )
+            profit_factor_display = (
+                f"{data['profit_factor']:.2f}" if data["closed_trades"] > 0 else "N/A"
+            )
+
+            dashboard += f"| **{agent_name}** | {data['trades']} | {data['closed_trades']} | {win_rate_display} | ${data['total_pl']:+,.2f} | ${data['avg_pl']:+,.2f} | {profit_factor_display} | ${data['capital_efficiency']:,.0f}/$ | ${data['estimated_cost']:.2f} |\n"
+
+        dashboard += "\n**Observability**:\n"
+        total_traces = sum(
+            a.get("langsmith_traces", 0) for a in ai_attribution.values()
+        )
+        total_jobs = sum(a.get("vertex_jobs", 0) for a in ai_attribution.values())
+        dashboard += f"- LangSmith Traces: {total_traces}\n"
+        dashboard += f"- Vertex AI Jobs: {total_jobs}\n"
+    else:
+        dashboard += "⚠️ **No AI attribution data available** - Trades may not have attribution metadata\n\n"
+
+    dashboard += """
 
 ### Top Performing Assets
 
@@ -764,6 +1023,8 @@ def generate_world_class_dashboard() -> str:
 | **CVaR (95%)** | {risk_metrics_dict.get('cvar_95', 0.0):.2f}% | Expected tail loss |
 | **Volatility (Annualized)** | {risk_metrics_dict.get('volatility', 0.0):.2f}% | {'✅' if risk_metrics_dict.get('volatility', 0.0) < 20.0 else '⚠️'} |
 
+**Note**: Sharpe/Sortino ratios require ≥30 closed trades for statistical significance. Current: {total_closed_trades} trades.
+
 ### Risk Heatmap
 
 {generate_risk_heatmap(risk_metrics_dict)}
@@ -775,6 +1036,71 @@ def generate_world_class_dashboard() -> str:
     for alert in risk_alerts:
         dashboard += f"{alert}\n\n"
 
+    # Benchmark comparison
+    benchmark_section = ""
+    try:
+        from src.utils.benchmark_comparison import BenchmarkComparator
+        from datetime import datetime as dt
+
+        # Get start date from challenge or perf_log
+        start_date_str = challenge_start.get("start_date", "")
+        if not start_date_str and isinstance(perf_log, list) and perf_log:
+            start_date_str = perf_log[0].get("date", "")
+
+        if start_date_str:
+            try:
+                start_date = dt.fromisoformat(start_date_str.split("T")[0])
+                end_date = dt.now()
+
+                strategy_perf = {
+                    "total_return_pct": (total_pl / starting_balance) * 100,
+                    "sharpe_ratio": risk_metrics_dict.get("sharpe_ratio", 0.0),
+                    "max_drawdown": risk_metrics_dict.get("max_drawdown_pct", 0.0),
+                }
+
+                comparator = BenchmarkComparator()
+                comparison = comparator.compare_strategies(
+                    strategy_perf, start_date, end_date, starting_balance
+                )
+
+                benchmark_section = "\n## 📊 Benchmark Comparison\n\n"
+                benchmark_section += (
+                    "| Strategy | Total Return | Sharpe Ratio | Max Drawdown |\n"
+                )
+                benchmark_section += (
+                    "|----------|--------------|--------------|--------------|\n"
+                )
+
+                # Strategy
+                benchmark_section += f"| **Our Strategy** | {strategy_perf['total_return_pct']:+.2f}% | {strategy_perf['sharpe_ratio']:.2f} | {strategy_perf['max_drawdown']:.2f}% |\n"
+
+                # SPY
+                if "error" not in comparison.get("spy", {}):
+                    spy = comparison["spy"]
+                    benchmark_section += f"| **Buy-and-Hold SPY** | {spy.get('total_return_pct', 0):+.2f}% | {spy.get('sharpe_ratio', 0):.2f} | {spy.get('max_drawdown', 0):.2f}% |\n"
+
+                # 60/40
+                if "error" not in comparison.get("6040", {}):
+                    perf_6040 = comparison["6040"]
+                    benchmark_section += f"| **60/40 Portfolio** | {perf_6040.get('total_return_pct', 0):+.2f}% | {perf_6040.get('sharpe_ratio', 0):.2f} | {perf_6040.get('max_drawdown', 0):.2f}% |\n"
+
+                # Comparison
+                vs_spy = comparison.get("vs_spy", {})
+                if vs_spy:
+                    beats = "✅" if vs_spy.get("beats_spy", False) else "❌"
+                    benchmark_section += f"\n**vs SPY**: {beats} Return diff: {vs_spy.get('return_diff', 0):+.2f}% | Sharpe diff: {vs_spy.get('sharpe_diff', 0):+.2f}\n"
+
+                benchmark_section += "\n---\n\n"
+            except Exception as e:
+                benchmark_section = (
+                    f"\n⚠️ Benchmark comparison unavailable: {e}\n\n---\n\n"
+                )
+    except ImportError:
+        benchmark_section = "\n⚠️ Benchmark comparison requires yfinance\n\n---\n\n"
+    except Exception as e:
+        benchmark_section = f"\n⚠️ Benchmark comparison error: {e}\n\n---\n\n"
+
+    dashboard += benchmark_section
     dashboard += f"""
 ---
 
