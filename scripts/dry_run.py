@@ -124,6 +124,20 @@ def dry_run(symbols: List[str], args) -> int:
                     f"- Date: `{meta.get('snapshot_date', 'n/a')}` | Regime: `{meta.get('market_regime', 'unknown')}` | Confidence: `{meta.get('confidence', 'n/a')}`"
                 )
                 lines.append("")
+            else:
+                # Fallback: query agent directly if store empty
+                try:
+                    from src.agents.bogleheads_agent import BogleHeadsAgent
+
+                    agent = BogleHeadsAgent()
+                    res = agent.analyze({"symbol": None})
+                    lines.append("## Bogleheads Snapshot (Agent Fallback)")
+                    lines.append(
+                        f"- Decision: `{(res.get('signal') or 'HOLD')}` | Confidence: `{res.get('confidence', 0.5)}`"
+                    )
+                    lines.append("")
+                except Exception:
+                    pass
         except Exception:
             pass
         lines.append(f"Plan ID: `{plan.plan_id}`")

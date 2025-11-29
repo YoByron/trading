@@ -1,10 +1,8 @@
-# 🌟 World-Class Trading Dashboard
+# 📊 World-Class Trading Dashboard
 
-**Last Updated**: 2025-11-29 05:44 PM ET
+**Last Updated**: 2025-11-29 05:50 PM ET
 **Auto-Updated**: Daily via GitHub Actions
-**Dashboard Version**: World-Class Elite Analytics v2.0
-
-> ✅ **SYSTEM STATUS: OPERATIONAL** - All monitoring systems active
+**Dashboard Version**: Enhanced World-Class (v2.0)
 
 ---
 
@@ -14,38 +12,10 @@
 
 | Metric | Value |
 |--------|-------|
-| **Equity** | $100,005.50 |
-| **P/L** | $+0.02 (+0.00%) |
+| **Equity** | $100,005.48 |
+| **P/L** | $+0.00 (+0.00%) |
 | **Trades Today** | 0 |
-| **Status** | ✅ OPERATIONAL |
-
----
-
-## 🌡️ Market Regime Detection
-
-**Current Regime**: ⚠️ Unknown (yfinance not available)
-
-| Metric | Value |
-|--------|-------|
-| **SPY 20-Day Return** | +0.00% |
-| **VIX Level** | 0.00 |
-| **Market Regime** | Unknown |
-| **Volatility Regime** | Unknown |
-
-**Regime-Specific Edge Notes**:
-Install yfinance to enable market regime detection
-
----
-
-## 🚨 CRITICAL ISSUES - IMMEDIATE ATTENTION REQUIRED
-
-### Critical Warnings
-
-🚨 **NEGATIVE SHARPE RATIO (-16.60)**: Strategy is worse than random. Taking massive risk for minimal reward. Better off with cash in savings account. **Action**: Run post-mortem on every losing trade. Check if entry/exit logic is inverted.
-
-⚠️ **INSUFFICIENT SAMPLE SIZE (0 trades)**: Need 50+ trades before metrics are meaningful. Current win rate 0.0% is statistically insignificant.
-
-⚠️ **FAR FROM TARGET**: $0.15/day vs $100/day target (0.15% of goal). Gap suggests strategy fundamentals need rethinking, not just optimization.
+| **Status** | ⏸️ No activity yet |
 
 ---
 
@@ -56,159 +26,256 @@ Install yfinance to enable market regime detection
 | Metric | Current | Target | Progress |
 |--------|---------|--------|----------|
 | **Average Daily Profit** | $0.15/day | $100.00/day | 0.15% |
-| **Total P/L** | $+5.50 (+0.01%) | TBD | ✅ |
-| **Win Rate** | 0.0% (0/0) | >55% | 🚨 |
+| **Total P/L** | $+5.48 (+0.55%) | TBD | ✅ |
+| **Win Rate** | 0.0% | >55% | ⚠️ |
 
-**Progress Toward $100/Day Goal**: `█░░░░░░░░░░░░░░░░░░░` (0.15%)
-*This shows how close your average daily profit is to the $100/day target*
+**Progress Bar**: `█░░░░░░░░░░░░░░░░░░░` (0.15%)
+
+**Assessment**: ⚠️ **R&D PHASE** - Learning, not earning yet
+
+---
+
+## 🛡️ Comprehensive Risk Metrics
+
+### Core Risk Metrics
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| **Max Drawdown** | 0.06% | <10% | ✅ |
+| **Current Drawdown** | 0.01% | <5% | ✅ |
+| **Ulcer Index** | 0.03 | <5.0 | ✅ |
+| **Sharpe Ratio** | -16.60 | >1.0 | ⚠️ |
+| **Sortino Ratio** | -23.17 | >1.5 | ⚠️ |
+| **Calmar Ratio** | 0.68 | >1.0 | ⚠️ |
+| **Volatility (Annualized)** | 0.24% | <20% | ✅ |
+| **VaR (95%)** | 0.03% | <3% | ✅ |
+| **VaR (99%)** | 0.03% | <5% | ✅ |
+| **CVaR (95%)** | 0.03% | <5% | ✅ |
+| **Kelly Fraction** | 0.00% | 5-10% | ⚠️ |
+| **Margin Usage** | 0.00% | <50% | ✅ |
+| **Leverage** | 1.00x | <2.0x | ✅ |
+
+### Risk Exposure by Symbol
+
+| Symbol | Exposure % | P/L | Trades | Win Rate |
+|--------|------------|-----|--------|----------|
+| SPY | 0.00% | $+0.00 | 4 | 0.0% |
+| GOOGL | 0.00% | $+0.00 | 3 | 0.0% |
+| NVDA | 0.00% | $+0.00 | 1 | 0.0% |
 
 ---
 
 ## 📊 Performance Attribution
 
-### By Strategy
+### By Strategy/Tier
 
-  (No trade data available for attribution analysis)
+| Strategy | P/L | Trades | Avg P/L per Trade |
+|----------|-----|--------|------------------|
+| T1_CORE | $+0.00 | 4 | $+0.00 |
+| T2_GROWTH | $+0.00 | 4 | $+0.00 |
 
-### 🤖 AI Attribution (Per-Agent P&L)
+### By Time of Day
 
-**Decision Breakdown**: 🤖 AI: 0 (0%) | 📊 Rules: 0 (0%) | ❓ Unattributed: 8
+| Time Period | P/L | Trades | Avg P/L per Trade |
+|-------------|-----|--------|------------------|
+| Morning | $+0.00 | 4 | $+0.00 |
 
-| Decision Maker | Type | Trades | Closed | Win Rate | Total P/L | Avg P/L | Cost |
-|----------------|------|--------|--------|----------|-----------|---------|------|
-| ❓ Unknown | Unattributed | 8 | 0 | N/A | $+0.00 | $+0.00 | $0.00 |
+**Best Trading Time**: 9:00
+**Worst Trading Time**: 9:00
 
-*Win rates marked with * have low confidence (< 10 closed trades)*
+---
 
-**Observability**:
-- LangSmith Traces: 0
-- Vertex AI Jobs: 0
+## 📈 Visualizations
+
+### Equity Curve Visualization
+
+*Charts will be generated when matplotlib is available in the environment. Data available: 37 data points.*
 
 
-### Top Performing Assets
+---
 
-  (No asset performance data available)
+## ⚡ Execution Metrics
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| **Avg Slippage** | 0.000% | <0.5% | ✅ |
+| **Fill Quality** | 100.0/100 | >90 | ✅ |
+| **Order Success Rate** | 50.0% | >95% | ⚠️ |
+| **Order Reject Rate** | 0.0% | <5% | ✅ |
+| **Avg Fill Time** | 150 ms | <200ms | ✅ |
+| **Broker Latency** | 50 ms | <100ms | ✅ |
+
+---
+
+## 📊 Data Completeness & Quality
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| **Performance Log Completeness** | 75.0% | >95% | ⚠️ |
+| **Missing Dates** | 6 | 0 | ⚠️ |
+| **Data Freshness** | 1 days old | <1 day | ⚠️ |
+| **Missing Candle %** | 0.00% | <1% | ✅ |
+| **Data Sources** | alpaca, yfinance | Multiple | ✅ |
+| **Model Version** | 1.0 | Latest | ✅ |
 
 ---
 
 ## 🔮 Predictive Analytics
 
-### Monte Carlo Forecast (10,000 simulations)
-
-| Horizon | Expected Profit | 95% Confidence Interval |
-|---------|----------------|-------------------------|
-| **7 Days** | $+0.71 | $-156.69 to $+168.70 |
-| **30 Days** | $+5.55 | See 7-day CI scaled |
-
-**Edge Drift Score**: +1.00 (✅ Improving)
-**Drawdown Probability (>5%)**: 0.0%
-
----
-
-## ⚖️ Comprehensive Risk Metrics
-
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Max Drawdown** | 0.06% | ✅ |
-| **Ulcer Index** | 0.03 | ✅ |
-| **Sharpe Ratio** | ⚠️ Insufficient data (need ≥30, have 0) |  |
-| **Sortino Ratio** | ⚠️ Insufficient data (need ≥30, have 0) |  |
-| **Calmar Ratio** | 0.68 | ⚠️ |
-| **VaR (95%)** | 0.03% | Risk level |
-| **VaR (99%)** | 0.03% | Extreme risk |
-| **CVaR (95%)** | 0.03% | Expected tail loss |
-| **Volatility (Annualized)** | 0.24% | ✅ |
-
-**Note**: Sharpe/Sortino ratios require ≥30 closed trades for statistical significance. Current: 0 trades.
-
-### Risk Heatmap
-
-  Risk Level:
-  Max Drawdown         [                    ] 0.6% ✅
-  VaR (95%)            [                    ] 0.5% ✅
-  Volatility           [                    ] 1.2% ✅
-  Ulcer Index          [                    ] 0.3% ✅
-
-
-### 🚨 Risk Alerts
-
-ℹ️ **Data Alert**: Only 0 trades recorded. Metrics will become more reliable with more trade data.
-
----
-
-## 📊 Strategy-Level Insights
-
-| Strategy | Win Rate | Expectancy | Avg Duration | Risk/Reward | Trades |
-|----------|----------|------------|--------------|-------------|--------|
-| **Tier 1 Core** | 62.2% (backtest) | $+0.28 (est) | 24.0h (est) | 1.50 (est) | 0 |
-| **Tier 2 Growth** | Pending | Pending | Pending | Pending | 0 |
-| **Tier 5 Crypto** | Pending | Pending | Pending | Pending | 0 |
-
-**Note**: Metrics marked with (backtest) or (est) are based on historical backtests pending live trade data.
-
----
-
-## 📈 Distributional Analysis
-
-**P/L Distribution**: ▁▁▂▄▃▁▂▁▁▂▁▂▃█▃▁▄
+### Monte Carlo Forecast (30-Day)
 
 | Metric | Value |
 |--------|-------|
-| **Mean Daily P/L** | $-8.77 |
-| **Median Daily P/L** | $-0.08 |
-| **Std Dev** | $16.25 |
-| **Win/Loss Skew** | 0.24x (losses larger) |
-| **Tail Characteristics** | Insufficient data (κ=0.00) |
-| **Win Days** | 17/37 (45.9%) |
-| **Loss Days** | 19/37 (51.4%) |
-
-**Interpretation**:
-- **Win/Loss Skew 0.24x**: ⚠️ Average losses are larger than wins
-- **Insufficient data**: ✅ Low outlier risk
+| **Expected P/L (30d)** | $+4.60 |
+| **Forecast Mean** | $100,009.92 |
+| **Forecast Std Dev** | $81.75 |
+| **5th Percentile** | $99,877.81 |
+| **95th Percentile** | $100,141.73 |
+| **Risk of Ruin** | 0.00% | ✅ |
+| **Forecasted Drawdown** | 0.00% |
+| **Strategy Decay Detected** | ✅ NO |
 
 ---
 
-## 🧠 Psychological Indicators
+## 📊 Benchmark Comparison (vs S&P 500)
 
-| Indicator | Value | Status |
-|-----------|-------|--------|
-| **Current Streak** | 1 losses | ⚠️ |
-| **Max Winning Streak** | 2 | ➡️ |
-| **Max Losing Streak** | 3 | ⚠️ |
-| **Behavior Under Drawdown** | No significant drawdowns (>2%) yet | ✅ |
-| **Equity vs Expected** | $100,005.50 vs $100,010.36 (-4.86, -0.00%) ⚠️ | |
-| **Tilt Risk** | Low | ✅ |
-
-**Notes**:
-- **Current Streak**: Consecutive winning or losing days based on daily P/L changes
-- **Max Streaks**: Historical peak winning/losing streaks (requires ≥10 days of data for significance)
-- **Drawdown Behavior**: How quickly the system recovers from equity drawdowns (>2% from peak)
-- **Equity vs Expected**: Actual equity compared to expected based on backtest ($0.28/day profit)
-- **Tilt Risk**: Psychological risk indicator based on recent losses (High if 4+ losing days in last 5, or >$50 recent loss, or losing streak >3)
+| Metric | Portfolio | Benchmark | Difference | Status |
+|--------|-----------|-----------|------------|--------|
+| **Total Return** | +0.01% | +0.00% | +0.00% | ⚠️ Underperforming |
+| **Alpha** | +0.00% | - | - | ⚠️ Negative Alpha |
+| **Beta** | 0.00 | 1.0 | -1.00 | Lower Risk |
+| **Data Available** | ⚠️ Limited | - | - | - |
 
 ---
 
-## ⚡ Execution Quality
+## 🤖 AI-Generated Insights
 
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Estimated Slippage** | <0.1% | ✅ Tracking... |
-| **Fill Rate** | ~100% | ✅ Paper trading |
-| **Average Spread Cost** | Tracking... | ⏳ Pending data |
-| **Order Latency** | <100ms | ✅ Cloud infrastructure |
+### Daily Summary
 
-**Note**: Execution quality metrics are estimated during paper trading. Real slippage and spread costs will be measured when live trading begins. Fill rate is near 100% in paper trading but may vary in live markets.
+📈 Portfolio gained $5.48 (+0.55%) today. ✅ Three consecutive positive days - strong momentum.
 
-**Slippage Sources**:
-- Market orders: Bid-ask spread + market impact
-- Limit orders: Potential non-fill risk
-- Volatility events: Wider spreads during high volatility
+### Strategy Health Score
 
-**Optimization Strategies**:
-- Use limit orders for non-urgent entries
-- Trade during market hours (9:30 AM - 4 PM ET) for better liquidity
-- Monitor bid-ask spreads before order submission
-- Consider VWAP/TWAP execution for larger positions
+**🔴 POOR** (25/100)
+
+
+**Health Factors:**
+- Sharpe Ratio: -16.60 (0/30)
+- Win Rate: 0.0% (0/25)
+- Max Drawdown: 0.06% (25/25)
+- Profit Factor: 0.00 (0/20)
+
+### Trade Analysis
+
+✅ Trade execution appears balanced.
+
+
+### Anomalies Detected
+
+⚠️ No trades executed today despite historical trading activity. Check for system issues or market conditions.
+
+### Market Regime Shift
+
+📈 Regime shift detected: Recent performance significantly improved. Market may be entering a more favorable regime.
+
+
+### Recommendations
+
+🔴 CRITICAL: Sharpe ratio is negative. Consider pausing trading until risk-adjusted returns improve.
+
+📊 Win rate (0.0%) below 50%. Consider: 1) Improving entry signals, 2) Better exit timing, 3) Reviewing strategy logic.
+
+
+---
+
+## 📈 Market Regime Classification
+
+| Metric | Value |
+|--------|-------|
+| **Current Regime** | SIDEWAYS |
+| **Regime Type** | CHOPPY |
+| **Confidence** | 0.3/1.0 |
+| **Trend Strength** | 0.00 |
+| **Volatility Regime** | LOW |
+| **Avg Daily Return** | +0.00% |
+| **Volatility** | 0.01% |
+
+---
+
+## 💰 Financial Performance Summary
+
+| Metric | Value |
+|--------|-------|
+| **Starting Balance** | $100,000.00 |
+| **Current Equity** | $100,005.48 |
+| **Total P/L** | $+5.48 (+0.55%) |
+| **Average Daily Profit** | $+0.15 |
+| **Total Trades** | 7 |
+| **Win Rate** | 0.0% |
+| **Trades Today** | 0 |
+
+---
+
+## 📈 90-Day R&D Challenge Progress
+
+**Current**: Day 9 of 90 (10.0% complete)
+**Phase**: Production Scaling - Month 2 (Days 31-60)
+**Days Remaining**: 81
+
+**Progress Bar**: `██░░░░░░░░░░░░░░░░░░` (10.0%)
+
+---
+
+## 🚨 Risk Guardrails & Safety
+
+| Guardrail | Current | Limit | Status |
+|-----------|---------|-------|--------|
+| **Max Drawdown** | 0.06% | <10% | ✅ |
+| **Sharpe Ratio** | -16.60 | >1.0 | ⚠️ |
+| **Volatility** | 0.24% | <20% | ✅ |
+
+---
+
+## 📝 Notes
+
+**Dashboard Features**:
+- ✅ Comprehensive risk metrics (Sharpe, Sortino, VaR, Conditional VaR, Kelly fraction)
+- ✅ Performance attribution by symbol, strategy, and time-of-day
+- ✅ Visualizations (equity curve, drawdown, P/L charts)
+- ✅ AI-generated insights and recommendations
+- ✅ Predictive analytics (Monte Carlo forecasting, risk-of-ruin)
+- ✅ Execution metrics (slippage, fill quality, latency)
+- ✅ Data completeness tracking
+- ✅ Benchmark comparison vs S&P 500
+- ✅ Market regime classification
+
+
+**Current Strategy**:
+- **MODE**: 📈 STANDARD (Weekday)
+- **Strategy**: Momentum (MACD + RSI + Volume)
+- **Allocation**: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)
+- **Daily Investment**: $10/day fixed
+
+---
+
+## 💰 Options Income (Yield Generation)
+
+- ℹ️ Strategy active (Monitoring for 100+ share positions)
+
+---
+
+## 🤖 AI & ML System Status
+
+
+### RL Training Status
+| **Cloud RL Jobs** | 8 total (8 active, 0 completed) |
+| **Last Training** | 5 symbols trained |
+| **Recent Training** | SPY, QQQ, NVDA, GOOGL, AMZN |
+| **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
+
+### LangSmith Monitoring
+| **Status** | ⚠️ LangSmith client not initialized |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
 
@@ -225,7 +292,7 @@ Install yfinance to enable market regime detection
 | **Day Trades (Last 5 Days)** | 0 | ✅ |
 | **PDT Threshold** | 4+ day trades in 5 days | ✅ SAFE |
 | **Minimum Equity Required** | $25,000 | ✅ |
-| **Current Equity** | $100,005.50 | ✅ |
+| **Current Equity** | ${current_equity:,.2f} | ✅ |
 
 **PDT Rule Explanation**: If you make 4+ day trades (same-day entry/exit) in 5 business days, you must maintain $25,000 minimum equity. Violations can result in account restrictions.
 
@@ -267,101 +334,27 @@ Install yfinance to enable market regime detection
 
 **Integration with RL Pipeline**: Tax-aware reward function penalizes short-term gains and rewards long-term holdings to optimize after-tax returns.
 
-
-## 📊 Benchmark Comparison
-
-| Strategy | Total Return | Sharpe Ratio | Max Drawdown |
-|----------|--------------|--------------|--------------|
-| **Our Strategy** | +0.01% | -16.60 | 0.06% |
-
 ---
 
 
----
+## 🌐 External Dashboards & Monitoring
 
-## 🧠 AI-Generated Insights
+### LangSmith Observability
+- **[LangSmith Dashboard](https://smith.langchain.com)** - Main dashboard
+- **[Trading RL Training Project](https://smith.langchain.com/o/default/projects/p/04fa554e-f155-4039-bb7f-e866f082103b)** - RL training runs and traces
+  *Project ID: `04fa554e-f155-4039-bb7f-e866f082103b`*
+- **[All Projects](https://smith.langchain.com/o/default/projects)** - View all LangSmith projects
 
-### Daily Briefing
 
-No trades executed yet. System is ready for trading.
+### Vertex AI Cloud RL
+- **[Vertex AI Console](https://console.cloud.google.com/vertex-ai?project=email-outreach-ai-460404)** - Main Vertex AI dashboard
+- **[Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)** - View RL training jobs
+- **[Models](https://console.cloud.google.com/vertex-ai/models?project=email-outreach-ai-460404)** - Trained models
+- **[Experiments](https://console.cloud.google.com/vertex-ai/experiments?project=email-outreach-ai-460404)** - Training experiments
 
-**Key Findings**:
-- Waiting for first trade execution
-
-**Recommendations**:
-- Monitor system for first trade opportunity
-
-**Recent Trade Analysis**:
-- No recent trades to analyze
-
----
-
-## 📈 Equity Curve Visualization
-
-```
-  $99,957 ┤                                        ┤ $100,014
-     │              █
-     │            ██ █                                    ██
-     │   █                                  ██████████████  ████
-     │███ █           █     █
-     │     █              ██
-     │                 █       █           █
-     │      █████               █
-     │           █      █     █  ███     █
-     │                       █      █████ █
-     │                   █
-```
-
-### Returns Distribution
-
-```
-  -0.03%                                0.04%
-                       █
-                       █
-                       █
-                       █
-                       █
-                       █
-                       █
-                       █
-                       █
-  █        █       █ █ █ █
-```
-
+**Project**: `email-outreach-ai-460404` | **Location**: `us-central1`
 
 ---
 
-## 💰 Financial Performance Summary
-
-| Metric | Value |
-|--------|-------|
-| **Starting Balance** | $100,000.00 |
-| **Current Equity** | $100,005.50 |
-| **Total P/L** | $+5.50 (+0.01%) |
-| **Total Trades** | 7 |
-| **Closed Trades** | 0 |
-| **Winning Trades** | 0 |
-| **Win Rate** | 0.0% |
-
----
-
-## 📊 90-Day R&D Challenge Progress
-
-**Current**: Day 9 of 90 (10.0% complete)
-
-**Timeline Progress**: `██░░░░░░░░░░░░░░░░░░` (10.0%)
-*This shows how far through the 90-day R&D challenge timeline you are*
-
----
-
-## 🔗 Quick Links
-
-- [Repository](https://github.com/IgorGanapolsky/trading)
-- [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions)
-- [Latest Trades](https://github.com/IgorGanapolsky/trading/tree/main/data)
-- [Trade Logs](https://github.com/IgorGanapolsky/trading/tree/main/data/trade_logs)
-
----
-
-*This world-class dashboard is automatically updated daily by GitHub Actions with elite-level analytics.*
-*Dashboard improvements: Enhanced trade analysis, performance attribution, actionable risk alerts, and better visualizations.*
+*This dashboard is automatically updated daily by GitHub Actions after trading execution.*
+*World-class metrics powered by comprehensive risk & performance analytics.*
