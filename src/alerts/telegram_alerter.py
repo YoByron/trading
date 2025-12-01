@@ -110,7 +110,7 @@ class TelegramAlerter:
         Returns:
             True if sent successfully
         """
-        message = f"*TRADING SYSTEM FAILURE*\n\n"
+        message = "*TRADING SYSTEM FAILURE*\n\n"
         message += f"Error: {error}\n"
 
         if context:
@@ -201,9 +201,46 @@ class TelegramAlerter:
             message += f"❌ {check}\n"
 
         message += f"\nPortfolio: ${portfolio_value:,.2f}\n"
-        message += f"\nReview logs immediately."
+        message += "\nReview logs immediately."
 
         return self.send_alert(message, level=status)
+
+    def send_tlt_gate_status(
+        self, gate_opened: bool, sma20: float, sma50: float, current_price: float
+    ) -> bool:
+        """
+        Send TLT momentum gate status change alert.
+
+        Args:
+            gate_opened: True if gate just opened, False if closed
+            sma20: Current 20-day SMA value
+            sma50: Current 50-day SMA value
+            current_price: Current TLT price
+
+        Returns:
+            True if sent successfully
+        """
+        emoji = "🟢" if gate_opened else "🔴"
+        status = "OPENED" if gate_opened else "CLOSED"
+        action = (
+            "✅ System will now allocate $90/day to TLT"
+            if gate_opened
+            else "⏸️  System will skip TLT orders until gate opens"
+        )
+
+        message = (
+            f"{emoji} *TLT Momentum Gate {status}*\n\n"
+            f"Treasuries trading is now {'ENABLED' if gate_opened else 'PAUSED'}.\n\n"
+            f"*Current Status:*\n"
+            f"• Price: ${current_price:.2f}\n"
+            f"• SMA20: ${sma20:.2f}\n"
+            f"• SMA50: ${sma50:.2f}\n"
+            f"• Gate: {status} (SMA20 {'>=' if gate_opened else '<'} SMA50)\n\n"
+            f"*Impact:*\n{action}\n\n"
+            f"*Next Check:* Daily at market open"
+        )
+
+        return self.send_alert(message, level="INFO" if gate_opened else "WARNING")
 
     def test_connection(self) -> bool:
         """
@@ -223,7 +260,8 @@ class TelegramAlerter:
             "• Trade execution failures\n"
             "• Market data issues\n"
             "• Portfolio health problems\n"
-            "• System errors\n\n"
+            "• System errors\n"
+            "• TLT momentum gate changes\n\n"
             "No more silent failures!"
         )
 
