@@ -1,9 +1,9 @@
 # 🎯 TRADING SYSTEM MASTER PLAN
 
-**Last Updated**: November 29, 2025
+**Last Updated**: December 1, 2025
 **CTO**: Claude (AI Agent)
 **CEO**: Igor Ganapolsky
-**Status**: R&D Phase - Take-Profit Fix Deployed + First Closed Trade
+**Status**: R&D Phase - Take-Profit Fix Deployed + First Closed Trade + TLT Monitoring Active
 
 ---
 
@@ -30,7 +30,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 **Current Positions**: 0 (all positions closed)
 
-**Recent Achievements** (November 25-29, 2025):
+**Recent Achievements** (November 25 - December 1, 2025):
 - ✅ **Fixed take-profit execution** - Changed `elif` to `if` for independent check
 - ✅ **Closed GOOGL position** - +$56.28 profit (+13.86%) - First closed trade!
 - ✅ **Win rate validated** - 100% (1/1) - System can pick winners and execute exits
@@ -38,6 +38,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
  - ✅ **Bogleheads Continuous Learning** - 6-hour ingestion to Sentiment RAG with TL;DR, ensemble contribution with regime-based boost
  - ✅ **Nightly Dry-Run CI** - Wiki report + badges auto-updated; includes Bogleheads snapshot fallback
  - ✅ **Treasuries Momentum Gate (TLT)** - SMA20>=SMA50 gating before allocating 10% to `TLT` in CoreStrategy
+ - ✅ **TLT Momentum Monitoring System** (Dec 1, 2025) - Automated monitoring with Telegram alerts when gate opens/closes; integrated into daily trading workflow
 
 **Critical Fixes** (November 25, 2025):
 - **Take-Profit Bug**: Fixed `elif` logic preventing take-profit from checking independently
@@ -46,11 +47,12 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 **Assessment**: System is profitable and working, but needs more trading frequency and capital deployment to scale toward North Star.
 
-**System Upgrades (Nov 28-29)**:
+**System Upgrades (Nov 28 - Dec 1)**:
 - Bogleheads ingestion: every 6 hours (CI) → Sentiment RAG (JSON fallback if embeddings unavailable)
 - Bogleheads in ensemble: weight key `bogleheads` (default 0.10), with regime-based weight boost
 - Nightly dry-run: primes Bogleheads, publishes wiki report, updates badges, includes TL;DR when available
 - Treasuries (TLT) momentum gate: `SMA20 >= SMA50` required to allocate 10% to `TLT`; otherwise skipped for the day
+- **TLT Momentum Monitoring** (Dec 1, 2025): Automated daily monitoring script (`scripts/monitor_tlt_momentum.py`) tracks gate status, sends Telegram alerts on status changes, integrated into automated alerts system and daily trading workflow
 
 **Architecture Status** (November 17, 2025):
 - **Status**: ✅ **CLEANED UP** - Code consolidated, systems intelligently integrated
