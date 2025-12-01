@@ -69,7 +69,7 @@ class OptionsStrategy:
         self.min_days_to_expire = 25
         self.max_days_to_expire = 50
         self.min_annualized_return = 0.06  # 6% annualized yield minimum
-        
+
         logger.info(
             f"Options Strategy initialized: Minimum shares threshold = {self.min_shares_threshold}"
         )
@@ -294,9 +294,9 @@ class OptionsStrategy:
             chain = self.options_client.get_option_chain(symbol)
 
             # Filter for Calls
-            calls = [
-                c for c in chain if "C" in c["symbol"].split(symbol)[-1]
-            ]  # Heuristic parsing or checking type
+            # calls = [
+            #     c for c in chain if "C" in c["symbol"].split(symbol)[-1]
+            # ]  # Heuristic parsing or checking type
             # Better: Alpaca contract objects usually have a 'type' field, but our client returns dicts.
             # Let's assume our client helper needs to parse the symbol or we rely on the data.
             # Standard OCC symbol: SPY251219C00600000 (C for Call)

@@ -15,6 +15,7 @@ import logging
 from src.rag.collectors.orchestrator import get_orchestrator
 from src.rag.vector_db.chroma_client import get_rag_db
 from src.rag.vector_db.embedder import get_embedder
+from src.rag.knowledge_graph import get_knowledge_graph
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class RAGIngestionPipeline:
         self.orchestrator = get_orchestrator()
         self.db = get_rag_db()
         self.embedder = get_embedder()
+        self.kg = get_knowledge_graph()
 
         logger.info("RAG Ingestion Pipeline initialized")
 
@@ -111,6 +113,12 @@ class RAGIngestionPipeline:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             source = article.get("source", "unknown")
             ids.append(f"{ticker}_{source}_{timestamp}_{i}")
+
+            # Update Knowledge Graph
+            self.kg.add_document(combined_text, source_ticker=ticker)
+
+        # Save KG changes
+        self.kg.save_graph()
 
         # Step 3: Add to vector database (ChromaDB will auto-embed)
         logger.info("\n💾 Step 3: Storing in ChromaDB...")
@@ -215,6 +223,12 @@ class RAGIngestionPipeline:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             source = article.get("source", "unknown")
             ids.append(f"MARKET_{source}_{timestamp}_{i}")
+
+            # Update Knowledge Graph
+            self.kg.add_document(combined_text, source_ticker="MARKET")
+
+        # Save KG changes
+        self.kg.save_graph()
 
         # Store in database
         result = self.db.add_documents(

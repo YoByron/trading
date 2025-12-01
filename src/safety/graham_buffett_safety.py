@@ -20,14 +20,14 @@ Enhanced: Added Intelligent Investor principles
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import List, Optional, Tuple
 from enum import Enum
 
 import yfinance as yf
-import pandas as pd
 
-from src.utils.dcf_valuation import DCFValuationCalculator, get_global_dcf_calculator
+
+from src.utils.dcf_valuation import get_global_dcf_calculator
 
 logger = logging.getLogger(__name__)
 
@@ -519,9 +519,7 @@ class GrahamBuffettSafety:
 
             # Earnings data
             financials = ticker.financials
-            earnings_data = (
-                ticker.earnings_history if hasattr(ticker, "earnings_history") else None
-            )
+            financials = ticker.financials
 
             # Calculate 3-year earnings growth
             earnings_growth_3y = None

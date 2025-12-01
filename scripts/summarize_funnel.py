@@ -35,6 +35,7 @@ def summarize(events: list[dict[str, Any]]) -> dict[str, Any]:
     by_gate = defaultdict(lambda: Counter(pass_=0, reject=0, skipped=0))
     by_ticker = defaultdict(lambda: Counter(pass_=0, reject=0))
     orders = []
+    stops = []
 
     for e in events:
         event = e.get("event", "")
@@ -48,11 +49,14 @@ def summarize(events: list[dict[str, Any]]) -> dict[str, Any]:
                 by_ticker[ticker][status] += 1
         elif event == "execution.order":
             orders.append(e)
+        elif event == "execution.stop":
+            stops.append(e)
 
     return {
         "gates": {g: dict(c) for g, c in by_gate.items()},
         "tickers": {t: dict(c) for t, c in by_ticker.items()},
         "orders": orders,
+        "stops": stops,
     }
 
 
@@ -74,6 +78,24 @@ def to_markdown(summary: dict[str, Any]) -> str:
             order = p.get("order", {})
             size = p.get("order_size") or order.get("notional")
             lines.append(f"- {t}: notional=${size}")
+    lines.append("")
+    lines.append("## Stops")
+    if not summary.get("stops"):
+        lines.append("- No stop orders submitted")
+    else:
+        for s in summary["stops"]:
+            t = s.get("ticker")
+            p = s.get("payload", {})
+            stop = p.get("stop", {})
+            stop_price = stop.get("stop_price")
+            atr_pct = p.get("atr_pct")
+            atr_mult = p.get("atr_multiplier")
+            if atr_pct is not None:
+                lines.append(
+                    f"- {t}: stop=${stop_price} (ATR%={atr_pct:.2%}, mult={atr_mult})"
+                )
+            else:
+                lines.append(f"- {t}: stop=${stop_price}")
     lines.append("")
     lines.append("## Ticker Pass/Reject")
     for t, counts in summary["tickers"].items():
@@ -100,4 +122,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -51,23 +51,24 @@ class InMemoryCollection:
         self.cross_encoder = None
         self.bm25 = None
         self.persist_path = "data/rag/in_memory_store.json"
-        
+
         # Ensure directory exists
         import os
+        import os
         os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)
-        
+
         if SENTENCE_TRANSFORMERS_AVAILABLE:
             try:
                 # Load Bi-Encoder for fast retrieval
                 self.model = SentenceTransformer("all-MiniLM-L6-v2")
                 # Load Cross-Encoder for high-precision re-ranking
                 self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-                self.embeddings = [] 
+                self.embeddings = []
             except Exception as e:
                 logger.warning(f"Failed to load embedding models: {e}")
                 self.model = None
                 self.cross_encoder = None
-        
+
         # Load existing data
         self.load_from_disk()
 
@@ -96,28 +97,28 @@ class InMemoryCollection:
         import os
         if not os.path.exists(self.persist_path):
             return
-            
+
         try:
             with open(self.persist_path, 'r') as f:
                 data = json.load(f)
-            
+
             self.documents = data.get("documents", [])
             self.metadatas = data.get("metadatas", [])
             self.ids = data.get("ids", [])
-            
+
             logger.info(f"Loaded {len(self.documents)} documents from {self.persist_path}")
-            
+
             # Re-generate embeddings if model is loaded
             if self.model and self.documents:
                 logger.info("Regenerating embeddings for loaded documents...")
                 new_embeddings = self.model.encode(self.documents)
                 self.embeddings = new_embeddings.tolist()
-                
+
             # Re-build BM25
             if BM25_AVAILABLE and self.documents:
                 tokenized_corpus = [doc.lower().split() for doc in self.documents]
                 self.bm25 = BM25Okapi(tokenized_corpus)
-                
+
         except Exception as e:
             logger.error(f"Failed to load in-memory store: {e}")
 
@@ -171,8 +172,6 @@ class InMemoryCollection:
 
         # If we have embeddings and a model, do semantic search
         if self.model and self.embeddings:
-            import numpy as np
-            from sentence_transformers import util
 
             # 1. Semantic Search
             query_embedding = self.model.encode(query_texts[0])
@@ -203,7 +202,7 @@ class InMemoryCollection:
             for idx, (sem_score, bm_score) in enumerate(zip(semantic_scores, bm25_scores)):
                 original_idx = indices[idx]
                 hybrid_score = (0.7 * float(sem_score)) + (0.3 * float(bm_score))
-                
+
                 candidates.append({
                     "document": self.documents[original_idx],
                     "metadata": self.metadatas[original_idx],
@@ -211,42 +210,43 @@ class InMemoryCollection:
                     "score": hybrid_score,
                     "distance": 1.0 - hybrid_score
                 })
-            
+
             # Sort by hybrid score descending
             candidates.sort(key=lambda x: x["score"], reverse=True)
-            
+
+            # --- RE-RANKING STEP ---
             # --- RE-RANKING STEP ---
             # Take top N candidates (e.g., 20) and re-rank with Cross-Encoder
             top_n_candidates = candidates[:20]
-            
+
             if self.cross_encoder and top_n_candidates:
                 # Prepare pairs: (Query, Document)
                 pairs = [[query_texts[0], c["document"]] for c in top_n_candidates]
                 cross_scores = self.cross_encoder.predict(pairs)
-                
+
                 # Update scores with Cross-Encoder scores (which are logits, unbounded)
                 # We can just replace the score or blend it. Replacing is usually better for final ranking.
                 for i, score in enumerate(cross_scores):
                     top_n_candidates[i]["score"] = float(score)
-                    # Distance is tricky with logits, but we can just invert rank or sigmoid it.
-                    # For compatibility, we'll just use 1/(1+exp(-score)) to map to 0-1 roughly if needed,
-                    # but for now let's just sort by score.
-                    top_n_candidates[i]["distance"] = -float(score) # Higher score = lower distance
-                
+                # Distance is tricky with logits, but we can just invert rank or sigmoid it.
+                # For compatibility, we'll just use 1/(1+exp(-score)) to map to 0-1 roughly if needed,
+                # but for now let's just sort by score.
+                top_n_candidates[i]["distance"] = -float(score)  # Higher score = lower distance
+
                 # Re-sort based on Cross-Encoder score
                 top_n_candidates.sort(key=lambda x: x["score"], reverse=True)
-                
+
                 # Use re-ranked results
                 results = top_n_candidates[:n_results]
             else:
                 # Fallback if no cross-encoder
                 results = candidates[:n_results]
-            
+
             return {
-                "documents": [r["document"] for r in results],
-                "metadatas": [r["metadata"] for r in results],
-                "distances": [r["distance"] for r in results],
-                "ids": [r["id"] for r in results],
+                "documents": [[r["document"] for r in results]],
+                "metadatas": [[r["metadata"] for r in results]],
+                "distances": [[r["distance"] for r in results]],
+                "ids": [[r["id"] for r in results]],
             }
 
         else:
@@ -263,21 +263,35 @@ class InMemoryCollection:
 
             results = filtered[:n_results]
             return {
-                "documents": [r["document"] for r in results],
-                "metadatas": [r["metadata"] for r in results],
-                "distances": [0.0 for _ in results],
-                "ids": [r["id"] for r in results],
+                "documents": [[r["document"] for r in results]],
+                "metadatas": [[r["metadata"] for r in results]],
+                "distances": [[0.0 for _ in results]],
+                "ids": [[r["id"] for r in results]],
             }
 
-    def get(self, ids: list[str]):
-        docs = []
-        metas = []
-        for doc_id in ids:
-            if doc_id in self.ids:
-                idx = self.ids.index(doc_id)
-                docs.append(self.documents[idx])
-                metas.append(self.metadatas[idx])
-        return {"documents": docs, "metadatas": metas, "ids": ids}
+    def get(self, ids: list[str] = None, limit: int = None):
+        if ids:
+            docs = []
+            metas = []
+            for doc_id in ids:
+                if doc_id in self.ids:
+                    idx = self.ids.index(doc_id)
+                    docs.append(self.documents[idx])
+                    metas.append(self.metadatas[idx])
+            return {"documents": docs, "metadatas": metas, "ids": ids}
+
+        if limit:
+            return {
+                "documents": self.documents[:limit],
+                "metadatas": self.metadatas[:limit],
+                "ids": self.ids[:limit]
+            }
+
+        return {
+            "documents": self.documents,
+            "metadatas": self.metadatas,
+            "ids": self.ids
+        }
 
     def delete(self, ids: list[str]):
         for doc_id in ids:

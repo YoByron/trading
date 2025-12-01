@@ -18,6 +18,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Validate configuration
+        env:
+          PYTHONPATH: src
+        run: |
+          python scripts/validate_config.py
       - name: Run smoke test
         env:
           PYTHONPATH: src
@@ -25,4 +30,3 @@ jobs:
           SIMULATED_EQUITY: '100000'
         run: |
           python tests/test_smoke.py
-

@@ -111,7 +111,7 @@ def test_world_class_dashboard():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
-        data_dir = create_test_data(tmpdir_path)
+        create_test_data(tmpdir_path)
 
         # Temporarily override DATA_DIR
         original_cwd = os.getcwd()
@@ -143,7 +143,7 @@ def test_world_class_dashboard_enhanced():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
-        data_dir = create_test_data(tmpdir_path)
+        create_test_data(tmpdir_path)
 
         original_cwd = os.getcwd()
         try:
@@ -172,7 +172,7 @@ def test_progress_dashboard():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
-        data_dir = create_test_data(tmpdir_path)
+        create_test_data(tmpdir_path)
 
         original_cwd = os.getcwd()
         try:

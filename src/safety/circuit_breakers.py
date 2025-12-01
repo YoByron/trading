@@ -13,7 +13,7 @@ import logging
 import json
 from pathlib import Path
 from datetime import datetime, date
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class CircuitBreaker:
         Returns:
             Dict with 'allowed', 'reason', 'severity'
         """
-        checks = []
+
 
         # Check 1: Kill switch
         if self.is_tripped:

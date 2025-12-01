@@ -26,9 +26,9 @@ import re
 import json
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
-from collections import defaultdict, Counter
+from collections import defaultdict
 import argparse
 
 import praw

@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-12-01 10:59 AM ET
+**Last Updated**: 2025-12-01 11:00 AM ET
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -267,7 +267,13 @@
 
 ### Visual Charts
 
-*Charts will be generated when matplotlib is available in the environment.*
+![Equity Curve](charts/equity_curve.png)
+
+![Daily P/L](charts/daily_pl.png)
+
+![Rolling Sharpe 7-Day](charts/rolling_sharpe_7d.png)
+
+![Market Regime Timeline](charts/regime_timeline.png)
 
 
 ### Daily Profit Trend
@@ -442,7 +448,6 @@
 | **Status** | ✅ OPERATIONAL |
 | **Last Trade Execution** | Never |
 | **Trades Today** | 0 |
-| **GitHub Actions** | ✅ Success (2025-12-01) |
 
 ### Infrastructure Health
 | **Training Monitor** | ✅ Active |
@@ -460,8 +465,11 @@
 | **Vertex AI Console** | [View Jobs →](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404) |
 
 ### LangSmith Monitoring
-| **Status** | ⚠️ LangSmith client initialization failed |
-| **Action Required** | Check LangSmith API key validity |
+| **Status** | ✅ Healthy |
+| **Total Runs** (7d) | 10 |
+| **Success Rate** | 0.0% |
+| **Avg Duration** | 0.8s |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
 
@@ -499,6 +507,63 @@
 - [Documentation](https://github.com/IgorGanapolsky/trading/tree/main/docs)
 - [LangSmith RL Training Project](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) *(Note: Project may show as "default" in LangSmith UI - this is correct)*
 - [Vertex AI Training Jobs](https://console.cloud.google.com/vertex-ai/training/custom-jobs?project=email-outreach-ai-460404)
+
+
+---
+
+## 🤖 RL Training Status
+
+**Last Updated**: 2025-12-01 11:00:13
+
+### Cloud RL Jobs
+
+**Active Jobs**: 8
+**Completed Jobs**: 0
+**Total Jobs**: 8
+
+#### Active Training Jobs
+
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195082`)
+  - Submitted: 2025-11-26T17:11:22.825921
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195087`)
+  - Submitted: 2025-11-26T17:11:27.277334
+- **QQQ**: submitted (Job ID: `vertex_ai_lstm_ppo_qqq_1764195087`)
+  - Submitted: 2025-11-26T17:11:27.277583
+- **SPY**: submitted (Job ID: `vertex_ai_lstm_ppo_spy_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.760844
+- **QQQ**: submitted (Job ID: `vertex_ai_lstm_ppo_qqq_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.761480
+- **NVDA**: submitted (Job ID: `vertex_ai_lstm_ppo_nvda_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.761860
+- **GOOGL**: submitted (Job ID: `vertex_ai_lstm_ppo_googl_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.762364
+- **AMZN**: submitted (Job ID: `vertex_ai_lstm_ppo_amzn_1764195091`)
+  - Submitted: 2025-11-26T17:11:31.762723
+
+#### Last Training Times
+
+- **SPY**: 2025-11-26T17:11:31.760848
+- **QQQ**: 2025-11-26T17:11:31.761486
+- **NVDA**: 2025-11-26T17:11:31.761863
+- **GOOGL**: 2025-11-26T17:11:31.762367
+- **AMZN**: 2025-11-26T17:11:31.762727
+
+#### Next Retrain Schedule
+
+- **SPY**: 2025-12-03T17:11:31.760848
+- **QQQ**: 2025-12-03T17:11:31.761486
+- **NVDA**: 2025-12-03T17:11:31.761863
+- **GOOGL**: 2025-12-03T17:11:31.762367
+- **AMZN**: 2025-12-03T17:11:31.762727
+
+### LangSmith Monitoring
+
+**Project**: trading-rl-training
+**Total Runs** (7 days): 10
+**Success Rate**: 0.0%
+**Average Duration**: 0.8s
+
+**View Dashboard**: https://smith.langchain.com
 
 ---
 

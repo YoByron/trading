@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import List
 
 from src.agents.momentum_agent import MomentumAgent
@@ -31,7 +32,10 @@ class TradingOrchestrator:
         if not self.tickers:
             raise ValueError("At least one ticker symbol is required.")
 
-        self.momentum_agent = MomentumAgent()
+        import os as _os
+        self.momentum_agent = MomentumAgent(
+            min_score=float(_os.getenv("MOMENTUM_MIN_SCORE", "0.0"))
+        )
         self.rl_filter = RLFilter()
         self.llm_agent = LangChainSentimentAgent()
         self.budget_controller = BudgetController()
@@ -74,8 +78,9 @@ class TradingOrchestrator:
         )
 
         # Gate 2: RL inference
+        rl_threshold = float(os.getenv("RL_CONFIDENCE_THRESHOLD", "0.6"))
         rl_decision = self.rl_filter.predict(momentum_signal.indicators)
-        if rl_decision.get("confidence", 0.0) < 0.6:
+        if rl_decision.get("confidence", 0.0) < rl_threshold:
             logger.info(
                 "Gate 2 (%s): REJECTED by RL filter (confidence=%.2f).",
                 ticker,
@@ -105,7 +110,10 @@ class TradingOrchestrator:
                 )
                 sentiment_score = llm_result.get("score", 0.0)
                 self.budget_controller.log_spend(llm_result.get("cost", 0.0))
-                if sentiment_score < -0.2:
+                neg_threshold = float(
+                    os.getenv("LLM_NEGATIVE_SENTIMENT_THRESHOLD", "-0.2")
+                )
+                if sentiment_score < neg_threshold:
                     logger.info(
                         "Gate 3 (%s): REJECTED by LLM (score=%.2f, reason=%s).",
                         ticker,
@@ -145,6 +153,26 @@ class TradingOrchestrator:
                 },
             )
 
+        # Gather recent history for ATR-based sizing and stops
+        hist = None
+        current_price = momentum_signal.indicators.get("last_price")
+        atr_pct = None
+        try:
+            from src.utils.market_data import MarketDataFetcher
+            from src.utils.technical_indicators import calculate_atr
+
+            fetcher = MarketDataFetcher()
+            res = fetcher.get_daily_bars(symbol=ticker, lookback_days=60)
+            hist = res.data
+            if current_price is None and hist is not None and not hist.empty:
+                current_price = float(hist["Close"].iloc[-1])
+            if hist is not None and current_price:
+                atr_val = float(calculate_atr(hist))
+                if atr_val and current_price:
+                    atr_pct = atr_val / float(current_price)
+        except Exception as exc:  # pragma: no cover - fail-open
+            logger.debug("History fetch failed for %s: %s", ticker, exc)
+
         # Gate 4: Risk sizing and execution
         order_size = self.risk_manager.calculate_size(
             ticker=ticker,
@@ -153,6 +181,8 @@ class TradingOrchestrator:
             rl_confidence=rl_decision.get("confidence", 0.0),
             sentiment_score=sentiment_score,
             multiplier=rl_decision.get("suggested_multiplier", 1.0),
+            current_price=current_price,
+            hist=hist,
         )
 
         if order_size <= 0:
@@ -181,3 +211,25 @@ class TradingOrchestrator:
             {"order_size": order_size, "account_equity": self.executor.account_equity},
         )
         self.telemetry.order_event(ticker, {"order": order, "rl": rl_decision})
+
+        # Place ATR-based stop-loss if possible
+        try:
+            if current_price and current_price > 0:
+                stop_price = self.risk_manager.calculate_stop_loss(
+                    ticker=ticker, entry_price=float(current_price), direction="long", hist=hist
+                )
+                # Approximate quantity from notional if fill qty unavailable
+                qty = order.get("filled_qty") or (order_size / float(current_price))
+                stop_order = self.executor.set_stop_loss(ticker, float(qty), float(stop_price))
+                self.telemetry.record(
+                    event_type="execution.stop",
+                    ticker=ticker,
+                    status="submitted",
+                    payload={
+                        "stop": stop_order,
+                        "atr_pct": atr_pct,
+                        "atr_multiplier": float(os.getenv("ATR_STOP_MULTIPLIER", "2.0")),
+                    },
+                )
+        except Exception as exc:  # pragma: no cover - non-fatal
+            logger.info("Stop-loss placement skipped for %s: %s", ticker, exc)

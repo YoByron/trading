@@ -244,6 +244,16 @@ Set `HYBRID_LLM_MODEL=claude-3-5-haiku-20241022` (default) or `gpt-4o-mini` to c
 - **Stop losses**: 5% trailing (ATR-based coming soon)
 - **Paper trading**: Validate for 90 days before live trading
 
+### Runtime Config (env)
+- `MOMENTUM_MIN_SCORE`: Minimum momentum score to pass Gate 1 (default: 0.0)
+- `MOMENTUM_MACD_THRESHOLD`: Minimum MACD histogram to pass (default: 0.0)
+- `MOMENTUM_RSI_OVERBOUGHT`: RSI ceiling for rejection (default: 70.0)
+- `MOMENTUM_VOLUME_MIN`: Minimum volume ratio (current/avg) (default: 0.8)
+- `RL_CONFIDENCE_THRESHOLD`: RL gate minimum confidence (default: 0.6)
+- `LLM_NEGATIVE_SENTIMENT_THRESHOLD`: Reject if sentiment below this (default: -0.2)
+- `RISK_USE_ATR_SCALING`: Toggle ATR-based volatility sizing (default: true)
+- `ATR_STOP_MULTIPLIER`: ATR multiplier for stop placement (default: 2.0)
+
 ---
 
 ## 🧪 Testing

@@ -16,7 +16,7 @@ import logging
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 import yfinance as yf
 from alpha_vantage.timeseries import TimeSeries
@@ -143,7 +143,7 @@ class NewsSentimentAggregator:
                 # Fallback: try alternative method
                 try:
                     news = stock.get_news()
-                except:
+                except Exception:
                     logger.warning(f"Could not fetch Yahoo news for {ticker}")
                     return {
                         "score": 0,

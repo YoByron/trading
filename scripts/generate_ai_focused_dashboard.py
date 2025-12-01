@@ -516,6 +516,30 @@ def generate_ai_focused_dashboard() -> str:
 | **P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
 | **Status** | {'✅ Active' if abs(today_pl) > 0.01 else '⏸️ No activity yet'} |
 
+"""
+
+    # Best-effort: load funnel telemetry counts
+    telemetry_path = Path("data/audit_trail/hybrid_funnel_runs.jsonl")
+    order_count = 0
+    stop_count = 0
+    if telemetry_path.exists():
+        try:
+            with telemetry_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        evt = json.loads(line)
+                        if evt.get("event") == "execution.order":
+                            order_count += 1
+                        elif evt.get("event") == "execution.stop":
+                            stop_count += 1
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+    dashboard += f"""
+| **Funnel Activity** | {order_count} orders, {stop_count} stops |
+
 ---
 
 ## 🎯 North Star Goal
