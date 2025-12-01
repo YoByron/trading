@@ -312,6 +312,7 @@ class TradingOrchestrator:
             "growth_strategy": None,
             "ipo_strategy": None,
             "options_strategy": None,
+            "options_accumulation_strategy": None,
         }
         self.health_status: Dict[str, Any] = {
             "status": "initialized",
@@ -496,6 +497,15 @@ class TradingOrchestrator:
             # Initialize OptionsStrategy (Yield Generation)
             self.options_strategy = OptionsStrategy(paper=use_paper)
             self.logger.info("Options strategy initialized (Covered Calls)")
+            
+            # Initialize Options Accumulation Strategy (NVDA focus)
+            try:
+                from src.strategies.options_accumulation_strategy import OptionsAccumulationStrategy
+                self.options_accumulation_strategy = OptionsAccumulationStrategy(paper=use_paper)
+                self.logger.info("Options accumulation strategy initialized (NVDA focus)")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize options accumulation strategy: {e}")
+                self.options_accumulation_strategy = None
 
             # Initialize ADK orchestrator adapter
             adk_enabled_env = os.getenv("ADK_ENABLED", "1").lower()
@@ -1225,6 +1235,50 @@ Output your recommendation in JSON format for easy parsing."""
             )
             self._send_alert("Growth Strategy Error", str(e), severity="CRITICAL")
 
+        finally:
+            self.logger.info("=" * 80)
+
+    def _execute_options_accumulation(self) -> None:
+        """Execute Options Accumulation Strategy (NVDA focus)."""
+        self.logger.info("=" * 80)
+        self.logger.info("EXECUTING OPTIONS ACCUMULATION STRATEGY")
+        self.logger.info("=" * 80)
+        
+        if not self.options_accumulation_strategy:
+            self.logger.warning("Options accumulation strategy not initialized")
+            return
+        
+        try:
+            result = self.options_accumulation_strategy.execute_daily()
+            
+            if result:
+                action = result.get("action")
+                if action == "purchased":
+                    self.logger.info(
+                        f"✅ Options accumulation: Purchased {result.get('shares_purchased', 0):.4f} shares"
+                    )
+                    status_after = result.get("status_after", {})
+                    self.logger.info(
+                        f"Progress: {status_after.get('progress_pct', 0):.1f}% "
+                        f"({status_after.get('current_shares', 0):.2f}/{status_after.get('target_shares', 50)} shares)"
+                    )
+                elif action == "complete":
+                    self.logger.info("✅ Options accumulation target reached!")
+                    self.logger.info("Covered calls can now be activated")
+                elif action in ["failed", "error"]:
+                    self.logger.warning(f"Options accumulation {action}: {result.get('error', 'Unknown error')}")
+            
+            self.last_execution["options_accumulation"] = datetime.now()
+            self.health_status["last_options_accumulation"] = datetime.now().isoformat()
+            
+        except Exception as e:
+            self.logger.error(f"Error executing Options Accumulation Strategy: {e}", exc_info=True)
+            self.health_status["errors"].append({
+                "timestamp": datetime.now().isoformat(),
+                "strategy": "options_accumulation",
+                "error": str(e),
+            })
+        
         finally:
             self.logger.info("=" * 80)
 
