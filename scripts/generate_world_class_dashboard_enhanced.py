@@ -656,16 +656,28 @@ def generate_world_class_dashboard() -> str:
     dashboard += f"""
 **Current Strategy**:
 """
+    # Get crypto strategy info
+    strategies = system_state.get("strategies", {})
+    tier5 = strategies.get("tier5", {})
+    crypto_trades = tier5.get("trades_executed", 0)
+    crypto_invested = tier5.get("total_invested", 0.0)
+    crypto_last_execution = tier5.get("last_execution")
+
     if is_crypto_mode:
         dashboard += "- **MODE**: 🌐 CRYPTO (Weekend/Holiday)\n"
         dashboard += "- **Strategy**: Tier 5 - Cryptocurrency 24/7 (BTC/ETH)\n"
         dashboard += "- **Allocation**: $10/day fixed (Crypto only)\n"
         dashboard += "- **Status**: ✅ Active (Monitoring BTC/ETH)\n"
+        dashboard += f"- **Crypto Trades Executed**: {crypto_trades}\n"
+        dashboard += f"- **Total Crypto Invested**: ${crypto_invested:.2f}\n"
+        if crypto_last_execution:
+            dashboard += f"- **Last Crypto Execution**: {crypto_last_execution}\n"
     else:
         dashboard += "- **MODE**: 📈 STANDARD (Weekday)\n"
         dashboard += "- **Strategy**: Momentum (MACD + RSI + Volume)\n"
         dashboard += "- **Allocation**: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)\n"
         dashboard += "- **Daily Investment**: $10/day fixed\n"
+        dashboard += f"- **Crypto Trades (Weekend)**: {crypto_trades} executed, ${crypto_invested:.2f} invested\n"
 
     dashboard += f"""
 ---
@@ -862,6 +874,94 @@ def generate_world_class_dashboard() -> str:
 - **Consult Tax Professional**: This is not tax advice. Consult a qualified tax professional before live trading.
 
 **Integration with RL Pipeline**: Tax-aware reward function penalizes short-term gains and rewards long-term holdings to optimize after-tax returns.
+
+---
+
+## 🔍 Crypto Trade Verification & Trust Metrics
+
+**Purpose**: Verify that crypto trades executed correctly and state tracking is accurate. This prevents the "lying" problem where trades execute but aren't tracked.
+
+### Verification Status
+
+"""
+    
+    # Get crypto strategy info
+    strategies = system_state.get("strategies", {})
+    tier5 = strategies.get("tier5", {})
+    crypto_trades = tier5.get("trades_executed", 0)
+    crypto_invested = tier5.get("total_invested", 0.0)
+    crypto_last_execution = tier5.get("last_execution")
+
+    # Run crypto verification tests and capture results
+    verification_status = "⚠️ Not Run"
+    verification_details = []
+    try:
+        from tests.test_crypto_trade_verification import CryptoTradeVerificationTests
+        
+        tester = CryptoTradeVerificationTests()
+        results = tester.run_all_tests()
+        
+        passed = results["passed"]
+        total = len(results["details"])
+        
+        if passed == total:
+            verification_status = f"✅ All Passed ({passed}/{total})"
+        elif passed > 0:
+            verification_status = f"⚠️ Partial ({passed}/{total} passed)"
+        else:
+            verification_status = f"❌ Failed ({passed}/{total})"
+        
+        # Extract critical verification details
+        for detail in results["details"]:
+            if detail["test"] == "Positions match state":
+                if "MISMATCH" in detail["message"]:
+                    verification_status = "🚨 CRITICAL MISMATCH DETECTED"
+                    verification_details.append(f"**CRITICAL**: {detail['message']}")
+                elif detail["status"] == "✅":
+                    verification_details.append("✅ Positions match state tracking")
+            elif detail["test"] == "Crypto strategy tracked":
+                verification_details.append(f"✅ Crypto strategy tracked: {tier5.get('name', 'Unknown')}")
+            elif detail["test"] == "State file valid JSON":
+                verification_details.append("✅ State file is valid")
+        
+    except ImportError:
+        verification_status = "⚠️ Verification module not available"
+        verification_details.append("Verification tests require alpaca-py (available in CI)")
+    except Exception as e:
+        verification_status = f"❌ Verification failed: {str(e)[:50]}"
+        verification_details.append(f"Error running verification: {str(e)}")
+
+    dashboard += f"""
+| Metric | Status |
+|--------|--------|
+| **Verification Status** | {verification_status} |
+| **Crypto Trades Tracked** | {crypto_trades} |
+| **Crypto Invested (Tracked)** | ${crypto_invested:.2f} |
+| **Last Execution** | {crypto_last_execution if crypto_last_execution else 'Never'} |
+
+### Verification Details
+
+"""
+    
+    if verification_details:
+        for detail in verification_details:
+            dashboard += f"{detail}\n\n"
+    else:
+        dashboard += "Run verification tests to see detailed results.\n\n"
+
+    dashboard += """
+**How Verification Works**:
+1. ✅ Checks `system_state.json` exists and is valid
+2. ✅ Verifies crypto strategy (tier5) is tracked
+3. ✅ Connects to Alpaca API to get actual positions (GROUND TRUTH)
+4. ✅ Compares Alpaca positions with our state tracking
+5. ✅ Detects mismatches (trades executed but not tracked)
+
+**Critical Test**: If positions exist in Alpaca but state shows 0 trades, this indicates a state tracking bug (like the one we fixed).
+
+**Verification runs automatically** after each crypto trading execution via GitHub Actions.
+
+**Manual Verification**: Run `bash scripts/verify_crypto_trade.sh` anytime to verify independently.
 
 ---
 

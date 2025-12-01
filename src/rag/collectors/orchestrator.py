@@ -31,6 +31,8 @@ class NewsOrchestrator:
     - Alpha Vantage (sentiment API)
     - TikTok (Research API)
     - Seeking Alpha (RSS feeds)
+    - Stocktwits (social trading platform)
+    - Bogleheads (forum insights)
 
     Future additions:
     - Bloomberg (web scraping)
