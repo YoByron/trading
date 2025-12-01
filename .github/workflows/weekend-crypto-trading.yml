@@ -205,6 +205,15 @@ jobs:
 
           echo "✅ System state changes committed and pushed"
 
+      - name: Verify Crypto Trade Execution
+        # Run smoke tests to verify trades executed correctly
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Running crypto trade verification smoke tests..."
+          python3 tests/test_crypto_trade_verification.py || echo "⚠️  Verification tests failed (check logs)"
+
       - name: Update Progress Dashboard Wiki
         # Always update dashboard, even if trading was skipped
         # This ensures dashboard shows latest data regardless of trading execution

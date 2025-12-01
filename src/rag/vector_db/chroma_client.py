@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 ensure_pydantic_base_settings()
 
+try:
+    from sentence_transformers import SentenceTransformer, util
+
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    logger.warning(
+        "sentence-transformers not found. InMemoryCollection will use dummy similarity."
+    )
+
 
 # Simple in‑memory collection fallback used when ChromaDB cannot be imported.
 class InMemoryCollection:
@@ -28,37 +38,120 @@ class InMemoryCollection:
         self.documents: list[str] = []
         self.metadatas: list[dict] = []
         self.ids: list[str] = []
+        self.embeddings = None
+        self.model = None
+
+        if SENTENCE_TRANSFORMERS_AVAILABLE:
+            try:
+                # Load a small, fast model for fallback
+                self.model = SentenceTransformer("all-MiniLM-L6-v2")
+                self.embeddings = []  # List of tensors or numpy arrays
+            except Exception as e:
+                logger.warning(f"Failed to load embedding model: {e}")
+                self.model = None
 
     def add(
         self, documents: list[str], metadatas: list[dict], ids: list[str] | None = None
     ):
         if ids is None:
             ids = [f"doc_{len(self.documents) + i}" for i in range(len(documents))]
+
         self.documents.extend(documents)
         self.metadatas.extend(metadatas)
         self.ids.extend(ids)
+
+        # Generate embeddings if model is available
+        if self.model:
+            new_embeddings = self.model.encode(documents)
+            if self.embeddings is None or len(self.embeddings) == 0:
+                self.embeddings = new_embeddings.tolist()
+            else:
+                self.embeddings.extend(new_embeddings.tolist())
+
         return {"ids": ids}
 
     def query(
         self, query_texts: list[str], n_results: int = 5, where: dict | None = None
     ):
-        # Very naive semantic search – returns the first ``n_results`` docs.
-        # ``where`` filtering is applied on metadata keys.
-        filtered = []
-        for doc, meta, doc_id in zip(self.documents, self.metadatas, self.ids):
+        # Filter first
+        indices = []
+        for i, (meta, doc_id) in enumerate(zip(self.metadatas, self.ids)):
             if where:
                 match = all(meta.get(k) == v for k, v in where.items())
                 if not match:
                     continue
-            filtered.append({"document": doc, "metadata": meta, "id": doc_id})
-        # Return up to n_results items.
-        results = filtered[:n_results]
-        return {
-            "documents": [r["document"] for r in results],
-            "metadatas": [r["metadata"] for r in results],
-            "distances": [0.0 for _ in results],  # dummy similarity
-            "ids": [r["id"] for r in results],
-        }
+            indices.append(i)
+
+        if not indices:
+            return {
+                "documents": [],
+                "metadatas": [],
+                "distances": [],
+                "ids": [],
+            }
+
+        # If we have embeddings and a model, do semantic search
+        if self.model and self.embeddings:
+            import numpy as np
+
+            query_embedding = self.model.encode(query_texts[0])
+
+            # Filter embeddings
+            filtered_embeddings = [self.embeddings[i] for i in indices]
+
+            # Calculate cosine similarity
+            # Sim(A, B) = (A . B) / (||A|| * ||B||)
+            # sentence-transformers util.cos_sim does this efficiently
+            from sentence_transformers import util
+
+            scores = util.cos_sim(query_embedding, filtered_embeddings)[0]
+
+            # Get top k
+            # torch.topk or just sort
+            scored_results = []
+            for idx, score in enumerate(scores):
+                original_idx = indices[idx]
+                scored_results.append(
+                    {
+                        "document": self.documents[original_idx],
+                        "metadata": self.metadatas[original_idx],
+                        "id": self.ids[original_idx],
+                        "score": float(score),
+                        "distance": 1.0
+                        - float(score),  # Chroma returns distance (lower is better)
+                    }
+                )
+
+            # Sort by score descending (distance ascending)
+            scored_results.sort(key=lambda x: x["score"], reverse=True)
+            results = scored_results[:n_results]
+
+            return {
+                "documents": [r["document"] for r in results],
+                "metadatas": [r["metadata"] for r in results],
+                "distances": [r["distance"] for r in results],
+                "ids": [r["id"] for r in results],
+            }
+
+        else:
+            # Fallback to naive "first N" if no embeddings
+            filtered = []
+            for i in indices:
+                filtered.append(
+                    {
+                        "document": self.documents[i],
+                        "metadata": self.metadatas[i],
+                        "id": self.ids[i],
+                    }
+                )
+
+            results = filtered[:n_results]
+            return {
+                "documents": [r["document"] for r in results],
+                "metadatas": [r["metadata"] for r in results],
+                "distances": [0.0 for _ in results],
+                "ids": [r["id"] for r in results],
+            }
 
     def get(self, ids: list[str]):
         docs = []

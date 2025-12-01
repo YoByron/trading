@@ -278,7 +278,7 @@ def main():
     print(f"Total Tickers: {data['meta']['total_tickers']}")
 
     # Top tickers
-    print(f"\nTop 10 Tickers by Sentiment Score:")
+    print("\nTop 10 Tickers by Sentiment Score:")
     print("-" * 80)
 
     sorted_tickers = sorted(
