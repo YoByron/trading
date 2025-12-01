@@ -241,6 +241,41 @@ class SmokeTests:
         except Exception as e:
             return False, f"Critical error detected: {e}"
 
+    def test_crypto_trade_verification(self):
+        """Test that crypto trade verification module works."""
+        try:
+            from tests.test_crypto_trade_verification import (
+                CryptoTradeVerificationTests,
+            )
+
+            tester = CryptoTradeVerificationTests()
+            results = tester.run_all_tests()
+
+            # At minimum, state file should exist and be valid
+            if results["failed"] > 0:
+                # Check if failures are just missing dependencies (OK)
+                critical_failures = [
+                    d
+                    for d in results["details"]
+                    if d["status"] == "❌"
+                    and "not installed" not in d["message"]
+                    and "not available" not in d["message"]
+                ]
+                if critical_failures:
+                    return (
+                        False,
+                        f"Crypto verification failed: {critical_failures[0]['message']}",
+                    )
+
+            return (
+                True,
+                f"Crypto verification tests passed ({results['passed']}/{len(results['details'])})",
+            )
+        except ImportError as e:
+            return False, f"Crypto verification module import failed: {e}"
+        except Exception as e:
+            return False, f"Crypto verification test failed: {e}"
+
     def run_all(self):
         """Run all smoke tests."""
         tests = [
@@ -250,6 +285,7 @@ class SmokeTests:
             ("Data Structures", self.test_data_structures),
             ("Risk Metrics Completeness", self.test_risk_metrics_completeness),
             ("No Critical Errors", self.test_no_critical_errors),
+            ("Crypto Trade Verification", self.test_crypto_trade_verification),
         ]
 
         results = []

@@ -520,16 +520,16 @@ def print_sentiment_summary(sentiment_data: Optional[Dict] = None):
     print()
     print(f"Total Tickers: {summary['total_tickers']}")
     print(
-        f"  Bullish:  {summary['bullish']} ({summary['bullish']/summary['total_tickers']*100:.0f}%)"
+        f"  Bullish:  {summary['bullish']} ({summary['bullish'] / summary['total_tickers'] * 100:.0f}%)"
     )
     print(
-        f"  Neutral:  {summary['neutral']} ({summary['neutral']/summary['total_tickers']*100:.0f}%)"
+        f"  Neutral:  {summary['neutral']} ({summary['neutral'] / summary['total_tickers'] * 100:.0f}%)"
     )
     print(
-        f"  Bearish:  {summary['bearish']} ({summary['bearish']/summary['total_tickers']*100:.0f}%)"
+        f"  Bearish:  {summary['bearish']} ({summary['bearish'] / summary['total_tickers'] * 100:.0f}%)"
     )
     print()
-    print(f"Confidence Levels:")
+    print("Confidence Levels:")
     print(f"  High:   {summary['high_confidence']}")
     print(f"  Medium: {summary['medium_confidence']}")
     print(f"  Low:    {summary['low_confidence']}")

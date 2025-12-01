@@ -15,6 +15,8 @@ from src.rag.collectors.reddit_collector import RedditCollector
 from src.rag.collectors.alphavantage_collector import AlphaVantageCollector
 from src.rag.collectors.tiktok_collector import TikTokCollector
 from src.rag.collectors.seekingalpha_collector import SeekingAlphaCollector
+from src.rag.collectors.stocktwits_collector import StockTwitsCollector
+from src.rag.collectors.bogleheads_collector import BogleheadsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,8 @@ class NewsOrchestrator:
             "alphavantage": AlphaVantageCollector(),
             "tiktok": TikTokCollector(),
             "seekingalpha": SeekingAlphaCollector(),
+            "stocktwits": StockTwitsCollector(),
+            "bogleheads": BogleheadsCollector(),
         }
 
         logger.info(f"Initialized {len(self.collectors)} news collectors")

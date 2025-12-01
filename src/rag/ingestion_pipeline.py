@@ -10,7 +10,7 @@ Orchestrates:
 from typing import List, Dict, Any
 from datetime import datetime
 import logging
-import json
+
 
 from src.rag.collectors.orchestrator import get_orchestrator
 from src.rag.vector_db.chroma_client import get_rag_db
@@ -63,7 +63,7 @@ class RAGIngestionPipeline:
         logger.info(f"{'='*60}")
 
         # Step 1: Collect news from all sources
-        logger.info(f"\n📰 Step 1: Collecting news...")
+        logger.info("\n📰 Step 1: Collecting news...")
         articles = self.orchestrator.collect_all_ticker_news(
             ticker, days_back=days_back
         )
@@ -79,7 +79,7 @@ class RAGIngestionPipeline:
             self.orchestrator.save_collected_news(articles, ticker=ticker)
 
         # Step 2: Prepare for embedding
-        logger.info(f"\n🧠 Step 2: Generating embeddings...")
+        logger.info("\n🧠 Step 2: Generating embeddings...")
 
         documents = []
         metadatas = []
@@ -113,7 +113,7 @@ class RAGIngestionPipeline:
             ids.append(f"{ticker}_{source}_{timestamp}_{i}")
 
         # Step 3: Add to vector database (ChromaDB will auto-embed)
-        logger.info(f"\n💾 Step 3: Storing in ChromaDB...")
+        logger.info("\n💾 Step 3: Storing in ChromaDB...")
 
         result = self.db.add_documents(
             documents=documents, metadatas=metadatas, ids=ids
@@ -126,7 +126,7 @@ class RAGIngestionPipeline:
 
             # Get updated stats
             stats = self.db.get_stats()
-            logger.info(f"\n📊 Database Stats:")
+            logger.info("\n📊 Database Stats:")
             logger.info(f"   Total documents: {stats.get('total_documents', 0)}")
             logger.info(f"   Unique tickers: {stats.get('unique_tickers', 0)}")
             logger.info(f"   Sources: {', '.join(stats.get('sources', []))}")
@@ -174,7 +174,7 @@ class RAGIngestionPipeline:
             Dict with status and count
         """
         logger.info(f"\n{'='*60}")
-        logger.info(f"🚀 Starting market news ingestion")
+        logger.info("🚀 Starting market news ingestion")
         logger.info(f"{'='*60}")
 
         # Collect market news

@@ -15,7 +15,7 @@ from typing import Dict, Optional, Tuple
 import json
 import logging
 import os
-import time
+
 
 import requests
 
@@ -286,7 +286,7 @@ class DCFValuationCalculator:
         This will raise DCFError to trigger Alpha Vantage fallback.
         """
         # Polygon.io v2 API endpoint for financials (may require higher tier)
-        url = f"https://api.polygon.io/v2/reference/financials"
+        url = "https://api.polygon.io/v2/reference/financials"
         params = {
             "ticker": ticker,
             "apiKey": self.polygon_api_key,
