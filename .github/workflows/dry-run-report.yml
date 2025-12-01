@@ -128,11 +128,37 @@ jobs:
 
           git clone "https://x-access-token:${WIKI_PAT}@github.com/${REPO}.wiki.git" wiki
           ts=$(date -u +"%Y-%m-%d %H:%M UTC")
+          # Prepare header: TLT Trend and Bogleheads TL;DR (if present)
+          header_file="wiki/_header.md"
+          : > "$header_file"
+
+          # TLT trend (SMA20/SMA50)
+          echo "## Treasuries (TLT) Trend" >> "$header_file"
+          python3 scripts/ci/compute_tlt_header.py >> "$header_file" || echo "- (error computing trend)" >> "$header_file"
+
+          # Bogleheads TL;DR (extract from dryrun.md if present)
+          if grep -q "Bogleheads Snapshot" dryrun.md 2>/dev/null; then
+            # Extract TL;DR line(s)
+            TLDR=$(grep -m1 "TL;DR:" dryrun.md || true)
+            echo "## Bogleheads Snapshot (Summary)" >> "$header_file"
+            if [ -n "$TLDR" ]; then
+              echo "$TLDR" >> "$header_file"
+            else
+              echo "- (no TL;DR found in artifact)" >> "$header_file"
+            fi
+            echo "" >> "$header_file"
+          fi
+
           page="wiki/Automated-Dry-Run.md"
           echo "# Automated Dry Run Report" > "$page"
           echo "" >> "$page"
           echo "Updated: $ts" >> "$page"
           echo "" >> "$page"
+          # Insert header (if any)
+          if [ -s "$header_file" ]; then
+            cat "$header_file" >> "$page"
+            echo "" >> "$page"
+          fi
           if [ -f dryrun.md ]; then
             cat dryrun.md >> "$page"
           else
