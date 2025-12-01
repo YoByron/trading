@@ -694,8 +694,10 @@ class CoreStrategy:
                     )
 
                     # 9b: BND - Bonds (15%)
-                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
-                    if bond_amount >= 0.50:
+                    # Alpaca minimum order size is $1.00 - orders below this will be rejected
+                    # At $6/day allocation: bond_amount = $0.90 (below $1.00 minimum)
+                    # Need daily allocation >= $6.67 to make bond_amount >= $1.00
+                    if bond_amount >= 1.00:
                         logger.info(
                             f"🔵 Attempting BND bond order: ${bond_amount:.2f} "
                             f"(threshold check: {bond_amount >= 0.50})"
@@ -722,8 +724,8 @@ class CoreStrategy:
                             )
 
                     # 9c: VNQ - REITs (15%)
-                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
-                    if reit_amount >= 0.50:
+                    # Alpaca minimum order size is $1.00 - orders below this will be rejected
+                    if reit_amount >= 1.00:
                         logger.info(
                             f"🏢 Attempting VNQ REIT order: ${reit_amount:.2f} "
                             f"(threshold check: {reit_amount >= 0.50})"
@@ -750,8 +752,10 @@ class CoreStrategy:
                             )
 
                     # 9d: TLT - Treasuries (10%) with simple momentum gate (SMA20 > SMA50)
-                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
-                    if treasury_amount >= 0.50:
+                    # Alpaca minimum order size is $1.00 - orders below this will be rejected
+                    # At $6/day allocation: treasury_amount = $0.60 (below $1.00 minimum)
+                    # Need daily allocation >= $10.00 to make treasury_amount >= $1.00
+                    if treasury_amount >= 1.00:
                         try:
                             import yfinance as _yf
 
