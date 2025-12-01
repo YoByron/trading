@@ -57,6 +57,19 @@ The entrypoint now bootstraps the funnel orchestrator (Momentum → RL → LLM �
 
 **Done!** System is ready for autonomous execution.
 
+### Useful CLIs
+
+```bash
+# Query latest Bogleheads snapshots (md/json)
+python3 scripts/bogleheads_query.py --limit 3 --format md
+
+# Ingest a one-off Bogleheads snapshot into the RAG store
+python3 scripts/bogleheads_ingest_once.py
+
+# Generate a dry-run report with ensemble + risk (json/md)
+python3 scripts/dry_run.py --symbols SPY QQQ --export-json out.json --export-md out.md
+```
+
 ---
 
 ## 📖 Project Documentation
@@ -183,6 +196,15 @@ Set `HYBRID_LLM_MODEL=claude-3-5-haiku-20241022` (default) or `gpt-4o-mini` to c
 - **Multi-tier Allocation**: ETFs (60%), Growth stocks (20%), IPOs (10%), Crowdfunding (10%)
 - **Risk Management**: Daily loss limits, max drawdown protection, position sizing
 - **Paper Trading**: 90-day validation before live trading
+
+### Treasuries Momentum Gate (New)
+- Allocates 10% of diversified daily allocation to `TLT` only when `SMA20 >= SMA50` (6-month window).
+- Skips TLT on weak momentum days to reduce drawdown.
+
+### Bogleheads Continuous Learning (New)
+- Ingests Bogleheads forum every 6 hours (CI). Stores snapshots in a Sentiment RAG (JSON fallback if embeddings unavailable).
+- Bogleheads agent contributes to ensemble decisions with adjustable weight and regime-based boost.
+- Nightly report includes latest snapshot with TL;DR when available.
 
 ### Data Sources & Sentiment
 - **Market Data**: Real-time via Alpaca API
