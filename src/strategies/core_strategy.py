@@ -696,30 +696,58 @@ class CoreStrategy:
                     # 9b: BND - Bonds (15%)
                     # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
                     if bond_amount >= 0.50:
+                        logger.info(
+                            f"🔵 Attempting BND bond order: ${bond_amount:.2f} "
+                            f"(threshold check: {bond_amount >= 0.50})"
+                        )
                         try:
-                            self.alpaca_trader.execute_order(
+                            logger.info(
+                                f"🔵 Executing BND order via Alpaca: symbol=BND, "
+                                f"amount=${bond_amount:.2f}, tier=T1_CORE"
+                            )
+                            bond_order = self.alpaca_trader.execute_order(
                                 symbol="BND",
                                 amount_usd=bond_amount,
                                 side="buy",
                                 tier="T1_CORE",
                             )
-                            logger.info(f"Bond ETF: BND ${bond_amount:.2f}")
+                            logger.info(
+                                f"✅ Bond ETF order executed successfully: BND ${bond_amount:.2f} "
+                                f"(order_id: {bond_order.get('id', 'N/A')})"
+                            )
                         except Exception as e:
-                            logger.warning(f"Bond order failed: {e}")
+                            logger.error(
+                                f"❌ Bond order FAILED: BND ${bond_amount:.2f} - {type(e).__name__}: {e}",
+                                exc_info=True,
+                            )
 
                     # 9c: VNQ - REITs (15%)
                     # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
                     if reit_amount >= 0.50:
+                        logger.info(
+                            f"🏢 Attempting VNQ REIT order: ${reit_amount:.2f} "
+                            f"(threshold check: {reit_amount >= 0.50})"
+                        )
                         try:
-                            self.alpaca_trader.execute_order(
+                            logger.info(
+                                f"🏢 Executing VNQ order via Alpaca: symbol=VNQ, "
+                                f"amount=${reit_amount:.2f}, tier=T1_CORE"
+                            )
+                            reit_order = self.alpaca_trader.execute_order(
                                 symbol="VNQ",
                                 amount_usd=reit_amount,
                                 side="buy",
                                 tier="T1_CORE",
                             )
-                            logger.info(f"REIT ETF: VNQ ${reit_amount:.2f}")
+                            logger.info(
+                                f"✅ REIT ETF order executed successfully: VNQ ${reit_amount:.2f} "
+                                f"(order_id: {reit_order.get('id', 'N/A')})"
+                            )
                         except Exception as e:
-                            logger.warning(f"REIT order failed: {e}")
+                            logger.error(
+                                f"❌ REIT order FAILED: VNQ ${reit_amount:.2f} - {type(e).__name__}: {e}",
+                                exc_info=True,
+                            )
 
                     # 9d: TLT - Treasuries (10%) with simple momentum gate (SMA20 > SMA50)
                     # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
@@ -743,21 +771,33 @@ class CoreStrategy:
 
                         try:
                             if gate:
-                                self.alpaca_trader.execute_order(
+                                logger.info(
+                                    f"📈 Attempting TLT treasury order: ${treasury_amount:.2f} "
+                                    f"(momentum gate: SMA20>=SMA50={gate})"
+                                )
+                                logger.info(
+                                    f"📈 Executing TLT order via Alpaca: symbol=TLT, "
+                                    f"amount=${treasury_amount:.2f}, tier=T1_CORE"
+                                )
+                                treasury_order = self.alpaca_trader.execute_order(
                                     symbol="TLT",
                                     amount_usd=treasury_amount,
                                     side="buy",
                                     tier="T1_CORE",
                                 )
                                 logger.info(
-                                    f"Treasury ETF: TLT ${treasury_amount:.2f} (SMA20>=SMA50: {gate})"
+                                    f"✅ Treasury ETF order executed successfully: TLT ${treasury_amount:.2f} "
+                                    f"(SMA20>=SMA50: {gate}, order_id: {treasury_order.get('id', 'N/A')})"
                                 )
                             else:
                                 logger.info(
-                                    f"Skipping TLT (momentum gate off: SMA20<SMA50), would-be ${treasury_amount:.2f}"
+                                    f"⏭️  Skipping TLT (momentum gate off: SMA20<SMA50), would-be ${treasury_amount:.2f}"
                                 )
                         except Exception as e:
-                            logger.warning(f"Treasury order failed: {e}")
+                            logger.error(
+                                f"❌ Treasury order FAILED: TLT ${treasury_amount:.2f} - {type(e).__name__}: {e}",
+                                exc_info=True,
+                            )
 
                     # Set stop-loss for momentum ETF
                     if order.stop_loss:

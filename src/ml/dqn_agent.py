@@ -13,13 +13,13 @@ generalization and handling of continuous state spaces.
 """
 
 import torch
-import torch.nn as nn
+
 import torch.optim as optim
 import numpy as np
 import logging
-import json
+
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, Optional
 from collections import deque
 import random
 

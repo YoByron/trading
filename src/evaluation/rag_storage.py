@@ -5,11 +5,11 @@ Stores evaluation results in ChromaDB for semantic search and pattern detection.
 FREE - Uses existing ChromaDB infrastructure.
 """
 
-import json
+
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from datetime import datetime
-from pathlib import Path
+
 import sys
 import os
 
@@ -124,12 +124,12 @@ class EvaluationRAGStorage:
         # Critical issues
         critical_issues = evaluation.get("critical_issues", [])
         if critical_issues:
-            lines.append(f"\nCRITICAL ISSUES:")
+            lines.append("CRITICAL ISSUES:")
             for issue in critical_issues:
                 lines.append(f"  - {issue}")
 
         # Trade result context
-        lines.append(f"\nTrade Result:")
+        lines.append("Trade Result:")
         lines.append(f"  Amount: ${trade_result.get('amount', 0.0):.2f}")
         lines.append(f"  Status: {trade_result.get('status', 'unknown')}")
 

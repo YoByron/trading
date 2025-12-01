@@ -1,4 +1,4 @@
-```
+
 """
 Adapter to integrate deepagents with existing agent framework.
 
@@ -71,7 +71,7 @@ class DeepAgentsAdapter(TradingAgent):
                     ),
                 },
             )
-        except Exception as e:
+        except Exception:
             logger.exception(f"DeepAgentsAdapter {self.agent_name} failed")
             return AgentResult(
                 name=self.agent_name,

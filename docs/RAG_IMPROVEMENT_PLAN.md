@@ -12,10 +12,11 @@ Based on deep research into state-of-the-art financial RAG architectures, here i
     -   Use `sentence-transformers` for semantic scoring.
     -   **Reciprocal Rank Fusion (RRF)** to combine results.
 
-### 🔄 Re-Ranking (Next Step)
+### ✅ Re-Ranking (Implemented)
 **Concept**: Retrieve a larger set of candidates (e.g., Top 50) and re-score them using a high-precision Cross-Encoder model.
 -   **Why**: Bi-encoders (used for retrieval) are fast but less accurate. Cross-encoders are slow but highly accurate.
 -   **Tool**: `sentence-transformers/cross-encoder`.
+-   **Status**: Active in `InMemoryCollection`. Uses `ms-marco-MiniLM-L-6-v2`.
 
 ## 2. Strategic Enhancements (Medium Effort)
 

@@ -11,13 +11,10 @@ Improvements over basic PPO:
 """
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 import numpy as np
 import logging
-from typing import Dict, List, Tuple, Optional
-from collections import deque
+from typing import Dict, List, Tuple
 from dataclasses import dataclass
 
 from .networks import LSTMPPO

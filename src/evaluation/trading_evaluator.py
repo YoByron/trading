@@ -15,7 +15,7 @@ import json
 import logging
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date, timedelta
-from typing import Dict, List, Any, Optional, Optional
+from typing import Dict, List, Any, Optional
 from pathlib import Path
 import sys
 import os

@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from langchain_core.tools import tool
 
-from mcp import MCPClient, default_client
+from mcp import default_client
 
 logger = logging.getLogger(__name__)
 
