@@ -29,7 +29,8 @@ PyPDF2>=3.0.0  # PDF parsing for Berkshire letters
 
 # YouTube Monitoring
 youtube-transcript-api==1.2.3
-yt-dlp==2025.11.12
+# Pin to a known, published release to avoid install failures
+yt-dlp==2024.10.22
 
 # Configuration
 python-dotenv==1.2.1

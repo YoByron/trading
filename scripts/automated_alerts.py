@@ -9,11 +9,10 @@ Implements CTO/CFO Decision #4: Automated alerts for:
 - Stop-loss triggers
 """
 
-import os
 import sys
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
@@ -151,6 +150,43 @@ def check_stop_loss_alerts(positions: List[Dict]) -> List[str]:
     return alerts
 
 
+def check_tlt_gate_status() -> List[str]:
+    """Check TLT momentum gate status and return alerts if gate opened."""
+    alerts = []
+    try:
+        from scripts.monitor_tlt_momentum import (
+            check_tlt_gate_change,
+            get_tlt_momentum_status,
+        )
+
+        gate_open, status = get_tlt_momentum_status()
+
+        if "error" not in status:
+            gate_change = check_tlt_gate_change()
+
+            if gate_change:
+                if gate_change["gate_opened"]:
+                    alerts.append(
+                        f"🟢 TLT Momentum Gate OPENED - Treasuries trading now enabled "
+                        f"(SMA20=${status['sma20']:.2f} >= SMA50=${status['sma50']:.2f})"
+                    )
+                else:
+                    alerts.append(
+                        f"🔴 TLT Momentum Gate CLOSED - Treasuries trading paused "
+                        f"(SMA20=${status['sma20']:.2f} < SMA50=${status['sma50']:.2f})"
+                    )
+            elif not gate_open:
+                # Gate is closed but no change - just informational
+                alerts.append(
+                    f"⏸️  TLT Gate CLOSED - No trades until SMA20 crosses above SMA50 "
+                    f"(Current: SMA20=${status['sma20']:.2f}, SMA50=${status['sma50']:.2f})"
+                )
+    except Exception as e:
+        logger.warning(f"Could not check TLT gate status: {e}")
+
+    return alerts
+
+
 def generate_alerts(suppress_known: bool = False):
     """
     Generate all alerts.
@@ -193,6 +229,10 @@ def generate_alerts(suppress_known: bool = False):
     stop_loss_alerts = check_stop_loss_alerts(positions)
     all_alerts.extend(stop_loss_alerts)
 
+    # Check TLT momentum gate status
+    tlt_alerts = check_tlt_gate_status()
+    all_alerts.extend(tlt_alerts)
+
     # Display alerts
     if all_alerts:
         print("\n📋 ALERTS:")
@@ -231,6 +271,6 @@ if __name__ == "__main__":
     try:
         exit_code = generate_alerts(suppress_known=args.suppress_known)
         sys.exit(exit_code)
-    except Exception as e:
+    except Exception:
         logger.exception("Alert generation failed")
         sys.exit(1)
