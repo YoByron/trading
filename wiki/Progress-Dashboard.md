@@ -238,6 +238,17 @@
 | **Python Strategies** | ✅ Active (Fallback) |
 | **Sentiment RAG** | ✅ Active |
 
+### TLT Momentum Gate Monitoring
+
+| Component | Status |
+|-----------|--------|
+| **TLT Monitoring** | ✅ Active |
+| **Gate Status** | 🔴 CLOSED (SMA20=$89.58 < SMA50=$89.75) |
+| **Allocation Ready** | $90/day when gate opens |
+| **Telegram Alerts** | ✅ Configured |
+| **Last Check** | 2025-12-01 10:51 AM ET |
+| **Integration** | Daily trading workflow + Automated alerts |
+
 ---
 
 ## 📈 Time-Series & Equity Curve
