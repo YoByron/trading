@@ -7,7 +7,7 @@ sentence-transformers or other RAG dependencies.
 
 import pytest
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 class TestCryptoTradingImports:
@@ -24,7 +24,7 @@ class TestCryptoTradingImports:
 
     def test_autonomous_trader_imports(self):
         """Test that autonomous_trader can be imported."""
-        from scripts.autonomous_trader import execute_crypto_trading, is_weekend
+        from scripts.autonomous_trader import is_weekend
 
         # Should be able to call is_weekend
         result = is_weekend()
@@ -44,8 +44,8 @@ class TestCryptoTradingImports:
         modules_before = set(sys.modules.keys())
 
         # Import crypto trading components
-        from scripts.autonomous_trader import execute_crypto_trading
-        from src.strategies.crypto_strategy import CryptoStrategy
+        from scripts.autonomous_trader import execute_crypto_trading  # noqa: F401
+        from src.strategies.crypto_strategy import CryptoStrategy  # noqa: F401
 
         # Check if sentiment_store was imported
         modules_after = set(sys.modules.keys())

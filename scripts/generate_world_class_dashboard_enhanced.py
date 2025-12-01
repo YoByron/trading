@@ -884,7 +884,7 @@ def generate_world_class_dashboard() -> str:
 ### Verification Status
 
 """
-    
+
     # Get crypto strategy info
     strategies = system_state.get("strategies", {})
     tier5 = strategies.get("tier5", {})
@@ -897,20 +897,20 @@ def generate_world_class_dashboard() -> str:
     verification_details = []
     try:
         from tests.test_crypto_trade_verification import CryptoTradeVerificationTests
-        
+
         tester = CryptoTradeVerificationTests()
         results = tester.run_all_tests()
-        
+
         passed = results["passed"]
         total = len(results["details"])
-        
+
         if passed == total:
             verification_status = f"✅ All Passed ({passed}/{total})"
         elif passed > 0:
             verification_status = f"⚠️ Partial ({passed}/{total} passed)"
         else:
             verification_status = f"❌ Failed ({passed}/{total})"
-        
+
         # Extract critical verification details
         for detail in results["details"]:
             if detail["test"] == "Positions match state":
@@ -920,13 +920,17 @@ def generate_world_class_dashboard() -> str:
                 elif detail["status"] == "✅":
                     verification_details.append("✅ Positions match state tracking")
             elif detail["test"] == "Crypto strategy tracked":
-                verification_details.append(f"✅ Crypto strategy tracked: {tier5.get('name', 'Unknown')}")
+                verification_details.append(
+                    f"✅ Crypto strategy tracked: {tier5.get('name', 'Unknown')}"
+                )
             elif detail["test"] == "State file valid JSON":
                 verification_details.append("✅ State file is valid")
-        
+
     except ImportError:
         verification_status = "⚠️ Verification module not available"
-        verification_details.append("Verification tests require alpaca-py (available in CI)")
+        verification_details.append(
+            "Verification tests require alpaca-py (available in CI)"
+        )
     except Exception as e:
         verification_status = f"❌ Verification failed: {str(e)[:50]}"
         verification_details.append(f"Error running verification: {str(e)}")
@@ -942,7 +946,7 @@ def generate_world_class_dashboard() -> str:
 ### Verification Details
 
 """
-    
+
     if verification_details:
         for detail in verification_details:
             dashboard += f"{detail}\n\n"

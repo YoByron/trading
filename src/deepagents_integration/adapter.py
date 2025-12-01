@@ -1,3 +1,4 @@
+```
 """
 Adapter to integrate deepagents with existing agent framework.
 

@@ -5,8 +5,8 @@ This test verifies that the lazy import fix works correctly.
 """
 
 import pytest
-import sys
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import patch
 
 
 def test_embedder_import_without_sentence_transformers():
@@ -24,10 +24,10 @@ def test_embedder_import_without_sentence_transformers():
 def test_embedder_import_with_sentence_transformers():
     """Test that embedder works when sentence_transformers is available."""
     try:
-        from sentence_transformers import SentenceTransformer
+        import sentence_transformers  # noqa: F401
 
         # If available, test that it works
-        from src.rag.vector_db.embedder import get_embedder, NewsEmbedder
+        from src.rag.vector_db.embedder import NewsEmbedder
 
         # Should be able to create embedder
         embedder = NewsEmbedder()

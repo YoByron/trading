@@ -121,7 +121,7 @@ def collect_alpha_vantage_signals(
             continue
 
         avg_sent = statistics.mean(sentiments)
-            score = max(-100.0, min(100.0, (avg_sent - 0.5) * 200))
+        score = max(-100.0, min(100.0, (avg_sent - 0.5) * 200))
         confidence = min(1.0, len(sentiments) / 10.0)
 
         contributions[ticker.upper()].append(

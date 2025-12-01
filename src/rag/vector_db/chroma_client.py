@@ -24,6 +24,14 @@ except ImportError:
         "sentence-transformers not found. InMemoryCollection will use dummy similarity."
     )
 
+try:
+    from rank_bm25 import BM25Okapi
+
+    BM25_AVAILABLE = True
+except ImportError:
+    BM25_AVAILABLE = False
+    logger.warning("rank_bm25 not found. Hybrid search disabled.")
+
 
 # Simple in‑memory collection fallback used when ChromaDB cannot be imported.
 class InMemoryCollection:
@@ -40,6 +48,7 @@ class InMemoryCollection:
         self.ids: list[str] = []
         self.embeddings = None
         self.model = None
+        self.bm25 = None
 
         if SENTENCE_TRANSFORMERS_AVAILABLE:
             try:
@@ -68,6 +77,11 @@ class InMemoryCollection:
             else:
                 self.embeddings.extend(new_embeddings.tolist())
 
+        # Update BM25 index
+        if BM25_AVAILABLE:
+            tokenized_corpus = [doc.lower().split() for doc in self.documents]
+            self.bm25 = BM25Okapi(tokenized_corpus)
+
         return {"ids": ids}
 
     def query(
@@ -93,38 +107,55 @@ class InMemoryCollection:
         # If we have embeddings and a model, do semantic search
         if self.model and self.embeddings:
             import numpy as np
-
-            query_embedding = self.model.encode(query_texts[0])
-
-            # Filter embeddings
-            filtered_embeddings = [self.embeddings[i] for i in indices]
-
-            # Calculate cosine similarity
-            # Sim(A, B) = (A . B) / (||A|| * ||B||)
-            # sentence-transformers util.cos_sim does this efficiently
             from sentence_transformers import util
 
-            scores = util.cos_sim(query_embedding, filtered_embeddings)[0]
+            # 1. Semantic Search
+            query_embedding = self.model.encode(query_texts[0])
+            filtered_embeddings = [self.embeddings[i] for i in indices]
+            semantic_scores = util.cos_sim(query_embedding, filtered_embeddings)[0]
 
-            # Get top k
-            # torch.topk or just sort
-            scored_results = []
-            for idx, score in enumerate(scores):
+            # 2. BM25 Search (if available)
+            bm25_scores = []
+            if BM25_AVAILABLE and self.bm25:
+                # We need to score ONLY the filtered documents.
+                # BM25Okapi doesn't easily support subset scoring without re-indexing or manual calculation.
+                # For this simple fallback, we'll score ALL and then filter.
+                tokenized_query = query_texts[0].lower().split()
+                all_bm25_scores = self.bm25.get_scores(tokenized_query)
+                bm25_scores = [all_bm25_scores[i] for i in indices]
+            else:
+                bm25_scores = [0.0] * len(indices)
+
+            # 3. Hybrid Fusion (Reciprocal Rank Fusion - RRF)
+            # or simple weighted sum. Let's do weighted sum for simplicity in this fallback.
+            # Normalize BM25 scores to 0-1 range roughly
+            if bm25_scores and max(bm25_scores) > 0:
+                max_bm25 = max(bm25_scores)
+                bm25_scores = [s / max_bm25 for s in bm25_scores]
+
+            # Combine: 0.7 Semantic + 0.3 Keyword
+            final_results = []
+            for idx, (sem_score, bm_score) in enumerate(
+                zip(semantic_scores, bm25_scores)
+            ):
                 original_idx = indices[idx]
-                scored_results.append(
+
+                # Hybrid score
+                hybrid_score = (0.7 * float(sem_score)) + (0.3 * float(bm_score))
+
+                final_results.append(
                     {
                         "document": self.documents[original_idx],
                         "metadata": self.metadatas[original_idx],
                         "id": self.ids[original_idx],
-                        "score": float(score),
-                        "distance": 1.0
-                        - float(score),  # Chroma returns distance (lower is better)
+                        "score": hybrid_score,
+                        "distance": 1.0 - hybrid_score,
                     }
                 )
 
-            # Sort by score descending (distance ascending)
-            scored_results.sort(key=lambda x: x["score"], reverse=True)
-            results = scored_results[:n_results]
+            # Sort by score descending
+            final_results.sort(key=lambda x: x["score"], reverse=True)
+            results = final_results[:n_results]
 
             return {
                 "documents": [r["document"] for r in results],

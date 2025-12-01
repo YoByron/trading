@@ -26,18 +26,21 @@ class StockTwitsCollector(BaseNewsCollector):
     def __init__(self):
         super().__init__(source_name="stocktwits")
 
-    def collect(self, ticker: str, limit: int = 30) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
         """
         Collect messages for a specific ticker.
 
         Args:
             ticker: Stock symbol (e.g., "AAPL")
-            limit: Number of messages to retrieve (default 30)
+            days_back: Not used directly by API limit, but good for interface consistency
 
         Returns:
             List of dictionaries containing message data
         """
         url = self.BASE_URL.format(symbol=ticker)
+        limit = 30  # Default limit
 
         try:
             response = requests.get(url)
@@ -58,20 +61,23 @@ class StockTwitsCollector(BaseNewsCollector):
             results = []
             for msg in messages[:limit]:
                 # Extract sentiment if available
-                sentiment = "Neutral"
+                sentiment_label = "Neutral"
                 if msg.get("entities") and msg["entities"].get("sentiment"):
-                    sentiment = msg["entities"]["sentiment"]["basic"]
+                    sentiment_label = msg["entities"]["sentiment"]["basic"]
 
-                entry = {
-                    "source": "stocktwits",
-                    "ticker": ticker,
-                    "content": msg.get("body", ""),
-                    "url": f"https://stocktwits.com/message/{msg.get('id')}",
-                    "published_at": msg.get("created_at"),
-                    "sentiment": sentiment,
-                    "author": msg.get("user", {}).get("username", "unknown"),
-                    "raw_score": 0.0,  # Placeholder, would need NLP to score properly
-                }
+                # Normalize using base class method
+                entry = self.normalize_article(
+                    title=f"StockTwits: {ticker}",
+                    content=msg.get("body", ""),
+                    url=f"https://stocktwits.com/message/{msg.get('id')}",
+                    published_date=msg.get("created_at", datetime.now().isoformat()),
+                    ticker=ticker,
+                    sentiment=0.0,  # Placeholder
+                )
+                # Add extra metadata
+                entry["author"] = msg.get("user", {}).get("username", "unknown")
+                entry["sentiment_label"] = sentiment_label
+
                 results.append(entry)
 
             logger.info(
@@ -83,10 +89,14 @@ class StockTwitsCollector(BaseNewsCollector):
             logger.error(f"Error collecting from StockTwits for {ticker}: {e}")
             return []
 
+    def collect_market_news(self, days_back: int = 1) -> List[Dict[str, Any]]:
+        """StockTwits is ticker-centric, no general market news."""
+        return []
+
     def collect_daily_snapshot(self, tickers: List[str]) -> List[Dict[str, Any]]:
         """Collect latest messages for all tracked tickers."""
         all_messages = []
         for ticker in tickers:
-            messages = self.collect(ticker)
+            messages = self.collect_ticker_news(ticker)
             all_messages.extend(messages)
         return all_messages

@@ -45,10 +45,7 @@ import yfinance as yf
 
 # Import project modules
 from src.core.multi_llm_analysis import MultiLLMAnalyzer
-from src.core.multi_llm_analysis_optimized import (
-    OptimizedMultiLLMAnalyzer,
-    RequestPriority,
-)
+from src.core.multi_llm_analysis_optimized import OptimizedMultiLLMAnalyzer
 from src.core.alpaca_trader import AlpacaTrader
 from src.core.risk_manager import RiskManager
 from src.utils.sentiment_loader import (
@@ -57,11 +54,7 @@ from src.utils.sentiment_loader import (
     get_market_regime,
     get_sentiment_history,
 )
-from src.safety.graham_buffett_safety import (
-    get_global_safety_analyzer,
-    GrahamBuffettSafety,
-    SafetyRating,
-)
+from src.safety.graham_buffett_safety import get_global_safety_analyzer
 
 # Optional LLM Council integration
 try:
@@ -320,6 +313,22 @@ class CoreStrategy:
             except Exception as e:
                 logger.warning(f"Failed to initialize LLM Council: {e}")
                 self.llm_council_enabled = False
+
+        # Initialize Intelligent Investor safety analyzer
+        self.use_intelligent_investor = (
+            os.getenv("USE_INTELLIGENT_INVESTOR", "true").lower() == "true"
+        )
+        if self.use_intelligent_investor:
+            try:
+                self.safety_analyzer = get_global_safety_analyzer()
+                logger.info(
+                    "Intelligent Investor safety analyzer initialized for CoreStrategy"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize safety analyzer: {e}")
+                self.safety_analyzer = None
+        else:
+            self.safety_analyzer = None
 
         allocation_mode = "VCA" if self.use_vca else "DCA"
         logger.info(

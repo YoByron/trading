@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 STATE_FILE = Path("data/agent_state.json")
 
 
+def get_anthropic_api_key():
+    """Get Anthropic API key from environment."""
+    return os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+
+
 def load_state() -> Dict[str, Any]:
     """Load agent state from persistent storage."""
     if STATE_FILE.exists():
@@ -167,7 +172,7 @@ def self_heal() -> None:
         new_client = Anthropic(api_key=api_key)
 
         # Test the client
-        test_response = new_client.messages.create(
+        new_client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=10,
             messages=[{"role": "user", "content": "test"}],
@@ -190,7 +195,7 @@ def self_heal() -> None:
 
         # Action 4: Fallback to safe mode
         try:
-            from src.agents.fallback_strategy import FallbackStrategy
+            from src.agents.fallback_strategy import FallbackStrategy  # noqa: F401
 
             # Signal that we're in fallback mode
             state = load_state()

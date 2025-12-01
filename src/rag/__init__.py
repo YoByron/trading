@@ -13,7 +13,7 @@ from .config import get_config, validate_config
 __version__ = "1.0.0"
 
 try:  # Optional Chromadb-backed components
-    from .vector_db import ChromaClient, Embedder, Retriever  # type: ignore
+    from .vector_db import ChromaClient, Embedder, Retriever  # type: ignore  # noqa: F401
 
     __all__ = [
         "ChromaClient",

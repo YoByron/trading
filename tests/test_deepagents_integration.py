@@ -25,7 +25,7 @@ def test_deepagents_import():
     """Test that DeepAgents modules can be imported."""
     print("Testing DeepAgents imports...")
     try:
-        from src.deepagents_integration.adapter import (
+        from src.deepagents_integration.adapter import (  # noqa: F401
             create_analysis_agent_adapter,
             create_research_agent_adapter,
         )
@@ -77,7 +77,7 @@ def test_main_orchestrator_import():
     """Test that TradingOrchestrator can be imported with DeepAgents integration."""
     print("\nTesting TradingOrchestrator import...")
     try:
-        from src.main import TradingOrchestrator
+        from src.main import TradingOrchestrator  # noqa: F401
 
         print("✅ TradingOrchestrator imports successfully with DeepAgents integration")
         return True
