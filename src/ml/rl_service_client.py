@@ -4,9 +4,8 @@ RL Service Client - Integration with cloud RL providers (Vertex AI RL, Azure ML,
 
 import os
 import logging
-import json
 from typing import Dict, Any, Optional
-from pathlib import Path
+
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -224,13 +223,12 @@ class RLServiceClient:
         # Use Vertex AI SDK if available
         if self.client and self.project_id:
             try:
-                from google.cloud.aiplatform import custom_job
-                from google.cloud.aiplatform import pipeline_jobs
+
 
                 # Create custom training job
                 # Note: This is a simplified example - actual RL training would require
                 # a proper training container and pipeline configuration
-                logger.info(f"   Using Vertex AI Custom Job API")
+                logger.info("   Using Vertex AI Custom Job API")
 
                 job_info = {
                     "job_id": f"vertex_ai_{job_name}_{int(datetime.now().timestamp())}",

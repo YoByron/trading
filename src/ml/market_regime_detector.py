@@ -4,7 +4,6 @@ Detects bull, bear, and sideways markets for regime-aware training.
 """
 
 import numpy as np
-import pandas as pd
 from typing import Dict, Any, Optional
 import logging
 

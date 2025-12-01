@@ -59,7 +59,7 @@ def crypto_enabled() -> bool:
 def execute_crypto_trading() -> None:
     """Execute crypto trading strategy."""
     from src.core.alpaca_trader import AlpacaTrader
-    from src.core.risk_manager import RiskManager
+    from src.risk.unified import UnifiedRiskManager as RiskManager
     from src.strategies.crypto_strategy import CryptoStrategy
 
     logger = setup_logging()
@@ -70,7 +70,14 @@ def execute_crypto_trading() -> None:
     try:
         # Initialize crypto strategy
         trader = AlpacaTrader(paper=True)
-        risk_manager = RiskManager()
+        risk_manager = RiskManager(
+            full_params=dict(
+                max_daily_loss_pct=2.0,
+                max_position_size_pct=CryptoStrategy.MAX_POSITION_PCT * 100,
+                max_drawdown_pct=15.0,
+                max_consecutive_losses=3,
+            )
+        )
 
         crypto_strategy = CryptoStrategy(
             trader=trader,

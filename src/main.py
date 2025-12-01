@@ -1,10 +1,16 @@
 """
-Trading System Orchestrator - Main Entry Point
+Trading System Orchestrator - Legacy Entry Point (DEPRECATED)
 
-This module serves as the main entry point for the automated trading system,
-coordinating all trading strategies on a defined schedule.
+DEPRECATION NOTICE:
+- This scheduler-based orchestrator is deprecated.
+- Canonical entry point is `scripts/autonomous_trader.py`, which boots the
+  new hybrid funnel orchestrator in `src/orchestrator/main.py` and writes
+  structured telemetry to `data/audit_trail/hybrid_funnel_runs.jsonl`.
 
-The orchestrator manages:
+This module remains for backward compatibility and will be removed after the
+R&D phase. Please migrate any invocations to the canonical entry.
+
+The legacy orchestrator manages:
 - CoreStrategy (Tier 1): Daily execution at 9:35 AM ET
 - GrowthStrategy (Tier 2): Weekly execution on Mondays at 9:35 AM ET
 - IPOStrategy (Tier 3): Weekly check for IPO opportunities
@@ -21,6 +27,11 @@ Features:
 Author: Trading System
 Created: 2025-10-28
 """
+
+import logging as _logging  # Added for deprecation warning on import
+_logging.getLogger(__name__).warning(
+    "src/main.py is deprecated. Use scripts/autonomous_trader.py (hybrid funnel)."
+)
 
 import os
 import sys

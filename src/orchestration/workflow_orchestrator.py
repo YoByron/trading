@@ -8,12 +8,12 @@ Implements AgentKit-style workflow automation:
 - Workflow state management
 """
 
-import os
+
 import json
 import logging
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from pathlib import Path
 from enum import Enum
 
