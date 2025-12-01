@@ -39,13 +39,26 @@ class LegacyMomentumCalculator:
     """
 
     def __init__(self, lookback_days: int = 120) -> None:
+        import os
+
         self.lookback_days = lookback_days
         self._provider = get_market_data_provider()
+
+        # Runtime tunables (env)
+        self.macd_threshold = float(os.getenv("MOMENTUM_MACD_THRESHOLD", "0.0"))
+        self.rsi_overbought = float(os.getenv("MOMENTUM_RSI_OVERBOUGHT", "70.0"))
+        self.volume_min = float(os.getenv("MOMENTUM_VOLUME_MIN", "0.8"))
 
     def evaluate(self, symbol: str) -> MomentumPayload:
         result = self._provider.get_daily_bars(symbol, lookback_days=self.lookback_days)
         hist = result.data
-        score, indicators = calculate_technical_score(hist, symbol)
+        score, indicators = calculate_technical_score(
+            hist,
+            symbol,
+            macd_threshold=self.macd_threshold,
+            rsi_overbought=self.rsi_overbought,
+            volume_min=self.volume_min,
+        )
 
         indicators = indicators or {}
         indicators["data_source"] = result.source.value

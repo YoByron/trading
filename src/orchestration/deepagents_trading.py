@@ -10,10 +10,7 @@ Based on LangChain DeepAgents demo:
 - Middleware for human-in-the-loop verification
 """
 
-import os
-import json
-import logging
-import asyncio
+
 from datetime import datetime
 from typing import Dict, List, Any
 from pathlib import Path
@@ -293,7 +290,6 @@ Save signals to a file.
     async def _execute_risk_validation(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute risk validation step."""
         # Use existing risk agent
-        from src.agents.risk_agent import RiskAgent
 
         # risk_agent = RiskAgent()
 
@@ -303,7 +299,6 @@ Save signals to a file.
     async def _execute_trade(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute trade step (with approval gates)."""
         # Use existing execution agent
-
 
         # This would execute approved trades
         return {

@@ -6,7 +6,7 @@ Collects sentiment and messages from StockTwits API.
 
 import logging
 import requests
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from datetime import datetime
 
 from src.rag.collectors.base_collector import BaseNewsCollector

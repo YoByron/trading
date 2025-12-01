@@ -246,19 +246,7 @@ class MarketDataProvider:
             if metrics.total_requests > 0
         }
 
-    def get_performance_metrics(self) -> Dict[str, Dict[str, float]]:
-        """Get performance metrics for all data sources."""
-        return {
-            source.value: {
-                "total_requests": metrics.total_requests,
-                "successful_requests": metrics.successful_requests,
-                "failed_requests": metrics.failed_requests,
-                "success_rate": metrics.success_rate,
-                "avg_latency_ms": metrics.avg_latency_ms,
-            }
-            for source, metrics in self._metrics.items()
-            if metrics.total_requests > 0
-        }
+
 
     def get_daily_bars(
         self,

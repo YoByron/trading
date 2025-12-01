@@ -33,7 +33,10 @@ from src.utils.sentiment_loader import (
 )
 from src.utils.dcf_valuation import get_global_dcf_calculator, DCFValuationCalculator
 from src.utils.external_signal_loader import load_latest_signals, get_signal_for_ticker
+
 from src.safety.graham_buffett_safety import get_global_safety_analyzer
+from src.rag.knowledge_graph import get_knowledge_graph
+from src.rag.vector_db.chroma_client import get_rag_db
 
 
 # Configure logging
@@ -405,6 +408,14 @@ class GrowthStrategy:
         else:
             self.safety_analyzer = None
 
+        # Initialize RAG Database
+        try:
+            self.rag_db = get_rag_db()
+            logger.info("RAG Database initialized for GrowthStrategy")
+        except Exception as e:
+            logger.warning(f"Failed to initialize RAG Database: {e}")
+            self.rag_db = None
+
         try:
             mos_env = float(os.getenv("DCF_MARGIN_OF_SAFETY", "0.15"))
         except ValueError:
@@ -669,7 +680,7 @@ class GrowthStrategy:
 
         # Get consensus scores from LLM analyzer + apply sentiment + DCF filter
         filtered_candidates: List[CandidateStock] = []
-        for candidate in candidates:
+        for i, candidate in enumerate(candidates):
             technical_data = {
                 "momentum": candidate.momentum,
                 "rsi": candidate.rsi,
@@ -679,6 +690,25 @@ class GrowthStrategy:
                 "volume_ratio": candidate.volume_ratio,
                 "technical_score": candidate.technical_score,
             }
+            # Expand candidate list with graph‑based related tickers (GraphRAG)
+            related = self.kg.get_related_tickers(candidate.symbol, top_k=3)
+            for rel_ticker, _weight in related:
+                if rel_ticker not in [c.symbol for c in candidates]:
+                    # Create a lightweight placeholder CandidateStock for the related ticker
+                    placeholder = CandidateStock(
+                        symbol=rel_ticker,
+                        technical_score=0.0,
+                        consensus_score=0.0,
+                        current_price=0.0,
+                        momentum=0.0,
+                        rsi=0.0,
+                        macd_value=0.0,
+                        macd_signal=0.0,
+                        macd_histogram=0.0,
+                        volume_ratio=0.0,
+                    )
+                    candidates.append(placeholder)
+                    logger.debug(f"GraphRAG: added related ticker {rel_ticker} for {candidate.symbol}")
 
             # Get LLM consensus score
             consensus_score = self.llm_analyzer.get_consensus_score(
@@ -688,34 +718,55 @@ class GrowthStrategy:
 
             # Apply sentiment modifier if enabled
             sentiment_modifier = 0
-            if self.use_sentiment and self.sentiment_data:
-                try:
-                    sent_score, sent_confidence, _ = get_ticker_sentiment(
-                        candidate.symbol,
-                        self.sentiment_data,
-                        default_score=50.0,  # Neutral default
-                    )
+            if self.use_sentiment:
+                # 1. Try RAG-based sentiment first (more accurate/recent)
+                rag_sentiment_score = 0
+                rag_article_count = 0
 
-                    # Convert 0-100 sentiment to -15 to +15 point modifier
-                    # Weight by confidence: high=1.0, medium=0.6, low=0.3
-                    confidence_weight = {"high": 1.0, "medium": 0.6, "low": 0.3}.get(
-                        sent_confidence, 0.3
-                    )
+                if self.rag_db:
+                    try:
+                        # Fetch recent news from RAG
+                        rag_news = self.rag_db.get_ticker_news(candidate.symbol, n_results=5)
+                        if rag_news:
+                            # Simple average of sentiment scores stored in metadata
+                            scores = [n["metadata"].get("sentiment", 0.5) for n in rag_news]
+                            rag_sentiment_score = sum(scores) / len(scores) * 100  # Convert 0-1 to 0-100
+                            rag_article_count = len(rag_news)
+                            logger.debug(f"{candidate.symbol}: Found {rag_article_count} RAG articles, avg sentiment={rag_sentiment_score:.1f}")
+                    except Exception as e:
+                        logger.warning(f"RAG lookup failed for {candidate.symbol}: {e}")
 
-                    # Sentiment score 70+ = +15 bonus, 30- = -15 penalty
-                    # Linear scaling: score 50 (neutral) = 0 modifier
-                    sentiment_modifier = (
-                        ((sent_score - 50) / 50) * 15 * confidence_weight
-                    )
+                # 2. Fallback/Combine with legacy sentiment loader
+                legacy_score = 50.0
+                legacy_confidence = "low"
 
-                    logger.debug(
-                        f"{candidate.symbol}: sentiment={sent_score:.1f} "
-                        f"(confidence={sent_confidence}) → modifier={sentiment_modifier:+.1f}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to get sentiment for {candidate.symbol}: {e}"
-                    )
+                if self.sentiment_data:
+                    try:
+                        legacy_score, legacy_confidence, _ = get_ticker_sentiment(
+                            candidate.symbol,
+                            self.sentiment_data,
+                            default_score=50.0,
+                        )
+                    except Exception:
+                        pass
+
+                # Blend scores: If RAG has data, weight it 70%, legacy 30%
+                # If RAG has no data, use legacy 100%
+                final_sentiment_score = legacy_score
+                confidence_weight = {"high": 1.0, "medium": 0.6, "low": 0.3}.get(legacy_confidence, 0.3)
+
+                if rag_article_count > 0:
+                    final_sentiment_score = (0.7 * rag_sentiment_score) + (0.3 * legacy_score)
+                    confidence_weight = max(confidence_weight, 0.8)  # Boost confidence if we have fresh RAG news
+
+                # Calculate modifier
+                # Sentiment score 70+ = +15 bonus, 30- = -15 penalty
+                sentiment_modifier = ((final_sentiment_score - 50) / 50) * 15 * confidence_weight
+
+                logger.debug(
+                    f"{candidate.symbol}: Combined Sentiment={final_sentiment_score:.1f} "
+                    f"(RAG={rag_article_count}, Legacy={legacy_score:.1f}) → modifier={sentiment_modifier:+.1f}"
+                )
 
             # Store sentiment modifier for logging
             candidate.sentiment_modifier = sentiment_modifier
@@ -797,6 +848,7 @@ class GrowthStrategy:
                 + 0.15 * (50 + x.sentiment_modifier)
                 + 0.15 * min(100.0, max(0.0, (x.dcf_discount or 0.0) * 400))
                 + 0.10 * min(100.0, max(0.0, (x.external_signal_score + 100) / 2))
+                + 0.05 * len(self.kg.get_related_tickers(x.symbol, top_k=3))  # GraphRAG boost
             ),
             reverse=True,
         )

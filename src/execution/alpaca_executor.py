@@ -97,3 +97,28 @@ class AlpacaExecutor:
             tier="T1_CORE",
         )
         return order
+
+    def set_stop_loss(self, symbol: str, qty: float, stop_price: float) -> Dict[str, Any]:
+        """Place or simulate a stop-loss order.
+
+        In simulated mode, records a synthetic stop order entry.
+        """
+        if qty <= 0 or stop_price <= 0:
+            raise ValueError("qty and stop_price must be positive")
+
+        if self.simulated:
+            order = {
+                "id": str(uuid.uuid4()),
+                "symbol": symbol,
+                "side": "sell",
+                "type": "stop",
+                "qty": float(qty),
+                "stop_price": float(stop_price),
+                "status": "accepted",
+                "submitted_at": datetime.utcnow().isoformat(),
+                "mode": "simulated",
+            }
+            self.simulated_orders.append(order)
+            return order
+
+        return self.trader.set_stop_loss(symbol=symbol, qty=qty, stop_price=stop_price)

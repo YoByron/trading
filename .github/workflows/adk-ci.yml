@@ -38,7 +38,14 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt pytest
+          python -m pip install -r requirements.txt
 
       - name: Run targeted pytest suite
-        run: python -m pytest tests/test_adk_client.py tests/test_adk_integration.py
+        run: |
+          python -m pytest \
+            tests/test_adk_client.py \
+            tests/test_adk_integration.py \
+            --timeout=60 \
+            --timeout-method=thread \
+            -v \
+            --tb=short

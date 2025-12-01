@@ -308,25 +308,25 @@ class TaxOptimizer:
         short_term_gains = sum(
             e.gain_loss
             for e in tax_events
-            if e.is_long_term == False and e.gain_loss > 0
+            if not e.is_long_term and e.gain_loss > 0
         )
         short_term_losses = abs(
             sum(
                 e.gain_loss
                 for e in tax_events
-                if e.is_long_term == False and e.gain_loss < 0
+                if not e.is_long_term and e.gain_loss < 0
             )
         )
         long_term_gains = sum(
             e.gain_loss
             for e in tax_events
-            if e.is_long_term == True and e.gain_loss > 0
+            if e.is_long_term and e.gain_loss > 0
         )
         long_term_losses = abs(
             sum(
                 e.gain_loss
                 for e in tax_events
-                if e.is_long_term == True and e.gain_loss < 0
+                if e.is_long_term and e.gain_loss < 0
             )
         )
 

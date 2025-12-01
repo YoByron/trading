@@ -100,13 +100,14 @@ class RiskManager:
                 self.behavioral_manager = None
                 self.use_behavioral_finance = False
 
-        print(f"[RISK MANAGER] Initialized with parameters:")
-        print(f"  - Max Daily Loss: {max_daily_loss_pct}%")
-        print(f"  - Max Position Size: {max_position_size_pct}%")
-        print(f"  - Max Drawdown: {max_drawdown_pct}%")
-        print(f"  - Max Consecutive Losses: {max_consecutive_losses}")
-        print(
-            f"  - Behavioral Finance: {'Enabled' if self.use_behavioral_finance else 'Disabled'}"
+        logger.info("[RISK MANAGER] Initialized")
+        logger.info("  - Max Daily Loss: %s%%", max_daily_loss_pct)
+        logger.info("  - Max Position Size: %s%%", max_position_size_pct)
+        logger.info("  - Max Drawdown: %s%%", max_drawdown_pct)
+        logger.info("  - Max Consecutive Losses: %s", max_consecutive_losses)
+        logger.info(
+            "  - Behavioral Finance: %s",
+            "Enabled" if self.use_behavioral_finance else "Disabled",
         )
 
     def can_trade(

@@ -5,29 +5,29 @@ Collects company posts and thought leadership content.
 """
 
 import logging
-import requests
 from typing import List, Dict, Any
-from datetime import datetime
+
 
 from src.rag.collectors.base_collector import BaseNewsCollector
 
 logger = logging.getLogger(__name__)
 
+
 class LinkedInCollector(BaseNewsCollector):
     """
     Collector for LinkedIn data.
-    
+
     Currently uses a mock implementation or public scraping if feasible.
     Official API requires strict OAuth and company page admin rights.
     """
-    
+
     def __init__(self):
         super().__init__(source_name="linkedin")
-        
+
     def collect_ticker_news(self, ticker: str, days_back: int = 7) -> List[Dict[str, Any]]:
         """
         Collect LinkedIn posts relevant to a ticker.
-        
+
         Since public scraping is hard, we'll implement a placeholder
         that can be swapped with a real scraper (e.g., using selenium or specialized APIs).
         """

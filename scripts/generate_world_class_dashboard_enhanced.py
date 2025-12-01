@@ -168,6 +168,25 @@ def generate_world_class_dashboard() -> str:
 
     all_trades = calculator._load_all_trades()
 
+    # Load funnel telemetry for order/stop counts (best-effort)
+    telemetry_path = Path("data/audit_trail/hybrid_funnel_runs.jsonl")
+    order_count = 0
+    stop_count = 0
+    if telemetry_path.exists():
+        try:
+            with telemetry_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        evt = json.loads(line)
+                        if evt.get("event") == "execution.order":
+                            order_count += 1
+                        elif evt.get("event") == "execution.stop":
+                            stop_count += 1
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
     # Calculate tax optimization metrics
     tax_metrics = {}
     tax_recommendations = []
@@ -320,6 +339,8 @@ def generate_world_class_dashboard() -> str:
 | **P/L** | ${basic_metrics.get('today_pl', 0):+,.2f} ({basic_metrics.get('today_pl_pct', 0):+.2f}%) |
 | **Trades Today** | {basic_metrics.get('today_trade_count', 0)} |
 | **Status** | {'✅ Active' if basic_metrics.get('today_trade_count', 0) > 0 or abs(basic_metrics.get('today_pl', 0)) > 0.01 else '⏸️ No activity yet'} |
+
+**Funnel Activity**: {order_count} orders, {stop_count} stops
 
 ---
 

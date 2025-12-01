@@ -12,7 +12,7 @@ before claiming success.
 
 import json
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from dataclasses import dataclass
 
 
@@ -102,7 +102,7 @@ class OutputVerifier:
             last_update_time = datetime.fromisoformat(last_updated)
             age_hours = (datetime.now() - last_update_time).total_seconds() / 3600
             return age_hours < max_age_hours
-        except:
+        except Exception:
             return False
 
     def verify_execution(self, trades: List[Dict]) -> Tuple[bool, List[str]]:

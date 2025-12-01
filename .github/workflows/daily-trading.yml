@@ -55,9 +55,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
+        timeout-minutes: 5
         run: |
           echo "🧪 Running test suite..."
-          python3 tests/test_evaluation_system.py || exit 1
+          python3 -m pytest \
+            tests/test_evaluation_system.py \
+            --timeout=120 \
+            --timeout-method=thread \
+            -v \
+            --tb=short \
+            || exit 1
           echo "✅ All tests passed"
 
       - name: Set up Go for ADK orchestrator

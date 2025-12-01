@@ -4,7 +4,7 @@ RAG System Configuration
 Centralized configuration for vector database and embedding settings.
 """
 
-import os
+
 from pathlib import Path
 from typing import Dict, Any
 
