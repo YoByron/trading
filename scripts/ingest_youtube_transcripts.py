@@ -249,12 +249,12 @@ def main():
     argparse.ArgumentParser(
         description="Ingest YouTube transcripts into RAG vector store"
     ).parse_args()
-    
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    
+
     result = ingest_youtube_transcripts()
 
     if result["status"] == "error":

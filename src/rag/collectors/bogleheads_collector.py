@@ -37,17 +37,24 @@ class BogleheadsCollector(BaseNewsCollector):
             "User-Agent": "Mozilla/5.0 (compatible; TradingBotResearch/1.0; +http://example.com/bot)"
         }
 
-    def collect(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def collect_ticker_news(
+        self, ticker: str, days_back: int = 7
+    ) -> List[Dict[str, Any]]:
+        """Bogleheads is forum-centric, hard to filter by ticker reliably."""
+        return []
+
+    def collect_market_news(self, days_back: int = 1) -> List[Dict[str, Any]]:
         """
         Collect recent forum topics.
 
         Args:
-            limit: Max topics to collect per forum section
+            days_back: Not used directly, but good for interface consistency
 
         Returns:
             List of forum topics with title and link
         """
         results = []
+        limit = 10
 
         for url in self.FORUM_URLS:
             try:
@@ -84,17 +91,18 @@ class BogleheadsCollector(BaseNewsCollector):
                     author_elem = topic.find("a", class_="username")
                     author = author_elem.text.strip() if author_elem else "unknown"
 
-                    results.append(
-                        {
-                            "source": "bogleheads",
-                            "ticker": "MARKET",  # Bogleheads is usually general market
-                            "content": title,  # Using title as content for now
-                            "url": full_url,
-                            "published_at": datetime.now().isoformat(),  # Approximate
-                            "author": author,
-                            "sentiment": "Neutral",  # Needs deep analysis
-                        }
+                    # Normalize
+                    entry = self.normalize_article(
+                        title=title,
+                        content=title,  # Using title as content for now
+                        url=full_url,
+                        published_date=datetime.now().isoformat(),
+                        ticker="MARKET",
+                        sentiment=0.0,
                     )
+                    entry["author"] = author
+
+                    results.append(entry)
                     count += 1
 
                 # Be nice to the server
@@ -108,4 +116,4 @@ class BogleheadsCollector(BaseNewsCollector):
 
     def collect_daily_snapshot(self) -> List[Dict[str, Any]]:
         """Collect snapshot of current forum discussions."""
-        return self.collect(limit=20)
+        return self.collect_market_news(days_back=1)

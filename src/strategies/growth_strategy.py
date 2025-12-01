@@ -17,14 +17,14 @@ Risk Level: MEDIUM
 """
 
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from dataclasses import dataclass
 import logging
 import os
 
 import yfinance as yf
 import pandas as pd
-import numpy as np
+
 
 from src.utils.sentiment_loader import (
     load_latest_sentiment,
@@ -33,11 +33,7 @@ from src.utils.sentiment_loader import (
 )
 from src.utils.dcf_valuation import get_global_dcf_calculator, DCFValuationCalculator
 from src.utils.external_signal_loader import load_latest_signals, get_signal_for_ticker
-from src.safety.graham_buffett_safety import (
-    get_global_safety_analyzer,
-    GrahamBuffettSafety,
-    SafetyRating,
-)
+from src.safety.graham_buffett_safety import get_global_safety_analyzer
 
 
 # Configure logging
@@ -1036,7 +1032,7 @@ class GrowthStrategy:
                 ticker = yf.Ticker(pos.symbol)
                 current_price = ticker.history(period="1d")["Close"].iloc[-1]
                 position_value += current_price * pos.quantity
-            except:
+            except Exception:
                 position_value += pos.entry_price * pos.quantity
 
         total_value = cash + position_value
@@ -1385,7 +1381,7 @@ class GrowthStrategy:
             technical_score = self.calculate_technical_score(position.symbol)
             if technical_score < 40:  # Below threshold
                 return True
-        except:
+        except Exception:
             pass
 
         return False

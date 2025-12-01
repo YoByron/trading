@@ -1,5 +1,5 @@
 # Bonds Trading Analysis Report
-**Date**: December 1, 2025  
+**Date**: December 1, 2025
 **Status**: ⚠️ **CONFIGURED BUT NOT EXECUTING**
 
 ---
@@ -14,7 +14,7 @@ Bonds trading (BND and TLT) is properly configured in the system but **no bond o
 
 ### Bond Allocation Strategy
 - **BND** (Vanguard Total Bond Market ETF): 15% of Tier 1 allocation
-- **TLT** (iShares 20+ Year Treasury): 10% of Tier 1 allocation  
+- **TLT** (iShares 20+ Year Treasury): 10% of Tier 1 allocation
 - **Total Bond Exposure**: 25% of Tier 1 daily allocation
 
 ### Execution Thresholds
@@ -168,4 +168,3 @@ if bond_amount >= 0.50:  # $0.90 >= $0.50 = TRUE ✅
 Bonds trading is **properly configured** but **not executing**. The most likely cause is **silent failures** in the Alpaca API execution path. The try/except block is catching exceptions but only logging warnings, making it difficult to diagnose the root cause.
 
 **Action Required**: Manual testing and enhanced logging to identify the exact failure point.
-
