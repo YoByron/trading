@@ -1050,6 +1050,150 @@ class CryptoStrategy:
                 total += quantity * price
         return total
 
+    def manage_positions(self) -> List[CryptoOrder]:
+        """
+        Manage existing crypto positions - check stop-losses and take-profits.
+        
+        Since Alpaca crypto doesn't support stop-loss orders, we need to manually
+        check positions and close them if stop-loss or take-profit is triggered.
+        
+        Returns:
+            List of CryptoOrder objects for positions that should be closed
+        """
+        logger.info("=" * 80)
+        logger.info("Managing Crypto Positions")
+        logger.info("=" * 80)
+        
+        closed_positions = []
+        
+        try:
+            # Get current positions from Alpaca
+            if not self.trader:
+                logger.warning("No trader instance available")
+                return closed_positions
+            
+            positions = self.trader.get_positions()
+            crypto_positions = [
+                p for p in positions 
+                if p.get("symbol") in self.crypto_universe and p.get("side") == "long"
+            ]
+            
+            if not crypto_positions:
+                logger.info("No crypto positions to manage")
+                return closed_positions
+            
+            logger.info(f"Checking {len(crypto_positions)} crypto positions")
+            
+            for pos in crypto_positions:
+                symbol = pos.get("symbol")
+                qty = float(pos.get("qty", 0))
+                current_price = float(pos.get("current_price", 0))
+                
+                if qty <= 0 or current_price <= 0:
+                    continue
+                
+                # Get entry price (need to track this - for now use avg_cost if available)
+                avg_cost = float(pos.get("avg_entry_price", current_price))
+                entry_price = avg_cost if avg_cost > 0 else current_price
+                
+                # Calculate P/L
+                market_value = qty * current_price
+                cost_basis = qty * entry_price
+                unrealized_pl = market_value - cost_basis
+                unrealized_plpc = (unrealized_pl / cost_basis) if cost_basis > 0 else 0.0
+                
+                logger.info(
+                    f"  {symbol}: {qty:.6f} shares @ ${current_price:.2f} "
+                    f"(Entry: ${entry_price:.2f}, P/L: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%))"
+                )
+                
+                # Check stop-loss (7% for crypto)
+                if unrealized_plpc <= -self.stop_loss_pct:
+                    logger.info(
+                        f"  🛑 STOP-LOSS TRIGGERED: {unrealized_plpc*100:.2f}% <= {-self.stop_loss_pct*100:.1f}%"
+                    )
+                    
+                    try:
+                        # Close the position
+                        executed_order = self.trader.execute_order(
+                            symbol=symbol,
+                            amount_usd=market_value,
+                            side="sell",
+                            tier="CRYPTO",
+                        )
+                        
+                        logger.info(f"  ✅ Position closed: Order ID {executed_order.get('id')}")
+                        
+                        # Create exit order record
+                        exit_order = CryptoOrder(
+                            symbol=symbol,
+                            action="sell",
+                            quantity=qty,
+                            amount=market_value,
+                            price=current_price,
+                            order_type="market",
+                            stop_loss=None,
+                            timestamp=datetime.now(),
+                            reason=f"Stop-loss triggered at {unrealized_plpc*100:.2f}% loss",
+                        )
+                        
+                        closed_positions.append(exit_order)
+                        self._update_holdings(symbol, -qty)
+                        
+                    except Exception as e:
+                        logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+                
+                # Check take-profit (10% for crypto, same as stocks)
+                elif unrealized_plpc >= 0.10:
+                    logger.info(
+                        f"  🎯 TAKE-PROFIT TRIGGERED: {unrealized_plpc*100:.2f}% >= 10.0%"
+                    )
+                    
+                    try:
+                        # Close the position
+                        executed_order = self.trader.execute_order(
+                            symbol=symbol,
+                            amount_usd=market_value,
+                            side="sell",
+                            tier="CRYPTO",
+                        )
+                        
+                        logger.info(f"  ✅ Position closed: Order ID {executed_order.get('id')}")
+                        
+                        # Create exit order record
+                        exit_order = CryptoOrder(
+                            symbol=symbol,
+                            action="sell",
+                            quantity=qty,
+                            amount=market_value,
+                            price=current_price,
+                            order_type="market",
+                            stop_loss=None,
+                            timestamp=datetime.now(),
+                            reason=f"Take-profit triggered at {unrealized_plpc*100:.2f}% profit",
+                        )
+                        
+                        closed_positions.append(exit_order)
+                        self._update_holdings(symbol, -qty)
+                        
+                    except Exception as e:
+                        logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+                else:
+                    logger.info(
+                        f"  ✅ Holding position (P/L {unrealized_plpc*100:.2f}% within bounds)"
+                    )
+            
+            if closed_positions:
+                logger.info(f"Closed {len(closed_positions)} crypto positions")
+            else:
+                logger.info("No crypto positions ready for exit")
+            
+            return closed_positions
+            
+        except Exception as e:
+            logger.error(f"Error managing crypto positions: {e}", exc_info=True)
+            return closed_positions
+
 
 # Example usage
 if __name__ == "__main__":

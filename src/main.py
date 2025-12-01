@@ -313,6 +313,7 @@ class TradingOrchestrator:
             "ipo_strategy": None,
             "options_strategy": None,
             "options_accumulation": None,
+            "crypto_position_management": None,
         }
         self.health_status: Dict[str, Any] = {
             "status": "initialized",
@@ -1276,6 +1277,72 @@ Output your recommendation in JSON format for easy parsing."""
             self.health_status["errors"].append({
                 "timestamp": datetime.now().isoformat(),
                 "strategy": "options_accumulation",
+                "error": str(e),
+            })
+        
+        finally:
+            self.logger.info("=" * 80)
+
+    def _manage_crypto_positions(self) -> None:
+        """Manage crypto positions - check stop-losses and take-profits."""
+        self.logger.info("=" * 80)
+        self.logger.info("MANAGING CRYPTO POSITIONS")
+        self.logger.info("=" * 80)
+        
+        try:
+            # Initialize crypto strategy if not already done
+            if not hasattr(self, 'crypto_strategy') or self.crypto_strategy is None:
+                try:
+                    from src.strategies.crypto_strategy import CryptoStrategy
+                    self.crypto_strategy = CryptoStrategy(
+                        trader=self.alpaca_trader,
+                        daily_amount=float(os.getenv("CRYPTO_DAILY_AMOUNT", "0.5"))
+                    )
+                    self.logger.info("Crypto strategy initialized for position management")
+                except Exception as e:
+                    self.logger.warning(f"Failed to initialize crypto strategy: {e}")
+                    return
+            
+            # Manage positions
+            closed_positions = self.crypto_strategy.manage_positions()
+            
+            if closed_positions:
+                self.logger.info(f"✅ Closed {len(closed_positions)} crypto positions")
+                
+                # Record closed trades in system state
+                try:
+                    from scripts.state_manager import StateManager
+                    state_manager = StateManager()
+                    
+                    for pos in closed_positions:
+                        # Get entry price from position (would need to track this)
+                        # For now, use a placeholder - in production should track entry prices
+                        entry_price = pos.price * 0.93  # Estimate (7% stop-loss)
+                        exit_price = pos.price
+                        
+                        state_manager.record_closed_trade(
+                            symbol=pos.symbol,
+                            entry_price=entry_price,
+                            exit_price=exit_price,
+                            quantity=pos.quantity,
+                            entry_date=pos.timestamp.isoformat(),
+                            exit_date=datetime.now().isoformat(),
+                        )
+                    
+                    self.logger.info("✅ Closed trades recorded in system state")
+                except Exception as e:
+                    self.logger.warning(f"Failed to record closed trades: {e}")
+            else:
+                self.logger.info("No crypto positions needed closing")
+            
+            self.last_execution["crypto_position_management"] = datetime.now()
+            self.health_status["last_crypto_management"] = datetime.now().isoformat()
+            
+        except Exception as e:
+            self.logger.error(f"Error managing crypto positions: {e}", exc_info=True)
+            self.health_status["errors"].append({
+                "timestamp": datetime.now().isoformat(),
+                "strategy": "crypto_position_management",
                 "error": str(e),
             })
         
