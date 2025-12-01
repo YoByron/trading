@@ -614,6 +614,19 @@ class TradingOrchestrator:
         )
         self.logger.info("Scheduled: IPO opportunity check - Wednesdays at 10:00 AM ET")
 
+        # Crypto Position Management: Daily at 9:38 AM ET (before core strategy)
+        schedule.every().day.at("09:38").do(self._manage_crypto_positions).tag(
+            "crypto_position_management"
+        )
+        self.logger.info("Scheduled: Crypto position management - Daily at 9:38 AM ET")
+
+        # Options Accumulation Strategy: Daily at 9:40 AM ET (before options strategy)
+        if self.options_accumulation_strategy:
+            schedule.every().day.at("09:40").do(self._execute_options_accumulation).tag(
+                "options_accumulation"
+            )
+            self.logger.info("Scheduled: Options accumulation strategy - Daily at 9:40 AM ET")
+
         # Options Strategy: Daily at 10:30 AM ET
         schedule.every().day.at("10:30").do(self._execute_options_strategy).tag(
             "options_strategy"
