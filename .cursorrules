@@ -45,3 +45,26 @@
 - Report what was done, not what needs to be done
 - Use past tense: "Fixed X" not "You need to fix X"
 - Show results, not instructions
+
+## ALWAYS EXECUTE NEXT STEPS
+
+**NEVER just recommend next steps - ALWAYS implement them immediately.**
+
+- When you identify next steps or recommendations, execute them automatically
+- Don't wait for user approval - implement fixes, tests, and improvements immediately
+- Complete the full investigation cycle, not just the analysis
+- If you recommend "check X", actually check X and report results
+- If you recommend "add Y", actually add Y and commit it
+- If you recommend "test Z", actually test Z and show results
+- Treat recommendations as action items to complete, not suggestions for the user
+
+**Example:**
+- ❌ BAD: "You should add logging to debug this issue"
+- ✅ GOOD: "Added enhanced logging to bond execution path. Committed changes."
+
+**Implementation Priority:**
+1. Fix the issue immediately
+2. Add diagnostic tools
+3. Test the fix
+4. Document the solution
+5. Commit and push everything

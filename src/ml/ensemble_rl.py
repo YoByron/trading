@@ -5,9 +5,9 @@ Based on 2024-2025 research showing ensembles outperform single models.
 """
 
 import torch
-import torch.nn as nn
+
 import numpy as np
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional
 import logging
 from pathlib import Path
 import json

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 ensure_pydantic_base_settings()
 
 try:
-    from sentence_transformers import SentenceTransformer, util
+    from sentence_transformers import SentenceTransformer, util, CrossEncoder
 
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
@@ -48,16 +48,78 @@ class InMemoryCollection:
         self.ids: list[str] = []
         self.embeddings = None
         self.model = None
+        self.cross_encoder = None
         self.bm25 = None
-
+        self.persist_path = "data/rag/in_memory_store.json"
+        
+        # Ensure directory exists
+        import os
+        os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)
+        
         if SENTENCE_TRANSFORMERS_AVAILABLE:
             try:
-                # Load a small, fast model for fallback
+                # Load Bi-Encoder for fast retrieval
                 self.model = SentenceTransformer("all-MiniLM-L6-v2")
-                self.embeddings = []  # List of tensors or numpy arrays
+                # Load Cross-Encoder for high-precision re-ranking
+                self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+                self.embeddings = [] 
             except Exception as e:
-                logger.warning(f"Failed to load embedding model: {e}")
+                logger.warning(f"Failed to load embedding models: {e}")
                 self.model = None
+                self.cross_encoder = None
+        
+        # Load existing data
+        self.load_from_disk()
+
+    def save_to_disk(self):
+        """Save collection to disk."""
+        import json
+        try:
+            data = {
+                "documents": self.documents,
+                "metadatas": self.metadatas,
+                "ids": self.ids,
+                # We don't save embeddings/models, we re-compute or re-load them
+                # Re-computing embeddings on load might be slow for large datasets,
+                # but for "in-memory" scale it's acceptable for now.
+                # Ideally we'd save embeddings as numpy arrays, but JSON is simple.
+            }
+            with open(self.persist_path, 'w') as f:
+                json.dump(data, f)
+            logger.info(f"Saved in-memory RAG store to {self.persist_path}")
+        except Exception as e:
+            logger.error(f"Failed to save in-memory store: {e}")
+
+    def load_from_disk(self):
+        """Load collection from disk."""
+        import json
+        import os
+        if not os.path.exists(self.persist_path):
+            return
+            
+        try:
+            with open(self.persist_path, 'r') as f:
+                data = json.load(f)
+            
+            self.documents = data.get("documents", [])
+            self.metadatas = data.get("metadatas", [])
+            self.ids = data.get("ids", [])
+            
+            logger.info(f"Loaded {len(self.documents)} documents from {self.persist_path}")
+            
+            # Re-generate embeddings if model is loaded
+            if self.model and self.documents:
+                logger.info("Regenerating embeddings for loaded documents...")
+                new_embeddings = self.model.encode(self.documents)
+                self.embeddings = new_embeddings.tolist()
+                
+            # Re-build BM25
+            if BM25_AVAILABLE and self.documents:
+                tokenized_corpus = [doc.lower().split() for doc in self.documents]
+                self.bm25 = BM25Okapi(tokenized_corpus)
+                
+        except Exception as e:
+            logger.error(f"Failed to load in-memory store: {e}")
 
     def add(
         self, documents: list[str], metadatas: list[dict], ids: list[str] | None = None
@@ -81,6 +143,9 @@ class InMemoryCollection:
         if BM25_AVAILABLE:
             tokenized_corpus = [doc.lower().split() for doc in self.documents]
             self.bm25 = BM25Okapi(tokenized_corpus)
+
+        # Auto-save
+        self.save_to_disk()
 
         return {"ids": ids}
 
@@ -134,29 +199,49 @@ class InMemoryCollection:
                 bm25_scores = [s / max_bm25 for s in bm25_scores]
 
             # Combine: 0.7 Semantic + 0.3 Keyword
-            final_results = []
-            for idx, (sem_score, bm_score) in enumerate(
-                zip(semantic_scores, bm25_scores)
-            ):
+            candidates = []
+            for idx, (sem_score, bm_score) in enumerate(zip(semantic_scores, bm25_scores)):
                 original_idx = indices[idx]
-
-                # Hybrid score
                 hybrid_score = (0.7 * float(sem_score)) + (0.3 * float(bm_score))
-
-                final_results.append(
-                    {
-                        "document": self.documents[original_idx],
-                        "metadata": self.metadatas[original_idx],
-                        "id": self.ids[original_idx],
-                        "score": hybrid_score,
-                        "distance": 1.0 - hybrid_score,
-                    }
-                )
-
-            # Sort by score descending
-            final_results.sort(key=lambda x: x["score"], reverse=True)
-            results = final_results[:n_results]
-
+                
+                candidates.append({
+                    "document": self.documents[original_idx],
+                    "metadata": self.metadatas[original_idx],
+                    "id": self.ids[original_idx],
+                    "score": hybrid_score,
+                    "distance": 1.0 - hybrid_score
+                })
+            
+            # Sort by hybrid score descending
+            candidates.sort(key=lambda x: x["score"], reverse=True)
+            
+            # --- RE-RANKING STEP ---
+            # Take top N candidates (e.g., 20) and re-rank with Cross-Encoder
+            top_n_candidates = candidates[:20]
+            
+            if self.cross_encoder and top_n_candidates:
+                # Prepare pairs: (Query, Document)
+                pairs = [[query_texts[0], c["document"]] for c in top_n_candidates]
+                cross_scores = self.cross_encoder.predict(pairs)
+                
+                # Update scores with Cross-Encoder scores (which are logits, unbounded)
+                # We can just replace the score or blend it. Replacing is usually better for final ranking.
+                for i, score in enumerate(cross_scores):
+                    top_n_candidates[i]["score"] = float(score)
+                    # Distance is tricky with logits, but we can just invert rank or sigmoid it.
+                    # For compatibility, we'll just use 1/(1+exp(-score)) to map to 0-1 roughly if needed,
+                    # but for now let's just sort by score.
+                    top_n_candidates[i]["distance"] = -float(score) # Higher score = lower distance
+                
+                # Re-sort based on Cross-Encoder score
+                top_n_candidates.sort(key=lambda x: x["score"], reverse=True)
+                
+                # Use re-ranked results
+                results = top_n_candidates[:n_results]
+            else:
+                # Fallback if no cross-encoder
+                results = candidates[:n_results]
+            
             return {
                 "documents": [r["document"] for r in results],
                 "metadatas": [r["metadata"] for r in results],
