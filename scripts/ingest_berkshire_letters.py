@@ -17,25 +17,15 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from datetime import datetime
 from typing import List, Dict, Any
 
 sys.path.append(".")
 
-# Import directly to avoid dependency issues
-import importlib.util
-
-berkshire_path = (
-    Path(__file__).parent.parent
-    / "src"
-    / "rag"
-    / "collectors"
-    / "berkshire_collector.py"
-)
-spec = importlib.util.spec_from_file_location("berkshire_collector", berkshire_path)
-berkshire_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(berkshire_module)
-BerkshireLettersCollector = berkshire_module.BerkshireLettersCollector
+# Import PDF parser directly to avoid dependency chain issues
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 
 from src.rag.vector_db.chroma_client import get_rag_db
 
@@ -95,16 +85,16 @@ def parse_pdf(file_path: Path) -> str:
     if PyPDF2 is None:
         logger.error("PyPDF2 not installed - cannot parse PDF files")
         return ""
-    
+
     try:
         text_parts = []
         with open(file_path, "rb") as f:
             pdf_reader = PyPDF2.PdfReader(f)
             for page in pdf_reader.pages:
                 text_parts.append(page.extract_text())
-        
+
         return "\n\n".join(text_parts)
-    
+
     except Exception as e:
         logger.error(f"Error parsing PDF {file_path}: {e}")
         return ""
@@ -113,17 +103,17 @@ def parse_pdf(file_path: Path) -> str:
 def ingest_berkshire_letters(force_reparse: bool = False) -> Dict[str, Any]:
     """
     Ingest all Berkshire letters into RAG vector store.
-    
+
     Args:
         force_reparse: Re-parse letters even if already parsed
-        
+
     Returns:
         Dict with ingestion results
     """
     logger.info("=" * 80)
     logger.info("INGESTING BERKSHIRE HATHAWAY LETTERS INTO RAG")
     logger.info("=" * 80)
-    
+
     # Set up directories
     base_dir = Path("data/rag/berkshire_letters")
     raw_dir = base_dir / "raw"
@@ -147,7 +137,7 @@ def ingest_berkshire_letters(force_reparse: bool = False) -> Dict[str, Any]:
 
         if force_reparse or not parsed_file.exists():
             logger.info(f"Parsing {year} letter...")
-            text = collector._parse_pdf(pdf_file)
+            text = parse_pdf(pdf_file)
             if text:
                 parsed_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(parsed_file, "w", encoding="utf-8") as f:
