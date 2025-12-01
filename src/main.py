@@ -312,7 +312,7 @@ class TradingOrchestrator:
             "growth_strategy": None,
             "ipo_strategy": None,
             "options_strategy": None,
-            "options_accumulation_strategy": None,
+            "options_accumulation": None,
         }
         self.health_status: Dict[str, Any] = {
             "status": "initialized",
