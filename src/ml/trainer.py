@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 from pathlib import Path
 import logging
-import json
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -87,6 +86,13 @@ class ModelTrainer:
             return {"success": False, "error": "No data"}
 
         df = self.data_processor.add_technical_indicators(df)
+
+        # Ensure all feature columns exist before normalization
+        for col in self.data_processor.feature_columns:
+            if col not in df.columns:
+                logger.warning(f"Feature column {col} missing, filling with 0.0")
+                df[col] = 0.0
+
         df = self.data_processor.normalize_data(df)
 
         # Create targets: 1 if next Close > current Close, else 0

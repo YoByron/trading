@@ -1,6 +1,6 @@
 # 🎯 TRADING SYSTEM MASTER PLAN
 
-**Last Updated**: November 25, 2025
+**Last Updated**: November 29, 2025
 **CTO**: Claude (AI Agent)
 **CEO**: Igor Ganapolsky
 **Status**: R&D Phase - Take-Profit Fix Deployed + First Closed Trade
@@ -17,7 +17,7 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 ---
 
-## 📊 CURRENT STATUS (Day ~27 - November 25, 2025)
+## 📊 CURRENT STATUS (Day ~29 - November 29, 2025)
 
 **Portfolio**: $100,005.50 (verified via Alpaca API)
 **P/L**: +$5.50 (+0.01%) - ✅ **PROFITABLE**
@@ -30,11 +30,14 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 **Current Positions**: 0 (all positions closed)
 
-**Recent Achievements** (November 25, 2025):
+**Recent Achievements** (November 25-29, 2025):
 - ✅ **Fixed take-profit execution** - Changed `elif` to `if` for independent check
 - ✅ **Closed GOOGL position** - +$56.28 profit (+13.86%) - First closed trade!
 - ✅ **Win rate validated** - 100% (1/1) - System can pick winners and execute exits
 - ✅ **System evaluation completed** - Comprehensive analysis saved to `docs/COMPREHENSIVE_SYSTEM_EVALUATION_2025-11-25.md`
+ - ✅ **Bogleheads Continuous Learning** - 6-hour ingestion to Sentiment RAG with TL;DR, ensemble contribution with regime-based boost
+ - ✅ **Nightly Dry-Run CI** - Wiki report + badges auto-updated; includes Bogleheads snapshot fallback
+ - ✅ **Treasuries Momentum Gate (TLT)** - SMA20>=SMA50 gating before allocating 10% to `TLT` in CoreStrategy
 
 **Critical Fixes** (November 25, 2025):
 - **Take-Profit Bug**: Fixed `elif` logic preventing take-profit from checking independently
@@ -42,6 +45,12 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 - **Trading Frequency**: Still low (0.26 trades/day) - needs improvement
 
 **Assessment**: System is profitable and working, but needs more trading frequency and capital deployment to scale toward North Star.
+
+**System Upgrades (Nov 28-29)**:
+- Bogleheads ingestion: every 6 hours (CI) → Sentiment RAG (JSON fallback if embeddings unavailable)
+- Bogleheads in ensemble: weight key `bogleheads` (default 0.10), with regime-based weight boost
+- Nightly dry-run: primes Bogleheads, publishes wiki report, updates badges, includes TL;DR when available
+- Treasuries (TLT) momentum gate: `SMA20 >= SMA50` required to allocate 10% to `TLT`; otherwise skipped for the day
 
 **Architecture Status** (November 17, 2025):
 - **Status**: ✅ **CLEANED UP** - Code consolidated, systems intelligently integrated
@@ -195,6 +204,11 @@ Through **PROVEN, DATA-DRIVEN profitability**.
 
 ### **Days 31-60 (Dec 1-30)** - MONTH 2 (TBD):
 Decision made on Day 30 based on data, not guesses
+
+Planned Areas:
+- Add ETF trend/regime gating to more components (bonds/REITs)
+- Enrich nightly report with quantitative trend snapshots (SMA/returns) for core ETFs
+- Tighten CI signal pathways and ensure report sections always render (multi-fallbacks)
 
 ---
 
