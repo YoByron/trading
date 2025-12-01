@@ -881,6 +881,108 @@ class CoreStrategy:
                     f"  Unrealized P/L: ${unrealized_pl:.2f} ({unrealized_plpc*100:.2f}%)"
                 )
 
+                # Calculate ATR-based stop-loss if enabled
+                atr_stop_price = None
+                if self.USE_ATR_STOPS:
+                    try:
+                        import yfinance as yf
+                        from src.utils.technical_indicators import calculate_atr, calculate_atr_stop_loss
+                        
+                        # Get historical data for ATR calculation
+                        ticker = yf.Ticker(symbol)
+                        hist = ticker.history(period="1mo")  # 1 month of data
+                        
+                        if not hist.empty and len(hist) >= 15:
+                            atr = calculate_atr(hist)
+                            if atr > 0:
+                                atr_stop_price = calculate_atr_stop_loss(
+                                    entry_price=avg_entry_price,
+                                    atr=atr,
+                                    multiplier=self.ATR_STOP_MULTIPLIER,
+                                    direction="long"
+                                )
+                                atr_stop_pct = ((avg_entry_price - atr_stop_price) / avg_entry_price) * 100
+                                logger.info(
+                                    f"  ATR Stop-Loss: ${atr_stop_price:.2f} ({atr_stop_pct:.2f}% below entry, ATR: ${atr:.2f})"
+                                )
+                                
+                                # Check ATR-based stop-loss
+                                if current_price <= atr_stop_price:
+                                    logger.info(
+                                        f"  🛑 ATR STOP-LOSS TRIGGERED: ${current_price:.2f} <= ${atr_stop_price:.2f}"
+                                    )
+                                    
+                                    try:
+                                        # Close the position
+                                        executed_order = self.alpaca_trader.execute_order(
+                                            symbol=symbol,
+                                            amount_usd=market_value,
+                                            side="sell",
+                                            tier="T1_CORE",
+                                        )
+                                        
+                                        logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
+                                        
+                                        exit_order = TradeOrder(
+                                            symbol=symbol,
+                                            action="sell",
+                                            quantity=qty,
+                                            amount=market_value,
+                                            price=current_price,
+                                            order_type="market",
+                                            stop_loss=None,
+                                            timestamp=datetime.now(),
+                                            reason=f"ATR stop-loss triggered at ${atr_stop_price:.2f} (ATR: ${atr:.2f})",
+                                        )
+                                        
+                                        closed_positions.append(exit_order)
+                                        self.trades_executed.append(exit_order)
+                                        self._update_holdings(symbol, -qty)
+                                        continue  # Skip take-profit check
+                                        
+                                    except Exception as e:
+                                        logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+                    except Exception as e:
+                        logger.debug(f"ATR calculation failed for {symbol}: {e}, using percentage-based stop")
+                
+                # Fallback to percentage-based stop-loss if ATR not available
+                if not self.USE_ATR_STOPS or atr_stop_price is None:
+                    pct_stop_price = avg_entry_price * (1 - self.stop_loss_pct)
+                    if current_price <= pct_stop_price:
+                        logger.info(
+                            f"  🛑 PERCENTAGE STOP-LOSS TRIGGERED: ${current_price:.2f} <= ${pct_stop_price:.2f} ({self.stop_loss_pct*100:.1f}%)"
+                        )
+                        
+                        try:
+                            executed_order = self.alpaca_trader.execute_order(
+                                symbol=symbol,
+                                amount_usd=market_value,
+                                side="sell",
+                                tier="T1_CORE",
+                            )
+                            
+                            logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
+                            
+                            exit_order = TradeOrder(
+                                symbol=symbol,
+                                action="sell",
+                                quantity=qty,
+                                amount=market_value,
+                                price=current_price,
+                                order_type="market",
+                                stop_loss=None,
+                                timestamp=datetime.now(),
+                                reason=f"Percentage stop-loss triggered at {self.stop_loss_pct*100:.1f}%",
+                            )
+                            
+                            closed_positions.append(exit_order)
+                            self.trades_executed.append(exit_order)
+                            self._update_holdings(symbol, -qty)
+                            continue  # Skip take-profit check
+                            
+                        except Exception as e:
+                            logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+
                 # Check if position has reached take-profit target
                 if unrealized_plpc >= self.take_profit_pct:
                     logger.info(
