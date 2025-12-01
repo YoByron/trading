@@ -246,16 +246,15 @@ def ingest_youtube_transcripts() -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    argparse.ArgumentParser(
         description="Ingest YouTube transcripts into RAG vector store"
-    )
-    args = parser.parse_args()
-
+    ).parse_args()
+    
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-
+    
     result = ingest_youtube_transcripts()
 
     if result["status"] == "error":
