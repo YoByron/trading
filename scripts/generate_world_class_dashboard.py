@@ -49,6 +49,7 @@ except ImportError:
     TaxOptimizer = None
 
 DATA_DIR = Path("data")
+RAG_DIR = DATA_DIR / "rag"
 
 # Statistical significance thresholds (investor-grade)
 STAT_THRESHOLDS = {
@@ -91,6 +92,89 @@ def load_json_file(filepath: Path) -> dict:
         except Exception:
             return {}
     return {}
+
+
+def get_rag_knowledge_stats() -> Dict[str, Any]:
+    """Get RAG Knowledge Base statistics for dashboard."""
+    import sqlite3
+
+    stats = {
+        "sentiment_rag": {"count": 0, "status": "⚠️ Empty", "last_update": "Never"},
+        "berkshire": {"count": 0, "parsed": 0, "year_range": "N/A", "size_mb": 0.0},
+        "bogleheads": {"insights": 0, "files": 0, "status": "Pending"},
+        "youtube": {"transcripts": 0, "size_kb": 0},
+        "reddit": {"count": 0},
+        "news": {"count": 0},
+    }
+
+    # Sentiment RAG database
+    db_path = RAG_DIR / "sentiment_rag.db"
+    if db_path.exists():
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*), MAX(snapshot_date) FROM sentiment_documents"
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                stats["sentiment_rag"]["count"] = row[0] or 0
+                stats["sentiment_rag"]["last_update"] = row[1] or "Never"
+                stats["sentiment_rag"]["status"] = (
+                    "✅ Active" if row[0] and row[0] > 0 else "⚠️ Empty"
+                )
+        except Exception:
+            pass
+
+    # Berkshire Letters
+    raw_dir = RAG_DIR / "berkshire_letters" / "raw"
+    parsed_dir = RAG_DIR / "berkshire_letters" / "parsed"
+    if raw_dir.exists():
+        raw_files = list(raw_dir.glob("*.pdf"))
+        parsed_files = list(parsed_dir.glob("*.txt")) if parsed_dir.exists() else []
+        years = sorted(
+            [int(f.stem) for f in raw_files if f.stem.isdigit()], reverse=True
+        )
+        total_size = sum(f.stat().st_size for f in raw_files) / (1024 * 1024)
+        stats["berkshire"]["count"] = len(raw_files)
+        stats["berkshire"]["parsed"] = len(parsed_files)
+        stats["berkshire"]["year_range"] = (
+            f"{min(years)}-{max(years)}" if years else "N/A"
+        )
+        stats["berkshire"]["size_mb"] = round(total_size, 2)
+
+    # Bogleheads Forum
+    bogleheads_dir = RAG_DIR / "bogleheads"
+    if bogleheads_dir.exists():
+        files = list(bogleheads_dir.glob("*.json"))
+        total_insights = 0
+        for f in files:
+            try:
+                with open(f) as fp:
+                    data = json.load(fp)
+                    if isinstance(data, list):
+                        total_insights += len(data)
+            except Exception:
+                pass
+        stats["bogleheads"]["files"] = len(files)
+        stats["bogleheads"]["insights"] = total_insights
+        stats["bogleheads"]["status"] = "Active" if total_insights > 0 else "Pending"
+
+    # YouTube Transcripts
+    cache_dir = DATA_DIR / "youtube_cache"
+    if cache_dir.exists():
+        transcripts = list(cache_dir.glob("*_transcript.txt"))
+        stats["youtube"]["transcripts"] = len(transcripts)
+        stats["youtube"]["size_kb"] = sum(f.stat().st_size for f in transcripts) // 1024
+
+    # Sentiment files
+    sentiment_dir = DATA_DIR / "sentiment"
+    if sentiment_dir.exists():
+        stats["reddit"]["count"] = len(list(sentiment_dir.glob("reddit_*.json")))
+        stats["news"]["count"] = len(list(sentiment_dir.glob("news_*.json")))
+
+    return stats
 
 
 def calculate_unified_system_health() -> Dict[str, Any]:
@@ -982,6 +1066,7 @@ def generate_world_class_dashboard() -> str:
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
     challenge_start = load_json_file(DATA_DIR / "challenge_start.json")
     trades = load_trade_data()
+    rag_stats = get_rag_knowledge_stats()
 
     # Extract equity curve
     equity_curve = []
@@ -2126,6 +2211,25 @@ def generate_world_class_dashboard() -> str:
 
 **Timeline Progress**: `{'█' * int((current_day / total_days * 100) / 5) + '░' * (20 - int((current_day / total_days * 100) / 5))}` ({current_day / total_days * 100:.1f}%)
 *This shows how far through the 90-day R&D challenge timeline you are*
+
+---
+
+## 🧠 RAG Knowledge Base
+
+**Powering AI-driven trading decisions with multiple data sources**
+
+| Source | Records | Status | Last Update |
+|--------|---------|--------|-------------|
+| **Sentiment RAG** | {rag_stats['sentiment_rag']['count']} tickers | {rag_stats['sentiment_rag']['status']} | {rag_stats['sentiment_rag']['last_update']} |
+| **Berkshire Letters** | {rag_stats['berkshire']['count']} PDFs ({rag_stats['berkshire']['size_mb']}MB) | {'✅ Downloaded' if rag_stats['berkshire']['count'] > 0 else '⚠️ Pending'} | {rag_stats['berkshire']['year_range']} |
+| **Bogleheads Forum** | {rag_stats['bogleheads']['insights']} insights | {'✅ Active' if rag_stats['bogleheads']['insights'] > 0 else '⏳ ' + rag_stats['bogleheads']['status']} | Daily |
+| **YouTube Transcripts** | {rag_stats['youtube']['transcripts']} videos ({rag_stats['youtube']['size_kb']}KB) | {'✅ Active' if rag_stats['youtube']['transcripts'] > 0 else '⚠️ Empty'} | Daily |
+| **Reddit Sentiment** | {rag_stats['reddit']['count']} files | {'✅ Active' if rag_stats['reddit']['count'] > 0 else '⚠️ Empty'} | Daily |
+| **News Sentiment** | {rag_stats['news']['count']} files | {'✅ Active' if rag_stats['news']['count'] > 0 else '⚠️ Empty'} | Daily |
+
+**Data Flow**: External Sources → RAG Collectors → Vector Store → AI Analysis → Trading Decisions
+
+[View Full RAG Knowledge Base](RAG-Knowledge-Base) | [GitHub Actions](https://github.com/IgorGanapolsky/trading/actions/workflows/bogleheads-learning.yml)
 
 ---
 
