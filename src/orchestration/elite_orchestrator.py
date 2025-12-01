@@ -589,9 +589,6 @@ class EliteOrchestrator:
             # Claude Skills: Financial Data
             if self.skills.financial_data_fetcher:
                 try:
-                    # Get context for data collection
-                    context = self.context_engine.get_agent_context("research_agent")
-
                     data_result = self.skills.get_price_data(
                         symbols=[symbol], timeframe="1Day", limit=30
                     )
@@ -614,7 +611,6 @@ class EliteOrchestrator:
             if self.langchain_agent:
                 try:
                     # Get context for langchain agent
-                    context = self.context_engine.get_agent_context("langchain_agent")  # noqa: F841
 
                     prompt = f"Analyze recent news and sentiment for {symbol}. Provide key insights."
                     langchain_result = self.langchain_agent.invoke({"input": prompt})
@@ -638,9 +634,6 @@ class EliteOrchestrator:
             # Gemini: Long-horizon research
             if self.gemini_agent:
                 try:
-                    # Get context for gemini agent
-                    context = self.context_engine.get_agent_context("gemini_agent")
-
                     research_prompt = f"Provide long-term research analysis for {symbol}. Consider fundamentals, trends, and portfolio fit."
                     gemini_result = self.gemini_agent.reason(prompt=research_prompt)
 

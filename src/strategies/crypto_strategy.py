@@ -212,7 +212,7 @@ class CryptoStrategy:
 
         logger.info(
             f"CryptoStrategy initialized: daily_amount=${daily_amount}, "
-            f"crypto_universe={self.crypto_universe}, stop_loss={stop_loss_pct*100}%"
+            f"crypto_universe={self.crypto_universe}, stop_loss={stop_loss_pct * 100}%"
         )
 
     def execute(self) -> Dict:
@@ -341,6 +341,7 @@ class CryptoStrategy:
 
             # Step 7: Execute order via Alpaca
             if self.trader:
+                executed_order = None
                 try:
                     executed_order = self.trader.execute_order(
                         symbol=best_coin,
@@ -349,16 +350,24 @@ class CryptoStrategy:
                         tier="CRYPTO",
                     )
                     logger.info(f"Alpaca order executed: {executed_order['id']}")
+                except Exception as e:
+                    logger.error(f"Failed to execute order via Alpaca: {e}")
+                    return None
 
-                    # Set stop-loss order
-                    if order.stop_loss:
+                # Set stop-loss order (optional - crypto may not support stop orders)
+                if order.stop_loss:
+                    try:
                         self.trader.set_stop_loss(
                             symbol=best_coin, qty=quantity, stop_price=order.stop_loss
                         )
                         logger.info(f"Stop-loss set at ${order.stop_loss:.2f}")
-                except Exception as e:
-                    logger.error(f"Failed to execute order via Alpaca: {e}")
-                    return None
+                    except Exception as stop_loss_error:
+                        # Stop-loss failure doesn't invalidate the trade
+                        # Alpaca crypto doesn't support stop-loss orders
+                        logger.warning(
+                            f"Stop-loss order failed (this is expected for crypto): {stop_loss_error}. "
+                            f"Trade executed successfully: {executed_order['id']}"
+                        )
 
             # Step 8: Update state
             self._update_holdings(best_coin, quantity)
@@ -1019,7 +1028,7 @@ class CryptoStrategy:
             order_type="market",
             stop_loss=stop_loss_price,
             timestamp=datetime.now(),
-            reason=f"Daily crypto purchase - best momentum coin",
+            reason="Daily crypto purchase - best momentum coin",
         )
 
     def _update_holdings(self, symbol: str, quantity: float) -> None:
