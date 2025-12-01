@@ -14,6 +14,75 @@ logger = logging.getLogger(__name__)
 
 ensure_pydantic_base_settings()
 
+
+# Simple in‑memory collection fallback used when ChromaDB cannot be imported.
+class InMemoryCollection:
+    """A minimal in‑memory stand‑in for ChromaDB collection.
+
+    Stores documents, metadatas and ids in Python lists and provides a very
+    lightweight ``add`` and ``query`` interface sufficient for the existing
+    ``TradingRAGDatabase`` methods.
+    """
+
+    def __init__(self):
+        self.documents: list[str] = []
+        self.metadatas: list[dict] = []
+        self.ids: list[str] = []
+
+    def add(
+        self, documents: list[str], metadatas: list[dict], ids: list[str] | None = None
+    ):
+        if ids is None:
+            ids = [f"doc_{len(self.documents) + i}" for i in range(len(documents))]
+        self.documents.extend(documents)
+        self.metadatas.extend(metadatas)
+        self.ids.extend(ids)
+        return {"ids": ids}
+
+    def query(
+        self, query_texts: list[str], n_results: int = 5, where: dict | None = None
+    ):
+        # Very naive semantic search – returns the first ``n_results`` docs.
+        # ``where`` filtering is applied on metadata keys.
+        filtered = []
+        for doc, meta, doc_id in zip(self.documents, self.metadatas, self.ids):
+            if where:
+                match = all(meta.get(k) == v for k, v in where.items())
+                if not match:
+                    continue
+            filtered.append({"document": doc, "metadata": meta, "id": doc_id})
+        # Return up to n_results items.
+        results = filtered[:n_results]
+        return {
+            "documents": [r["document"] for r in results],
+            "metadatas": [r["metadata"] for r in results],
+            "distances": [0.0 for _ in results],  # dummy similarity
+            "ids": [r["id"] for r in results],
+        }
+
+    def get(self, ids: list[str]):
+        docs = []
+        metas = []
+        for doc_id in ids:
+            if doc_id in self.ids:
+                idx = self.ids.index(doc_id)
+                docs.append(self.documents[idx])
+                metas.append(self.metadatas[idx])
+        return {"documents": docs, "metadatas": metas, "ids": ids}
+
+    def delete(self, ids: list[str]):
+        for doc_id in ids:
+            if doc_id in self.ids:
+                idx = self.ids.index(doc_id)
+                del self.documents[idx]
+                del self.metadatas[idx]
+                del self.ids[idx]
+        return True
+
+    def count(self) -> int:
+        return len(self.documents)
+
+
 try:
     import chromadb  # type: ignore
     from chromadb.config import Settings  # type: ignore
@@ -44,9 +113,13 @@ class TradingRAGDatabase:
         self.persist_directory = persist_directory
 
         if chromadb is None:
-            raise RuntimeError(
-                "ChromaDB is not available. Install dependencies or disable the RAG pipeline."
+            # Fallback to an in‑memory store when ChromaDB is unavailable.
+            logger.warning(
+                "ChromaDB not installed – using in‑memory RAG store fallback."
             )
+            self.client = None
+            self.collection = InMemoryCollection()
+            return
 
         # Initialize persistent client
         self.client = chromadb.PersistentClient(path=persist_directory)

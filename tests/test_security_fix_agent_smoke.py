@@ -12,7 +12,7 @@ Quick validation that the agent can:
 Run with: python3 tests/test_security_fix_agent_smoke.py
 """
 
-import os
+
 import sys
 import tempfile
 from pathlib import Path
@@ -120,6 +120,12 @@ def test_imports():
             fetch_dependabot_alerts,
             fix_security_alert,
         )
+
+        # Verify imports to avoid F401
+        assert SecurityAlert
+        assert FixResult
+        assert fetch_dependabot_alerts
+        assert fix_security_alert
 
         print("   ✅ All imports successful")
         return True

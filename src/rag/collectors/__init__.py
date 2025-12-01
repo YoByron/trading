@@ -8,6 +8,8 @@ from src.rag.collectors.tiktok_collector import TikTokCollector
 from src.rag.collectors.linkedin_collector import LinkedInCollector
 from src.rag.collectors.seekingalpha_collector import SeekingAlphaCollector
 from src.rag.collectors.berkshire_collector import BerkshireLettersCollector
+from src.rag.collectors.stocktwits_collector import StockTwitsCollector
+from src.rag.collectors.bogleheads_collector import BogleheadsCollector
 
 __all__ = [
     "get_orchestrator",
@@ -19,4 +21,6 @@ __all__ = [
     "LinkedInCollector",
     "SeekingAlphaCollector",
     "BerkshireLettersCollector",
+    "StockTwitsCollector",
+    "BogleheadsCollector",
 ]

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import torch
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Optional
 import yfinance as yf
 import logging
 
@@ -77,6 +77,8 @@ class DataProcessor:
         df["Volume_Change"] = df["Volume"].pct_change()
 
         # 6. Add Bogleheads features if available (optional)
+        # Always ensure these columns exist, even if Bogleheads integration fails
+        bogleheads_added = False
         try:
             from src.utils.bogleheads_integration import (
                 get_bogleheads_signal_for_symbol,
@@ -96,9 +98,12 @@ class DataProcessor:
             df["Bogleheads_Risk"] = {"low": 0.0, "medium": 0.5, "high": 1.0}.get(
                 regime.get("risk_level", "medium"), 0.5
             )
+            bogleheads_added = True
         except Exception as e:
             logger.debug(f"Could not add Bogleheads features: {e}")
-            # Fill with default values if unavailable
+
+        # Always ensure Bogleheads features exist (fill with defaults if not added)
+        if not bogleheads_added or "Bogleheads_Sentiment" not in df.columns:
             df["Bogleheads_Sentiment"] = 0.0
             df["Bogleheads_Regime"] = 0.0
             df["Bogleheads_Risk"] = 0.5

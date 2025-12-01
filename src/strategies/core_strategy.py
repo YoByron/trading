@@ -685,7 +685,8 @@ class CoreStrategy:
                     )
 
                     # 9b: BND - Bonds (15%)
-                    if bond_amount >= 1.0:
+                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
+                    if bond_amount >= 0.50:
                         try:
                             self.alpaca_trader.execute_order(
                                 symbol="BND",
@@ -698,7 +699,8 @@ class CoreStrategy:
                             logger.warning(f"Bond order failed: {e}")
 
                     # 9c: VNQ - REITs (15%)
-                    if reit_amount >= 1.0:
+                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
+                    if reit_amount >= 0.50:
                         try:
                             self.alpaca_trader.execute_order(
                                 symbol="VNQ",
@@ -710,16 +712,41 @@ class CoreStrategy:
                         except Exception as e:
                             logger.warning(f"REIT order failed: {e}")
 
-                    # 9d: TLT - Treasuries (10%)
-                    if treasury_amount >= 1.0:
+                    # 9d: TLT - Treasuries (10%) with simple momentum gate (SMA20 > SMA50)
+                    # Lowered threshold from $1.0 to $0.50 to enable execution at R&D allocation levels
+                    if treasury_amount >= 0.50:
                         try:
-                            self.alpaca_trader.execute_order(
-                                symbol="TLT",
-                                amount_usd=treasury_amount,
-                                side="buy",
-                                tier="T1_CORE",
+                            import yfinance as _yf
+
+                            tlt = _yf.Ticker("TLT")
+                            hist = tlt.history(period="6mo")
+                            if not hist.empty and "Close" in hist.columns:
+                                sma20 = hist["Close"].rolling(20).mean().iloc[-1]
+                                sma50 = hist["Close"].rolling(50).mean().iloc[-1]
+                                gate = sma20 >= sma50
+                            else:
+                                gate = True  # fail-open if no data
+                        except Exception as e:
+                            logger.warning(
+                                f"TLT momentum check failed (proceeding): {e}"
                             )
-                            logger.info(f"Treasury ETF: TLT ${treasury_amount:.2f}")
+                            gate = True
+
+                        try:
+                            if gate:
+                                self.alpaca_trader.execute_order(
+                                    symbol="TLT",
+                                    amount_usd=treasury_amount,
+                                    side="buy",
+                                    tier="T1_CORE",
+                                )
+                                logger.info(
+                                    f"Treasury ETF: TLT ${treasury_amount:.2f} (SMA20>=SMA50: {gate})"
+                                )
+                            else:
+                                logger.info(
+                                    f"Skipping TLT (momentum gate off: SMA20<SMA50), would-be ${treasury_amount:.2f}"
+                                )
                         except Exception as e:
                             logger.warning(f"Treasury order failed: {e}")
 
