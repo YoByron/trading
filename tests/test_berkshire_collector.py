@@ -117,7 +117,7 @@ def main():
     letter_2023 = collector.get_letter(2023)
     if letter_2023:
         print(f"✓ Retrieved 2023 letter ({len(letter_2023)} characters)")
-        print(f"First 300 characters:")
+        print("First 300 characters:")
         print(f"  {letter_2023[:300]}...")
     else:
         print("2023 letter not available")

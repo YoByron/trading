@@ -8,6 +8,9 @@
 """
 import sys
 import sys
+import os
+
+sys.path.append(os.getcwd())
 import logging
 
 logging.basicConfig(

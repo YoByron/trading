@@ -7,7 +7,7 @@ This demonstrates the backtest engine with a mock strategy to avoid dependency i
 
 import logging
 import sys
-from datetime import datetime, timedelta
+
 
 sys.path.insert(0, "/Users/igorganapolsky/workspace/git/apps/trading")
 
@@ -102,7 +102,7 @@ def test_backtest_engine_structure():
         initial_capital=100000.0,
     )
 
-    print(f"\n✓ Engine initialized successfully")
+    print("\n✓ Engine initialized successfully")
     print(f"  - Start date: {engine.start_date.strftime('%Y-%m-%d')}")
     print(f"  - End date: {engine.end_date.strftime('%Y-%m-%d')}")
     print(f"  - Initial capital: ${engine.initial_capital:,.2f}")
