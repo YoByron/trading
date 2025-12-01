@@ -10,8 +10,8 @@ Improves sample efficiency by replaying important transitions more frequently.
 """
 
 import numpy as np
-import torch
-from typing import Dict, Any, List, Tuple, Optional
+
+from typing import Any, List, Tuple, Optional
 from collections import namedtuple
 import random
 

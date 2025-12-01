@@ -17,7 +17,7 @@ import logging
 import os
 from dataclasses import dataclass
 from statistics import mean
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 try:
     from rag_store import SentimentSQLiteStore  # type: ignore

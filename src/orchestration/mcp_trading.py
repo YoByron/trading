@@ -26,7 +26,8 @@ from src.agents.signal_agent import SignalAgent
 from src.agent_framework.context_engine import (
     get_context_engine,
     ContextType,
-    ContextMessage,
+    get_context_engine,
+    ContextType,
 )
 
 logger = logging.getLogger(__name__)
@@ -209,10 +210,9 @@ class MCPTradingOrchestrator:
             }
 
             try:
-                # Get context for research agent
-                research_context = self.context_engine.get_agent_context(
-                    "research_agent"
-                )
+                # research_context = self.context_engine.get_agent_context(
+                #     "research_agent"
+                # )
 
                 sentiment = openrouter_tools.detailed_sentiment(
                     market_payload, market_payload["news"]
@@ -257,8 +257,7 @@ class MCPTradingOrchestrator:
                         f"Context validation warnings for {symbol}: {errors}"
                     )
 
-                # Get context for meta agent
-                meta_context = self.context_engine.get_agent_context("meta_agent")
+                # meta_context = self.context_engine.get_agent_context("meta_agent")
 
                 meta_decision = self.meta_agent.analyze(market_payload)
                 result.meta_decision = meta_decision

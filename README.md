@@ -4,7 +4,7 @@
 ![Win Rate](https://img.shields.io/badge/win_rate-62.2%25-success.svg)
 ![Sharpe Ratio](https://img.shields.io/badge/sharpe-2.18-success.svg)
 [![Progress Dashboard](https://img.shields.io/badge/Progress-Dashboard-success)](https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard)
-![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 [![Automated Dry Run](https://img.shields.io/badge/Automated%20Dry%20Run-View%20Latest-blue)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
 [![Dry Run Updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/IgorGanapolsky/trading/main/badges/dryrun.json)](https://github.com/IgorGanapolsky/trading/wiki/Automated-Dry-Run)
 
@@ -44,7 +44,7 @@ python3 tests/test_smoke.py
 # Expected: ✅ ALL SMOKE TESTS PASSED
 ```
 
-### 4. Run Trading System
+### 4. Run Trading System (Canonical)
 
 ```bash
 # Point the orchestrator at a ticker list and use the built-in Alpaca simulator
@@ -76,7 +76,7 @@ python3 scripts/dry_run.py --symbols SPY QQQ --export-json out.json --export-md 
 
 **CRITICAL - Read These First**:
 - **[docs/verification-protocols.md](docs/verification-protocols.md)** - "Show, Don't Tell" protocol (MANDATORY reading for all agents and developers)
-- **[docs/r-and-d-phase.md](docs/r-and-d-phase.md)** - Current R&D phase strategy and status (Day 9/90)
+- **[docs/r-and-d-phase.md](docs/r-and-d-phase.md)** - Current R&D phase strategy and status (90-day plan)
 - **[docs/AGENTS.md](docs/AGENTS.md)** - Agent coordination guidelines for autonomous operation
 
 **Strategic Context**:
@@ -95,7 +95,7 @@ These documents contain critical protocols and context for understanding how the
 - ✅ Max Drawdown: **2.2%** (excellent)
 - ✅ Annualized Return: **26.16%**
 
-**Current Status**: Day 7 of 90-day R&D phase
+**Current Status**: Active 90-day R&D phase
 **Account**: $99,978.75 (paper trading)
 **Daily Investment**: $10/day (fixed)
 
@@ -182,7 +182,8 @@ Set `HYBRID_LLM_MODEL=claude-3-5-haiku-20241022` (default) or `gpt-4o-mini` to c
 - **[BACKTEST_USAGE.md](docs/BACKTEST_USAGE.md)** - Backtesting engine
 - **[ORCHESTRATOR_README.md](docs/ORCHESTRATOR_README.md)** - (Legacy) main orchestrator
 - **[agent_framework/](src/agent_framework/)** - Base classes for the new agent architecture
-- **[orchestrator/main.py](src/orchestrator/main.py)** - CLI entrypoint for the new orchestrator
+- **[orchestrator/main.py](src/orchestrator/main.py)** - Hybrid funnel orchestrator (new)
+- `src/main.py` (legacy scheduler) is deprecated — use `scripts/autonomous_trader.py`.
 - **[MCP_EXECUTION_GUIDE.md](docs/MCP_EXECUTION_GUIDE.md)** - Code-execution harness for MCP servers
 - **[UNUSED_FILE_DETECTION.md](docs/UNUSED_FILE_DETECTION.md)** - Automated unused file detection system
 - **[Full Documentation Index](docs/)** - All 42 documentation files
@@ -295,6 +296,6 @@ This software is for educational purposes. Trading involves risk. Past performan
 
 ---
 
-**Built with**: Python, Alpaca API, GitHub Actions, Streamlit
+**Built with**: Python 3.11, Alpaca API, GitHub Actions, Streamlit
 **Maintained by**: Igor Ganapolsky
 **Documentation**: See [docs/](docs/) for complete guides

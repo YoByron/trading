@@ -6,7 +6,7 @@ Continuously updates models from live trade results.
 import torch
 import numpy as np
 from collections import deque
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import logging
 from pathlib import Path
 import json
@@ -114,11 +114,11 @@ class OnlineRLLearner:
             batch = [self.replay_buffer[i] for i in batch_indices]
 
             # Prepare batch data
-            states = torch.stack([exp["state"] for exp in batch])
-            actions = torch.tensor([exp["action"] for exp in batch], dtype=torch.long)
+            # states = torch.stack([exp["state"] for exp in batch])
+            # actions = torch.tensor([exp["action"] for exp in batch], dtype=torch.long)
             rewards = torch.tensor([exp["reward"] for exp in batch], dtype=torch.float)
-            next_states = torch.stack([exp["next_state"] for exp in batch])
-            dones = torch.tensor([exp["done"] for exp in batch], dtype=torch.bool)
+            # next_states = torch.stack([exp["next_state"] for exp in batch])
+            # dones = torch.tensor([exp["done"] for exp in batch], dtype=torch.bool)
 
             # Update model (this is a placeholder - actual update depends on algorithm)
             # For PPO, this would be a PPO update step

@@ -5,12 +5,11 @@ RL agent that learns both action (BUY/SELL/HOLD) and optimal position size.
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from typing import Tuple, Optional
+
+from typing import Tuple, Optional, Dict, Any
 import logging
 
-from src.ml.networks import LSTMPPO
+
 
 logger = logging.getLogger(__name__)
 

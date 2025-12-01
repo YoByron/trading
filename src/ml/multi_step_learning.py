@@ -13,7 +13,7 @@ Benefits:
 """
 
 import numpy as np
-import torch
+
 from typing import List, Tuple, Optional, Deque
 from collections import deque
 from dataclasses import dataclass
@@ -79,8 +79,8 @@ class NStepBuffer:
             rewards = [r for _, _, r, _, _ in self.buffer]
             final_next_state, _, _, _, final_done = self.buffer[-1]
 
-            # Compute n-step return
-            n_step_return = self._compute_n_step_return(rewards, final_done)
+            # Compute n-step return (unused here, computed later)
+            # n_step_return = self._compute_n_step_return(rewards, final_done)
 
             transition = NStepTransition(
                 state=initial_state,

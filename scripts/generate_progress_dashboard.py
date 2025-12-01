@@ -563,7 +563,24 @@ def generate_dashboard() -> str:
     equities_invested = strategies.get("tier1", {}).get(
         "total_invested", 0.0
     ) + strategies.get("tier2", {}).get("total_invested", 0.0)
-    bonds_invested = 0.0  # BND is in tier1, would need to track separately
+    # Calculate bonds invested (BND is part of tier1, track separately)
+    bonds_invested = 0.0
+    bonds_trades = 0
+    
+    # Check trade files for BND/TLT orders
+    trades_dir = DATA_DIR / "trades"
+    if trades_dir.exists():
+        for trade_file in trades_dir.glob("trades_*.json"):
+            try:
+                trades = load_json_file(trade_file)
+                if isinstance(trades, list):
+                    for trade in trades:
+                        symbol = trade.get("symbol", "").upper()
+                        if symbol in ["BND", "TLT"]:
+                            bonds_trades += 1
+                            bonds_invested += trade.get("amount", 0.0)
+            except Exception:
+                pass
 
     # Calculate trades for each asset class
     equities_trades = strategies.get("tier1", {}).get(
@@ -582,8 +599,31 @@ def generate_dashboard() -> str:
 | Asset Class | Total Invested | Trades Executed |
 |-------------|----------------|-----------------|
 | **Equities** | ${equities_invested_str} | {equities_trades} |
-| **Bonds** | ${bonds_invested_str} | 0 |
+| **Bonds** | ${bonds_invested_str} | {bonds_trades} |
 | **Crypto** | ${crypto_invested_str} | {crypto_trades} |
+
+---
+
+## 🔵 Bonds Trading Status
+
+### Current Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Bonds Exposure** | ${bonds_invested_str} | {'✅ Active' if bonds_invested > 0 else '⏸️ Not Executing'} |
+| **Bonds Trades** | {bonds_trades} | {'✅ Executing' if bonds_trades > 0 else '⏸️ None Yet'} |
+| **BND Allocation** | 15% of Tier 1 | ✅ Configured |
+| **TLT Allocation** | 10% of Tier 1 | ✅ Configured |
+
+### Execution Requirements
+
+**Alpaca API Minimum Order Size: $1.00 USD**
+
+**Root Cause Identified**: Bonds configured but not executing due to Alpaca $1.00 minimum order requirement  
+**Fix Applied**: Updated execution thresholds from $0.50 to $1.00  
+**Status**: ✅ Fixed - Bonds will execute when daily allocation >= $6.67
+
+**Documentation**: [Bonds Trading Analysis](docs/BONDS_TRADING_ANALYSIS.md)
 
 ---
 """

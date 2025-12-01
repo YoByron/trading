@@ -15,7 +15,7 @@ import json
 import logging
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -295,7 +295,7 @@ Save signals to a file.
         # Use existing risk agent
         from src.agents.risk_agent import RiskAgent
 
-        risk_agent = RiskAgent()
+        # risk_agent = RiskAgent()
 
         # This would validate signals from previous step
         return {"success": True, "type": "risk", "result": "Risk validation completed"}
@@ -303,8 +303,7 @@ Save signals to a file.
     async def _execute_trade(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Execute trade step (with approval gates)."""
         # Use existing execution agent
-        from src.agents.execution_agent import ExecutionAgent
-        from mcp.servers import alpaca as alpaca_tools
+
 
         # This would execute approved trades
         return {
