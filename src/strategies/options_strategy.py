@@ -48,22 +48,31 @@ class OptionsStrategy:
     2. LangChain Agent: News & Sentiment
     """
 
-    def __init__(self, paper: bool = True):
+    def __init__(self, paper: bool = True, min_shares_threshold: int = None):
         """
         Initialize the Options Strategy.
 
         Args:
             paper: If True, use paper trading environment.
+            min_shares_threshold: Minimum shares required for covered calls (default: 50, was 100)
         """
         self.paper = paper
         self.options_client = AlpacaOptionsClient(paper=paper)
         self.trader = AlpacaTrader(paper=paper)
 
         # Strategy Configuration
+        # Lowered from 100 to 50 shares for faster activation (more realistic)
+        self.min_shares_threshold = min_shares_threshold or int(
+            os.getenv("OPTIONS_MIN_SHARES", "50")
+        )
         self.target_delta = 0.30
         self.min_days_to_expire = 25
         self.max_days_to_expire = 50
         self.min_annualized_return = 0.06  # 6% annualized yield minimum
+        
+        logger.info(
+            f"Options Strategy initialized: Minimum shares threshold = {self.min_shares_threshold}"
+        )
 
         # Initialize AI Agents
         self.gemini_agent = None
@@ -177,12 +186,15 @@ class OptionsStrategy:
             # 1. Get Portfolio Positions
             positions = self.trader.get_positions()
             eligible_positions = [
-                p for p in positions if float(p["qty"]) >= 100 and p["side"] == "long"
+                p
+                for p in positions
+                if float(p["qty"]) >= self.min_shares_threshold
+                and p["side"] == "long"
             ]
 
             if not eligible_positions:
                 logger.info(
-                    "No positions eligible for covered calls (need >= 100 shares)."
+                    f"No positions eligible for covered calls (need >= {self.min_shares_threshold} shares)."
                 )
                 return results
 
