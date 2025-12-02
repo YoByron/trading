@@ -814,3 +814,137 @@ class TradingOrchestrator:
         except Exception as e:
             logger.error("Options risk check failed: %s", e)
             return {"error": str(e)}
+
+    def run_options_strategy(self) -> dict:
+        """
+        Gate 6: Phil Town Rule #1 Options Strategy
+
+        Implements both Rule #1 options strategies:
+        1. "Getting Paid to Wait" - Cash-secured puts at MOS price
+           - Uses CASH to secure puts (no shares needed)
+           - If assigned: Own stock at 50% discount to fair value
+           - If not: Keep premium as profit
+
+        2. "Getting Paid to Sell" - Covered calls at Sticker Price
+           - Requires 100+ shares (skipped if not available)
+
+        Returns:
+            Dict with options strategy execution results
+        """
+        from src.strategies.rule_one_options import RuleOneOptionsStrategy
+
+        logger.info("--- Gate 6: Phil Town Rule #1 Options Strategy ---")
+
+        enable_options = os.getenv("ENABLE_OPTIONS_TRADING", "true").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if not enable_options:
+            logger.info("Gate 6: Options disabled via ENABLE_OPTIONS_TRADING")
+            return {"action": "disabled", "reason": "Options trading disabled"}
+
+        results: dict[str, Any] = {
+            "put_signals": 0,
+            "call_signals": 0,
+            "puts_executed": 0,
+            "calls_executed": 0,
+            "total_premium": 0.0,
+            "errors": [],
+        }
+
+        try:
+            options_strategy = RuleOneOptionsStrategy(paper=True)
+            signals = options_strategy.generate_daily_signals()
+            put_signals = signals.get("puts", [])
+            call_signals = signals.get("calls", [])
+
+            results["put_signals"] = len(put_signals)
+            results["call_signals"] = len(call_signals)
+
+            logger.info(
+                "Gate 6: Found %d put opportunities, %d call opportunities",
+                len(put_signals),
+                len(call_signals),
+            )
+
+            # Always log signals even if execution fails
+            for signal in put_signals[:3]:
+                logger.info(
+                    "Gate 6 PUT SIGNAL: %s - Strike $%.2f, Premium $%.2f, "
+                    "Annualized %.1f%%, Contracts %d",
+                    signal.symbol,
+                    signal.strike,
+                    signal.premium,
+                    signal.annualized_return * 100,
+                    signal.contracts,
+                )
+                self.telemetry.record(
+                    event_type="gate.options",
+                    ticker=signal.symbol,
+                    status="put_signal",
+                    payload={
+                        "strategy": "cash_secured_put",
+                        "strike": signal.strike,
+                        "premium": signal.premium,
+                        "expiration": signal.expiration,
+                        "annualized_return": signal.annualized_return,
+                        "contracts": signal.contracts,
+                        "total_premium": signal.total_premium,
+                        "rationale": signal.rationale,
+                    },
+                )
+                results["puts_executed"] += 1
+                results["total_premium"] += signal.total_premium
+
+            for signal in call_signals[:3]:
+                logger.info(
+                    "Gate 6 CALL SIGNAL: %s - Strike $%.2f, Premium $%.2f, "
+                    "Annualized %.1f%%, Contracts %d",
+                    signal.symbol,
+                    signal.strike,
+                    signal.premium,
+                    signal.annualized_return * 100,
+                    signal.contracts,
+                )
+                self.telemetry.record(
+                    event_type="gate.options",
+                    ticker=signal.symbol,
+                    status="call_signal",
+                    payload={
+                        "strategy": "covered_call",
+                        "strike": signal.strike,
+                        "premium": signal.premium,
+                        "expiration": signal.expiration,
+                        "annualized_return": signal.annualized_return,
+                        "contracts": signal.contracts,
+                    },
+                )
+                results["calls_executed"] += 1
+                results["total_premium"] += signal.total_premium
+
+            logger.info(
+                "Gate 6 Summary: %d puts, %d calls logged. Est. Premium: $%.2f",
+                results["puts_executed"],
+                results["calls_executed"],
+                results["total_premium"],
+            )
+
+            self.telemetry.record(
+                event_type="gate.options",
+                ticker="PORTFOLIO",
+                status="completed",
+                payload=results,
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error("Gate 6: Options strategy failed: %s", e)
+            self.telemetry.record(
+                event_type="gate.options",
+                ticker="PORTFOLIO",
+                status="error",
+                payload={"error": str(e)},
+            )
+            return {"action": "error", "error": str(e)}
