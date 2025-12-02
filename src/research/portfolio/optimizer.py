@@ -100,13 +100,9 @@ class PortfolioOptimizer:
         elif method == OptimizationMethod.MIN_VARIANCE:
             weights = self._min_variance(covariance_matrix, constraints)
         elif method == OptimizationMethod.MEAN_VARIANCE:
-            weights = self._mean_variance(
-                expected_returns, covariance_matrix, constraints
-            )
+            weights = self._mean_variance(expected_returns, covariance_matrix, constraints)
         elif method == OptimizationMethod.MAX_SHARPE:
-            weights = self._max_sharpe(
-                expected_returns, covariance_matrix, constraints
-            )
+            weights = self._max_sharpe(expected_returns, covariance_matrix, constraints)
         elif method == OptimizationMethod.RISK_PARITY:
             weights = self._risk_parity(covariance_matrix, constraints)
         elif method == OptimizationMethod.HRP:
@@ -131,9 +127,7 @@ class PortfolioOptimizer:
             method=method,
         )
 
-    def _min_variance(
-        self, cov: pd.DataFrame, constraints: PortfolioConstraints
-    ) -> np.ndarray:
+    def _min_variance(self, cov: pd.DataFrame, constraints: PortfolioConstraints) -> np.ndarray:
         """Minimum variance optimization."""
         n = len(cov)
 
@@ -171,9 +165,7 @@ class PortfolioOptimizer:
         result = minimize(neg_sharpe, x0, method="SLSQP", bounds=bounds, constraints=cons)
         return result.x if result.success else x0
 
-    def _risk_parity(
-        self, cov: pd.DataFrame, constraints: PortfolioConstraints
-    ) -> np.ndarray:
+    def _risk_parity(self, cov: pd.DataFrame, constraints: PortfolioConstraints) -> np.ndarray:
         """Risk parity (equal risk contribution)."""
         n = len(cov)
 
@@ -195,7 +187,7 @@ class PortfolioOptimizer:
 
     def _hierarchical_risk_parity(self, cov: pd.DataFrame) -> np.ndarray:
         """Hierarchical Risk Parity using correlation clustering."""
-        from scipy.cluster.hierarchy import linkage, leaves_list
+        from scipy.cluster.hierarchy import leaves_list, linkage
         from scipy.spatial.distance import squareform
 
         corr = cov.values / np.outer(np.sqrt(np.diag(cov)), np.sqrt(np.diag(cov)))

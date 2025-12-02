@@ -10,19 +10,19 @@ Provides position sizing algorithms and portfolio construction methods:
 - Constraints: sector caps, concentration limits, turnover
 """
 
+from src.research.portfolio.kelly import (
+    calculate_half_kelly,
+    calculate_kelly_fraction,
+)
 from src.research.portfolio.optimizer import (
-    PortfolioOptimizer,
     OptimizationMethod,
-    PortfolioConstraints,
     OptimizationResult,
+    PortfolioConstraints,
+    PortfolioOptimizer,
 )
 from src.research.portfolio.risk_parity import (
-    calculate_risk_parity_weights,
     calculate_equal_risk_contribution,
-)
-from src.research.portfolio.kelly import (
-    calculate_kelly_fraction,
-    calculate_half_kelly,
+    calculate_risk_parity_weights,
 )
 
 __all__ = [
