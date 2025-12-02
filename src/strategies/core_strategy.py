@@ -79,7 +79,6 @@ except ImportError:
     VCAStrategy = None
     VCACalculation = None
 
-
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -1051,7 +1050,7 @@ class CoreStrategy:
                                         self._update_holdings(symbol, -qty)
                                         self._reward_rl(symbol, unrealized_plpc)
                                         continue  # Skip take-profit check
-                                        
+
                                     except Exception as e:
                                         logger.error(f"  ❌ Failed to close position {symbol}: {e}")
                     except Exception as e:
@@ -1092,7 +1091,7 @@ class CoreStrategy:
                             self._update_holdings(symbol, -qty)
                             self._reward_rl(symbol, unrealized_plpc)
                             continue  # Skip take-profit check
-                            
+
                         except Exception as e:
                             logger.error(f"  ❌ Failed to close position {symbol}: {e}")
 
