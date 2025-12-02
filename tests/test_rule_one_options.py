@@ -349,7 +349,7 @@ class TestRuleOneOptionsStrategy:
 
         files = list(Path(tmp_path).glob("*.json"))
         assert files, "Expected signal snapshot file"
-        with open(files[0], "r", encoding="utf-8") as handle:
+        with open(files[0], encoding="utf-8") as handle:
             data = json.load(handle)
         assert data["put_opportunities"][0]["symbol"] == "AAPL"
         assert data["put_opportunities"][0]["contracts"] == 1

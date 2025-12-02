@@ -754,7 +754,7 @@ class RuleOneOptionsStrategy:
             mid = (bid + ask) / 2 if (bid > 0 and ask > 0) else max(bid, ask)
             delta = best_put.get("delta")
             implied_vol = best_put.get("impliedVolatility")
-            vol_series = puts["impliedVolatility"] if "impliedVolatility" in puts else []
+            vol_series = puts["impliedVolatility"] if "impliedVolatility" in puts.columns else []
             iv_rank = self._compute_iv_rank(vol_series, implied_vol)
 
             return OptionContract(
@@ -831,7 +831,7 @@ class RuleOneOptionsStrategy:
             mid = (bid + ask) / 2 if (bid > 0 and ask > 0) else max(bid, ask)
             delta = best_call.get("delta")
             implied_vol = best_call.get("impliedVolatility")
-            vol_series = calls["impliedVolatility"] if "impliedVolatility" in calls else []
+            vol_series = calls["impliedVolatility"] if "impliedVolatility" in calls.columns else []
             iv_rank = self._compute_iv_rank(vol_series, implied_vol)
 
             return OptionContract(

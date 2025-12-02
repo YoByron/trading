@@ -114,7 +114,7 @@ class OptionsBookRetriever:
 
         logger.info("Options Book Retriever initialized")
 
-    def get_iv_regime(self, iv_rank: float) -> Dict[str, Any]:
+    def get_iv_regime(self, iv_rank: float) -> dict[str, Any]:
         """
         CRITICAL: Determine IV regime before ANY RAG query.
 
@@ -191,9 +191,9 @@ class OptionsBookRetriever:
         query: str,
         iv_rank: float,
         top_k: int = 5,
-        content_types: Optional[List[str]] = None,
-        include_structured: bool = True
-    ) -> Dict[str, Any]:
+        content_types: Optional[list[str]] = None,
+        include_structured: bool = True,
+    ) -> dict[str, Any]:
         """
         Search options knowledge with IV regime awareness.
 
