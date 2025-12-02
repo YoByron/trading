@@ -718,9 +718,7 @@ class BacktestEngine:
         snapshot = self._get_bias_snapshot(symbol, date)
         if snapshot is None:
             return False
-        if snapshot.score < self.bias_replay_threshold:
-            return True
-        return False
+        return snapshot.score < self.bias_replay_threshold
 
     def _get_point_in_time_sentiment(
         self,
