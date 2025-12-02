@@ -111,3 +111,65 @@ Next Steps:
 - When network access is available, re-run backtest matrix to populate real scenario data
 - Continue R&D phase (Day 9/90) to improve paper trading metrics toward 60% win rate, 1.5 Sharpe
 - Once metrics improve, promotion gate will pass naturally
+
+2025-12-02 00:00 - Claude Opus 4 (CTO)
+Summary:
+- Implemented $10/day → $100/day roadmap based on CEO's North Star goal
+- Added BITO (ProShares Bitcoin Strategy ETF) to asset universe for BTC exposure without crypto API issues
+- Added IEF (iShares 7-10 Year Treasury Bond ETF) for shorter-duration treasury diversification
+- Updated allocation: 50% equity, 15% bonds, 15% REITs, 10% treasuries, 10% crypto proxy
+- Created comprehensive plan.md documenting the 16-18 month path to $100/day profit
+
+Files Changed:
+- src/strategies/core_strategy.py (ETF universe + allocation update)
+- plan.md (full roadmap with compounding math)
+- claude-progress.txt (this entry)
+
+Key Decisions:
+1. BITO replaces broken direct BTC/ETH trading - trades like regular stock, no API issues
+2. IEF complements TLT for a treasury ladder approach
+3. Reduced equity from 60% to 50% to make room for crypto proxy
+4. Compounding math: $10/day input → $100/day profit in ~18 months at 0.13% daily edge
+
+Next Steps:
+- Run backtest with new 7-ETF portfolio allocation
+- Continue R&D phase to validate win rate holds with expanded universe
+- Next trade: Dec 03, 9:35 AM ET (will include new assets in momentum selection)
+
+2025-12-02 01:00 - Claude Opus 4 (CTO)
+Summary:
+- Implemented Phil Town's Rule #1 Options Strategy per CEO request
+- Created comprehensive src/strategies/rule_one_options.py with:
+  - Sticker Price Calculator (Phil Town's formula)
+  - Big Five Analysis (ROIC, Equity, EPS, Sales, FCF growth)
+  - "Selling Puts to Buy at Discount" strategy
+  - "Selling Covered Calls to Sell at Premium" strategy
+- Added quality universe: AAPL, MSFT, GOOGL, AMZN, BRK-B, V, MA, JNJ, etc.
+- Created tests in tests/test_rule_one_options.py
+- Updated plan.md with options roadmap and yield estimates
+
+Files Changed:
+- src/strategies/rule_one_options.py (NEW - 550+ lines)
+- tests/test_rule_one_options.py (NEW - comprehensive tests)
+- plan.md (added Phil Town options section)
+- claude-progress.txt (this entry)
+
+Key Features:
+1. Sticker Price = Future Value discounted at 15% MARR
+2. MOS Price = 50% of Sticker Price (buy target)
+3. Sell puts at MOS, sell calls at Sticker
+4. Big Five screen ensures only quality stocks
+5. 12%+ annualized yield target on options
+
+Options Timeline:
+- Now: Building positions, research only
+- Month 3: Start covered calls (need 50+ shares)
+- Month 6: Start put selling ($5k+ cash)
+- Month 12: Full deployment of both strategies
+
+Expected Yield Boost: +$50-150/month at $10k portfolio
+
+Next Steps:
+- Accumulate 50+ shares of NVDA for first covered call
+- Monitor Big Five metrics on Rule #1 universe
+- Options trading will auto-activate when thresholds met
