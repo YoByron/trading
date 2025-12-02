@@ -45,7 +45,12 @@ def parse_args() -> argparse.Namespace:
         default=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         help="End date (YYYY-MM-DD) for the training window.",
     )
-    parser.add_argument("--epochs", type=int, default=10, help="Max training epochs (early stopping may halt sooner).")
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=10,
+        help="Max training epochs (early stopping may halt sooner).",
+    )
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size.")
     parser.add_argument("--learning-rate", type=float, default=3e-4, help="Learning rate.")
     parser.add_argument(
@@ -212,7 +217,9 @@ def train_model(
     X_train, y_train = X[train_indices], y[train_indices]
     X_val, y_val = X[val_indices], y[val_indices]
 
-    print(f"📊 Dataset split: train={len(train_indices)}, val={len(val_indices)} ({val_split*100:.0f}%)")
+    print(
+        f"📊 Dataset split: train={len(train_indices)}, val={len(val_indices)} ({val_split * 100:.0f}%)"
+    )
 
     train_dataset = TensorDataset(
         torch.from_numpy(X_train).float(),
@@ -305,7 +312,9 @@ def train_model(
 
         # Check early stopping conditions
         if val_sharpe < min_val_sharpe and epoch > 2:
-            print(f"⚠️  Early stop check: val_sharpe ({val_sharpe:.3f}) < min ({min_val_sharpe:.3f})")
+            print(
+                f"⚠️  Early stop check: val_sharpe ({val_sharpe:.3f}) < min ({min_val_sharpe:.3f})"
+            )
             if epochs_without_improvement >= patience:
                 print(f"🛑 Early stopping triggered: {patience} epochs without improvement")
                 training_metrics["early_stopped"] = True
@@ -394,15 +403,20 @@ def main() -> None:
     metrics_path = Path("data/audit_trail/rl_training_metrics.jsonl")
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     with metrics_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "tickers": args.tickers,
-            "epochs_completed": training_metrics["epochs_completed"],
-            "early_stopped": training_metrics["early_stopped"],
-            "best_val_sharpe": training_metrics["best_val_sharpe"],
-            "final_train_acc": training_metrics["final_train_acc"],
-            "final_val_acc": training_metrics["final_val_acc"],
-        }) + "\n")
+        f.write(
+            json.dumps(
+                {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "tickers": args.tickers,
+                    "epochs_completed": training_metrics["epochs_completed"],
+                    "early_stopped": training_metrics["early_stopped"],
+                    "best_val_sharpe": training_metrics["best_val_sharpe"],
+                    "final_train_acc": training_metrics["final_train_acc"],
+                    "final_val_acc": training_metrics["final_val_acc"],
+                }
+            )
+            + "\n"
+        )
     print(f"📝 Training metrics logged to {metrics_path}")
 
 
