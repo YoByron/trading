@@ -89,10 +89,10 @@ PYTHONPATH=. python3 scripts/train_rl_transformer.py \
   --epochs 4
 
 # Convert Rule #1 signals into a $10/day premium plan
-PYTHONPATH=src python3 scripts/options_profit_planner.py --target-daily 10
+PYTHONPATH=/workspace python3 scripts/options_profit_planner.py --target-daily 10
 
 # Run theta harvest live simulation (equity → planner → opportunities)
-PYTHONPATH=src python3 scripts/run_options_live_sim.py --symbols SPY,QQQ,IWM
+PYTHONPATH=/workspace python3 scripts/run_options_live_sim.py --symbols SPY,QQQ,IWM
 ```
 
 ---
