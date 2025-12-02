@@ -1,44 +1,44 @@
-# Plan Mode Session: Options Strategy Enhancements
+# Plan Mode Session: Resolve PR #78 Merge Conflicts
 
-> Managed in Claude Code Plan Mode. Do not modify outside Plan Mode workflow.
+> Managed under Claude Code Plan Mode guardrails. Do not bypass this workflow.
 
 ## Metadata
-- Task: Enhance Rule #1 options engine with richer analytics + risk controls
-- Owner: Claude CTO
-- Status: DRAFT
-- Created at: 2025-12-02T12:45:00Z
+- Task: Resolve merge conflicts blocking PR #78 (fix(ci): Resolve all ruff lint and format errors)
+- Owner: GPT-5.1 Codex
+- Status: APPROVED
+- Created at: 2025-12-02T14:26:41Z
 - Valid for (minutes): 180
 
 ## Clarifying Questions
-1. Should enhanced analytics run inside the daily trading workflow or as a standalone prep step? (Assuming standalone analytics that emits artifacts for now.)
-2. Are we allowed to store lightweight market data snapshots (IV history, signal logs) under `data/` for audit? (Assuming yes ≤1 MB per run.)
+1. Should the PR branch be rebased on top of `main` or should `main` be merged into the branch? (Assuming merge-from-main to preserve contributor history.)
+2. Are we expected to rerun the repo-wide lint/test suite or only the portions touched by the conflicts? (Defaulting to targeted lint/tests covering the modified files, plus `ruff` if available.)
 
 ## Execution Plan
-1. **Risk & Data Audit**
-   - Review current `RuleOneOptionsStrategy` outputs, confirm MAX_IV_RANK, delta targets, and premium caps are wired (they currently are not enforced).
-   - Inventory available fields from yfinance/Alpaca for IV, delta, open interest.
-2. **IV Rank + Delta Enforcement**
-   - Implement helper to approximate IV rank from latest option chain (ATM IV vs trailing min/max) and reject trades above threshold.
-   - Annotate signals with computed delta + IV rank so reports explain why a contract qualified.
-3. **Position Sizing & Cash Checks**
-   - Add sizing logic that inspects Alpaca cash/shares, determines how many contracts we can sell, and rejects signals that exceed cash or share inventory.
-   - For puts: use buying power / (strike*100); for calls: floor(shares/100).
-4. **Signal Journal & Summary Output**
-   - Persist daily signal snapshot (valuations + best puts/calls) under `data/options_signals/YYYY-MM-DD.json` for later auditing.
-   - Provide convenience method returning structured summary used by reports/dashboard.
-5. **Testing + Docs**
-   - Extend `tests/test_rule_one_options.py` to cover IV rank filtering, sizing guardrails, and journal persistence.
-   - Update `plan.md` exit checklist + any relevant docs (e.g., README or strategy doc) with new workflow description.
+1. **Branch & Conflict Discovery**
+   - Fetch `origin/claude/fix-ci-pipeline-01UjfKEPkeMbdoKEeqUQajBE` and `origin/main`.
+   - Create/refresh a working branch dedicated to resolving the conflicts.
+   - Inspect `git status`/`git diff origin/main...HEAD` to see the conflict surface area.
+2. **Merge Base and Resolve Conflicts**
+   - Merge `origin/main` into the working branch (non-ff) and capture all conflict markers.
+   - Edit conflicted files, reconciling the contributor changes with the latest `main` state while preserving CI fixes.
+   - Ensure formatting/lint expectations from the PR description still hold after conflict resolution.
+3. **Validation & Tooling**
+   - Run the relevant linters/tests (e.g., `ruff`, targeted pytest) for touched modules.
+   - Verify `git status` is clean and no new conflicts remain.
+4. **Documentation & Reporting**
+   - Update `claude-progress.txt` with a concise session summary.
+   - Stage, commit, and push the branch; open/refresh a PR describing the conflict resolution.
+   - Update this `plan.md` exit checklist to reflect completion.
 
 ## Approval
-- Reviewer: Claude CTO (self-approved per autonomous directive)
+- Reviewer: GPT-5.1 Codex (autonomous approval per directive)
 - Status: APPROVED
-- Approved at: 2025-12-02T12:50:00Z
-- Valid through: 2025-12-02T15:50:00Z
+- Approved at: 2025-12-02T14:28:00Z
+- Valid through: 2025-12-02T17:28:00Z
 
 ## Exit Checklist
-- [x] Enforce IV rank + delta filters with explainable metadata
-- [x] Add cash/share-aware contract sizing for puts and calls
-- [x] Persist options signal journal under `data/options_signals/`
-- [x] Update tests and documentation
-- [x] Summarize work + ensure CI/lints clean
+- [x] Merge `origin/main` into the PR branch with conflicts resolved
+- [x] Run targeted lint/tests covering affected files
+- [x] Update `claude-progress.txt` with work summary
+- [x] Commit, push, and ensure PR/branch reflects the resolved conflicts
+- [x] Confirm plan guard satisfied and repository left clean
