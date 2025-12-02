@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime, timezone
 
 import chromadb
 from chromadb.api import Collection
@@ -57,11 +58,32 @@ class SentimentVectorStore:
         *,
         ticker: str | None = None,
         n_results: int = 5,
+        as_of: datetime | str | None = None,
     ) -> dict:
         """Query the vector store with optional ticker filter."""
-        where = {"ticker": ticker} if ticker else None
+        where = {}
+        if ticker:
+            where["ticker"] = ticker.upper()
+        if as_of:
+            date_cutoff, ts_cutoff = _normalize_as_of(as_of)
+            where["snapshot_date"] = {"$lte": date_cutoff}
+            where["created_at"] = {"$lte": ts_cutoff}
+        where_clause = where or None
         return self._collection.query(
             query_texts=[query_text],
             n_results=n_results,
-            where=where,
+            where=where_clause,
         )
+
+
+def _normalize_as_of(as_of: datetime | str) -> tuple[str, str]:
+    if isinstance(as_of, datetime):
+        aware = as_of if as_of.tzinfo else as_of.replace(tzinfo=timezone.utc)
+        return aware.date().isoformat(), aware.astimezone(timezone.utc).isoformat()
+    try:
+        parsed = datetime.fromisoformat(as_of)
+    except ValueError:
+        parsed = datetime.strptime(as_of, "%Y-%m-%d")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.date().isoformat(), parsed.astimezone(timezone.utc).isoformat()
