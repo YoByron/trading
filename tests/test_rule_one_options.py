@@ -2,19 +2,14 @@
 Tests for Phil Town's Rule #1 Options Strategy.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
-import numpy as np
+from unittest.mock import MagicMock, patch
 
+import pytest
 from src.strategies.rule_one_options import (
-    RuleOneOptionsStrategy,
     BigFiveMetrics,
-    StickerPriceResult,
     RuleOneOptionsSignal,
-    MeaningRating,
-    MoatRating,
-    ManagementRating,
+    RuleOneOptionsStrategy,
+    StickerPriceResult,
 )
 
 
@@ -160,14 +155,14 @@ class TestRuleOneOptionsSignal:
 class TestRuleOneOptionsStrategy:
     """Test the main strategy class."""
 
-    @patch('src.strategies.rule_one_options.yf.Ticker')
+    @patch("src.strategies.rule_one_options.yf.Ticker")
     def test_calculate_sticker_price(self, mock_ticker):
         """Should calculate Sticker Price using Phil Town's formula."""
         # Mock yfinance data
         mock_ticker.return_value.info = {
-            'currentPrice': 150.0,
-            'trailingEps': 6.0,
-            'earningsGrowth': 0.12,
+            "currentPrice": 150.0,
+            "trailingEps": 6.0,
+            "earningsGrowth": 0.12,
         }
         mock_ticker.return_value.financials = MagicMock()
         mock_ticker.return_value.balance_sheet = MagicMock()
@@ -183,13 +178,13 @@ class TestRuleOneOptionsStrategy:
         assert result.sticker_price > 0
         assert result.mos_price == result.sticker_price * 0.5
 
-    @patch('src.strategies.rule_one_options.yf.Ticker')
+    @patch("src.strategies.rule_one_options.yf.Ticker")
     def test_calculate_big_five(self, mock_ticker):
         """Should calculate Big Five metrics."""
         mock_ticker.return_value.info = {
-            'returnOnCapital': 0.18,
-            'earningsGrowth': 0.15,
-            'revenueGrowth': 0.12,
+            "returnOnCapital": 0.18,
+            "earningsGrowth": 0.15,
+            "revenueGrowth": 0.12,
         }
         mock_ticker.return_value.financials = MagicMock()
         mock_ticker.return_value.balance_sheet = MagicMock()
