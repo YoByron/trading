@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import date, datetime
+from typing import Any
+
+import holidays
 
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.langchain_agents.analyst import LangChainSentimentAgent
+from src.orchestrator.anomaly_monitor import AnomalyMonitor
 from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
 from src.orchestrator.telemetry import OrchestratorTelemetry
@@ -18,6 +23,22 @@ from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import TradeGateway, TradeRequest
 
 logger = logging.getLogger(__name__)
+
+_US_HOLIDAYS_CACHE: dict[int, holidays.HolidayBase] = {}
+
+
+def _get_us_holidays(year: int) -> holidays.HolidayBase:
+    if year not in _US_HOLIDAYS_CACHE:
+        _US_HOLIDAYS_CACHE[year] = holidays.US(years=[year])
+    return _US_HOLIDAYS_CACHE[year]
+
+
+def is_us_market_day(day: date | None = None) -> bool:
+    current_day = day or datetime.utcnow().date()
+    if current_day.weekday() >= 5:  # Saturday/Sunday
+        return False
+    calendar = _get_us_holidays(current_day.year)
+    return current_day not in calendar
 
 
 class TradingOrchestrator:
@@ -47,22 +68,116 @@ class TradingOrchestrator:
         self.executor = AlpacaExecutor(paper=paper)
         self.executor.sync_portfolio_state()
         self.telemetry = OrchestratorTelemetry()
+        self.anomaly_monitor = AnomalyMonitor(
+            telemetry=self.telemetry,
+            window=int(os.getenv("ANOMALY_WINDOW", "40")),
+            rejection_threshold=float(os.getenv("ANOMALY_REJECTION_THRESHOLD", "0.8")),
+            confidence_floor=float(os.getenv("ANOMALY_CONFIDENCE_FLOOR", "0.45")),
+        )
         self.failure_manager = FailureIsolationManager(self.telemetry)
         self.options_risk_monitor = OptionsRiskMonitor(paper=paper)
         # CRITICAL: All trades must go through the gateway - no direct executor calls
         self.trade_gateway = TradeGateway(executor=self.executor, paper=paper)
         # Capital efficiency calculator - determines what strategies are viable
         self.capital_calculator = get_capital_calculator(daily_deposit_rate=10.0)
+        self.session_profile: dict[str, Any] | None = None
 
     def run(self) -> None:
-        logger.info("Running hybrid funnel for tickers: %s", ", ".join(self.tickers))
-        for ticker in self.tickers:
-            self._process_ticker(ticker)
+        session_profile = self._build_session_profile()
+        active_tickers = session_profile["tickers"]
+        self.session_profile = session_profile
+
+        self.momentum_agent.configure_regime(session_profile.get("momentum_overrides"))
+
+        self.telemetry.record(
+            event_type="session.profile",
+            ticker="SYSTEM",
+            status="info",
+            payload={
+                "session_type": session_profile["session_type"],
+                "market_day": session_profile["is_market_day"],
+                "tickers": active_tickers,
+                "rl_threshold": session_profile["rl_threshold"],
+            },
+        )
+
+        logger.info(
+            "Running hybrid funnel (%s) for tickers: %s",
+            session_profile["session_type"],
+            ", ".join(active_tickers),
+        )
+
+        for ticker in active_tickers:
+            self._process_ticker(ticker, rl_threshold=session_profile["rl_threshold"])
 
         # Gate 5: Post-execution delta rebalancing
         self.run_delta_rebalancing()
 
-    def _process_ticker(self, ticker: str) -> None:
+    def _build_session_profile(self) -> dict[str, Any]:
+        today = datetime.utcnow().date()
+        market_day = is_us_market_day(today)
+        proxy_symbols = os.getenv("WEEKEND_PROXY_SYMBOLS", "BITO,RWCR")
+        proxy_list = [symbol.strip().upper() for symbol in proxy_symbols.split(",") if symbol.strip()]
+        momentum_overrides: dict[str, float] = {}
+        rl_threshold = float(os.getenv("RL_CONFIDENCE_THRESHOLD", "0.6"))
+        session_type = "market_hours"
+
+        if not market_day:
+            session_type = "off_hours_crypto_proxy"
+            proxy_list = proxy_list or ["BITO"]
+            momentum_overrides = {
+                "rsi_overbought": float(os.getenv("WEEKEND_RSI_OVERBOUGHT", "65.0")),
+                "macd_threshold": float(os.getenv("WEEKEND_MACD_THRESHOLD", "-0.05")),
+                "volume_min": float(os.getenv("WEEKEND_VOLUME_MIN", "0.5")),
+            }
+            rl_threshold = float(os.getenv("RL_WEEKEND_CONFIDENCE_THRESHOLD", "0.55"))
+
+        tickers = self.tickers if market_day else proxy_list
+
+        return {
+            "session_type": session_type,
+            "is_market_day": market_day,
+            "tickers": tickers,
+            "rl_threshold": rl_threshold,
+            "momentum_overrides": momentum_overrides,
+        }
+
+    def _estimate_execution_costs(self, notional: float) -> dict[str, float]:
+        sec_fee_rate = float(os.getenv("SEC_FEE_RATE", "0.000018"))
+        broker_fee_rate = float(os.getenv("BROKER_FEE_RATE", "0.0005"))
+        slip_bps = float(os.getenv("EXECUTION_SLIPPAGE_BPS", "25.0"))
+
+        slippage_cost = (slip_bps / 10_000.0) * notional
+        fee_cost = (sec_fee_rate + broker_fee_rate) * notional
+        total_cost = slippage_cost + fee_cost
+
+        return {
+            "slippage_cost": round(slippage_cost, 4),
+            "fees": round(fee_cost, 4),
+            "total_cost": round(total_cost, 4),
+            "slippage_bps": slip_bps,
+            "fee_rate": sec_fee_rate + broker_fee_rate,
+        }
+
+    def _track_gate_event(
+        self,
+        *,
+        gate: str,
+        ticker: str,
+        status: str,
+        metrics: dict[str, Any] | None = None,
+    ) -> None:
+        try:
+            self.anomaly_monitor.track(
+                gate=gate,
+                ticker=ticker,
+                status=status,
+                metrics=metrics or {},
+            )
+        except Exception as exc:  # pragma: no cover - non-critical
+            logger.debug("Anomaly monitor tracking failed for %s: %s", gate, exc)
+
+    def _process_ticker(self, ticker: str, rl_threshold: float) -> None:
         logger.info("--- Processing %s ---", ticker)
 
         # Gate 1: deterministic momentum
@@ -90,6 +205,12 @@ class TradingOrchestrator:
                     "indicators": momentum_signal.indicators,
                 },
             )
+            self._track_gate_event(
+                gate="momentum",
+                ticker=ticker,
+                status="reject",
+                metrics={"confidence": momentum_signal.strength},
+            )
             return
         logger.info("Gate 1 (%s): PASSED (strength=%.2f)", ticker, momentum_signal.strength)
         self.telemetry.gate_pass(
@@ -100,9 +221,14 @@ class TradingOrchestrator:
                 "indicators": momentum_signal.indicators,
             },
         )
+        self._track_gate_event(
+            gate="momentum",
+            ticker=ticker,
+            status="pass",
+            metrics={"confidence": momentum_signal.strength},
+        )
 
         # Gate 2: RL inference
-        rl_threshold = float(os.getenv("RL_CONFIDENCE_THRESHOLD", "0.6"))
         rl_outcome = self.failure_manager.run(
             gate="rl_filter",
             ticker=ticker,
@@ -113,6 +239,12 @@ class TradingOrchestrator:
                 "Gate 2 (%s): RL filter failed: %s",
                 ticker,
                 rl_outcome.failure.error,
+            )
+            self._track_gate_event(
+                gate="rl_filter",
+                ticker=ticker,
+                status="error",
+                metrics={"confidence": 0.0},
             )
             return
 
@@ -128,6 +260,12 @@ class TradingOrchestrator:
                 ticker,
                 rl_decision,
             )
+            self._track_gate_event(
+                gate="rl_filter",
+                ticker=ticker,
+                status="reject",
+                metrics={"confidence": rl_decision.get("confidence", 0.0)},
+            )
             return
         logger.info(
             "Gate 2 (%s): PASSED (action=%s, confidence=%.2f).",
@@ -136,6 +274,18 @@ class TradingOrchestrator:
             rl_decision.get("confidence", 0.0),
         )
         self.telemetry.gate_pass("rl_filter", ticker, rl_decision)
+        self.telemetry.explainability_event(
+            gate="rl_filter",
+            ticker=ticker,
+            contributions=rl_decision.get("explainability", {}),
+            metadata={"sources": rl_decision.get("sources")},
+        )
+        self._track_gate_event(
+            gate="rl_filter",
+            ticker=ticker,
+            status="pass",
+            metrics={"confidence": rl_decision.get("confidence", 0.0)},
+        )
 
         # Gate 3: LLM sentiment (budget-aware)
         sentiment_score = 0.0
@@ -164,9 +314,21 @@ class TradingOrchestrator:
                         ticker,
                         {**llm_result, "trigger": "negative_sentiment"},
                     )
+                    self._track_gate_event(
+                        gate="llm",
+                        ticker=ticker,
+                        status="reject",
+                        metrics={"confidence": sentiment_score},
+                    )
                     return
                 logger.info("Gate 3 (%s): PASSED (sentiment=%.2f).", ticker, sentiment_score)
                 self.telemetry.gate_pass("llm", ticker, llm_result)
+                self._track_gate_event(
+                    gate="llm",
+                    ticker=ticker,
+                    status="pass",
+                    metrics={"confidence": sentiment_score},
+                )
             else:
                 logger.warning(
                     "Gate 3 (%s): Error calling LLM (%s). Falling back to RL output.",
@@ -182,6 +344,12 @@ class TradingOrchestrator:
                         "attempts": llm_outcome.failure.metadata.get("attempts"),
                     },
                 )
+                self._track_gate_event(
+                    gate="llm",
+                    ticker=ticker,
+                    status="error",
+                    metrics={"confidence": sentiment_score},
+                )
         else:
             logger.info("Gate 3 (%s): Skipped to protect budget.", ticker)
             self.telemetry.record(
@@ -192,6 +360,12 @@ class TradingOrchestrator:
                     "remaining_budget": self.budget_controller.remaining_budget,
                     "model": llm_model,
                 },
+            )
+            self._track_gate_event(
+                gate="llm",
+                ticker=ticker,
+                status="skipped",
+                metrics={"confidence": sentiment_score},
             )
 
         # Gather recent history for ATR-based sizing and stops
@@ -236,6 +410,12 @@ class TradingOrchestrator:
                 ticker,
                 risk_outcome.failure.error,
             )
+            self._track_gate_event(
+                gate="risk",
+                ticker=ticker,
+                status="error",
+                metrics={"confidence": rl_decision.get("confidence", 0.0)},
+            )
             return
 
         order_size = risk_outcome.result
@@ -249,6 +429,12 @@ class TradingOrchestrator:
                     "order_size": order_size,
                     "account_equity": self.executor.account_equity,
                 },
+            )
+            self._track_gate_event(
+                gate="risk",
+                ticker=ticker,
+                status="reject",
+                metrics={"confidence": rl_decision.get("confidence", 0.0)},
             )
             return
 
@@ -291,7 +477,22 @@ class TradingOrchestrator:
             ticker,
             {"order_size": order_size, "account_equity": self.executor.account_equity},
         )
-        self.telemetry.order_event(ticker, {"order": order, "rl": rl_decision})
+        self._track_gate_event(
+            gate="risk",
+            ticker=ticker,
+            status="pass",
+            metrics={"confidence": rl_decision.get("confidence", 0.0)},
+        )
+        cost_estimate = self._estimate_execution_costs(order_size)
+        self.telemetry.order_event(
+            ticker,
+            {
+                "order": order,
+                "rl": rl_decision,
+                "cost_estimate": cost_estimate,
+                "session_type": (self.session_profile or {}).get("session_type"),
+            },
+        )
 
         # Place ATR-based stop-loss if possible
         try:
