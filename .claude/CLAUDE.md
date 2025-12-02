@@ -138,6 +138,59 @@ If I catch myself about to suggest manual intervention:
 
 ---
 
+## Git Worktree Protocol (Multi-Agent Coordination)
+
+**CRITICAL**: Multiple agents may be working on different branches simultaneously. NEVER conflict with other agents' work.
+
+### Worktree Rules
+
+1. **Always Use Git Worktrees for Branch Work**
+   ```bash
+   # Create new worktree for feature branch
+   git worktree add ../trading-feature-name -b claude/feature-name
+
+   # Work in isolated directory
+   cd ../trading-feature-name
+   # Make changes, commit, push
+
+   # Clean up when done
+   git worktree remove ../trading-feature-name
+   ```
+
+2. **Why Worktrees Matter**
+   - Multiple agents can work on different branches in parallel
+   - No conflicts from switching branches in main repo
+   - Each worktree has its own working directory
+   - Clean separation of concerns
+
+3. **Worktree Best Practices**
+   - Use descriptive branch names: `claude/feature-description-<unique-id>`
+   - Always clean up worktrees when PR is merged
+   - List active worktrees: `git worktree list`
+   - Remove stale worktrees: `git worktree prune`
+
+4. **Single Branch Work Exception**
+   - If you're only working on ONE branch in a session, you MAY work directly in main repo
+   - If you need to switch branches or work on multiple features, use worktrees
+
+### GitHub PR Creation Protocol
+
+**YOU HAVE FULL ACCESS TO `gh` CLI - USE IT!**
+
+```bash
+# Fix for Enterprise Managed User restrictions:
+unset GITHUB_TOKEN && gh auth switch --user IgorGanapolsky
+
+# Then create PR:
+gh pr create --base main --head <branch-name> \
+  --title "type: Brief description" \
+  --body "PR description with Summary, Changes, Test Plan"
+```
+
+**See `.claude/skills/github_pr_manager/skill.md` for full protocol.**
+
+---
+
 ## 🚨 CRITICAL: ABSOLUTE ANTI-LYING MANDATE
 
 **NEVER LIE. NEVER MAKE FALSE CLAIMS. NEVER CLAIM SOMETHING EXISTS WHEN IT DOESN'T.**
