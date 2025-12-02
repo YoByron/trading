@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from src.strategies.rule_one_options import (
     BigFiveMetrics,
     OptionContract,
