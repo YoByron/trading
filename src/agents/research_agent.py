@@ -119,7 +119,7 @@ Fundamentals drive long-term performance; sentiment affects short-term price act
 </context>
 
 <fundamentals>
-P/E: {fundamentals.get('pe_ratio', 'N/A')} | Growth: {fundamentals.get('growth_rate', 'N/A')} | Margin: {fundamentals.get('profit_margin', 'N/A')} | Cap: {fundamentals.get('market_cap', 'N/A')}
+P/E: {fundamentals.get("pe_ratio", "N/A")} | Growth: {fundamentals.get("growth_rate", "N/A")} | Margin: {fundamentals.get("profit_margin", "N/A")} | Cap: {fundamentals.get("market_cap", "N/A")}
 </fundamentals>
 
 <news>
@@ -127,7 +127,7 @@ P/E: {fundamentals.get('pe_ratio', 'N/A')} | Growth: {fundamentals.get('growth_r
 </news>
 
 <market_context>
-Sector: {market_context.get('sector', 'N/A')} | Market Trend: {market_context.get('market_trend', 'N/A')} | Volatility: {market_context.get('volatility', 'N/A')}
+Sector: {market_context.get("sector", "N/A")} | Market Trend: {market_context.get("market_trend", "N/A")} | Volatility: {market_context.get("volatility", "N/A")}
 </market_context>
 
 {memory_context}

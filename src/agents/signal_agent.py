@@ -70,8 +70,8 @@ Strong signals deserve high scores; weak/mixed signals deserve low scores.
 </context>
 
 <indicators>
-Price: ${indicators.get('price', 0):.2f} | MACD Hist: {indicators.get('macd_histogram', 0):.4f} | RSI: {indicators.get('rsi', 50):.1f} | Volume: {indicators.get('volume_ratio', 1.0):.1f}x
-Trend: {indicators.get('trend', 'UNKNOWN')} | MA50: ${indicators.get('ma_50', 0):.2f} | Momentum: {indicators.get('momentum_score', 0):.0f}/100
+Price: ${indicators.get("price", 0):.2f} | MACD Hist: {indicators.get("macd_histogram", 0):.4f} | RSI: {indicators.get("rsi", 50):.1f} | Volume: {indicators.get("volume_ratio", 1.0):.1f}x
+Trend: {indicators.get("trend", "UNKNOWN")} | MA50: ${indicators.get("ma_50", 0):.2f} | Momentum: {indicators.get("momentum_score", 0):.0f}/100
 </indicators>
 
 {memory_context}

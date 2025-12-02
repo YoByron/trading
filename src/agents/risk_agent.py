@@ -85,7 +85,7 @@ Action: {proposed_action} | Confidence: {confidence:.0%} | Volatility: {volatili
 </trade_proposal>
 
 <calculated_parameters>
-Suggested Size: ${position_size:,.0f} ({position_size/portfolio_value:.1%} of portfolio)
+Suggested Size: ${position_size:,.0f} ({position_size / portfolio_value:.1%} of portfolio)
 Stop Loss: {stop_loss_pct:.1%}
 Max Loss if Stopped: ${position_size * stop_loss_pct:,.0f}
 </calculated_parameters>
