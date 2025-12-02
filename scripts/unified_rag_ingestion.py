@@ -19,7 +19,6 @@ Date: December 2025
 import json
 import logging
 import os
-import subprocess
 import sys
 import tempfile
 from datetime import datetime, timedelta
@@ -65,7 +64,8 @@ class YouTubeIngestion:
     def _check_whisper(self) -> bool:
         """Check if Whisper is available for transcription."""
         try:
-            import whisper
+            import whisper  # noqa: F401 - availability check
+
             logger.info("Whisper is available for fallback transcription")
             return True
         except ImportError:
@@ -87,6 +87,7 @@ class YouTubeIngestion:
         # Try YouTube transcript API first
         try:
             from youtube_transcript_api import YouTubeTranscriptApi
+
             transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
             transcript = " ".join([entry["text"] for entry in transcript_list])
             logger.info(f"Got transcript from YouTube API for {video_id}")
@@ -125,11 +126,13 @@ class YouTubeIngestion:
                 ydl_opts = {
                     "format": "bestaudio/best",
                     "outtmpl": audio_path,
-                    "postprocessors": [{
-                        "key": "FFmpegExtractAudio",
-                        "preferredcodec": "mp3",
-                        "preferredquality": "192",
-                    }],
+                    "postprocessors": [
+                        {
+                            "key": "FFmpegExtractAudio",
+                            "preferredcodec": "mp3",
+                            "preferredquality": "192",
+                        }
+                    ],
                     "quiet": True,
                     "no_warnings": True,
                 }
@@ -151,7 +154,9 @@ class YouTubeIngestion:
                 result = model.transcribe(audio_file)
 
                 transcript = result["text"]
-                logger.info(f"Whisper transcription complete for {video_id}: {len(transcript)} chars")
+                logger.info(
+                    f"Whisper transcription complete for {video_id}: {len(transcript)} chars"
+                )
 
                 return transcript
 
@@ -257,14 +262,19 @@ class RedditIngestion:
                     subreddit = reddit.subreddit(sub_name)
                     posts = list(subreddit.hot(limit=limit_per_sub))
 
-                    all_posts.extend([{
-                        "title": p.title,
-                        "text": p.selftext,
-                        "score": p.score,
-                        "num_comments": p.num_comments,
-                        "subreddit": sub_name,
-                        "created_utc": p.created_utc,
-                    } for p in posts])
+                    all_posts.extend(
+                        [
+                            {
+                                "title": p.title,
+                                "text": p.selftext,
+                                "score": p.score,
+                                "num_comments": p.num_comments,
+                                "subreddit": sub_name,
+                                "created_utc": p.created_utc,
+                            }
+                            for p in posts
+                        ]
+                    )
 
                     subreddit_stats[sub_name] = {
                         "posts_collected": len(posts),
@@ -339,8 +349,9 @@ class PodcastIngestion:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            import feedparser
-            import whisper
+            import feedparser  # noqa: F401 - availability check
+            import whisper  # noqa: F401 - availability check
+
             self.available = True
         except ImportError as e:
             logger.warning(f"Podcast ingestion dependencies missing: {e}")
@@ -392,12 +403,14 @@ class PodcastIngestion:
                             break
 
                 if audio_url:
-                    episodes.append({
-                        "title": entry.get("title", "Unknown"),
-                        "audio_url": audio_url,
-                        "published": pub_date.isoformat() if pub_date else None,
-                        "summary": entry.get("summary", ""),
-                    })
+                    episodes.append(
+                        {
+                            "title": entry.get("title", "Unknown"),
+                            "audio_url": audio_url,
+                            "published": pub_date.isoformat() if pub_date else None,
+                            "summary": entry.get("summary", ""),
+                        }
+                    )
 
             return episodes
 
@@ -503,7 +516,9 @@ class DataPurging:
                 summary[str(directory)] = count
 
         total = sum(summary.values())
-        logger.info(f"Data purging complete: {total} files deleted (retention: {self.retention_days} days)")
+        logger.info(
+            f"Data purging complete: {total} files deleted (retention: {self.retention_days} days)"
+        )
 
         return summary
 
