@@ -58,14 +58,14 @@ def calculate_multi_horizon_returns(
     # Map horizon strings to periods (assuming daily data)
     # For intraday data, these would need to be adjusted
     horizon_map = {
-        "1m": 1,   # 1 minute (if minute data)
-        "5m": 5,   # 5 minutes
+        "1m": 1,  # 1 minute (if minute data)
+        "5m": 5,  # 5 minutes
         "1h": 60,  # 1 hour (if minute data)
-        "1d": 1,   # 1 day
-        "1w": 5,   # 1 week (5 trading days)
-        "1mo": 21, # 1 month (~21 trading days)
-        "3mo": 63, # 3 months (~63 trading days)
-        "6mo": 126, # 6 months (~126 trading days)
+        "1d": 1,  # 1 day
+        "1w": 5,  # 1 week (5 trading days)
+        "1mo": 21,  # 1 month (~21 trading days)
+        "3mo": 63,  # 3 months (~63 trading days)
+        "6mo": 126,  # 6 months (~126 trading days)
     }
 
     results = {}

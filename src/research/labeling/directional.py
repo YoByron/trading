@@ -7,7 +7,6 @@ Creates directional labels (up/down) over multiple horizons.
 import logging
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -36,12 +35,12 @@ def create_directional_labels(
 
     # Map horizon strings to periods (assuming daily data)
     horizon_map = {
-        "5m": 1,   # 5 minutes (if minute data)
+        "5m": 1,  # 5 minutes (if minute data)
         "1h": 60,  # 1 hour (if minute data)
-        "1d": 1,   # 1 day
-        "1w": 5,   # 1 week (5 trading days)
-        "1mo": 21, # 1 month (~21 trading days)
-        "3mo": 63, # 3 months (~63 trading days)
+        "1d": 1,  # 1 day
+        "1w": 5,  # 1 week (5 trading days)
+        "1mo": 21,  # 1 month (~21 trading days)
+        "3mo": 63,  # 3 months (~63 trading days)
     }
 
     results = {}
