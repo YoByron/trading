@@ -4,35 +4,35 @@ BACKTEST RESULTS SUMMARY
 
 PERIOD INFORMATION
 --------------------------------------------------------------------------------
-Start Date:        2022-04-01
-End Date:          2022-06-30
-Trading Days:      65
+Start Date:        2024-01-01
+End Date:          2024-12-31
+Trading Days:      262
 
 CAPITAL & RETURNS
 --------------------------------------------------------------------------------
 Initial Capital:   $100,000.00
-Final Capital:     $99,952.56
-Total Return:      $-47.44 (-0.05%)
-Annualized Return: -0.18%
+Final Capital:     $99,782.73
+Total Return:      $-217.27 (-0.22%)
+Annualized Return: -0.21%
 
 RISK METRICS
 --------------------------------------------------------------------------------
-Sharpe Ratio:      -40.87
-Max Drawdown:      0.07%
-Volatility:        0.10%
+Sharpe Ratio:      -7.41
+Max Drawdown:      0.65%
+Volatility:        0.57%
 
 EXECUTION COSTS
 --------------------------------------------------------------------------------
 Slippage Model:    Enabled
-Total Slippage:    $0.12
+Total Slippage:    $2.10
 Slippage % of PnL: 0.00%
 
 TRADE STATISTICS
 --------------------------------------------------------------------------------
-Total Trades:      65
-Profitable Trades: 9
-Losing Trades:     56
-Win Rate:          41.54%
+Total Trades:      262
+Profitable Trades: 39
+Losing Trades:     223
+Win Rate:          46.95%
 Avg Trade Return:  -0.00%
 
 PERFORMANCE SUMMARY
@@ -41,10 +41,10 @@ Overall Rating:    NEEDS IMPROVEMENT
 
 RECENT TRADES (Last 5)
 --------------------------------------------------------------------------------
-  2022-06-24: BUY VOO @ $349.23 ($10.00)
-  2022-06-27: BUY VOO @ $360.11 ($10.00)
-  2022-06-28: BUY VOO @ $358.75 ($10.00)
-  2022-06-29: BUY VOO @ $351.00 ($10.00)
-  2022-06-30: BUY SPY @ $380.40 ($10.00)
+  2024-12-25: BUY BITO @ $24.28 ($10.00)
+  2024-12-26: BUY BITO @ $24.28 ($10.00)
+  2024-12-27: BUY BITO @ $23.36 ($10.00)
+  2024-12-30: BUY BITO @ $23.09 ($10.00)
+  2024-12-31: BUY BITO @ $23.02 ($10.00)
 
 ================================================================================

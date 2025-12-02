@@ -14,6 +14,7 @@ Outputs:
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import sys
@@ -37,6 +38,7 @@ if TYPE_CHECKING:  # pragma: no cover - for static typing only
 DEFAULT_CONFIG = BASE_DIR / "config" / "backtest_scenarios.yaml"
 BACKTEST_ROOT = BASE_DIR / "data" / "backtests"
 SUMMARY_PATH = BACKTEST_ROOT / "latest_summary.json"
+SUMMARY_CSV_PATH = BACKTEST_ROOT / "latest_summary.csv"
 
 # Promotion guard thresholds (align with docs/r-and-d-phase.md)
 PROMOTION_THRESHOLDS = {
@@ -75,6 +77,11 @@ def parse_args() -> argparse.Namespace:
         "--summary",
         default=str(SUMMARY_PATH),
         help="Aggregate summary JSON path (default: data/backtests/latest_summary.json).",
+    )
+    parser.add_argument(
+        "--summary-csv",
+        default=str(SUMMARY_CSV_PATH),
+        help="Optional CSV export for aggregate summary (default: data/backtests/latest_summary.csv).",
     )
     parser.add_argument(
         "--max-scenarios",
@@ -258,6 +265,40 @@ def write_summary(summary: dict[str, Any], path: Path) -> None:
         json.dump(summary, handle, indent=2)
 
 
+def write_summary_csv(summary: dict[str, Any], path: Path) -> None:
+    scenarios = summary.get("scenarios", [])
+    if not scenarios:
+        raise ValueError("No scenario data available to write CSV summary.")
+
+    fieldnames = [
+        "scenario",
+        "label",
+        "start_date",
+        "end_date",
+        "trading_days",
+        "total_return_pct",
+        "cost_adjusted_return_pct",
+        "annualized_return_pct",
+        "cost_adjusted_annualized_return_pct",
+        "sharpe_ratio",
+        "max_drawdown_pct",
+        "win_rate_pct",
+        "profitable_days",
+        "longest_profitable_streak",
+        "final_capital",
+        "final_capital_after_costs",
+        "total_trades",
+        "status",
+    ]
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in scenarios:
+            writer.writerow({key: row.get(key) for key in fieldnames})
+
+
 def main() -> None:
     args = parse_args()
     config = load_config(Path(args.config))
@@ -278,8 +319,16 @@ def main() -> None:
         summaries.append(summary)
 
     aggregate = aggregate_summary(summaries)
-    write_summary(aggregate, Path(args.summary))
-    print(f"✅ Backtest matrix complete. Summary written to {args.summary}")
+    summary_path = Path(args.summary)
+    csv_path = Path(args.summary_csv)
+    write_summary(aggregate, summary_path)
+    try:
+        write_summary_csv(aggregate, csv_path)
+    except ValueError as exc:
+        print(f"⚠️  CSV export skipped: {exc}")
+    else:
+        print(f"📄 CSV summary written to {csv_path}")
+    print(f"✅ Backtest matrix complete. Summary written to {summary_path}")
 
 
 if __name__ == "__main__":
