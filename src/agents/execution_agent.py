@@ -19,6 +19,11 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 
+try:
+    from src.core.options_client import AlpacaOptionsClient
+except Exception:  # pragma: no cover - optional dependency for options flows
+    AlpacaOptionsClient = None  # type: ignore[assignment]
+
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -35,9 +40,14 @@ class ExecutionAgent(BaseAgent):
     - Track execution quality (slippage, fill rate)
     """
 
-    def __init__(self, alpaca_api: Optional[TradingClient] = None):
+    def __init__(
+        self,
+        alpaca_api: Optional[TradingClient] = None,
+        options_client: "AlpacaOptionsClient | None" = None,
+    ):
         super().__init__(name="ExecutionAgent", role="Order execution and timing optimization")
         self.alpaca_api = alpaca_api
+        self.options_client = options_client
         self.execution_history: list = []
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -232,3 +242,56 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                     analysis["action"] = rec
 
         return analysis
+
+    # ------------------------------------------------------------------ #
+    # Options execution helpers (Theta automation, etc.)
+    # ------------------------------------------------------------------ #
+    def execute_option_trade(
+        self,
+        *,
+        option_symbol: str,
+        side: str,
+        qty: int,
+        order_type: str = "limit",
+        limit_price: float | None = None,
+    ) -> dict[str, Any]:
+        """
+        Submit an options order via the Alpaca options client.
+
+        Args:
+            option_symbol: OCC-formatted option ticker (e.g., SPY250117C00450000)
+            side: One of sell_to_open, buy_to_close, buy_to_open, sell_to_close
+            qty: Number of contracts
+            order_type: limit or market
+            limit_price: Required for limit orders (per contract)
+        """
+        if not self.options_client:
+            raise RuntimeError("Options client not configured for ExecutionAgent")
+
+        result = self.options_client.submit_option_order(
+            option_symbol=option_symbol,
+            qty=qty,
+            side=side,
+            order_type=order_type,
+            limit_price=limit_price,
+        )
+        self.execution_history.append(
+            {
+                "type": "options",
+                "symbol": option_symbol,
+                "side": side,
+                "qty": qty,
+                "order_type": order_type,
+                "limit_price": limit_price,
+                "result": result,
+            }
+        )
+        logger.info(
+            "Options order submitted via ExecutionAgent: %s %s x%d @ %s (status=%s)",
+            side,
+            option_symbol,
+            qty,
+            f"${limit_price:.2f}" if limit_price else "mkt",
+            result.get("status"),
+        )
+        return result

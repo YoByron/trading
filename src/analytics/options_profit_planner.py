@@ -22,11 +22,24 @@ import math
 import os
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Literal, Union
 
 logger = logging.getLogger(__name__)
+
+try:
+    import yfinance as yf
+except Exception:  # pragma: no cover - optional dependency
+    yf = None  # type: ignore[assignment]
+
+try:
+    from alpaca.trading.client import TradingClient
+except Exception:  # pragma: no cover - optional dependency
+    TradingClient = None  # type: ignore[assignment]
+
+from src.agents.execution_agent import ExecutionAgent
+from src.core.options_client import AlpacaOptionsClient
 
 try:  # Optional import for runtime typing; not required for JSON snapshots
     from src.strategies.rule_one_options import RuleOneOptionsSignal  # type: ignore
@@ -319,6 +332,12 @@ class ThetaHarvestResult:
     reason: str
     order_id: str | None = None
     iv_percentile: float | None = None
+    option_symbol: str | None = None
+    expiration: str | None = None
+    strike: float | None = None
+    delta: float | None = None
+    limit_price: float | None = None
+    notes: list[str] | None = None
 
 
 class ThetaHarvestExecutor:
@@ -336,9 +355,48 @@ class ThetaHarvestExecutor:
     - Size positions to target $10/day equivalent premium
     """
 
-    def __init__(self, paper: bool = True) -> None:
+    def __init__(
+        self,
+        paper: bool = True,
+        auto_execute: bool | None = None,
+        execution_agent: ExecutionAgent | None = None,
+    ) -> None:
         self.paper = paper
         self.planner = OptionsProfitPlanner()
+        env_flag = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower()
+        self.auto_execute = auto_execute if auto_execute is not None else env_flag in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if execution_agent:
+            self.execution_agent = execution_agent
+        elif self.auto_execute:
+            self.execution_agent = self._build_execution_agent()
+        else:
+            self.execution_agent = None
+        if self.auto_execute and not self.execution_agent:
+            logger.warning(
+                "Theta automation enabled but execution agent unavailable; disabling auto-execution."
+            )
+            self.auto_execute = False
+
+    def _build_execution_agent(self) -> ExecutionAgent | None:
+        """Best-effort construction of an execution agent wired for options."""
+        if TradingClient is None or AlpacaOptionsClient is None:
+            return None
+        api_key = os.getenv("ALPACA_API_KEY")
+        secret_key = os.getenv("ALPACA_SECRET_KEY")
+        if not api_key or not secret_key:
+            return None
+        try:
+            trading_client = TradingClient(api_key=api_key, secret_key=secret_key, paper=self.paper)
+            options_client = AlpacaOptionsClient(paper=self.paper)
+            return ExecutionAgent(alpaca_api=trading_client, options_client=options_client)
+        except Exception as exc:  # pragma: no cover - network dependent
+            logger.warning("Failed to initialize execution agent for theta automation: %s", exc)
+            return None
 
     def check_equity_gate(self, account_equity: float) -> dict[str, Any]:
         """
@@ -488,6 +546,23 @@ class ThetaHarvestExecutor:
             iv_percentile=iv_pct,
         )
 
+        if self.auto_execute and self._should_attempt_auto(strategy=strategy, regime_label=regime_label):
+            execution = self._auto_execute_theta(result)
+            if execution:
+                status = str(execution.get("status", "")).upper()
+                result.executed = status in {"SUCCESS", "FILLED", "ACCEPTED"}
+                result.order_id = execution.get("order_id") or execution.get("id")
+                result.reason = (
+                    "Auto-executed theta harvest"
+                    if result.executed
+                    else f"Auto execution status: {status or 'UNKNOWN'}"
+                )
+                extra_note = execution.get("error") or execution.get("message")
+                if extra_note:
+                    result.notes = (result.notes or []) + [str(extra_note)]
+            else:
+                result.notes = (result.notes or []) + ["Auto execution skipped (no contract match)"]
+
         logger.info(
             "🎯 Theta opportunity: %s %s x%d, est. premium $%.2f, IV pct: %s",
             symbol,
@@ -498,6 +573,192 @@ class ThetaHarvestExecutor:
         )
 
         return result
+
+    # ------------------------------------------------------------------ #
+    # Auto-execution plumbing
+    # ------------------------------------------------------------------ #
+    def _should_attempt_auto(self, *, strategy: str, regime_label: str) -> bool:
+        if strategy != "poor_mans_covered_call":
+            return False
+        return str(regime_label or "").lower() in {"calm", "range", "neutral"}
+
+    def _auto_execute_theta(self, result: ThetaHarvestResult) -> dict[str, Any] | None:
+        """Attempt to route the theta signal to the execution agent."""
+        if not self.execution_agent:
+            return None
+        contract = self._select_option_contract(symbol=result.symbol, strategy=result.strategy)
+        if not contract:
+            return None
+        result.option_symbol = contract["option_symbol"]
+        result.expiration = contract["expiration"]
+        result.strike = contract["strike"]
+        result.delta = contract["delta"]
+        result.limit_price = contract["limit_price"]
+        try:
+            return self.execution_agent.execute_option_trade(
+                option_symbol=contract["option_symbol"],
+                side="sell_to_open",
+                qty=max(1, result.contracts),
+                order_type="limit",
+                limit_price=contract["limit_price"],
+            )
+        except Exception as exc:  # pragma: no cover - network dependent
+            logger.warning("Theta auto execution failed for %s: %s", result.symbol, exc)
+            return {"status": "ERROR", "error": str(exc)}
+
+    def _select_option_contract(self, symbol: str, strategy: str) -> dict[str, Any] | None:
+        """Pick a 20-delta weekly contract for the short call leg."""
+        if yf is None:
+            logger.debug("yfinance not available; cannot select theta contract automatically.")
+            return None
+        if strategy != "poor_mans_covered_call":
+            logger.debug("Auto-execution currently limited to poor man's covered calls.")
+            return None
+
+        try:
+            ticker = yf.Ticker(symbol)
+            expirations = getattr(ticker, "options", [])
+            if not expirations:
+                return None
+            today = datetime.utcnow().date()
+            chosen_exp = None
+            chosen_date = None
+            for exp_str in expirations:
+                try:
+                    exp_date = datetime.strptime(exp_str, "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+                if (exp_date - today).days >= 5:
+                    chosen_exp = exp_str
+                    chosen_date = exp_date
+                    break
+            if chosen_exp is None:
+                chosen_exp = expirations[0]
+                chosen_date = datetime.strptime(chosen_exp, "%Y-%m-%d").date()
+
+            chain = ticker.option_chain(chosen_exp)
+            calls = getattr(chain, "calls", None)
+            if calls is None or calls.empty:
+                return None
+
+            last_price = self._fetch_last_price(symbol, ticker)
+            target_delta = 0.20
+            best: dict[str, Any] | None = None
+            best_diff = float("inf")
+            dte = max(1, (chosen_date - today).days)
+
+            for _, row in calls.iterrows():
+                strike = self._to_float(row.get("strike"))
+                if strike is None or strike <= 0:
+                    continue
+                bid = self._to_float(row.get("bid"))
+                ask = self._to_float(row.get("ask"))
+                last = self._to_float(row.get("lastPrice"))
+                if bid is None and ask is None and last is None:
+                    continue
+                mid = None
+                if bid is not None and ask is not None and bid > 0 and ask > 0:
+                    mid = (bid + ask) / 2
+                elif last is not None and last > 0:
+                    mid = last
+                if mid is None or mid <= 0:
+                    continue
+                iv = self._to_float(row.get("impliedVolatility")) or 0.25
+                row_delta = self._to_float(row.get("delta"))
+                if row_delta is None and last_price:
+                    row_delta = self._estimate_delta(
+                        option_type="call",
+                        stock_price=last_price,
+                        strike=strike,
+                        dte=dte,
+                        iv=iv,
+                    )
+                if row_delta is None:
+                    continue
+                diff = abs(abs(row_delta) - target_delta)
+                if diff < best_diff:
+                    best_diff = diff
+                    best = {
+                        "strike": strike,
+                        "delta": row_delta,
+                        "mid": mid,
+                        "bid": bid,
+                        "ask": ask,
+                    }
+
+            if not best:
+                return None
+
+            option_symbol = self._build_occ_symbol(
+                symbol=symbol, expiration=chosen_date, option_type="call", strike=best["strike"]
+            )
+            limit_price = round(max(best["mid"], 0.05), 2)
+            return {
+                "option_symbol": option_symbol,
+                "expiration": chosen_date.isoformat(),
+                "strike": best["strike"],
+                "delta": best["delta"],
+                "limit_price": limit_price,
+            }
+        except Exception as exc:  # pragma: no cover - network dependent
+            logger.debug("Failed to select theta contract for %s: %s", symbol, exc)
+            return None
+
+    @staticmethod
+    def _to_float(value: Any) -> float | None:
+        try:
+            val = float(value)
+            if math.isnan(val):
+                return None
+            return val
+        except (TypeError, ValueError):
+            return None
+
+    def _fetch_last_price(self, symbol: str, ticker: Any | None = None) -> float | None:
+        if yf is None:
+            return None
+        try:
+            tk = ticker or yf.Ticker(symbol)
+            hist = tk.history(period="2d")
+            if hist is not None and not hist.empty:
+                return float(hist["Close"].iloc[-1])
+        except Exception:
+            return None
+        return None
+
+    @staticmethod
+    def _estimate_delta(
+        *,
+        option_type: Literal["call", "put"],
+        stock_price: float,
+        strike: float,
+        dte: int,
+        iv: float,
+        risk_free_rate: float = 0.04,
+    ) -> float | None:
+        """Black-Scholes delta estimate (fallback when greeks absent)."""
+        if stock_price <= 0 or strike <= 0 or dte <= 0 or iv <= 0:
+            return None
+        T = dte / 365.0
+        sigma = max(0.01, iv)
+        try:
+            d1 = (math.log(stock_price / strike) + (risk_free_rate + 0.5 * sigma**2) * T) / (
+                sigma * math.sqrt(T)
+            )
+        except (ValueError, ZeroDivisionError):
+            return None
+        cdf = 0.5 * (1.0 + math.erf(d1 / math.sqrt(2)))
+        return round(cdf if option_type == "call" else cdf - 1.0, 4)
+
+    @staticmethod
+    def _build_occ_symbol(
+        *, symbol: str, expiration: date, option_type: Literal["call", "put"], strike: float
+    ) -> str:
+        """Construct OCC OCC-format option ticker."""
+        base = symbol.upper().replace("-", "")
+        strike_int = int(round(strike * 1000))
+        suffix = "C" if option_type == "call" else "P"
+        return f"{base}{expiration.strftime('%y%m%d')}{suffix}{strike_int:08d}"
 
     def generate_theta_plan(
         self,
@@ -525,6 +786,7 @@ class ThetaHarvestExecutor:
             "opportunities": [],
             "total_estimated_premium": 0.0,
             "premium_gap": self.planner.target_daily_profit,
+            "auto_execution_enabled": self.auto_execute,
         }
 
         if not gate["theta_enabled"]:

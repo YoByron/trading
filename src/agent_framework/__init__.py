@@ -6,6 +6,7 @@ and context engineering components.
 """
 
 from . import agent_blueprints
+from .auditor import VolatilityAuditor
 from .base import AgentResult, TradingAgent
 from .context import AgentConfig, RunContext, RunMode
 from .context_engine import (
@@ -57,6 +58,7 @@ __all__ = [
     "ContextPriority",
     "get_context_engine",
     "agent_blueprints",
+    "VolatilityAuditor",
     # Agent0 exports
     "CurriculumAgent",
     "TradingTask",

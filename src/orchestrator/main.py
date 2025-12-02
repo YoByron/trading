@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import logging
 import os
+from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import holidays
 from src.agents.momentum_agent import MomentumAgent
+from src.agent_framework.auditor import VolatilityAuditor
+from src.analytics.options_profit_planner import ThetaHarvestExecutor
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
 from src.execution.alpaca_executor import AlpacaExecutor
@@ -1080,6 +1083,8 @@ class TradingOrchestrator:
                 payload=results,
             )
 
+            self._run_theta_extension()
+            self._run_volatility_audit()
             return results
 
         except Exception as e:
@@ -1091,3 +1096,65 @@ class TradingOrchestrator:
                 payload={"error": str(e)},
             )
             return {"action": "error", "error": str(e)}
+
+    def _run_theta_extension(self) -> None:
+        """
+        Hook for the theta profit planner / executor.
+
+        Runs regardless of whether premium opportunities were logged so we can
+        keep the theta telemetry fresh during R&D.
+        """
+        try:
+            account_equity = getattr(self.executor, "account_equity", 0.0)
+            if account_equity <= 0:
+                logger.debug("Skipping theta extension - unknown account equity.")
+                return
+            regime_label = "unknown"
+            try:
+                regime_snapshot = self.regime_detector.detect_live_regime()
+                regime_label = getattr(regime_snapshot, "label", "unknown") or "unknown"
+            except Exception as exc:  # pragma: no cover - telemetry only
+                logger.debug("Live regime snapshot unavailable for theta executor: %s", exc)
+
+            theta_executor = ThetaHarvestExecutor(paper=self.executor.paper)
+            plan = theta_executor.generate_theta_plan(
+                account_equity=account_equity, regime_label=regime_label
+            )
+            status = "planned" if plan.get("opportunities") else "idle"
+            self.telemetry.record(
+                event_type="theta.plan",
+                ticker="PORTFOLIO",
+                status=status,
+                payload={**plan, "source": "hybrid_orchestrator"},
+            )
+        except Exception as exc:  # pragma: no cover - diagnostics only
+            logger.warning("Theta extension failed: %s", exc)
+            self.telemetry.record(
+                event_type="theta.plan",
+                ticker="PORTFOLIO",
+                status="error",
+                payload={"error": str(exc)},
+            )
+
+    def _run_volatility_audit(self) -> None:
+        """Run the volatility-aware auditor when its schedule says we're due."""
+        if os.getenv("ENABLE_VOL_AUDITOR", "true").lower() not in {"1", "true", "yes", "on"}:
+            return
+        auditor = VolatilityAuditor()
+        directive = auditor.evaluate_schedule()
+        if not auditor.should_run_now(directive):
+            self.telemetry.record(
+                event_type="audit.volatility",
+                ticker="PORTFOLIO",
+                status="scheduled",
+                payload=asdict(directive),
+            )
+            return
+        review = auditor.run_review(directive)
+        auditor.mark_run(directive)
+        self.telemetry.record(
+            event_type="audit.volatility",
+            ticker="PORTFOLIO",
+            status="completed",
+            payload=review,
+        )
