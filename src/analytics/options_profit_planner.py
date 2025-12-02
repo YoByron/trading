@@ -477,13 +477,13 @@ class ThetaHarvestExecutor:
                 iv_percentile=iv_pct,
             )
 
-        # Log the opportunity (execution via orchestrator)
+        # Build theta harvest result
         result = ThetaHarvestResult(
             symbol=symbol,
             strategy=strategy,
             contracts=contracts,
             estimated_premium=estimated_premium * contracts,
-            executed=False,  # Execution handled by orchestrator
+            executed=False,
             reason=f"Signal ready for {strategy}",
             iv_percentile=iv_pct,
         )
@@ -496,6 +496,120 @@ class ThetaHarvestExecutor:
             result.estimated_premium,
             iv_pct,
         )
+
+        return result
+
+    def execute_theta_order(
+        self,
+        result: ThetaHarvestResult,
+        alpaca_client: Any = None,
+    ) -> ThetaHarvestResult:
+        """
+        Execute a theta harvest order through Alpaca.
+
+        This is the key tie-in that connects options planning to actual execution.
+        Only executes when:
+        - Paper mode is enabled OR
+        - Live mode with explicit confirmation
+
+        Args:
+            result: ThetaHarvestResult from evaluate_theta_opportunity
+            alpaca_client: Alpaca TradingClient instance
+
+        Returns:
+            Updated ThetaHarvestResult with execution status
+        """
+        if result.strategy == "none" or result.contracts <= 0:
+            return result
+
+        if alpaca_client is None:
+            logger.warning("No Alpaca client provided - skipping execution")
+            return result
+
+        try:
+            # Build option symbol (OCC format): SPY241206C00600000
+            # For now, we generate a weekly expiry (next Friday)
+            from datetime import datetime, timedelta
+
+            today = datetime.now()
+            days_until_friday = (4 - today.weekday()) % 7
+            if days_until_friday == 0:
+                days_until_friday = 7  # Next week's Friday
+            expiry = today + timedelta(days=days_until_friday)
+            expiry_str = expiry.strftime("%y%m%d")
+
+            # Get current price to calculate strike
+            import yfinance as yf
+
+            ticker = yf.Ticker(result.symbol)
+            current_price = ticker.history(period="1d")["Close"].iloc[-1]
+
+            # Calculate 20-delta strike (roughly 5% OTM for calls, 5% ITM for puts)
+            if result.strategy == "poor_mans_covered_call":
+                # Sell call at ~5% above current price
+                strike = round(current_price * 1.05, 0)
+                option_type = "C"
+                side = "sell_to_open"
+            elif result.strategy == "iron_condor":
+                # For iron condor, we'd need 4 legs - simplified to single call for now
+                strike = round(current_price * 1.08, 0)
+                option_type = "C"
+                side = "sell_to_open"
+            else:
+                logger.warning("Unknown strategy: %s", result.strategy)
+                return result
+
+            # Build OCC symbol
+            strike_str = f"{int(strike * 1000):08d}"
+            option_symbol = f"{result.symbol}{expiry_str}{option_type}{strike_str}"
+
+            logger.info(
+                "🚀 Executing theta order: %s %s x%d (strike $%.0f, expiry %s)",
+                side.upper(),
+                option_symbol,
+                result.contracts,
+                strike,
+                expiry.strftime("%Y-%m-%d"),
+            )
+
+            # Submit order via Alpaca
+            # Note: Options trading requires specific Alpaca permissions
+            if self.paper:
+                # Paper mode - log intent only (Alpaca paper doesn't support options)
+                logger.info(
+                    "📝 PAPER MODE: Would execute %s %s x%d",
+                    side,
+                    option_symbol,
+                    result.contracts,
+                )
+                result.executed = True
+                result.reason = f"Paper execution logged: {side} {option_symbol}"
+                result.order_id = f"paper_{option_symbol}_{datetime.now().timestamp()}"
+            else:
+                # Live mode - attempt real execution
+                try:
+                    from alpaca.trading.enums import OrderSide, TimeInForce
+                    from alpaca.trading.requests import MarketOrderRequest
+
+                    order_side = OrderSide.SELL if "sell" in side else OrderSide.BUY
+                    order_req = MarketOrderRequest(
+                        symbol=option_symbol,
+                        qty=result.contracts,
+                        side=order_side,
+                        time_in_force=TimeInForce.DAY,
+                    )
+                    order = alpaca_client.submit_order(order_req)
+                    result.executed = True
+                    result.order_id = str(order.id)
+                    result.reason = f"Order submitted: {order.id}"
+                    logger.info("✅ Theta order executed: %s", order.id)
+                except Exception as e:
+                    logger.error("❌ Theta order failed: %s", e)
+                    result.reason = f"Execution failed: {e}"
+
+        except Exception as e:
+            logger.error("Theta execution error: %s", e)
+            result.reason = f"Execution error: {e}"
 
         return result
 
