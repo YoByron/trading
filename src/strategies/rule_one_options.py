@@ -58,6 +58,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for lightweight test 
 
 class MeaningRating(Enum):
     """Phil Town's 'Meaning' rating - do you understand the business?"""
+
     EXCELLENT = "excellent"  # Fully understand, use products
     GOOD = "good"  # Understand well
     FAIR = "fair"  # Basic understanding
@@ -66,6 +67,7 @@ class MeaningRating(Enum):
 
 class MoatRating(Enum):
     """Phil Town's 'Moat' rating - competitive advantage durability."""
+
     WIDE = "wide"  # Strong, durable advantage (brand, network, patents)
     NARROW = "narrow"  # Some advantage but vulnerable
     NONE = "none"  # No sustainable advantage
@@ -73,6 +75,7 @@ class MoatRating(Enum):
 
 class ManagementRating(Enum):
     """Phil Town's 'Management' rating - quality of leadership."""
+
     EXCELLENT = "excellent"  # Owner-oriented, high integrity
     GOOD = "good"  # Competent, shareholder-friendly
     FAIR = "fair"  # Mixed track record
@@ -266,7 +269,9 @@ class RuleOneOptionsStrategy:
         self._valuation_cache: dict[str, StickerPriceResult] = {}
         self._big_five_cache: dict[str, BigFiveMetrics] = {}
 
-        logger.info(f"Rule #1 Options Strategy initialized: {len(self.universe)} symbols, paper={paper}")
+        logger.info(
+            f"Rule #1 Options Strategy initialized: {len(self.universe)} symbols, paper={paper}"
+        )
 
     def calculate_big_five(self, symbol: str) -> Optional[BigFiveMetrics]:
         """
@@ -284,11 +289,11 @@ class RuleOneOptionsStrategy:
 
             # Calculate ROIC (Return on Invested Capital)
             # ROIC = NOPAT / Invested Capital
-            roic = info.get('returnOnCapital') or info.get('returnOnEquity', 0.10)
+            roic = info.get("returnOnCapital") or info.get("returnOnEquity", 0.10)
 
             # Get growth rates from yfinance
-            eps_growth = info.get('earningsGrowth', 0.10)
-            revenue_growth = info.get('revenueGrowth', 0.10)
+            eps_growth = info.get("earningsGrowth", 0.10)
+            revenue_growth = info.get("revenueGrowth", 0.10)
 
             # Estimate equity and FCF growth (simplified)
             equity_growth = eps_growth * 0.8 if eps_growth else 0.10
@@ -333,15 +338,15 @@ class RuleOneOptionsStrategy:
             info = ticker.info
 
             # Get current data
-            current_price = info.get('currentPrice') or info.get('regularMarketPrice', 0)
-            current_eps = info.get('trailingEps', 0)
+            current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
+            current_eps = info.get("trailingEps", 0)
 
             if current_eps <= 0:
                 logger.warning(f"{symbol}: Negative or zero EPS, skipping")
                 return None
 
             # Get growth rate estimate
-            analyst_growth = info.get('earningsGrowth')
+            analyst_growth = info.get("earningsGrowth")
 
             # Get Big Five for growth estimate
             big_five = self._big_five_cache.get(symbol) or self.calculate_big_five(symbol)
@@ -559,7 +564,9 @@ class RuleOneOptionsStrategy:
 
                 annualized_return = (contract.mid / target_strike) * (365 / contract.days_to_expiry)
                 if annualized_return < self.MIN_ANNUALIZED_RETURN:
-                    logger.debug(f"{symbol}: Annualized return {annualized_return:.1%} below minimum")
+                    logger.debug(
+                        f"{symbol}: Annualized return {annualized_return:.1%} below minimum"
+                    )
                     continue
 
                 max_contracts = int(cash_available // (target_strike * 100))
@@ -864,7 +871,7 @@ class RuleOneOptionsStrategy:
         results = {}
 
         for symbol in self.universe:
-            big_five = self.calculate_big_five(symbol)
+            self.calculate_big_five(symbol)  # Populates _big_five_cache
             valuation = self.calculate_sticker_price(symbol)
 
             if valuation:
@@ -936,10 +943,7 @@ class RuleOneOptionsStrategy:
         ]
 
         # Find overvalued stocks (above Sticker)
-        overvalued = [
-            v for v in valuations.values()
-            if v.current_price > v.sticker_price * 1.2
-        ]
+        overvalued = [v for v in valuations.values() if v.current_price > v.sticker_price * 1.2]
 
         return {
             "valuations": {s: v.__dict__ for s, v in valuations.items()},
@@ -980,9 +984,9 @@ if __name__ == "__main__":
         )
 
     print("\n--- Undervalued (Below MOS Price) ---")
-    for sym in analysis['undervalued_stocks']:
+    for sym in analysis["undervalued_stocks"]:
         print(f"  {sym}: STRONG BUY")
 
     print("\n--- Overvalued (Above Sticker Price) ---")
-    for sym in analysis['overvalued_stocks']:
+    for sym in analysis["overvalued_stocks"]:
         print(f"  {sym}: Consider selling")
