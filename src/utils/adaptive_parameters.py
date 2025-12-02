@@ -219,9 +219,7 @@ class AdaptiveParameterManager:
         self.historical_vix_std = float(os.getenv("HISTORICAL_VIX_STD", "8.0"))
         self.historical_volatility = float(os.getenv("HISTORICAL_VOLATILITY", "0.15"))
 
-        logger.info(
-            f"AdaptiveParameterManager initialized with {len(self.parameters)} parameters"
-        )
+        logger.info(f"AdaptiveParameterManager initialized with {len(self.parameters)} parameters")
 
     def get_adapted_parameters(
         self,
@@ -381,9 +379,7 @@ class AdaptiveParameterManager:
             "std_value": np.std(values),
             "min_value": np.min(values),
             "max_value": np.max(values),
-            "regime_distribution": {
-                r: regimes.count(r) / len(regimes) for r in set(regimes)
-            },
+            "regime_distribution": {r: regimes.count(r) / len(regimes) for r in set(regimes)},
         }
 
     def _build_volatility_context(
@@ -494,9 +490,7 @@ class AdaptiveParameterManager:
         else:
             return "extreme"
 
-    def _get_parameter_history(
-        self, name: str, lookback_days: int
-    ) -> list[dict[str, Any]]:
+    def _get_parameter_history(self, name: str, lookback_days: int) -> list[dict[str, Any]]:
         """Get parameter history from file."""
         history = []
         cutoff = datetime.now() - timedelta(days=lookback_days)

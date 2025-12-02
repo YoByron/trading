@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -258,7 +257,7 @@ class WalkForwardMatrixValidator:
         from src.backtesting.backtest_engine import BacktestEngine
         from src.utils.regime_detector import RegimeDetector
 
-        logger.info(f"Starting walk-forward matrix evaluation")
+        logger.info("Starting walk-forward matrix evaluation")
         logger.info(f"Period: {start_date} to {end_date}")
 
         windows = self.generate_windows(start_date, end_date)
@@ -474,14 +473,10 @@ class WalkForwardMatrixValidator:
 
         # Check OOS Sharpe
         if mean_oos_sharpe < self.MIN_OOS_SHARPE:
-            messages.append(
-                f"FAIL: Mean OOS Sharpe {mean_oos_sharpe:.2f} < {self.MIN_OOS_SHARPE}"
-            )
+            messages.append(f"FAIL: Mean OOS Sharpe {mean_oos_sharpe:.2f} < {self.MIN_OOS_SHARPE}")
             passed = False
         else:
-            messages.append(
-                f"PASS: Mean OOS Sharpe {mean_oos_sharpe:.2f} >= {self.MIN_OOS_SHARPE}"
-            )
+            messages.append(f"PASS: Mean OOS Sharpe {mean_oos_sharpe:.2f} >= {self.MIN_OOS_SHARPE}")
 
         # Check Sharpe decay (overfitting indicator)
         if avg_sharpe_decay > self.MAX_SHARPE_DECAY:
@@ -524,9 +519,7 @@ class WalkForwardMatrixValidator:
 
         return passed, messages
 
-    def _insufficient_data_result(
-        self, windows: int, message: str
-    ) -> BacktestMatrixResults:
+    def _insufficient_data_result(self, windows: int, message: str) -> BacktestMatrixResults:
         """Return empty results for insufficient data."""
         return BacktestMatrixResults(
             strategy_name="Unknown",
@@ -678,9 +671,7 @@ class LiveVsBacktestTracker:
             "avg_return_divergence": avg_return_div,
             "avg_drawdown_divergence": avg_dd_div,
             "trend": trend,
-            "recent_alerts": [
-                p for p in recent if p.get("alert_level") in ["WARNING", "CRITICAL"]
-            ],
+            "recent_alerts": [p for p in recent if p.get("alert_level") in ["WARNING", "CRITICAL"]],
         }
 
     def _load_state(self) -> dict:

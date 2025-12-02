@@ -22,7 +22,7 @@ import logging
 import os
 import statistics
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
@@ -346,7 +346,9 @@ class SREMonitor:
         # Momentum pass rate SLI (should be in healthy range)
         if "momentum" in self.gate_metrics:
             pass_rate = self.gate_metrics["momentum"].pass_rate
-            compliant = self.SLO_MOMENTUM_PASS_RATE_MIN <= pass_rate <= self.SLO_MOMENTUM_PASS_RATE_MAX
+            compliant = (
+                self.SLO_MOMENTUM_PASS_RATE_MIN <= pass_rate <= self.SLO_MOMENTUM_PASS_RATE_MAX
+            )
             slis.append(
                 SLIMetrics(
                     name="momentum_pass_rate_range",
@@ -499,9 +501,7 @@ class SREMonitor:
                 signal_strength=payload.get("confidence", 0.0),
             )
 
-    def _check_gate_alerts(
-        self, gate: str, metrics: GateMetrics, latency_ms: float
-    ) -> None:
+    def _check_gate_alerts(self, gate: str, metrics: GateMetrics, latency_ms: float) -> None:
         """Check for alert conditions on a gate."""
         # Error rate alert
         if metrics.total_evaluations >= 10:  # Need minimum samples
@@ -551,8 +551,7 @@ class SREMonitor:
             if (
                 alert.get("type") == alert_type
                 and alert.get("gate") == gate
-                and datetime.fromisoformat(alert["timestamp"])
-                > now - timedelta(minutes=5)
+                and datetime.fromisoformat(alert["timestamp"]) > now - timedelta(minutes=5)
             ):
                 return  # Skip duplicate
 
@@ -753,7 +752,9 @@ if __name__ == "__main__":
     # Simulate some events
     for i in range(100):
         monitor.record_gate_event("momentum", "pass" if i % 3 != 0 else "reject", latency_ms=50 + i)
-        monitor.record_gate_event("rl_filter", "pass" if i % 4 != 0 else "reject", latency_ms=30 + i)
+        monitor.record_gate_event(
+            "rl_filter", "pass" if i % 4 != 0 else "reject", latency_ms=30 + i
+        )
         monitor.record_gate_event("llm", "pass" if i % 5 != 0 else "reject", latency_ms=200 + i * 2)
         monitor.record_gate_event("risk", "pass" if i % 10 != 0 else "reject", latency_ms=10 + i)
 
@@ -776,7 +777,9 @@ if __name__ == "__main__":
 
     print("\nGate Metrics:")
     for gate, metrics in dashboard["gates"].items():
-        print(f"  {gate}: pass_rate={metrics['pass_rate']:.1f}%, p95_latency={metrics['p95_latency_ms']:.0f}ms")
+        print(
+            f"  {gate}: pass_rate={metrics['pass_rate']:.1f}%, p95_latency={metrics['p95_latency_ms']:.0f}ms"
+        )
 
     print("\nRegime Metrics:")
     for regime, metrics in dashboard["regimes"].items():

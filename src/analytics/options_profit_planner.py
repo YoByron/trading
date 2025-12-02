@@ -40,7 +40,9 @@ SignalInput = Union[dict[str, Any], "RuleOneOptionsSignal"]
 THETA_STAGE_1_EQUITY = float(os.getenv("THETA_STAGE_1_EQUITY", "5000"))  # Poor man's covered calls
 THETA_STAGE_2_EQUITY = float(os.getenv("THETA_STAGE_2_EQUITY", "10000"))  # Iron condors
 THETA_STAGE_3_EQUITY = float(os.getenv("THETA_STAGE_3_EQUITY", "25000"))  # Full options suite
-IV_PERCENTILE_THRESHOLD = float(os.getenv("IV_PERCENTILE_THRESHOLD", "50"))  # Min IV rank for selling
+IV_PERCENTILE_THRESHOLD = float(
+    os.getenv("IV_PERCENTILE_THRESHOLD", "50")
+)  # Min IV rank for selling
 
 
 @dataclass
@@ -393,7 +395,7 @@ class ThetaHarvestExecutor:
                 return None
 
             # Rolling 20-day volatility
-            rolling_vol = returns.rolling(20).std() * (252 ** 0.5)
+            rolling_vol = returns.rolling(20).std() * (252**0.5)
             current_vol = rolling_vol.iloc[-1]
             hist_vol = rolling_vol.dropna()
 
@@ -526,7 +528,9 @@ class ThetaHarvestExecutor:
         }
 
         if not gate["theta_enabled"]:
-            plan["summary"] = f"Theta strategies disabled until equity reaches ${THETA_STAGE_1_EQUITY}"
+            plan["summary"] = (
+                f"Theta strategies disabled until equity reaches ${THETA_STAGE_1_EQUITY}"
+            )
             return plan
 
         for symbol in symbols:
@@ -544,7 +548,9 @@ class ThetaHarvestExecutor:
                     daily_equiv = result.estimated_premium / 7  # Weekly expiry
                 plan["total_estimated_premium"] += daily_equiv
 
-        plan["premium_gap"] = max(0, self.planner.target_daily_profit - plan["total_estimated_premium"])
+        plan["premium_gap"] = max(
+            0, self.planner.target_daily_profit - plan["total_estimated_premium"]
+        )
         plan["on_track"] = plan["premium_gap"] == 0
 
         # Build summary
