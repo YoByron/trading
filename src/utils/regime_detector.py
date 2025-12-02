@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 # Regime labels mapped to numeric IDs for HMM
 REGIME_LABELS = {
-    0: "calm",        # Low vol, range-bound
-    1: "trending",    # Directional movement
-    2: "volatile",    # High vol, choppy
-    3: "spike",       # Crisis/tail event
+    0: "calm",  # Low vol, range-bound
+    1: "trending",  # Directional movement
+    2: "volatile",  # High vol, choppy
+    3: "spike",  # Crisis/tail event
 }
 
 REGIME_ALLOCATIONS = {
@@ -64,7 +64,9 @@ class RegimeDetector:
     trend_threshold: float = 0.03
     vix_spike_threshold: float = 30.0
     vix_calm_threshold: float = 15.0
-    hmm_enabled: bool = field(default_factory=lambda: os.getenv("HMM_REGIME_ENABLED", "true").lower() == "true")
+    hmm_enabled: bool = field(
+        default_factory=lambda: os.getenv("HMM_REGIME_ENABLED", "true").lower() == "true"
+    )
     _hmm_model: Any = field(default=None, repr=False)
     _last_hmm_fit: datetime | None = field(default=None, repr=False)
     _hmm_fit_interval_hours: int = 24
@@ -149,7 +151,7 @@ class RegimeDetector:
                 return self._fallback_snapshot()
 
             # Extract close prices
-            closes = data["Close"] if "Close" in data else data
+            closes = data.get("Close", data)
             if closes.empty:
                 return self._fallback_snapshot()
 
@@ -176,7 +178,9 @@ class RegimeDetector:
             elif vix >= 20.0:
                 regime_id = 2  # volatile
                 confidence = 0.7 + (vix - 20) / 30
-            elif skew_percentile > 80 or (closes["^VIX"].iloc[-5:].mean() > closes["^VIX"].iloc[-20:].mean()):
+            elif skew_percentile > 80 or (
+                closes["^VIX"].iloc[-5:].mean() > closes["^VIX"].iloc[-20:].mean()
+            ):
                 regime_id = 1  # trending (VIX rising = bear trend)
                 confidence = 0.6 + skew_percentile / 200
             else:
