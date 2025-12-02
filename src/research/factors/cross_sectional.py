@@ -7,7 +7,6 @@ Provides rank-based features (percentile ranks, z-scores) for relative compariso
 import logging
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -46,9 +45,13 @@ def calculate_percentile_ranks(
             # For DataFrame, rank each column independently
             ranked = data.copy()
             for col in data.columns:
-                ranked[col] = data[col].rolling(window=window).apply(
-                    lambda x: pd.Series(x).rank(pct=True, method=method).iloc[-1] * 100,
-                    raw=False,
+                ranked[col] = (
+                    data[col]
+                    .rolling(window=window)
+                    .apply(
+                        lambda x: pd.Series(x).rank(pct=True, method=method).iloc[-1] * 100,
+                        raw=False,
+                    )
                 )
             return ranked
 
@@ -94,9 +97,7 @@ def calculate_cross_sectional_momentum(
         DataFrame of momentum ranks
     """
     # Calculate cumulative returns over lookback period
-    momentum = (1 + returns).rolling(window=lookback).apply(
-        lambda x: x.prod() - 1, raw=False
-    )
+    momentum = (1 + returns).rolling(window=lookback).apply(lambda x: x.prod() - 1, raw=False)
 
     # Rank cross-sectionally (at each time point)
     momentum_ranks = momentum.rank(axis=1, pct=True, method="average") * 100
@@ -144,11 +145,11 @@ def calculate_relative_strength(
     Returns:
         Series of relative strength (positive = outperforming)
     """
-    symbol_cumret = (1 + symbol_returns).rolling(window=window).apply(
-        lambda x: x.prod() - 1, raw=False
+    symbol_cumret = (
+        (1 + symbol_returns).rolling(window=window).apply(lambda x: x.prod() - 1, raw=False)
     )
-    benchmark_cumret = (1 + benchmark_returns).rolling(window=window).apply(
-        lambda x: x.prod() - 1, raw=False
+    benchmark_cumret = (
+        (1 + benchmark_returns).rolling(window=window).apply(lambda x: x.prod() - 1, raw=False)
     )
 
     relative_strength = symbol_cumret - benchmark_cumret

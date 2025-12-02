@@ -5,7 +5,6 @@ Creates volatility/realized variance labels.
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -44,9 +43,7 @@ def create_volatility_labels(
             vol = fitted.conditional_volatility / 100
             vol = pd.Series(vol, index=returns.index)
         except ImportError:
-            logger.warning(
-                "arch library not available. Falling back to realized volatility."
-            )
+            logger.warning("arch library not available. Falling back to realized volatility.")
             vol = returns.rolling(window=window).std() * np.sqrt(252)
     else:
         raise ValueError(f"Unknown method: {method}")

@@ -5,7 +5,6 @@ Provides volume profile, order flow imbalance, and VWAP deviation features.
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
