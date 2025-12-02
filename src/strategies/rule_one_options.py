@@ -20,6 +20,8 @@ Key Principles:
 
 import json
 import logging
+import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -27,9 +29,14 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import requests
 import yfinance as yf
 
 logger = logging.getLogger(__name__)
+
+# Rate limiting for Yahoo Finance fallback
+_LAST_YFINANCE_CALL = 0.0
+_YFINANCE_MIN_INTERVAL = 0.5  # 500ms between calls
 
 try:
     from src.core.alpaca_trader import AlpacaTrader
@@ -255,6 +262,9 @@ class RuleOneOptionsStrategy:
         "MCD",  # Growth + moat
     ]
 
+    # Cache settings
+    CACHE_TTL_HOURS = 24  # Fundamentals cache valid for 24 hours
+
     def __init__(
         self,
         paper: bool = True,
@@ -278,7 +288,11 @@ class RuleOneOptionsStrategy:
         self.options_client = AlpacaOptionsClient(paper=paper)
         self.options_log_dir = Path("data/options_signals")
 
-        # Cache for valuations
+        # File-based cache directory for fundamentals
+        self.fundamentals_cache_dir = Path("data/cache/fundamentals")
+        self.fundamentals_cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # In-memory cache for valuations (session-only)
         self._valuation_cache: dict[str, StickerPriceResult] = {}
         self._big_five_cache: dict[str, BigFiveMetrics] = {}
 
@@ -286,9 +300,164 @@ class RuleOneOptionsStrategy:
             f"Rule #1 Options Strategy initialized: {len(self.universe)} symbols, paper={paper}"
         )
 
+    def _load_cached_fundamentals(self, symbol: str) -> Optional[dict]:
+        """Load cached fundamentals from disk if fresh."""
+        cache_file = self.fundamentals_cache_dir / f"{symbol}_fundamentals.json"
+        if not cache_file.exists():
+            return None
+
+        try:
+            with open(cache_file) as f:
+                data = json.load(f)
+
+            # Check TTL
+            cached_time = datetime.fromisoformat(data.get("timestamp", "2000-01-01"))
+            age_hours = (datetime.now() - cached_time).total_seconds() / 3600
+
+            if age_hours > self.CACHE_TTL_HOURS:
+                logger.debug(
+                    f"{symbol}: Cache expired ({age_hours:.1f}h > {self.CACHE_TTL_HOURS}h)"
+                )
+                return None
+
+            logger.debug(f"{symbol}: Using cached fundamentals ({age_hours:.1f}h old)")
+            return data
+        except Exception as e:
+            logger.debug(f"{symbol}: Failed to load cache: {e}")
+            return None
+
+    def _save_cached_fundamentals(self, symbol: str, data: dict) -> None:
+        """Save fundamentals to disk cache."""
+        cache_file = self.fundamentals_cache_dir / f"{symbol}_fundamentals.json"
+        try:
+            data["timestamp"] = datetime.now().isoformat()
+            with open(cache_file, "w") as f:
+                json.dump(data, f, indent=2)
+            logger.debug(f"{symbol}: Fundamentals cached to disk")
+        except Exception as e:
+            logger.debug(f"{symbol}: Failed to save cache: {e}")
+
+    def _fetch_polygon_fundamentals(self, symbol: str) -> Optional[dict]:
+        """
+        Fetch fundamental data from Polygon.io API.
+
+        Returns dict with growth rates and financial metrics, or None if unavailable.
+        """
+        polygon_api_key = os.getenv("POLYGON_API_KEY")
+        if not polygon_api_key:
+            return None
+
+        try:
+            # Polygon.io v3 ticker details endpoint
+            url = f"https://api.polygon.io/v3/reference/tickers/{symbol}"
+            params = {"apiKey": polygon_api_key}
+            response = requests.get(url, params=params, timeout=15)
+
+            if response.status_code == 429:
+                logger.warning(f"Polygon.io rate limited for {symbol}")
+                return None
+
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("status") != "OK":
+                return None
+
+            result = data.get("results", {})
+            if not result:
+                return None
+
+            logger.debug(f"Polygon.io fundamentals fetched for {symbol}")
+            return {
+                "source": "polygon",
+                "market_cap": result.get("market_cap"),
+                "shares_outstanding": result.get("share_class_shares_outstanding"),
+                "name": result.get("name"),
+            }
+        except Exception as e:
+            logger.debug(f"Polygon.io fundamentals failed for {symbol}: {e}")
+            return None
+
+    def _fetch_finnhub_fundamentals(self, symbol: str) -> Optional[dict]:
+        """
+        Fetch fundamental data from Finnhub API.
+
+        Returns dict with growth rates and financial metrics, or None if unavailable.
+        """
+        finnhub_api_key = os.getenv("FINNHUB_API_KEY")
+        if not finnhub_api_key:
+            return None
+
+        try:
+            # Finnhub basic financials endpoint
+            url = "https://finnhub.io/api/v1/stock/metric"
+            params = {"symbol": symbol, "metric": "all", "token": finnhub_api_key}
+            response = requests.get(url, params=params, timeout=15)
+
+            if response.status_code == 429:
+                logger.warning(f"Finnhub rate limited for {symbol}")
+                return None
+
+            response.raise_for_status()
+            data = response.json()
+
+            metrics = data.get("metric", {})
+            if not metrics:
+                return None
+
+            logger.debug(f"Finnhub fundamentals fetched for {symbol}")
+            return {
+                "source": "finnhub",
+                "roic": metrics.get("roicTTM"),
+                "eps_growth_5y": metrics.get("epsGrowth5Y"),
+                "revenue_growth_5y": metrics.get("revenueGrowth5Y"),
+                "pe_ratio": metrics.get("peBasicExclExtraTTM"),
+                "book_value_growth_5y": metrics.get("bookValuePerShareGrowth5Y"),
+            }
+        except Exception as e:
+            logger.debug(f"Finnhub fundamentals failed for {symbol}: {e}")
+            return None
+
+    def _fetch_yfinance_fundamentals(self, symbol: str) -> Optional[dict]:
+        """
+        Fetch fundamental data from Yahoo Finance (fallback).
+
+        Returns dict with growth rates and financial metrics, or None if unavailable.
+        """
+        global _LAST_YFINANCE_CALL
+
+        # Rate limiting
+        elapsed = time.time() - _LAST_YFINANCE_CALL
+        if elapsed < _YFINANCE_MIN_INTERVAL:
+            time.sleep(_YFINANCE_MIN_INTERVAL - elapsed)
+        _LAST_YFINANCE_CALL = time.time()
+
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+
+            if not info or "symbol" not in info:
+                return None
+
+            logger.debug(f"Yahoo Finance fundamentals fetched for {symbol}")
+            return {
+                "source": "yfinance",
+                "roic": info.get("returnOnCapital") or info.get("returnOnEquity"),
+                "eps_growth": info.get("earningsGrowth"),
+                "revenue_growth": info.get("revenueGrowth"),
+                "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
+                "trailing_eps": info.get("trailingEps"),
+                "forward_pe": info.get("forwardPE"),
+            }
+        except Exception as e:
+            logger.debug(f"Yahoo Finance fundamentals failed for {symbol}: {e}")
+            return None
+
     def calculate_big_five(self, symbol: str) -> Optional[BigFiveMetrics]:
         """
         Calculate Phil Town's Big Five metrics for a stock.
+
+        Uses disk cache (24h TTL) + multi-source fallback: Finnhub -> Yahoo Finance
 
         Args:
             symbol: Stock ticker
@@ -296,30 +465,112 @@ class RuleOneOptionsStrategy:
         Returns:
             BigFiveMetrics or None if data unavailable
         """
+        # Check in-memory cache first
+        if symbol in self._big_five_cache:
+            return self._big_five_cache[symbol]
+
         try:
-            ticker = yf.Ticker(symbol)
-            info = ticker.info
+            # Check disk cache
+            cached = self._load_cached_fundamentals(symbol)
+            if cached and cached.get("big_five"):
+                bf = cached["big_five"]
+                metrics = BigFiveMetrics(
+                    roic=bf.get("roic", 0.10),
+                    equity_growth=bf.get("equity_growth", 0.10),
+                    eps_growth=bf.get("eps_growth", 0.10),
+                    sales_growth=bf.get("sales_growth", 0.10),
+                    fcf_growth=bf.get("fcf_growth", 0.10),
+                )
+                self._big_five_cache[symbol] = metrics
+                logger.info(
+                    f"{symbol}: Big Five from cache - ROIC={metrics.roic:.1%}, EPS Growth={metrics.eps_growth:.1%}"
+                )
+                return metrics
 
-            # Calculate ROIC (Return on Invested Capital)
-            # ROIC = NOPAT / Invested Capital
-            roic = info.get("returnOnCapital") or info.get("returnOnEquity", 0.10)
+            # Try Finnhub first (has growth metrics)
+            finnhub_data = self._fetch_finnhub_fundamentals(symbol)
+            if finnhub_data:
+                roic = finnhub_data.get("roic") or 0.10
+                eps_growth = (finnhub_data.get("eps_growth_5y") or 10.0) / 100.0
+                revenue_growth = (finnhub_data.get("revenue_growth_5y") or 10.0) / 100.0
+                equity_growth = (
+                    finnhub_data.get("book_value_growth_5y") or eps_growth * 80
+                ) / 100.0
 
-            # Get growth rates from yfinance
-            eps_growth = info.get("earningsGrowth", 0.10)
-            revenue_growth = info.get("revenueGrowth", 0.10)
+                metrics = BigFiveMetrics(
+                    roic=roic if roic else 0.10,
+                    equity_growth=equity_growth,
+                    eps_growth=eps_growth,
+                    sales_growth=revenue_growth,
+                    fcf_growth=eps_growth * 0.9,
+                )
+                self._big_five_cache[symbol] = metrics
 
-            # Estimate equity and FCF growth (simplified)
-            equity_growth = eps_growth * 0.8 if eps_growth else 0.10
-            fcf_growth = eps_growth * 0.9 if eps_growth else 0.10
+                # Save to disk cache
+                self._save_cached_fundamentals(
+                    symbol,
+                    {
+                        "source": "finnhub",
+                        "big_five": {
+                            "roic": metrics.roic,
+                            "equity_growth": metrics.equity_growth,
+                            "eps_growth": metrics.eps_growth,
+                            "sales_growth": metrics.sales_growth,
+                            "fcf_growth": metrics.fcf_growth,
+                        },
+                    },
+                )
 
+                logger.info(
+                    f"{symbol}: Big Five from Finnhub - ROIC={roic:.1%}, EPS Growth={eps_growth:.1%}"
+                )
+                return metrics
+
+            # Try Yahoo Finance as fallback
+            yf_data = self._fetch_yfinance_fundamentals(symbol)
+            if yf_data:
+                roic = yf_data.get("roic") or 0.10
+                eps_growth = yf_data.get("eps_growth") or 0.10
+                revenue_growth = yf_data.get("revenue_growth") or 0.10
+
+                metrics = BigFiveMetrics(
+                    roic=roic,
+                    equity_growth=eps_growth * 0.8 if eps_growth else 0.10,
+                    eps_growth=eps_growth,
+                    sales_growth=revenue_growth,
+                    fcf_growth=eps_growth * 0.9 if eps_growth else 0.10,
+                )
+                self._big_five_cache[symbol] = metrics
+
+                # Save to disk cache
+                self._save_cached_fundamentals(
+                    symbol,
+                    {
+                        "source": "yfinance",
+                        "big_five": {
+                            "roic": metrics.roic,
+                            "equity_growth": metrics.equity_growth,
+                            "eps_growth": metrics.eps_growth,
+                            "sales_growth": metrics.sales_growth,
+                            "fcf_growth": metrics.fcf_growth,
+                        },
+                    },
+                )
+
+                logger.info(
+                    f"{symbol}: Big Five from Yahoo Finance - ROIC={roic:.1%}, EPS Growth={eps_growth:.1%}"
+                )
+                return metrics
+
+            # All sources failed - use conservative defaults
+            logger.warning(f"{symbol}: All fundamental sources failed, using defaults")
             metrics = BigFiveMetrics(
-                roic=roic,
-                equity_growth=equity_growth,
-                eps_growth=eps_growth,
-                sales_growth=revenue_growth,
-                fcf_growth=fcf_growth,
+                roic=0.10,
+                equity_growth=0.08,
+                eps_growth=0.08,
+                sales_growth=0.08,
+                fcf_growth=0.08,
             )
-
             self._big_five_cache[symbol] = metrics
             return metrics
 
@@ -327,9 +578,55 @@ class RuleOneOptionsStrategy:
             logger.warning(f"Failed to calculate Big Five for {symbol}: {e}")
             return None
 
+    def _fetch_current_price(self, symbol: str) -> Optional[float]:
+        """
+        Fetch current stock price from multiple sources.
+
+        Priority: Alpaca -> Polygon.io -> Yahoo Finance
+        """
+        # Try Alpaca first (most reliable for our trading system)
+        try:
+            if hasattr(self.trader, "get_latest_quote"):
+                quote = self.trader.get_latest_quote(symbol)
+                if quote and quote.get("price"):
+                    return float(quote["price"])
+        except Exception:
+            pass
+
+        # Try Polygon.io
+        polygon_api_key = os.getenv("POLYGON_API_KEY")
+        if polygon_api_key:
+            try:
+                url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/prev"
+                params = {"apiKey": polygon_api_key}
+                response = requests.get(url, params=params, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    results = data.get("results", [])
+                    if results:
+                        return float(results[0].get("c", 0))  # Close price
+            except Exception:
+                pass
+
+        # Fallback to Yahoo Finance with rate limiting
+        global _LAST_YFINANCE_CALL
+        elapsed = time.time() - _LAST_YFINANCE_CALL
+        if elapsed < _YFINANCE_MIN_INTERVAL:
+            time.sleep(_YFINANCE_MIN_INTERVAL - elapsed)
+        _LAST_YFINANCE_CALL = time.time()
+
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            return info.get("currentPrice") or info.get("regularMarketPrice")
+        except Exception:
+            return None
+
     def calculate_sticker_price(self, symbol: str) -> Optional[StickerPriceResult]:
         """
         Calculate Phil Town's Sticker Price and MOS Price.
+
+        Uses multi-source fallback for price and fundamentals data.
 
         Formula:
         1. Get current EPS
@@ -347,27 +644,25 @@ class RuleOneOptionsStrategy:
             StickerPriceResult or None if calculation fails
         """
         try:
-            ticker = yf.Ticker(symbol)
-            info = ticker.info
+            # Get current price from multiple sources
+            current_price = self._fetch_current_price(symbol)
+            if not current_price or current_price <= 0:
+                logger.warning(f"{symbol}: Unable to fetch current price")
+                return None
 
-            # Get current data
-            current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
-            current_eps = info.get("trailingEps", 0)
+            # Get fundamentals (already uses multi-source fallback)
+            yf_data = self._fetch_yfinance_fundamentals(symbol)
+            current_eps = yf_data.get("trailing_eps") if yf_data else None
 
-            if current_eps <= 0:
+            if not current_eps or current_eps <= 0:
                 logger.warning(f"{symbol}: Negative or zero EPS, skipping")
                 return None
 
-            # Get growth rate estimate
-            analyst_growth = info.get("earningsGrowth")
-
-            # Get Big Five for growth estimate
+            # Get Big Five for growth estimate (uses multi-source)
             big_five = self._big_five_cache.get(symbol) or self.calculate_big_five(symbol)
 
             if big_five and big_five.avg_growth > 0:
                 growth_rate = min(big_five.avg_growth, 0.25)  # Cap at 25%
-            elif analyst_growth and analyst_growth > 0:
-                growth_rate = min(analyst_growth, 0.25)
             else:
                 growth_rate = 0.10  # Conservative default
 
@@ -401,6 +696,10 @@ class RuleOneOptionsStrategy:
             )
 
             self._valuation_cache[symbol] = result
+            logger.info(
+                f"{symbol}: Sticker Price=${sticker_price:.2f}, MOS=${mos_price:.2f}, "
+                f"Current=${current_price:.2f}, Growth={growth_rate:.1%}"
+            )
             return result
 
         except Exception as e:
@@ -410,7 +709,12 @@ class RuleOneOptionsStrategy:
     def _get_available_cash(self) -> float:
         """Fetch available cash/buying power for sizing put contracts."""
         try:
-            account = self.trader.get_account()
+            # Use get_account_info (correct method) with fallback to get_account
+            if hasattr(self.trader, "get_account_info"):
+                account = self.trader.get_account_info()
+            else:
+                account = self.trader.get_account()
+
             cash_fields = [
                 account.get("cash"),
                 account.get("buying_power"),
@@ -422,6 +726,7 @@ class RuleOneOptionsStrategy:
                 try:
                     cash_val = float(value)
                     if cash_val > 0:
+                        logger.debug(f"Available cash for options: ${cash_val:,.2f}")
                         return cash_val
                 except (TypeError, ValueError):
                     continue
