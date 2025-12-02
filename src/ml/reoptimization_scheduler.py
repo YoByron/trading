@@ -18,12 +18,11 @@ Created: 2025-12-02
 
 import json
 import logging
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +138,10 @@ class ReOptimizationScheduler:
         days_since_last = (datetime.now() - last_run_date).days
 
         if days_since_last < self.config.min_days_between_runs:
-            return False, f"Only {days_since_last} days since last run (min: {self.config.min_days_between_runs})"
+            return (
+                False,
+                f"Only {days_since_last} days since last run (min: {self.config.min_days_between_runs})",
+            )
 
         # Check frequency
         freq_days = {
@@ -152,7 +154,10 @@ class ReOptimizationScheduler:
         required_days = freq_days.get(self.config.frequency, 30)
 
         if days_since_last >= required_days:
-            return True, f"{days_since_last} days since last run (frequency: {self.config.frequency.value})"
+            return (
+                True,
+                f"{days_since_last} days since last run (frequency: {self.config.frequency.value})",
+            )
 
         return False, f"Scheduled for {required_days - days_since_last} more days"
 
@@ -216,9 +221,7 @@ class ReOptimizationScheduler:
                 return result
 
             # Check parameter change constraints
-            param_changes, within_bounds = self._check_parameter_bounds(
-                current_params, best_params
-            )
+            param_changes, within_bounds = self._check_parameter_bounds(current_params, best_params)
 
             if not within_bounds:
                 duration = time.time() - start_time
