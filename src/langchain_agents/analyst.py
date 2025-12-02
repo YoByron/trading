@@ -7,8 +7,9 @@ import logging
 import os
 from typing import Any
 
-from langchain_agents.agents import build_price_action_agent
 from langchain_community.chat_models import ChatAnthropic
+
+from langchain_agents.agents import build_price_action_agent
 
 logger = logging.getLogger(__name__)
 
