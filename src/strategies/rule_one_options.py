@@ -21,10 +21,10 @@ Key Principles:
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import yfinance as yf
@@ -439,7 +439,7 @@ class RuleOneOptionsStrategy:
             return None
 
     @staticmethod
-    def _serialize_signal(signal: RuleOneOptionsSignal) -> Dict:
+    def _serialize_signal(signal: RuleOneOptionsSignal) -> dict:
         """Convert signal dataclass into JSON-friendly dict."""
         payload = {
             "symbol": signal.symbol,
@@ -462,7 +462,7 @@ class RuleOneOptionsStrategy:
         return payload
 
     @staticmethod
-    def _serialize_valuation(result: StickerPriceResult) -> Dict:
+    def _serialize_valuation(result: StickerPriceResult) -> dict:
         """Convert StickerPriceResult to JSON-friendly dict."""
         return {
             "symbol": result.symbol,
@@ -477,7 +477,7 @@ class RuleOneOptionsStrategy:
             "timestamp": result.timestamp.isoformat() if result.timestamp else None,
         }
 
-    def _persist_signals(self, snapshot: Dict) -> None:
+    def _persist_signals(self, snapshot: dict) -> None:
         """Persist daily signals to disk for audit trail."""
         try:
             self.options_log_dir.mkdir(parents=True, exist_ok=True)
@@ -489,7 +489,7 @@ class RuleOneOptionsStrategy:
         except Exception as exc:
             logger.error(f"Failed to persist options snapshot: {exc}")
 
-    def find_put_opportunities(self) -> List[RuleOneOptionsSignal]:
+    def find_put_opportunities(self) -> list[RuleOneOptionsSignal]:
         """
         Find opportunities to sell puts at MOS price.
 
@@ -502,7 +502,7 @@ class RuleOneOptionsStrategy:
         Returns:
             List of RuleOneOptionsSignal for put selling opportunities
         """
-        signals: List[RuleOneOptionsSignal] = []
+        signals: list[RuleOneOptionsSignal] = []
         cash_available = self._get_available_cash()
 
         if cash_available <= 0:
@@ -739,7 +739,7 @@ class RuleOneOptionsStrategy:
             mid = (bid + ask) / 2 if (bid > 0 and ask > 0) else max(bid, ask)
             delta = best_put.get("delta")
             implied_vol = best_put.get("impliedVolatility")
-            vol_series = puts["impliedVolatility"] if "impliedVolatility" in puts else []
+            vol_series = puts["impliedVolatility"] if "impliedVolatility" in puts.columns else []
             iv_rank = self._compute_iv_rank(vol_series, implied_vol)
 
             return OptionContract(
@@ -816,7 +816,7 @@ class RuleOneOptionsStrategy:
             mid = (bid + ask) / 2 if (bid > 0 and ask > 0) else max(bid, ask)
             delta = best_call.get("delta")
             implied_vol = best_call.get("impliedVolatility")
-            vol_series = calls["impliedVolatility"] if "impliedVolatility" in calls else []
+            vol_series = calls["impliedVolatility"] if "impliedVolatility" in calls.columns else []
             iv_rank = self._compute_iv_rank(vol_series, implied_vol)
 
             return OptionContract(

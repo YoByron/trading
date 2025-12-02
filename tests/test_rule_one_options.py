@@ -3,21 +3,17 @@ Tests for Phil Town's Rule #1 Options Strategy.
 """
 
 import json
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-import numpy as np
 import pytest
+
 from src.strategies.rule_one_options import (
     BigFiveMetrics,
     OptionContract,
     RuleOneOptionsSignal,
     RuleOneOptionsStrategy,
     StickerPriceResult,
-    MeaningRating,
-    MoatRating,
-    ManagementRating,
 )
 
 
