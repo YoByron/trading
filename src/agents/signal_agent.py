@@ -10,10 +10,13 @@ Responsibilities:
 Enhanced with LLM reasoning for context-aware decisions
 """
 
+import builtins
+import contextlib
 import logging
+from typing import Any
+
 import pandas as pd
-import numpy as np
-from typing import Dict, Any
+
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -34,7 +37,7 @@ class SignalAgent(BaseAgent):
             name="SignalAgent", role="Technical analysis and momentum signal generation"
         )
 
-    def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate trading signals from technical analysis.
 
@@ -57,8 +60,8 @@ class SignalAgent(BaseAgent):
         prompt = f"""Analyze {symbol} technicals. Be decisive - strong signals get high scores, weak signals get low scores.
 
 INDICATORS:
-Price: ${indicators.get('price', 0):.2f} | MACD Hist: {indicators.get('macd_histogram', 0):.4f} | RSI: {indicators.get('rsi', 50):.1f} | Volume: {indicators.get('volume_ratio', 1.0):.1f}x
-Trend: {indicators.get('trend', 'UNKNOWN')} | MA50: ${indicators.get('ma_50', 0):.2f} | Momentum: {indicators.get('momentum_score', 0):.0f}/100
+Price: ${indicators.get("price", 0):.2f} | MACD Hist: {indicators.get("macd_histogram", 0):.4f} | RSI: {indicators.get("rsi", 50):.1f} | Volume: {indicators.get("volume_ratio", 1.0):.1f}x
+Trend: {indicators.get("trend", "UNKNOWN")} | MA50: ${indicators.get("ma_50", 0):.2f} | Momentum: {indicators.get("momentum_score", 0):.0f}/100
 
 {memory_context}
 
@@ -106,7 +109,7 @@ FACTORS: [2-3 key factors driving your decision]"""
 
         return analysis
 
-    def _calculate_indicators(self, price_data: pd.DataFrame) -> Dict[str, Any]:
+    def _calculate_indicators(self, price_data: pd.DataFrame) -> dict[str, Any]:
         """
         Calculate technical indicators from price data.
 
@@ -132,9 +135,7 @@ FACTORS: [2-3 key factors driving your decision]"""
             }
 
         close = price_data["Close"] if "Close" in price_data else price_data["close"]
-        volume = (
-            price_data["Volume"] if "Volume" in price_data else price_data["volume"]
-        )
+        volume = price_data["Volume"] if "Volume" in price_data else price_data["volume"]
 
         # MACD
         ema_12 = close.ewm(span=12, adjust=False).mean()
@@ -156,9 +157,7 @@ FACTORS: [2-3 key factors driving your decision]"""
 
         # Volume ratio
         avg_volume = volume.rolling(window=20).mean()
-        volume_ratio = (
-            volume.iloc[-1] / avg_volume.iloc[-1] if avg_volume.iloc[-1] > 0 else 1.0
-        )
+        volume_ratio = volume.iloc[-1] / avg_volume.iloc[-1] if avg_volume.iloc[-1] > 0 else 1.0
 
         # Current values
         current_price = close.iloc[-1]
@@ -206,7 +205,7 @@ FACTORS: [2-3 key factors driving your decision]"""
             "momentum_score": momentum_score,
         }
 
-    def _parse_signal_response(self, reasoning: str) -> Dict[str, Any]:
+    def _parse_signal_response(self, reasoning: str) -> dict[str, Any]:
         """Parse LLM response into structured signal."""
         lines = reasoning.split("\n")
         analysis = {
@@ -221,28 +220,22 @@ FACTORS: [2-3 key factors driving your decision]"""
         for line in lines:
             line = line.strip()
             if line.startswith("STRENGTH:"):
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     analysis["strength"] = int(line.split(":")[1].strip())
-                except:
-                    pass
             elif line.startswith("DIRECTION:"):
                 direction = line.split(":")[1].strip().upper()
                 if direction in ["BULLISH", "BEARISH", "NEUTRAL"]:
                     analysis["direction"] = direction
             elif line.startswith("ENTRY_QUALITY:"):
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     analysis["entry_quality"] = int(line.split(":")[1].strip())
-                except:
-                    pass
             elif line.startswith("RECOMMENDATION:"):
                 rec = line.split(":")[1].strip().upper()
                 if rec in ["BUY", "SELL", "HOLD"]:
                     analysis["action"] = rec
             elif line.startswith("CONFIDENCE:"):
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     analysis["confidence"] = float(line.split(":")[1].strip())
-                except:
-                    pass
             elif line.startswith("FACTORS:"):
                 analysis["factors"] = line.split(":", 1)[1].strip()
 

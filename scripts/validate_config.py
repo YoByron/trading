@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import sys
 from src.core.config import load_config
 
 
@@ -23,4 +22,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

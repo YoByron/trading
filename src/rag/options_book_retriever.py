@@ -15,11 +15,11 @@ Integrates with:
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Optional
 
-from src.rag.collectors.options_book_collector import get_options_book_collector
 from src.rag.collectors.mcmillan_options_collector import McMillanOptionsKnowledgeBase
+from src.rag.collectors.options_book_collector import get_options_book_collector
 from src.rag.vector_db.chroma_client import get_rag_db
 from src.rag.vector_db.embedder import get_embedder
 
@@ -75,9 +75,9 @@ class OptionsBookRetriever:
         self,
         query: str,
         top_k: int = 5,
-        content_types: Optional[List[str]] = None,
-        include_structured: bool = True
-    ) -> Dict[str, Any]:
+        content_types: Optional[list[str]] = None,
+        include_structured: bool = True,
+    ) -> dict[str, Any]:
         """
         Search all options knowledge sources for query.
 
@@ -103,14 +103,12 @@ class OptionsBookRetriever:
             "book_results": [],
             "structured_results": [],
             "combined_answer": "",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Search PDF books
         book_search = self.book_collector.search(
-            query=query,
-            top_k=top_k,
-            content_types=content_types
+            query=query, top_k=top_k, content_types=content_types
         )
         results["book_results"] = book_search.get("results", [])
 
@@ -129,8 +127,8 @@ class OptionsBookRetriever:
         iv_rank: float,
         market_outlook: str = "neutral",
         days_to_expiration: int = 30,
-        risk_tolerance: str = "moderate"
-    ) -> Dict[str, Any]:
+        risk_tolerance: str = "moderate",
+    ) -> dict[str, Any]:
         """
         Get recommended options strategy based on current conditions.
 
@@ -151,14 +149,14 @@ class OptionsBookRetriever:
         # Get IV-based recommendation from structured KB
         iv_rec = self.mcmillan_kb.get_iv_recommendation(
             iv_rank=iv_rank,
-            iv_percentile=iv_rank  # Use same if percentile not available
+            iv_percentile=iv_rank,  # Use same if percentile not available
         )
 
         # Map outlook to strategy categories
         outlook_strategies = {
             "bullish": ["long_call", "covered_call", "cash_secured_put", "bull_spread"],
             "neutral": ["iron_condor", "covered_call", "calendar_spread", "butterfly"],
-            "bearish": ["long_put", "bear_spread", "protective_put"]
+            "bearish": ["long_put", "bear_spread", "protective_put"],
         }
 
         suitable_strategies = outlook_strategies.get(market_outlook.lower(), [])
@@ -182,8 +180,7 @@ class OptionsBookRetriever:
 
         # Search books for additional context
         book_context = self.book_collector.search(
-            query=f"{primary_strategy} setup {market_outlook}",
-            top_k=3
+            query=f"{primary_strategy} setup {market_outlook}", top_k=3
         )
 
         return {
@@ -197,8 +194,8 @@ class OptionsBookRetriever:
                 "iv_rank": iv_rank,
                 "market_outlook": market_outlook,
                 "dte": days_to_expiration,
-                "risk_tolerance": risk_tolerance
-            }
+                "risk_tolerance": risk_tolerance,
+            },
         }
 
     def cross_check_expected_move(
@@ -207,8 +204,8 @@ class OptionsBookRetriever:
         sentiment_signal: str,
         current_iv: float,
         dte: int,
-        stock_price: float = None
-    ) -> Dict[str, Any]:
+        stock_price: float = None,
+    ) -> dict[str, Any]:
         """
         Cross-check sentiment signal against McMillan's expected move calculation.
 
@@ -244,7 +241,7 @@ class OptionsBookRetriever:
             stock_price=stock_price,
             implied_volatility=current_iv,
             days_to_expiration=dte,
-            confidence_level=1.0  # 1 std dev (68% probability)
+            confidence_level=1.0,  # 1 std dev (68% probability)
         )
 
         # Also calculate 2 std dev for more context
@@ -252,28 +249,25 @@ class OptionsBookRetriever:
             stock_price=stock_price,
             implied_volatility=current_iv,
             days_to_expiration=dte,
-            confidence_level=2.0  # 2 std dev (95% probability)
+            confidence_level=2.0,  # 2 std dev (95% probability)
         )
 
         # Get IV recommendation
         iv_rank_approx = min(100, current_iv * 300)  # Rough approximation
         iv_rec = self.mcmillan_kb.get_iv_recommendation(
-            iv_rank=iv_rank_approx,
-            iv_percentile=iv_rank_approx
+            iv_rank=iv_rank_approx, iv_percentile=iv_rank_approx
         )
 
         # Determine if sentiment aligns with expected move
         alignment_analysis = self._analyze_sentiment_alignment(
-            sentiment_signal=sentiment_signal,
-            expected_move=expected_move,
-            iv_recommendation=iv_rec
+            sentiment_signal=sentiment_signal, expected_move=expected_move, iv_recommendation=iv_rec
         )
 
         # Get relevant book passages
         book_search = self.book_collector.search(
-            query=f"expected move {sentiment_signal} IV {current_iv*100:.0f}%",
+            query=f"expected move {sentiment_signal} IV {current_iv * 100:.0f}%",
             top_k=3,
-            content_types=["strategy", "rule"]
+            content_types=["strategy", "rule"],
         )
 
         return {
@@ -285,24 +279,18 @@ class OptionsBookRetriever:
                 "current_iv": current_iv,
                 "iv_rank_approx": iv_rank_approx,
                 "recommendation": iv_rec["recommendation"],
-                "strategies": iv_rec["strategies"]
+                "strategies": iv_rec["strategies"],
             },
             "alignment": alignment_analysis,
             "book_references": book_search.get("results", []),
             "final_recommendation": self._generate_recommendation(
-                sentiment_signal,
-                expected_move,
-                iv_rec,
-                alignment_analysis
-            )
+                sentiment_signal, expected_move, iv_rec, alignment_analysis
+            ),
         }
 
     def get_20_delta_weekly_guidance(
-        self,
-        iv_rank: float,
-        iv_percentile: float,
-        stock_price: float = 100.0
-    ) -> Dict[str, Any]:
+        self, iv_rank: float, iv_percentile: float, stock_price: float = 100.0
+    ) -> dict[str, Any]:
         """
         Get guidance for auto-selling 20-delta weeklies when IV is 2σ cheap.
 
@@ -327,8 +315,8 @@ class OptionsBookRetriever:
         # Position sizing for this setup
         position_sizing = self.mcmillan_kb.get_position_size(
             portfolio_value=10000,  # Example
-            option_premium=0.50,    # Typical weekly premium for 20-delta
-            max_risk_pct=0.02
+            option_premium=0.50,  # Typical weekly premium for 20-delta
+            max_risk_pct=0.02,
         )
 
         return {
@@ -339,23 +327,19 @@ class OptionsBookRetriever:
             "reasoning": (
                 "IV is 2 standard deviations below mean - exceptionally cheap. "
                 "McMillan suggests this is optimal for selling premium via 20-delta weeklies."
-                if is_2std_cheap else
-                "IV is not at 2σ cheap level. Wait for better entry or use standard criteria."
+                if is_2std_cheap
+                else "IV is not at 2σ cheap level. Wait for better entry or use standard criteria."
             ),
             "strategy_rules": strategy_rules,
             "position_sizing": position_sizing,
             "delta_target": 0.20,
             "dte_target": 7,  # Weekly
-            "reference": "McMillan's Options as a Strategic Investment, Ch. 22: Volatility"
+            "reference": "McMillan's Options as a Strategic Investment, Ch. 22: Volatility",
         }
 
     def get_collar_or_butterfly_guidance(
-        self,
-        position_type: str,
-        iv_rank: float,
-        stock_price: float,
-        shares_owned: int = 100
-    ) -> Dict[str, Any]:
+        self, position_type: str, iv_rank: float, stock_price: float, shares_owned: int = 100
+    ) -> dict[str, Any]:
         """
         Quick retrieval for collar or butterfly setups.
 
@@ -381,24 +365,26 @@ class OptionsBookRetriever:
                     "step_1": f"Own {shares_owned} shares",
                     "step_2": "Buy OTM put (10-15 delta) for protection",
                     "step_3": "Sell OTM call (15-30 delta) to offset put cost",
-                    "net_cost": "Usually zero or small credit"
+                    "net_cost": "Usually zero or small credit",
                 },
                 "optimal_iv": "IV Rank 30-50 (balanced put cost vs call premium)",
                 "current_iv_rank": iv_rank,
                 "iv_assessment": (
-                    "Good entry - balanced costs" if 30 <= iv_rank <= 50 else
-                    "Put may be expensive - consider narrower width" if iv_rank > 50 else
-                    "Put is cheap - wider protection available"
+                    "Good entry - balanced costs"
+                    if 30 <= iv_rank <= 50
+                    else "Put may be expensive - consider narrower width"
+                    if iv_rank > 50
+                    else "Put is cheap - wider protection available"
                 ),
                 "quick_rules": [
                     "Put strike: 8-10% below current price",
                     "Call strike: 5-10% above current price",
                     "Same expiration for both",
                     "DTE: 30-60 days typical",
-                    "Roll before expiration, not at"
+                    "Roll before expiration, not at",
                 ],
                 "risk_profile": "Limited downside (to put strike), capped upside (at call strike)",
-                "mcmillan_reference": "Chapter 19: Put and Call Combination Strategies"
+                "mcmillan_reference": "Chapter 19: Put and Call Combination Strategies",
             }
 
         elif position_type.lower() == "butterfly":
@@ -409,20 +395,21 @@ class OptionsBookRetriever:
                     "step_1": "Buy 1 ITM call (lower strike)",
                     "step_2": "Sell 2 ATM calls (middle strike)",
                     "step_3": "Buy 1 OTM call (higher strike)",
-                    "strikes": "Equal distance between strikes"
+                    "strikes": "Equal distance between strikes",
                 },
                 "optimal_iv": "IV Rank > 30 (more premium to collect)",
                 "current_iv_rank": iv_rank,
                 "iv_assessment": (
-                    "Good entry - elevated premiums" if iv_rank > 30 else
-                    "Low IV - butterfly may be too cheap"
+                    "Good entry - elevated premiums"
+                    if iv_rank > 30
+                    else "Low IV - butterfly may be too cheap"
                 ),
                 "quick_rules": [
                     "Wings: 5-10 points apart typically",
                     "Max profit: At middle strike at expiration",
                     "Max loss: Net debit paid",
                     "DTE: 30-45 days optimal",
-                    "Close at 50% profit or 21 DTE"
+                    "Close at 50% profit or 21 DTE",
                 ],
                 "risk_profile": "Limited risk (net debit), limited reward (width - debit)",
                 "example": {
@@ -431,23 +418,20 @@ class OptionsBookRetriever:
                     "middle_strike": stock_price,
                     "upper_strike": stock_price + 5,
                     "typical_cost": "$1.50-2.50 for $5 wide",
-                    "max_profit": "$5 - cost = $2.50-3.50"
+                    "max_profit": "$5 - cost = $2.50-3.50",
                 },
-                "mcmillan_reference": "Chapter 10: Butterfly Spreads"
+                "mcmillan_reference": "Chapter 10: Butterfly Spreads",
             }
 
         else:
             return {
                 "error": f"Unknown position type: {position_type}",
-                "supported": ["collar", "butterfly"]
+                "supported": ["collar", "butterfly"],
             }
 
     def _analyze_sentiment_alignment(
-        self,
-        sentiment_signal: str,
-        expected_move: Dict,
-        iv_recommendation: Dict
-    ) -> Dict[str, Any]:
+        self, sentiment_signal: str, expected_move: dict, iv_recommendation: dict
+    ) -> dict[str, Any]:
         """Analyze if sentiment aligns with expected move."""
 
         move_pct = expected_move["move_percentage"]
@@ -487,15 +471,11 @@ class OptionsBookRetriever:
             "note": note,
             "expected_move_pct": move_pct,
             "is_significant_move": is_large_expected_move,
-            "sentiment_direction": sentiment_signal
+            "sentiment_direction": sentiment_signal,
         }
 
     def _generate_recommendation(
-        self,
-        sentiment_signal: str,
-        expected_move: Dict,
-        iv_recommendation: Dict,
-        alignment: Dict
+        self, sentiment_signal: str, expected_move: dict, iv_recommendation: dict, alignment: dict
     ) -> str:
         """Generate final recommendation based on all inputs."""
 
@@ -526,7 +506,7 @@ class OptionsBookRetriever:
                 f"Consider waiting for better setup or use defined-risk spread."
             )
 
-    def _synthesize_answer(self, query: str, results: Dict) -> str:
+    def _synthesize_answer(self, query: str, results: dict) -> str:
         """Synthesize answer from all results."""
         parts = []
 
@@ -544,7 +524,7 @@ class OptionsBookRetriever:
             return "\n\n".join(parts)
         return "No relevant information found in options knowledge base."
 
-    def ingest_options_books_to_vector_store(self) -> Dict[str, Any]:
+    def ingest_options_books_to_vector_store(self) -> dict[str, Any]:
         """
         Ingest all options book chunks into the vector store for semantic search.
 
@@ -557,7 +537,7 @@ class OptionsBookRetriever:
         if not chunks:
             return {
                 "status": "no_chunks",
-                "message": "No book chunks to ingest. Use book_collector.ingest_pdf() first."
+                "message": "No book chunks to ingest. Use book_collector.ingest_pdf() first.",
             }
 
         # Prepare for ChromaDB
@@ -571,16 +551,12 @@ class OptionsBookRetriever:
             ids.append(chunk["id"])
 
         # Add to database
-        result = self.db.add_documents(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
-        )
+        result = self.db.add_documents(documents=documents, metadatas=metadatas, ids=ids)
 
         return {
             "status": result["status"],
             "chunks_ingested": len(chunks),
-            "message": result.get("message", "")
+            "message": result.get("message", ""),
         }
 
 
@@ -606,9 +582,7 @@ if __name__ == "__main__":
     # Example: Get strategy for conditions
     print("\n=== Strategy for Current Conditions ===")
     strategy = retriever.get_strategy_for_conditions(
-        iv_rank=65,
-        market_outlook="neutral",
-        days_to_expiration=30
+        iv_rank=65, market_outlook="neutral", days_to_expiration=30
     )
     print(f"Recommended: {strategy['recommended_strategy']}")
     print(f"IV Reasoning: {strategy['iv_reasoning']}")
@@ -616,11 +590,7 @@ if __name__ == "__main__":
     # Example: Cross-check expected move
     print("\n=== Expected Move Cross-Check ===")
     cross_check = retriever.cross_check_expected_move(
-        ticker="SPY",
-        sentiment_signal="overbought",
-        current_iv=0.18,
-        dte=7,
-        stock_price=450.0
+        ticker="SPY", sentiment_signal="overbought", current_iv=0.18, dte=7, stock_price=450.0
     )
     print(f"Expected Move: ±{cross_check['expected_move']['move_percentage']:.1f}%")
     print(f"Alignment: {cross_check['alignment']['status']}")
@@ -629,9 +599,7 @@ if __name__ == "__main__":
     # Example: Collar guidance
     print("\n=== Collar Cheat Sheet ===")
     collar = retriever.get_collar_or_butterfly_guidance(
-        position_type="collar",
-        iv_rank=45,
-        stock_price=150.0
+        position_type="collar", iv_rank=45, stock_price=150.0
     )
     print(f"When to use: {collar['when_to_use']}")
     print(f"IV Assessment: {collar['iv_assessment']}")
