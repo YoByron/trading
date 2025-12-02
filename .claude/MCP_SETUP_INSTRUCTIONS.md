@@ -2,7 +2,50 @@
 
 ## What This Does
 
-This MCP (Model Context Protocol) server enables Claude Desktop to read RSS feeds directly, allowing you to consume crypto newsletters (like CoinSnacks) and market analysis content during conversations.
+This MCP (Model Context Protocol) configuration enables Claude Desktop to:
+
+1. **Trade via Alpaca**: Execute stock/options orders, manage positions, get market data via the Alpaca MCP server
+2. **Read RSS Feeds**: Consume crypto newsletters (like CoinSnacks) and market analysis content
+
+## Available MCP Servers
+
+### 1. Official Alpaca MCP Server (`alpaca-mcp-server`)
+
+**Official package from Alpaca**: https://github.com/alpacahq/alpaca-mcp-server
+
+Full trading and market data access via Alpaca APIs with **50+ tools**:
+
+**Trading Tools**:
+- `place_stock_market_order` / `place_stock_limit_order` - Place stock orders
+- `place_option_market_order` - Options trading with multi-leg strategies
+- `place_crypto_order` - Crypto trading (BTC, ETH, etc.)
+- `get_all_positions` / `get_open_position` - View positions
+- `close_position` / `liquidate_position` - Close positions
+- `get_orders` / `get_order_by_id` - Order status
+- `cancel_order` / `cancel_all_orders` - Cancel orders
+- `get_account` - Account info and buying power
+
+**Market Data Tools**:
+- `get_stock_bars` / `get_stock_latest_bar` - Historical and real-time bars
+- `get_stock_quotes` / `get_stock_latest_quote` - Quote data
+- `get_stock_snapshot` - Comprehensive stock snapshot
+- `get_options_chain` - Full options chain data
+- `get_options_greeks` - Greeks and implied volatility
+- `get_crypto_bars` / `get_crypto_latest_bar` - Crypto market data
+- `get_news` - Market news
+
+**Additional Features**:
+- Trailing stop orders
+- Multi-leg options strategies
+- Watchlist management
+- Corporate actions tracking
+- OAuth multi-tenant support
+
+**Configuration**: Requires `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` environment variables.
+
+### 2. RSS Feed MCP Server (`@veithly/rss-mcp`)
+
+Read RSS feeds for crypto newsletters and market analysis.
 
 ## Installation Steps
 
@@ -41,6 +84,16 @@ Example of merged config:
     "your-existing-server": {
       ...
     },
+    "alpaca": {
+      "command": "uvx",
+      "args": ["alpaca-mcp-server"],
+      "description": "Official Alpaca MCP Server - 50+ tools for stocks, options, crypto",
+      "env": {
+        "APCA_API_KEY_ID": "${ALPACA_API_KEY}",
+        "APCA_API_SECRET_KEY": "${ALPACA_SECRET_KEY}",
+        "APCA_PAPER": "true"
+      }
+    },
     "rss": {
       "command": "npx",
       "args": ["-y", "@veithly/rss-mcp"],
@@ -52,6 +105,8 @@ Example of merged config:
   }
 }
 ```
+
+**Important**: For live trading, set `"APCA_PAPER": "false"`. Ensure your API keys are stored in environment variables (never commit actual secrets).
 
 #### Option B: Fresh Installation
 
@@ -127,7 +182,17 @@ Multiple feeds should be comma-separated.
    - Windows: `%APPDATA%\Claude\logs\`
    - Linux: `~/.config/Claude/logs/`
 
-### npx Command Fails
+### uvx Command Fails (Alpaca)
+
+Ensure Python and uv are installed:
+```bash
+python3 --version
+uvx --version
+```
+
+If uv not installed: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### npx Command Fails (RSS)
 
 Ensure Node.js is installed:
 ```bash
@@ -145,7 +210,15 @@ If not installed, download from: https://nodejs.org/
 
 ## Package Information
 
-**MCP Package**: `@veithly/rss-mcp`
+### Official Alpaca MCP Server
+**Package**: `alpaca-mcp-server` (Python/uvx)
+**GitHub**: https://github.com/alpacahq/alpaca-mcp-server
+**Installation**: `uvx alpaca-mcp-server init` (or via Claude Desktop config)
+**Features**: 50+ tools - Trading v2 API, Market Data for stocks/options/crypto, news, corporate actions, multi-leg options, watchlists
+**License**: Apache-2.0
+
+### RSS Feed MCP Server
+**Package**: `@veithly/rss-mcp`
 **Repository**: https://github.com/veithly/rss-mcp
 **License**: MIT
 
@@ -160,6 +233,14 @@ If not installed, download from: https://nodejs.org/
 
 Once configured, you can:
 
+### Alpaca Trading Benefits
+1. **Execute Trades**: Place stock/options orders directly from Claude conversations
+2. **Portfolio Management**: View positions, account balances, and P/L in real-time
+3. **Market Data**: Get real-time quotes, historical bars, and options chains
+4. **News Integration**: Access market news alongside trading decisions
+5. **Account Overview**: Quick snapshot of account, open orders, and positions
+
+### RSS Feed Benefits
 1. **Daily Newsletter Digest**: Ask Claude to summarize today's CoinSnacks newsletter
 2. **Market Sentiment Analysis**: Extract key themes and sentiment from recent posts
 3. **Integration with Research**: Use newsletter insights during trading research phase
