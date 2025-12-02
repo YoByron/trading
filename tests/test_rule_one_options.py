@@ -26,8 +26,12 @@ def stub_alpaca_clients(monkeypatch):
 
     options_mock = Mock()
 
-    monkeypatch.setattr("src.strategies.rule_one_options.AlpacaTrader", lambda *args, **kwargs: trader_mock)
-    monkeypatch.setattr("src.strategies.rule_one_options.AlpacaOptionsClient", lambda *args, **kwargs: options_mock)
+    monkeypatch.setattr(
+        "src.strategies.rule_one_options.AlpacaTrader", lambda *args, **kwargs: trader_mock
+    )
+    monkeypatch.setattr(
+        "src.strategies.rule_one_options.AlpacaOptionsClient", lambda *args, **kwargs: options_mock
+    )
 
 
 class TestBigFiveMetrics:
@@ -267,7 +271,9 @@ class TestRuleOneOptionsStrategy:
             iv_rank=65.0,
         )
 
-        monkeypatch.setattr(strategy, "_find_best_put_option", lambda *args, **kwargs: high_iv_contract)
+        monkeypatch.setattr(
+            strategy, "_find_best_put_option", lambda *args, **kwargs: high_iv_contract
+        )
 
         signals = strategy.find_put_opportunities()
         assert signals == []
@@ -307,7 +313,9 @@ class TestRuleOneOptionsStrategy:
             days_to_expiry=35,
             iv_rank=22.0,
         )
-        monkeypatch.setattr(strategy, "_find_best_put_option", lambda *args, **kwargs: good_contract)
+        monkeypatch.setattr(
+            strategy, "_find_best_put_option", lambda *args, **kwargs: good_contract
+        )
 
         signals = strategy.find_put_opportunities()
         assert len(signals) == 1
