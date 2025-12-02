@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -14,6 +16,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.utils.error_monitoring import init_sentry
 from src.utils.logging_config import setup_logging
+
+SYSTEM_STATE_PATH = Path(os.getenv("SYSTEM_STATE_PATH", "data/system_state.json"))
 
 
 def _flag_enabled(env_name: str, default: str = "true") -> bool:
@@ -56,6 +60,81 @@ def is_market_holiday() -> bool:
 def crypto_enabled() -> bool:
     """Feature flag for the legacy crypto branch."""
     return os.getenv("ENABLE_CRYPTO_AGENT", "false").lower() in {"1", "true", "yes"}
+
+
+def calc_daily_input(equity: float) -> float:
+    """
+    Dynamically scale the daily capital deployment with account equity.
+
+    Scaling ramps faster once equity clears specific gates while respecting
+    the existing $10/day baseline and a $50/day safety cap.
+    """
+
+    base = 10.0
+    if equity >= 2_000:
+        base += 0.2 * (equity / 1_000)
+    if equity >= 5_000:
+        base += 0.15 * ((equity - 5_000) / 1_000)
+    if equity >= 10_000:
+        base += 0.1 * ((equity - 10_000) / 1_000)
+    return round(min(base, 50.0), 2)
+
+
+def _load_equity_snapshot() -> float | None:
+    """Pull the most recent equity figure from disk or simulation env."""
+
+    if SYSTEM_STATE_PATH.exists():
+        try:
+            with SYSTEM_STATE_PATH.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+                account = payload.get("account") or {}
+                equity = account.get("current_equity") or account.get("portfolio_value")
+                if equity is not None:
+                    return float(equity)
+        except Exception:
+            pass
+
+    sim_equity = os.getenv("SIMULATED_EQUITY")
+    if sim_equity:
+        try:
+            return float(sim_equity)
+        except ValueError:
+            return None
+    return None
+
+
+def _apply_dynamic_daily_budget(logger) -> float | None:
+    """
+    Adjust DAILY_INVESTMENT based on account equity before orchestrator loads.
+
+    Returns:
+        The resolved daily investment (or None when unchanged/unavailable)
+    """
+
+    equity = _load_equity_snapshot()
+    if equity is None:
+        logger.info(
+            "Dynamic budget: equity snapshot unavailable; keeping DAILY_INVESTMENT=%s",
+            os.getenv("DAILY_INVESTMENT", "10.0"),
+        )
+        return None
+
+    new_amount = calc_daily_input(equity)
+    try:
+        current_amount = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+    except ValueError:
+        current_amount = 10.0
+
+    if abs(current_amount - new_amount) < 0.01:
+        return new_amount
+
+    os.environ["DAILY_INVESTMENT"] = f"{new_amount:.2f}"
+    logger.info(
+        "Dynamic budget: equity $%.2f → DAILY_INVESTMENT $%.2f (≤ $50 cap).",
+        equity,
+        new_amount,
+    )
+    return new_amount
 
 
 def execute_crypto_trading() -> None:
@@ -180,6 +259,7 @@ def main() -> None:
     load_dotenv()
     init_sentry()
     logger = setup_logging()
+    _apply_dynamic_daily_budget(logger)
 
     # Auto-scale daily input if enabled
     if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {"1", "true", "yes"}:
