@@ -102,9 +102,7 @@ class BigFiveMetrics:
         # Rule #1: All Big Five should be >= 10% over 10, 5, and 1 year
         # Simplified: Average growth >= 10% and ROIC >= 10%
         self.passes_rule_one = bool(
-            self.avg_growth >= 0.10 and
-            self.roic is not None and
-            self.roic >= 0.10
+            self.avg_growth >= 0.10 and self.roic is not None and self.roic >= 0.10
         )
 
 
@@ -435,9 +433,7 @@ class RuleOneOptionsStrategy:
                 return None
 
             clean = [
-                float(iv)
-                for iv in implied_vols
-                if iv is not None and not np.isnan(iv) and iv > 0
+                float(iv) for iv in implied_vols if iv is not None and not np.isnan(iv) and iv > 0
             ]
             if len(clean) < 5:
                 return None
@@ -548,16 +544,26 @@ class RuleOneOptionsStrategy:
 
                 # Enforce IV rank + delta gates
                 if contract.iv_rank is not None and contract.iv_rank > self.MAX_IV_RANK:
-                    logger.debug(f"{symbol}: IV rank {contract.iv_rank:.1f} exceeds max {self.MAX_IV_RANK}")
+                    logger.debug(
+                        f"{symbol}: IV rank {contract.iv_rank:.1f} exceeds max {self.MAX_IV_RANK}"
+                    )
                     continue
 
-                if contract.delta is not None and abs(contract.delta) > (self.TARGET_DELTA_PUT + self.DELTA_TOLERANCE):
-                    logger.debug(f"{symbol}: Put delta {contract.delta:.2f} too high for target {self.TARGET_DELTA_PUT}")
+                if contract.delta is not None and abs(contract.delta) > (
+                    self.TARGET_DELTA_PUT + self.DELTA_TOLERANCE
+                ):
+                    logger.debug(
+                        f"{symbol}: Put delta {contract.delta:.2f} too high for target {self.TARGET_DELTA_PUT}"
+                    )
                     continue
 
-                premium_pct = contract.mid / valuation.current_price if valuation.current_price else 0
+                premium_pct = (
+                    contract.mid / valuation.current_price if valuation.current_price else 0
+                )
                 if premium_pct > self.MAX_PREMIUM_PCT:
-                    logger.debug(f"{symbol}: Premium {premium_pct:.2%} exceeds cap {self.MAX_PREMIUM_PCT:.2%}")
+                    logger.debug(
+                        f"{symbol}: Premium {premium_pct:.2%} exceeds cap {self.MAX_PREMIUM_PCT:.2%}"
+                    )
                     continue
 
                 if contract.days_to_expiry <= 0:
@@ -570,7 +576,9 @@ class RuleOneOptionsStrategy:
 
                 max_contracts = int(cash_available // (target_strike * 100))
                 if max_contracts <= 0:
-                    logger.debug(f"{symbol}: Not enough cash (${cash_available:.2f}) for cash-secured puts")
+                    logger.debug(
+                        f"{symbol}: Not enough cash (${cash_available:.2f}) for cash-secured puts"
+                    )
                     continue
 
                 total_premium = contract.mid * 100 * max_contracts
@@ -649,22 +657,34 @@ class RuleOneOptionsStrategy:
                     continue
 
                 if contract.iv_rank is not None and contract.iv_rank > self.MAX_IV_RANK:
-                    logger.debug(f"{symbol}: Call IV rank {contract.iv_rank:.1f} exceeds max {self.MAX_IV_RANK}")
+                    logger.debug(
+                        f"{symbol}: Call IV rank {contract.iv_rank:.1f} exceeds max {self.MAX_IV_RANK}"
+                    )
                     continue
 
-                if contract.delta is not None and contract.delta > (self.TARGET_DELTA_CALL + self.DELTA_TOLERANCE):
-                    logger.debug(f"{symbol}: Call delta {contract.delta:.2f} too high for target {self.TARGET_DELTA_CALL}")
+                if contract.delta is not None and contract.delta > (
+                    self.TARGET_DELTA_CALL + self.DELTA_TOLERANCE
+                ):
+                    logger.debug(
+                        f"{symbol}: Call delta {contract.delta:.2f} too high for target {self.TARGET_DELTA_CALL}"
+                    )
                     continue
 
-                premium_pct = contract.mid / valuation.current_price if valuation.current_price else 0
+                premium_pct = (
+                    contract.mid / valuation.current_price if valuation.current_price else 0
+                )
                 if premium_pct > self.MAX_PREMIUM_PCT:
-                    logger.debug(f"{symbol}: Call premium {premium_pct:.2%} exceeds cap {self.MAX_PREMIUM_PCT:.2%}")
+                    logger.debug(
+                        f"{symbol}: Call premium {premium_pct:.2%} exceeds cap {self.MAX_PREMIUM_PCT:.2%}"
+                    )
                     continue
 
                 if contract.days_to_expiry <= 0:
                     continue
 
-                annualized_return = (contract.mid / valuation.current_price) * (365 / contract.days_to_expiry)
+                annualized_return = (contract.mid / valuation.current_price) * (
+                    365 / contract.days_to_expiry
+                )
                 if annualized_return < self.MIN_ANNUALIZED_RETURN:
                     continue
 
@@ -699,9 +719,7 @@ class RuleOneOptionsStrategy:
         signals.sort(key=lambda x: x.annualized_return, reverse=True)
         return signals
 
-    def _find_best_put_option(
-        self, symbol: str, target_strike: float
-    ) -> Optional[OptionContract]:
+    def _find_best_put_option(self, symbol: str, target_strike: float) -> Optional[OptionContract]:
         """
         Find the best put option near target strike.
 
@@ -775,9 +793,7 @@ class RuleOneOptionsStrategy:
             logger.debug(f"Could not find put option for {symbol}: {e}")
             return None
 
-    def _find_best_call_option(
-        self, symbol: str, target_strike: float
-    ) -> Optional[OptionContract]:
+    def _find_best_call_option(self, symbol: str, target_strike: float) -> Optional[OptionContract]:
         """
         Find the best call option near target strike.
 
@@ -961,16 +977,20 @@ if __name__ == "__main__":
     print(f"Analyzed: {analysis['analyzed_count']}/{analysis['universe_size']} stocks")
 
     print("\n--- Top Put Opportunities (Getting Paid to Wait) ---")
-    for opp in analysis['put_opportunities']:
-        print(f"  {opp['symbol']}: Sell put at ${opp['strike']:.2f}, "
-              f"Yield: {opp['annualized_return']:.1%}, "
-              f"Premium ${opp['premium']:.2f}/sh × {opp.get('contracts', 1)} contract(s)")
+    for opp in analysis["put_opportunities"]:
+        print(
+            f"  {opp['symbol']}: Sell put at ${opp['strike']:.2f}, "
+            f"Yield: {opp['annualized_return']:.1%}, "
+            f"Premium ${opp['premium']:.2f}/sh × {opp.get('contracts', 1)} contract(s)"
+        )
 
     print("\n--- Top Call Opportunities (Getting Paid to Sell) ---")
-    for opp in analysis['call_opportunities']:
-        print(f"  {opp['symbol']}: Sell call at ${opp['strike']:.2f}, "
-              f"Yield: {opp['annualized_return']:.1%}, "
-              f"Premium ${opp['premium']:.2f}/sh × {opp.get('contracts', 1)} contract(s)")
+    for opp in analysis["call_opportunities"]:
+        print(
+            f"  {opp['symbol']}: Sell call at ${opp['strike']:.2f}, "
+            f"Yield: {opp['annualized_return']:.1%}, "
+            f"Premium ${opp['premium']:.2f}/sh × {opp.get('contracts', 1)} contract(s)"
+        )
 
     print("\n--- Undervalued (Below MOS Price) ---")
     for sym in analysis['undervalued_stocks']:
