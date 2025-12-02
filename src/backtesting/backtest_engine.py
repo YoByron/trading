@@ -34,6 +34,11 @@ from src.backtesting.bias_replay import BiasReplay
 from src.risk.risk_manager import RiskManager
 from src.utils.technical_indicators import calculate_technical_score
 
+try:  # Optional dependency for point-in-time sentiment
+    from rag_store.sqlite_store import SentimentSQLiteStore
+except Exception:  # noqa: BLE001
+    SentimentSQLiteStore = None  # type: ignore[misc]
+
 # Import slippage model for realistic execution costs
 try:
     from src.risk.slippage_model import SlippageModel, SlippageModelType
@@ -77,6 +82,7 @@ class BacktestEngine:
         use_hybrid_gates: bool = False,
         hybrid_options: Optional[dict[str, Any]] = None,
         bias_replay: BiasReplay | None = None,
+        sentiment_store: "SentimentSQLiteStore | None" = None,
     ):
         """
         Initialize the backtest engine.
@@ -163,6 +169,10 @@ class BacktestEngine:
 
         self.bias_replay = bias_replay
         self.bias_replay_threshold = float(os.getenv("BACKTEST_BIAS_NEGATIVE_THRESHOLD", "-0.2"))
+        if SentimentSQLiteStore is None:
+            self.sentiment_store = None
+        else:
+            self.sentiment_store = sentiment_store
 
     def run(self) -> BacktestResults:
         """
@@ -494,8 +504,12 @@ class BacktestEngine:
             if rl_decision["action"] != "long":
                 continue
 
-            sentiment = self.hybrid_sentiment.score(hist)
-            if not sentiment["accepted"]:
+            snapshot = self._get_point_in_time_sentiment(symbol, date)
+            if snapshot:
+                sentiment = snapshot
+            else:
+                sentiment = self.hybrid_sentiment.score(hist)
+            if not sentiment.get("accepted", False):
                 continue
 
             price = float(hist["Close"].iloc[-1])
@@ -707,6 +721,45 @@ class BacktestEngine:
         if snapshot.score < self.bias_replay_threshold:
             return True
         return False
+
+    def _get_point_in_time_sentiment(
+        self,
+        symbol: str,
+        date: datetime,
+    ) -> dict[str, Any] | None:
+        if not getattr(self, "sentiment_store", None):
+            return None
+        try:
+            rows = list(
+                self.sentiment_store.fetch_latest_by_ticker(  # type: ignore[union-attr]
+                    symbol, limit=1, as_of=date
+                )
+            )
+        except Exception:
+            return None
+        if not rows:
+            return None
+        row = rows[0]
+        raw_score = row["score"]
+        if raw_score is None:
+            normalized = 0.0
+        else:
+            raw_float = float(raw_score)
+            if raw_float > 1.0 or raw_float < -1.0:
+                normalized = max(-1.0, min(1.0, (raw_float - 50.0) / 50.0))
+            else:
+                normalized = raw_float
+        threshold = getattr(self.hybrid_sentiment, "negative_threshold", -0.2)
+        accepted = normalized >= threshold
+        return {
+            "score": normalized,
+            "accepted": accepted,
+            "threshold": threshold,
+            "reason": "rag_store_snapshot",
+            "confidence": row.get("confidence"),
+            "snapshot_date": row.get("snapshot_date"),
+            "source": "rag_store",
+        }
 
     def _get_price(self, symbol: str, date: datetime) -> Optional[float]:
         """
