@@ -8,6 +8,9 @@ import os
 from typing import Any
 
 from langchain_community.chat_models import ChatAnthropic
+from src.utils.sentiment import blend_sentiment_scores, compute_lexical_sentiment
+
+from langchain_agents.agents import build_price_action_agent
 
 from langchain_agents.agents import build_price_action_agent
 
@@ -26,6 +29,7 @@ class LangChainSentimentAgent:
     def __init__(self, model_name: str | None = None) -> None:
         self.model_name = model_name or os.getenv("HYBRID_LLM_MODEL", "claude-3-5-haiku-20241022")
         self.cost_override = os.getenv("HYBRID_LLM_COST")
+        self.sentiment_weight = float(os.getenv("LLM_SENTIMENT_WEIGHT", "0.6"))
         self._executor = None
 
     def _build_llm(self) -> ChatAnthropic:
@@ -81,8 +85,10 @@ Respond strictly as JSON:
             logger.warning("LLM returned non-JSON response: %s", raw_output)
             parsed = {"score": 0.0, "reason": raw_output}
 
-        score = float(parsed.get("score", 0.0))
-        reason = parsed.get("reason", "No rationale provided.")
+        llm_score = float(parsed.get("score", 0.0))
+        reason = parsed.get("reason", "No rationale provided.") or "No rationale provided."
+        lexical_score = compute_lexical_sentiment(reason or json.dumps(indicators, default=str))
+        blended_score = blend_sentiment_scores(llm_score, lexical_score, self.sentiment_weight)
 
         if self.cost_override is not None:
             cost_estimate = float(self.cost_override)
@@ -90,8 +96,11 @@ Respond strictly as JSON:
             cost_estimate = self.MODEL_PRICING.get(self.model_name, 0.01)
 
         return {
-            "score": score,
+            "score": blended_score,
             "reason": reason,
             "cost": cost_estimate,
             "model": self.model_name,
+            "llm_score": llm_score,
+            "lexical_score": lexical_score,
+            "ensemble_weight": self.sentiment_weight,
         }
