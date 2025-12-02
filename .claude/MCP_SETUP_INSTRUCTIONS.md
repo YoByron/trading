@@ -96,7 +96,11 @@ Example of merged config:
 }
 ```
 
+<<<<<<< HEAD
+**Important**: For live trading, remove the `"--paper"` flag and set `"ALPACA_PAPER": "false"`.
+=======
 **Important**: For live trading, change `"--paper"` to remove it and set `"ALPACA_PAPER": "false"`.
+>>>>>>> origin/main
 
 #### Option B: Fresh Installation
 
@@ -190,7 +194,14 @@ If not installed, download from: https://nodejs.org/
 
 ## Package Information
 
-**MCP Package**: `@veithly/rss-mcp`
+### Alpaca Trading MCP Server
+**Package**: `@ideadesignmedia/alpaca-mcp`
+**npm**: https://www.npmjs.com/package/@ideadesignmedia/alpaca-mcp
+**Features**: Trading v2 API, Market Data for stocks & options, news, corporate actions
+**License**: MIT
+
+### RSS Feed MCP Server
+**Package**: `@veithly/rss-mcp`
 **Repository**: https://github.com/veithly/rss-mcp
 **License**: MIT
 
@@ -205,6 +216,14 @@ If not installed, download from: https://nodejs.org/
 
 Once configured, you can:
 
+### Alpaca Trading Benefits
+1. **Execute Trades**: Place stock/options orders directly from Claude conversations
+2. **Portfolio Management**: View positions, account balances, and P/L in real-time
+3. **Market Data**: Get real-time quotes, historical bars, and options chains
+4. **News Integration**: Access market news alongside trading decisions
+5. **Account Overview**: Quick snapshot of account, open orders, and positions
+
+### RSS Feed Benefits
 1. **Daily Newsletter Digest**: Ask Claude to summarize today's CoinSnacks newsletter
 2. **Market Sentiment Analysis**: Extract key themes and sentiment from recent posts
 3. **Integration with Research**: Use newsletter insights during trading research phase
