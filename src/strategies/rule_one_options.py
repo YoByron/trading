@@ -237,9 +237,21 @@ class RuleOneOptionsStrategy:
 
     # Default wonderful companies (Rule #1 quality stocks)
     DEFAULT_UNIVERSE = [
-        "AAPL", "MSFT", "GOOGL", "AMZN", "BRK-B",  # Large cap quality
-        "V", "MA", "JNJ", "PG", "KO",  # Consumer/Financial moats
-        "NVDA", "COST", "UNH", "HD", "MCD"  # Growth + moat
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "BRK-B",  # Large cap quality
+        "V",
+        "MA",
+        "JNJ",
+        "PG",
+        "KO",  # Consumer/Financial moats
+        "NVDA",
+        "COST",
+        "UNH",
+        "HD",
+        "MCD",  # Growth + moat
     ]
 
     def __init__(
@@ -640,7 +652,9 @@ class RuleOneOptionsStrategy:
                     continue
 
                 # Get valuation
-                valuation = self._valuation_cache.get(symbol) or self.calculate_sticker_price(symbol)
+                valuation = self._valuation_cache.get(symbol) or self.calculate_sticker_price(
+                    symbol
+                )
                 if not valuation:
                     continue
 
@@ -902,7 +916,9 @@ class RuleOneOptionsStrategy:
         put_signals = self.find_put_opportunities()
         call_signals = self.find_call_opportunities()
 
-        logger.info(f"Found {len(put_signals)} put opportunities, {len(call_signals)} call opportunities")
+        logger.info(
+            f"Found {len(put_signals)} put opportunities, {len(call_signals)} call opportunities"
+        )
 
         snapshot = {
             "timestamp": datetime.now().isoformat(),
@@ -937,10 +953,7 @@ class RuleOneOptionsStrategy:
         best_calls = signals["calls"][:3] if signals["calls"] else []
 
         # Find undervalued stocks (below MOS)
-        undervalued = [
-            v for v in valuations.values()
-            if v.current_price <= v.mos_price
-        ]
+        undervalued = [v for v in valuations.values() if v.current_price <= v.mos_price]
 
         # Find overvalued stocks (above Sticker)
         overvalued = [v for v in valuations.values() if v.current_price > v.sticker_price * 1.2]
