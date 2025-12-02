@@ -313,10 +313,9 @@ def run_stress_tests():
     print("Expected: REJECT for illiquid option (spread > 5%)")
 
     gateway = TradeGateway(executor=None, paper=True)
-    gateway.executor = type('MockExecutor', (), {
-        'account_equity': 50000,
-        'get_positions': lambda self: []
-    })()
+    gateway.executor = type(
+        "MockExecutor", (), {"account_equity": 50000, "get_positions": lambda self: []}
+    )()
 
     request = TradeRequest(
         symbol="SPY240315C00500000",  # Option symbol
@@ -324,8 +323,8 @@ def run_stress_tests():
         notional=500,
         source="stress_test",
         is_option=True,
-        bid_price=1.70,   # Wide spread
-        ask_price=2.00,   # 15% spread = (2.00-1.70)/2.00 = 15%
+        bid_price=1.70,  # Wide spread
+        ask_price=2.00,  # 15% spread = (2.00-1.70)/2.00 = 15%
     )
     decision = gateway.evaluate(request)
 
@@ -343,10 +342,9 @@ def run_stress_tests():
     print("Expected: APPROVED (spread acceptable)")
 
     gateway = TradeGateway(executor=None, paper=True)
-    gateway.executor = type('MockExecutor', (), {
-        'account_equity': 50000,
-        'get_positions': lambda self: []
-    })()
+    gateway.executor = type(
+        "MockExecutor", (), {"account_equity": 50000, "get_positions": lambda self: []}
+    )()
 
     request = TradeRequest(
         symbol="SPY240315C00500000",  # Option symbol
@@ -354,8 +352,8 @@ def run_stress_tests():
         notional=500,
         source="stress_test",
         is_option=True,
-        bid_price=1.96,   # Tight spread
-        ask_price=2.00,   # 2% spread = (2.00-1.96)/2.00 = 2%
+        bid_price=1.96,  # Tight spread
+        ask_price=2.00,  # 2% spread = (2.00-1.96)/2.00 = 2%
     )
     decision = gateway.evaluate(request)
 
