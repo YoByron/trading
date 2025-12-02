@@ -12,6 +12,8 @@ from src.utils.sentiment import blend_sentiment_scores, compute_lexical_sentimen
 
 from langchain_agents.agents import build_price_action_agent
 
+from langchain_agents.agents import build_price_action_agent
+
 logger = logging.getLogger(__name__)
 
 
