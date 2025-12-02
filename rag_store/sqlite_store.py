@@ -176,17 +176,17 @@ class SentimentSQLiteStore:
             params.append(ts_cutoff)
 
         where_clause = " AND ".join(filters)
+        query = "\n".join(
+            [
+                "SELECT *",
+                "FROM sentiment_snapshots",
+                "WHERE " + where_clause,
+                "ORDER BY snapshot_date DESC, created_at DESC",
+                "LIMIT ?",
+            ]
+        )
         with _connection(self.db_path) as conn:
-            cursor = conn.execute(
-                f"""
-                SELECT *
-                FROM sentiment_snapshots
-                WHERE {where_clause}
-                ORDER BY snapshot_date DESC, created_at DESC
-                LIMIT ?
-                """,
-                (*params, limit),
-            )
+            cursor = conn.execute(query, (*params, limit))
             return cursor.fetchall()
 
     def fetch_by_source_date(

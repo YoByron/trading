@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from src.core.config import AppConfig, load_config
 
@@ -110,7 +111,9 @@ class SmartDCAAllocator:
         bucket = self._bucket_for_ticker(ticker)
         target = self._bucket_targets.get(bucket, 0.0)
         remaining = max(0.0, target - self._bucket_spend.get(bucket, 0.0))
-        blended_confidence = self._blend_confidence(momentum_strength, rl_confidence, sentiment_score)
+        blended_confidence = self._blend_confidence(
+            momentum_strength, rl_confidence, sentiment_score
+        )
         cap = round(remaining * blended_confidence, 2)
         if cap < self._min_trade:
             cap = 0.0
