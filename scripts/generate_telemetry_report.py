@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -65,11 +66,91 @@ def print_report(summary: dict[str, Any]) -> None:
             print(f"  - {ts} | {gate} | {ticker} | {reason}")
 
 
+def _current_quarter_start(ref: datetime | None = None) -> datetime:
+    ref = ref or datetime.utcnow()
+    quarter = (ref.month - 1) // 3
+    start_month = quarter * 3 + 1
+    return datetime(ref.year, start_month, 1)
+
+
+def _parse_ts(raw: Any) -> datetime | None:
+    if not raw:
+        return None
+    value = str(raw)
+    if value.endswith("Z"):
+        value = value.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _safe_float(value: Any) -> float | None:
+    try:
+        number = float(value)
+        if number != number:  # NaN check
+            return None
+        return number
+    except (TypeError, ValueError):
+        return None
+
+
+def calculate_tax_sweep(events: list[dict[str, Any]], rate: float = 0.28) -> dict[str, Any]:
+    """Estimate quarter-to-date profits and the 28% HYSA sweep."""
+    quarter_start = _current_quarter_start()
+    realized = 0.0
+    premium_by_day: dict[str, float] = {}
+
+    for event in events:
+        ts = _parse_ts(event.get("ts") or event.get("generated_at"))
+        if ts is None or ts < quarter_start:
+            continue
+        payload = event.get("payload") or {}
+        value = None
+        for key in ("net_profit", "realized_pnl", "realized_profit", "pnl"):
+            if key in payload:
+                value = _safe_float(payload.get(key))
+                break
+        if value is not None:
+            realized += value
+            continue
+
+        if str(event.get("event", "")).startswith("gate.options"):
+            premium = _safe_float(payload.get("total_premium"))
+            if premium is not None:
+                day_key = ts.date().isoformat()
+                previous = premium_by_day.get(day_key, 0.0)
+                premium_by_day[day_key] = max(previous, premium)
+
+    quarter_profit = realized + sum(premium_by_day.values())
+    tax_reserve = max(0.0, quarter_profit * rate)
+    return {
+        "quarter_profit": round(quarter_profit, 2),
+        "tax_reserve": round(tax_reserve, 2),
+        "sweep_rate": rate,
+        "days_accounted": len(premium_by_day),
+    }
+
+
+def print_tax_sweep(tax_summary: dict[str, Any]) -> None:
+    print("\nQuarterly tax sweep (28% HYSA bucket):")
+    profit = tax_summary.get("quarter_profit", 0.0)
+    reserve = tax_summary.get("tax_reserve", 0.0)
+    if profit <= 0:
+        print("  - No positive profit recorded this quarter yet.")
+        return
+    print(f"  - Profit captured: ${profit:,.2f}")
+    print(f"  - Reserve 28%: ${reserve:,.2f} → move to HYSA / tax bucket.")
+
+
 def main() -> None:
     args = parse_args()
     events = load_events(Path(args.log))
     summary = summarize_events(events)
+    tax_summary = calculate_tax_sweep(events)
+    summary["tax_reserve"] = tax_summary
     print_report(summary)
+    print_tax_sweep(tax_summary)
 
     if args.output_json:
         output_path = Path(args.output_json)
