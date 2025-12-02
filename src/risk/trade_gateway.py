@@ -394,15 +394,15 @@ class TradeGateway:
                 if bid_ask_spread_pct > self.MAX_BID_ASK_SPREAD_PCT:
                     rejection_reasons.append(RejectionReason.ILLIQUID_OPTION)
                     logger.warning(
-                        f"❌ REJECTED: Bid-Ask spread {bid_ask_spread_pct*100:.1f}% > "
-                        f"{self.MAX_BID_ASK_SPREAD_PCT*100}% max for {request.symbol}"
+                        f"❌ REJECTED: Bid-Ask spread {bid_ask_spread_pct * 100:.1f}% > "
+                        f"{self.MAX_BID_ASK_SPREAD_PCT * 100}% max for {request.symbol}"
                     )
                     metadata["liquidity_rejection"] = {
                         "bid": request.bid_price,
                         "ask": request.ask_price,
                         "spread_pct": bid_ask_spread_pct * 100,
                         "max_allowed_pct": self.MAX_BID_ASK_SPREAD_PCT * 100,
-                        "reason": "Illiquid option - wide spread destroys alpha on fill"
+                        "reason": "Illiquid option - wide spread destroys alpha on fill",
                     }
                     risk_score += 0.3
                 else:
@@ -411,7 +411,7 @@ class TradeGateway:
                         "bid": request.bid_price,
                         "ask": request.ask_price,
                         "spread_pct": bid_ask_spread_pct * 100,
-                        "status": "acceptable"
+                        "status": "acceptable",
                     }
 
         # ============================================================
