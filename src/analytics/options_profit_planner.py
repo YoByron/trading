@@ -22,9 +22,9 @@ import math
 import os
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, TYPE_CHECKING, Union
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,14 @@ try:  # Optional import for runtime typing; not required for JSON snapshots
     from src.strategies.rule_one_options import RuleOneOptionsSignal  # type: ignore
 except Exception:  # pragma: no cover - fallback for test environments without full deps
     RuleOneOptionsSignal = Any  # type: ignore
+
+try:  # Optional - only needed when executing theta orders live
+    from src.core.options_client import AlpacaOptionsClient
+except Exception:  # pragma: no cover - dependency may be missing locally
+    AlpacaOptionsClient = None  # type: ignore[misc,assignment]
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from src.agents.execution_agent import ExecutionAgent
 
 
 SignalInput = Union[dict[str, Any], "RuleOneOptionsSignal"]
@@ -321,6 +329,35 @@ class ThetaHarvestResult:
     iv_percentile: float | None = None
 
 
+@dataclass
+class ThetaOrderRequest:
+    """Executable option order derived from a theta opportunity."""
+
+    option_symbol: str
+    quantity: int
+    side: str
+    order_type: str
+    limit_price: float | None
+    strategy: str
+    underlying: str
+    notes: str
+    simulated: bool = False
+
+
+@dataclass
+class ResolvedOptionContract:
+    """Normalized contract metadata pulled from Alpaca or synthesized."""
+
+    symbol: str
+    underlying: str
+    option_type: str
+    strike: float
+    expiration: date
+    delta: float | None
+    bid: float | None
+    ask: float | None
+    mid: float | None
+    simulated: bool = False
 class ThetaHarvestExecutor:
     """
     Execute theta harvest strategies based on equity gates.
@@ -339,6 +376,8 @@ class ThetaHarvestExecutor:
     def __init__(self, paper: bool = True) -> None:
         self.paper = paper
         self.planner = OptionsProfitPlanner()
+        # Lazily created Alpaca options client (False sentinel == permanently unavailable)
+        self._options_client: "AlpacaOptionsClient | None | bool" = None
 
     def check_equity_gate(self, account_equity: float) -> dict[str, Any]:
         """
@@ -678,3 +717,505 @@ class ThetaHarvestExecutor:
             plan["summary"] = "No qualifying theta opportunities found"
 
         return plan
+
+    # ------------------------------------------------------------------ #
+    # Execution integration
+    # ------------------------------------------------------------------ #
+    def dispatch_theta_trades(
+        self,
+        plan: dict[str, Any],
+        execution_agent: "ExecutionAgent",
+        *,
+        paper: bool = True,
+        regime_label: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Convert theta opportunities into concrete option orders via ExecutionAgent.
+
+        Args:
+            plan: Output of generate_theta_plan
+            execution_agent: Execution agent capable of submitting option trades
+            paper: Whether to run trades in paper mode
+            regime_label: Optional market regime context for logging
+        """
+
+        opportunities = plan.get("opportunities", [])
+        summary: dict[str, Any] = {
+            "requested": len(opportunities),
+            "submitted": [],
+            "skipped": [],
+            "status": "noop",
+            "regime": regime_label,
+        }
+
+        if not opportunities:
+            summary["status"] = "no_opportunities"
+            return summary
+
+        for opportunity in opportunities:
+            orders = self._build_orders_for_opportunity(
+                opportunity,
+                plan.get("account_equity", 0.0),
+                regime_label=regime_label,
+            )
+            if not orders:
+                summary["skipped"].append(
+                    {
+                        "symbol": opportunity.get("symbol"),
+                        "strategy": opportunity.get("strategy"),
+                        "reason": "order_generation_failed",
+                    }
+                )
+                continue
+
+            for order_req in orders:
+                exec_result = execution_agent.submit_option_order(
+                    option_symbol=order_req.option_symbol,
+                    qty=order_req.quantity,
+                    side=order_req.side,
+                    order_type=order_req.order_type,
+                    limit_price=order_req.limit_price,
+                    paper=paper,
+                    metadata={
+                        "strategy": order_req.strategy,
+                        "underlying": order_req.underlying,
+                        "notes": order_req.notes,
+                        "simulated": order_req.simulated,
+                    },
+                )
+                summary["submitted"].append(
+                    {
+                        "request": asdict(order_req),
+                        "result": exec_result,
+                    }
+                )
+
+        if summary["submitted"]:
+            summary["status"] = "executed"
+        elif summary["skipped"]:
+            summary["status"] = "skipped"
+        return summary
+
+    # ------------------------------------------------------------------ #
+    # Internal helpers
+    # ------------------------------------------------------------------ #
+    def _build_orders_for_opportunity(
+        self,
+        opportunity: dict[str, Any],
+        account_equity: float,
+        regime_label: str | None = None,
+    ) -> list[ThetaOrderRequest]:
+        strategy = opportunity.get("strategy")
+        if strategy == "poor_mans_covered_call":
+            return self._build_poor_mans_orders(opportunity, regime_label=regime_label)
+        if strategy == "iron_condor":
+            return self._build_iron_condor_orders(opportunity, regime_label=regime_label)
+        logger.debug("Unsupported theta strategy %s", strategy)
+        return []
+
+    def _build_poor_mans_orders(
+        self,
+        opportunity: dict[str, Any],
+        regime_label: str | None = None,
+    ) -> list[ThetaOrderRequest]:
+        symbol = opportunity.get("symbol")
+        contracts = max(1, int(opportunity.get("contracts", 1)))
+        notes = f"Poor man's covered call ({regime_label or 'default'} regime)"
+        contract = self._select_contract(
+            symbol=symbol,
+            option_type="call",
+            target_delta=0.20,
+            min_dte=5,
+            max_dte=12,
+        )
+
+        if contract is None:
+            synthetic_symbol = self._synthesize_occ_symbol(
+                symbol=symbol,
+                option_type="call",
+                dte=7,
+                strike_offset_pct=0.05,
+            )
+            return [
+                ThetaOrderRequest(
+                    option_symbol=synthetic_symbol,
+                    quantity=contracts,
+                    side="sell_to_open",
+                    order_type="market",
+                    limit_price=None,
+                    strategy="poor_mans_covered_call",
+                    underlying=symbol,
+                    notes=f"{notes} (synthetic symbol - options feed unavailable)",
+                    simulated=True,
+                )
+            ]
+
+        limit_price = self._calc_limit_price(contract)
+        order_type = "limit" if limit_price is not None else "market"
+
+        return [
+            ThetaOrderRequest(
+                option_symbol=contract.symbol,
+                quantity=contracts,
+                side="sell_to_open",
+                order_type=order_type,
+                limit_price=limit_price,
+                strategy="poor_mans_covered_call",
+                underlying=symbol,
+                notes=notes,
+                simulated=contract.simulated,
+            )
+        ]
+
+    def _build_iron_condor_orders(
+        self,
+        opportunity: dict[str, Any],
+        regime_label: str | None = None,
+    ) -> list[ThetaOrderRequest]:
+        symbol = opportunity.get("symbol")
+        contracts = max(1, int(opportunity.get("contracts", 1)))
+        notes = f"Iron condor ({regime_label or 'default'} regime)"
+        chain = self._get_option_chain(symbol)
+        if not chain:
+            return []
+
+        short_call = self._select_contract_from_chain(
+            chain=chain,
+            symbol=symbol,
+            option_type="call",
+            target_delta=0.20,
+            min_dte=25,
+            max_dte=35,
+        )
+        short_put = self._select_contract_from_chain(
+            chain=chain,
+            symbol=symbol,
+            option_type="put",
+            target_delta=0.20,
+            min_dte=25,
+            max_dte=35,
+        )
+
+        if not short_call or not short_put:
+            logger.debug("Unable to resolve short legs for iron condor on %s", symbol)
+            return []
+
+        width = float(os.getenv("THETA_CONDOR_WIDTH", "5.0"))
+        long_call = self._find_wing_contract(
+            chain,
+            base_contract=short_call,
+            option_type="call",
+            target_strike=short_call.strike + width,
+        )
+        long_put = self._find_wing_contract(
+            chain,
+            base_contract=short_put,
+            option_type="put",
+            target_strike=short_put.strike - width,
+        )
+
+        orders: list[ThetaOrderRequest] = []
+
+        orders.append(
+            ThetaOrderRequest(
+                option_symbol=short_call.symbol,
+                quantity=contracts,
+                side="sell_to_open",
+                order_type="limit" if self._calc_limit_price(short_call) else "market",
+                limit_price=self._calc_limit_price(short_call),
+                strategy="iron_condor",
+                underlying=symbol,
+                notes=f"{notes} - short call leg",
+                simulated=short_call.simulated,
+            )
+        )
+
+        orders.append(
+            ThetaOrderRequest(
+                option_symbol=short_put.symbol,
+                quantity=contracts,
+                side="sell_to_open",
+                order_type="limit" if self._calc_limit_price(short_put) else "market",
+                limit_price=self._calc_limit_price(short_put),
+                strategy="iron_condor",
+                underlying=symbol,
+                notes=f"{notes} - short put leg",
+                simulated=short_put.simulated,
+            )
+        )
+
+        if long_call:
+            orders.append(
+                ThetaOrderRequest(
+                    option_symbol=long_call.symbol,
+                    quantity=contracts,
+                    side="buy_to_open",
+                    order_type="limit" if self._calc_limit_price(long_call) else "market",
+                    limit_price=self._calc_limit_price(long_call),
+                    strategy="iron_condor",
+                    underlying=symbol,
+                    notes=f"{notes} - long call wing",
+                    simulated=long_call.simulated,
+                )
+            )
+
+        if long_put:
+            orders.append(
+                ThetaOrderRequest(
+                    option_symbol=long_put.symbol,
+                    quantity=contracts,
+                    side="buy_to_open",
+                    order_type="limit" if self._calc_limit_price(long_put) else "market",
+                    limit_price=self._calc_limit_price(long_put),
+                    strategy="iron_condor",
+                    underlying=symbol,
+                    notes=f"{notes} - long put wing",
+                    simulated=long_put.simulated,
+                )
+            )
+
+        if long_call is None or long_put is None:
+            logger.warning(
+                "Iron condor wings partially missing for %s (call=%s, put=%s). "
+                "Order will be partially defined-risk.",
+                symbol,
+                bool(long_call),
+                bool(long_put),
+            )
+
+        return orders
+
+    def _find_wing_contract(
+        self,
+        chain: list[dict[str, Any]],
+        *,
+        base_contract: ResolvedOptionContract,
+        option_type: str,
+        target_strike: float,
+    ) -> ResolvedOptionContract | None:
+        """Locate protective wing contract near the requested strike."""
+
+        closest: ResolvedOptionContract | None = None
+        for entry in chain:
+            contract = self._contract_from_chain_entry(entry)
+            if not contract:
+                continue
+            if contract.option_type != option_type:
+                continue
+            if contract.expiration != base_contract.expiration:
+                continue
+            distance = abs(contract.strike - target_strike)
+            if distance < 0.01:
+                return contract
+            if closest is None or distance < abs(closest.strike - target_strike):
+                closest = contract
+        return closest
+
+    def _select_contract(
+        self,
+        symbol: str,
+        option_type: str,
+        target_delta: float,
+        min_dte: int,
+        max_dte: int,
+    ) -> ResolvedOptionContract | None:
+        chain = self._get_option_chain(symbol)
+        if not chain:
+            return None
+        return self._select_contract_from_chain(
+            chain,
+            symbol=symbol,
+            option_type=option_type,
+            target_delta=target_delta,
+            min_dte=min_dte,
+            max_dte=max_dte,
+        )
+
+    def _select_contract_from_chain(
+        self,
+        chain: list[dict[str, Any]],
+        *,
+        symbol: str,
+        option_type: str,
+        target_delta: float,
+        min_dte: int,
+        max_dte: int,
+    ) -> ResolvedOptionContract | None:
+        today = datetime.utcnow().date()
+        candidates: list[tuple[float, int, ResolvedOptionContract]] = []
+
+        for entry in chain:
+            contract = self._contract_from_chain_entry(entry)
+            if not contract:
+                continue
+            if contract.option_type != option_type:
+                continue
+            dte = (contract.expiration - today).days
+            if dte < min_dte or dte > max_dte:
+                continue
+            if contract.delta is None:
+                continue
+            score = abs(abs(contract.delta) - target_delta)
+            candidates.append((score, dte, contract))
+
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return candidates[0][2]
+
+    def _contract_from_chain_entry(self, entry: dict[str, Any]) -> ResolvedOptionContract | None:
+        symbol = entry.get("symbol")
+        parsed = self._parse_option_symbol(symbol)
+        if not parsed:
+            return None
+
+        greeks = entry.get("greeks") or {}
+        delta = greeks.get("delta")
+        bid = entry.get("latest_quote_bid")
+        ask = entry.get("latest_quote_ask")
+        trade = entry.get("latest_trade_price")
+
+        return ResolvedOptionContract(
+            symbol=symbol,
+            underlying=parsed["underlying"],
+            option_type=parsed["option_type"],
+            strike=parsed["strike"],
+            expiration=parsed["expiration"],
+            delta=float(delta) if delta is not None else None,
+            bid=self.planner._maybe_float(bid),
+            ask=self.planner._maybe_float(ask),
+            mid=self._calc_mid_price(bid, ask, trade),
+        )
+
+    @staticmethod
+    def _calc_mid_price(bid: Any, ask: Any, trade: Any) -> float | None:
+        values = [value for value in (bid, ask, trade) if value is not None]
+        try:
+            floats = [float(value) for value in values if float(value) > 0]
+        except (TypeError, ValueError):
+            floats = []
+        if not floats:
+            return None
+        if bid is not None and ask is not None:
+            try:
+                return round((float(bid) + float(ask)) / 2, 2)
+            except (TypeError, ValueError):
+                pass
+        if trade is not None:
+            try:
+                return round(float(trade), 2)
+            except (TypeError, ValueError):
+                pass
+        if bid is not None:
+            try:
+                return round(float(bid), 2)
+            except (TypeError, ValueError):
+                pass
+        if ask is not None:
+            try:
+                return round(float(ask), 2)
+            except (TypeError, ValueError):
+                pass
+        return None
+
+    def _calc_limit_price(self, contract: ResolvedOptionContract) -> float | None:
+        if contract.mid is not None:
+            return round(contract.mid, 2)
+        if contract.bid is not None and contract.ask is not None:
+            return round((contract.bid + contract.ask) / 2, 2)
+        if contract.bid is not None:
+            return round(contract.bid, 2)
+        if contract.ask is not None:
+            return round(contract.ask, 2)
+        return None
+
+    def _get_option_chain(self, symbol: str) -> list[dict[str, Any]] | None:
+        if not hasattr(self, "_chain_cache"):
+            self._chain_cache: dict[str, list[dict[str, Any]]] = {}
+
+        if symbol in self._chain_cache:
+            return self._chain_cache[symbol]
+
+        client = self._get_options_client()
+        if client is None:
+            return None
+
+        try:
+            chain = client.get_option_chain(symbol)
+            self._chain_cache[symbol] = chain
+            return chain
+        except Exception as exc:  # pragma: no cover - network/API failure
+            logger.warning("Failed to fetch option chain for %s: %s", symbol, exc)
+            return None
+
+    def _get_options_client(self) -> "AlpacaOptionsClient | None":
+        if self._options_client is False:
+            return None
+        if self._options_client:
+            return self._options_client
+        if AlpacaOptionsClient is None:
+            self._options_client = False
+            return None
+        try:
+            self._options_client = AlpacaOptionsClient(paper=self.paper)
+            return self._options_client
+        except Exception as exc:  # pragma: no cover - dependency issues
+            logger.warning("Theta executor unable to init Alpaca options client: %s", exc)
+            self._options_client = False
+            return None
+
+    def _parse_option_symbol(self, symbol: str | None) -> dict[str, Any] | None:
+        if not symbol or len(symbol) < 15:
+            return None
+        try:
+            expiry_digits = symbol[-15:-9]
+            cp_flag = symbol[-9]
+            strike_digits = symbol[-8:]
+            underlying = symbol[:-15].strip()
+            expiration = datetime.strptime(expiry_digits, "%y%m%d").date()
+            strike = int(strike_digits) / 1000
+            option_type = "call" if cp_flag.upper() == "C" else "put"
+            return {
+                "underlying": underlying,
+                "expiration": expiration,
+                "strike": strike,
+                "option_type": option_type,
+            }
+        except Exception:
+            return None
+
+    def _synthesize_occ_symbol(
+        self,
+        *,
+        symbol: str,
+        option_type: str,
+        dte: int,
+        strike_offset_pct: float,
+    ) -> str:
+        base_price = self._resolve_underlying_price(symbol) or 100.0
+        if option_type == "call":
+            strike = base_price * (1 + strike_offset_pct)
+        else:
+            strike = base_price * (1 - strike_offset_pct)
+        strike_int = int(round(strike * 1000))
+        expiry = (datetime.utcnow().date() + timedelta(days=dte)).strftime("%y%m%d")
+        flag = "C" if option_type == "call" else "P"
+        root = symbol.replace(".", "").replace("-", "").upper()
+        return f"{root}{expiry}{flag}{strike_int:08d}"
+
+    def _resolve_underlying_price(self, symbol: str) -> float | None:
+        try:
+            import yfinance as yf  # type: ignore
+
+            ticker = yf.Ticker(symbol)
+            info = ticker.fast_info  # type: ignore[attr-defined]
+            price = info.get("last_price") if isinstance(info, dict) else None
+            if price:
+                return float(price)
+            hist = ticker.history(period="1d")
+            if not hist.empty:
+                return float(hist["Close"].iloc[-1])
+            return None
+        except Exception:
+            return None

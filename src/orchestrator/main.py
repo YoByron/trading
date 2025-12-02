@@ -8,9 +8,11 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import holidays
+from src.agents.execution_agent import ExecutionAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
+from src.analytics.options_profit_planner import THETA_STAGE_1_EQUITY, ThetaHarvestExecutor
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
@@ -24,6 +26,8 @@ from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
 from src.utils.regime_detector import RegimeDetector
+
+from src.agent_framework.auditor import AdaptiveTradeAuditor
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +74,9 @@ class TradingOrchestrator:
         self.risk_manager = RiskManager()
         self.executor = AlpacaExecutor(paper=paper)
         self.executor.sync_portfolio_state()
+        trading_client = getattr(getattr(self.executor, "trader", None), "trading_client", None)
+        self.execution_agent = ExecutionAgent(alpaca_api=trading_client, paper=paper)
+        self.theta_executor = ThetaHarvestExecutor(paper=paper)
         self.telemetry = OrchestratorTelemetry()
         self.anomaly_monitor = AnomalyMonitor(
             telemetry=self.telemetry,
@@ -87,6 +94,7 @@ class TradingOrchestrator:
         self.microstructure = MicrostructureFeatureExtractor()
         self.regime_detector = RegimeDetector()
         self.smart_dca = SmartDCAAllocator()
+        self.trade_auditor = AdaptiveTradeAuditor()
 
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
@@ -1107,16 +1115,7 @@ class TradingOrchestrator:
 
         Executes theta strategies (poor man's covered calls, iron condors)
         when equity gates are met and IV conditions are favorable.
-
-        Equity Gates:
-        - $5k+: Poor man's covered calls (SPY, QQQ)
-        - $10k+: Iron condors in calm regime
-        - $25k+: Full options suite
-
-        Returns:
-            Dict with theta harvest results
         """
-        from src.analytics.options_profit_planner import ThetaHarvestExecutor
 
         logger.info("--- Gate 7: Theta Harvest Execution ---")
 
@@ -1129,105 +1128,60 @@ class TradingOrchestrator:
             logger.info("Gate 7: Theta harvest disabled via ENABLE_THETA_HARVEST")
             return {"action": "disabled", "reason": "Theta harvest disabled"}
 
+        account_equity = self.executor.account_equity
+        gate = self.theta_executor.check_equity_gate(account_equity)
+        if not gate["theta_enabled"]:
+            logger.info(
+                "Gate 7: Theta disabled - equity $%.2f below $5k threshold",
+                account_equity,
+            )
+            self.telemetry.record(
+                event_type="gate.theta_harvest",
+                ticker="PORTFOLIO",
+                status="disabled",
+                payload={
+                    "account_equity": account_equity,
+                    "gap_to_next_tier": gate["gap_to_next_tier"],
+                    "next_tier": gate["next_tier"],
+                },
+            )
+            return {"action": "disabled", "reason": "Equity below threshold", "gate": gate}
+
         try:
-            account_equity = self.executor.account_equity
-            executor = ThetaHarvestExecutor(paper=True)
+            regime_snapshot = self.regime_detector.detect_live_regime()
+            regime_label = getattr(regime_snapshot, "label", "calm")
+        except Exception:
+            regime_label = "calm"
 
-            # Check equity gate
-            gate = executor.check_equity_gate(account_equity)
-
-            if not gate["theta_enabled"]:
-                logger.info(
-                    "Gate 7: Theta disabled - equity $%.2f below $5k threshold",
-                    account_equity,
-                )
-                self.telemetry.record(
-                    event_type="gate.theta_harvest",
-                    ticker="PORTFOLIO",
-                    status="disabled",
-                    payload={
-                        "account_equity": account_equity,
-                        "gap_to_next_tier": gate["gap_to_next_tier"],
-                        "next_tier": gate["next_tier"],
-                    },
-                )
-                return {"action": "disabled", "reason": "Equity below threshold", "gate": gate}
-
-            # Get current regime
-            regime_label = "calm"  # Default, could integrate with regime_detector
-            try:
-                # Use last known regime from session
-                if self.session_profile:
-                    regime_label = self.session_profile.get("regime", "calm")
-            except Exception:
-                pass
-
-            # Generate theta plan
-            plan = executor.generate_theta_plan(
+        try:
+            plan = self.theta_executor.generate_theta_plan(
                 account_equity=account_equity,
                 regime_label=regime_label,
                 symbols=["SPY", "QQQ", "IWM"],
             )
-
-            logger.info(
-                "Gate 7: Theta plan generated - %d opportunities, est. daily premium $%.2f",
-                len(plan.get("opportunities", [])),
-                plan.get("total_estimated_premium", 0),
+            execution = self.theta_executor.dispatch_theta_trades(
+                plan,
+                execution_agent=self.execution_agent,
+                paper=self.executor.paper,
+                regime_label=regime_label,
             )
-
-            # Execute opportunities
-            executed = []
-            for opp in plan.get("opportunities", []):
-                if opp.get("strategy") != "none":
-                    # Create result object for execution
-                    from src.analytics.options_profit_planner import ThetaHarvestResult
-
-                    result = ThetaHarvestResult(
-                        symbol=opp["symbol"],
-                        strategy=opp["strategy"],
-                        contracts=opp["contracts"],
-                        estimated_premium=opp["estimated_premium"],
-                        executed=False,
-                        reason=opp["reason"],
-                        iv_percentile=opp.get("iv_percentile"),
-                    )
-
-                    # Execute through the theta executor
-                    executed_result = executor.execute_theta_order(
-                        result=result,
-                        alpaca_client=None,  # Paper mode by default
-                    )
-
-                    if executed_result.executed:
-                        executed.append(executed_result)
-                        self.telemetry.record(
-                            event_type="gate.theta_harvest",
-                            ticker=executed_result.symbol,
-                            status="executed",
-                            payload={
-                                "strategy": executed_result.strategy,
-                                "contracts": executed_result.contracts,
-                                "estimated_premium": executed_result.estimated_premium,
-                                "order_id": executed_result.order_id,
-                            },
-                        )
 
             self.telemetry.record(
                 event_type="gate.theta_harvest",
                 ticker="PORTFOLIO",
-                status="completed",
+                status=execution.get("status", "noop"),
                 payload={
-                    "opportunities": len(plan.get("opportunities", [])),
-                    "executed": len(executed),
-                    "total_estimated_premium": plan.get("total_estimated_premium", 0),
+                    "plan": {
+                        "opportunities": len(plan.get("opportunities", [])),
+                        "premium_gap": plan.get("premium_gap"),
+                        "total_estimated_premium": plan.get("total_estimated_premium"),
+                        "regime": regime_label,
+                    },
+                    "execution": execution,
                 },
             )
 
-            return {
-                "action": "completed",
-                "plan": plan,
-                "executed_count": len(executed),
-            }
+            return {"action": execution.get("status", "noop"), "plan": plan, "execution": execution}
 
         except Exception as e:
             logger.error("Gate 7: Theta harvest failed: %s", e)
@@ -1263,12 +1217,20 @@ class TradingOrchestrator:
             return {"action": "disabled", "reason": "Trade audit disabled"}
 
         try:
-            from src.agent_framework.auditor import TradeAuditor
+            try:
+                regime_snapshot = self.regime_detector.detect_live_regime()
+                vix_level = getattr(regime_snapshot, "vix_level", 20.0)
+            except Exception:
+                vix_level = 20.0
 
-            auditor = TradeAuditor()
-            result = auditor.run_audit(force=False)
+            threshold = float(os.getenv("AUDITOR_VIX_THRESHOLD", "25"))
+            frequency = "daily" if vix_level >= threshold else "weekly"
+            report = self.trade_auditor.run_if_due(
+                frequency=frequency,
+                vix_level=vix_level,
+            )
 
-            if result is None:
+            if not report:
                 logger.info("Gate 8: Audit skipped - not due yet")
                 return {"action": "skipped", "reason": "Audit not due"}
 
@@ -1276,27 +1238,14 @@ class TradingOrchestrator:
                 event_type="gate.trade_audit",
                 ticker="PORTFOLIO",
                 status="completed",
-                payload={
-                    "audit_id": result.audit_id,
-                    "vix_level": result.vix_level,
-                    "frequency": result.frequency,
-                    "trades_analyzed": result.trades_analyzed,
-                    "win_rate": result.win_rate,
-                    "recommendations_count": len(result.recommendations),
-                    "theta_loss_detected": result.theta_loss_detected,
-                },
+                payload=report,
             )
 
-            # Log recommendations
-            for rec in result.recommendations:
-                logger.warning("AUDIT RECOMMENDATION: %s", rec)
+            guidance = report.get("theta_guidance")
+            if guidance:
+                logger.warning("AUDIT RECOMMENDATION: %s", guidance)
 
-            return {
-                "action": "completed",
-                "audit_id": result.audit_id,
-                "win_rate": result.win_rate,
-                "recommendations": result.recommendations,
-            }
+            return {"action": "completed", "report": report}
 
         except Exception as e:
             logger.error("Gate 8: Trade audit failed: %s", e)

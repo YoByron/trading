@@ -4,6 +4,22 @@ This document outlines the three key strategies for maximizing profitability and
 
 ---
 
+## Dynamic Budget & Tax Enhancements (Dec 2025)
+
+### Auto-Scaling Daily Input
+
+- `scripts/autonomous_trader.py` now inspects `data/system_state.json` (or `SIMULATED_EQUITY`) before the orchestrator spins up.
+- The new `calc_daily_input()` helper maps equity into a $10–$50/day deployment, adding extra basis points at the $2k / $5k / $10k gates while preserving the risk cap.
+- The resulting number is exported via `DAILY_INVESTMENT`, so every downstream component (tier budgets, risk manager, trade gateway) automatically receives the right daily budget without editing `.env`.
+
+### Tax Sweep Guidance
+
+- `scripts/generate_telemetry_report.py` now prints the latest equity/P&L plus a recommended tax sweep (default 28%) when cumulative profit is positive.
+- Use `--tax-rate` to align with your local marginal bracket; the recommendation is stored in the JSON output for dashboards/Slack pings.
+- This keeps the HYSA/tax bucket honest and enforces the “sweep 28% of realized gains quarterly” directive automatically.
+
+---
+
 ## 1. Alpaca High-Yield Cash (3.56% APY)
 
 **Discovered**: October 30, 2025 (Alpaca rate update email)
