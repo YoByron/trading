@@ -14,6 +14,8 @@ from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
 from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.risk_manager import RiskManager
+from src.risk.options_risk_monitor import OptionsRiskMonitor
+from src.risk.trade_gateway import TradeGateway, TradeRequest
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +47,17 @@ class TradingOrchestrator:
         self.executor.sync_portfolio_state()
         self.telemetry = OrchestratorTelemetry()
         self.failure_manager = FailureIsolationManager(self.telemetry)
+        self.options_risk_monitor = OptionsRiskMonitor(paper=paper)
+        # CRITICAL: All trades must go through the gateway - no direct executor calls
+        self.trade_gateway = TradeGateway(executor=self.executor, paper=paper)
 
     def run(self) -> None:
         logger.info("Running hybrid funnel for tickers: %s", ", ".join(self.tickers))
         for ticker in self.tickers:
             self._process_ticker(ticker)
+
+        # Gate 5: Post-execution delta rebalancing
+        self.run_delta_rebalancing()
 
     def _process_ticker(self, ticker: str) -> None:
         logger.info("--- Processing %s ---", ticker)
@@ -252,14 +260,36 @@ class TradingOrchestrator:
             return
 
         logger.info("Executing BUY %s for $%.2f", ticker, order_size)
+
+        # CRITICAL: All trades go through the mandatory gateway
+        trade_request = TradeRequest(
+            symbol=ticker,
+            side="buy",
+            notional=order_size,
+            source="orchestrator"
+        )
+        gateway_decision = self.trade_gateway.evaluate(trade_request)
+
+        if not gateway_decision.approved:
+            logger.warning(
+                "Gate GATEWAY (%s): REJECTED by Trade Gateway - %s",
+                ticker,
+                [r.value for r in gateway_decision.rejection_reasons],
+            )
+            self.telemetry.gate_reject(
+                "gateway",
+                ticker,
+                {
+                    "rejection_reasons": [r.value for r in gateway_decision.rejection_reasons],
+                    "risk_score": gateway_decision.risk_score,
+                },
+            )
+            return
+
         order_outcome = self.failure_manager.run(
             gate="execution.order",
             ticker=ticker,
-            operation=lambda: self.executor.place_order(
-                ticker,
-                order_size,
-                side="buy",
-            ),
+            operation=lambda: self.trade_gateway.execute(gateway_decision),
             event_type="execution.order",
         )
         if not order_outcome.ok:
@@ -296,3 +326,161 @@ class TradingOrchestrator:
                 )
         except Exception as exc:  # pragma: no cover - non-fatal
             logger.info("Stop-loss placement skipped for %s: %s", ticker, exc)
+
+    def run_delta_rebalancing(self) -> dict:
+        """
+        Gate 5: Delta-Neutral Rebalancing (Post-Execution)
+
+        McMillan Rule: If |net delta| > 60, buy/sell SPY shares to bring it under 25.
+
+        This should be called after all ticker processing to ensure the overall
+        portfolio delta exposure remains within acceptable bounds.
+
+        Returns:
+            Dict with rebalancing results
+        """
+        logger.info("--- Gate 5: Delta-Neutral Rebalancing Check ---")
+
+        try:
+            # Calculate current delta exposure
+            delta_analysis = self.options_risk_monitor.calculate_net_delta()
+
+            self.telemetry.record(
+                event_type="gate.delta_rebalance",
+                ticker="PORTFOLIO",
+                status="checking",
+                payload={
+                    "net_delta": delta_analysis["net_delta"],
+                    "max_allowed": delta_analysis["max_allowed"],
+                    "rebalance_needed": delta_analysis["rebalance_needed"],
+                },
+            )
+
+            if not delta_analysis["rebalance_needed"]:
+                logger.info(
+                    "Gate 5: Delta exposure acceptable (net delta: %.1f, max: %.1f)",
+                    delta_analysis["net_delta"],
+                    delta_analysis["max_allowed"],
+                )
+                return {"action": "none", "delta_analysis": delta_analysis}
+
+            # Calculate hedge trade
+            hedge = self.options_risk_monitor.calculate_delta_hedge(
+                delta_analysis["net_delta"]
+            )
+
+            if hedge["action"] == "NONE":
+                return {"action": "none", "delta_analysis": delta_analysis}
+
+            logger.warning(
+                "Gate 5: Delta rebalancing triggered - %s %d %s",
+                hedge["action"],
+                hedge["quantity"],
+                hedge["symbol"],
+            )
+
+            # Execute the hedge through the gateway
+            try:
+                hedge_request = TradeRequest(
+                    symbol=hedge["symbol"],
+                    side=hedge["action"].lower(),
+                    quantity=hedge["quantity"],
+                    source="delta_hedge"
+                )
+                hedge_decision = self.trade_gateway.evaluate(hedge_request)
+
+                if not hedge_decision.approved:
+                    logger.warning(
+                        "Delta hedge rejected by gateway: %s",
+                        [r.value for r in hedge_decision.rejection_reasons]
+                    )
+                    return {"action": "rejected", "reasons": [r.value for r in hedge_decision.rejection_reasons]}
+
+                order = self.trade_gateway.execute(hedge_decision)
+
+                self.telemetry.record(
+                    event_type="gate.delta_rebalance",
+                    ticker=hedge["symbol"],
+                    status="executed",
+                    payload={
+                        "hedge": hedge,
+                        "order": order,
+                        "pre_rebalance_delta": delta_analysis["net_delta"],
+                        "target_delta": hedge.get("target_delta"),
+                    },
+                )
+
+                logger.info(
+                    "✅ Delta hedge executed: %s %d %s (Order ID: %s)",
+                    hedge["action"],
+                    hedge["quantity"],
+                    hedge["symbol"],
+                    order.get("id", "N/A"),
+                )
+
+                return {
+                    "action": "hedged",
+                    "hedge": hedge,
+                    "order": order,
+                    "delta_analysis": delta_analysis,
+                }
+
+            except Exception as e:
+                logger.error("Failed to execute delta hedge: %s", e)
+                self.telemetry.record(
+                    event_type="gate.delta_rebalance",
+                    ticker=hedge["symbol"],
+                    status="failed",
+                    payload={"error": str(e), "hedge": hedge},
+                )
+                return {"action": "failed", "error": str(e), "hedge": hedge}
+
+        except Exception as e:
+            logger.error("Delta rebalancing check failed: %s", e)
+            return {"action": "error", "error": str(e)}
+
+    def run_options_risk_check(self, option_prices: dict = None) -> dict:
+        """
+        Run options position risk check (stop-losses and delta management).
+
+        McMillan Rules Applied:
+        - Credit spreads/iron condors: Exit at 2.2x credit received
+        - Long options: Exit at 50% loss
+        - Delta: Rebalance if |net delta| > 60
+
+        Args:
+            option_prices: Dict mapping option symbols to current prices
+                          If None, will attempt to fetch from executor
+
+        Returns:
+            Risk check results with any actions taken
+        """
+        logger.info("--- Running Options Risk Check ---")
+
+        if option_prices is None:
+            option_prices = {}
+
+        try:
+            results = self.options_risk_monitor.run_risk_check(
+                current_prices=option_prices,
+                executor=self.executor
+            )
+
+            self.telemetry.record(
+                event_type="options.risk_check",
+                ticker="PORTFOLIO",
+                status="completed",
+                payload={
+                    "positions_checked": results["positions_checked"],
+                    "stop_loss_exits": len(results["stop_loss_exits"]),
+                    "rebalance_needed": results["delta_analysis"]["rebalance_needed"]
+                    if results["delta_analysis"]
+                    else False,
+                },
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error("Options risk check failed: %s", e)
+            return {"error": str(e)}
