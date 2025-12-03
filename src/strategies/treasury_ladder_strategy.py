@@ -53,15 +53,6 @@ class YieldCurveRegime(Enum):
     NORMAL = "normal"  # 2yr < 10yr (typical)
     FLAT = "flat"  # 2yr ≈ 10yr (transition)
     INVERTED = "inverted"  # 2yr > 10yr (recession signal)
-    STEEP = "steep"  # 2s10s very low - steepener opportunity
-
-
-class RateVolatilityRegime(Enum):
-    """Rate volatility regime based on MOVE Index."""
-
-    LOW = "low"  # MOVE < 70 - safe to extend duration
-    NORMAL = "normal"  # 70 <= MOVE <= 120 - standard allocation
-    HIGH = "high"  # MOVE > 120 - reduce duration exposure
 
 
 @dataclass
@@ -75,13 +66,6 @@ class TreasuryAllocation:
     spread: float  # 10yr - 2yr spread
     rationale: str
     timestamp: datetime
-    # Dynamic long ETF selection (TLT vs ZROZ)
-    long_etf: str = "TLT"  # Default to TLT, switch to ZROZ when 10Y < 4.05%
-    # GOVT core allocation (fixed 25%)
-    govt_pct: float = 0.25  # Fixed intermediate treasury allocation
-    # Steepener override
-    steepener_active: bool = False  # True when 2s10s < 0.2%
-    steepener_extra_pct: float = 0.0  # Extra allocation to long treasuries
 
 
 @dataclass
@@ -124,10 +108,7 @@ class TreasuryLadderStrategy:
     """
 
     # Treasury ETF universe
-    ETF_SYMBOLS = ["SHY", "IEF", "TLT", "ZROZ", "GOVT", "BIL"]
-
-    # Fixed core allocation - intermediate treasury for stable carry
-    GOVT_CORE_ALLOCATION = 0.25  # 25% fixed GOVT allocation
+    ETF_SYMBOLS = ["SHY", "IEF", "TLT"]
 
     # Base allocations for different yield curve regimes
     # Normal curve: balanced ladder
@@ -139,27 +120,9 @@ class TreasuryLadderStrategy:
     # Inverted curve: heavy preference for short duration (recession hedge)
     ALLOCATION_INVERTED = {"SHY": 0.70, "IEF": 0.25, "TLT": 0.05}
 
-    # Yield curve regime thresholds (percentage points)
+    # Yield curve regime thresholds (basis points)
     SPREAD_INVERTED_THRESHOLD = 0.0  # Spread < 0 = inverted
     SPREAD_FLAT_THRESHOLD = 0.5  # Spread < 50bps = flat
-    SPREAD_STEEPENER_THRESHOLD = 0.2  # Spread < 20bps = steepener opportunity
-
-    # Dynamic long ETF selection thresholds
-    YIELD_10Y_ZROZ_THRESHOLD = 4.05  # Switch to ZROZ when 10Y < 4.05%
-
-    # Steepener override parameters
-    STEEPENER_EXTRA_ALLOCATION = 0.15  # Add 15% extra to long treasuries when triggered
-
-    # MOVE Index thresholds for rate volatility
-    MOVE_LOW_VOL_THRESHOLD = 70  # MOVE < 70 = quiet rates
-    MOVE_HIGH_VOL_THRESHOLD = 120  # MOVE > 120 = volatile rates
-
-    # Duration multipliers based on MOVE
-    MOVE_DURATION_ADJUSTMENTS = {
-        "low": 1.3,  # Increase duration by 30% when rates quiet
-        "normal": 1.0,  # Standard allocation
-        "high": 0.5,  # Reduce duration by 50% when rates volatile
-    }
 
     # Rebalancing parameters
     DEFAULT_REBALANCE_THRESHOLD = 0.05  # 5% drift triggers rebalance
@@ -326,224 +289,24 @@ class TreasuryLadderStrategy:
                 f"Error fetching yields: {e}, using default",
             )
 
-    def get_10y_yield(self) -> float:
+    def get_optimal_allocation(self, macro_context: dict | None = None) -> TreasuryAllocation:
         """
-        Fetch current 10-year Treasury yield from FRED.
+        Determine optimal allocation based on current yield curve and macro context.
 
-        Returns:
-            float: Current 10Y yield in percentage (e.g., 4.19 for 4.19%)
-        """
-        if not self.fred_collector:
-            logger.warning("FRED collector unavailable, using default 10Y yield of 4.20%")
-            return 4.20
-
-        try:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=7)
-
-            dgs10_data = self.fred_collector._fetch_series(
-                "DGS10",
-                start_date.strftime("%Y-%m-%d"),
-                end_date.strftime("%Y-%m-%d"),
-            )
-
-            if dgs10_data and dgs10_data.get("latest_value") != ".":
-                yield_10y = float(dgs10_data["latest_value"])
-                logger.info(f"Current 10Y Treasury yield: {yield_10y:.2f}%")
-                return yield_10y
-            else:
-                logger.warning("10Y yield data unavailable, using default 4.20%")
-                return 4.20
-
-        except Exception as e:
-            logger.error(f"Failed to fetch 10Y yield: {e}")
-            return 4.20
-
-    def select_long_etf(self, yield_10y: float) -> str:
-        """
-        Dynamically select long-duration ETF based on 10Y yield level.
-
-        When 10Y yield is low (< 4.05%), use ZROZ (ultra-long 25+ year zero coupon)
-        for 2-3% extra yield with slightly higher duration risk.
-
-        When 10Y yield is higher (>= 4.05%), stick with TLT (20+ year) for
-        more moderate duration exposure.
+        Analyzes the yield curve and then adjusts the allocation based on the
+        broader macroeconomic outlook (Dovish/Hawkish).
 
         Args:
-            yield_10y: Current 10-year Treasury yield in percentage
-
-        Returns:
-            str: "ZROZ" or "TLT" ticker symbol
-        """
-        if yield_10y < self.YIELD_10Y_ZROZ_THRESHOLD:
-            logger.info(
-                f"10Y yield ({yield_10y:.2f}%) < {self.YIELD_10Y_ZROZ_THRESHOLD}% → "
-                "Selecting ZROZ (ultra-long) for extra carry"
-            )
-            return "ZROZ"
-        else:
-            logger.info(
-                f"10Y yield ({yield_10y:.2f}%) >= {self.YIELD_10Y_ZROZ_THRESHOLD}% → "
-                "Selecting TLT (standard long duration)"
-            )
-            return "TLT"
-
-    def check_steepener_signal(self, spread: float) -> tuple[bool, float]:
-        """
-        Check if steepener trade should be activated.
-
-        The 2s/10s steepener is one of the best mean-reverting Treasury trades.
-        When the spread is extremely flat (< 0.2%), historical data shows
-        high probability of curve steepening, making long duration attractive.
-
-        Args:
-            spread: Current 10Y-2Y spread in percentage points
-
-        Returns:
-            tuple: (should_activate, extra_allocation_pct)
-        """
-        if spread < self.SPREAD_STEEPENER_THRESHOLD:
-            logger.info(
-                f"STEEPENER SIGNAL ACTIVE: 2s10s spread ({spread:.2f}%) < "
-                f"{self.SPREAD_STEEPENER_THRESHOLD}% threshold. "
-                f"Adding {self.STEEPENER_EXTRA_ALLOCATION * 100:.0f}% extra to long treasuries."
-            )
-            return True, self.STEEPENER_EXTRA_ALLOCATION
-        return False, 0.0
-
-    def get_move_index(self) -> tuple[float, RateVolatilityRegime]:
-        """
-        Fetch MOVE Index (bond market volatility) and determine regime.
-
-        The MOVE Index is the "VIX for bonds" - measures implied volatility
-        of Treasury options. Low MOVE means safe to extend duration;
-        high MOVE means reduce duration exposure to avoid 2022-style losses.
-
-        Returns:
-            tuple: (move_value, regime)
-        """
-        # Note: MOVE Index is available from FRED as "MOVE" or via CBOE
-        # For now, we'll try FRED first, fall back to default
-        if not self.fred_collector:
-            logger.warning("FRED collector unavailable, assuming normal MOVE regime")
-            return 100.0, RateVolatilityRegime.NORMAL
-
-        try:
-            # MOVE index from FRED (if available) or estimate from VIX correlation
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=7)
-
-            # Try to fetch MOVE directly (may not be in FRED)
-            # If not available, we'll use a proxy or default
-            move_data = self.fred_collector._fetch_series(
-                "MOVE",
-                start_date.strftime("%Y-%m-%d"),
-                end_date.strftime("%Y-%m-%d"),
-            )
-
-            if move_data and move_data.get("latest_value") not in (None, ".", ""):
-                move_value = float(move_data["latest_value"])
-            else:
-                # Default to moderate level if unavailable
-                logger.info("MOVE Index not available from FRED, using default 90")
-                move_value = 90.0
-
-        except Exception as e:
-            logger.warning(f"Failed to fetch MOVE Index: {e}, using default 90")
-            move_value = 90.0
-
-        # Determine regime
-        if move_value < self.MOVE_LOW_VOL_THRESHOLD:
-            regime = RateVolatilityRegime.LOW
-            logger.info(f"MOVE Index ({move_value:.0f}) LOW → Safe to extend duration")
-        elif move_value > self.MOVE_HIGH_VOL_THRESHOLD:
-            regime = RateVolatilityRegime.HIGH
-            logger.info(f"MOVE Index ({move_value:.0f}) HIGH → Reduce duration exposure")
-        else:
-            regime = RateVolatilityRegime.NORMAL
-            logger.info(f"MOVE Index ({move_value:.0f}) NORMAL → Standard allocation")
-
-        return move_value, regime
-
-    def apply_move_adjustment(
-        self, allocation: dict[str, float], move_regime: RateVolatilityRegime
-    ) -> dict[str, float]:
-        """
-        Adjust allocation based on MOVE Index volatility regime.
-
-        Args:
-            allocation: Base allocation percentages
-            move_regime: Current rate volatility regime
-
-        Returns:
-            dict: Adjusted allocation percentages
-        """
-        if move_regime == RateVolatilityRegime.LOW:
-            # Increase duration - boost TLT/ZROZ allocation
-            multiplier = self.MOVE_DURATION_ADJUSTMENTS["low"]
-            logger.info(f"LOW rate vol: Boosting long duration by {(multiplier - 1) * 100:.0f}%")
-        elif move_regime == RateVolatilityRegime.HIGH:
-            # Reduce duration - cut TLT/ZROZ, shift to SHY
-            multiplier = self.MOVE_DURATION_ADJUSTMENTS["high"]
-            logger.info(f"HIGH rate vol: Reducing long duration by {(1 - multiplier) * 100:.0f}%")
-        else:
-            multiplier = self.MOVE_DURATION_ADJUSTMENTS["normal"]
-
-        adjusted = allocation.copy()
-
-        # Adjust TLT allocation
-        tlt_adjustment = adjusted.get("TLT", 0) * (multiplier - 1)
-        adjusted["TLT"] = adjusted.get("TLT", 0) * multiplier
-
-        # If reducing duration, shift excess to SHY
-        if move_regime == RateVolatilityRegime.HIGH:
-            shy_boost = -tlt_adjustment  # tlt_adjustment is negative
-            adjusted["SHY"] = adjusted.get("SHY", 0) + shy_boost
-
-        # Normalize to ensure sum = 1.0
-        total = sum(adjusted.values())
-        if total > 0:
-            adjusted = {k: v / total for k, v in adjusted.items()}
-
-        return adjusted
-
-    def get_optimal_allocation(self) -> TreasuryAllocation:
-        """
-        Determine optimal allocation based on current yield curve, rate volatility,
-        and steepener signals.
-
-        Enhanced logic:
-        1. Analyze yield curve regime (normal/flat/inverted)
-        2. Check for steepener signal (2s10s < 0.2%)
-        3. Get MOVE Index for rate volatility adjustment
-        4. Select dynamic long ETF (TLT vs ZROZ based on 10Y yield)
-        5. Apply all adjustments to create final allocation
+            macro_context: Optional dictionary with macro state ('DOVISH', 'HAWKISH').
 
         Returns:
             TreasuryAllocation dataclass with allocation percentages and metadata
-
-        Example:
-            >>> strategy = TreasuryLadderStrategy()
-            >>> allocation = strategy.get_optimal_allocation()
-            >>> print(f"SHY: {allocation.shy_pct*100:.0f}%, Long ETF: {allocation.long_etf}")
         """
-        logger.info("=" * 60)
-        logger.info("Calculating optimal treasury allocation (enhanced)...")
+        logger.info("Calculating optimal treasury allocation...")
 
-        # Step 1: Analyze yield curve
+        # 1. Analyze yield curve to get base allocation
         regime, spread, rationale = self.analyze_yield_curve()
 
-        # Step 2: Check steepener signal
-        steepener_active, steepener_extra = self.check_steepener_signal(spread)
-
-        # Step 3: Get MOVE Index and rate volatility regime
-        move_value, move_regime = self.get_move_index()
-
-        # Step 4: Get 10Y yield and select long ETF (TLT vs ZROZ)
-        yield_10y = self.get_10y_yield()
-        long_etf = self.select_long_etf(yield_10y)
-
-        # Step 5: Select base allocation based on yield curve regime
         if regime == YieldCurveRegime.INVERTED:
             allocation_dict = self.ALLOCATION_INVERTED.copy()
         elif regime == YieldCurveRegime.FLAT:
@@ -551,75 +314,59 @@ class TreasuryLadderStrategy:
         else:  # NORMAL
             allocation_dict = self.ALLOCATION_NORMAL.copy()
 
-        # Step 6: Apply steepener override if active
-        if steepener_active:
-            # Reduce SHY and IEF proportionally to fund extra long exposure
-            shy_reduction = steepener_extra * 0.6  # 60% from SHY
-            ief_reduction = steepener_extra * 0.4  # 40% from IEF
-            allocation_dict["SHY"] = max(0.10, allocation_dict["SHY"] - shy_reduction)
-            allocation_dict["IEF"] = max(0.10, allocation_dict["IEF"] - ief_reduction)
-            allocation_dict["TLT"] = allocation_dict["TLT"] + steepener_extra
-            logger.info(
-                f"Steepener override applied: TLT boosted to {allocation_dict['TLT'] * 100:.0f}%"
-            )
+        # 2. Adjust allocation based on macro context
+        if macro_context and macro_context.get("state") in ["DOVISH", "HAWKISH"]:
+            macro_state = macro_context["state"]
+            shift_pct = 0.20  # Shift 20% of allocation
+            logger.info(f"Adjusting treasury allocation based on {macro_state} macro context.")
 
-        # Step 7: Apply MOVE Index adjustment
-        if move_regime != RateVolatilityRegime.NORMAL:
-            allocation_dict = self.apply_move_adjustment(allocation_dict, move_regime)
+            if macro_state == "DOVISH":
+                # Favor long-duration bonds (TLT) if rate cuts are expected
+                shift_from_shy = min(allocation_dict["SHY"], shift_pct)
+                allocation_dict["SHY"] -= shift_from_shy
+                allocation_dict["TLT"] += shift_from_shy
+                rationale += (
+                    f" Macro: DOVISH outlook shifts {shift_from_shy * 100:.0f}% to long-duration."
+                )
+            elif macro_state == "HAWKISH":
+                # Favor short-duration bonds (SHY) if rate hikes are expected
+                shift_from_tlt = min(allocation_dict["TLT"], shift_pct)
+                allocation_dict["TLT"] -= shift_from_tlt
+                allocation_dict["SHY"] += shift_from_tlt
+                rationale += (
+                    f" Macro: HAWKISH outlook shifts {shift_from_tlt * 100:.0f}% to short-duration."
+                )
 
-        # Normalize to ensure sum = 1.0
-        total = sum(allocation_dict.values())
-        if abs(total - 1.0) > 0.001:
-            allocation_dict = {k: v / total for k, v in allocation_dict.items()}
-
-        # Build enhanced rationale
-        enhanced_rationale = (
-            f"{rationale} | "
-            f"Long ETF: {long_etf} (10Y={yield_10y:.2f}%) | "
-            f"MOVE: {move_value:.0f} ({move_regime.value})"
-        )
-        if steepener_active:
-            enhanced_rationale += f" | STEEPENER ACTIVE (+{steepener_extra * 100:.0f}% long)"
-
-        # Create allocation object with all enhancements
+        # Create allocation object
         allocation = TreasuryAllocation(
             shy_pct=allocation_dict["SHY"],
             ief_pct=allocation_dict["IEF"],
             tlt_pct=allocation_dict["TLT"],
             regime=regime,
             spread=spread,
-            rationale=enhanced_rationale,
+            rationale=rationale,
             timestamp=datetime.now(),
-            long_etf=long_etf,
-            govt_pct=self.GOVT_CORE_ALLOCATION,
-            steepener_active=steepener_active,
-            steepener_extra_pct=steepener_extra,
         )
 
-        logger.info("=" * 60)
-        logger.info("ENHANCED TREASURY ALLOCATION:")
-        logger.info(f"  GOVT (fixed core): {allocation.govt_pct * 100:.0f}%")
-        logger.info(f"  SHY (short): {allocation.shy_pct * 100:.0f}%")
-        logger.info(f"  IEF (intermediate): {allocation.ief_pct * 100:.0f}%")
-        logger.info(f"  {allocation.long_etf} (long): {allocation.tlt_pct * 100:.0f}%")
-        logger.info(f"  Regime: {regime.value} | Spread: {spread:.2f}%")
-        logger.info(f"  Steepener: {'ACTIVE' if steepener_active else 'inactive'}")
-        logger.info("=" * 60)
+        logger.info(
+            f"Optimal allocation: SHY={allocation.shy_pct * 100:.0f}%, "
+            f"IEF={allocation.ief_pct * 100:.0f}%, TLT={allocation.tlt_pct * 100:.0f}%"
+        )
 
         return allocation
 
-    def execute_daily(self, amount: Optional[float] = None) -> dict[str, Any]:
+    def execute_daily(
+        self, amount: Optional[float] = None, macro_context: dict | None = None
+    ) -> dict[str, Any]:
         """
-        Execute daily investment across enhanced treasury ladder.
+        Execute daily investment across treasury ladder.
 
-        Enhanced execution with:
-        1. Fixed 25% GOVT allocation (intermediate treasury for stable carry)
-        2. Dynamic long ETF selection (TLT vs ZROZ based on 10Y yield)
-        3. Steepener override when 2s10s spread < 0.2%
-        4. MOVE Index adjustment for rate volatility
+        Distributes the daily investment amount across SHY, IEF, and TLT
+        according to the optimal allocation determined by yield curve analysis.
 
         Args:
             amount: Dollar amount to invest (default: self.daily_allocation)
+            macro_context: Optional dictionary with macro state for allocation adjustment.
 
         Returns:
             Dictionary containing execution results:
@@ -627,16 +374,11 @@ class TreasuryLadderStrategy:
                 - allocation: TreasuryAllocation used
                 - total_invested: Total amount invested
                 - success: Whether execution succeeded
-
-        Example:
-            >>> strategy = TreasuryLadderStrategy(daily_allocation=10.0)
-            >>> result = strategy.execute_daily()
-            >>> print(f"Invested ${result['total_invested']:.2f} in {result['allocation'].long_etf}")
         """
         amount = amount or self.daily_allocation
 
         logger.info("=" * 80)
-        logger.info("Starting ENHANCED Treasury Ladder daily execution")
+        logger.info("Starting Treasury Ladder daily execution")
         logger.info(f"Investment amount: ${amount:.2f}")
 
         if not self.alpaca_trader:
@@ -650,43 +392,27 @@ class TreasuryLadderStrategy:
             }
 
         try:
-            # Get optimal allocation (includes dynamic ETF selection, steepener, MOVE)
-            allocation = self.get_optimal_allocation()
+            # Get optimal allocation, now with macro context
+            allocation = self.get_optimal_allocation(macro_context=macro_context)
 
             # Calculate dollar amounts for each ETF
-            # GOVT gets fixed 25% core allocation
-            govt_amount = amount * allocation.govt_pct
+            shy_amount = amount * allocation.shy_pct
+            ief_amount = amount * allocation.ief_pct
+            tlt_amount = amount * allocation.tlt_pct
 
-            # Remaining 75% goes to the dynamic ladder (SHY, IEF, TLT/ZROZ)
-            ladder_amount = amount * (1 - allocation.govt_pct)
-            shy_amount = ladder_amount * allocation.shy_pct
-            ief_amount = ladder_amount * allocation.ief_pct
-            long_amount = ladder_amount * allocation.tlt_pct
-
-            # Use dynamic long ETF (TLT or ZROZ)
-            long_etf = allocation.long_etf
-
-            logger.info("=" * 60)
-            logger.info("ALLOCATION BREAKDOWN:")
-            logger.info(f"  GOVT (fixed core): ${govt_amount:.2f} (25%)")
-            logger.info(f"  SHY (short): ${shy_amount:.2f}")
-            logger.info(f"  IEF (intermediate): ${ief_amount:.2f}")
-            logger.info(f"  {long_etf} (long): ${long_amount:.2f}")
-            logger.info("=" * 60)
+            logger.info(
+                f"Allocating: SHY=${shy_amount:.2f}, IEF=${ief_amount:.2f}, TLT=${tlt_amount:.2f}"
+            )
 
             # Execute orders
             orders = []
             total_invested = 0.0
 
-            # Order execution list with dynamic long ETF
-            execution_list = [
-                ("GOVT", govt_amount),  # Fixed 25% core
+            for symbol, invest_amount in [
                 ("SHY", shy_amount),
                 ("IEF", ief_amount),
-                (long_etf, long_amount),  # Dynamic: TLT or ZROZ
-            ]
-
-            for symbol, invest_amount in execution_list:
+                ("TLT", tlt_amount),
+            ]:
                 if invest_amount > 0.01:  # Skip if less than 1 cent
                     try:
                         order = self.alpaca_trader.execute_order(
@@ -714,14 +440,9 @@ class TreasuryLadderStrategy:
             # Update total invested
             self.total_invested += total_invested
 
-            logger.info("=" * 60)
             logger.info(
                 f"Daily execution complete: {len(orders)} orders, ${total_invested:.2f} invested"
             )
-            logger.info(f"Long ETF used: {long_etf}")
-            if allocation.steepener_active:
-                logger.info("STEEPENER OVERRIDE was active - extra long exposure")
-            logger.info("=" * 60)
 
             return {
                 "orders": orders,
@@ -729,8 +450,6 @@ class TreasuryLadderStrategy:
                 "total_invested": total_invested,
                 "success": len(orders) > 0,
                 "timestamp": datetime.now().isoformat(),
-                "long_etf": long_etf,
-                "steepener_active": allocation.steepener_active,
             }
 
         except Exception as e:
@@ -743,24 +462,18 @@ class TreasuryLadderStrategy:
                 "error": str(e),
             }
 
-    def rebalance_if_needed(self) -> Optional[RebalanceDecision]:
+    def rebalance_if_needed(self, macro_context: dict | None = None) -> Optional[RebalanceDecision]:
         """
         Check if rebalancing is needed and execute if necessary.
 
         Compares current holdings to target allocation. If any position
         drifts more than rebalance_threshold (default 5%), triggers a rebalance.
 
+        Args:
+            macro_context: Optional dictionary with macro state for allocation adjustment.
+
         Returns:
             RebalanceDecision if rebalance was checked, None if skipped
-
-        Raises:
-            Exception: If critical rebalancing error occurs
-
-        Example:
-            >>> strategy = TreasuryLadderStrategy()
-            >>> decision = strategy.rebalance_if_needed()
-            >>> if decision and decision.should_rebalance:
-            ...     print(f"Rebalanced: {decision.reason}")
         """
         logger.info("Checking if rebalancing needed...")
 
@@ -802,8 +515,8 @@ class TreasuryLadderStrategy:
                 for symbol in self.etf_symbols
             }
 
-            # Get target allocation
-            target_alloc_obj = self.get_optimal_allocation()
+            # Get target allocation, now with macro context
+            target_alloc_obj = self.get_optimal_allocation(macro_context=macro_context)
             target_allocation = {
                 "SHY": target_alloc_obj.shy_pct,
                 "IEF": target_alloc_obj.ief_pct,
