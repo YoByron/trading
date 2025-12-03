@@ -67,7 +67,8 @@ repos:
       - id: validate-yaml-strict
         name: Strict YAML Validation
         entry: bash scripts/validate_yaml_before_commit.sh
-        language: system
+        language: python
+        additional_dependencies: [pyyaml]
         types: [yaml]
         pass_filenames: false
         verbose: true
