@@ -4,7 +4,8 @@ from typing import Any
 
 from mcp.client import MCPClient, default_client
 
-SERVER_ID = "alpaca-trading"
+# Official Alpaca MCP server id
+SERVER_ID = "alpaca"
 
 
 def _client(client: MCPClient | None) -> MCPClient:
@@ -22,11 +23,12 @@ def submit_order(
     client: MCPClient | None = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
+    # Map to official Alpaca MCP tool: submit_order(symbol, side, qty, type, time_in_force, extended_hours)
     payload = {
         "symbol": symbol,
         "side": side,
         "qty": qty,
-        "order_type": order_type,
+        "type": order_type,
         "time_in_force": time_in_force,
         "extended_hours": extended_hours,
         **kwargs,
@@ -38,7 +40,7 @@ def get_positions(
     *,
     client: MCPClient | None = None,
 ) -> dict[str, Any]:
-    return _client(client).call_tool(SERVER_ID, "get_positions", {})
+    return _client(client).call_tool(SERVER_ID, "get_all_positions", {})
 
 
 def get_clock(
@@ -52,4 +54,4 @@ def get_account(
     *,
     client: MCPClient | None = None,
 ) -> dict[str, Any]:
-    return _client(client).call_tool(SERVER_ID, "get_account", {})
+    return _client(client).call_tool(SERVER_ID, "get_account_info", {})
