@@ -69,7 +69,7 @@ langchain-core==0.3.80
 langchain-anthropic==0.3.22
 langchain-community==0.3.31
 langgraph==0.2.76
-langsmith==0.3.50  # LangSmith monitoring for RL training (compatible with langchain-core 0.3.80)
+langsmith==0.3.45  # LangSmith monitoring pinned to available 0.3.x release
 
 # Dashboard
 streamlit>=1.29.0
