@@ -6,10 +6,9 @@ Prevents wasted execution time on broken credentials.
 
 import os
 import sys
-from typing import List, Tuple
 
 
-def validate_secrets() -> Tuple[bool, List[str]]:
+def validate_secrets() -> tuple[bool, list[str]]:
     """Validate required secrets are present and non-empty."""
 
     # Critical secrets required for trading

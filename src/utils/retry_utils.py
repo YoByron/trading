@@ -7,7 +7,7 @@ Prevents transient failures from causing workflow failures.
 import logging
 import time
 from functools import wraps
-from typing import Any, Callable, List, Type
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def exponential_retry(
     max_attempts: int = 4,
     base_delay: float = 1.0,
     max_delay: float = 16.0,
-    retryable_exceptions: List[Type[Exception]] = None,
+    retryable_exceptions: list[type[Exception]] | None = None,
     backoff_multiplier: float = 2.0,
 ):
     """
@@ -143,7 +143,7 @@ def fetch_with_retry(url: str, timeout: float = 10.0) -> Any:
 def check_api_health(api_name: str, check_func: Callable) -> bool:
     """Check API health with retry logic."""
     try:
-        result = check_func()
+        check_func()
         logger.info(f"{api_name} health check passed")
         return True
     except Exception as e:
