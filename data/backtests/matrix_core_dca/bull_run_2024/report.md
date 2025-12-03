@@ -6,31 +6,45 @@ PERIOD INFORMATION
 --------------------------------------------------------------------------------
 Start Date:        2024-01-02
 End Date:          2024-03-29
-Trading Days:      0
+Trading Days:      64
 
 CAPITAL & RETURNS
 --------------------------------------------------------------------------------
 Initial Capital:   $100,000.00
-Final Capital:     $100,000.00
-Total Return:      $0.00 (0.00%)
-Annualized Return: 0.00%
+Final Capital:     $100,024.68
+Total Return:      $24.68 (0.02%)
+Annualized Return: 0.10%
 
 RISK METRICS
 --------------------------------------------------------------------------------
-Sharpe Ratio:      0.00
-Max Drawdown:      0.00%
-Volatility:        0.00%
+Sharpe Ratio:      -72.35
+Max Drawdown:      0.01%
+Volatility:        0.05%
+
+EXECUTION COSTS
+--------------------------------------------------------------------------------
+Slippage Model:    Enabled
+Total Slippage:    $0.07
+Slippage % of PnL: 0.28%
 
 TRADE STATISTICS
 --------------------------------------------------------------------------------
-Total Trades:      0
-Profitable Trades: 0
-Losing Trades:     0
-Win Rate:          0.00%
+Total Trades:      64
+Profitable Trades: 56
+Losing Trades:     8
+Win Rate:          51.56%
 Avg Trade Return:  0.00%
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
-Overall Rating:    NEEDS IMPROVEMENT
+Overall Rating:    FAIR
+
+RECENT TRADES (Last 5)
+--------------------------------------------------------------------------------
+  2024-03-25: BUY QQQ @ $446.42 ($10.00)
+  2024-03-26: BUY QQQ @ $444.80 ($10.00)
+  2024-03-27: BUY SPY @ $518.85 ($10.00)
+  2024-03-28: BUY SPY @ $523.21 ($10.00)
+  2024-03-29: BUY VOO @ $480.77 ($10.00)
 
 ================================================================================

@@ -6,31 +6,45 @@ PERIOD INFORMATION
 --------------------------------------------------------------------------------
 Start Date:        2020-02-03
 End Date:          2020-05-29
-Trading Days:      0
+Trading Days:      85
 
 CAPITAL & RETURNS
 --------------------------------------------------------------------------------
 Initial Capital:   $100,000.00
-Final Capital:     $100,000.00
-Total Return:      $0.00 (0.00%)
-Annualized Return: 0.00%
+Final Capital:     $100,123.17
+Total Return:      $123.17 (0.12%)
+Annualized Return: 0.37%
 
 RISK METRICS
 --------------------------------------------------------------------------------
-Sharpe Ratio:      0.00
-Max Drawdown:      0.00%
-Volatility:        0.00%
+Sharpe Ratio:      -13.82
+Max Drawdown:      0.11%
+Volatility:        0.26%
+
+EXECUTION COSTS
+--------------------------------------------------------------------------------
+Slippage Model:    Enabled
+Total Slippage:    $0.31
+Slippage % of PnL: 0.25%
 
 TRADE STATISTICS
 --------------------------------------------------------------------------------
-Total Trades:      0
-Profitable Trades: 0
-Losing Trades:     0
-Win Rate:          0.00%
+Total Trades:      85
+Profitable Trades: 71
+Losing Trades:     14
+Win Rate:          52.94%
 Avg Trade Return:  0.00%
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
-Overall Rating:    NEEDS IMPROVEMENT
+Overall Rating:    FAIR
+
+RECENT TRADES (Last 5)
+--------------------------------------------------------------------------------
+  2020-05-25: BUY QQQ @ $229.69 ($15.00)
+  2020-05-26: BUY QQQ @ $229.69 ($15.00)
+  2020-05-27: BUY QQQ @ $229.07 ($15.00)
+  2020-05-28: BUY QQQ @ $230.32 ($15.00)
+  2020-05-29: BUY QQQ @ $230.02 ($15.00)
 
 ================================================================================
