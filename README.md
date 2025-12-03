@@ -108,6 +108,7 @@ PYTHONPATH=src python3 scripts/options_profit_planner.py --target-daily 10
 - **[docs/profit-optimization.md](docs/profit-optimization.md)** - Cost optimization strategies (OpenRouter, High-Yield Cash, batching)
 - **[docs/day_trading_support.md](docs/day_trading_support.md)** - Agentic coaching/study/newsletter orchestration for trader readiness
 - **[docs/options-profit-roadmap.md](docs/options-profit-roadmap.md)** - Options income plan + instrumentation for the $10/day directive
+- **[docs/ops/RUNBOOK.md](docs/ops/RUNBOOK.md)** - Operations runbook for paper/live trading (NEW 2025-12-03)
 
 These documents contain critical protocols and context for understanding how the system operates, what phase we're in, and how to verify work properly. All AI agents MUST read verification-protocols.md before making claims about system status or completion.
 
