@@ -51,6 +51,8 @@ def load_json_file(filepath: Path) -> dict:
 
 def calculate_metrics():
     """Calculate all metrics for dashboard."""
+    # Detect staleness threshold (hours)
+    STALE_HOURS = 24
     # Load challenge data
     challenge_file = DATA_DIR / "challenge_start.json"
     if challenge_file.exists():
@@ -73,7 +75,8 @@ def calculate_metrics():
         starting_balance = 100000.0
 
     # Load system state
-    system_state = load_json_file(DATA_DIR / "system_state.json")
+    system_state_path = DATA_DIR / "system_state.json"
+    system_state = load_json_file(system_state_path)
     account = system_state.get("account", {})
     current_equity = account.get("current_equity", starting_balance)
     total_pl = account.get("total_pl", 0.0)
@@ -120,6 +123,23 @@ def calculate_metrics():
     automation = system_state.get("automation", {})
     automation_status = automation.get("workflow_status", "UNKNOWN")
     last_execution = automation.get("last_successful_execution", "Never")
+
+    # Staleness detection
+    stale_reason = None
+    last_updated_str = system_state.get("meta", {}).get("last_updated")
+    if last_updated_str:
+        try:
+            last_dt = datetime.fromisoformat(last_updated_str.replace("Z", "+00:00"))
+            age_hours = (datetime.now() - last_dt).total_seconds() / 3600
+            if age_hours > STALE_HOURS:
+                stale_reason = f"Data stale: system_state last updated {age_hours:.1f}h ago ({last_updated_str})"
+        except Exception:
+            pass
+    else:
+        stale_reason = "Data stale: system_state missing last_updated timestamp"
+
+    if (not perf_log) and stale_reason is None:
+        stale_reason = "Data stale: no performance_log.json entries"
 
     # Get recent trades
     today_trades_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
@@ -180,6 +200,7 @@ def calculate_metrics():
         "today_pl": today_pl,
         "today_pl_pct": today_pl_pct,
         "today_perf_available": today_perf is not None,
+        "stale_reason": stale_reason,
     }
 
 
@@ -291,9 +312,13 @@ def generate_dashboard() -> str:
     journal = world_class_metrics.get("trading_journal", {})
     compliance = world_class_metrics.get("compliance", {})
 
+    stale_banner = ""
+    if basic_metrics.get("stale_reason"):
+        stale_banner = f"\n> ⚠️ **Data stale**: {basic_metrics['stale_reason']}\n\n"
+
     dashboard = f"""# 📊 Progress Dashboard
 
-**Last Updated**: {now.strftime("%Y-%m-%d %I:%M %p ET")}
+{stale_banner}**Last Updated**: {now.strftime("%Y-%m-%d %I:%M %p ET")}
 **Auto-Updated**: Daily via GitHub Actions
 
 ---

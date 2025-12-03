@@ -61,8 +61,7 @@ jobs:
         id: validate_secrets
         run: |
           echo "🔑 Validating required secrets..."
-          python3 scripts/validate_secrets.py
-          echo "secrets_valid=true" >> $GITHUB_OUTPUT
+          python3 scripts/validate_secrets.py --gha-output
 
       - name: Run tests
         timeout-minutes: 5
