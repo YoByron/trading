@@ -219,18 +219,18 @@ class RuleOneOptionsStrategy:
     DEFAULT_PE_RATIO_CAP = 50  # Maximum P/E ratio to use
     PROJECTION_YEARS = 10  # Project growth 10 years forward
 
-    # Options parameters
-    MIN_DAYS_TO_EXPIRY = 25
+    # Options parameters (Updated Dec 2, 2025 for wider opportunity discovery)
+    MIN_DAYS_TO_EXPIRY = 7  # Include weeklies (was 25)
     MAX_DAYS_TO_EXPIRY = 50
     # Conservative delta targets (CEO directive Dec 2, 2025)
     # Lower delta = lower risk of assignment, safer for beginners
     TARGET_DELTA_PUT = 0.20  # ~20% chance of assignment (was 0.30)
     TARGET_DELTA_CALL = 0.25  # ~25% chance of being called away (was 0.30)
-    DELTA_TOLERANCE = 0.05  # Allow small variance around target
+    DELTA_TOLERANCE = 0.10  # Allow wider variance for more opportunities (was 0.05)
 
-    # IV Rank filter - only sell premium when IV is low
+    # IV Rank filter - relaxed to find more opportunities during learning phase
     # High IV = expensive options = higher premium but more risk
-    MAX_IV_RANK = 40  # Only sell when IV rank < 40 (options are cheap)
+    MAX_IV_RANK = 50  # Raised from 40 to capture more opportunities
 
     # Premium cap - never receive more than 1.2% of underlying per trade
     MAX_PREMIUM_PCT = 0.012  # 1.2% of stock price max
