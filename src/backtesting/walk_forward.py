@@ -6,7 +6,7 @@ Provides time-aware train/test splits to avoid look-ahead bias and overfitting.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -160,7 +160,7 @@ class WalkForwardValidator:
 
     def run(
         self,
-        model_class: Type,
+        model_class: type,
         data: pd.DataFrame,
         strategy_factory: Optional[Callable] = None,
         **model_kwargs,
