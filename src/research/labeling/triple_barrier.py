@@ -5,9 +5,7 @@ Creates event-based labels using the triple-barrier method.
 """
 
 import logging
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
