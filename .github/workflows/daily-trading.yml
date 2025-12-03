@@ -484,7 +484,9 @@ jobs:
           fi
 
       - name: Commit system state updates
-        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true' && env.ALLOW_STATE_PUSH == '1'
+        env:
+          ALLOW_STATE_PUSH: ${{ secrets.ALLOW_STATE_PUSH || '0' }}
         run: |
           echo "💾 Committing system_state.json updates..."
 
