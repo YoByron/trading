@@ -188,7 +188,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        timeout-minutes: 3
+        timeout-minutes: 12
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
