@@ -46,11 +46,12 @@ jobs:
           ref: main
           fetch-depth: 1
 
+      # Note: pip cache is disabled to avoid large post-job tar uploads that
+      # were cancelling runs on GitHub-hosted runners.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -102,11 +103,12 @@ jobs:
           ref: main
           fetch-depth: 1
 
+      # Note: pip cache is disabled to avoid large post-job tar uploads that
+      # were cancelling runs on GitHub-hosted runners.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Restore backtest cache
         uses: actions/cache@v4
