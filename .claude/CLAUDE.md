@@ -138,53 +138,56 @@ If I catch myself about to suggest manual intervention:
 
 ---
 
-## LOCAL CI VERIFICATION (Effective Dec 2, 2025)
+## Git Worktree Protocol (Multi-Agent Coordination)
 
-**MANDATORY before pushing any PR or branch:**
+**CRITICAL**: Multiple agents may be working on different branches simultaneously. NEVER conflict with other agents' work.
 
-1. **Run ruff lint/format check** (fast, always):
+### Worktree Rules
+
+1. **Always Use Git Worktrees for Branch Work**
    ```bash
-   uvx ruff check . && uvx ruff format --check .
+   # Create new worktree for feature branch
+   git worktree add ../trading-feature-name -b claude/feature-name
+
+   # Work in isolated directory
+   cd ../trading-feature-name
+   # Make changes, commit, push
+
+   # Clean up when done
+   git worktree remove ../trading-feature-name
    ```
 
-2. **Fix any issues before pushing** - don't rely on GitHub CI to catch them
+2. **Why Worktrees Matter**
+   - Multiple agents can work on different branches in parallel
+   - No conflicts from switching branches in main repo
+   - Each worktree has its own working directory
+   - Clean separation of concerns
 
-3. **For significant changes**, run ACT locally:
-   ```bash
-   act -j "Lint & Format" -W .github/workflows/ci.yml --container-architecture linux/amd64
-   ```
+3. **Worktree Best Practices**
+   - Use descriptive branch names: `claude/feature-description-<unique-id>`
+   - Always clean up worktrees when PR is merged
+   - List active worktrees: `git worktree list`
+   - Remove stale worktrees: `git worktree prune`
 
-**Why**: GitHub CI failures waste time and create noise. Catch issues locally first.
+4. **Single Branch Work Exception**
+   - If you're only working on ONE branch in a session, you MAY work directly in main repo
+   - If you need to switch branches or work on multiple features, use worktrees
 
-**Skill Reference**: See `.claude/skills/local_ci_runner/SKILL.md` for full documentation.
+### GitHub PR Creation Protocol
 
----
+**YOU HAVE FULL ACCESS TO `gh` CLI - USE IT!**
 
-## GIT WORKTREE PROTOCOL (Effective Dec 2, 2025)
+```bash
+# Fix for Enterprise Managed User restrictions:
+unset GITHUB_TOKEN && gh auth switch --user IgorGanapolsky
 
-**ALWAYS use git worktrees when working on PRs to avoid conflicts with other agents.**
+# Then create PR:
+gh pr create --base main --head <branch-name> \
+  --title "type: Brief description" \
+  --body "PR description with Summary, Changes, Test Plan"
+```
 
-**Why**: Multiple agents may be working on different branches. Switching branches in the main repo can cause conflicts and lost work.
-
-**Protocol**:
-1. **Create worktree for PR work**:
-   ```bash
-   git worktree add ../trading-pr-XX pr-branch-name
-   cd ../trading-pr-XX
-   ```
-
-2. **Do all PR work in the worktree** - don't switch branches in main repo
-
-3. **Clean up after PR is merged**:
-   ```bash
-   git worktree remove ../trading-pr-XX
-   ```
-
-**Benefits**:
-- Isolated work environment per PR
-- No branch switching in main repo
-- Multiple PRs can be worked on in parallel
-- Other agents aren't affected by your branch changes
+**See `.claude/skills/github_pr_manager/skill.md` for full protocol.**
 
 ---
 
