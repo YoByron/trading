@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import holidays
+from src.agents.macro_agent import MacroeconomicAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
@@ -23,6 +24,7 @@ from src.risk.options_risk_monitor import OptionsRiskMonitor
 from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
+from src.strategies.treasury_ladder_strategy import TreasuryLadderStrategy
 from src.utils.regime_detector import RegimeDetector
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ class TradingOrchestrator:
 
         import os as _os
 
+        self.macro_agent = MacroeconomicAgent()
         self.momentum_agent = MomentumAgent(
             min_score=float(_os.getenv("MOMENTUM_MIN_SCORE", "0.0"))
         )
@@ -87,6 +90,7 @@ class TradingOrchestrator:
         self.microstructure = MicrostructureFeatureExtractor()
         self.regime_detector = RegimeDetector()
         self.smart_dca = SmartDCAAllocator()
+        self.treasury_ladder_strategy = TreasuryLadderStrategy(paper=paper)
 
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
@@ -112,6 +116,10 @@ class TradingOrchestrator:
         self.session_profile = session_profile
         self.smart_dca.reset_session(active_tickers)
 
+        # Determine the macro context for this session
+        macro_context = self.macro_agent.get_macro_context()
+        session_profile["macro_context"] = macro_context
+
         self.momentum_agent.configure_regime(session_profile.get("momentum_overrides"))
 
         self.telemetry.record(
@@ -123,6 +131,7 @@ class TradingOrchestrator:
                 "market_day": session_profile["is_market_day"],
                 "tickers": active_tickers,
                 "rl_threshold": session_profile["rl_threshold"],
+                "macro_context": macro_context,
             },
         )
 
@@ -138,11 +147,39 @@ class TradingOrchestrator:
         # Allocate any unused DCA budget into the safety bucket
         self._deploy_safe_reserve()
 
+        # Run portfolio-level strategies
+        self._run_portfolio_strategies()
+
         # Gate 5: Post-execution delta rebalancing
         self.run_delta_rebalancing()
 
         # Gate 6: Phil Town Rule #1 Options Strategy
         self.run_options_strategy()
+
+    def _run_portfolio_strategies(self) -> None:
+        """Run strategies that operate on the portfolio level."""
+        logger.info("--- Running Portfolio-Level Strategies ---")
+        if not self.session_profile:
+            logger.warning("Session profile not available, skipping portfolio strategies.")
+            return
+
+        macro_context = self.session_profile.get("macro_context")
+
+        # --- Treasury Ladder Strategy ---
+        try:
+            treasury_alloc_pct = float(os.getenv("TREASURY_ALLOCATION_PCT", "0.10"))
+            daily_investment = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+            treasury_amount = daily_investment * treasury_alloc_pct
+
+            if treasury_amount >= 1.0:  # Alpaca minimum is $1
+                logger.info(f"Executing Treasury Ladder Strategy with ${treasury_amount:.2f}...")
+                self.treasury_ladder_strategy.execute_daily(
+                    amount=treasury_amount, macro_context=macro_context
+                )
+            else:
+                logger.info("Skipping Treasury Ladder: allocation amount is too small.")
+        except Exception as e:
+            logger.error(f"Failed to run Treasury Ladder Strategy: {e}", exc_info=True)
 
     def _build_session_profile(self) -> dict[str, Any]:
         today = datetime.utcnow().date()
