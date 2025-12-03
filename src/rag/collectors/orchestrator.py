@@ -18,6 +18,12 @@ from src.rag.collectors.stocktwits_collector import StockTwitsCollector
 from src.rag.collectors.tiktok_collector import TikTokCollector
 from src.rag.collectors.yahoo_collector import YahooFinanceCollector
 
+# Actionable trading data collectors
+from src.rag.collectors.options_flow_collector import OptionsFlowCollector
+from src.rag.collectors.finviz_collector import FinvizCollector
+from src.rag.collectors.tradingview_collector import TradingViewCollector
+from src.rag.collectors.earnings_whisper_collector import EarningsWhisperCollector
+
 logger = logging.getLogger(__name__)
 
 # New collectors for comprehensive data coverage
@@ -53,9 +59,11 @@ class NewsOrchestrator:
     - FRED (Federal Reserve Economic Data) - macro indicators
     - SEC 13F (institutional holdings) - smart money tracking
 
-    Future additions:
-    - Bloomberg (web scraping)
-    - Earnings Call Transcripts
+    Actionable Trading Data (added Dec 2025):
+    - Options Flow (unusual activity, smart money signals)
+    - Finviz (screener signals, technical patterns, insider activity)
+    - TradingView (trading ideas, community sentiment)
+    - Earnings Whisper (earnings expectations, whisper numbers)
     """
 
     def __init__(self):
@@ -68,6 +76,11 @@ class NewsOrchestrator:
             "seekingalpha": SeekingAlphaCollector(),
             "stocktwits": StockTwitsCollector(),
             "bogleheads": BogleheadsCollector(),
+            # Actionable trading data collectors
+            "options_flow": OptionsFlowCollector(),
+            "finviz": FinvizCollector(),
+            "tradingview": TradingViewCollector(),
+            "earnings": EarningsWhisperCollector(),
         }
 
         # Add new collectors if available
