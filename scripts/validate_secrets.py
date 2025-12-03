@@ -23,7 +23,7 @@ def validate_secrets() -> tuple[bool, list[str]]:
         "OPENROUTER_API_KEY",
         "ALPHA_VANTAGE_API_KEY",
         "POLYGON_API_KEY",
-        "FINNHUB_API_KEY",
+        "FINNHUB_API_KEY",  # Corrected spelling (was FINHUB_API_KEY)
         "ANTHROPIC_API_KEY",
         "GOOGLE_API_KEY",
     ]
