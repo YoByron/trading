@@ -29,6 +29,17 @@ def _parse_tickers() -> list[str]:
     return [ticker.strip().upper() for ticker in raw.split(",") if ticker.strip()]
 
 
+def calc_daily_input(equity: float) -> float:
+    """
+    Scale the DAILY_INVESTMENT contribution with equity once the base account
+    clears $2k. Caps at $50 to preserve the R&D safety rails.
+    """
+    base = 10.0
+    if equity > 2000:
+        base += 0.2 * (equity / 1000.0)
+    return min(base, 50.0)
+
+
 def is_weekend() -> bool:
     """Check if today is Saturday or Sunday."""
     return datetime.now().weekday() in [5, 6]  # Saturday=5, Sunday=6
@@ -55,6 +66,37 @@ def is_market_holiday() -> bool:
         logger = setup_logging()
         logger.warning(f"Could not check market holiday status: {e}. Assuming not a holiday.")
         return False  # Fail safe: assume not a holiday if check fails
+
+
+def _resolve_account_equity(logger) -> float:
+    """Best-effort lookup of current equity for scaling decisions."""
+    try:
+        from src.core.alpaca_trader import AlpacaTrader
+
+        trader = AlpacaTrader(paper=True)
+        account = trader.get_account_info()
+        return float(account.get("equity") or account.get("portfolio_value") or 0.0)
+    except Exception as exc:  # pragma: no cover - external dependency
+        logger.warning("Could not resolve account equity for scaling: %s", exc)
+        fallback = float(os.getenv("SIMULATED_EQUITY", "100000"))
+        return fallback
+
+
+def _apply_daily_input_scaling(logger) -> None:
+    """Optionally bump DAILY_INVESTMENT based on equity growth."""
+    if not _flag_enabled("ENABLE_DAILY_INPUT_SCALING", "true"):
+        return
+    equity = _resolve_account_equity(logger)
+    if equity <= 0:
+        logger.info("Daily input scaling skipped - unknown equity snapshot.")
+        return
+    scaled = calc_daily_input(equity)
+    os.environ["DAILY_INVESTMENT"] = f"{scaled:.2f}"
+    logger.info(
+        "Daily input auto-scaled to $%.2f (equity=$%.2f). Set ENABLE_DAILY_INPUT_SCALING=false to disable.",
+        scaled,
+        equity,
+    )
 
 
 def crypto_enabled() -> bool:

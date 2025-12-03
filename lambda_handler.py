@@ -1,38 +1,46 @@
-"""AWS Lambda entrypoint for the hybrid trading orchestrator."""
+"""
+AWS Lambda entrypoint for the hybrid trading orchestrator.
+
+This lightweight shim allows us to re-use the same `scripts/autonomous_trader.py`
+flow inside EventBridge/Lambda to guarantee cloud execution even if the primary
+GitHub Actions runner is unavailable.
+"""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-sys.path.append(str(ROOT))
+from dotenv import load_dotenv
 
-from scripts.autonomous_trader import main as orchestrator_main
+WORKSPACE_ROOT = Path(__file__).resolve().parent
+if str(WORKSPACE_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT / "src"))
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
 
-logger = logging.getLogger("lambda_handler")
+from scripts.autonomous_trader import main as run_autonomous_session  # noqa: E402
+
+logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict | None, context: object | None) -> dict[str, str]:
     """
-    AWS Lambda handler that executes the autonomous trader pipeline.
-
-    Returns:
-        dict: API Gateway compatible response payload.
+    AWS Lambda handler compatible with the instructions inside CLOUD_DEPLOYMENT.md.
     """
+    env_path = WORKSPACE_ROOT / ".env"
+    load_dotenv(env_path)  # Safe no-op if file missing
+    os.environ.setdefault("ENABLE_WEEKEND_PROXY", "true")
 
     try:
-        orchestrator_main()
-        return {
-            "statusCode": 200,
-            "body": json.dumps({"message": "Trading execution completed successfully"}),
-        }
-    except Exception as exc:  # pragma: no cover - AWS runtime only
-        logger.exception("Lambda execution failed: %s", exc)
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(exc)}),
-        }
+        logger.info("Lambda trading invocation started (event=%s)", json.dumps(event or {}))
+        run_autonomous_session()
+        logger.info("Lambda trading invocation finished successfully.")
+        return {"statusCode": "200", "body": "Hybrid orchestrator run completed"}
+    except Exception as exc:  # pragma: no cover - cloud runtime diagnostics
+        logger.exception("Lambda trading invocation failed: %s", exc)
+        return {"statusCode": "500", "body": f"Execution failed: {exc}"}
