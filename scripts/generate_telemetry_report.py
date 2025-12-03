@@ -97,7 +97,7 @@ def print_report(
             else "\nAccount Snapshot: unavailable"
         )
     if tax_sweep:
-        print(f"Suggested Tax Sweep ({tax_rate*100:.0f}%): ${tax_sweep:.2f}")
+        print(f"Suggested Tax Sweep ({tax_rate * 100:.0f}%): ${tax_sweep:.2f}")
 
 
 def _current_quarter_start(ref: datetime | None = None) -> datetime:

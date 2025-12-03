@@ -101,14 +101,8 @@ class AdaptiveTradeAuditor:
         if not filtered:
             return None
 
-        gate_failures = [
-            event
-            for event in filtered
-            if event.get("status") in {"reject", "error"}
-        ]
-        execution_events = [
-            event for event in filtered if event.get("event") == "execution.order"
-        ]
+        gate_failures = [event for event in filtered if event.get("status") in {"reject", "error"}]
+        execution_events = [event for event in filtered if event.get("event") == "execution.order"]
 
         try:
             summary = summarize_events(filtered)
