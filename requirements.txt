@@ -65,9 +65,9 @@ stable-baselines3==2.3.2  # 2.3.0 yanked due to PyTorch 1.13 loading issue
 
 # DeepAgents Integration (pinned for numpy<2 and protobuf compatibility - Issue #65)
 langchain>=0.3.0,<0.4.0
-langchain-core>=0.3.0,<0.4.0
+langchain-core>=0.3.80,<0.4.0
 langchain-anthropic>=0.3.0,<0.4.0
-langchain-community>=0.3.0,<0.4.0
+langchain-community>=0.3.27,<0.4.0
 langgraph>=0.2.0,<0.3.0
 langsmith>=0.1.0,<0.2.0  # LangSmith monitoring for RL training
 
@@ -83,3 +83,5 @@ flake8==7.0.0
 bandit==1.7.7
 pre-commit
 sentence-transformers>=2.2.0
+langchain-text-splitters>=0.3.9,<0.4.0
+langgraph-checkpoint>=3.0.0,<3.1.0
