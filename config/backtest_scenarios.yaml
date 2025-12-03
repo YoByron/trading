@@ -66,3 +66,64 @@ scenarios:
     description: >
       Tests performance during elevated VIX and rate hike uncertainty.
       Validates vol-scaled slippage and treasury allocation during stress.
+
+  # Bond-Specific Scenarios
+  - name: bond_bull_2020
+    label: "Treasury bull run (Mar-Aug 2020)"
+    start_date: "2020-03-01"
+    end_date: "2020-08-31"
+    etf_universe: ["TLT", "IEF", "SHY", "BND"]
+    daily_allocation: 10.0
+    description: >
+      Tests treasury ladder performance during flight-to-safety rally.
+      Validates duration rotation and yield curve strategy during crisis.
+
+  - name: bond_bear_2022
+    label: "Treasury crash (Jan-Oct 2022)"
+    start_date: "2022-01-03"
+    end_date: "2022-10-31"
+    etf_universe: ["TLT", "IEF", "SHY", "LQD", "JNK"]
+    daily_allocation: 10.0
+    description: >
+      Stress test for worst bond market in 40 years (rate hikes).
+      Validates duration-adjusted stops and short-duration rotation.
+
+  - name: yield_curve_inversion_2023
+    label: "Yield curve inversion regime (Jan-Dec 2023)"
+    start_date: "2023-01-01"
+    end_date: "2023-12-29"
+    etf_universe: ["SHY", "IEF", "TLT"]
+    daily_allocation: 10.0
+    description: >
+      Tests yield curve strategy during sustained inversion.
+      Validates short-duration preference and ladder rebalancing.
+
+  - name: credit_stress_2020
+    label: "Credit spread blowout (Feb-Apr 2020)"
+    start_date: "2020-02-01"
+    end_date: "2020-04-30"
+    etf_universe: ["LQD", "JNK", "HYG", "TLT"]
+    daily_allocation: 10.0
+    description: >
+      Tests corporate bond risk management during credit stress.
+      Validates high-yield limits and flight-to-quality rotation.
+
+  - name: bond_steepener_2021
+    label: "Yield curve steepening (Jan-Mar 2021)"
+    start_date: "2021-01-01"
+    end_date: "2021-03-31"
+    etf_universe: ["SHY", "TLT", "IEF"]
+    daily_allocation: 10.0
+    description: >
+      Tests barbell strategy during curve steepening.
+      Validates long-duration allocation during bullish steepener.
+
+  - name: mixed_asset_2024
+    label: "Mixed equity/bond allocation (Jan-Jun 2024)"
+    start_date: "2024-01-02"
+    end_date: "2024-06-28"
+    etf_universe: ["SPY", "QQQ", "TLT", "SHY", "LQD"]
+    daily_allocation: 10.0
+    description: >
+      Tests 60/40-style mixed allocation with bond ladder.
+      Validates correlation benefits and rebalancing triggers.
