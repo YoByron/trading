@@ -6,6 +6,8 @@ This module provides lightweight risk tools for the hybrid funnel pipeline:
 - SlippageModel: Execution cost modeling
 - VaRCalculator: Value at Risk calculations
 - RiskMonitor: Real-time risk monitoring with alerts
+- TargetAlignedSizer: Position sizing aligned with $100/day target
+- DailyLossLimiter: Circuit breakers for daily loss limits
 
 Note: For comprehensive risk management with circuit breakers, behavioral
 finance, and drawdown tracking, use src/core/risk_manager.RiskManager instead.
@@ -37,6 +39,14 @@ with contextlib.suppress(ImportError):
         get_risk_monitor,
     )
 
+with contextlib.suppress(ImportError):
+    from src.risk.target_aligned_sizing import (
+        TargetAlignedSizer,
+        DailyLossLimiter,
+        PositionSizeResult,
+        create_target_aligned_sizer,
+    )
+
 __all__ = [
     "RiskManager",
     "SlippageModel",
@@ -47,4 +57,8 @@ __all__ = [
     "VaRResult",
     "RiskMonitor",
     "RiskAlert",
+    "TargetAlignedSizer",
+    "DailyLossLimiter",
+    "PositionSizeResult",
+    "create_target_aligned_sizer",
 ]
