@@ -9,8 +9,71 @@ import hashlib
 import json
 import sys
 import time
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
+
+import numpy as np
+
+
+def longest_positive_streak(series: Sequence[float]) -> int:
+    """Return the longest consecutive run of positive values.
+
+    The helper accepts any iterable convertible to a NumPy array, so callers can
+    pass lists or arrays from pandas/NumPy without extra ceremony.
+    """
+
+    arr = np.asarray(series, dtype=float)
+    best = 0
+    current = 0
+
+    for value in arr:
+        if value > 0:
+            current += 1
+            best = max(best, current)
+        else:
+            current = 0
+
+    return int(best)
+
+
+def aggregate_summary(summaries: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate backtest scenario summaries for quick CI assertions.
+
+    Returns a dictionary with an ``aggregate_metrics`` block capturing the
+    minimum/maximum values needed by downstream tests and dashboards. If no
+    summaries are provided, metrics fall back to sensible defaults so the caller
+    can render an informative message instead of crashing.
+    """
+
+    summaries = list(summaries)
+    if not summaries:
+        return {
+            "aggregate_metrics": {
+                "min_win_rate": 0.0,
+                "min_sharpe_ratio": 0.0,
+                "max_drawdown": 0.0,
+                "min_profitable_streak": 0,
+                "passes": 0,
+            },
+            "scenarios": [],
+        }
+
+    win_rates = [s.get("win_rate_pct", 0.0) for s in summaries]
+    sharpe_ratios = [s.get("sharpe_ratio", 0.0) for s in summaries]
+    drawdowns = [s.get("max_drawdown_pct", 0.0) for s in summaries]
+    streaks = [s.get("longest_profitable_streak", 0) for s in summaries]
+    passes = sum(1 for s in summaries if s.get("status") == "pass")
+
+    aggregate_metrics = {
+        "min_win_rate": min(win_rates),
+        "min_sharpe_ratio": min(sharpe_ratios),
+        "max_drawdown": max(drawdowns),
+        "min_profitable_streak": min(streaks),
+        "passes": passes,
+    }
+
+    return {"aggregate_metrics": aggregate_metrics, "scenarios": summaries}
 
 
 def load_config(config_path: Path) -> dict[str, Any]:
