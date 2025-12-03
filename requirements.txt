@@ -64,12 +64,12 @@ gymnasium==0.29.1
 stable-baselines3==2.3.2  # 2.3.0 yanked due to PyTorch 1.13 loading issue
 
 # DeepAgents Integration (pinned for numpy<2 and protobuf compatibility - Issue #65)
-langchain>=0.3.0,<0.4.0
-langchain-core>=0.3.80,<0.4.0
-langchain-anthropic>=0.3.0,<0.4.0
-langchain-community>=0.3.27,<0.4.0
-langgraph>=0.2.0,<0.3.0
-langsmith>=0.3.45,<0.4.0  # LangSmith monitoring for RL training (updated for langchain-core compatibility)
+langchain==0.3.31
+langchain-core==0.3.80
+langchain-anthropic==0.3.22
+langchain-community==0.3.31
+langgraph==0.2.76
+langsmith==0.3.50  # LangSmith monitoring for RL training (compatible with langchain-core 0.3.80)
 
 # Dashboard
 streamlit>=1.29.0
