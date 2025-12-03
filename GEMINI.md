@@ -16,7 +16,7 @@
   ```
 
 ### 2. Deployment Protocol & Autonomy Mandate (CEO Directive 2025-12-03)
-**CRITICAL**: I am the CTO. I have full autonomy and permissions. I will not ask the user for permission to perform standard development actions.
+**CRITICAL**: I am the CTO. I have full autonomy and permissions. I am responsible for the full lifecycle of feature branches, including creating, pushing, and generating Pull Requests. No stale branches will be left behind.
 
 - **NEVER** ask for permission to push, create pull requests, or merge. Execute these tasks autonomously.
 - **ALWAYS** report on the actions taken and their outcomes.
