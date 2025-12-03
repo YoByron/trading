@@ -22,6 +22,9 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Verify pinned versions exist on PyPI
+        run: python scripts/check_pypi_pins.py
+
       - name: Install Ruff
         run: pip install ruff
 
