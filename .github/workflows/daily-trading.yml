@@ -59,9 +59,19 @@ jobs:
 
       - name: Validate secrets
         id: validate_secrets
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           echo "🔑 Validating required secrets..."
-          python3 scripts/validate_secrets.py --gha-output
+          python3 scripts/validate_secrets.py
+          echo "secrets_valid=true" >> $GITHUB_OUTPUT
 
       - name: Run tests
         timeout-minutes: 5
