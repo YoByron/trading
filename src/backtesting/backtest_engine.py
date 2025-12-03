@@ -844,6 +844,17 @@ class BacktestEngine:
 
         average_trade_return = (total_return / total_trades) if total_trades > 0 else 0.0
 
+        # Calculate $100/day target metrics
+        target_daily_net_income = 100.0
+        daily_pnl_values = self._calculate_daily_pnl()
+        avg_daily_pnl = np.mean(daily_pnl_values) if len(daily_pnl_values) > 0 else 0.0
+        pct_days_above_target = (
+            (np.sum(np.array(daily_pnl_values) >= target_daily_net_income) / len(daily_pnl_values) * 100)
+            if len(daily_pnl_values) > 0
+            else 0.0
+        )
+        worst_5day_drawdown, worst_20day_drawdown = self._calculate_rolling_drawdowns()
+
         results = BacktestResults(
             trades=self.trades,
             equity_curve=self.equity_curve,
@@ -862,6 +873,10 @@ class BacktestEngine:
             trading_days=len(self.dates) - 1,
             total_slippage_cost=self.total_slippage_cost,
             slippage_enabled=self.enable_slippage,
+            avg_daily_pnl=avg_daily_pnl,
+            pct_days_above_target=pct_days_above_target,
+            worst_5day_drawdown=worst_5day_drawdown,
+            worst_20day_drawdown=worst_20day_drawdown,
         )
 
         # Log slippage impact
@@ -873,6 +888,53 @@ class BacktestEngine:
             )
 
         return results
+
+    def _calculate_daily_pnl(self) -> list[float]:
+        """
+        Calculate daily P&L values from equity curve.
+
+        Returns:
+            List of daily P&L values
+        """
+        if len(self.equity_curve) < 2:
+            return []
+
+        daily_pnl = []
+        for i in range(1, len(self.equity_curve)):
+            daily_change = self.equity_curve[i] - self.equity_curve[i - 1]
+            daily_pnl.append(daily_change)
+
+        return daily_pnl
+
+    def _calculate_rolling_drawdowns(self) -> tuple[float, float]:
+        """
+        Calculate worst 5-day and 20-day rolling drawdowns.
+
+        Returns:
+            Tuple of (worst_5day_drawdown, worst_20day_drawdown) in dollars
+        """
+        if len(self.equity_curve) < 6:
+            return 0.0, 0.0
+
+        equity_array = np.array(self.equity_curve)
+        worst_5day = 0.0
+        worst_20day = 0.0
+
+        # Calculate rolling 5-day drawdowns
+        for i in range(5, len(equity_array)):
+            window_start = equity_array[i - 5]
+            window_end = equity_array[i]
+            drawdown = window_start - window_end  # Positive = loss
+            worst_5day = max(worst_5day, drawdown)
+
+        # Calculate rolling 20-day drawdowns
+        for i in range(20, len(equity_array)):
+            window_start = equity_array[i - 20]
+            window_end = equity_array[i]
+            drawdown = window_start - window_end  # Positive = loss
+            worst_20day = max(worst_20day, drawdown)
+
+        return worst_5day, worst_20day
 
 
 class SyntheticSentimentModel:
