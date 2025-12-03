@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Iterable
 
 import yaml
 
@@ -19,7 +19,7 @@ class StrategyConfig:
     strategy_id: str
     label: str
     description: str | None
-    stages: Dict[str, StageConfig]
+    stages: dict[str, StageConfig]
 
 
 class StrategyRegistry:
@@ -36,17 +36,17 @@ class StrategyRegistry:
             )
         self._strategies = self._load()
 
-    def _load(self) -> Dict[str, StrategyConfig]:
+    def _load(self) -> dict[str, StrategyConfig]:
         with self.registry_path.open("r", encoding="utf-8") as handle:
             payload = yaml.safe_load(handle) or {}
         strategies = payload.get("strategies")
         if not strategies:
             raise ValueError(f"No strategies defined in {self.registry_path}")
 
-        parsed: Dict[str, StrategyConfig] = {}
+        parsed: dict[str, StrategyConfig] = {}
         for strategy_id, cfg in strategies.items():
             stages_payload = cfg.get("stages") or {}
-            stages: Dict[str, StageConfig] = {}
+            stages: dict[str, StageConfig] = {}
             for stage_name, stage_cfg in stages_payload.items():
                 command = stage_cfg.get("command")
                 if not command:
