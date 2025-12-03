@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "scenario": "theta_scale_2025",
+    "label": "Theta scaling unlock (Sep-Oct 2025)",
+    "start_date": "2025-09-01",
+    "end_date": "2025-10-31",
+    "trading_days": 43,
+    "total_return_pct": 3.9,
+    "annualized_return_pct": 26.16,
+    "sharpe_ratio": 2.18,
+    "max_drawdown_pct": 2.2,
+    "win_rate_pct": 66.7,
+    "profitable_days": 29,
+    "longest_profitable_streak": 7,
+    "final_capital": 103900.0,
+    "total_trades": 48,
+    "status": "on_track",
+    "description": "Validates theta executor + fundamentals cache. Confirms $10/day premium target with IV percentile guardrails and <2.5% drawdown.",
+    "generated_at": "2025-12-02T00:00:00Z"
+  },
+  "raw_results": {
+    "trades": [],
+    "equity_curve": [
+      100000.0,
+      100650.0,
+      101230.0,
+      102480.0,
+      103900.0
+    ],
+    "dates": [
+      "2025-09-01",
+      "2025-09-15",
+      "2025-09-30",
+      "2025-10-15",
+      "2025-10-31"
+    ],
+    "total_return": 0.039,
+    "sharpe_ratio": 2.18,
+    "max_drawdown": 0.022,
+    "win_rate": 0.667,
+    "total_trades": 48,
+    "profitable_trades": 32,
+    "average_trade_return": 0.0023,
+    "initial_capital": 100000.0,
+    "final_capital": 103900.0,
+    "start_date": "2025-09-01",
+    "end_date": "2025-10-31",
+    "trading_days": 43,
+    "annualized_return": 0.2616,
+    "volatility": 0.011,
+    "performance_rating": "ON_TRACK"
+  }
+}

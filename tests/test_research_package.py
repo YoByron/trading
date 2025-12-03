@@ -2,11 +2,10 @@
 Tests for the research package.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from pathlib import Path
-import shutil
+import pandas as pd
+import pytest
+
 
 @pytest.fixture
 def sample_ohlcv_data():
@@ -14,7 +13,7 @@ def sample_ohlcv_data():
     dates = pd.date_range("2023-01-01", periods=100, freq="D")
     np.random.seed(42)
     close = 100 + np.random.randn(100).cumsum()
-    
+
     df = pd.DataFrame(
         {
             "Open": close * (1 + np.random.randn(100) * 0.01),
@@ -27,13 +26,14 @@ def sample_ohlcv_data():
     )
     return df
 
+
 class TestFactors:
     """Tests for factor analysis."""
-    
+
     def test_factor_model(self, sample_ohlcv_data):
         """Test factor model creation and analysis."""
-        from src.research.factors import FactorModel, SyntheticFactorGenerator
-        
+        from src.research.factors import SyntheticFactorGenerator
+
         # Generate synthetic factors
         dates = sample_ohlcv_data.index
         prices = pd.DataFrame(
@@ -44,12 +44,13 @@ class TestFactors:
             },
             index=dates,
         )
-        
+
         generator = SyntheticFactorGenerator()
         factors = generator.generate_all_factors(prices, market_symbol="SPY")
-        
+
         assert "market" in factors.columns
         assert len(factors) > 0
+
 
 class TestExperimentTracker:
     """Tests for ExperimentTracker."""
@@ -80,6 +81,7 @@ class TestExperimentTracker:
     def test_model_registry(self, tmp_path):
         """Test model registry."""
         from src.research.experiments import ModelRegistry
+
         # Note: ModelStage might not be available if it wasn't in HEAD, checking imports...
         # If ModelStage is not in src.research.experiments, this test will fail.
         # I'll assume it is or use string literals if possible, but let's try to import it.
@@ -119,7 +121,9 @@ class TestAlpha:
         from src.research.alpha import FeatureLibrary
 
         lib = FeatureLibrary()
-        features = lib.compute_all(sample_ohlcv_data) # HEAD uses compute_all_features, Feat uses compute_all
+        features = lib.compute_all(
+            sample_ohlcv_data
+        )  # HEAD uses compute_all_features, Feat uses compute_all
         # I'll check which one exists. HEAD's integration test uses compute_all_features.
         # I'll try compute_all_features first.
         if hasattr(lib, "compute_all_features"):
@@ -127,7 +131,7 @@ class TestAlpha:
         else:
             features = lib.compute_all(sample_ohlcv_data)
 
-        assert len(features.columns) > 10 # Relaxed check
+        assert len(features.columns) > 10  # Relaxed check
 
     def test_signal_generator(self, sample_ohlcv_data):
         """Test signal generation."""
@@ -138,6 +142,7 @@ class TestAlpha:
             return
 
         from src.research.alpha import FeatureLibrary
+
         lib = FeatureLibrary()
         if hasattr(lib, "compute_all_features"):
             features = lib.compute_all_features(sample_ohlcv_data)
@@ -222,4 +227,4 @@ class TestIntegration:
 
         # 5. Run baselines
         baselines = run_baseline_comparison(sample_ohlcv_data, include_all=False)
-        assert len(baselines) >= 1 # Relaxed check
+        assert len(baselines) >= 1  # Relaxed check

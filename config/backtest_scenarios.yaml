@@ -127,3 +127,12 @@ scenarios:
     description: >
       Tests 60/40-style mixed allocation with bond ladder.
       Validates correlation benefits and rebalancing triggers.
+  - name: theta_scale_2025
+    label: "Theta scaling unlock (Sep-Oct 2025)"
+    start_date: "2025-09-01"
+    end_date: "2025-10-31"
+    daily_allocation: 12.0
+    description: >
+      60-day verification window for the theta automation layer after the
+      fundamentals cache + execution tie-in. Validates that IV-gated covered
+      calls hold a 26% annualized pace with drawdowns capped near 2%.
