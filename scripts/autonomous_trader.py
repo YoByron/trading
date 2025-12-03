@@ -304,13 +304,15 @@ def main() -> None:
     _apply_dynamic_daily_budget(logger)
 
     # Auto-scale daily input if enabled
-    if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {"1", "true", "yes"}:
+    if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
         equity = get_account_equity()
         scaled_input = calc_daily_input(equity)
         os.environ["DAILY_INVESTMENT"] = str(scaled_input)
-        logger.info(
-            f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})"
-        )
+        logger.info(f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})")
 
     crypto_allowed = crypto_enabled()
     is_holiday = is_market_holiday()

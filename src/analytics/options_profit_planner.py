@@ -24,7 +24,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 logger = logging.getLogger(__name__)
 
@@ -377,6 +377,8 @@ class ResolvedOptionContract:
     ask: float | None
     mid: float | None
     simulated: bool = False
+
+
 class ThetaHarvestExecutor:
     """
     Execute theta harvest strategies based on equity gates.
@@ -401,11 +403,16 @@ class ThetaHarvestExecutor:
         self.paper = paper
         self.planner = OptionsProfitPlanner()
         env_flag = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower()
-        self.auto_execute = auto_execute if auto_execute is not None else env_flag in {
-            "1",
-            "true",
-            "yes",
-        }
+        self.auto_execute = (
+            auto_execute
+            if auto_execute is not None
+            else env_flag
+            in {
+                "1",
+                "true",
+                "yes",
+            }
+        )
         if execution_agent:
             self.execution_agent = execution_agent
         elif self.auto_execute:
@@ -582,7 +589,9 @@ class ThetaHarvestExecutor:
             iv_percentile=iv_pct,
         )
 
-        if self.auto_execute and self._should_attempt_auto(strategy=strategy, regime_label=regime_label):
+        if self.auto_execute and self._should_attempt_auto(
+            strategy=strategy, regime_label=regime_label
+        ):
             execution = self._auto_execute_theta(result)
             if execution:
                 status = str(execution.get("status", "")).upper()
@@ -869,7 +878,7 @@ class ThetaHarvestExecutor:
     def dispatch_theta_trades(
         self,
         plan: dict[str, Any],
-        execution_agent: "ExecutionAgent",
+        execution_agent: ExecutionAgent,
         *,
         paper: bool = True,
         regime_label: str | None = None,
@@ -1294,7 +1303,7 @@ class ThetaHarvestExecutor:
             logger.warning("Failed to fetch option chain for %s: %s", symbol, exc)
             return None
 
-    def _get_options_client(self) -> "AlpacaOptionsClient | None":
+    def _get_options_client(self) -> AlpacaOptionsClient | None:
         if self._options_client is False:
             return None
         if self._options_client:

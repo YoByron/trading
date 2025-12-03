@@ -53,7 +53,7 @@ class ExecutionAgent(BaseAgent):
         self.options_client = options_client
         self.execution_history: list = []
         # Lazily instantiated options client (False sentinel == permanently unavailable)
-        self._options_client: "AlpacaOptionsClient | None | bool" = options_client
+        self._options_client: AlpacaOptionsClient | None | bool = options_client
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """

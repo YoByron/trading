@@ -4,18 +4,16 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import holidays
+from src.agent_framework.auditor import AdaptiveTradeAuditor
 from src.agents.execution_agent import ExecutionAgent
 from src.agents.momentum_agent import MomentumAgent
-from src.agent_framework.auditor import VolatilityAuditor
-from src.analytics.options_profit_planner import ThetaHarvestExecutor
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
-from src.analytics.options_profit_planner import THETA_STAGE_1_EQUITY, ThetaHarvestExecutor
+from src.analytics.options_profit_planner import ThetaHarvestExecutor
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
@@ -29,8 +27,6 @@ from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
 from src.utils.regime_detector import RegimeDetector
-
-from src.agent_framework.auditor import AdaptiveTradeAuditor
 
 logger = logging.getLogger(__name__)
 
