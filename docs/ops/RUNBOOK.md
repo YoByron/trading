@@ -504,6 +504,9 @@ git status
 gh pr list
 gh workflow list
 
+# Worktree hygiene
+scripts/worktree_hygiene.sh --prune
+
 # Stop trading
 ./stop-trading-system.sh
 
