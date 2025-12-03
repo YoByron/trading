@@ -84,4 +84,4 @@ bandit==1.7.7
 pre-commit
 sentence-transformers>=2.2.0
 langchain-text-splitters>=0.3.9,<0.4.0
-langgraph-checkpoint>=3.0.0,<3.1.0
+# Let langgraph pin its compatible checkpoint (<3.0.0 for langgraph 0.2.76)
