@@ -69,7 +69,7 @@ langchain-core==0.3.80
 langchain-anthropic==0.3.22
 langchain-community==0.3.31
 langgraph==0.2.76
-langsmith==0.3.50  # LangSmith monitoring for RL training (compatible with langchain-core 0.3.80)
+langsmith==0.3.45  # LangSmith monitoring pinned to available 0.3.x release
 
 # Dashboard
 streamlit>=1.29.0
@@ -84,4 +84,4 @@ bandit==1.7.7
 pre-commit
 sentence-transformers>=2.2.0
 langchain-text-splitters>=0.3.9,<0.4.0
-langgraph-checkpoint>=3.0.0,<3.1.0
+# Let langgraph pin its compatible checkpoint (<3.0.0 for langgraph 0.2.76)
