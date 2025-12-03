@@ -90,6 +90,9 @@ PYTHONPATH=. python3 scripts/train_rl_transformer.py \
 
 # Convert Rule #1 signals into a $10/day premium plan
 PYTHONPATH=src python3 scripts/options_profit_planner.py --target-daily 10
+
+# Generate a daily profit scaling plan toward the $100/day North Star
+PYTHONPATH=src python3 scripts/generate_profit_target_report.py --target 100
 ```
 
 ---
