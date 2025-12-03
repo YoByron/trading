@@ -28,6 +28,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional path to write structured JSON summary.",
     )
     parser.add_argument(
+        "--tax-rate",
+        type=float,
+        default=0.28,
+        help="Marginal tax rate used for sweep guidance (default: 0.28).",
+    )
+    parser.add_argument(
         "--adapt-rl",
         action="store_true",
         help="Run RL filter adaptation using the same telemetry log after reporting.",
@@ -35,7 +41,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def print_report(summary: dict[str, Any]) -> None:
+def load_account_state(path: Path | None = None) -> dict[str, Any] | None:
+    state_path = path or Path("data/system_state.json")
+    if not state_path.exists():
+        return None
+    try:
+        with state_path.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+            return payload.get("account")
+    except Exception:
+        return None
+
+
+def print_report(
+    summary: dict[str, Any],
+    account_snapshot: dict[str, Any] | None,
+    tax_sweep: float | None,
+    tax_rate: float,
+) -> None:
     print("==== Hybrid Funnel Telemetry ====")
     print(f"Generated at: {summary['generated_at']}")
     print(f"Total events: {summary['event_count']}")
@@ -64,18 +87,43 @@ def print_report(summary: dict[str, Any]) -> None:
             reason = event.get("payload", {}).get("reason") or event.get("status")
             print(f"  - {ts} | {gate} | {ticker} | {reason}")
 
+    if account_snapshot:
+        equity = account_snapshot.get("current_equity")
+        total_pl = account_snapshot.get("total_pl")
+        print(
+            f"\nAccount Snapshot: equity=${equity:.2f} | cumulative P/L=${total_pl:.2f}"
+            if equity is not None and total_pl is not None
+            else "\nAccount Snapshot: unavailable"
+        )
+    if tax_sweep:
+        print(f"Suggested Tax Sweep ({tax_rate*100:.0f}%): ${tax_sweep:.2f}")
+
 
 def main() -> None:
     args = parse_args()
     events = load_events(Path(args.log))
     summary = summarize_events(events)
-    print_report(summary)
+    account_snapshot = load_account_state()
+    tax_sweep = None
+    if account_snapshot:
+        try:
+            cumulative_pl = float(account_snapshot.get("total_pl", 0.0))
+            if cumulative_pl > 0:
+                tax_sweep = round(cumulative_pl * args.tax_rate, 2)
+        except (TypeError, ValueError):
+            tax_sweep = None
+
+    print_report(summary, account_snapshot, tax_sweep, args.tax_rate)
 
     if args.output_json:
         output_path = Path(args.output_json)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = dict(summary)
+        payload["account_snapshot"] = account_snapshot
+        payload["tax_sweep_recommendation"] = tax_sweep
+        payload["tax_rate"] = args.tax_rate
         with output_path.open("w", encoding="utf-8") as handle:
-            json.dump(summary, handle, indent=2)
+            json.dump(payload, handle, indent=2)
         print(f"\nStructured summary written to {output_path}")
 
     if args.adapt_rl:

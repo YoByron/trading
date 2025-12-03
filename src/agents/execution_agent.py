@@ -19,6 +19,11 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 
+try:
+    from src.core.options_client import AlpacaOptionsClient
+except Exception:  # pragma: no cover - optional dependency in lightweight test envs
+    AlpacaOptionsClient = None  # type: ignore[misc,assignment]
+
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -35,10 +40,19 @@ class ExecutionAgent(BaseAgent):
     - Track execution quality (slippage, fill rate)
     """
 
-    def __init__(self, alpaca_api: Optional[TradingClient] = None):
+    def __init__(
+        self,
+        alpaca_api: Optional[TradingClient] = None,
+        *,
+        paper: bool = True,
+        options_client: "AlpacaOptionsClient | None" = None,
+    ):
         super().__init__(name="ExecutionAgent", role="Order execution and timing optimization")
         self.alpaca_api = alpaca_api
+        self.paper = paper
         self.execution_history: list = []
+        # Lazily instantiated options client (False sentinel == permanently unavailable)
+        self._options_client: "AlpacaOptionsClient | None | bool" = options_client
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -131,6 +145,130 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         self.log_decision(analysis)
 
         return analysis
+
+    # ------------------------------------------------------------------ #
+    # Options execution helpers
+    # ------------------------------------------------------------------ #
+    def _get_options_client(self) -> "AlpacaOptionsClient | None":
+        """
+        Lazily resolve an Alpaca options client if credentials are available.
+
+        Returns:
+            AlpacaOptionsClient or None when unavailable (missing creds / package)
+        """
+
+        if self._options_client is False:
+            return None
+
+        if self._options_client is not None:
+            return self._options_client
+
+        if AlpacaOptionsClient is None:
+            logger.warning("AlpacaOptionsClient not available in current environment.")
+            self._options_client = False
+            return None
+
+        try:
+            self._options_client = AlpacaOptionsClient(paper=self.paper)
+            return self._options_client
+        except Exception as exc:  # pragma: no cover - depends on external creds
+            logger.warning("Failed to initialize AlpacaOptionsClient: %s", exc)
+            self._options_client = False
+            return None
+
+    def submit_option_order(
+        self,
+        *,
+        option_symbol: str,
+        qty: int,
+        side: str = "sell_to_open",
+        order_type: str = "limit",
+        limit_price: float | None = None,
+        paper: bool | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Submit an option order using Alpaca's options API (with simulation fallback).
+
+        Args:
+            option_symbol: OCC option symbol (e.g., SPY240216C00420000)
+            qty: Number of contracts to trade
+            side: Order side (sell_to_open, buy_to_close, etc.)
+            order_type: "market" or "limit"
+            limit_price: Limit price per contract when using limit orders
+            paper: Override for paper/live flag (defaults to agent setting)
+            metadata: Additional context to persist alongside execution history
+
+        Returns:
+            Dict containing submission metadata (or simulation) plus execution status.
+        """
+
+        if qty <= 0:
+            raise ValueError("qty must be positive when submitting option orders.")
+
+        payload_meta = metadata.copy() if metadata else {}
+        payload_meta["option_symbol"] = option_symbol
+        payload_meta["side"] = side
+        payload_meta["order_type"] = order_type
+        payload_meta["limit_price"] = limit_price
+
+        client = self._get_options_client()
+        final_paper = self.paper if paper is None else paper
+        result: dict[str, Any]
+
+        if client:
+            try:
+                order = client.submit_option_order(
+                    option_symbol=option_symbol,
+                    qty=qty,
+                    side=side,
+                    order_type=order_type,
+                    limit_price=limit_price,
+                )
+                result = {
+                    "status": "SUBMITTED",
+                    "order": order,
+                    "metadata": payload_meta,
+                    "paper": final_paper,
+                }
+                logger.info(
+                    "Options order submitted via Alpaca: %s x%d (%s)",
+                    option_symbol,
+                    qty,
+                    side,
+                )
+            except Exception as exc:  # pragma: no cover - network/credential failures
+                logger.error("Option order submission failed: %s", exc)
+                result = {
+                    "status": "ERROR",
+                    "error": str(exc),
+                    "option_symbol": option_symbol,
+                    "qty": qty,
+                    "side": side,
+                    "metadata": payload_meta,
+                }
+        else:
+            # Simulation fallback when options trading isn't enabled in this environment.
+            result = {
+                "status": "SIMULATED",
+                "option_symbol": option_symbol,
+                "qty": qty,
+                "side": side,
+                "order_type": order_type,
+                "limit_price": limit_price,
+                "metadata": payload_meta,
+                "paper": final_paper,
+            }
+            logger.info(
+                "Simulated options order: %s x%d (%s) @ %s",
+                option_symbol,
+                qty,
+                side,
+                limit_price if limit_price is not None else "MKT",
+            )
+
+        self.execution_history.append(result)
+        return result
 
     def _check_market_status(self) -> dict[str, Any]:
         """Check if market is open and ready for trading."""
