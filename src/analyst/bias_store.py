@@ -19,7 +19,7 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-@dataclass(slots=True)
+@dataclass
 class BiasSnapshot:
     """
     Standardized payload published by the analyst loop.
