@@ -93,6 +93,12 @@ PYTHONPATH=/workspace python3 scripts/options_profit_planner.py --target-daily 1
 
 # Run theta harvest live simulation (equity → planner → opportunities)
 PYTHONPATH=/workspace python3 scripts/run_options_live_sim.py --symbols SPY,QQQ,IWM
+# Generate reproducible options theta CSV + report
+PYTHONPATH=/workspace .venv/bin/python3 scripts/report_options_theta.py
+
+# Inspect and run unified strategy pipelines
+python3 scripts/run_strategy_pipeline.py --list
+python3 scripts/run_strategy_pipeline.py --strategy options_theta --stage plan
 ```
 
 ---

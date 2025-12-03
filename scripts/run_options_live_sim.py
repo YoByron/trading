@@ -20,6 +20,11 @@ import argparse
 import json
 from pathlib import Path
 from typing import Iterable
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.append(str(REPO_ROOT))
 
 from src.analytics.options_live_sim import OptionsLiveSimResult, OptionsLiveSimulator
 
