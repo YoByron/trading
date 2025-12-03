@@ -10,10 +10,10 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
-def load_config(config_path: Path) -> Dict[str, Any]:
+def load_config(config_path: Path) -> dict[str, Any]:
     """Load backtest configuration."""
     if not config_path.exists():
         print(f"❌ Config file not found: {config_path}")
@@ -28,14 +28,14 @@ def load_config(config_path: Path) -> Dict[str, Any]:
             return json.load(f)
 
 
-def calculate_scenario_hash(scenario: Dict[str, Any]) -> str:
+def calculate_scenario_hash(scenario: dict[str, Any]) -> str:
     """Calculate hash of scenario for caching."""
     # Create deterministic hash of scenario parameters
     scenario_str = json.dumps(scenario, sort_keys=True)
     return hashlib.md5(scenario_str.encode()).hexdigest()[:12]
 
 
-def load_cache(cache_dir: Path) -> Dict[str, Dict[str, Any]]:
+def load_cache(cache_dir: Path) -> dict[str, dict[str, Any]]:
     """Load cached backtest results."""
     cache_file = cache_dir / "backtest_cache.json"
     if not cache_file.exists():
@@ -49,7 +49,7 @@ def load_cache(cache_dir: Path) -> Dict[str, Dict[str, Any]]:
         return {}
 
 
-def save_cache(cache_dir: Path, cache: Dict[str, Dict[str, Any]]):
+def save_cache(cache_dir: Path, cache: dict[str, dict[str, Any]]):
     """Save backtest cache."""
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cache_dir / "backtest_cache.json"
@@ -61,7 +61,7 @@ def save_cache(cache_dir: Path, cache: Dict[str, Dict[str, Any]]):
         print(f"⚠️  Could not save cache: {e}")
 
 
-def run_scenario(scenario: Dict[str, Any], output_dir: Path) -> Dict[str, Any]:
+def run_scenario(scenario: dict[str, Any], output_dir: Path) -> dict[str, Any]:
     """Run a single backtest scenario."""
     print(f"   Running scenario: {scenario.get('name', 'Unnamed')}")
 
