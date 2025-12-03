@@ -103,3 +103,4 @@ Use this roadmap + tooling loop daily to convert theoretical Rule #1 signals int
 - This simulator is now the single source of truth for **Month 4 theta ramp readiness**:
   - Shows the daily premium gap vs $10 target *and* how much theta can be deployed immediately.
   - Enables dashboard automation to broadcast “theta on deck” opportunities without manual spreadsheet math.
+- Reporting loop: `scripts/report_options_theta.py` writes `data/backtests/options_theta_daily_pl.csv` and `reports/options_theta_strategy.md`, giving you diffable artifacts for CI/backtest review.
