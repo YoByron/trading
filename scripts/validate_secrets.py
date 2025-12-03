@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""
+Fast secrets validation - early fail for missing/invalid API keys.
+Prevents wasted execution time on broken credentials.
+"""
+
+import os
+import sys
+from typing import List, Tuple
+
+
+def validate_secrets() -> Tuple[bool, List[str]]:
+    """Validate required secrets are present and non-empty."""
+
+    # Critical secrets required for trading
+    required_secrets = [
+        "ALPACA_API_KEY",
+        "ALPACA_SECRET_KEY",
+    ]
+
+    # Optional but recommended secrets (warnings only)
+    optional_secrets = [
+        "OPENROUTER_API_KEY",
+        "ALPHA_VANTAGE_API_KEY",
+        "POLYGON_API_KEY",
+        "FINNHUB_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GOOGLE_API_KEY",
+    ]
+
+    missing_critical = []
+    missing_optional = []
+
+    # Check critical secrets
+    for secret in required_secrets:
+        value = os.getenv(secret)
+        if not value or value.strip() == "":
+            missing_critical.append(secret)
+        elif len(value) < 10:  # Basic sanity check
+            missing_critical.append(f"{secret} (too short)")
+
+    # Check optional secrets
+    for secret in optional_secrets:
+        value = os.getenv(secret)
+        if not value or value.strip() == "":
+            missing_optional.append(secret)
+
+    # Report results
+    errors = []
+
+    if missing_critical:
+        print(f"❌ CRITICAL: Missing required secrets: {', '.join(missing_critical)}")
+        errors.extend(missing_critical)
+    else:
+        print("✅ All critical secrets present")
+
+    if missing_optional:
+        print(f"⚠️  WARNING: Missing optional secrets: {', '.join(missing_optional)}")
+        print("   Some features may be limited")
+
+    # Additional validation for specific formats
+    alpaca_key = os.getenv("ALPACA_API_KEY", "")
+    if alpaca_key and not alpaca_key.startswith("PK"):
+        print("⚠️  WARNING: ALPACA_API_KEY doesn't look like a valid key (should start with 'PK')")
+
+    alpaca_secret = os.getenv("ALPACA_SECRET_KEY", "")
+    if alpaca_secret and len(alpaca_secret) < 30:
+        print("⚠️  WARNING: ALPACA_SECRET_KEY seems too short for a valid secret")
+
+    return len(missing_critical) == 0, errors
+
+
+def main():
+    """Main validation function."""
+    print("🔑 Validating trading secrets...")
+    print("-" * 50)
+
+    valid, errors = validate_secrets()
+
+    print("-" * 50)
+
+    if valid:
+        print("✅ Secrets validation passed")
+        return 0
+    else:
+        print(f"❌ Secrets validation failed: {len(errors)} critical errors")
+        print("   Please check GitHub repository secrets:")
+        print("   Settings > Secrets and variables > Actions")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
