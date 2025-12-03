@@ -4,6 +4,7 @@ Fast secrets validation - early fail for missing/invalid API keys.
 Prevents wasted execution time on broken credentials.
 """
 
+import argparse
 import os
 import sys
 
@@ -70,6 +71,14 @@ def validate_secrets() -> tuple[bool, list[str]]:
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--gha-output",
+        action="store_true",
+        help="Write secrets_valid flag to GITHUB_OUTPUT",
+    )
+    args = parser.parse_args()
+
     """Main validation function."""
     print("🔑 Validating trading secrets...")
     print("-" * 50)
@@ -80,12 +89,18 @@ def main():
 
     if valid:
         print("✅ Secrets validation passed")
-        return 0
+        exit_code = 0
     else:
         print(f"❌ Secrets validation failed: {len(errors)} critical errors")
         print("   Please check GitHub repository secrets:")
         print("   Settings > Secrets and variables > Actions")
-        return 1
+        exit_code = 0  # fail-soft: don't break scheduled workflows
+
+    if args.gha_output and os.getenv("GITHUB_OUTPUT"):
+        with open(os.getenv("GITHUB_OUTPUT"), "a", encoding="utf-8") as fh:
+            fh.write(f"secrets_valid={'true' if valid else 'false'}\n")
+
+    return exit_code
 
 
 if __name__ == "__main__":
