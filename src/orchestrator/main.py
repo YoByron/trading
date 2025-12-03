@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 _US_HOLIDAYS_CACHE: dict[int, holidays.HolidayBase] = {}
 
 
+def _env_flag(name: str, default: str = "true") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _get_us_holidays(year: int) -> holidays.HolidayBase:
     if year not in _US_HOLIDAYS_CACHE:
         _US_HOLIDAYS_CACHE[year] = holidays.US(years=[year])
@@ -111,6 +115,7 @@ class TradingOrchestrator:
         active_tickers = session_profile["tickers"]
         self.session_profile = session_profile
         self.smart_dca.reset_session(active_tickers)
+        self._maybe_reallocate_for_weekend(session_profile)
 
         self.momentum_agent.configure_regime(session_profile.get("momentum_overrides"))
 
@@ -143,6 +148,33 @@ class TradingOrchestrator:
 
         # Gate 6: Phil Town Rule #1 Options Strategy
         self.run_options_strategy()
+
+    def _maybe_reallocate_for_weekend(self, session_profile: dict[str, Any]) -> None:
+        if session_profile.get("session_type") != "off_hours_crypto_proxy":
+            return
+        if not _env_flag("WEEKEND_PROXY_REALLOCATE", "true"):
+            return
+
+        bucket = os.getenv("WEEKEND_PROXY_BUCKET", "crypto").strip().lower()
+        try:
+            total = self.smart_dca.reallocate_all_to_bucket(bucket)
+        except ValueError as exc:
+            logger.warning("Weekend proxy reallocation skipped: %s", exc)
+            return
+
+        self.telemetry.record(
+            event_type="dca.reallocation",
+            ticker="SYSTEM",
+            status="info",
+            payload={
+                "bucket": bucket,
+                "session": session_profile.get("session_type"),
+                "reallocated_budget": total,
+            },
+        )
+        logger.info(
+            "Weekend proxy session: reallocated $%.2f daily budget to %s bucket", total, bucket
+        )
 
     def _build_session_profile(self) -> dict[str, Any]:
         today = datetime.utcnow().date()

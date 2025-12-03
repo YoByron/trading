@@ -150,6 +150,32 @@ class SmartDCAAllocator:
 
         return SafeSweep(symbol=self.safe_symbol, amount=total, buckets=leftovers)
 
+    def reallocate_all_to_bucket(self, bucket: str) -> float:
+        """
+        Move the entire session budget into a single bucket.
+
+        Used for weekend/holiday sessions where only a subset of tickers (e.g. crypto proxies)
+        are tradable. Returns the reallocated budget for diagnostics.
+        """
+        normalized = bucket.strip().lower()
+        if not normalized:
+            raise ValueError("bucket name is required")
+
+        total_budget = round(sum(self._bucket_targets.values()), 2)
+        if normalized not in self._bucket_targets:
+            self._bucket_targets[normalized] = 0.0
+            self._bucket_spend[normalized] = 0.0
+
+        for key in list(self._bucket_targets.keys()):
+            self._bucket_targets[key] = 0.0
+            self._bucket_spend[key] = 0.0
+
+        self._bucket_targets[normalized] = total_budget
+        logger.info(
+            "Smart DCA reallocated $%.2f of daily budget to %s bucket", total_budget, normalized
+        )
+        return total_budget
+
     # ------------------------------------------------------------------ #
     # Internal helpers
     # ------------------------------------------------------------------ #

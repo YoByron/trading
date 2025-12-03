@@ -88,3 +88,19 @@
 - 🎯 When planner states `gap_to_target <= 0` for 10 consecutive sessions, we have mathematically demonstrated a sustainable **$10/day** premium engine.
 
 Use this roadmap + tooling loop daily to convert theoretical Rule #1 signals into measurable, auditable income. Once the options planner shows consistent surplus, graduate to the Fibonacci scale-up plan for $30/day → $100/day targets.
+
+---
+
+## 6. Theta Harvest Simulator (NEW)
+
+- `OptionsLiveSimulator` (`src/analytics/options_live_sim.py`) stitches together:
+  - Account equity from `data/system_state.json`
+  - Latest premium pacing summary from `OptionsProfitPlanner`
+  - Theta Harvest plan (equity-gated, IV-aware) from `ThetaHarvestExecutor`
+- CLI: `PYTHONPATH=src python3 scripts/run_options_live_sim.py --symbols SPY,QQQ,IWM`
+  - Outputs console summary plus `data/options_signals/options_live_sim_latest.json`
+  - Flags for `--equity`, `--regime`, and `--dry-run` keep dev/test workflows deterministic.
+- This simulator is now the single source of truth for **Month 4 theta ramp readiness**:
+  - Shows the daily premium gap vs $10 target *and* how much theta can be deployed immediately.
+  - Enables dashboard automation to broadcast “theta on deck” opportunities without manual spreadsheet math.
+- Reporting loop: `scripts/report_options_theta.py` writes `data/backtests/options_theta_daily_pl.csv` and `reports/options_theta_strategy.md`, giving you diffable artifacts for CI/backtest review.
