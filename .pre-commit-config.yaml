@@ -84,7 +84,8 @@ repos:
       - id: smoke-tests
         name: Smoke Tests - Critical Path Verification
         entry: python3 tests/test_smoke.py
-        language: system
+        language: python
+        additional_dependencies: [numpy, pyyaml]
         types: [python]
         files: '(scripts/|src/|tests/)'
         pass_filenames: false
