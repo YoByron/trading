@@ -490,18 +490,14 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-          # Pull latest changes to avoid conflicts
-          git pull --rebase origin main || {
-            echo "⚠️  Merge conflict detected - resolving..."
-
-            # Keep our version (trading execution takes precedence)
-            git checkout --ours data/system_state.json
-            git add data/system_state.json
-            git rebase --continue
-          }
-
-          # Stage system_state.json
+          # Stage system_state.json first, then rebase with autostash to avoid
+          # "unstaged changes" errors from the runner checkout.
           git add data/system_state.json
+
+          git pull --rebase --autostash origin main || {
+            echo "⚠️  Merge conflict detected - keeping workflow-generated state"
+            git rebase --abort || true
+          }
 
           # Create commit with trading execution details
           git commit -m "$(cat <<'EOF'
