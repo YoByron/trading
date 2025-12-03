@@ -80,6 +80,15 @@
 
 ---
 
+## 5. Theta Harvest Automation (Dec 2025)
+
+- **Execution bridge**: `ThetaHarvestExecutor` now produces executable orders and streams them through `ExecutionAgent.submit_option_order()` once the equity gate hits **$5k+** (poor man's covered calls) or **$10k+** (iron condors).
+- **Contract selection**: Automatically pulls Alpaca option chains to target 20-delta weekly calls or 30-day condors; falls back to synthetic OCC symbols when data/APIs are unavailable so telemetry still records intent.
+- **Regime-aware gating**: `TradingOrchestrator` invokes theta execution after Gate 6 using the live `RegimeDetector` snapshot, so premium selling only fires in calm/defined-risk regimes.
+- **Telemetry**: Every theta plan/execution is recorded under `gate.theta` with opportunity counts, premium gap, and per-leg execution status → the CEO can now see how options are closing the $10/day gap in real time.
+
+---
+
 ## 5. Success Criteria
 
 - ✅ Planner JSON + console output present for every trading day.

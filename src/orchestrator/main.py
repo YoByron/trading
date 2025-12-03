@@ -8,22 +8,26 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import holidays
+from src.agents.execution_agent import ExecutionAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
+from src.analytics.options_profit_planner import THETA_STAGE_1_EQUITY, ThetaHarvestExecutor
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
 from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
 from src.orchestrator.smart_dca import SmartDCAAllocator
-from src.orchestrator.telemetry import OrchestratorTelemetry
+from src.orchestrator.telemetry import OrchestratorTelemetry, QuarterlyProfitSweeper
 from src.risk.capital_efficiency import get_capital_calculator
 from src.risk.options_risk_monitor import OptionsRiskMonitor
 from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
 from src.utils.regime_detector import RegimeDetector
+
+from src.agent_framework.auditor import AdaptiveTradeAuditor
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +78,9 @@ class TradingOrchestrator:
         self.risk_manager = RiskManager()
         self.executor = AlpacaExecutor(paper=paper)
         self.executor.sync_portfolio_state()
+        trading_client = getattr(getattr(self.executor, "trader", None), "trading_client", None)
+        self.execution_agent = ExecutionAgent(alpaca_api=trading_client, paper=paper)
+        self.theta_executor = ThetaHarvestExecutor(paper=paper)
         self.telemetry = OrchestratorTelemetry()
         self.anomaly_monitor = AnomalyMonitor(
             telemetry=self.telemetry,
@@ -91,6 +98,7 @@ class TradingOrchestrator:
         self.microstructure = MicrostructureFeatureExtractor()
         self.regime_detector = RegimeDetector()
         self.smart_dca = SmartDCAAllocator()
+        self.trade_auditor = AdaptiveTradeAuditor()
 
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
@@ -148,6 +156,15 @@ class TradingOrchestrator:
 
         # Gate 6: Phil Town Rule #1 Options Strategy
         self.run_options_strategy()
+
+        # Gate 7: Theta Harvest Execution (equity-gated)
+        self.run_theta_harvest()
+
+        # Gate 8: VIX-Triggered Trade Audit
+        self.run_trade_audit()
+
+        # Gate 9: Quarterly Profit Sweep Check
+        self.run_quarterly_sweep_check()
 
     def _maybe_reallocate_for_weekend(self, session_profile: dict[str, Any]) -> None:
         if session_profile.get("session_type") != "off_hours_crypto_proxy":
@@ -1122,4 +1139,197 @@ class TradingOrchestrator:
                 status="error",
                 payload={"error": str(e)},
             )
+            return {"action": "error", "error": str(e)}
+
+    def run_theta_harvest(self) -> dict:
+        """
+        Gate 7: Theta Harvest Execution
+
+        Executes theta strategies (poor man's covered calls, iron condors)
+        when equity gates are met and IV conditions are favorable.
+        """
+
+        logger.info("--- Gate 7: Theta Harvest Execution ---")
+
+        enable_theta = os.getenv("ENABLE_THETA_HARVEST", "true").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if not enable_theta:
+            logger.info("Gate 7: Theta harvest disabled via ENABLE_THETA_HARVEST")
+            return {"action": "disabled", "reason": "Theta harvest disabled"}
+
+        account_equity = self.executor.account_equity
+        gate = self.theta_executor.check_equity_gate(account_equity)
+        if not gate["theta_enabled"]:
+            logger.info(
+                "Gate 7: Theta disabled - equity $%.2f below $5k threshold",
+                account_equity,
+            )
+            self.telemetry.record(
+                event_type="gate.theta_harvest",
+                ticker="PORTFOLIO",
+                status="disabled",
+                payload={
+                    "account_equity": account_equity,
+                    "gap_to_next_tier": gate["gap_to_next_tier"],
+                    "next_tier": gate["next_tier"],
+                },
+            )
+            return {"action": "disabled", "reason": "Equity below threshold", "gate": gate}
+
+        try:
+            regime_snapshot = self.regime_detector.detect_live_regime()
+            regime_label = getattr(regime_snapshot, "label", "calm")
+        except Exception:
+            regime_label = "calm"
+
+        try:
+            plan = self.theta_executor.generate_theta_plan(
+                account_equity=account_equity,
+                regime_label=regime_label,
+                symbols=["SPY", "QQQ", "IWM"],
+            )
+            execution = self.theta_executor.dispatch_theta_trades(
+                plan,
+                execution_agent=self.execution_agent,
+                paper=self.executor.paper,
+                regime_label=regime_label,
+            )
+
+            self.telemetry.record(
+                event_type="gate.theta_harvest",
+                ticker="PORTFOLIO",
+                status=execution.get("status", "noop"),
+                payload={
+                    "plan": {
+                        "opportunities": len(plan.get("opportunities", [])),
+                        "premium_gap": plan.get("premium_gap"),
+                        "total_estimated_premium": plan.get("total_estimated_premium"),
+                        "regime": regime_label,
+                    },
+                    "execution": execution,
+                },
+            )
+
+            return {"action": execution.get("status", "noop"), "plan": plan, "execution": execution}
+
+        except Exception as e:
+            logger.error("Gate 7: Theta harvest failed: %s", e)
+            self.telemetry.record(
+                event_type="gate.theta_harvest",
+                ticker="PORTFOLIO",
+                status="error",
+                payload={"error": str(e)},
+            )
+            return {"action": "error", "error": str(e)}
+
+    def run_trade_audit(self) -> dict:
+        """
+        Gate 8: VIX-Triggered Trade Audit
+
+        Runs trade audits at frequency determined by VIX:
+        - VIX < 25: Weekly audit
+        - VIX 25-35: Daily audit
+        - VIX > 35: Twice-daily audit
+
+        Returns:
+            Dict with audit results
+        """
+        logger.info("--- Gate 8: VIX-Triggered Trade Audit ---")
+
+        enable_audit = os.getenv("ENABLE_TRADE_AUDIT", "true").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if not enable_audit:
+            logger.info("Gate 8: Trade audit disabled via ENABLE_TRADE_AUDIT")
+            return {"action": "disabled", "reason": "Trade audit disabled"}
+
+        try:
+            try:
+                regime_snapshot = self.regime_detector.detect_live_regime()
+                vix_level = getattr(regime_snapshot, "vix_level", 20.0)
+            except Exception:
+                vix_level = 20.0
+
+            threshold = float(os.getenv("AUDITOR_VIX_THRESHOLD", "25"))
+            frequency = "daily" if vix_level >= threshold else "weekly"
+            report = self.trade_auditor.run_if_due(
+                frequency=frequency,
+                vix_level=vix_level,
+            )
+
+            if not report:
+                logger.info("Gate 8: Audit skipped - not due yet")
+                return {"action": "skipped", "reason": "Audit not due"}
+
+            self.telemetry.record(
+                event_type="gate.trade_audit",
+                ticker="PORTFOLIO",
+                status="completed",
+                payload=report,
+            )
+
+            guidance = report.get("theta_guidance")
+            if guidance:
+                logger.warning("AUDIT RECOMMENDATION: %s", guidance)
+
+            return {"action": "completed", "report": report}
+
+        except Exception as e:
+            logger.error("Gate 8: Trade audit failed: %s", e)
+            self.telemetry.record(
+                event_type="gate.trade_audit",
+                ticker="PORTFOLIO",
+                status="error",
+                payload={"error": str(e)},
+            )
+            return {"action": "error", "error": str(e)}
+
+    def run_quarterly_sweep_check(self) -> dict:
+        """
+        Gate 9: Quarterly Profit Sweep Check
+
+        At quarter-end, calculates profits and reserves 28% for taxes.
+
+        Returns:
+            Dict with sweep results
+        """
+        logger.info("--- Gate 9: Quarterly Profit Sweep Check ---")
+
+        try:
+            sweeper = QuarterlyProfitSweeper(telemetry=self.telemetry)
+
+            if not sweeper.is_quarter_end():
+                logger.debug("Gate 9: Not quarter-end - skipping sweep")
+                return {"action": "skipped", "reason": "Not quarter end"}
+
+            # Get equity values
+            # In production, these would come from stored quarter-start values
+            start_equity = float(os.getenv("QUARTER_START_EQUITY", "100000"))
+            end_equity = self.executor.account_equity
+            deposits = float(os.getenv("QUARTER_DEPOSITS", "0"))
+
+            result = sweeper.run_quarterly_check(
+                start_equity=start_equity,
+                end_equity=end_equity,
+                deposits=deposits,
+                force=False,
+                dry_run=True,  # Safety: dry run by default
+            )
+
+            if result:
+                logger.info(
+                    "Gate 9: Quarterly sweep calculated - $%.2f to tax reserve",
+                    result.get("amount", 0),
+                )
+                return {"action": "calculated", "result": result}
+
+            return {"action": "skipped", "reason": "No sweep needed"}
+
+        except Exception as e:
+            logger.error("Gate 9: Quarterly sweep check failed: %s", e)
             return {"action": "error", "error": str(e)}

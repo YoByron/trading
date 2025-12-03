@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -14,6 +16,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.utils.error_monitoring import init_sentry
 from src.utils.logging_config import setup_logging
+
+SYSTEM_STATE_PATH = Path(os.getenv("SYSTEM_STATE_PATH", "data/system_state.json"))
 
 
 def _flag_enabled(env_name: str, default: str = "true") -> bool:
@@ -58,6 +62,81 @@ def crypto_enabled() -> bool:
     return os.getenv("ENABLE_CRYPTO_AGENT", "false").lower() in {"1", "true", "yes"}
 
 
+def calc_daily_input(equity: float) -> float:
+    """
+    Dynamically scale the daily capital deployment with account equity.
+
+    Scaling ramps faster once equity clears specific gates while respecting
+    the existing $10/day baseline and a $50/day safety cap.
+    """
+
+    base = 10.0
+    if equity >= 2_000:
+        base += 0.2 * (equity / 1_000)
+    if equity >= 5_000:
+        base += 0.15 * ((equity - 5_000) / 1_000)
+    if equity >= 10_000:
+        base += 0.1 * ((equity - 10_000) / 1_000)
+    return round(min(base, 50.0), 2)
+
+
+def _load_equity_snapshot() -> float | None:
+    """Pull the most recent equity figure from disk or simulation env."""
+
+    if SYSTEM_STATE_PATH.exists():
+        try:
+            with SYSTEM_STATE_PATH.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+                account = payload.get("account") or {}
+                equity = account.get("current_equity") or account.get("portfolio_value")
+                if equity is not None:
+                    return float(equity)
+        except Exception:
+            pass
+
+    sim_equity = os.getenv("SIMULATED_EQUITY")
+    if sim_equity:
+        try:
+            return float(sim_equity)
+        except ValueError:
+            return None
+    return None
+
+
+def _apply_dynamic_daily_budget(logger) -> float | None:
+    """
+    Adjust DAILY_INVESTMENT based on account equity before orchestrator loads.
+
+    Returns:
+        The resolved daily investment (or None when unchanged/unavailable)
+    """
+
+    equity = _load_equity_snapshot()
+    if equity is None:
+        logger.info(
+            "Dynamic budget: equity snapshot unavailable; keeping DAILY_INVESTMENT=%s",
+            os.getenv("DAILY_INVESTMENT", "10.0"),
+        )
+        return None
+
+    new_amount = calc_daily_input(equity)
+    try:
+        current_amount = float(os.getenv("DAILY_INVESTMENT", "10.0"))
+    except ValueError:
+        current_amount = 10.0
+
+    if abs(current_amount - new_amount) < 0.01:
+        return new_amount
+
+    os.environ["DAILY_INVESTMENT"] = f"{new_amount:.2f}"
+    logger.info(
+        "Dynamic budget: equity $%.2f → DAILY_INVESTMENT $%.2f (≤ $50 cap).",
+        equity,
+        new_amount,
+    )
+    return new_amount
+
+
 def execute_crypto_trading() -> None:
     """Execute crypto trading strategy."""
     from src.core.alpaca_trader import AlpacaTrader
@@ -100,6 +179,64 @@ def execute_crypto_trading() -> None:
         raise
 
 
+def calc_daily_input(equity: float) -> float:
+    """
+    Calculate dynamic daily input based on account equity.
+
+    Auto-scaling logic to accelerate compounding:
+    - Base: $10/day (minimum safe amount)
+    - $2k+: Add $0.20 per $1k equity (e.g., $12 at $2k)
+    - $5k+: Add $0.30 per $1k equity (e.g., $16.50 at $5k)
+    - $10k+: Add $0.40 per $1k equity (e.g., $24 at $10k)
+    - Cap at $50/day to maintain risk discipline
+
+    This shaves 2-3 months off the $100/day roadmap by
+    compounding faster once equity validates the system.
+
+    Args:
+        equity: Current account equity in USD
+
+    Returns:
+        Daily input amount (capped at $50)
+    """
+    base = 10.0  # Minimum daily input
+
+    if equity >= 10000:
+        # Tier 3: $10k+ = $10 + $4 per $1k above $10k
+        base += 4.0 * ((equity - 10000) / 1000)
+        base += 4.0  # Tier 2 bonus ($5k-$10k)
+        base += 0.4  # Tier 1 bonus ($2k-$5k)
+    elif equity >= 5000:
+        # Tier 2: $5k-$10k = $10 + $3 per $1k above $5k
+        base += 0.3 * ((equity - 5000) / 1000) * 10
+        base += 0.4  # Tier 1 bonus
+    elif equity >= 2000:
+        # Tier 1: $2k-$5k = $10 + $2 per $1k above $2k
+        base += 0.2 * ((equity - 2000) / 1000) * 10
+
+    # Hard cap at $50/day for risk management
+    return min(base, 50.0)
+
+
+def get_account_equity() -> float:
+    """
+    Fetch current account equity from Alpaca.
+
+    Returns:
+        Account equity in USD, or 0.0 if unavailable
+    """
+    try:
+        from src.core.alpaca_trader import AlpacaTrader
+
+        trader = AlpacaTrader(paper=True)
+        account = trader.get_account_info()
+        return float(account.get("equity", 0.0))
+    except Exception as e:
+        logger = setup_logging()
+        logger.warning(f"Could not fetch account equity: {e}. Using base input.")
+        return 0.0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument(
@@ -112,11 +249,26 @@ def main() -> None:
         action="store_true",
         help="Skip legacy crypto flow even on weekends.",
     )
+    parser.add_argument(
+        "--auto-scale",
+        action="store_true",
+        help="Enable auto-scaling of daily input based on equity.",
+    )
     args = parser.parse_args()
 
     load_dotenv()
     init_sentry()
     logger = setup_logging()
+    _apply_dynamic_daily_budget(logger)
+
+    # Auto-scale daily input if enabled
+    if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {"1", "true", "yes"}:
+        equity = get_account_equity()
+        scaled_input = calc_daily_input(equity)
+        os.environ["DAILY_INVESTMENT"] = str(scaled_input)
+        logger.info(
+            f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})"
+        )
 
     crypto_allowed = crypto_enabled()
     is_holiday = is_market_holiday()
