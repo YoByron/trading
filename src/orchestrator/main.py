@@ -16,11 +16,12 @@ from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
 from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
+from src.orchestrator.smart_dca import SmartDCAAllocator
 from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.capital_efficiency import get_capital_calculator
 from src.risk.options_risk_monitor import OptionsRiskMonitor
 from src.risk.risk_manager import RiskManager
-from src.risk.trade_gateway import TradeGateway, TradeRequest
+from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
 from src.utils.regime_detector import RegimeDetector
 
@@ -85,6 +86,7 @@ class TradingOrchestrator:
         self.session_profile: dict[str, Any] | None = None
         self.microstructure = MicrostructureFeatureExtractor()
         self.regime_detector = RegimeDetector()
+        self.smart_dca = SmartDCAAllocator()
 
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
@@ -108,6 +110,7 @@ class TradingOrchestrator:
         session_profile = self._build_session_profile()
         active_tickers = session_profile["tickers"]
         self.session_profile = session_profile
+        self.smart_dca.reset_session(active_tickers)
 
         self.momentum_agent.configure_regime(session_profile.get("momentum_overrides"))
 
@@ -131,6 +134,9 @@ class TradingOrchestrator:
 
         for ticker in active_tickers:
             self._process_ticker(ticker, rl_threshold=session_profile["rl_threshold"])
+
+        # Allocate any unused DCA budget into the safety bucket
+        self._deploy_safe_reserve()
 
         # Gate 5: Post-execution delta rebalancing
         self.run_delta_rebalancing()
@@ -314,6 +320,29 @@ class TradingOrchestrator:
             metrics={"confidence": rl_decision.get("confidence", 0.0)},
         )
 
+        pre_plan = self.smart_dca.plan_allocation(
+            ticker=ticker,
+            momentum_strength=momentum_signal.strength,
+            rl_confidence=rl_decision.get("confidence", 0.0),
+            sentiment_score=0.0,
+        )
+        if pre_plan.cap <= 0:
+            logger.info(
+                "Smart DCA: bucket %s exhausted before LLM budget, skipping %s",
+                pre_plan.bucket,
+                ticker,
+            )
+            self.telemetry.record(
+                event_type="dca.skip",
+                ticker=ticker,
+                status="exhausted",
+                payload={
+                    "bucket": pre_plan.bucket,
+                    "remaining": self.smart_dca.remaining_budget().get(pre_plan.bucket, 0.0),
+                },
+            )
+            return
+
         micro_features = {}
         regime_snapshot = {"label": "unknown", "confidence": 0.0}
         try:
@@ -455,6 +484,30 @@ class TradingOrchestrator:
                 metrics={"confidence": sentiment_score},
             )
 
+        allocation_plan = self.smart_dca.plan_allocation(
+            ticker=ticker,
+            momentum_strength=momentum_signal.strength,
+            rl_confidence=rl_decision.get("confidence", 0.0),
+            sentiment_score=sentiment_score,
+        )
+        if allocation_plan.cap <= 0:
+            logger.info(
+                "Smart DCA: sentiment reduced allocation for %s (bucket=%s). Redirecting to safety.",
+                ticker,
+                allocation_plan.bucket,
+            )
+            self.telemetry.record(
+                event_type="dca.skip",
+                ticker=ticker,
+                status="negative_sentiment",
+                payload={
+                    "bucket": allocation_plan.bucket,
+                    "confidence": allocation_plan.confidence,
+                    "remaining": self.smart_dca.remaining_budget().get(allocation_plan.bucket, 0.0),
+                },
+            )
+            return
+
         # Gather recent history for ATR-based sizing and stops
         hist = None
         current_price = momentum_signal.indicators.get("last_price")
@@ -489,6 +542,7 @@ class TradingOrchestrator:
                 current_price=current_price,
                 hist=hist,
                 market_regime=regime_snapshot.get("label"),
+                allocation_cap=allocation_plan.cap,
             ),
             event_type="gate.risk",
         )
@@ -526,6 +580,7 @@ class TradingOrchestrator:
             )
             return
 
+        self.smart_dca.reserve(allocation_plan.bucket, order_size)
         logger.info("Executing BUY %s for $%.2f", ticker, order_size)
 
         # CRITICAL: All trades go through the mandatory gateway
@@ -535,6 +590,8 @@ class TradingOrchestrator:
         gateway_decision = self.trade_gateway.evaluate(trade_request)
 
         if not gateway_decision.approved:
+            if RejectionReason.MINIMUM_BATCH_NOT_MET not in gateway_decision.rejection_reasons:
+                self.smart_dca.release(allocation_plan.bucket, order_size)
             logger.warning(
                 "Gate GATEWAY (%s): REJECTED by Trade Gateway - %s",
                 ticker,
@@ -557,6 +614,7 @@ class TradingOrchestrator:
             event_type="execution.order",
         )
         if not order_outcome.ok:
+            self.smart_dca.release(allocation_plan.bucket, order_size)
             logger.error("Execution failed for %s: %s", ticker, order_outcome.failure.error)
             return
         order = order_outcome.result
@@ -581,6 +639,19 @@ class TradingOrchestrator:
                 "session_type": (self.session_profile or {}).get("session_type"),
             },
         )
+        self.telemetry.record(
+            event_type="dca.allocate",
+            ticker=ticker,
+            status="allocated",
+            payload={
+                "bucket": allocation_plan.bucket,
+                "notional": order_size,
+                "cap": allocation_plan.cap,
+                "remaining_bucket": self.smart_dca.remaining_budget().get(
+                    allocation_plan.bucket, 0.0
+                ),
+            },
+        )
 
         # Place ATR-based stop-loss if possible
         try:
@@ -603,6 +674,75 @@ class TradingOrchestrator:
                 )
         except Exception as exc:  # pragma: no cover - non-fatal
             logger.info("Stop-loss placement skipped for %s: %s", ticker, exc)
+
+    def _deploy_safe_reserve(self) -> None:
+        sweep = self.smart_dca.drain_to_safe()
+        if not sweep or sweep.amount <= 0:
+            return
+
+        self.telemetry.record(
+            event_type="dca.safe_sweep",
+            ticker=sweep.symbol,
+            status="pending",
+            payload={
+                "amount": sweep.amount,
+                "buckets": sweep.buckets,
+            },
+        )
+
+        trade_request = TradeRequest(
+            symbol=sweep.symbol,
+            side="buy",
+            notional=sweep.amount,
+            source="smart_dca.safe",
+        )
+        decision = self.trade_gateway.evaluate(trade_request)
+
+        if not decision.approved:
+            level = logging.INFO
+            if RejectionReason.MINIMUM_BATCH_NOT_MET not in decision.rejection_reasons:
+                level = logging.WARNING
+            logger.log(
+                level,
+                "Smart DCA sweep rejected for %s: %s",
+                sweep.symbol,
+                [r.value for r in decision.rejection_reasons],
+            )
+            self.telemetry.record(
+                event_type="dca.safe_sweep",
+                ticker=sweep.symbol,
+                status="rejected",
+                payload={
+                    "amount": sweep.amount,
+                    "reasons": [r.value for r in decision.rejection_reasons],
+                },
+            )
+            return
+
+        order_outcome = self.failure_manager.run(
+            gate="execution.safe_dca",
+            ticker=sweep.symbol,
+            operation=lambda: self.trade_gateway.execute(decision),
+            event_type="execution.safe_dca",
+        )
+        if not order_outcome.ok:
+            logger.error(
+                "Smart DCA sweep execution failed for %s: %s",
+                sweep.symbol,
+                order_outcome.failure.error,
+            )
+            return
+
+        self.telemetry.record(
+            event_type="dca.safe_sweep",
+            ticker=sweep.symbol,
+            status="executed",
+            payload={
+                "amount": sweep.amount,
+                "buckets": sweep.buckets,
+                "order": order_outcome.result,
+            },
+        )
 
     def _persist_bias_from_llm(self, ticker: str, llm_payload: dict) -> None:
         try:

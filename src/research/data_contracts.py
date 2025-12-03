@@ -8,6 +8,11 @@ This module provides a robust data quality framework for trading systems:
 3. Data Versioning: Track data snapshots for reproducibility
 4. Timezone Consistency: Ensure all timestamps are properly aligned
 
+Also provides standardized data structures for research:
+- SignalSnapshot: Feature vector at time t
+- FutureReturns: Forward returns
+- Label: Supervised learning targets
+
 Author: Trading System
 Created: 2025-12-02
 """
@@ -26,6 +31,183 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+# --- From origin/main (Research Data Structures) ---
+
+@dataclass
+class SignalSnapshot:
+    """
+    Standardized feature vector at time t.
+
+    This represents all engineered features for a symbol at a specific timestamp.
+    """
+
+    timestamp: pd.Timestamp
+    symbol: str
+    features: pd.Series  # All engineered features
+    metadata: dict[str, Any]  # Data source, quality flags, etc.
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "symbol": self.symbol,
+            "features": self.features.to_dict(),
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SignalSnapshot":
+        """Create from dictionary."""
+        return cls(
+            timestamp=pd.Timestamp(data["timestamp"]),
+            symbol=data["symbol"],
+            features=pd.Series(data["features"]),
+            metadata=data["metadata"],
+        )
+
+
+@dataclass
+class FutureReturns:
+    """
+    Forward returns over multiple horizons.
+
+    This represents the actual returns that occurred after a signal snapshot.
+    """
+
+    symbol: str
+    timestamp: pd.Timestamp
+    returns_5m: Optional[float] = None
+    returns_1h: Optional[float] = None
+    returns_1d: Optional[float] = None
+    returns_1w: Optional[float] = None
+    returns_1mo: Optional[float] = None
+    returns_3mo: Optional[float] = None
+    realized_vol_1d: Optional[float] = None
+    realized_vol_1w: Optional[float] = None
+    metadata: dict[str, Any] = None
+
+    def __post_init__(self):
+        """Initialize metadata if not provided."""
+        if self.metadata is None:
+            self.metadata = {}
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "symbol": self.symbol,
+            "timestamp": self.timestamp.isoformat(),
+            "returns_5m": self.returns_5m,
+            "returns_1h": self.returns_1h,
+            "returns_1d": self.returns_1d,
+            "returns_1w": self.returns_1w,
+            "returns_1mo": self.returns_1mo,
+            "returns_3mo": self.returns_3mo,
+            "realized_vol_1d": self.realized_vol_1d,
+            "realized_vol_1w": self.realized_vol_1w,
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "FutureReturns":
+        """Create from dictionary."""
+        return cls(
+            symbol=data["symbol"],
+            timestamp=pd.Timestamp(data["timestamp"]),
+            returns_5m=data.get("returns_5m"),
+            returns_1h=data.get("returns_1h"),
+            returns_1d=data.get("returns_1d"),
+            returns_1w=data.get("returns_1w"),
+            returns_1mo=data.get("returns_1mo"),
+            returns_3mo=data.get("returns_3mo"),
+            realized_vol_1d=data.get("realized_vol_1d"),
+            realized_vol_1w=data.get("realized_vol_1w"),
+            metadata=data.get("metadata", {}),
+        )
+
+
+@dataclass
+class Label:
+    """
+    Supervised learning label.
+
+    Can represent directional (up/down), magnitude (regression), or event-based labels.
+    """
+
+    symbol: str
+    timestamp: pd.Timestamp
+    label_type: str  # 'directional', 'magnitude', 'volatility', 'event'
+    value: float  # Label value
+    horizon: str  # '5m', '1h', '1d', etc.
+    metadata: dict[str, Any] = None
+
+    def __post_init__(self):
+        """Initialize metadata if not provided."""
+        if self.metadata is None:
+            self.metadata = {}
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "symbol": self.symbol,
+            "timestamp": self.timestamp.isoformat(),
+            "label_type": self.label_type,
+            "value": self.value,
+            "horizon": self.horizon,
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Label":
+        """Create from dictionary."""
+        return cls(
+            symbol=data["symbol"],
+            timestamp=pd.Timestamp(data["timestamp"]),
+            label_type=data["label_type"],
+            value=data["value"],
+            horizon=data["horizon"],
+            metadata=data.get("metadata", {}),
+        )
+
+
+def create_signal_snapshot(
+    timestamp: pd.Timestamp,
+    symbol: str,
+    features: pd.Series,
+    metadata: Optional[dict[str, Any]] = None,
+) -> SignalSnapshot:
+    """Convenience function to create a SignalSnapshot."""
+    if metadata is None:
+        metadata = {}
+
+    return SignalSnapshot(
+        timestamp=timestamp,
+        symbol=symbol,
+        features=features,
+        metadata=metadata,
+    )
+
+
+def create_future_returns(
+    symbol: str,
+    timestamp: pd.Timestamp,
+    returns_data: dict[str, float],
+    metadata: Optional[dict[str, Any]] = None,
+) -> FutureReturns:
+    """Convenience function to create FutureReturns."""
+    if metadata is None:
+        metadata = {}
+
+    return FutureReturns(
+        symbol=symbol,
+        timestamp=timestamp,
+        returns_1d=returns_data.get("1d"),
+        returns_1w=returns_data.get("1w"),
+        returns_1mo=returns_data.get("1mo"),
+        returns_3mo=returns_data.get("3mo"),
+        metadata=metadata,
+    )
+
+# --- From HEAD (Validation Framework) ---
 
 class DataQualityLevel(Enum):
     """Data quality severity levels."""
@@ -117,13 +299,6 @@ class OHLCVSchema:
 class DataValidator:
     """
     Comprehensive data validation framework.
-
-    Validates OHLCV data for:
-    - Schema compliance
-    - Data gaps and missing values
-    - Price anomalies (bad ticks, splits)
-    - Survivorship bias indicators
-    - Timezone consistency
     """
 
     def __init__(
@@ -139,16 +314,6 @@ class DataValidator:
         self.min_volume = min_volume
 
     def validate(self, df: pd.DataFrame, symbol: str = "UNKNOWN") -> DataQualityReport:
-        """
-        Run all validation checks on DataFrame.
-
-        Args:
-            df: OHLCV DataFrame to validate
-            symbol: Symbol for reporting
-
-        Returns:
-            DataQualityReport with all check results
-        """
         results = []
 
         # Schema checks
@@ -214,7 +379,6 @@ class DataValidator:
         return report
 
     def _check_required_columns(self, df: pd.DataFrame) -> ValidationResult:
-        """Check that all required columns are present."""
         missing = [col for col in self.schema.required_columns if col not in df.columns]
 
         if missing:
@@ -234,7 +398,6 @@ class DataValidator:
         )
 
     def _check_index_type(self, df: pd.DataFrame) -> ValidationResult:
-        """Check that index is datetime type."""
         if not isinstance(df.index, pd.DatetimeIndex):
             return ValidationResult(
                 check_name="index_type",
@@ -251,7 +414,6 @@ class DataValidator:
         )
 
     def _check_column_dtypes(self, df: pd.DataFrame) -> ValidationResult:
-        """Check column data types."""
         issues = []
 
         for col, expected_dtype in self.schema.column_dtypes.items():
@@ -277,7 +439,6 @@ class DataValidator:
         )
 
     def _check_missing_values(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for missing values in required columns."""
         missing_counts = {}
 
         for col in self.schema.required_columns:
@@ -308,7 +469,6 @@ class DataValidator:
         )
 
     def _check_data_gaps(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for gaps in trading dates."""
         if len(df) < 2:
             return ValidationResult(
                 check_name="data_gaps",
@@ -317,9 +477,7 @@ class DataValidator:
                 message="Insufficient data for gap check",
             )
 
-        # Calculate expected business days
         date_diffs = pd.Series(df.index).diff().dropna()
-        # Filter to weekday gaps (ignore weekends)
         large_gaps = date_diffs[date_diffs > timedelta(days=self.max_gap_days)]
 
         if len(large_gaps) > 0:
@@ -332,7 +490,7 @@ class DataValidator:
                 message=f"Found {len(large_gaps)} gaps > {self.max_gap_days} days",
                 details={
                     "gap_count": len(large_gaps),
-                    "gap_dates": gap_dates[:10],  # First 10
+                    "gap_dates": gap_dates[:10],
                 },
             )
 
@@ -344,7 +502,6 @@ class DataValidator:
         )
 
     def _check_ohlc_consistency(self, df: pd.DataFrame) -> ValidationResult:
-        """Check OHLC logical consistency (High >= Low, etc.)."""
         issues = []
 
         if "High" in df.columns and "Low" in df.columns:
@@ -389,7 +546,6 @@ class DataValidator:
         )
 
     def _check_price_anomalies(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for suspicious price changes (bad ticks, unadjusted splits)."""
         if "Close" not in df.columns or len(df) < 2:
             return ValidationResult(
                 check_name="price_anomalies",
@@ -424,7 +580,6 @@ class DataValidator:
         )
 
     def _check_volume_anomalies(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for zero or extremely low volume days."""
         if "Volume" not in df.columns:
             return ValidationResult(
                 check_name="volume_anomalies",
@@ -457,8 +612,6 @@ class DataValidator:
         )
 
     def _check_splits_dividends(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for unadjusted splits/dividends in data."""
-        # Look for price patterns consistent with unadjusted splits
         if "Close" not in df.columns or len(df) < 2:
             return ValidationResult(
                 check_name="splits_dividends",
@@ -469,7 +622,6 @@ class DataValidator:
 
         pct_change = df["Close"].pct_change()
 
-        # Common split ratios: 2:1 (-50%), 3:1 (-67%), 3:2 (-33%), 4:1 (-75%)
         split_patterns = {
             "2:1": (-0.52, -0.48),
             "3:1": (-0.70, -0.64),
@@ -505,7 +657,6 @@ class DataValidator:
         )
 
     def _check_timezone_consistency(self, df: pd.DataFrame) -> ValidationResult:
-        """Check timezone consistency in index."""
         if not isinstance(df.index, pd.DatetimeIndex):
             return ValidationResult(
                 check_name="timezone_consistency",
@@ -525,7 +676,6 @@ class DataValidator:
         )
 
     def _check_duplicate_timestamps(self, df: pd.DataFrame) -> ValidationResult:
-        """Check for duplicate timestamps."""
         duplicates = df.index.duplicated().sum()
 
         if duplicates > 0:
@@ -545,7 +695,6 @@ class DataValidator:
         )
 
     def _check_chronological_order(self, df: pd.DataFrame) -> ValidationResult:
-        """Check that data is in chronological order."""
         if len(df) < 2:
             return ValidationResult(
                 check_name="chronological_order",
@@ -572,7 +721,6 @@ class DataValidator:
         )
 
     def _compute_hash(self, df: pd.DataFrame) -> str:
-        """Compute hash of DataFrame for versioning."""
         content = df.to_json(date_format="iso")
         return hashlib.md5(content.encode()).hexdigest()[:16]
 
@@ -580,8 +728,6 @@ class DataValidator:
 class DataSnapshot:
     """
     Versioned data snapshot for reproducibility.
-
-    Stores data with metadata for exact reproducibility of experiments.
     """
 
     def __init__(self, storage_dir: str = "data/snapshots"):
@@ -595,31 +741,15 @@ class DataSnapshot:
         description: str = "",
         metadata: Optional[dict[str, Any]] = None,
     ) -> str:
-        """
-        Save a data snapshot with metadata.
-
-        Args:
-            df: DataFrame to save
-            symbol: Symbol identifier
-            description: Human-readable description
-            metadata: Additional metadata
-
-        Returns:
-            Snapshot ID
-        """
-        # Generate snapshot ID
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         data_hash = hashlib.md5(df.to_json(date_format="iso").encode()).hexdigest()[:8]
         snapshot_id = f"{symbol}_{timestamp}_{data_hash}"
 
-        # Create snapshot directory
         snapshot_dir = self.storage_dir / snapshot_id
         snapshot_dir.mkdir(exist_ok=True)
 
-        # Save data as parquet
         df.to_parquet(snapshot_dir / "data.parquet")
 
-        # Create manifest
         manifest = {
             "snapshot_id": snapshot_id,
             "symbol": symbol,
@@ -642,15 +772,6 @@ class DataSnapshot:
         return snapshot_id
 
     def load_snapshot(self, snapshot_id: str) -> tuple[pd.DataFrame, dict[str, Any]]:
-        """
-        Load a data snapshot.
-
-        Args:
-            snapshot_id: Snapshot identifier
-
-        Returns:
-            Tuple of (DataFrame, manifest dict)
-        """
         snapshot_dir = self.storage_dir / snapshot_id
 
         if not snapshot_dir.exists():
@@ -665,7 +786,6 @@ class DataSnapshot:
         return df, manifest
 
     def list_snapshots(self, symbol: Optional[str] = None) -> list[dict[str, Any]]:
-        """List all available snapshots."""
         snapshots = []
 
         for snapshot_dir in self.storage_dir.iterdir():
@@ -712,11 +832,11 @@ if __name__ == "__main__":
     validator = DataValidator()
     report = validator.validate(df, symbol="TEST")
 
-    print(f"\nOverall Status: {report.overall_status.value}")
+    print(f"\\nOverall Status: {report.overall_status.value}")
     print(f"Checks Passed: {report.passed_checks}/{report.total_checks}")
     print(f"Data Hash: {report.data_hash}")
 
-    print("\nCheck Results:")
+    print("\\nCheck Results:")
     for result in report.results:
         status = "✅" if result.passed else "❌"
         print(f"  {status} {result.check_name}: {result.message}")
@@ -728,6 +848,6 @@ if __name__ == "__main__":
         symbol="TEST",
         description="Demo snapshot with clean data",
     )
-    print(f"\nSaved snapshot: {snapshot_id}")
+    print(f"\\nSaved snapshot: {snapshot_id}")
 
-    print("\n" + "=" * 80)
+    print("\\n" + "=" * 80)

@@ -38,7 +38,10 @@ from src.research.data_contracts import (
     DataQualityReport,
     DataSnapshot,
     DataValidator,
+    FutureReturns,
+    Label,
     OHLCVSchema,
+    SignalSnapshot,
 )
 from src.research.experiments import (
     ExperimentConfig,
@@ -95,6 +98,9 @@ __all__ = [
     "DataSnapshot",
     "OHLCVSchema",
     "DataQualityReport",
+    "SignalSnapshot",
+    "FutureReturns",
+    "Label",
     # Experiments
     "ExperimentTracker",
     "ExperimentConfig",
