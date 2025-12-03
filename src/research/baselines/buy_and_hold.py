@@ -37,7 +37,11 @@ class BuyAndHoldStrategy:
         """
         signals = pd.DataFrame(index=data.index)
         for symbol in self.symbols:
-            if symbol in data.index.get_level_values(0) if isinstance(data.index, pd.MultiIndex) else data.get("symbol"):
+            if (
+                symbol in data.index.get_level_values(0)
+                if isinstance(data.index, pd.MultiIndex)
+                else data.get("symbol")
+            ):
                 signals[f"{symbol}_signal"] = 1
             else:
                 signals[f"{symbol}_signal"] = 0
