@@ -151,6 +151,11 @@ def main():
     parser.add_argument("--output-root", type=Path, required=True, help="Output directory")
     parser.add_argument("--summary", type=Path, help="Summary file path")
     parser.add_argument("--max-scenarios", type=int, default=50, help="Max scenarios to run")
+    parser.add_argument(
+        "--use-hybrid-gates",
+        action="store_true",
+        help="Reserved flag for CI compatibility; currently a no-op.",
+    )
 
     args = parser.parse_args()
 
