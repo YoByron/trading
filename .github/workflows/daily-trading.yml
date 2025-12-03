@@ -80,7 +80,8 @@ jobs:
           python3 scripts/run_backtest_matrix.py \
             --config config/backtest_scenarios.yaml \
             --output-root data/backtests \
-            --summary data/backtests/latest_summary.json
+            --summary data/backtests/latest_summary.json \
+            --use-hybrid-gates
 
       - name: Set up Go for ADK orchestrator
         uses: actions/setup-go@v5
