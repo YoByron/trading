@@ -56,6 +56,11 @@ class BacktestResults:
     # Slippage tracking for realistic cost analysis
     total_slippage_cost: float = 0.0
     slippage_enabled: bool = False
+    # $100/day target metrics
+    avg_daily_pnl: float = 0.0
+    pct_days_above_target: float = 0.0
+    worst_5day_drawdown: float = 0.0
+    worst_20day_drawdown: float = 0.0
 
     def generate_report(self) -> str:
         """
@@ -93,6 +98,13 @@ class BacktestResults:
             f"Slippage Model:    {'Enabled' if self.slippage_enabled else 'Disabled (results may be optimistic)'}",
             f"Total Slippage:    ${self.total_slippage_cost:.2f}",
             f"Slippage % of PnL: {self._calculate_slippage_impact():.2f}%",
+            "",
+            "$100/DAY TARGET METRICS",
+            "-" * 80,
+            f"Avg Daily P&L:     ${self.avg_daily_pnl:.2f}",
+            f"% Days ≥ $100:     {self.pct_days_above_target:.1f}%",
+            f"Worst 5-Day DD:    ${self.worst_5day_drawdown:.2f}",
+            f"Worst 20-Day DD:   ${self.worst_20day_drawdown:.2f}",
             "",
             "TRADE STATISTICS",
             "-" * 80,
@@ -255,6 +267,10 @@ class BacktestResults:
             "total_slippage_cost": self.total_slippage_cost,
             "slippage_enabled": self.slippage_enabled,
             "slippage_impact_pct": self._calculate_slippage_impact(),
+            "avg_daily_pnl": self.avg_daily_pnl,
+            "pct_days_above_target": self.pct_days_above_target,
+            "worst_5day_drawdown": self.worst_5day_drawdown,
+            "worst_20day_drawdown": self.worst_20day_drawdown,
         }
 
     def save_to_json(self, filepath: str) -> None:
