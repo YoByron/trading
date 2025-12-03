@@ -35,6 +35,10 @@ pytz==2023.3
 loguru==0.7.3
 anthropic>=0.73.0,<1.0.0  # Aligned with pyproject.toml
 
+# Testing (for CI)
+pytest>=7.0.0,<8.0.0
+pytest-timeout>=2.0.0
+
 # REMOVED (unused):
 # streamlit==1.39.0              # Never imported - dashboard not built
 # plotly==5.18.0                 # Never imported - visualization not used
