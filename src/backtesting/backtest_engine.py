@@ -849,7 +849,11 @@ class BacktestEngine:
         daily_pnl_values = self._calculate_daily_pnl()
         avg_daily_pnl = np.mean(daily_pnl_values) if len(daily_pnl_values) > 0 else 0.0
         pct_days_above_target = (
-            (np.sum(np.array(daily_pnl_values) >= target_daily_net_income) / len(daily_pnl_values) * 100)
+            (
+                np.sum(np.array(daily_pnl_values) >= target_daily_net_income)
+                / len(daily_pnl_values)
+                * 100
+            )
             if len(daily_pnl_values) > 0
             else 0.0
         )

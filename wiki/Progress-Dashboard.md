@@ -192,8 +192,8 @@
 
 **Alpaca API Minimum Order Size: $1.00 USD**
 
-**Root Cause Identified**: Bonds configured but not executing due to Alpaca $1.00 minimum order requirement  
-**Fix Applied**: Updated execution thresholds from $0.50 to $1.00  
+**Root Cause Identified**: Bonds configured but not executing due to Alpaca $1.00 minimum order requirement
+**Fix Applied**: Updated execution thresholds from $0.50 to $1.00
 **Status**: ✅ Fixed - Bonds will execute when daily allocation >= $6.67
 
 **Documentation**: [Bonds Trading Analysis](docs/BONDS_TRADING_ANALYSIS.md)

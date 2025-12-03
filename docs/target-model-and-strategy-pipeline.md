@@ -1,6 +1,6 @@
 # Target Model & Strategy Pipeline Documentation
 
-**Created:** 2025-12-03  
+**Created:** 2025-12-03
 **Purpose:** Make $100/day North Star an explicit, measurable design constraint
 
 ## Overview
@@ -361,5 +361,5 @@ registry.update_status('mean_reversion_v1', StrategyStatus.BACKTESTED)
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.0
 **Last Updated:** 2025-12-03

@@ -85,7 +85,9 @@ def check_strategy_files() -> dict[str, dict[str, str]]:
     return discovered
 
 
-def check_overlaps(registry: StrategyRegistry, branches: list[str], prs: list[dict]) -> dict[str, list[str]]:
+def check_overlaps(
+    registry: StrategyRegistry, branches: list[str], prs: list[dict]
+) -> dict[str, list[str]]:
     """
     Check for overlapping branches/PRs that touch the same strategies.
 
@@ -99,7 +101,10 @@ def check_overlaps(registry: StrategyRegistry, branches: list[str], prs: list[di
         # Simple heuristic: check if branch name contains strategy-related keywords
         branch_lower = branch.lower()
         for strategy_name, strategy_meta in registry.strategies.items():
-            if strategy_name.lower() in branch_lower or strategy_meta.class_name.lower() in branch_lower:
+            if (
+                strategy_name.lower() in branch_lower
+                or strategy_meta.class_name.lower() in branch_lower
+            ):
                 if strategy_name not in overlaps:
                     overlaps[strategy_name] = []
                 overlaps[strategy_name].append(f"branch:{branch}")
@@ -121,7 +126,9 @@ def check_overlaps(registry: StrategyRegistry, branches: list[str], prs: list[di
     return overlaps
 
 
-def print_inventory(registry: StrategyRegistry, overlaps: dict[str, list[str]], json_output: bool = False) -> None:
+def print_inventory(
+    registry: StrategyRegistry, overlaps: dict[str, list[str]], json_output: bool = False
+) -> None:
     """Print strategy inventory."""
     strategies = registry.list_strategies()
 
@@ -182,8 +189,12 @@ def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Strategy inventory and overlap checker")
     parser.add_argument("--json", action="store_true", help="Output JSON format")
-    parser.add_argument("--check-overlaps", action="store_true", help="Check for overlapping branches/PRs")
-    parser.add_argument("--auto-register", action="store_true", help="Auto-register discovered strategies")
+    parser.add_argument(
+        "--check-overlaps", action="store_true", help="Check for overlapping branches/PRs"
+    )
+    parser.add_argument(
+        "--auto-register", action="store_true", help="Auto-register discovered strategies"
+    )
     args = parser.parse_args()
 
     registry = get_registry()

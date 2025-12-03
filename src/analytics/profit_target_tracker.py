@@ -92,9 +92,7 @@ class ProfitTargetTracker:
         if not active:
             return {}
 
-        total_allocation = sum(
-            strat.get("allocation", 0.0) or 0.0 for strat in active.values()
-        )
+        total_allocation = sum(strat.get("allocation", 0.0) or 0.0 for strat in active.values())
         if total_allocation <= 0:
             total_allocation = sum(
                 float(strat.get("daily_amount", 0.0)) for strat in active.values()

@@ -220,7 +220,7 @@ Options simulation logs are written to:
 
 **Cause**: Account equity below $5k threshold
 
-**Solution**: 
+**Solution**:
 - Continue building equity via daily $10/day input
 - Options unlock automatically at $5k equity
 - Check `equity_gate.gap_to_next_tier` in plan output

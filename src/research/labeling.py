@@ -117,7 +117,7 @@ class TripleBarrierLabeler:
 
         # Use all dates if no specific events provided
         if events is None:
-            events = df.index[self.config.atr_period:]  # Skip warmup period
+            events = df.index[self.config.atr_period :]  # Skip warmup period
 
         # Calculate barriers
         if self.config.use_dynamic_barriers:
@@ -134,9 +134,7 @@ class TripleBarrierLabeler:
             if event_date not in close.index:
                 continue
 
-            label, touch_time, ret = self._apply_triple_barrier(
-                close, event_date, barriers
-            )
+            label, touch_time, ret = self._apply_triple_barrier(close, event_date, barriers)
             labels.append(label)
             touch_times.append(touch_time)
             barrier_returns.append(ret)
@@ -240,7 +238,7 @@ class TripleBarrierLabeler:
         if event_idx >= max_idx:
             return 0, event_date, 0.0
 
-        forward_path = close.iloc[event_idx + 1: max_idx + 1]
+        forward_path = close.iloc[event_idx + 1 : max_idx + 1]
 
         if len(forward_path) == 0:
             return 0, event_date, 0.0
@@ -410,9 +408,9 @@ class VolatilityLabeler:
             )
 
             # High vol indicator
-            labels[f"high_vol_{horizon}d"] = (
-                fwd_vol > fwd_vol.rolling(252).quantile(0.75)
-            ).astype(int)
+            labels[f"high_vol_{horizon}d"] = (fwd_vol > fwd_vol.rolling(252).quantile(0.75)).astype(
+                int
+            )
 
         metadata = {
             "horizons": self.horizons,
@@ -487,15 +485,11 @@ class EventLabeler:
 
             # Calculate pre/post event returns
             if event_idx >= self.event_window:
-                pre_ret = (
-                    close.iloc[event_idx] / close.iloc[event_idx - self.event_window] - 1
-                )
+                pre_ret = close.iloc[event_idx] / close.iloc[event_idx - self.event_window] - 1
                 labels.loc[event_date, "pre_event_ret"] = pre_ret
 
             if event_idx + self.event_window < len(close):
-                post_ret = (
-                    close.iloc[event_idx + self.event_window] / close.iloc[event_idx] - 1
-                )
+                post_ret = close.iloc[event_idx + self.event_window] / close.iloc[event_idx] - 1
                 labels.loc[event_date, "post_event_ret"] = post_ret
 
         metadata = {

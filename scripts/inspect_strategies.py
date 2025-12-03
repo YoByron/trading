@@ -19,7 +19,6 @@ Created: 2025-12-03
 import argparse
 import json
 import logging
-import os
 import subprocess
 import sys
 from datetime import datetime
@@ -28,7 +27,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.strategies.registry import get_registry, initialize_registry, StrategyStatus
+from src.strategies.registry import StrategyStatus, get_registry, initialize_registry
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -121,7 +120,9 @@ def print_strategy_report():
     strategies = registry.list_all()
 
     if not strategies:
-        print("No strategies registered. Run: python -c 'from src.strategies.registry import initialize_registry; initialize_registry()'")
+        print(
+            "No strategies registered. Run: python -c 'from src.strategies.registry import initialize_registry; initialize_registry()'"
+        )
         return
 
     # Group by status
@@ -154,7 +155,9 @@ def print_strategy_report():
             m = strat.metrics
             if m.backtest_date:
                 print(f"     Last Backtest: {m.backtest_date}")
-                print(f"     Sharpe: {m.sharpe_ratio:.2f} | Win Rate: {m.win_rate:.1f}% | Avg Daily: ${m.avg_daily_pnl:.2f}")
+                print(
+                    f"     Sharpe: {m.sharpe_ratio:.2f} | Win Rate: {m.win_rate:.1f}% | Avg Daily: ${m.avg_daily_pnl:.2f}"
+                )
                 print(f"     $100/Day Hit Rate: {m.hit_rate_100_day:.1f}%")
             else:
                 print("     ⚠️  No backtest metrics available")
@@ -211,8 +214,7 @@ def print_json_report():
         "summary": {
             "total": len(registry.list_all()),
             "by_status": {
-                status.value: len(registry.list_by_status(status))
-                for status in StrategyStatus
+                status.value: len(registry.list_by_status(status)) for status in StrategyStatus
             },
         },
     }

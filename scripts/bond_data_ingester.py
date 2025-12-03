@@ -19,9 +19,8 @@ Created: 2025-12-03
 
 import json
 import logging
-import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -247,14 +246,18 @@ def calculate_bond_metrics(df: pd.DataFrame, metadata: dict) -> dict[str, Any]:
         returns_3m = ((df["Close"].iloc[-1] / df["Close"].iloc[-63]) - 1) if len(df) >= 63 else 0
 
         # Volatility
-        volatility_20d = float(df["Volatility_20d"].iloc[-1]) if "Volatility_20d" in df.columns else 0
+        volatility_20d = (
+            float(df["Volatility_20d"].iloc[-1]) if "Volatility_20d" in df.columns else 0
+        )
 
         # Momentum
         momentum_gate = sma_20 >= sma_50
 
         # Duration-adjusted return (approximation)
         duration_years = metadata.get("duration_years", 5.0)
-        duration_adjusted_vol = volatility_20d / duration_years if duration_years > 0 else volatility_20d
+        duration_adjusted_vol = (
+            volatility_20d / duration_years if duration_years > 0 else volatility_20d
+        )
 
         return {
             "current_price": round(current_price, 2),
@@ -510,7 +513,9 @@ def print_bond_summary():
         vol = metrics.get("volatility_20d_ann", 0)
         gate = "OPEN" if metrics.get("momentum_gate_open", False) else "CLOSED"
 
-        print(f"{symbol:<8} {name:<45} ${price:>6.2f} {ret_1m:>+7.2f}% {ret_3m:>+7.2f}% {vol:>7.1f}% {gate:>6}")
+        print(
+            f"{symbol:<8} {name:<45} ${price:>6.2f} {ret_1m:>+7.2f}% {ret_3m:>+7.2f}% {vol:>7.1f}% {gate:>6}"
+        )
 
     print("=" * 100)
 
@@ -521,7 +526,7 @@ def print_bond_summary():
     print("\nRECOMMENDED ALLOCATION:")
     for symbol, pct in signals["allocation"].items():
         if pct > 0:
-            print(f"  {symbol}: {pct*100:.0f}%")
+            print(f"  {symbol}: {pct * 100:.0f}%")
     print()
 
 

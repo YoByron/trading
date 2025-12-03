@@ -14,7 +14,6 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 
 # Add src to path
@@ -23,13 +22,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from strategies.strategy_registry import (
     BacktestMetrics,
     StrategyRegistry,
-    StrategyStatus,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -58,64 +53,60 @@ def parse_backtest_to_metrics(backtest_data: dict) -> BacktestMetrics:
 
 
 def update_strategy_from_backtest(
-    strategy_id: str,
-    backtest_file: Path,
-    registry: StrategyRegistry
+    strategy_id: str, backtest_file: Path, registry: StrategyRegistry
 ) -> bool:
     """Update strategy registry with backtest results."""
     # Load backtest
     backtest_data = load_backtest_result(backtest_file)
     if not backtest_data:
         return False
-    
+
     # Convert to metrics
     metrics = parse_backtest_to_metrics(backtest_data)
-    
+
     # Update registry
     success = registry.update_backtest_metrics(strategy_id, metrics)
-    
+
     if success:
         logger.info(f"Updated {strategy_id} with backtest results:")
         logger.info(f"  Sharpe: {metrics.sharpe_ratio:.2f}")
         logger.info(f"  Win Rate: {metrics.win_rate_pct:.1f}%")
         logger.info(f"  Daily P&L: ${metrics.avg_daily_pnl:.2f}")
         logger.info(f"  Max Drawdown: {metrics.max_drawdown_pct:.1f}%")
-    
+
     return success
 
 
-def scan_and_update_all_backtests(
-    backtest_dir: Path = Path("data/backtests")
-) -> int:
+def scan_and_update_all_backtests(backtest_dir: Path = Path("data/backtests")) -> int:
     """Scan backtest directory and update all strategies."""
     if not backtest_dir.exists():
         logger.error(f"Backtest directory not found: {backtest_dir}")
         return 0
-    
+
     registry = StrategyRegistry()
     updated_count = 0
-    
+
     # Find all backtest JSON files
     backtest_files = list(backtest_dir.glob("**/*_backtest.json"))
-    
+
     logger.info(f"Found {len(backtest_files)} backtest files")
-    
+
     for backtest_file in backtest_files:
         # Try to infer strategy ID from filename
         # Format: <strategy_id>_backtest.json or <strategy_id>_YYYY-MM-DD_backtest.json
         filename = backtest_file.stem
-        
+
         # Remove _backtest suffix
         if filename.endswith("_backtest"):
             filename = filename[:-9]
-        
+
         # Remove date suffix if present
         parts = filename.split("_")
         if len(parts) > 1 and parts[-1].replace("-", "").isdigit():
             strategy_id = "_".join(parts[:-1])
         else:
             strategy_id = filename
-        
+
         # Check if strategy exists in registry
         if strategy_id in registry.strategies:
             logger.info(f"Updating {strategy_id} from {backtest_file.name}")
@@ -123,67 +114,54 @@ def scan_and_update_all_backtests(
                 updated_count += 1
         else:
             logger.warning(f"Strategy {strategy_id} not in registry, skipping")
-    
+
     return updated_count
 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Update strategy registry with backtest metrics"
-    )
+    parser = argparse.ArgumentParser(description="Update strategy registry with backtest metrics")
+    parser.add_argument("--strategy-id", help="Specific strategy ID to update")
+    parser.add_argument("--backtest-file", type=Path, help="Path to backtest JSON file")
     parser.add_argument(
-        "--strategy-id",
-        help="Specific strategy ID to update"
-    )
-    parser.add_argument(
-        "--backtest-file",
-        type=Path,
-        help="Path to backtest JSON file"
-    )
-    parser.add_argument(
-        "--scan-all",
-        action="store_true",
-        help="Scan all backtests in data/backtests/ and update"
+        "--scan-all", action="store_true", help="Scan all backtests in data/backtests/ and update"
     )
     parser.add_argument(
         "--backtest-dir",
         type=Path,
         default=Path("data/backtests"),
-        help="Directory to scan for backtests (default: data/backtests)"
+        help="Directory to scan for backtests (default: data/backtests)",
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.scan_all:
         logger.info("Scanning all backtests...")
         updated = scan_and_update_all_backtests(args.backtest_dir)
         print(f"\n✅ Updated {updated} strategies with backtest metrics\n")
-        
+
         # Show registry report
         registry = StrategyRegistry()
         print(registry.generate_report())
-    
+
     elif args.strategy_id and args.backtest_file:
         registry = StrategyRegistry()
-        success = update_strategy_from_backtest(
-            args.strategy_id,
-            args.backtest_file,
-            registry
-        )
-        
+        success = update_strategy_from_backtest(args.strategy_id, args.backtest_file, registry)
+
         if success:
             print(f"\n✅ Successfully updated {args.strategy_id}\n")
             print(registry.generate_report())
         else:
             print(f"\n❌ Failed to update {args.strategy_id}\n")
             sys.exit(1)
-    
+
     else:
         parser.print_help()
         print("\nExamples:")
         print("  # Update specific strategy")
-        print("  python3 scripts/update_backtest_metrics.py --strategy-id momentum_v1 --backtest-file data/backtests/momentum_v1_backtest.json")
+        print(
+            "  python3 scripts/update_backtest_metrics.py --strategy-id momentum_v1 --backtest-file data/backtests/momentum_v1_backtest.json"
+        )
         print("\n  # Scan and update all")
         print("  python3 scripts/update_backtest_metrics.py --scan-all")
 

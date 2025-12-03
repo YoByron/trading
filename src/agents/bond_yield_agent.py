@@ -168,22 +168,17 @@ class BondYieldAgent:
             shape = YieldCurveShape.STEEP
             confidence = min(1.0, 0.6 + (spread_2_10 - self.SPREAD_STEEP_THRESHOLD) * 0.2)
             rationale = (
-                f"Steep curve ({spread_2_10:.2f}% spread). "
-                "Favor long duration to capture yield."
+                f"Steep curve ({spread_2_10:.2f}% spread). Favor long duration to capture yield."
             )
         elif spread_2_10 > self.SPREAD_NORMAL_THRESHOLD:
             shape = YieldCurveShape.NORMAL
             confidence = 0.6 + min(0.2, spread_2_10 * 0.1)
-            rationale = (
-                f"Normal curve ({spread_2_10:.2f}% spread). "
-                "Balanced duration approach."
-            )
+            rationale = f"Normal curve ({spread_2_10:.2f}% spread). Balanced duration approach."
         elif spread_2_10 > self.SPREAD_FLAT_THRESHOLD:
             shape = YieldCurveShape.FLAT
             confidence = 0.5 + min(0.2, (0.5 - spread_2_10) * 0.4)
             rationale = (
-                f"Flat curve ({spread_2_10:.2f}% spread). "
-                "Late cycle - favor short duration."
+                f"Flat curve ({spread_2_10:.2f}% spread). Late cycle - favor short duration."
             )
         else:
             shape = YieldCurveShape.INVERTED
@@ -244,14 +239,16 @@ class BondYieldAgent:
 
         # Get treasury allocation based on yield curve
         treasury_signals = self._generate_treasury_signals(
-            curve_signal, bond_amount * 0.6  # 60% of bonds to treasuries
+            curve_signal,
+            bond_amount * 0.6,  # 60% of bonds to treasuries
         )
         signals.extend(treasury_signals)
 
         # Get corporate allocation if enabled
         if self.enable_corporates:
             corp_signals = self._generate_corporate_signals(
-                curve_signal, bond_amount * 0.3  # 30% of bonds to corporates
+                curve_signal,
+                bond_amount * 0.3,  # 30% of bonds to corporates
             )
             signals.extend(corp_signals)
 
@@ -263,7 +260,9 @@ class BondYieldAgent:
         # Filter by confidence threshold
         signals = [s for s in signals if s.strength >= self.min_confidence]
 
-        logger.info(f"Generated {len(signals)} bond signals (bond allocation: {bond_pct*100:.0f}%)")
+        logger.info(
+            f"Generated {len(signals)} bond signals (bond allocation: {bond_pct * 100:.0f}%)"
+        )
         return signals
 
     def _calculate_bond_allocation_pct(self, curve_signal: YieldCurveSignal) -> float:

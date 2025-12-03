@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Callable
 
 import pytest
-
 from src.utils import self_healing, sentiment
 
 

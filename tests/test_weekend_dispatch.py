@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-
 from src.orchestrator.main import TradingOrchestrator
 from src.orchestrator.smart_dca import SmartDCAAllocator
 

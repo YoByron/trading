@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
 from src.analytics.options_live_sim import OptionsLiveSimResult, OptionsLiveSimulator
 from src.analytics.options_profit_planner import OptionsProfitPlanner
 
@@ -23,7 +22,12 @@ class DummyThetaExecutor:
         return {
             "summary": "theta ready",
             "opportunities": [
-                {"symbol": symbols[0], "strategy": "test", "contracts": 1, "estimated_premium": 35.0}
+                {
+                    "symbol": symbols[0],
+                    "strategy": "test",
+                    "contracts": 1,
+                    "estimated_premium": 35.0,
+                }
             ],
             "total_estimated_premium": 5.0,
             "premium_gap": 5.0,

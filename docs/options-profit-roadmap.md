@@ -1,7 +1,7 @@
 # 📈 Options Profit Roadmap – Targeting $10/Day
 
-**Date:** 2025-12-02  
-**Owner:** Claude CTO  
+**Date:** 2025-12-02
+**Owner:** Claude CTO
 **Scope:** Phil Town Rule #1 workflow + covered calls/puts stack
 
 ---

@@ -27,28 +27,30 @@ Capital Requirements for $100/day:
 Reference: Tasty Trade "The Wheel" strategy guidelines
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
-import json
 
 logger = logging.getLogger(__name__)
 
 
 class WheelPhase(Enum):
     """Current phase in the wheel cycle."""
-    SELLING_PUTS = "selling_puts"       # Phase 1: Selling CSPs
-    ASSIGNED = "assigned"               # Transition: Got assigned shares
-    SELLING_CALLS = "selling_calls"     # Phase 2: Selling covered calls
-    CALLED_AWAY = "called_away"         # Transition: Shares called away
+
+    SELLING_PUTS = "selling_puts"  # Phase 1: Selling CSPs
+    ASSIGNED = "assigned"  # Transition: Got assigned shares
+    SELLING_CALLS = "selling_calls"  # Phase 2: Selling covered calls
+    CALLED_AWAY = "called_away"  # Transition: Shares called away
 
 
 @dataclass
 class WheelPosition:
     """Tracks a single wheel cycle on a stock."""
+
     symbol: str
     phase: WheelPhase
 
@@ -116,14 +118,19 @@ class WheelPosition:
             total_premium_collected=data.get("total_premium_collected", 0.0),
             cycles_completed=data.get("cycles_completed", 0),
             realized_pnl=data.get("realized_pnl", 0.0),
-            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else datetime.now(),
-            last_updated=datetime.fromisoformat(data["last_updated"]) if data.get("last_updated") else datetime.now(),
+            started_at=datetime.fromisoformat(data["started_at"])
+            if data.get("started_at")
+            else datetime.now(),
+            last_updated=datetime.fromisoformat(data["last_updated"])
+            if data.get("last_updated")
+            else datetime.now(),
         )
 
 
 @dataclass
 class WheelCandidate:
     """A stock evaluated for wheel strategy suitability."""
+
     symbol: str
     current_price: float
 
@@ -175,17 +182,35 @@ class WheelStrategy:
     # Quality stocks for wheel (high quality, good premiums)
     WHEEL_UNIVERSE = [
         # Tech with wide moats
-        "AAPL", "MSFT", "GOOGL", "META",
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "META",
         # Consumer staples (stable)
-        "KO", "PG", "PEP", "WMT", "COST",
+        "KO",
+        "PG",
+        "PEP",
+        "WMT",
+        "COST",
         # Financials
-        "V", "MA", "JPM", "BRK-B",
+        "V",
+        "MA",
+        "JPM",
+        "BRK-B",
         # Healthcare
-        "JNJ", "UNH", "PFE",
+        "JNJ",
+        "UNH",
+        "PFE",
         # ETFs (highly liquid, lower risk)
-        "SPY", "QQQ", "IWM",
+        "SPY",
+        "QQQ",
+        "IWM",
         # Other blue chips
-        "NVDA", "AMD", "DIS", "HD", "MCD",
+        "NVDA",
+        "AMD",
+        "DIS",
+        "HD",
+        "MCD",
     ]
 
     def __init__(self, paper: bool = True, state_file: str = "data/wheel_state.json"):
@@ -227,7 +252,7 @@ class WheelStrategy:
         """Load wheel positions from disk."""
         try:
             if self.state_file.exists():
-                with open(self.state_file, "r") as f:
+                with open(self.state_file) as f:
                     data = json.load(f)
                     for symbol, pos_data in data.get("positions", {}).items():
                         self.positions[symbol] = WheelPosition.from_dict(pos_data)
@@ -249,7 +274,9 @@ class WheelStrategy:
         except Exception as e:
             logger.error(f"Failed to save wheel state: {e}")
 
-    def _get_support_resistance(self, symbol: str, current_price: float) -> tuple[Optional[float], Optional[float]]:
+    def _get_support_resistance(
+        self, symbol: str, current_price: float
+    ) -> tuple[Optional[float], Optional[float]]:
         """
         Calculate support and resistance levels for strike selection.
 
@@ -296,6 +323,7 @@ class WheelStrategy:
 
         try:
             import yfinance as yf
+
             ticker = yf.Ticker(symbol)
             info = ticker.info
 
@@ -354,7 +382,9 @@ class WheelStrategy:
             import yfinance as yf
 
             ticker = yf.Ticker(symbol)
-            current_price = ticker.info.get("currentPrice") or ticker.info.get("regularMarketPrice", 0)
+            current_price = ticker.info.get("currentPrice") or ticker.info.get(
+                "regularMarketPrice", 0
+            )
 
             if not current_price:
                 logger.debug(f"{symbol}: No price data")
@@ -377,7 +407,9 @@ class WheelStrategy:
             if self.iv_analyzer:
                 try:
                     iv_data = self.iv_analyzer.get_recommendation(symbol)
-                    iv_rank = iv_data.iv_rank if hasattr(iv_data, 'iv_rank') else iv_data.get('iv_rank')
+                    iv_rank = (
+                        iv_data.iv_rank if hasattr(iv_data, "iv_rank") else iv_data.get("iv_rank")
+                    )
                 except Exception:
                     pass
 
@@ -630,7 +662,9 @@ class WheelStrategy:
             import yfinance as yf
 
             ticker = yf.Ticker(symbol)
-            current_price = ticker.info.get("currentPrice") or ticker.info.get("regularMarketPrice", 0)
+            current_price = ticker.info.get("currentPrice") or ticker.info.get(
+                "regularMarketPrice", 0
+            )
 
             if not current_price:
                 return None
@@ -750,22 +784,26 @@ class WheelStrategy:
                             # Check if assigned
                             # This would require checking actual position via API
                             logger.info(f"{symbol}: Put expired, checking for assignment")
-                            actions.append({
-                                "symbol": symbol,
-                                "action": "CHECK_ASSIGNMENT",
-                                "expiration": position.put_expiration,
-                            })
+                            actions.append(
+                                {
+                                    "symbol": symbol,
+                                    "action": "CHECK_ASSIGNMENT",
+                                    "expiration": position.put_expiration,
+                                }
+                            )
 
                 elif position.phase == WheelPhase.SELLING_CALLS:
                     if position.call_expiration:
                         exp_date = datetime.strptime(position.call_expiration, "%Y-%m-%d")
                         if datetime.now() > exp_date:
                             logger.info(f"{symbol}: Call expired, checking if called away")
-                            actions.append({
-                                "symbol": symbol,
-                                "action": "CHECK_CALLED_AWAY",
-                                "expiration": position.call_expiration,
-                            })
+                            actions.append(
+                                {
+                                    "symbol": symbol,
+                                    "action": "CHECK_CALLED_AWAY",
+                                    "expiration": position.call_expiration,
+                                }
+                            )
 
             except Exception as e:
                 logger.warning(f"Error managing position {symbol}: {e}")
@@ -781,7 +819,9 @@ class WheelStrategy:
         """
         total_premium = sum(p.total_premium_collected for p in self.positions.values())
         active_puts = sum(1 for p in self.positions.values() if p.phase == WheelPhase.SELLING_PUTS)
-        active_calls = sum(1 for p in self.positions.values() if p.phase == WheelPhase.SELLING_CALLS)
+        active_calls = sum(
+            1 for p in self.positions.values() if p.phase == WheelPhase.SELLING_CALLS
+        )
         completed_cycles = sum(p.cycles_completed for p in self.positions.values())
 
         return {
@@ -848,10 +888,7 @@ class WheelStrategy:
                 if candidate.symbol in self.positions:
                     position = self.positions[candidate.symbol]
                     if position.phase == WheelPhase.ASSIGNED:
-                        result = self.execute_call_trade(
-                            candidate.symbol,
-                            position.shares_owned
-                        )
+                        result = self.execute_call_trade(candidate.symbol, position.shares_owned)
                         if result:
                             results["calls_executed"].append(result)
 

@@ -1,6 +1,6 @@
 # Trading System Operations Runbook
 
-**Last Updated:** 2025-12-03  
+**Last Updated:** 2025-12-03
 **Maintained By:** Trading System Ops Team
 
 ## Table of Contents
@@ -470,8 +470,8 @@ git push
 
 ## Contacts & Escalation
 
-**CEO (Decision Authority)**: Igor Ganapolsky  
-**CTO (System Owner)**: Claude AI Agent  
+**CEO (Decision Authority)**: Igor Ganapolsky
+**CTO (System Owner)**: Claude AI Agent
 **Broker Support**: Alpaca - support@alpaca.markets
 
 ### Escalation Path
@@ -533,5 +533,5 @@ TRADING_HALT=true  # Emergency stop
 
 ---
 
-**Document Version**: 1.0  
+**Document Version**: 1.0
 **Next Review Date**: 2025-12-10

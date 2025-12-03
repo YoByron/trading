@@ -91,7 +91,7 @@ def compare_with_baseline(new_metrics: dict) -> tuple[bool, list[str]]:
         logger.warning("No baseline metrics found. This will be saved as new baseline.")
         return True, []
 
-    with open(REFERENCE_METRICS_FILE, "r") as f:
+    with open(REFERENCE_METRICS_FILE) as f:
         baseline = json.load(f)
 
     is_valid, warnings = CoreStrategyFrozen.validate_metrics(new_metrics)
@@ -176,7 +176,9 @@ def main() -> None:
     # Exit with error code if validation failed
     if not is_valid:
         print("\n❌ VALIDATION FAILED: Metrics degraded beyond tolerance.")
-        print("If this degradation is intentional, add 'ACCEPT_METRIC_DEGRADATION' to PR description.")
+        print(
+            "If this degradation is intentional, add 'ACCEPT_METRIC_DEGRADATION' to PR description."
+        )
         sys.exit(1)
     else:
         print("\n✅ VALIDATION PASSED")

@@ -128,7 +128,7 @@ class BondRiskManager:
 
         logger.info(
             f"BondRiskManager initialized: max_duration={self.max_portfolio_duration}, "
-            f"max_bonds={self.max_bond_allocation*100}%, max_hy={self.max_hy_allocation*100}%"
+            f"max_bonds={self.max_bond_allocation * 100}%, max_hy={self.max_hy_allocation * 100}%"
         )
 
     def calculate_position_metrics(
@@ -209,7 +209,7 @@ class BondRiskManager:
 
         logger.debug(
             f"Duration stop: entry={entry_price:.2f}, duration={duration:.1f}yr, "
-            f"stop_pct={stop_pct*100:.1f}%, stop={stop_price:.2f}"
+            f"stop_pct={stop_pct * 100:.1f}%, stop={stop_price:.2f}"
         )
 
         return round(stop_price, 2)
@@ -245,9 +245,7 @@ class BondRiskManager:
             )
 
         # Calculate portfolio metrics
-        total_bond_value = sum(
-            float(pos.get("market_value", 0)) for pos in bond_positions
-        )
+        total_bond_value = sum(float(pos.get("market_value", 0)) for pos in bond_positions)
 
         portfolio_duration = 0
         portfolio_dv01 = 0
@@ -300,29 +298,28 @@ class BondRiskManager:
         bond_pct = total_bond_value / portfolio_value if portfolio_value > 0 else 0
         if bond_pct > self.max_bond_allocation:
             recommendations.append(
-                f"REDUCE BOND ALLOCATION: {bond_pct*100:.1f}% exceeds "
-                f"limit {self.max_bond_allocation*100}%."
+                f"REDUCE BOND ALLOCATION: {bond_pct * 100:.1f}% exceeds "
+                f"limit {self.max_bond_allocation * 100}%."
             )
 
         hy_pct = hy_value / portfolio_value if portfolio_value > 0 else 0
         if hy_pct > self.max_hy_allocation:
             recommendations.append(
-                f"REDUCE HIGH YIELD: {hy_pct*100:.1f}% exceeds "
-                f"limit {self.max_hy_allocation*100}%."
+                f"REDUCE HIGH YIELD: {hy_pct * 100:.1f}% exceeds "
+                f"limit {self.max_hy_allocation * 100}%."
             )
 
         if max_position_pct > self.MAX_SINGLE_BOND_PCT:
             recommendations.append(
-                f"CONCENTRATION RISK: Single position at {max_position_pct*100:.1f}% "
-                f"exceeds limit {self.MAX_SINGLE_BOND_PCT*100}%."
+                f"CONCENTRATION RISK: Single position at {max_position_pct * 100:.1f}% "
+                f"exceeds limit {self.MAX_SINGLE_BOND_PCT * 100}%."
             )
 
         # DV01 check
         dv01_per_10k = (portfolio_dv01 / portfolio_value) * 10000 if portfolio_value > 0 else 0
         if dv01_per_10k > self.MAX_DV01_PER_10K:
             recommendations.append(
-                f"DV01 RISK: ${dv01_per_10k:.0f} per $10k exceeds "
-                f"limit ${self.MAX_DV01_PER_10K}."
+                f"DV01 RISK: ${dv01_per_10k:.0f} per $10k exceeds limit ${self.MAX_DV01_PER_10K}."
             )
 
         if not recommendations:
@@ -378,9 +375,7 @@ class BondRiskManager:
             return False, "Invalid portfolio value"
 
         # Get current bond exposure
-        current_bond_value = sum(
-            float(pos.get("market_value", 0)) for pos in current_positions
-        )
+        current_bond_value = sum(float(pos.get("market_value", 0)) for pos in current_positions)
 
         # Check total bond allocation after trade
         new_bond_value = current_bond_value + trade_value
@@ -389,7 +384,7 @@ class BondRiskManager:
         if new_bond_pct > self.max_bond_allocation:
             return False, (
                 f"Trade would exceed max bond allocation: "
-                f"{new_bond_pct*100:.1f}% > {self.max_bond_allocation*100}%"
+                f"{new_bond_pct * 100:.1f}% > {self.max_bond_allocation * 100}%"
             )
 
         # Check single position limit
@@ -404,7 +399,7 @@ class BondRiskManager:
         if position_pct > self.MAX_SINGLE_BOND_PCT:
             return False, (
                 f"Trade would exceed single position limit: "
-                f"{position_pct*100:.1f}% > {self.MAX_SINGLE_BOND_PCT*100}%"
+                f"{position_pct * 100:.1f}% > {self.MAX_SINGLE_BOND_PCT * 100}%"
             )
 
         # Check high yield limit
@@ -419,15 +414,13 @@ class BondRiskManager:
             if new_hy_pct > self.max_hy_allocation:
                 return False, (
                     f"Trade would exceed high yield limit: "
-                    f"{new_hy_pct*100:.1f}% > {self.max_hy_allocation*100}%"
+                    f"{new_hy_pct * 100:.1f}% > {self.max_hy_allocation * 100}%"
                 )
 
         # Check duration impact
         duration = self.DURATION_ESTIMATES.get(symbol, 5.0)
 
-        current_assessment = self.assess_portfolio_risk(
-            current_positions, portfolio_value
-        )
+        current_assessment = self.assess_portfolio_risk(current_positions, portfolio_value)
 
         new_duration_contribution = (trade_value / portfolio_value) * duration
         projected_duration = current_assessment.portfolio_duration + new_duration_contribution
@@ -490,13 +483,15 @@ class BondRiskManager:
             duration_swing = 16.5 - 1.9  # 14.6 years
             swap_amount = (duration_excess / duration_swing) * portfolio_value
 
-            recommendations.append({
-                "action": "swap",
-                "sell": "TLT",
-                "buy": "SHY",
-                "amount": round(min(swap_amount, tlt_value), 2),
-                "expected_duration_reduction": round(duration_excess, 2),
-            })
+            recommendations.append(
+                {
+                    "action": "swap",
+                    "sell": "TLT",
+                    "buy": "SHY",
+                    "amount": round(min(swap_amount, tlt_value), 2),
+                    "expected_duration_reduction": round(duration_excess, 2),
+                }
+            )
 
         return {
             "action": "reduce_duration",
@@ -533,7 +528,7 @@ if __name__ == "__main__":
     print(f"Portfolio Duration: {assessment.portfolio_duration:.1f} years")
     print(f"Portfolio DV01: ${assessment.portfolio_dv01:.2f}")
     print(f"Risk Level: {assessment.risk_level.value}")
-    print(f"Max Position: {assessment.max_position_pct*100:.1f}%")
+    print(f"Max Position: {assessment.max_position_pct * 100:.1f}%")
     print(f"Duration Breach: {assessment.duration_limit_breach}")
     print(f"Equity Correlation: {assessment.correlation_to_equities:.2f}")
 

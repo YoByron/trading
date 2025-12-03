@@ -570,10 +570,9 @@ class EliteOrchestrator:
         # Record performance for adaptive learning
         if self.enable_adaptive and self.adaptive_orchestrator:
             try:
-                import time
-
                 execution_time_ms = sum(
-                    phase.get("execution_time_ms", 0) for phase in results.get("phases", {}).values()
+                    phase.get("execution_time_ms", 0)
+                    for phase in results.get("phases", {}).values()
                 )
                 success = len(results.get("errors", [])) == 0
                 profit = results.get("final_decision", {}).get("profit", 0.0) or 0.0

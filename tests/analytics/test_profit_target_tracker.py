@@ -1,11 +1,9 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
-import json
-
 import pytest
-
 from src.analytics.profit_target_tracker import ProfitTargetTracker
 
 

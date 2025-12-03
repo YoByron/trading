@@ -252,13 +252,9 @@ class CrossSectionalMomentum(BaselineStrategy):
 
         return signal
 
-    def generate_multi_asset_signals(
-        self, returns: pd.DataFrame
-    ) -> pd.DataFrame:
+    def generate_multi_asset_signals(self, returns: pd.DataFrame) -> pd.DataFrame:
         """For multiple assets, rank by momentum."""
-        momentum = returns.rolling(self.lookback).apply(
-            lambda x: (1 + x).prod() - 1
-        )
+        momentum = returns.rolling(self.lookback).apply(lambda x: (1 + x).prod() - 1)
 
         # Rank assets
         ranks = momentum.rank(axis=1, ascending=False)
@@ -383,10 +379,12 @@ def run_baseline_comparison(
     ]
 
     if include_all:
-        strategies.extend([
-            VolatilityBreakout(20, 2.0),
-            CrossSectionalMomentum(126),
-        ])
+        strategies.extend(
+            [
+                VolatilityBreakout(20, 2.0),
+                CrossSectionalMomentum(126),
+            ]
+        )
 
     results = []
     for strategy in strategies:
@@ -426,9 +424,7 @@ def check_model_beats_baselines(
     """
     model_sharpe = model_result.sharpe_ratio
     max_baseline_sharpe = baseline_results["sharpe_ratio"].max()
-    best_baseline = baseline_results.loc[
-        baseline_results["sharpe_ratio"].idxmax(), "strategy_name"
-    ]
+    best_baseline = baseline_results.loc[baseline_results["sharpe_ratio"].idxmax(), "strategy_name"]
 
     beats_all = model_sharpe > max_baseline_sharpe + min_sharpe_improvement
 
@@ -439,7 +435,8 @@ def check_model_beats_baselines(
         "sharpe_improvement": model_sharpe - max_baseline_sharpe,
         "beats_all_baselines": beats_all,
         "recommendation": (
-            "DEPLOY" if beats_all
+            "DEPLOY"
+            if beats_all
             else f"DO NOT DEPLOY - Model must beat {best_baseline} (Sharpe {max_baseline_sharpe:.2f})"
         ),
     }

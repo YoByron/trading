@@ -5,7 +5,6 @@ Verifies that split and dividend adjustments are correct.
 """
 
 import pandas as pd
-import pytest
 
 
 def test_no_negative_prices(data: pd.DataFrame) -> bool:
@@ -57,9 +56,7 @@ def test_price_consistency(data: pd.DataFrame) -> bool:
 
     # Low should be <= all other prices
     low_issues = (
-        (data["Low"] > data["High"])
-        | (data["Low"] > data["Open"])
-        | (data["Low"] > data["Close"])
+        (data["Low"] > data["High"]) | (data["Low"] > data["Open"]) | (data["Low"] > data["Close"])
     )
 
     if high_issues.any() or low_issues.any():
@@ -88,7 +85,7 @@ def test_volume_consistency(data: pd.DataFrame) -> bool:
 
     negative_volume = data["Volume"] < 0
     if negative_volume.any():
-        print(f"Found negative volume")
+        print("Found negative volume")
         print(f"Negative volume dates: {data[negative_volume].index.tolist()}")
         return False
 
@@ -115,9 +112,9 @@ def test_split_adjustments(data: pd.DataFrame, threshold: float = 0.2) -> bool:
     if large_jumps.any():
         jump_dates = data[large_jumps].index.tolist()
         jump_returns = returns[large_jumps]
-        print(f"Found {large_jumps.sum()} potential splits (>{threshold*100}% jumps)")
+        print(f"Found {large_jumps.sum()} potential splits (>{threshold * 100}% jumps)")
         for date, ret in zip(jump_dates, jump_returns):
-            print(f"  {date}: {ret*100:.2f}%")
+            print(f"  {date}: {ret * 100:.2f}%")
         # This is informational - large jumps might be legitimate
         return True  # Don't fail, just warn
 

@@ -37,7 +37,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -250,7 +250,9 @@ def print_status_report(status: TBillLadderStatus) -> None:
         print(f"  ACTION REQUIRED: Invest ${status.recommended_investment:,.2f} in {TBILL_ETF}")
         print(f"  This converts cash drag to {CURRENT_TBILL_YIELD * 100:.1f}% yielding T-Bills")
     else:
-        print(f"  No action needed. Investable cash (${status.investable_cash:.2f}) below minimum (${MIN_INVESTMENT_THRESHOLD})")
+        print(
+            f"  No action needed. Investable cash (${status.investable_cash:.2f}) below minimum (${MIN_INVESTMENT_THRESHOLD})"
+        )
 
     print("=" * 70 + "\n")
 
@@ -268,9 +270,7 @@ def save_status_to_file(status: TBillLadderStatus, output_path: Path) -> None:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="T-Bill Ladder for Idle Cash"
-    )
+    parser = argparse.ArgumentParser(description="T-Bill Ladder for Idle Cash")
     parser.add_argument(
         "--execute",
         action="store_true",
@@ -343,7 +343,7 @@ def main():
                     print(f"  Estimated Annual Yield: ${result['estimated_annual_yield']:,.2f}")
                     print(f"  Estimated Daily Income: ${result['estimated_daily_income']:.2f}")
                 else:
-                    print(f"  Status: FAILED")
+                    print("  Status: FAILED")
                     print(f"  Error: {result.get('error', 'Unknown error')}")
                 print("-" * 40)
             else:

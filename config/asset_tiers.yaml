@@ -1,5 +1,5 @@
 # Asset Tier Configuration for Multi-Asset Portfolio
-# 
+#
 # Tiers are deployed based on market regime and equity thresholds.
 # Regime IDs: 0=Calm, 1=Trend, 2=Volatile, 3=Crisis
 #

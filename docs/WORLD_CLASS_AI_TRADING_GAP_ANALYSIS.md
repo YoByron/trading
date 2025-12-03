@@ -1,7 +1,7 @@
 # World-Class AI Trading System: Gap Analysis & Roadmap
 
-**Analysis Date**: 2025-01-XX  
-**Analyst Perspective**: World-Class AI Trading Expert  
+**Analysis Date**: 2025-01-XX
+**Analyst Perspective**: World-Class AI Trading Expert
 **Repository**: https://github.com/IgorGanapolsky/trading
 
 ---
@@ -10,7 +10,7 @@
 
 Your repository demonstrates **solid engineering hygiene** and **operational maturity** (CI/CD, monitoring, multi-agent orchestration). However, from a **world-class AI trading** perspective, it's missing the **research infrastructure, systematic modeling framework, and production-grade backtesting/risk systems** needed to reliably discover, validate, and monetize edges at scale.
 
-**Current State**: Production-ready infrastructure with basic momentum/RL strategies  
+**Current State**: Production-ready infrastructure with basic momentum/RL strategies
 **Gap**: Missing the "quant research platform" layer that separates professional trading systems from hobbyist codebases
 
 ---
@@ -19,7 +19,7 @@ Your repository demonstrates **solid engineering hygiene** and **operational mat
 
 ### What's Missing
 
-**Current State**: 
+**Current State**:
 - Strategies are hardcoded (`core_strategy.py`, `momentum_agent.py`)
 - No clear separation between data ingestion, feature engineering, alpha research, and execution
 - Each new idea requires bespoke code changes
@@ -38,8 +38,8 @@ src/research/factors/
 └── regime.py           # Market regime indicators (HMM, volatility regimes)
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 2-3 days  
+**Implementation Priority**: HIGH
+**Effort**: 2-3 days
 **Impact**: Enables rapid iteration on new ideas
 
 #### 1.2 Standardized Data Contracts (`src/research/data_contracts.py`)
@@ -71,8 +71,8 @@ class FutureReturns:
     realized_vol_1d: float
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 1 day  
+**Implementation Priority**: HIGH
+**Effort**: 1 day
 **Impact**: Makes all models comparable on same targets
 
 #### 1.3 Research Workflow Templates (`notebooks/research_templates/`)
@@ -103,8 +103,8 @@ def run_research_experiment(
     pass
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 2 days  
+**Implementation Priority**: HIGH
+**Effort**: 2 days
 **Impact**: 10x faster iteration on new ideas
 
 #### 1.4 Canonical Baselines (`src/research/baselines/`)
@@ -119,8 +119,8 @@ def run_research_experiment(
 
 **Why Critical**: You can't claim an edge if you don't beat trivial strategies.
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 1 day  
+**Implementation Priority**: MEDIUM
+**Effort**: 1 day
 **Impact**: Always know if a new idea is actually better
 
 ---
@@ -129,7 +129,7 @@ def run_research_experiment(
 
 ### What's Missing
 
-**Current State**: 
+**Current State**:
 - `MarketDataProvider` exists but lacks:
   - Clear data contracts (schemas, quality checks)
   - Versioned datasets
@@ -140,7 +140,7 @@ def run_research_experiment(
 
 #### 2.1 Data Ingestion Improvements
 
-**Current**: Alpaca + Polygon + yfinance fallback (good!)  
+**Current**: Alpaca + Polygon + yfinance fallback (good!)
 **Missing**:
 - **Checkpointing**: Resume interrupted historical downloads
 - **Data Versioning**: Frozen parquet/CSV snapshots with manifest files
@@ -153,7 +153,7 @@ class DataCheckpointer:
     """Resume interrupted downloads."""
     def save_checkpoint(self, symbol: str, last_date: pd.Timestamp):
         pass
-    
+
     def load_checkpoint(self, symbol: str) -> Optional[pd.Timestamp]:
         pass
 
@@ -163,14 +163,14 @@ class DatasetManager:
     def create_snapshot(self, name: str, symbols: List[str], date_range: tuple) -> str:
         """Create frozen dataset snapshot."""
         pass
-    
+
     def load_snapshot(self, snapshot_id: str) -> pd.DataFrame:
         """Load exact dataset used in experiment."""
         pass
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 2-3 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 2-3 days
 **Impact**: Reproducible experiments
 
 #### 2.2 Labeling Pipeline (`src/research/labeling/`)
@@ -206,8 +206,8 @@ def create_triple_barrier_labels(
     pass
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 1-2 days  
+**Implementation Priority**: HIGH
+**Effort**: 1-2 days
 **Impact**: Enables supervised learning experiments
 
 #### 2.3 Data Quality Tests (`tests/data_quality/`)
@@ -232,8 +232,8 @@ def test_split_adjustments(df: pd.DataFrame):
     pass
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 1 day  
+**Implementation Priority**: MEDIUM
+**Effort**: 1 day
 **Impact**: Catch data issues before they corrupt models
 
 ---
@@ -242,7 +242,7 @@ def test_split_adjustments(df: pd.DataFrame):
 
 ### What Exists
 
-**Good**: 
+**Good**:
 - `BacktestEngine` exists with slippage modeling
 - Supports hybrid gates (momentum → RL → sentiment → risk)
 - Calculates Sharpe, drawdown, win rate
@@ -251,7 +251,7 @@ def test_split_adjustments(df: pd.DataFrame):
 
 #### 3.1 Vectorized Backtester for Multiple Timeframes
 
-**Current**: Daily-only backtesting  
+**Current**: Daily-only backtesting
 **Missing**: Fast vectorized backtester for:
 - 5-minute bars (intraday)
 - 60-minute bars (swing trading)
@@ -272,8 +272,8 @@ class VectorizedBacktester:
         pass
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 3-4 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 3-4 days
 **Impact**: Test intraday strategies
 
 #### 3.2 Event-Driven Simulator for Order-Level Behavior
@@ -300,14 +300,14 @@ class EventDrivenSimulator:
         pass
 ```
 
-**Implementation Priority**: LOW (unless doing HFT)  
-**Effort**: 1 week  
+**Implementation Priority**: LOW (unless doing HFT)
+**Effort**: 1 week
 **Impact**: Realistic intraday execution modeling
 
 #### 3.3 Walk-Forward & Cross-Validation Utilities
 
-**Current**: Basic backtesting  
-**Missing**: 
+**Current**: Basic backtesting
+**Missing**:
 - Time-series cross-validation utilities
 - Walk-forward analysis with expanding/rolling windows
 - Realistic train/test splits (avoid look-ahead)
@@ -329,13 +329,13 @@ class WalkForwardValidator:
         pass
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 2 days  
+**Implementation Priority**: HIGH
+**Effort**: 2 days
 **Impact**: Avoid overfitting, realistic performance estimates
 
 #### 3.4 Standard Performance Report
 
-**Current**: Basic metrics (Sharpe, drawdown, win rate)  
+**Current**: Basic metrics (Sharpe, drawdown, win rate)
 **Missing**: Comprehensive report with:
 - CAGR, Sharpe, Sortino, max DD
 - Turnover, hit rate, average win/loss
@@ -358,8 +358,8 @@ class PerformanceReport:
         }
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 2-3 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 2-3 days
 **Impact**: Better understanding of strategy behavior
 
 ---
@@ -368,7 +368,7 @@ class PerformanceReport:
 
 ### What's Missing
 
-**Current State**: 
+**Current State**:
 - Models exist (`src/ml/`) but:
   - No clear interfaces (alpha models, risk models, execution models)
   - No registry pattern (hard-coded model selection)
@@ -413,8 +413,8 @@ class ExecutionModel(ABC):
         pass
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 1 day  
+**Implementation Priority**: HIGH
+**Effort**: 1 day
 **Impact**: Modular, testable components
 
 #### 4.2 Model Registry (`src/models/registry.py`)
@@ -427,7 +427,7 @@ class ModelRegistry:
     """Registry for model configurations."""
     def register(self, name: str, model_class: Type, config: dict):
         pass
-    
+
     def get_model(self, name: str, **overrides) -> BaseModel:
         """Instantiate model from registry."""
         pass
@@ -439,7 +439,7 @@ models:
     params:
       lookback: 20
       threshold: 0.5
-  
+
   lstm_ppo_v1:
     class: LSTMPPOModel
     params:
@@ -447,8 +447,8 @@ models:
       hidden_size: 128
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 1 day  
+**Implementation Priority**: MEDIUM
+**Effort**: 1 day
 **Impact**: Easy model swapping without code changes
 
 #### 4.3 Experiment Tracking
@@ -472,7 +472,7 @@ class ExperimentTracker:
     ):
         """Log experiment with Git SHA, data snapshot, hyperparams, metrics."""
         pass
-    
+
     def query_experiments(
         self,
         filters: dict
@@ -481,8 +481,8 @@ class ExperimentTracker:
         pass
 ```
 
-**Implementation Priority**: HIGH  
-**Effort**: 1-2 days  
+**Implementation Priority**: HIGH
+**Effort**: 1-2 days
 **Impact**: Track what works, avoid repeating failures
 
 #### 4.4 Hyperparameter Search
@@ -506,8 +506,8 @@ def bayesian_search(
     # ...
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 1 day  
+**Implementation Priority**: MEDIUM
+**Effort**: 1 day
 **Impact**: Better model performance
 
 ---
@@ -544,7 +544,7 @@ class PortfolioOptimizer:
     ) -> pd.Series:
         """Mean-variance optimization."""
         pass
-    
+
     def risk_parity(
         self,
         covariance: pd.DataFrame
@@ -553,8 +553,8 @@ class PortfolioOptimizer:
         pass
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 2-3 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 2-3 days
 **Impact**: Better risk-adjusted returns
 
 #### 5.2 Portfolio Constraints
@@ -580,8 +580,8 @@ class PortfolioConstraints:
         pass
 ```
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 1-2 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 1-2 days
 **Impact**: Realistic portfolio construction
 
 #### 5.3 Risk Monitoring & Attribution
@@ -603,7 +603,7 @@ class FactorAttribution:
     ) -> pd.Series:
         """Calculate factor exposures."""
         pass
-    
+
     def stress_test(
         self,
         positions: pd.Series,
@@ -613,12 +613,12 @@ class FactorAttribution:
         pass
 ```
 
-**Implementation Priority**: MEDIUM  
+**Implementation Priority**: MEDIUM
 **Impact**: Understand what drives returns
 
 #### 5.4 Execution Engine Improvements
 
-**Current**: Basic Alpaca execution  
+**Current**: Basic Alpaca execution
 **Missing**:
 - Unified `Order` object
 - Broker abstraction layer (plug in other brokers)
@@ -650,8 +650,8 @@ class ExecutionEngine:
         pass
 ```
 
-**Implementation Priority**: LOW (unless multi-broker)  
-**Effort**: 2-3 days  
+**Implementation Priority**: LOW (unless multi-broker)
+**Effort**: 2-3 days
 **Impact**: Broker-agnostic execution
 
 ---
@@ -670,7 +670,7 @@ class ExecutionEngine:
 - Could add more comprehensive dashboards (equity curve vs benchmark, intraday P&L)
 - Could add alerts for risk limit breaches (email/Slack)
 
-**Implementation Priority**: LOW  
+**Implementation Priority**: LOW
 **Impact**: Nice-to-have improvements
 
 ---
@@ -679,7 +679,7 @@ class ExecutionEngine:
 
 ### What Exists
 
-**Good**: Extensive documentation in `docs/`  
+**Good**: Extensive documentation in `docs/`
 **Missing**: "Quant research notebook" narrative
 
 ### What to Add
@@ -712,8 +712,8 @@ class ExecutionEngine:
 
 **What to Add**: `docs/ONBOARDING.md`
 
-**Implementation Priority**: MEDIUM  
-**Effort**: 2-3 days  
+**Implementation Priority**: MEDIUM
+**Effort**: 2-3 days
 **Impact**: Makes repo accessible to others (or future you)
 
 ---
@@ -749,7 +749,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
    - Effort: 1 day
    - Impact: MEDIUM
 
-**Total Effort**: ~1 week  
+**Total Effort**: ~1 week
 **Total Impact**: Enables rapid iteration on new ideas
 
 ### Phase 2: Backtesting & Validation (1-2 weeks)
@@ -769,7 +769,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
    - Effort: 1 day
    - Impact: MEDIUM
 
-**Total Effort**: ~1 week  
+**Total Effort**: ~1 week
 **Total Impact**: Realistic performance estimates, avoid overfitting
 
 ### Phase 3: Model Management (1 week)
@@ -789,7 +789,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
    - Effort: 1 day
    - Impact: MEDIUM
 
-**Total Effort**: ~1 week  
+**Total Effort**: ~1 week
 **Total Impact**: Track experiments, easy model swapping
 
 ### Phase 4: Portfolio & Risk (1-2 weeks)
@@ -804,7 +804,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
    - Effort: 2 days
    - Impact: MEDIUM
 
-**Total Effort**: ~1 week  
+**Total Effort**: ~1 week
 **Total Impact**: Better risk-adjusted returns
 
 ### Phase 5: Documentation (1 week)
@@ -813,7 +813,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
 2. **Methodology Notebooks** (`notebooks/strategy_analysis/`)
 3. **Onboarding Guide** (`docs/ONBOARDING.md`)
 
-**Total Effort**: ~1 week  
+**Total Effort**: ~1 week
 **Total Impact**: Makes repo accessible
 
 ---
@@ -849,7 +849,7 @@ Given your skill set and $100/month budget, here's a practical sequence:
 3. **Test each component** - ensure it works before moving to the next
 4. **Document as you go** - write design docs and notebooks as you build
 
-**Estimated Total Effort**: 4-6 weeks of focused development  
+**Estimated Total Effort**: 4-6 weeks of focused development
 **Estimated Impact**: 10x faster iteration on new trading ideas, systematic validation, reproducible experiments
 
 ---
