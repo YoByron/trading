@@ -103,3 +103,46 @@ jobs:
 
       - name: Run mypy
         run: mypy src/ --ignore-missing-imports || true
+
+  core-strategy-validation:
+    name: Core Strategy Metric Validation
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.files.*.path, 'src/strategies/core_strategy') ||
+      contains(github.event.pull_request.files.*.path, 'src/strategies/core_strategy_frozen')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run reference backtest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python scripts/run_core_strategy_reference_backtest.py || {
+            echo "::error::Core strategy metrics degraded. Add 'ACCEPT_METRIC_DEGRADATION' to PR description if intentional."
+            exit 1
+          }
+
+      - name: Check for metric degradation acceptance
+        if: failure()
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          if [[ "$PR_BODY" == *"ACCEPT_METRIC_DEGRADATION"* ]]; then
+            echo "Metric degradation explicitly accepted in PR description."
+            exit 0
+          else
+            echo "::error::Metric degradation not accepted. Add 'ACCEPT_METRIC_DEGRADATION' to PR description."
+            exit 1
+          fi
