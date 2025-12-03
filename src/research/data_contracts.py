@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 # --- From origin/main (Research Data Structures) ---
 
+
 @dataclass
 class SignalSnapshot:
     """
@@ -207,7 +208,9 @@ def create_future_returns(
         metadata=metadata,
     )
 
+
 # --- From HEAD (Validation Framework) ---
+
 
 class DataQualityLevel(Enum):
     """Data quality severity levels."""
@@ -350,8 +353,12 @@ class DataValidator:
         # Get date range
         if len(df) > 0:
             date_range = (
-                str(df.index[0])[:10] if hasattr(df.index[0], 'strftime') else str(df.index[0])[:10],
-                str(df.index[-1])[:10] if hasattr(df.index[-1], 'strftime') else str(df.index[-1])[:10],
+                str(df.index[0])[:10]
+                if hasattr(df.index[0], "strftime")
+                else str(df.index[0])[:10],
+                str(df.index[-1])[:10]
+                if hasattr(df.index[-1], "strftime")
+                else str(df.index[-1])[:10],
             )
         else:
             date_range = ("", "")
@@ -370,7 +377,11 @@ class DataValidator:
         )
 
         # Log summary
-        status_msg = "✅ PASS" if overall_status == DataQualityLevel.PASS else f"⚠️ {overall_status.value.upper()}"
+        status_msg = (
+            "✅ PASS"
+            if overall_status == DataQualityLevel.PASS
+            else f"⚠️ {overall_status.value.upper()}"
+        )
         logger.info(
             f"Data validation for {symbol}: {status_msg} "
             f"({report.passed_checks}/{report.total_checks} checks passed)"
@@ -634,11 +645,13 @@ class DataValidator:
             matches = pct_change[(pct_change >= low) & (pct_change <= high)]
             if len(matches) > 0:
                 for idx in matches.index:
-                    potential_splits.append({
-                        "date": str(idx)[:10],
-                        "likely_ratio": ratio,
-                        "change_pct": float(matches[idx] * 100),
-                    })
+                    potential_splits.append(
+                        {
+                            "date": str(idx)[:10],
+                            "likely_ratio": ratio,
+                            "change_pct": float(matches[idx] * 100),
+                        }
+                    )
 
         if potential_splits:
             return ValidationResult(
