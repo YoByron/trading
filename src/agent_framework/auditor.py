@@ -197,3 +197,10 @@ class AdaptiveTradeAuditor:
                 handle.write(json.dumps(report, default=str) + "\n")
         except Exception as exc:
             logger.warning("Failed to append audit report: %s", exc)
+
+
+# Backwards compatibility: older modules import VolatilityAuditor
+class VolatilityAuditor(AdaptiveTradeAuditor):
+    """Alias for AdaptiveTradeAuditor used in legacy code paths."""
+
+    pass
