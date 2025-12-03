@@ -89,18 +89,30 @@ class EliteOrchestrator:
     3. Context engineering: Persistent storage outside prompts
     4. Hybrid orchestration: Each agent type for its strengths
     5. Autonomous operation: Minimal human intervention
+    6. Adaptive organization: Dynamic agent reorganization (NEW)
     """
 
-    def __init__(self, paper: bool = True, enable_planning: bool = True):
+    def __init__(
+        self,
+        paper: bool = True,
+        enable_planning: bool = True,
+        enable_adaptive: Optional[bool] = None,
+    ):
         """
         Initialize Elite Orchestrator
 
         Args:
             paper: Paper trading mode
             enable_planning: Enable planning-first flows
+            enable_adaptive: Enable adaptive agent organization (default: from env or True)
         """
         self.paper = paper
         self.enable_planning = enable_planning
+        self.enable_adaptive = (
+            enable_adaptive
+            if enable_adaptive is not None
+            else os.getenv("ENABLE_ADAPTIVE_ORCHESTRATOR", "true").lower() == "true"
+        )
 
         # Initialize all agent frameworks
         self.skills = get_skills()
@@ -144,8 +156,23 @@ class EliteOrchestrator:
 
         self._initialize_agents()
 
+        # Initialize Adaptive Orchestrator if enabled
+        self.adaptive_orchestrator = None
+        if self.enable_adaptive:
+            try:
+                from src.orchestration.adaptive_orchestrator import AdaptiveOrchestrator
+
+                self.adaptive_orchestrator = AdaptiveOrchestrator(
+                    paper=self.paper, enable_learning=True
+                )
+                logger.info("✅ Adaptive Orchestrator initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Adaptive Orchestrator unavailable: {e}")
+                self.adaptive_orchestrator = None
+
         logger.info("✅ Elite Orchestrator initialized")
         logger.info(f"   Planning: {'Enabled' if enable_planning else 'Disabled'}")
+        logger.info(f"   Adaptive: {'Enabled' if self.adaptive_orchestrator else 'Disabled'}")
         logger.info(f"   Mode: {'PAPER' if paper else 'LIVE'}")
 
         # Ensemble voting configuration and agent filters
@@ -337,15 +364,22 @@ class EliteOrchestrator:
         self, symbols: list[str], context: Optional[dict[str, Any]] = None
     ) -> TradePlan:
         """
-        Create a planning-first trade plan
+        Create a planning-first trade plan (with adaptive organization if enabled)
 
         Args:
             symbols: Symbols to trade
             context: Additional context
 
         Returns:
-            TradePlan with explicit planning phases
+            TradePlan with explicit planning phases (adaptive if enabled)
         """
+        # Use adaptive orchestrator if enabled
+        if self.enable_adaptive and self.adaptive_orchestrator:
+            logger.info("🔄 Using adaptive agent organization")
+            return self.adaptive_orchestrator.create_adaptive_plan(symbols, context)
+
+        # Fallback to fixed organization
+        logger.info("📋 Using fixed agent organization")
         plan_id = f"plan_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         plan = TradePlan(
@@ -355,7 +389,7 @@ class EliteOrchestrator:
             context=context or {},
         )
 
-        # Define planning phases
+        # Define planning phases (fixed structure)
         plan.phases = {
             PlanningPhase.INITIALIZE.value: {
                 "description": "Initialize trading cycle",
@@ -532,6 +566,66 @@ class EliteOrchestrator:
         plan.status = "completed"
         self._save_plan(plan)
         self._save_results(plan.plan_id, results)
+
+        # Record performance for adaptive learning
+        if self.enable_adaptive and self.adaptive_orchestrator:
+            try:
+                import time
+
+                execution_time_ms = sum(
+                    phase.get("execution_time_ms", 0) for phase in results.get("phases", {}).values()
+                )
+                success = len(results.get("errors", [])) == 0
+                profit = results.get("final_decision", {}).get("profit", 0.0) or 0.0
+                confidence = (
+                    analysis_result.get("ensemble_vote", {})
+                    .get(list(plan.symbols)[0] if plan.symbols else "", {})
+                    .get("weighted_score", 0.0)
+                    if analysis_result
+                    else 0.0
+                )
+
+                # Get complexity and regime from plan context
+                complexity_str = plan.context.get("complexity", "moderate")
+                market_regime = plan.context.get("market_regime", "SIDEWAYS")
+
+                from src.orchestration.adaptive_orchestrator import (
+                    ComplexityAssessment,
+                    OrganizationPattern,
+                    TaskComplexity,
+                )
+
+                complexity = ComplexityAssessment(
+                    complexity=TaskComplexity(complexity_str),
+                    score=plan.context.get("complexity_score", 0.5),
+                    factors={},
+                )
+
+                organization_pattern = OrganizationPattern(
+                    plan.context.get("organization_pattern", "parallel")
+                )
+
+                # Create minimal organization for recording
+                from src.orchestration.adaptive_orchestrator import AgentOrganization
+
+                organization = AgentOrganization(
+                    pattern=organization_pattern,
+                    phases={},
+                    agent_assignments={},
+                    execution_order=[],
+                )
+
+                self.adaptive_orchestrator.record_performance(
+                    organization=organization,
+                    complexity=complexity,
+                    market_regime=market_regime,
+                    execution_time_ms=execution_time_ms,
+                    success=success,
+                    profit=profit,
+                    confidence=confidence,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to record adaptive performance: {e}")
 
         logger.info(f"✅ Plan execution complete: {plan.plan_id}")
         return results
