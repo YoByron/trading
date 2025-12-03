@@ -34,26 +34,28 @@ Key Parameters (from McMillan):
 Reference: Lawrence McMillan "Options as a Strategic Investment"
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
-import json
 from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class SpreadDirection(Enum):
     """Direction of credit spread."""
-    BULL_PUT = "bull_put"    # Bullish: Sell put spread
+
+    BULL_PUT = "bull_put"  # Bullish: Sell put spread
     BEAR_CALL = "bear_call"  # Bearish: Sell call spread
 
 
 @dataclass
 class CreditSpread:
     """Represents a credit spread position."""
+
     symbol: str
     direction: SpreadDirection
     expiration: str
@@ -69,9 +71,9 @@ class CreditSpread:
     # Position details
     contracts: int = 1
     net_credit: float = 0.0  # Premium received (short - long)
-    max_loss: float = 0.0     # Width - Credit
-    max_profit: float = 0.0   # Net credit
-    width: float = 0.0        # Strike difference
+    max_loss: float = 0.0  # Width - Credit
+    max_profit: float = 0.0  # Net credit
+    width: float = 0.0  # Strike difference
 
     # Greeks
     short_delta: Optional[float] = None
@@ -111,6 +113,7 @@ class CreditSpread:
 @dataclass
 class SpreadOpportunity:
     """A potential credit spread opportunity."""
+
     symbol: str
     direction: SpreadDirection
     expiration: str
@@ -173,11 +176,25 @@ class CreditSpreadsStrategy:
     # High-liquidity universe for spreads
     SPREAD_UNIVERSE = [
         # Highly liquid ETFs (best for spreads)
-        "SPY", "QQQ", "IWM", "EEM", "XLF", "XLE",
+        "SPY",
+        "QQQ",
+        "IWM",
+        "EEM",
+        "XLF",
+        "XLE",
         # Large cap tech
-        "AAPL", "MSFT", "GOOGL", "META", "AMZN", "NVDA",
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "META",
+        "AMZN",
+        "NVDA",
         # Other liquid stocks
-        "TSLA", "AMD", "NFLX", "JPM", "BAC",
+        "TSLA",
+        "AMD",
+        "NFLX",
+        "JPM",
+        "BAC",
     ]
 
     def __init__(self, paper: bool = True, state_file: str = "data/credit_spreads_state.json"):
@@ -211,7 +228,7 @@ class CreditSpreadsStrategy:
         """Load positions from disk."""
         try:
             if self.state_file.exists():
-                with open(self.state_file, "r") as f:
+                with open(self.state_file) as f:
                     data = json.load(f)
                     for pos_data in data.get("positions", []):
                         spread = CreditSpread(
@@ -289,7 +306,9 @@ class CreditSpreadsStrategy:
 
             # Get current price
             ticker = yf.Ticker(symbol)
-            current_price = ticker.info.get("currentPrice") or ticker.info.get("regularMarketPrice", 0)
+            current_price = ticker.info.get("currentPrice") or ticker.info.get(
+                "regularMarketPrice", 0
+            )
 
             if not current_price:
                 return None
@@ -299,7 +318,9 @@ class CreditSpreadsStrategy:
             if self.iv_analyzer:
                 try:
                     iv_data = self.iv_analyzer.get_recommendation(symbol)
-                    iv_rank = iv_data.iv_rank if hasattr(iv_data, 'iv_rank') else iv_data.get('iv_rank')
+                    iv_rank = (
+                        iv_data.iv_rank if hasattr(iv_data, "iv_rank") else iv_data.get("iv_rank")
+                    )
                 except Exception:
                     pass
 
@@ -338,10 +359,8 @@ class CreditSpreadsStrategy:
 
             if direction == SpreadDirection.BULL_PUT:
                 options = chain.puts
-                option_type = "P"
             else:
                 options = chain.calls
-                option_type = "C"
 
             if options.empty:
                 return None
@@ -414,7 +433,9 @@ class CreditSpreadsStrategy:
             # Calculate risk/reward
             max_profit = net_credit * 100
             max_loss = (actual_width - net_credit) * 100
-            return_on_risk = net_credit / (actual_width - net_credit) if actual_width > net_credit else 0
+            return_on_risk = (
+                net_credit / (actual_width - net_credit) if actual_width > net_credit else 0
+            )
 
             if return_on_risk < self.MIN_RETURN_ON_RISK:
                 logger.debug(f"{symbol}: Return on risk {return_on_risk:.1%} below minimum")
@@ -446,9 +467,9 @@ class CreditSpreadsStrategy:
             rationale = (
                 f"{direction_str} spread: Sell ${short_strike:.2f}/{long_strike:.2f} "
                 f"for ${net_credit:.2f} credit. "
-                f"IV Rank: {iv_rank:.1f}% " if iv_rank else ""
-                f"DTE: {target_dte}, POP: {pop:.0%}, "
-                f"Return on Risk: {return_on_risk:.0%}"
+                f"IV Rank: {iv_rank:.1f}% "
+                if iv_rank
+                else f"DTE: {target_dte}, POP: {pop:.0%}, Return on Risk: {return_on_risk:.0%}"
             )
 
             return SpreadOpportunity(
@@ -497,7 +518,9 @@ class CreditSpreadsStrategy:
         logger.info(f"Found {len(opportunities)} spread opportunities")
         return opportunities
 
-    def execute_spread(self, opportunity: SpreadOpportunity, contracts: int = 1) -> Optional[dict[str, Any]]:
+    def execute_spread(
+        self, opportunity: SpreadOpportunity, contracts: int = 1
+    ) -> Optional[dict[str, Any]]:
         """
         Execute a credit spread trade.
 
@@ -637,37 +660,49 @@ class CreditSpreadsStrategy:
 
                 # Check profit target
                 if current_pnl >= spread.max_profit * self.PROFIT_TARGET_PCT:
-                    actions.append({
-                        "symbol": spread.symbol,
-                        "action": "CLOSE_PROFIT_TARGET",
-                        "current_pnl": current_pnl,
-                        "max_profit": spread.max_profit,
-                        "pct_of_max": current_pnl / spread.max_profit,
-                        "reason": f"Profit target reached ({current_pnl/spread.max_profit:.0%} of max)",
-                    })
+                    actions.append(
+                        {
+                            "symbol": spread.symbol,
+                            "action": "CLOSE_PROFIT_TARGET",
+                            "current_pnl": current_pnl,
+                            "max_profit": spread.max_profit,
+                            "pct_of_max": current_pnl / spread.max_profit,
+                            "reason": f"Profit target reached ({current_pnl / spread.max_profit:.0%} of max)",
+                        }
+                    )
 
                 # Check stop loss
-                if current_pnl <= -spread.net_credit * 100 * self.STOP_LOSS_MULTIPLIER * spread.contracts:
-                    actions.append({
-                        "symbol": spread.symbol,
-                        "action": "CLOSE_STOP_LOSS",
-                        "current_pnl": current_pnl,
-                        "stop_loss_level": -spread.net_credit * 100 * self.STOP_LOSS_MULTIPLIER * spread.contracts,
-                        "reason": f"Stop loss hit (2x credit)",
-                    })
+                if (
+                    current_pnl
+                    <= -spread.net_credit * 100 * self.STOP_LOSS_MULTIPLIER * spread.contracts
+                ):
+                    actions.append(
+                        {
+                            "symbol": spread.symbol,
+                            "action": "CLOSE_STOP_LOSS",
+                            "current_pnl": current_pnl,
+                            "stop_loss_level": -spread.net_credit
+                            * 100
+                            * self.STOP_LOSS_MULTIPLIER
+                            * spread.contracts,
+                            "reason": "Stop loss hit (2x credit)",
+                        }
+                    )
 
                 # Check DTE
                 exp_date = datetime.strptime(spread.expiration, "%Y-%m-%d")
                 dte = (exp_date - datetime.now()).days
 
                 if dte <= 7:
-                    actions.append({
-                        "symbol": spread.symbol,
-                        "action": "CLOSE_NEAR_EXPIRATION",
-                        "dte": dte,
-                        "current_pnl": current_pnl,
-                        "reason": f"Near expiration ({dte} DTE), close to avoid assignment risk",
-                    })
+                    actions.append(
+                        {
+                            "symbol": spread.symbol,
+                            "action": "CLOSE_NEAR_EXPIRATION",
+                            "dte": dte,
+                            "current_pnl": current_pnl,
+                            "reason": f"Near expiration ({dte} DTE), close to avoid assignment risk",
+                        }
+                    )
 
             except Exception as e:
                 logger.warning(f"Error checking exit for {spread.symbol}: {e}")
@@ -709,4 +744,6 @@ if __name__ == "__main__":
             f"(POP: {opp.probability_of_profit:.0%}, RoR: {opp.return_on_risk:.0%})"
         )
         if opp.iv_rank:
-            print(f"    IV Rank: {opp.iv_rank:.1f}%, DTE: {opp.dte}, Confidence: {opp.confidence:.0%}")
+            print(
+                f"    IV Rank: {opp.iv_rank:.1f}%, DTE: {opp.dte}, Confidence: {opp.confidence:.0%}"
+            )

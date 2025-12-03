@@ -18,8 +18,8 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -58,7 +58,9 @@ def execute_stage(stage: StageConfig, *, dry_run: bool) -> None:
     subprocess.run(stage.command, shell=True, check=True)
 
 
-def run_pipeline(strategy_id: str, stages: Iterable[str] | None, *, dry_run: bool, registry: StrategyRegistry) -> None:
+def run_pipeline(
+    strategy_id: str, stages: Iterable[str] | None, *, dry_run: bool, registry: StrategyRegistry
+) -> None:
     strategy = registry.get(strategy_id)
     ordered_stages = strategy.stages
     if not ordered_stages:
@@ -70,17 +72,25 @@ def run_pipeline(strategy_id: str, stages: Iterable[str] | None, *, dry_run: boo
             stage_cfg = ordered_stages[stage_name]
         except KeyError as exc:
             available = ", ".join(ordered_stages.keys())
-            raise KeyError(f"Stage '{stage_name}' not defined for {strategy_id}. Available: {available}") from exc
+            raise KeyError(
+                f"Stage '{stage_name}' not defined for {strategy_id}. Available: {available}"
+            ) from exc
         execute_stage(stage_cfg, dry_run=dry_run)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run strategy pipelines.")
     parser.add_argument("--strategy", help="Strategy identifier defined in config/strategies.yaml")
-    parser.add_argument("--stage", nargs="*", help="Stage(s) to run. Default: all stages for the strategy.")
-    parser.add_argument("--registry", default="config/strategies.yaml", help="Path to strategy registry YAML.")
+    parser.add_argument(
+        "--stage", nargs="*", help="Stage(s) to run. Default: all stages for the strategy."
+    )
+    parser.add_argument(
+        "--registry", default="config/strategies.yaml", help="Path to strategy registry YAML."
+    )
     parser.add_argument("--list", action="store_true", help="List available strategies and exit.")
-    parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print commands without executing them."
+    )
     return parser
 
 

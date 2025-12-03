@@ -14,7 +14,7 @@ fixed chains/trees/graphs by reorganizing agents as tasks evolve.
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
@@ -37,8 +37,8 @@ try:
     )
 except ImportError:
     # Fallback if elite_orchestrator not available
-    from enum import Enum
     from dataclasses import dataclass, field
+    from enum import Enum
     from typing import Any
 
     class PlanningPhase(Enum):
@@ -66,6 +66,7 @@ except ImportError:
         decisions: list[dict[str, Any]] = field(default_factory=list)
         context: dict[str, Any] = field(default_factory=dict)
         status: str = "planning"
+
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +369,7 @@ class AdaptiveOrchestrator:
         # Check if we have learned a better organization
         learned_org = self._get_learned_organization(complexity, market_regime)
         if learned_org:
-            logger.info(f"📚 Using learned organization pattern")
+            logger.info("📚 Using learned organization pattern")
             return learned_org
 
         # Use template-based organization
@@ -638,7 +639,11 @@ class AdaptiveOrchestrator:
                     AgentType.LANGCHAIN.value,
                 ],
                 "risk": [AgentType.CLAUDE_SKILLS.value],
-                "execution": [AgentType.CLAUDE_SKILLS.value, AgentType.GO_ADK.value, AgentType.MCP.value],
+                "execution": [
+                    AgentType.CLAUDE_SKILLS.value,
+                    AgentType.GO_ADK.value,
+                    AgentType.MCP.value,
+                ],
             },
             execution_order=["initialize", "data_collection", "analysis", "risk", "execution"],
             rationale="Hierarchical plan: Tree structure for complex/critical tasks",
@@ -766,8 +771,7 @@ class AdaptiveOrchestrator:
         recent = [
             p
             for p in self.performance_history
-            if p.timestamp
-            and (datetime.now() - datetime.fromisoformat(p.timestamp)).days < 7
+            if p.timestamp and (datetime.now() - datetime.fromisoformat(p.timestamp)).days < 7
         ]
 
         if not recent:
@@ -868,7 +872,9 @@ class AdaptiveOrchestrator:
         if len(self.performance_history) > 1000:
             self.performance_history = self.performance_history[-1000:]
 
-        logger.info(f"📊 Recorded performance: {org_id} (success: {success}, profit: ${profit:.2f})")
+        logger.info(
+            f"📊 Recorded performance: {org_id} (success: {success}, profit: ${profit:.2f})"
+        )
 
     def _load_performance_history(self):
         """Load historical performance data"""
@@ -876,7 +882,7 @@ class AdaptiveOrchestrator:
             return
 
         try:
-            with open(self.performance_file, "r") as f:
+            with open(self.performance_file) as f:
                 for line in f:
                     if line.strip():
                         data = json.loads(line)

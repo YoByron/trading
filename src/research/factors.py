@@ -207,10 +207,7 @@ class FactorModel:
             beta, residuals, rank, s = np.linalg.lstsq(X, port_ret, rcond=None)
 
             alpha = float(beta[0]) * 252  # Annualize
-            exposures = {
-                col: float(beta[i + 1])
-                for i, col in enumerate(factors.columns)
-            }
+            exposures = {col: float(beta[i + 1]) for i, col in enumerate(factors.columns)}
 
             # R-squared
             y_pred = X @ beta
@@ -415,18 +412,19 @@ class FactorRiskMonitor:
         exposures = self.factor_model.calculate_exposures(port_ret, fact_ret)
 
         # Record history
-        self._exposure_history.append({
-            "timestamp": timestamp or datetime.now(),
-            "exposures": {k: v.exposure for k, v in exposures.items()},
-        })
+        self._exposure_history.append(
+            {
+                "timestamp": timestamp or datetime.now(),
+                "exposures": {k: v.exposure for k, v in exposures.items()},
+            }
+        )
 
         return exposures
 
     def get_exposure_history(self, factor: str) -> pd.Series:
         """Get historical exposures for a factor."""
         data = [
-            (h["timestamp"], h["exposures"].get(factor, np.nan))
-            for h in self._exposure_history
+            (h["timestamp"], h["exposures"].get(factor, np.nan)) for h in self._exposure_history
         ]
         return pd.Series(
             [d[1] for d in data],
@@ -457,19 +455,23 @@ class FactorRiskMonitor:
             exp = current.get(factor)
             if exp is not None:
                 if exp < min_exp:
-                    breaches.append({
-                        "factor": factor,
-                        "exposure": exp,
-                        "limit": min_exp,
-                        "type": "below_minimum",
-                    })
+                    breaches.append(
+                        {
+                            "factor": factor,
+                            "exposure": exp,
+                            "limit": min_exp,
+                            "type": "below_minimum",
+                        }
+                    )
                 elif exp > max_exp:
-                    breaches.append({
-                        "factor": factor,
-                        "exposure": exp,
-                        "limit": max_exp,
-                        "type": "above_maximum",
-                    })
+                    breaches.append(
+                        {
+                            "factor": factor,
+                            "exposure": exp,
+                            "limit": max_exp,
+                            "type": "above_maximum",
+                        }
+                    )
 
         return breaches
 
@@ -505,7 +507,7 @@ class PCAFactorDiscovery:
 
         # Store components
         self._components = Vt[: self.n_components].T
-        self._explained_variance = (S ** 2)[:self.n_components] / (S ** 2).sum()
+        self._explained_variance = (S**2)[: self.n_components] / (S**2).sum()
         self._feature_names = list(returns.columns)
 
         logger.info(

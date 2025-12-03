@@ -12,9 +12,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
-
-from src.target_model import TargetModel, TargetModelConfig, TARGET_DAILY_NET_INCOME
+from src.target_model import TARGET_DAILY_NET_INCOME, TargetModel, TargetModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +60,7 @@ class PortfolioRiskLayer:
             config: Position sizing configuration
         """
         self.config = config or PositionSizingConfig()
-        self.target_model = TargetModel(
-            TargetModelConfig(capital=self.config.capital)
-        )
+        self.target_model = TargetModel(TargetModelConfig(capital=self.config.capital))
 
     def calculate_position_size(
         self,
@@ -125,7 +121,7 @@ class PortfolioRiskLayer:
         reasoning_parts = [
             f"Target: ${self.config.target_daily_net_income:.2f}/day",
             f"Signal strength: {signal_strength:.2f}",
-            f"Volatility: {volatility*100:.1f}%",
+            f"Volatility: {volatility * 100:.1f}%",
         ]
         if self.config.volatility_scaling:
             reasoning_parts.append(f"Volatility scaling: {volatility_multiplier:.2f}x")
@@ -247,7 +243,6 @@ class PortfolioRiskLayer:
         Returns:
             Formatted report string
         """
-        metrics = self.target_model.compute_metrics()
         analysis = self.target_model.analyze_backtest_vs_target(
             avg_daily_pnl=current_avg_daily_pnl,
             pct_days_above_target=50.0,  # Placeholder

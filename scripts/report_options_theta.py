@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import sys
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
-import sys
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -20,7 +20,14 @@ if str(REPO_ROOT) not in sys.path:
 
 from src.analytics.options_live_sim import OptionsLiveSimulator
 
-CSV_FIELDS = ["date", "account_equity", "regime", "estimated_daily_premium", "premium_gap", "opportunity_count"]
+CSV_FIELDS = [
+    "date",
+    "account_equity",
+    "regime",
+    "estimated_daily_premium",
+    "premium_gap",
+    "opportunity_count",
+]
 
 
 def write_csv_row(csv_path: Path, row: dict[str, object]) -> None:
@@ -33,7 +40,9 @@ def write_csv_row(csv_path: Path, row: dict[str, object]) -> None:
         writer.writerow(row)
 
 
-def render_report(report_path: Path, row: dict[str, object], opportunities: Iterable[dict[str, object]]) -> None:
+def render_report(
+    report_path: Path, row: dict[str, object], opportunities: Iterable[dict[str, object]]
+) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Options Theta Strategy Report",
@@ -61,7 +70,9 @@ def render_report(report_path: Path, row: dict[str, object], opportunities: Iter
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Generate CSV + report for the options theta strategy.")
+    parser = argparse.ArgumentParser(
+        description="Generate CSV + report for the options theta strategy."
+    )
     parser.add_argument(
         "--csv-path",
         type=Path,

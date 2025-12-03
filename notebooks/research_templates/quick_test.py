@@ -23,7 +23,7 @@ Usage:
 import argparse
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -213,7 +213,7 @@ def create_time_aware_split(
 
 
 def run_research_experiment(
-    model_class: Type[BaseModel],
+    model_class: type[BaseModel],
     features: list[str],
     target: str = "returns_1d",
     symbols: list[str] = None,
@@ -338,7 +338,9 @@ if __name__ == "__main__":
     parser.add_argument("--model_class", type=str, required=True, help="Model class name")
     parser.add_argument("--features", type=str, required=True, help="Comma-separated feature list")
     parser.add_argument("--target", type=str, default="returns_1d", help="Target variable")
-    parser.add_argument("--symbols", type=str, default="SPY,QQQ,VOO", help="Comma-separated symbols")
+    parser.add_argument(
+        "--symbols", type=str, default="SPY,QQQ,VOO", help="Comma-separated symbols"
+    )
     parser.add_argument("--train_start", type=str, default="2020-01-01")
     parser.add_argument("--train_end", type=str, default="2023-01-01")
     parser.add_argument("--test_start", type=str, default="2023-01-01")

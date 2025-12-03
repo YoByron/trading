@@ -13,7 +13,11 @@ logger = logging.getLogger(__name__)
 
 # Tax configuration
 TAX_RESERVE_PCT = float(os.getenv("TAX_RESERVE_PCT", "28.0"))  # 28% for short-term gains
-QUARTERLY_SWEEP_ENABLED = os.getenv("QUARTERLY_SWEEP_ENABLED", "true").lower() in {"1", "true", "yes"}
+QUARTERLY_SWEEP_ENABLED = os.getenv("QUARTERLY_SWEEP_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 
 class OrchestratorTelemetry:

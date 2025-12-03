@@ -22,7 +22,6 @@ Created: 2025-12-03
 import argparse
 import json
 import logging
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -54,14 +53,14 @@ def run_backtest(
         Dict with backtest results and target evaluation
     """
     try:
-        from src.strategies.core_strategy import CoreStrategy
         from src.backtesting.backtest_engine import BacktestEngine
         from src.backtesting.target_integration import (
-            evaluate_backtest_with_target,
             BacktestTargetValidator,
+            evaluate_backtest_with_target,
             save_target_evaluation,
         )
-        from src.strategies.registry import get_registry, initialize_registry, StrategyMetrics
+        from src.strategies.core_strategy import CoreStrategy
+        from src.strategies.registry import StrategyMetrics, get_registry, initialize_registry
     except ImportError as e:
         logger.error(f"Import error: {e}")
         logger.info("Some dependencies may be missing. Running in minimal mode.")
@@ -174,10 +173,13 @@ def run_backtest(
 
         # Also save equity curve as CSV
         import pandas as pd
-        equity_df = pd.DataFrame({
-            "date": results.dates,
-            "equity": results.equity_curve,
-        })
+
+        equity_df = pd.DataFrame(
+            {
+                "date": results.dates,
+                "equity": results.equity_curve,
+            }
+        )
         equity_df.to_csv(output_dir / "core_momentum_reference_equity.csv", index=False)
         logger.info("Reference equity curve saved as CSV")
 

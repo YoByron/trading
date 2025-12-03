@@ -10,7 +10,6 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 import pandas as pd
-
 from src.backtesting.backtest_results import BacktestResults
 
 logger = logging.getLogger(__name__)
@@ -283,9 +282,7 @@ class WalkForwardValidator:
             dates=dates_list,
         )
 
-    def _calculate_summary_metrics(
-        self, fold_results: list[BacktestResults]
-    ) -> dict[str, Any]:
+    def _calculate_summary_metrics(self, fold_results: list[BacktestResults]) -> dict[str, Any]:
         """Calculate summary metrics across all folds."""
         if not fold_results:
             return {}
@@ -306,9 +303,7 @@ class WalkForwardValidator:
             "avg_drawdown": np.mean(drawdowns),
             "max_drawdown": np.max(drawdowns),
             "avg_win_rate": np.mean(win_rates),
-            "consistency": len([r for r in returns if r > 0]) / len(returns)
-            if returns
-            else 0.0,
+            "consistency": len([r for r in returns if r > 0]) / len(returns) if returns else 0.0,
         }
 
     def generate_report(self, results: WalkForwardResults) -> str:
@@ -325,31 +320,25 @@ class WalkForwardValidator:
         report.append("=" * 80)
         report.append("WALK-FORWARD VALIDATION REPORT")
         report.append("=" * 80)
-        report.append(f"\nConfiguration:")
+        report.append("\nConfiguration:")
         report.append(f"  Method: {self.method}")
         report.append(f"  Train Window: {self.train_window} days")
         report.append(f"  Test Window: {self.test_window} days")
         report.append(f"  Step: {self.step} days")
         report.append(f"  Total Folds: {len(results.folds)}")
 
-        report.append(f"\nSummary Metrics:")
+        report.append("\nSummary Metrics:")
         for key, value in results.summary_metrics.items():
             if isinstance(value, float):
                 report.append(f"  {key}: {value:.2f}")
             else:
                 report.append(f"  {key}: {value}")
 
-        report.append(f"\nFold Details:")
-        for i, (fold, fold_result) in enumerate(
-            zip(results.folds, results.fold_results)
-        ):
+        report.append("\nFold Details:")
+        for i, (fold, fold_result) in enumerate(zip(results.folds, results.fold_results)):
             report.append(f"\n  Fold {i + 1}:")
-            report.append(
-                f"    Train: {fold.train_start.date()} to {fold.train_end.date()}"
-            )
-            report.append(
-                f"    Test: {fold.test_start.date()} to {fold.test_end.date()}"
-            )
+            report.append(f"    Train: {fold.train_start.date()} to {fold.train_end.date()}")
+            report.append(f"    Test: {fold.test_start.date()} to {fold.test_end.date()}")
             report.append(f"    Return: {fold_result.total_return:.2f}%")
             report.append(f"    Sharpe: {fold_result.sharpe_ratio:.2f}")
             report.append(f"    Max DD: {fold_result.max_drawdown:.2f}%")

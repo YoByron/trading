@@ -11,9 +11,9 @@ Author: Trading System
 Created: 2025-12-03
 """
 
+from unittest.mock import patch
+
 import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch
 
 
 class TestBondYieldAgent:
@@ -26,7 +26,7 @@ class TestBondYieldAgent:
         agent = BondYieldAgent()
 
         # Mock FRED data for different curve shapes
-        with patch.object(agent, '_get_yield_data') as mock_yields:
+        with patch.object(agent, "_get_yield_data") as mock_yields:
             # Steep curve
             mock_yields.return_value = {"DGS2": 3.5, "DGS10": 5.0, "DGS30": 5.5, "T10Y2Y": 1.5}
             signal = agent.analyze_yield_curve()
@@ -53,10 +53,10 @@ class TestBondYieldAgent:
 
         agent = BondYieldAgent(min_confidence=0.0)
 
-        with patch.object(agent, '_get_yield_data') as mock_yields:
+        with patch.object(agent, "_get_yield_data") as mock_yields:
             mock_yields.return_value = {"DGS2": 4.0, "DGS10": 4.5, "DGS30": 4.7, "T10Y2Y": 0.5}
 
-            with patch.object(agent, '_check_bond_momentum') as mock_momentum:
+            with patch.object(agent, "_check_bond_momentum") as mock_momentum:
                 mock_momentum.return_value = (True, {"momentum_gate": "OPEN"})
 
                 signals = agent.generate_bond_signals(daily_allocation=10.0)
@@ -64,22 +64,26 @@ class TestBondYieldAgent:
                 assert len(signals) > 0
                 # Should include treasury signals
                 treasury_symbols = {s.symbol for s in signals if s.category == "treasury"}
-                assert "SHY" in treasury_symbols or "IEF" in treasury_symbols or "TLT" in treasury_symbols
+                assert (
+                    "SHY" in treasury_symbols
+                    or "IEF" in treasury_symbols
+                    or "TLT" in treasury_symbols
+                )
 
     def test_duration_target_by_curve_shape(self):
         """Test that duration targets vary by curve shape."""
-        from src.agents.bond_yield_agent import BondYieldAgent, YieldCurveShape
+        from src.agents.bond_yield_agent import BondYieldAgent
 
         agent = BondYieldAgent()
 
         # Inverted curve should recommend short duration
-        with patch.object(agent, '_get_yield_data') as mock_yields:
+        with patch.object(agent, "_get_yield_data") as mock_yields:
             mock_yields.return_value = {"DGS2": 5.0, "DGS10": 4.5, "DGS30": 4.3, "T10Y2Y": -0.5}
             signal = agent.analyze_yield_curve()
             assert signal.recommended_duration == "short"
 
         # Steep curve should recommend long duration
-        with patch.object(agent, '_get_yield_data') as mock_yields:
+        with patch.object(agent, "_get_yield_data") as mock_yields:
             mock_yields.return_value = {"DGS2": 3.5, "DGS10": 5.0, "DGS30": 5.5, "T10Y2Y": 1.5}
             signal = agent.analyze_yield_curve()
             assert signal.recommended_duration == "long"
@@ -95,13 +99,9 @@ class TestBondRiskManager:
         manager = BondRiskManager()
 
         # Short duration bond should have tighter stop
-        short_stop = manager.calculate_duration_stop_loss(
-            entry_price=100.0, duration=2.0
-        )
+        short_stop = manager.calculate_duration_stop_loss(entry_price=100.0, duration=2.0)
         # Long duration bond should have wider stop
-        long_stop = manager.calculate_duration_stop_loss(
-            entry_price=100.0, duration=16.0
-        )
+        long_stop = manager.calculate_duration_stop_loss(entry_price=100.0, duration=16.0)
 
         # Long duration stop should be further from entry
         assert long_stop < short_stop
@@ -123,7 +123,7 @@ class TestBondRiskManager:
         assessment = manager.assess_portfolio_risk(positions, portfolio_value=100000)
 
         # Portfolio duration should be weighted average
-        expected_duration = (1000/100000) * 1.9 + (1000/100000) * 16.5
+        expected_duration = (1000 / 100000) * 1.9 + (1000 / 100000) * 16.5
         assert abs(assessment.portfolio_duration - expected_duration) < 0.01
 
     def test_trade_validation_limits(self):
@@ -187,7 +187,7 @@ class TestBondRiskManager:
 
     def test_risk_level_classification(self):
         """Test risk level classification by duration."""
-        from src.risk.bond_risk import BondRiskManager, BondRiskLevel
+        from src.risk.bond_risk import BondRiskLevel, BondRiskManager
 
         manager = BondRiskManager()
 
@@ -209,7 +209,6 @@ class TestTreasuryLadderStrategy:
         """Test allocation changes by yield curve regime."""
         from src.strategies.treasury_ladder_strategy import (
             TreasuryLadderStrategy,
-            YieldCurveRegime,
         )
 
         strategy = TreasuryLadderStrategy(daily_allocation=10.0, paper=True)
@@ -297,10 +296,10 @@ class TestIntegration:
         agent = BondYieldAgent(min_confidence=0.0)
         risk_manager = BondRiskManager()
 
-        with patch.object(agent, '_get_yield_data') as mock_yields:
+        with patch.object(agent, "_get_yield_data") as mock_yields:
             mock_yields.return_value = {"DGS2": 4.0, "DGS10": 4.5, "T10Y2Y": 0.5}
 
-            with patch.object(agent, '_check_bond_momentum') as mock_momentum:
+            with patch.object(agent, "_check_bond_momentum") as mock_momentum:
                 mock_momentum.return_value = (True, {"momentum_gate": "OPEN"})
 
                 signals = agent.generate_bond_signals(daily_allocation=10.0)

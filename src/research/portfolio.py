@@ -169,9 +169,7 @@ class PortfolioOptimizer:
         # Calculate final metrics
         weights = result.weights
         result.expected_return = float(weights @ expected_returns)
-        result.expected_volatility = float(
-            np.sqrt(weights @ cov @ weights) * np.sqrt(252)
-        )
+        result.expected_volatility = float(np.sqrt(weights @ cov @ weights) * np.sqrt(252))
         result.sharpe_ratio = (
             (result.expected_return - self.risk_free_rate) / result.expected_volatility
             if result.expected_volatility > 0
@@ -389,9 +387,7 @@ class PortfolioOptimizer:
         weights = inv_vols / inv_vols.sum()
 
         # Scale to target volatility
-        port_vol = np.sqrt(
-            np.dot(weights.T, np.dot(cov.values, weights))
-        ) * np.sqrt(252)
+        port_vol = np.sqrt(np.dot(weights.T, np.dot(cov.values, weights))) * np.sqrt(252)
 
         if port_vol > 0:
             scale = self.constraints.target_volatility / port_vol
@@ -411,9 +407,7 @@ class PortfolioOptimizer:
     def _hierarchical_risk_parity(self, cov: pd.DataFrame) -> PortfolioResult:
         """Hierarchical Risk Parity (HRP) optimization."""
         # Convert covariance to correlation and distance
-        corr = cov.values / np.outer(
-            np.sqrt(np.diag(cov.values)), np.sqrt(np.diag(cov.values))
-        )
+        corr = cov.values / np.outer(np.sqrt(np.diag(cov.values)), np.sqrt(np.diag(cov.values)))
         np.fill_diagonal(corr, 1.0)
 
         # Distance matrix

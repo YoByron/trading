@@ -28,7 +28,7 @@ print(target_model.generate_target_report(analysis))
 ```
 
 ### 2. Enhanced Backtest Reporting ✅
-**Files**: 
+**Files**:
 - `src/backtesting/backtest_results.py` (enhanced)
 - `src/backtesting/backtest_engine.py` (enhanced)
 

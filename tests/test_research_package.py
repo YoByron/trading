@@ -207,7 +207,7 @@ class TestIntegration:
 
         # 1. Validate data
         validator = DataValidator()
-        report = validator.validate(sample_ohlcv_data, "TEST")
+        validator.validate(sample_ohlcv_data, "TEST")
         # assert report.total_checks > 0 # This might fail if DataValidator changed
 
         # 2. Generate features

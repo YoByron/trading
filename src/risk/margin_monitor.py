@@ -23,12 +23,12 @@ Options Margin (Simplified):
 - Covered calls: No additional margin (collateralized by shares)
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
-import json
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MarginStatus:
     """Current margin utilization status."""
+
     # Account values
     equity: float = 0.0
     cash: float = 0.0
@@ -85,6 +86,7 @@ class MarginStatus:
 @dataclass
 class MarginImpact:
     """Projected margin impact of a potential trade."""
+
     symbol: str
     trade_type: str  # "buy_stock", "sell_put", "sell_call", "spread", etc.
     quantity: int
@@ -112,9 +114,9 @@ class MarginMonitor:
     """
 
     # Utilization thresholds
-    THRESHOLD_SAFE = 30      # 0-30%: Safe zone
-    THRESHOLD_CAUTION = 50   # 30-50%: Caution
-    THRESHOLD_WARNING = 75   # 50-75%: Warning
+    THRESHOLD_SAFE = 30  # 0-30%: Safe zone
+    THRESHOLD_CAUTION = 50  # 30-50%: Caution
+    THRESHOLD_WARNING = 75  # 50-75%: Warning
     THRESHOLD_CRITICAL = 90  # 75-90%: Critical
     # 90-100%: Margin call territory
 
@@ -138,6 +140,7 @@ class MarginMonitor:
         # Initialize trading client
         try:
             from src.core.alpaca_trader import AlpacaTrader
+
             self.trader = AlpacaTrader(paper=paper)
         except ImportError:
             logger.warning("AlpacaTrader not available")
@@ -150,7 +153,7 @@ class MarginMonitor:
         """Load margin history from disk."""
         try:
             if self.HISTORY_FILE.exists():
-                with open(self.HISTORY_FILE, "r") as f:
+                with open(self.HISTORY_FILE) as f:
                     data = json.load(f)
                     # Only load recent history
                     cutoff = datetime.now().timestamp() - (self.MAX_HISTORY_DAYS * 86400)
@@ -215,7 +218,9 @@ class MarginMonitor:
             initial_margin = float(account.get("initial_margin", 0) or 0)
 
             # Options-specific (if available)
-            options_buying_power = float(account.get("options_buying_power", buying_power) or buying_power)
+            options_buying_power = float(
+                account.get("options_buying_power", buying_power) or buying_power
+            )
 
             # Calculate margin usage
             if equity > 0:
@@ -315,6 +320,7 @@ class MarginMonitor:
             # Get current price
             try:
                 import yfinance as yf
+
                 ticker = yf.Ticker(symbol)
                 price = ticker.info.get("currentPrice", 100)
             except Exception:
@@ -339,6 +345,7 @@ class MarginMonitor:
             # Simplified: 20% of underlying + OTM amount
             try:
                 import yfinance as yf
+
                 ticker = yf.Ticker(symbol)
                 price = ticker.info.get("currentPrice", 100)
             except Exception:
@@ -426,40 +433,48 @@ class MarginMonitor:
         current = self.get_current_status()
 
         if current.risk_level == "MARGIN_CALL":
-            alerts.append({
-                "severity": "CRITICAL",
-                "type": "MARGIN_CALL",
-                "message": f"MARGIN CALL! Utilization at {current.utilization_pct:.1f}%. "
-                          "Close positions immediately to avoid forced liquidation.",
-                "action": "CLOSE_POSITIONS",
-            })
+            alerts.append(
+                {
+                    "severity": "CRITICAL",
+                    "type": "MARGIN_CALL",
+                    "message": f"MARGIN CALL! Utilization at {current.utilization_pct:.1f}%. "
+                    "Close positions immediately to avoid forced liquidation.",
+                    "action": "CLOSE_POSITIONS",
+                }
+            )
 
         elif current.risk_level == "CRITICAL":
-            alerts.append({
-                "severity": "HIGH",
-                "type": "CRITICAL_MARGIN",
-                "message": f"Margin utilization CRITICAL at {current.utilization_pct:.1f}%. "
-                          "Reduce exposure to prevent margin call.",
-                "action": "REDUCE_EXPOSURE",
-            })
+            alerts.append(
+                {
+                    "severity": "HIGH",
+                    "type": "CRITICAL_MARGIN",
+                    "message": f"Margin utilization CRITICAL at {current.utilization_pct:.1f}%. "
+                    "Reduce exposure to prevent margin call.",
+                    "action": "REDUCE_EXPOSURE",
+                }
+            )
 
         elif current.risk_level == "WARNING":
-            alerts.append({
-                "severity": "MEDIUM",
-                "type": "HIGH_MARGIN",
-                "message": f"Margin utilization high at {current.utilization_pct:.1f}%. "
-                          "No new positions recommended.",
-                "action": "NO_NEW_POSITIONS",
-            })
+            alerts.append(
+                {
+                    "severity": "MEDIUM",
+                    "type": "HIGH_MARGIN",
+                    "message": f"Margin utilization high at {current.utilization_pct:.1f}%. "
+                    "No new positions recommended.",
+                    "action": "NO_NEW_POSITIONS",
+                }
+            )
 
         elif current.risk_level == "CAUTION":
-            alerts.append({
-                "severity": "LOW",
-                "type": "ELEVATED_MARGIN",
-                "message": f"Margin utilization elevated at {current.utilization_pct:.1f}%. "
-                          "Reduce new position sizes.",
-                "action": "REDUCE_SIZE",
-            })
+            alerts.append(
+                {
+                    "severity": "LOW",
+                    "type": "ELEVATED_MARGIN",
+                    "message": f"Margin utilization elevated at {current.utilization_pct:.1f}%. "
+                    "Reduce new position sizes.",
+                    "action": "REDUCE_SIZE",
+                }
+            )
 
         return alerts
 
@@ -519,19 +534,18 @@ class MarginMonitor:
 
         # Get historical trend
         week_ago = datetime.now().timestamp() - (7 * 86400)
-        recent_history = [
-            s for s in self._history
-            if s.timestamp.timestamp() > week_ago
-        ]
+        recent_history = [s for s in self._history if s.timestamp.timestamp() > week_ago]
 
         avg_utilization = (
             sum(s.utilization_pct for s in recent_history) / len(recent_history)
-            if recent_history else current.utilization_pct
+            if recent_history
+            else current.utilization_pct
         )
 
         max_utilization = (
             max(s.utilization_pct for s in recent_history)
-            if recent_history else current.utilization_pct
+            if recent_history
+            else current.utilization_pct
         )
 
         return {
@@ -598,7 +612,7 @@ if __name__ == "__main__":
         premium=2.50,
     )
 
-    print(f"Trade: Sell 1 SPY $400 Put for $2.50")
+    print("Trade: Sell 1 SPY $400 Put for $2.50")
     print(f"Initial Margin Required: ${impact.initial_margin_required:,.2f}")
     print(f"Buying Power Effect: ${impact.buying_power_effect:,.2f}")
     print(f"Projected Utilization: {impact.projected_utilization:.1f}%")

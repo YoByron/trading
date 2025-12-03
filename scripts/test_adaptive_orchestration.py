@@ -84,9 +84,7 @@ def test_organization_patterns():
             )
             org = orchestrator._select_organization(assessment, regime, ["SPY"], {})
 
-            logger.info(
-                f"\n   {complexity.value.upper()} + {regime}: {org.pattern.value.upper()}"
-            )
+            logger.info(f"\n   {complexity.value.upper()} + {regime}: {org.pattern.value.upper()}")
             logger.info(f"   Rationale: {org.rationale}")
             logger.info(f"   Phases: {len(org.phases)}")
 
@@ -151,7 +149,7 @@ def test_elite_integration():
     elite_fixed = EliteOrchestrator(paper=True, enable_adaptive=False)
     plan_fixed = elite_fixed.create_trade_plan(["SPY"])
     logger.info(f"   Plan ID: {plan_fixed.plan_id}")
-    logger.info(f"   Organization: fixed (no adaptive context)")
+    logger.info("   Organization: fixed (no adaptive context)")
 
 
 def test_performance_learning():

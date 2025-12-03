@@ -5,12 +5,9 @@ Ensures universe definition doesn't suffer from survivorship bias.
 """
 
 import pandas as pd
-import pytest
 
 
-def test_universe_consistency(
-    universe: list[str], data: dict[str, pd.DataFrame]
-) -> bool:
+def test_universe_consistency(universe: list[str], data: dict[str, pd.DataFrame]) -> bool:
     """
     Test that all symbols in universe have data.
 
@@ -23,9 +20,7 @@ def test_universe_consistency(
     """
     missing_symbols = []
     for symbol in universe:
-        if symbol not in data:
-            missing_symbols.append(symbol)
-        elif data[symbol].empty:
+        if symbol not in data or data[symbol].empty:
             missing_symbols.append(symbol)
 
     if missing_symbols:
@@ -35,9 +30,7 @@ def test_universe_consistency(
     return True
 
 
-def test_date_range_consistency(
-    data: dict[str, pd.DataFrame], min_overlap: float = 0.8
-) -> bool:
+def test_date_range_consistency(data: dict[str, pd.DataFrame], min_overlap: float = 0.8) -> bool:
     """
     Test that all symbols have similar date ranges (avoid survivorship bias).
 
@@ -78,17 +71,15 @@ def test_date_range_consistency(
 
         if overlap_pct < min_overlap:
             print(
-                f"Symbol {symbol} has only {overlap_pct*100:.1f}% overlap "
-                f"(required: {min_overlap*100:.1f}%)"
+                f"Symbol {symbol} has only {overlap_pct * 100:.1f}% overlap "
+                f"(required: {min_overlap * 100:.1f}%)"
             )
             return False
 
     return True
 
 
-def test_delisted_symbols(
-    universe: list[str], current_data: dict[str, pd.DataFrame]
-) -> bool:
+def test_delisted_symbols(universe: list[str], current_data: dict[str, pd.DataFrame]) -> bool:
     """
     Test for delisted symbols (survivorship bias check).
 
@@ -112,13 +103,11 @@ def test_delisted_symbols(
 # Pytest test functions
 def test_universe_consistency_check(universe_fixture, data_fixture):
     """Pytest test for universe consistency."""
-    assert test_universe_consistency(
-        universe_fixture, data_fixture
-    ), "Universe consistency check failed"
+    assert test_universe_consistency(universe_fixture, data_fixture), (
+        "Universe consistency check failed"
+    )
 
 
 def test_date_range_consistency_check(data_fixture):
     """Pytest test for date range consistency."""
-    assert test_date_range_consistency(
-        data_fixture
-    ), "Date range consistency check failed"
+    assert test_date_range_consistency(data_fixture), "Date range consistency check failed"

@@ -29,17 +29,6 @@ def _parse_tickers() -> list[str]:
     return [ticker.strip().upper() for ticker in raw.split(",") if ticker.strip()]
 
 
-def calc_daily_input(equity: float) -> float:
-    """
-    Scale the DAILY_INVESTMENT contribution with equity once the base account
-    clears $2k. Caps at $50 to preserve the R&D safety rails.
-    """
-    base = 10.0
-    if equity > 2000:
-        base += 0.2 * (equity / 1000.0)
-    return min(base, 50.0)
-
-
 def is_weekend() -> bool:
     """Check if today is Saturday or Sunday."""
     return datetime.now().weekday() in [5, 6]  # Saturday=5, Sunday=6
@@ -102,24 +91,6 @@ def _apply_daily_input_scaling(logger) -> None:
 def crypto_enabled() -> bool:
     """Feature flag for the legacy crypto branch."""
     return os.getenv("ENABLE_CRYPTO_AGENT", "false").lower() in {"1", "true", "yes"}
-
-
-def calc_daily_input(equity: float) -> float:
-    """
-    Dynamically scale the daily capital deployment with account equity.
-
-    Scaling ramps faster once equity clears specific gates while respecting
-    the existing $10/day baseline and a $50/day safety cap.
-    """
-
-    base = 10.0
-    if equity >= 2_000:
-        base += 0.2 * (equity / 1_000)
-    if equity >= 5_000:
-        base += 0.15 * ((equity - 5_000) / 1_000)
-    if equity >= 10_000:
-        base += 0.1 * ((equity - 10_000) / 1_000)
-    return round(min(base, 50.0), 2)
 
 
 def _load_equity_snapshot() -> float | None:
@@ -372,16 +343,17 @@ def main() -> None:
             logger.info("=" * 80)
             logger.info("OPTIONS LIVE SIMULATION")
             logger.info("=" * 80)
-            
+
             # Import and run options simulation
             import subprocess
+
             script_path = os.path.join(os.path.dirname(__file__), "options_live_sim.py")
             result = subprocess.run(
                 [sys.executable, script_path, "--paper"],
                 capture_output=False,
                 text=True,
             )
-            
+
             if result.returncode == 0:
                 logger.info("✅ Options simulation completed successfully.")
             else:
@@ -399,10 +371,10 @@ def main() -> None:
             logger.info("=" * 80)
             logger.info("OPTIONS LIVE SIMULATION")
             logger.info("=" * 80)
-            from scripts.options_live_sim import main as options_sim_main
-
             # Run options simulation in paper mode
             import sys as sys_module
+
+            from scripts.options_live_sim import main as options_sim_main
 
             # Save original args
             original_argv = sys_module.argv.copy()

@@ -5,7 +5,6 @@ Ensures all data uses consistent timezones.
 """
 
 import pandas as pd
-import pytest
 
 
 def test_timezone_consistency(data: pd.DataFrame, expected_tz: str = "UTC") -> bool:
@@ -67,13 +66,11 @@ def test_no_timezone_mixing(data: dict[str, pd.DataFrame]) -> bool:
 # Pytest test functions
 def test_timezone_consistency_check(data_fixture):
     """Pytest test for timezone consistency."""
-    assert test_timezone_consistency(
-        data_fixture, expected_tz="UTC"
-    ), "Timezone consistency check failed"
+    assert test_timezone_consistency(data_fixture, expected_tz="UTC"), (
+        "Timezone consistency check failed"
+    )
 
 
 def test_no_timezone_mixing_check(data_fixture):
     """Pytest test for timezone mixing."""
-    assert test_no_timezone_mixing(
-        data_fixture
-    ), "Found mixed timezones across symbols"
+    assert test_no_timezone_mixing(data_fixture), "Found mixed timezones across symbols"

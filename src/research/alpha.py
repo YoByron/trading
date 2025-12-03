@@ -108,8 +108,7 @@ class FeatureLibrary:
             features = self._add_microstructure_features(features)
 
         logger.info(
-            f"Computed {len(features.columns) - len(df.columns)} features "
-            f"({len(features)} rows)"
+            f"Computed {len(features.columns) - len(df.columns)} features ({len(features)} rows)"
         )
         return features
 
@@ -156,10 +155,9 @@ class FeatureLibrary:
 
             # Parkinson volatility (using high/low)
             hl_ratio = np.log(high / low)
-            df[f"vol_parkinson_{window}d"] = (
-                hl_ratio.rolling(window).apply(lambda x: np.sqrt(np.sum(x**2) / (4 * np.log(2) * len(x))))
-                * np.sqrt(252)
-            )
+            df[f"vol_parkinson_{window}d"] = hl_ratio.rolling(window).apply(
+                lambda x: np.sqrt(np.sum(x**2) / (4 * np.log(2) * len(x)))
+            ) * np.sqrt(252)
 
             # Garman-Klass volatility (OHLC)
             df[f"vol_garman_klass_{window}d"] = self._garman_klass_vol(
@@ -171,7 +169,11 @@ class FeatureLibrary:
 
         # Volatility regime indicator
         vol_21 = df["vol_realized_21d"]
-        vol_63 = df["vol_realized_63d"] if "vol_realized_63d" in df.columns else vol_21.rolling(63).mean()
+        vol_63 = (
+            df["vol_realized_63d"]
+            if "vol_realized_63d" in df.columns
+            else vol_21.rolling(63).mean()
+        )
         df["vol_regime"] = vol_21 / (vol_63 + 1e-8)
 
         # High/Low range ratio
@@ -208,9 +210,7 @@ class FeatureLibrary:
             # Volume momentum
             df[f"volume_momentum_{window}d"] = volume.pct_change(window)
 
-            self._register_feature(
-                f"volume_ma_ratio_{window}d", "volume", {"window": window}
-            )
+            self._register_feature(f"volume_ma_ratio_{window}d", "volume", {"window": window})
 
         # VWAP and deviation
         typical_price = (high + low + close) / 3
@@ -265,7 +265,9 @@ class FeatureLibrary:
         df["atr_pct"] = df["atr"] / close
 
         # ADX
-        df["adx"], df["+di"], df["-di"] = self._compute_adx(high, low, close, self.config.adx_period)
+        df["adx"], df["+di"], df["-di"] = self._compute_adx(
+            high, low, close, self.config.adx_period
+        )
 
         # Stochastic Oscillator
         lowest_low = low.rolling(14).min()
@@ -286,7 +288,18 @@ class FeatureLibrary:
         df["cci"] = (tp - sma_tp) / (0.015 * mad + 1e-8)
 
         # Register all technical features
-        for col in ["rsi", "macd", "macd_signal", "macd_histogram", "bb_position", "atr", "adx", "stoch_k", "mfi", "cci"]:
+        for col in [
+            "rsi",
+            "macd",
+            "macd_signal",
+            "macd_histogram",
+            "bb_position",
+            "atr",
+            "adx",
+            "stoch_k",
+            "mfi",
+            "cci",
+        ]:
             self._register_feature(col, "technical", {})
 
         return df
@@ -382,9 +395,7 @@ class FeatureLibrary:
         mr = mf_positive_sum / (mf_negative_sum + 1e-8)
         return 100 - (100 / (1 + mr))
 
-    def _register_feature(
-        self, name: str, category: str, metadata: dict[str, Any]
-    ) -> None:
+    def _register_feature(self, name: str, category: str, metadata: dict[str, Any]) -> None:
         """Register a feature with its metadata."""
         self._feature_registry[name] = {
             "category": category,
@@ -577,23 +588,21 @@ class AlphaResearcher:
                 ic = signals[col].corr(forward_returns, method="spearman")
 
                 # Calculate IC mean and std over rolling windows
-                rolling_ic = (
-                    signals[col]
-                    .rolling(63)
-                    .corr(forward_returns.rolling(63))
-                )
+                rolling_ic = signals[col].rolling(63).corr(forward_returns.rolling(63))
                 ic_mean = rolling_ic.mean()
                 ic_std = rolling_ic.std()
                 ic_ir = ic_mean / (ic_std + 1e-8)  # Information Ratio
 
-                results.append({
-                    "signal": col,
-                    "ic": ic,
-                    "ic_mean": ic_mean,
-                    "ic_std": ic_std,
-                    "ic_ir": ic_ir,
-                    "holding_period": holding_period,
-                })
+                results.append(
+                    {
+                        "signal": col,
+                        "ic": ic,
+                        "ic_mean": ic_mean,
+                        "ic_std": ic_std,
+                        "ic_ir": ic_ir,
+                        "holding_period": holding_period,
+                    }
+                )
 
         return pd.DataFrame(results).sort_values("ic_ir", ascending=False)
 

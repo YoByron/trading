@@ -33,7 +33,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -146,9 +146,7 @@ def fetch_yield_data(fred_collector: FREDCollector) -> dict[str, Any]:
         }
 
 
-def analyze_steepener_signal(
-    spread: float, yield_2y: float, yield_10y: float
-) -> SteepenerSignal:
+def analyze_steepener_signal(spread: float, yield_2y: float, yield_10y: float) -> SteepenerSignal:
     """
     Analyze yield curve for steepener signal.
 
@@ -246,11 +244,7 @@ def get_historical_context(fred_collector: FREDCollector) -> dict[str, Any]:
 
         if spread_data and "observations" in spread_data:
             observations = spread_data["observations"]
-            values = [
-                float(obs["value"])
-                for obs in observations
-                if obs["value"] not in (".", "")
-            ]
+            values = [float(obs["value"]) for obs in observations if obs["value"] not in (".", "")]
 
             if values:
                 return {
@@ -258,9 +252,7 @@ def get_historical_context(fred_collector: FREDCollector) -> dict[str, Any]:
                     "min_1y": min(values),
                     "max_1y": max(values),
                     "avg_1y": sum(values) / len(values),
-                    "percentile": (
-                        sum(1 for v in values if v <= values[-1]) / len(values) * 100
-                    ),
+                    "percentile": (sum(1 for v in values if v <= values[-1]) / len(values) * 100),
                     "observations_count": len(values),
                 }
 
@@ -318,9 +310,7 @@ def save_signal_to_file(signal: SteepenerSignal, output_path: Path) -> None:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Treasury Steepener Signal Detector"
-    )
+    parser = argparse.ArgumentParser(description="Treasury Steepener Signal Detector")
     parser.add_argument(
         "--check",
         action="store_true",

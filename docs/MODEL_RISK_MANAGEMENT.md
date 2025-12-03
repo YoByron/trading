@@ -336,7 +336,7 @@ Key principles applied:
 
 ---
 
-**Document Owner**: Trading System CTO  
-**Review Frequency**: Quarterly  
-**Last Updated**: 2025-12-02  
+**Document Owner**: Trading System CTO
+**Review Frequency**: Quarterly
+**Last Updated**: 2025-12-02
 **Version**: 1.0

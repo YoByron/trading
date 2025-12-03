@@ -12,8 +12,6 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
-
 logger = logging.getLogger(__name__)
 
 # North Star Target
@@ -126,12 +124,8 @@ class TargetModel:
         max_position_size = self.config.capital * (self.config.max_daily_loss_pct / 100)
 
         # Worst-case drawdown limits
-        worst_5day_drawdown_limit = self.config.capital * (
-            self.config.max_daily_loss_pct * 5 / 100
-        )
-        worst_20day_drawdown_limit = self.config.capital * (
-            self.config.max_drawdown_pct / 100
-        )
+        worst_5day_drawdown_limit = self.config.capital * (self.config.max_daily_loss_pct * 5 / 100)
+        worst_20day_drawdown_limit = self.config.capital * (self.config.max_drawdown_pct / 100)
 
         return TargetModelMetrics(
             required_daily_return_pct=required_daily_return_pct,
@@ -162,9 +156,7 @@ class TargetModel:
         commission_cost = trades_per_day * self.config.commission_per_trade
 
         # Slippage costs (in basis points)
-        slippage_cost = (
-            trades_per_day * trade_size * (self.config.slippage_bps / 10000)
-        )
+        slippage_cost = trades_per_day * trade_size * (self.config.slippage_bps / 10000)
 
         return commission_cost + slippage_cost
 

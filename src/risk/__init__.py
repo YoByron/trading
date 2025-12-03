@@ -41,9 +41,9 @@ with contextlib.suppress(ImportError):
 
 with contextlib.suppress(ImportError):
     from src.risk.target_aligned_sizing import (
-        TargetAlignedSizer,
         DailyLossLimiter,
         PositionSizeResult,
+        TargetAlignedSizer,
         create_target_aligned_sizer,
     )
 

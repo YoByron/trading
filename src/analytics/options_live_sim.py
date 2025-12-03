@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from src.analytics.options_profit_planner import OptionsProfitPlanner, ThetaHarvestExecutor
 from src.utils.regime_detector import RegimeDetector
@@ -173,7 +174,9 @@ class OptionsLiveSimulator:
             },
             "theta_plan": result.theta_plan,
             "profit_summary": result.profit_summary,
-            "profit_summary_path": str(result.profit_summary_path) if result.profit_summary_path else None,
+            "profit_summary_path": str(result.profit_summary_path)
+            if result.profit_summary_path
+            else None,
         }
 
         with path.open("w", encoding="utf-8") as handle:

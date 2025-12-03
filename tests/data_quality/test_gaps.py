@@ -5,7 +5,6 @@ Ensures no missing trading days in the data.
 """
 
 import pandas as pd
-import pytest
 
 
 def test_no_gaps_in_trading_days(data: pd.DataFrame) -> bool:
@@ -105,6 +104,4 @@ def test_weekend_data(data_fixture):
 
 def test_frequency_consistency(data_fixture):
     """Pytest test for frequency consistency."""
-    assert test_consistent_frequency(
-        data_fixture, expected_freq="D"
-    ), "Frequency is not consistent"
+    assert test_consistent_frequency(data_fixture, expected_freq="D"), "Frequency is not consistent"

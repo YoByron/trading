@@ -15,15 +15,15 @@ This checklist ensures consistent validation standards across all models and gat
 - [ ] **Data Completeness**: Verify no missing values in critical features
   - Check: `df.isnull().sum()` for each feature
   - Threshold: < 1% missing values
-  
+
 - [ ] **Data Freshness**: Confirm data is current
   - Check: Latest data point within expected timeframe
   - Threshold: Data must be < 24 hours old for live trading
-  
+
 - [ ] **Data Consistency**: Verify no outliers or anomalies
   - Check: Z-score analysis on price/volume data
   - Threshold: Flag values > 5 standard deviations
-  
+
 - [ ] **Data Source Verification**: Confirm data from authorized sources
   - Sources: Alpaca API (primary), Yahoo Finance (fallback)
   - Document: Data source for each feature
@@ -145,14 +145,14 @@ This checklist ensures consistent validation standards across all models and gat
   "version": "string",
   "validation_date": "YYYY-MM-DD",
   "validator": "string",
-  
+
   "data_quality": {
     "completeness_check": true,
     "freshness_check": true,
     "consistency_check": true,
     "missing_value_pct": 0.0
   },
-  
+
   "walk_forward_validation": {
     "total_windows": 4,
     "mean_oos_sharpe": 1.2,
@@ -160,26 +160,26 @@ This checklist ensures consistent validation standards across all models and gat
     "sharpe_consistency": 0.75,
     "passed": true
   },
-  
+
   "sensitivity_analysis": {
     "parameter_sensitivity": "low",
     "regime_sensitivity": "acceptable",
     "time_sensitivity": "acceptable"
   },
-  
+
   "benchmarking": {
     "vs_spy_alpha": 0.05,
     "sharpe_ratio": 1.2,
     "max_drawdown": 0.08,
     "passed": true
   },
-  
+
   "error_handling": {
     "graceful_degradation": true,
     "circuit_breaker_integrated": true,
     "logging_complete": true
   },
-  
+
   "approval": {
     "automated_checks_passed": true,
     "manual_review_required": false,

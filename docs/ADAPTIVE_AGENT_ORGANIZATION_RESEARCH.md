@@ -1,7 +1,7 @@
 # Adaptive Agent Organization Research
 
-**Date**: 2025-01-XX  
-**Source**: Paper referenced on X/Twitter about multi-agent systems  
+**Date**: 2025-01-XX
+**Source**: Paper referenced on X/Twitter about multi-agent systems
 **Status**: Research Opportunity
 
 ---
@@ -18,11 +18,11 @@ Our current `EliteOrchestrator` uses a **fixed hierarchical structure**:
 
 ```python
 # Fixed phases (cannot change)
-PlanningPhase.INITIALIZE → 
-PlanningPhase.DATA_COLLECTION → 
-PlanningPhase.ANALYSIS → 
-PlanningPhase.RISK_ASSESSMENT → 
-PlanningPhase.EXECUTION → 
+PlanningPhase.INITIALIZE →
+PlanningPhase.DATA_COLLECTION →
+PlanningPhase.ANALYSIS →
+PlanningPhase.RISK_ASSESSMENT →
+PlanningPhase.EXECUTION →
 PlanningPhase.AUDIT
 
 # Fixed agent assignments per phase
@@ -111,7 +111,7 @@ class AdaptiveOrchestrator:
     def create_adaptive_plan(self, task_context):
         # Analyze task complexity
         complexity = self.assess_complexity(task_context)
-        
+
         # Select agent organization based on complexity
         if complexity == "simple":
             return SimplePlan()  # Fewer agents, faster path

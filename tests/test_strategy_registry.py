@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from src.pipeline.strategy_registry import StageConfig, StrategyRegistry
 
 

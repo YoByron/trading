@@ -485,7 +485,9 @@ class ExperimentTracker:
         # Sort by metric
         sorted_runs = sorted(
             valid_runs,
-            key=lambda x: x["metrics"].get(metric, float("-inf") if higher_is_better else float("inf")),
+            key=lambda x: x["metrics"].get(
+                metric, float("-inf") if higher_is_better else float("inf")
+            ),
             reverse=higher_is_better,
         )
 
@@ -554,6 +556,7 @@ class ModelRegistry:
         dst = dst_dir / src.name
 
         import shutil
+
         shutil.copy2(src, dst)
 
         # Record version
@@ -607,11 +610,13 @@ class ModelRegistry:
         """List all registered models."""
         result = []
         for name, info in self._registry["models"].items():
-            result.append({
-                "name": name,
-                "version_count": len(info["versions"]),
-                "production_version": info.get("production_version"),
-            })
+            result.append(
+                {
+                    "name": name,
+                    "version_count": len(info["versions"]),
+                    "production_version": info.get("production_version"),
+                }
+            )
         return result
 
 
@@ -649,14 +654,16 @@ if __name__ == "__main__":
     print(f"\nStarted run: {run.run_id}")
 
     # Log some metrics
-    tracker.log_metrics({
-        "train_loss": 0.025,
-        "val_loss": 0.028,
-        "test_accuracy": 0.58,
-        "sharpe": 1.45,
-        "max_drawdown": 0.12,
-        "win_rate": 0.55,
-    })
+    tracker.log_metrics(
+        {
+            "train_loss": 0.025,
+            "val_loss": 0.028,
+            "test_accuracy": 0.58,
+            "sharpe": 1.45,
+            "max_drawdown": 0.12,
+            "win_rate": 0.55,
+        }
+    )
 
     # Add note
     tracker.add_note("Initial baseline model - promising results")

@@ -115,9 +115,7 @@ def test_organization_templates(adaptive_orchestrator):
             assessment = ComplexityAssessment(
                 complexity=complexity, score=0.5, factors={}, rationale=""
             )
-            org = adaptive_orchestrator._select_organization(
-                assessment, regime, ["SPY"], {}
-            )
+            org = adaptive_orchestrator._select_organization(assessment, regime, ["SPY"], {})
 
             assert org is not None
             assert org.pattern in OrganizationPattern

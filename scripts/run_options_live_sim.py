@@ -17,10 +17,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
-from pathlib import Path
-from typing import Iterable
 import sys
+from collections.abc import Iterable
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -77,7 +76,9 @@ def summarize_result(result: OptionsLiveSimResult, combined_path: Path | None) -
 
 def main(argv: Iterable[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Run the options live simulation pipeline.")
-    parser.add_argument("--equity", type=float, help="Override account equity instead of reading system_state.json")
+    parser.add_argument(
+        "--equity", type=float, help="Override account equity instead of reading system_state.json"
+    )
     parser.add_argument("--regime", help="Override regime label (e.g. calm, volatile)")
     parser.add_argument(
         "--symbols",

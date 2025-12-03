@@ -10,7 +10,6 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-
 from src.backtesting.backtest_results import BacktestResults
 
 logger = logging.getLogger(__name__)
@@ -211,9 +210,7 @@ class PerformanceReporter:
         # In practice, you'd track positions over time
         total_notional = sum(trade.get("amount", 0) for trade in trades)
         avg_exposure = total_notional / trading_days if trading_days > 0 else 0.0
-        max_exposure = max(
-            (trade.get("amount", 0) for trade in trades), default=0.0
-        )
+        max_exposure = max((trade.get("amount", 0) for trade in trades), default=0.0)
 
         # Turnover: total traded value / average equity
         avg_equity = np.mean(equity_curve)

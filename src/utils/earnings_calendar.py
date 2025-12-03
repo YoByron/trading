@@ -18,12 +18,12 @@ Best Practices (McMillan):
 Reference: McMillan "Options as Strategic Investment" Ch. 22
 """
 
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
-import json
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EarningsEvent:
     """Represents an earnings announcement."""
+
     symbol: str
     earnings_date: datetime
-    time_of_day: str  # "BMO" (before market open), "AMC" (after market close), "TAS" (time after session)
+    time_of_day: (
+        str  # "BMO" (before market open), "AMC" (after market close), "TAS" (time after session)
+    )
     eps_estimate: Optional[float] = None
     eps_actual: Optional[float] = None
     revenue_estimate: Optional[float] = None
@@ -64,6 +67,7 @@ class EarningsEvent:
 @dataclass
 class EarningsRisk:
     """Risk assessment for holding options through earnings."""
+
     symbol: str
     earnings_date: Optional[datetime]
     days_until_earnings: Optional[int]
@@ -91,7 +95,7 @@ class EarningsCalendar:
     """
 
     # Risk thresholds (days before earnings)
-    CRITICAL_ZONE = 3   # Close ALL short options
+    CRITICAL_ZONE = 3  # Close ALL short options
     HIGH_RISK_ZONE = 7  # Consider closing
     MEDIUM_RISK_ZONE = 14  # Avoid new positions
     LOW_RISK_ZONE = 21  # Trade with caution
@@ -110,7 +114,7 @@ class EarningsCalendar:
         """Load cached earnings data."""
         try:
             if self.CACHE_FILE.exists():
-                with open(self.CACHE_FILE, "r") as f:
+                with open(self.CACHE_FILE) as f:
                     data = json.load(f)
                     self._cache_timestamp = datetime.fromisoformat(data.get("timestamp", ""))
                     for symbol, event_data in data.get("events", {}).items():
@@ -187,7 +191,7 @@ class EarningsCalendar:
                                 earnings_dt = earnings_date
 
                             # Convert to datetime if needed
-                            if hasattr(earnings_dt, 'to_pydatetime'):
+                            if hasattr(earnings_dt, "to_pydatetime"):
                                 earnings_dt = earnings_dt.to_pydatetime()
                             elif isinstance(earnings_dt, str):
                                 earnings_dt = datetime.fromisoformat(earnings_dt)
@@ -366,9 +370,7 @@ class EarningsCalendar:
             if risk.days_until_earnings is None or risk.days_until_earnings >= min_days_buffer:
                 safe_symbols.append(symbol)
             else:
-                logger.info(
-                    f"Filtering out {symbol}: Earnings in {risk.days_until_earnings} days"
-                )
+                logger.info(f"Filtering out {symbol}: Earnings in {risk.days_until_earnings} days")
 
         return safe_symbols
 
@@ -502,9 +504,11 @@ if __name__ == "__main__":
         risk = calendar.assess_earnings_risk(symbol)
         print(f"{symbol}:")
         if risk.earnings_date:
-            print(f"  Earnings: {risk.earnings_date.strftime('%Y-%m-%d')} ({risk.days_until_earnings} days)")
+            print(
+                f"  Earnings: {risk.earnings_date.strftime('%Y-%m-%d')} ({risk.days_until_earnings} days)"
+            )
         else:
-            print(f"  Earnings: Unknown")
+            print("  Earnings: Unknown")
         print(f"  Risk Level: {risk.risk_level} (Score: {risk.risk_score})")
         print(f"  Action: {risk.rationale}")
         print()
@@ -512,7 +516,7 @@ if __name__ == "__main__":
     # Check a hypothetical position
     print("\n=== POSITION SAFETY CHECK ===")
     safety = calendar.check_position_safety("NVDA", "2025-12-20", is_short=True)
-    print(f"NVDA short option expiring 2025-12-20:")
+    print("NVDA short option expiring 2025-12-20:")
     print(f"  Safety: {safety['safety']}")
     print(f"  Action: {safety['action']}")
     print(f"  Reason: {safety['reason']}")
