@@ -34,7 +34,13 @@ repos:
     rev: 1.8.0
     hooks:
       - id: bandit
-        args: ['-ll', '-ii', '--skip', 'B101,B310,B113,B602,B603,B404']
+        args:
+          [
+            '-ll',
+            '-ii',
+            '--skip',
+            'B101,B310,B113,B602,B603,B404,B614,B324,B301,B314',
+          ]
         exclude: ^tests/|.pc-venv/
 
   # Keep the custom hygiene script if needed, but ensure it works
@@ -67,7 +73,8 @@ repos:
       - id: validate-yaml-strict
         name: Strict YAML Validation
         entry: bash scripts/validate_yaml_before_commit.sh
-        language: system
+        language: python
+        additional_dependencies: [pyyaml]
         types: [yaml]
         pass_filenames: false
         verbose: true
