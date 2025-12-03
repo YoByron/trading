@@ -5,106 +5,58 @@
 ## Metadata
 - Task: Execute critical path toward $100/day North Star goal
 - Owner: Claude CTO
-- Status: APPROVED
+- Status: IN_PROGRESS
 - Created at: 2025-12-02T20:30:00Z
-- Valid for (minutes): 240
+- Last Updated: 2025-12-03T18:00:00Z
 
 ---
 
 ## 🎯 North Star Goal: $100/Day Net Income
 
-**Current State**: $0.03/day → **Target**: $100/day  
-**Gap**: 99.97%  
+**Current State**: $0.00/day → **Target**: $100/day
+**Gap**: 100%
 **Timeline**: 16-18 months via Fibonacci compounding
 
 ---
 
-## Critical Gap Analysis Summary
+## High-Level Plan
 
-Full analysis: **docs/north-star-gap-analysis.md**
+1.  **Phase 1: Feature Development (`feature/macro-agent`) - COMPLETE**
+    *   **Goal:** Make the trading system "macro-aware" by integrating a Macroeconomic Agent and a Treasury Ladder Strategy.
+    *   **Status:** The feature implementation is complete and has been merged into `main`.
 
-| Gap | Severity | Status | Blocker |
-|-----|----------|--------|---------|
-| No validated backtest data | 🔴 CRITICAL | 0 trades in matrix | Network access |
-| Options income = $0/day | 🔴 CRITICAL | Need inventory | 50+ shares |
-| Paper trading only | 🔴 CRITICAL | Day 9 of 90 | 80 days remaining |
-| Win rate = 0% | ⚠️ HIGH | No closed trades | Exits not triggered |
-| Sharpe ratio = 0.0 | ⚠️ HIGH | Insufficient data | Need 30+ days |
+2.  **Phase 2: Production Hardening & Strategy Tuning - IN PROGRESS**
+    *   **Goal:** Address recurring CI/CD failures and improve the core trading strategy's performance to pass the automated "Promotion Gate".
+    *   **Status:** Actively working on this. The root cause of CI failures was identified as a non-profitable baseline strategy. The current focus is on enabling and validating the full AI-powered strategy in our backtesting environment.
 
----
-
-## Complementary Gap Analyses
-
-1. **docs/north-star-gap-analysis.md** - Business/execution gaps toward $100/day
-2. **docs/WORLD_CLASS_AI_TRADING_GAP_ANALYSIS.md** - Research infrastructure gaps
+3.  **Phase 3: Live Trading & Optimization**
+    *   **Goal:** Achieve consistent profitability in a live paper-trading environment, progressing through the Victory Ladder milestones.
+    *   **Status:** Pending completion of Phase 2.
 
 ---
 
-## Path to $100/Day (Fibonacci Compounding)
+## Immediate Actions (Current Initiative)
 
-| Phase | Daily Amount | Profit Threshold | Cumulative |
-|-------|--------------|------------------|------------|
-| 1 | $1/day | $60 | $60 |
-| 2 | $2/day | $90 | $150 |
-| 3 | $3/day | $150 | $300 |
-| 4 | $5/day | $240 | $540 |
-| 5 | $8/day | $390 | $930 |
-| 6 | $13/day | $630 | $1,560 |
-| 7 | $21/day | $1,020 | $2,580 |
-| 8 | $34/day | $1,650 | $4,230 |
-| 9 | $55/day | $2,670 | $6,900 |
-| 10 | $89/day | → Scale to $100/day | |
-| 11 | **$100/day** | 🏆 **NORTH STAR** | |
+### P0: Enable and Validate AI-Powered Backtests
+- **Status:** IN_PROGRESS
+- **Goal:** Modify the CI/CD workflow to run backtests with the full hybrid (Momentum → RL → LLM) gates enabled. This is critical to get a true reading of the strategy's performance.
+- **Next Step:** The workflow has been modified on a feature branch. The next step is to push this branch and analyze the results from the CI run.
 
----
-
-## Victory Ladder Milestones
-
-| Level | Daily Profit | Meaning |
-|-------|--------------|---------|
-| 🥉 Bronze | $10/day | Beat savings account |
-| 🥈 Silver | $30/day | Quit a side gig |
-| 🥇 Gold | $70/day | Reduce day job hours |
-| 🏆 Platinum | **$100/day** | **NORTH STAR GOAL** |
-| 💎 Diamond | $150/day | Hire a junior dev |
-| 🏅 Champion | $300/day | System pays rent |
-
----
-
-## Immediate Actions (This Week)
-
-### P0: Run Full Backtest With Network
-```bash
-PYTHONPATH=src python3 scripts/run_backtest_matrix.py
-```
-- Blocked: Needs yfinance network access
-- Validates strategy across 3 market regimes
-
-### P1: Monitor Exit Signal Execution
-- Take-profit: 5% gain
-- Stop-loss: 5% loss  
-- Track first closed trades for win rate
-
-### P2: Calculate Rolling Sharpe Daily
-- Add to daily report automation
-- Surface in dashboard
-
-### P3: Run Options Profit Planner
-```bash
-PYTHONPATH=src python3 scripts/options_profit_planner.py --target-daily 10
-```
+### P1: Integrate `act` for Local CI/CD Validation
+- **Status:** PENDING
+- **Goal:** Set up `act` to allow local execution of the full GitHub Actions pipeline inside a Docker container.
+- **Benefit:** This will prevent future local environment issues and ensure that what works locally will also work in CI.
 
 ---
 
 ## Approval
 - Reviewer: Claude CTO (autonomous)
-- Status: APPROVED
-- Approved at: 2025-12-02T20:30:00Z
-- Valid through: 2025-12-03T00:30:00Z
+- Status: ACTIVE
+- Last Review: 2025-12-03T18:00:00Z
 
 ## Exit Checklist
 - [x] Gap analysis created (docs/north-star-gap-analysis.md)
-- [x] Progress log updated
-- [ ] Backtest matrix run with real data (blocked: network)
-- [ ] Options profit planner in daily workflow
-- [ ] First closed trade recorded for win rate
+- [x] `feature/macro-agent` implemented and merged.
+- [ ] Backtest matrix run with **hybrid gates enabled** in CI.
+- [ ] Backtest results show passing metrics on the Promotion Gate.
+- [ ] `act` integrated into the local development workflow.
