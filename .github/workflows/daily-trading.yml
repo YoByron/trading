@@ -33,18 +33,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  execute-trading:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30  # Increased from 20 to 30 as safety net (fixes should prevent timeouts)
-    env:
-      PYTHONPATH: ${{ github.workspace }}
-      ENABLE_WEEKEND_PROXY: 'true'
-
+  # Quick validation and setup job
+  validate-and-test:
+    runs-on: ubuntu-22.04  # Pinned Ubuntu version
+    timeout-minutes: 10
+    outputs:
+      secrets_valid: ${{ steps.validate_secrets.outputs.secrets_valid }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Always fetch latest to get any YouTube analysis updates
           ref: main
           fetch-depth: 1
 
@@ -58,6 +56,13 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
+
+      - name: Validate secrets
+        id: validate_secrets
+        run: |
+          echo "🔑 Validating required secrets..."
+          python3 scripts/validate_secrets.py
+          echo "secrets_valid=true" >> $GITHUB_OUTPUT
 
       - name: Run tests
         timeout-minutes: 5
@@ -75,12 +80,105 @@ jobs:
             || exit 1
           echo "✅ All tests passed"
 
+  # Separate job for backtesting to prevent timeouts
+  run-backtests:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    needs: validate-and-test
+    if: needs.validate-and-test.outputs.secrets_valid == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Restore backtest cache
+        uses: actions/cache@v4
+        with:
+          path: data/backtests/cache
+          key: backtest-cache-${{ hashFiles('config/backtest_scenarios.yaml') }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+
       - name: Run backtest scenario matrix
+        timeout-minutes: 20
         run: |
           python3 scripts/run_backtest_matrix.py \
             --config config/backtest_scenarios.yaml \
             --output-root data/backtests \
             --summary data/backtests/latest_summary.json
+
+      - name: Upload backtest results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-results-${{ github.run_id }}
+          path: |
+            data/backtests/latest_summary.json
+            data/backtests/**/*.json
+          retention-days: 7
+
+  # Main trading execution job
+  execute-trading:
+    runs-on: ubuntu-22.04  # Pinned Ubuntu version
+    timeout-minutes: 20  # Reduced from 30 since backtests are separate
+    needs: validate-and-test
+    if: needs.validate-and-test.outputs.secrets_valid == 'true'
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      ENABLE_WEEKEND_PROXY: 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Always fetch latest to get any YouTube analysis updates
+          ref: main
+          fetch-depth: 1
+
+      - name: Install uv (for MCP server)
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install uv
+
+      - name: Start Alpaca MCP server (paper)
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          if [ -z "$ALPACA_API_KEY" ] || [ -z "$ALPACA_SECRET_KEY" ]; then
+            echo "No Alpaca keys; skipping MCP server startup (trading will skip)."
+            exit 0
+          fi
+          nohup uvx alpaca-mcp-server serve \
+            --host 127.0.0.1 --port 8801 \
+            --mode paper \
+            --alpaca-key "$ALPACA_API_KEY" \
+            --alpaca-secret "$ALPACA_SECRET_KEY" \
+            --transport http \
+            > /tmp/alpaca_mcp.log 2>&1 &
+          echo "MCP server started on 127.0.0.1:8801"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
 
       - name: Set up Go for ADK orchestrator
         uses: actions/setup-go@v5
@@ -89,17 +187,26 @@ jobs:
         env:
           ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
 
+      - name: Restore ADK build cache
+        if: env.ADK_ENABLED != '0'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/adk_build
+          key: adk-build-${{ hashFiles('go/adk_trading/**') }}
+
       - name: Install Go dependencies for ADK
         if: env.ADK_ENABLED != '0'
         working-directory: go/adk_trading
+        timeout-minutes: 3
         run: |
           echo "📦 Installing Go dependencies for ADK orchestrator..."
           go mod download
           go mod verify
           echo "✅ Go dependencies installed"
 
-      - name: Start ADK orchestrator service (background)
+      - name: Build and start ADK orchestrator service
         if: env.ADK_ENABLED != '0'
+        timeout-minutes: 5
         env:
           ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
@@ -113,14 +220,25 @@ jobs:
 
           cd go/adk_trading
 
-          # Build first to catch compilation errors early
-          echo "📦 Building ADK orchestrator..."
-          go build -o /tmp/trading_orchestrator ./cmd/trading_orchestrator || {
-            echo "❌ Build failed - checking logs..."
-            cat ../../logs/adk_service.log 2>/dev/null || echo "No log file"
-            echo "⚠️  Continuing with fallback to Python strategies..."
-            exit 0
-          }
+          # Check if cached binary exists and is valid
+          if [ -f "/tmp/adk_build/trading_orchestrator" ]; then
+            echo "📦 Using cached ADK binary..."
+            cp /tmp/adk_build/trading_orchestrator /tmp/trading_orchestrator
+            chmod +x /tmp/trading_orchestrator
+          else
+            # Build first to catch compilation errors early
+            echo "📦 Building ADK orchestrator..."
+            mkdir -p /tmp/adk_build
+            if ! go build -o /tmp/adk_build/trading_orchestrator ./cmd/trading_orchestrator; then
+              echo "❌ Build failed - checking logs..."
+              cat ../../logs/adk_service.log 2>/dev/null || echo "No log file"
+              echo "⚠️  ADK build failed - disabling for this run..."
+              echo "ADK_ENABLED=0" >> $GITHUB_ENV
+              exit 0
+            fi
+            cp /tmp/adk_build/trading_orchestrator /tmp/trading_orchestrator
+            chmod +x /tmp/trading_orchestrator
+          fi
 
           # Start service in background
           echo "🚀 Starting ADK service..."
@@ -133,11 +251,19 @@ jobs:
           echo $! > /tmp/adk_service.pid
           echo "   Service PID: $(cat /tmp/adk_service.pid)"
 
-          # Wait for service to be ready (max 60 seconds - increased for reliability)
+          # Wait for service to be ready (max 60 seconds with fail-fast on process death)
           echo "⏳ Waiting for ADK service to start..."
           ADK_READY=false
           for i in {1..60}; do
-            if curl -f http://localhost:8080/api/health 2>/dev/null > /dev/null; then
+            # Check if process died
+            if ! ps -p "$(cat /tmp/adk_service.pid)" >/dev/null 2>&1; then
+              echo "❌ ADK process crashed - aborting wait loop"
+              echo "ADK_ENABLED=0" >> $GITHUB_ENV
+              break
+            fi
+
+            # Check health endpoint
+            if timeout 5s curl -f http://localhost:8080/api/health 2>/dev/null > /dev/null; then
               echo "✅ ADK service is ready! (took ${i}s)"
               ADK_READY=true
               break
@@ -152,11 +278,10 @@ jobs:
 
           # Verify service started
           if [ "$ADK_READY" = "false" ]; then
-            echo "⚠️  WARNING: ADK service may not have started properly"
+            echo "⚠️  WARNING: ADK service not ready - disabling for this run"
             echo "   Checking logs..."
             tail -30 ../../logs/adk_service.log || echo "   No log file found"
-            echo "   Continuing with fallback to Python strategies..."
-            echo "   ADK will be disabled for this run"
+            echo "ADK_ENABLED=0" >> $GITHUB_ENV
           else
             echo "✅ ADK service verified and ready for trading"
             echo "   Health check: http://localhost:8080/api/health"
@@ -417,6 +542,8 @@ jobs:
 
       - name: Monitor TLT Momentum Gate
         if: steps.check_execution.outputs.skip != 'true'
+        continue-on-error: true  # Don't fail workflow if monitoring fails
+        timeout-minutes: 3
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -426,6 +553,8 @@ jobs:
 
       - name: Update Progress Dashboard Wiki
         if: steps.check_execution.outputs.skip != 'true'
+        continue-on-error: true  # Don't fail workflow if wiki update fails
+        timeout-minutes: 5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -502,6 +631,7 @@ jobs:
 
       - name: Upload execution logs
         if: always()
+        continue-on-error: true  # Don't fail workflow if log upload fails
         uses: actions/upload-artifact@v4
         with:
           name: trading-logs-${{ github.run_id }}
@@ -513,3 +643,14 @@ jobs:
             data/trades_*.json
             wiki/Progress-Dashboard.md
           retention-days: 30
+
+      - name: Upload logs on failure (early)
+        if: failure() || cancelled()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-logs-${{ github.run_id }}
+          path: |
+            logs/*.log
+            logs/adk_service.log
+          retention-days: 7
