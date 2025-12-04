@@ -75,7 +75,11 @@ class BrokerHealthMonitor:
             f"{self.broker_name}_health.jsonl",
         )
 
-    def check_health(self) -> BrokerHealthMetrics:
+    def check_health(
+        self,
+        retries: int = 3,
+        backoff_seconds: float = 2.0,
+    ) -> BrokerHealthMetrics:
         """
         Perform comprehensive health check.
 
@@ -85,67 +89,83 @@ class BrokerHealthMonitor:
         import time
 
         start_time = time.time()
+        errors: list[str] = []
+        account_info = {}
+        elapsed_ms = 0.0
 
-        try:
-            # Import here to avoid circular dependencies
-            from src.core.alpaca_trader import AlpacaTrader
+        # Only count one health-check regardless of retries
+        self.metrics.total_checks += 1
 
-            # Attempt connection
-            trader = AlpacaTrader(paper=True)
-            account_info = trader.get_account_info()
+        for attempt in range(1, max(1, retries) + 1):
+            try:
+                from src.core.alpaca_trader import AlpacaTrader
 
-            # Update metrics
-            elapsed_ms = (time.time() - start_time) * 1000
-            self.metrics.last_successful_connection = datetime.now()
-            self.metrics.total_checks += 1
-            self.metrics.successful_checks += 1
-            self.metrics.avg_response_time_ms = (
-                self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1) + elapsed_ms
-            ) / self.metrics.total_checks
-            self.metrics.consecutive_failures = 0
-            self.metrics.account_status = account_info.get("status", "UNKNOWN")
-            self.metrics.buying_power = account_info.get("buying_power", 0.0)
-            self.metrics.last_error = None
+                trader = AlpacaTrader(paper=True)
+                account_info = trader.get_account_info()
+                elapsed_ms = (time.time() - start_time) * 1000
 
-            # Determine status
-            if account_info.get("status") == "ACTIVE" and not account_info.get(
-                "trading_blocked", False
-            ):
-                self.metrics.status = BrokerStatus.HEALTHY
-            elif account_info.get("trading_blocked", False):
-                self.metrics.status = BrokerStatus.DEGRADED
-                self.metrics.last_error = "Trading blocked"
-            else:
-                self.metrics.status = BrokerStatus.DEGRADED
-                self.metrics.last_error = f"Account status: {account_info.get('status')}"
+                # Success: reset failure counters and break
+                self.metrics.last_successful_connection = datetime.now()
+                self.metrics.successful_checks += 1
+                self.metrics.consecutive_failures = 0
+                self.metrics.last_error = None
+                break
+            except Exception as e:  # noqa: PERF203
+                errors.append(str(e))
+                elapsed_ms = (time.time() - start_time) * 1000
 
-            # Log health check
-            self._log_health_check(success=True, response_time_ms=elapsed_ms)
+                # If not last attempt, wait with exponential backoff then retry
+                if attempt < retries:
+                    sleep_for = backoff_seconds * attempt
+                    time.sleep(sleep_for)
+                    continue
 
-            logger.info(
-                f"✅ Broker health check passed: {self.broker_name} "
-                f"(status: {self.metrics.status.value}, "
-                f"response: {elapsed_ms:.2f}ms)"
-            )
+                # Exhausted retries: record failure metrics
+                self.metrics.last_failed_connection = datetime.now()
+                self.metrics.failed_checks += 1
+                self.metrics.consecutive_failures += 1
+                self.metrics.last_error = "; ".join(errors) or str(e)
+                self.metrics.status = BrokerStatus.FAILING
 
-        except Exception as e:
-            # Update failure metrics
-            elapsed_ms = (time.time() - start_time) * 1000
-            self.metrics.last_failed_connection = datetime.now()
-            self.metrics.total_checks += 1
-            self.metrics.failed_checks += 1
-            self.metrics.consecutive_failures += 1
-            self.metrics.last_error = str(e)
-            self.metrics.status = BrokerStatus.FAILING
+                self._log_health_check(
+                    success=False, response_time_ms=elapsed_ms, error=self.metrics.last_error
+                )
+                logger.error(
+                    f"❌ Broker health check failed after {attempt} attempt(s): {self.broker_name} "
+                    f"(consecutive failures: {self.metrics.consecutive_failures}, "
+                    f"errors: {self.metrics.last_error})"
+                )
+                return self.metrics
 
-            # Log health check failure
-            self._log_health_check(success=False, response_time_ms=elapsed_ms, error=str(e))
+        # If we reached here, connection succeeded on some attempt
+        self.metrics.account_status = account_info.get("status", "UNKNOWN")
+        self.metrics.buying_power = account_info.get("buying_power", 0.0)
 
-            logger.error(
-                f"❌ Broker health check failed: {self.broker_name} "
-                f"(consecutive failures: {self.metrics.consecutive_failures}, "
-                f"error: {str(e)})"
-            )
+        # Update rolling average response time
+        self.metrics.avg_response_time_ms = (
+            self.metrics.avg_response_time_ms * (self.metrics.total_checks - 1) + elapsed_ms
+        ) / self.metrics.total_checks
+
+        # Determine status
+        if account_info.get("status") == "ACTIVE" and not account_info.get(
+            "trading_blocked", False
+        ):
+            self.metrics.status = BrokerStatus.HEALTHY
+        elif account_info.get("trading_blocked", False):
+            self.metrics.status = BrokerStatus.DEGRADED
+            self.metrics.last_error = "Trading blocked"
+        else:
+            self.metrics.status = BrokerStatus.DEGRADED
+            self.metrics.last_error = f"Account status: {account_info.get('status')}"
+
+        # Log health check
+        self._log_health_check(success=True, response_time_ms=elapsed_ms)
+
+        logger.info(
+            f"✅ Broker health check passed (attempts: {min(retries, len(errors) + 1)}): "
+            f"{self.broker_name} (status: {self.metrics.status.value}, "
+            f"response: {elapsed_ms:.2f}ms)"
+        )
 
         return self.metrics
 
