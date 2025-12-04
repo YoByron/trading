@@ -75,6 +75,30 @@ class AlpacaExecutor:
             or 0.0
         )
 
+    def get_positions(self) -> list[dict[str, Any]]:
+        """
+        Get current open positions from Alpaca.
+
+        Returns fresh position data from the broker, not cached data.
+
+        Returns:
+            List of position dictionaries with keys:
+            - symbol: str
+            - qty: float
+            - avg_entry_price: float
+            - current_price: float
+            - unrealized_pl: float
+            - unrealized_plpc: float (as decimal, e.g., 0.03 for 3%)
+            - market_value: float
+        """
+        if self.simulated:
+            return self.positions  # Return cached simulated positions
+
+        if self.trader:
+            return self.trader.get_positions()
+
+        return []
+
     def place_order(self, symbol: str, notional: float, side: str = "buy") -> dict[str, Any]:
         logger.debug(
             "Submitting %s order via AlpacaExecutor: %s for $%.2f",
