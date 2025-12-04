@@ -54,7 +54,6 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        timeout-minutes: 10
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
@@ -495,23 +494,25 @@ jobs:
           fi
 
       - name: Commit system state updates
-        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true' && env.ALLOW_STATE_PUSH == '1'
-        env:
-          ALLOW_STATE_PUSH: ${{ secrets.ALLOW_STATE_PUSH || '0' }}
+        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
         run: |
           echo "💾 Committing system_state.json updates..."
 
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-          # Stage system_state.json first, then rebase with autostash to avoid
-          # "unstaged changes" errors from the runner checkout.
-          git add data/system_state.json
+          # Pull latest changes to avoid conflicts
+          git pull --rebase origin main || {
+            echo "⚠️  Merge conflict detected - resolving..."
 
-          git pull --rebase --autostash origin main || {
-            echo "⚠️  Merge conflict detected - keeping workflow-generated state"
-            git rebase --abort || true
+            # Keep our version (trading execution takes precedence)
+            git checkout --ours data/system_state.json
+            git add data/system_state.json
+            git rebase --continue
           }
+
+          # Stage system_state.json
+          git add data/system_state.json
 
           # Create commit with trading execution details
           git commit -m "$(cat <<'EOF'
