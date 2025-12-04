@@ -483,6 +483,15 @@ jobs:
             git diff --stat data/system_state.json
           fi
 
+      - name: Record trading run result
+        if: always()
+        run: |
+          python3 scripts/log_trading_run.py
+        env:
+          JOB_STATUS: ${{ job.status }}
+          FAILING_STEP: ""
+          ERROR_MESSAGE: ""
+
       - name: Commit system state updates
         if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true' && env.ALLOW_STATE_PUSH == '1'
         env:
