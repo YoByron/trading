@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
   pages: write
 
 # Prevent multiple concurrent trading runs
