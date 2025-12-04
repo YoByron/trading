@@ -185,8 +185,14 @@ class AlpacaExecutor:
         # Calculate entry price (estimated from notional / filled_qty or current price)
         entry_price = self._estimate_entry_price(symbol, notional, order)
         if entry_price <= 0:
-            logger.warning(f"Could not determine entry price for {symbol} - using 5% default stop")
-            stop_loss_pct = DEFAULT_STOP_LOSS_PCT
+            logger.error(f"Could not determine entry price for {symbol}. Stop-loss not placed.")
+            result["error"] = "Could not determine entry price for stop-loss."
+            # Order was placed but stop failed - this is a risk!
+            logger.critical(
+                f"[RISK] Position {symbol} opened WITHOUT stop-loss protection! "
+                f"Manual intervention required."
+            )
+            return result
 
         # Calculate stop-loss price
         if stop_loss_pct is not None:
@@ -222,7 +228,7 @@ class AlpacaExecutor:
             result["stop_loss"] = stop_order
             logger.info(
                 f"[PROTECTED] {symbol}: Entry=${entry_price:.2f}, "
-                f"Stop=${stop_price:.2f} ({actual_pct*100:.1f}%), "
+                f"Stop=${stop_price:.2f} ({actual_pct * 100:.1f}%), "
                 f"Qty={qty:.4f}"
             )
         except Exception as e:
@@ -236,9 +242,7 @@ class AlpacaExecutor:
 
         return result
 
-    def _estimate_entry_price(
-        self, symbol: str, notional: float, order: dict[str, Any]
-    ) -> float:
+    def _estimate_entry_price(self, symbol: str, notional: float, order: dict[str, Any]) -> float:
         """Estimate entry price from order or current market price."""
         # Try to get from order fill
         if order.get("filled_avg_price"):
@@ -301,9 +305,7 @@ class AlpacaExecutor:
         # Fallback to default
         return entry_price * (1 - DEFAULT_STOP_LOSS_PCT), DEFAULT_STOP_LOSS_PCT
 
-    def _get_order_qty(
-        self, order: dict[str, Any], notional: float, entry_price: float
-    ) -> float:
+    def _get_order_qty(self, order: dict[str, Any], notional: float, entry_price: float) -> float:
         """Get quantity from order or estimate from notional."""
         if order.get("filled_qty"):
             return float(order["filled_qty"])
