@@ -120,6 +120,7 @@ jobs:
       - name: Install dependencies
         env:
           PIP_CACHE_DIR: /tmp/pipcache
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install --no-cache-dir -r requirements.txt
@@ -193,6 +194,7 @@ jobs:
         timeout-minutes: 12
         env:
           PIP_CACHE_DIR: /tmp/pipcache
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install --no-cache-dir -r requirements.txt
