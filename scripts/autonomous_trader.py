@@ -364,33 +364,7 @@ def main() -> None:
     else:
         logger.info("Options simulation disabled via ENABLE_OPTIONS_SIM")
 
-    # Execute options live simulation (theta harvest)
-    options_enabled = _flag_enabled("ENABLE_OPTIONS_SIM", "true")
-    if options_enabled:
-        try:
-            logger.info("=" * 80)
-            logger.info("OPTIONS LIVE SIMULATION")
-            logger.info("=" * 80)
-            # Run options simulation in paper mode
-            import sys as sys_module
 
-            from scripts.options_live_sim import main as options_sim_main
-
-            # Save original args
-            original_argv = sys_module.argv.copy()
-            try:
-                sys_module.argv = ["options_live_sim.py", "--paper"]
-                options_sim_main()
-            finally:
-                # Restore original args
-                sys_module.argv = original_argv
-
-            logger.info("Options simulation completed.")
-        except Exception as e:
-            logger.error(f"Options simulation failed (non-fatal): {e}", exc_info=True)
-            logger.info("Continuing without options simulation...")
-    else:
-        logger.info("Options simulation disabled via ENABLE_OPTIONS_SIM")
 
 
 if __name__ == "__main__":
