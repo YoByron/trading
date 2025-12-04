@@ -36,6 +36,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
+RUN_LOG = DATA_DIR / "trading_runs.jsonl"
 
 
 def load_json_file(filepath: Path) -> dict:
@@ -47,6 +48,53 @@ def load_json_file(filepath: Path) -> dict:
         except Exception:
             return {}
     return {}
+
+
+def load_run_log(max_items: int = 5) -> list[dict]:
+    """Load recent trading runs from jsonl log.
+
+    Returns newest-first list capped at max_items.
+    """
+
+    if not RUN_LOG.exists():
+        return []
+
+    try:
+        lines = RUN_LOG.read_text().splitlines()
+        records = [json.loads(line) for line in lines if line.strip()]
+    except Exception:
+        return []
+
+    return list(reversed(records[-max_items:]))
+
+
+def format_recent_runs(runs: list[dict]) -> str:
+    if not runs:
+        return "| — | — | — | — | — |"
+
+    lines = []
+    for run in runs:
+        ts = run.get("ts")
+        try:
+            ts_et = (
+                datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                .astimezone()
+                .strftime("%Y-%m-%d %I:%M %p")
+            )
+        except Exception:
+            ts_et = ts or "?"
+
+        status = run.get("status", "unknown").upper()
+        step = run.get("failing_step") or "—"
+        msg = (run.get("error") or "").replace("|", "/")
+        msg = msg[:80] + ("…" if len(msg) > 80 else "")
+        run_link = run.get("run_number") or run.get("run_id") or "?"
+        if run.get("actions_url"):
+            run_link = f"[#{run_link}]({run['actions_url']})"
+
+        lines.append(f"| {ts_et} | {status} | {step} | {msg or '—'} | {run_link} |")
+
+    return "\n".join(lines)
 
 
 def calculate_metrics():
@@ -261,6 +309,14 @@ def generate_dashboard() -> str:
         chart_paths = {}
 
     now = datetime.now()
+    recent_runs = load_run_log(max_items=5)
+
+    failure_banner = ""
+    if recent_runs and recent_runs[0].get("status") == "failure":
+        failure_banner = (
+            f"\n> 🚨 **Last trading run failed** — {recent_runs[0].get('error') or 'see details below'}"
+            f" (Run #{recent_runs[0].get('run_number')})\n\n"
+        )
 
     # Get today's date string for display
     today_display = date.today().strftime("%Y-%m-%d (%A)")
@@ -318,8 +374,18 @@ def generate_dashboard() -> str:
 
     dashboard = f"""# 📊 Progress Dashboard
 
-{stale_banner}**Last Updated**: {now.strftime("%Y-%m-%d %I:%M %p ET")}
+{failure_banner}{stale_banner}**Last Updated**: {now.strftime("%Y-%m-%d %I:%M %p ET")}
 **Auto-Updated**: Daily via GitHub Actions
+
+---
+
+## 🩺 Recent Trading Runs
+
+| Time (ET) | Status | Step | Message | Run |
+|-----------|--------|------|---------|-----|
+{format_recent_runs(recent_runs)}
+
+
 
 ---
 
