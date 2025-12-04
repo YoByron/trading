@@ -23,9 +23,21 @@ from typing import Any, Callable, Optional
 
 from anthropic import Anthropic
 
+from src.core.alpaca_trader import AlpacaTrader
 from src.utils.self_healing import get_anthropic_api_key
 
 logger = logging.getLogger(__name__)
+
+# Lazy-loaded singleton for Alpaca trader
+_alpaca_trader: Optional[AlpacaTrader] = None
+
+
+def get_alpaca_trader() -> AlpacaTrader:
+    """Get or create singleton AlpacaTrader instance."""
+    global _alpaca_trader
+    if _alpaca_trader is None:
+        _alpaca_trader = AlpacaTrader(paper=True)
+    return _alpaca_trader
 
 # Beta header for advanced tool use (PTC)
 PTC_BETA_HEADER = "advanced-tool-use-2025-11-20"
@@ -306,30 +318,114 @@ Important: Return a dict with keys: action, symbol, quantity, confidence, reason
 
         return decision
 
-    # Tool handlers (implementations)
+    # Tool handlers - wired to real Alpaca API
     def _fetch_market_data_handler(
         self, symbol: str, timeframe: str = "1d"
     ) -> dict[str, Any]:
-        """Fetch market data - placeholder for actual implementation."""
-        # In production, this would call Alpaca API
+        """Fetch market data from Alpaca API."""
         logger.info(f"PTC: Fetching market data for {symbol} ({timeframe})")
-        return {
-            "symbol": symbol,
-            "price": 450.0,  # Placeholder
-            "volume": 1000000,
-            "volatility": 0.02,
-            "timeframe": timeframe,
-        }
+        try:
+            trader = get_alpaca_trader()
+
+            # Map timeframe to Alpaca format
+            tf_map = {"1m": "1Min", "5m": "5Min", "15m": "15Min", "1h": "1Hour", "1d": "1Day"}
+            alpaca_tf = tf_map.get(timeframe.lower(), "1Day")
+
+            # Get historical bars
+            bars = trader.get_historical_bars(symbol, timeframe=alpaca_tf, limit=20)
+
+            if bars:
+                latest = bars[-1]
+                # Calculate simple volatility from recent bars
+                closes = [b["close"] for b in bars]
+                if len(closes) > 1:
+                    returns = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes))]
+                    volatility = sum(abs(r) for r in returns) / len(returns)
+                else:
+                    volatility = 0.02
+
+                return {
+                    "symbol": symbol,
+                    "price": latest["close"],
+                    "open": latest["open"],
+                    "high": latest["high"],
+                    "low": latest["low"],
+                    "volume": latest["volume"],
+                    "volatility": volatility,
+                    "timeframe": timeframe,
+                }
+
+            # Fallback to quote if bars unavailable
+            quote = trader.get_current_quote(symbol)
+            if quote:
+                return {
+                    "symbol": symbol,
+                    "price": (quote["bid"] + quote["ask"]) / 2,
+                    "bid": quote["bid"],
+                    "ask": quote["ask"],
+                    "volume": 0,
+                    "volatility": 0.02,
+                    "timeframe": timeframe,
+                }
+
+        except Exception as e:
+            logger.warning(f"PTC: Failed to fetch market data for {symbol}: {e}")
+
+        # Return empty data on failure
+        return {"symbol": symbol, "price": 0, "volume": 0, "volatility": 0, "error": "data unavailable"}
 
     def _analyze_signals_handler(self, data: dict[str, Any]) -> dict[str, Any]:
-        """Analyze signals - placeholder for actual implementation."""
-        logger.info(f"PTC: Analyzing signals for {data.get('symbol', 'N/A')}")
-        return {
-            "macd_signal": 0.5,
-            "rsi": 55,
-            "volume_ratio": 1.2,
-            "signal_strength": 0.6,
-        }
+        """Analyze technical signals from market data."""
+        symbol = data.get("symbol", "N/A")
+        logger.info(f"PTC: Analyzing signals for {symbol}")
+
+        try:
+            trader = get_alpaca_trader()
+            bars = trader.get_historical_bars(symbol, timeframe="1Day", limit=30)
+
+            if len(bars) < 14:
+                return {"signal_strength": 0.5, "rsi": 50, "macd_signal": 0, "error": "insufficient data"}
+
+            closes = [b["close"] for b in bars]
+            volumes = [b["volume"] for b in bars]
+
+            # Calculate RSI (14-period)
+            gains, losses = [], []
+            for i in range(1, min(15, len(closes))):
+                change = closes[i] - closes[i - 1]
+                gains.append(max(0, change))
+                losses.append(abs(min(0, change)))
+
+            avg_gain = sum(gains) / len(gains) if gains else 0
+            avg_loss = sum(losses) / len(losses) if losses else 0.0001
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+
+            # Calculate simple MACD signal (12 vs 26 EMA approximation)
+            ema12 = sum(closes[-12:]) / 12 if len(closes) >= 12 else closes[-1]
+            ema26 = sum(closes[-26:]) / 26 if len(closes) >= 26 else closes[-1]
+            macd = (ema12 - ema26) / ema26 if ema26 else 0
+
+            # Volume ratio (today vs 20-day avg)
+            avg_volume = sum(volumes[:-1]) / (len(volumes) - 1) if len(volumes) > 1 else 1
+            volume_ratio = volumes[-1] / avg_volume if avg_volume > 0 else 1.0
+
+            # Composite signal strength (0-1)
+            rsi_signal = (rsi - 30) / 40 if 30 <= rsi <= 70 else (0 if rsi < 30 else 1)
+            macd_signal = 0.5 + (macd * 10)  # Normalize MACD contribution
+            signal_strength = (rsi_signal * 0.4 + min(1, max(0, macd_signal)) * 0.4 + min(1, volume_ratio / 2) * 0.2)
+
+            return {
+                "symbol": symbol,
+                "rsi": round(rsi, 2),
+                "macd_signal": round(macd, 4),
+                "volume_ratio": round(volume_ratio, 2),
+                "signal_strength": round(min(1, max(0, signal_strength)), 2),
+            }
+
+        except Exception as e:
+            logger.warning(f"PTC: Signal analysis failed for {symbol}: {e}")
+            return {"signal_strength": 0.5, "rsi": 50, "macd_signal": 0, "error": str(e)}
 
     def _calculate_position_handler(
         self,
@@ -338,15 +434,20 @@ Important: Return a dict with keys: action, symbol, quantity, confidence, reason
         portfolio_value: float,
     ) -> dict[str, Any]:
         """Calculate position size based on risk."""
-        # Simple position sizing: risk 1% per trade
-        risk_per_trade = 0.01
-        position_value = portfolio_value * risk_per_trade * signal_strength
+        # Risk 1% per trade, scaled by signal strength and inverse volatility
+        base_risk = 0.01
+        vol_adjustment = 0.02 / max(0.01, volatility)  # More size when vol is low
+        vol_adjustment = min(2.0, max(0.5, vol_adjustment))  # Cap adjustment
 
-        logger.info(f"PTC: Position size calculated: ${position_value:.2f}")
+        position_value = portfolio_value * base_risk * signal_strength * vol_adjustment
+        position_value = min(position_value, portfolio_value * 0.05)  # Max 5% per position
+
+        logger.info(f"PTC: Position size: ${position_value:.2f} (signal={signal_strength:.2f}, vol={volatility:.4f})")
         return {
-            "position_value": position_value,
-            "risk_percent": risk_per_trade * 100,
+            "position_value": round(position_value, 2),
+            "risk_percent": round(base_risk * 100, 2),
             "signal_multiplier": signal_strength,
+            "volatility_adjustment": round(vol_adjustment, 2),
         }
 
     def _execute_trade_handler(
@@ -356,15 +457,39 @@ Important: Return a dict with keys: action, symbol, quantity, confidence, reason
         quantity: float,
         order_type: str = "market",
     ) -> dict[str, Any]:
-        """Execute trade - placeholder for actual implementation."""
-        logger.info(f"PTC: Executing {side} {quantity} {symbol} ({order_type})")
-        return {
-            "order_id": f"ptc_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "symbol": symbol,
-            "side": side,
-            "quantity": quantity,
-            "status": "submitted",
-        }
+        """Execute trade via Alpaca API."""
+        logger.info(f"PTC: Executing {side} ${quantity:.2f} {symbol} ({order_type})")
+        try:
+            trader = get_alpaca_trader()
+
+            # Execute the order (quantity here is actually notional USD)
+            order = trader.execute_order(
+                symbol=symbol,
+                amount_usd=quantity,
+                side=side,
+                tier="T1_CORE",
+            )
+
+            return {
+                "order_id": order.get("id", f"ptc_{datetime.now().strftime('%Y%m%d%H%M%S')}"),
+                "symbol": symbol,
+                "side": side,
+                "notional": quantity,
+                "status": order.get("status", "submitted"),
+                "filled_avg_price": order.get("filled_avg_price"),
+                "filled_qty": order.get("filled_qty"),
+            }
+
+        except Exception as e:
+            logger.error(f"PTC: Trade execution failed for {symbol}: {e}")
+            return {
+                "order_id": None,
+                "symbol": symbol,
+                "side": side,
+                "quantity": quantity,
+                "status": "failed",
+                "error": str(e),
+            }
 
 
 class PTCMetaAgent:
