@@ -686,6 +686,45 @@ def generate_dashboard() -> str:
 **Documentation**: [Bonds Trading Analysis](docs/BONDS_TRADING_ANALYSIS.md)
 
 ---
+
+## 📉 Options Trading Status (Theta Harvest)
+
+### Current Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+"""
+    # Extract options metrics
+    options = system_state.get("options", {})
+    theta_harvest_time = options.get("last_theta_harvest", "Never")
+    if theta_harvest_time != "Never":
+        try:
+            theta_harvest_time = datetime.fromisoformat(theta_harvest_time.replace("Z", "+00:00")).strftime("%Y-%m-%d %I:%M %p")
+        except:
+            pass
+            
+    target_premium = options.get("target_daily_premium", 0.0)
+    est_premium = options.get("total_estimated_premium", 0.0)
+    premium_gap = options.get("premium_gap", 0.0)
+    opps_count = options.get("opportunities_count", 0)
+    on_track = options.get("on_track", False)
+    
+    status_emoji = "✅" if on_track else "⚠️"
+    
+    dashboard += f"| **Last Harvest** | {theta_harvest_time} | {'✅ Active' if theta_harvest_time != 'Never' else '⏸️ Inactive'} |\n"
+    dashboard += f"| **Target Premium** | ${target_premium:.2f}/day | -\n"
+    dashboard += f"| **Est. Premium** | ${est_premium:.2f}/day | {status_emoji} {'On Track' if on_track else 'Below Target'} |\n"
+    dashboard += f"| **Opportunities** | {opps_count} found | -\n"
+    
+    dashboard += """
+### Strategy Details
+- **Objective**: Generate consistent income via theta decay (selling time value)
+- **Strategies**: Poor Man's Covered Calls, Iron Condors
+- **Target**: $10/day premium to supplement equity gains
+"""
+
+    dashboard += """
+---
 """
 
     dashboard += """
