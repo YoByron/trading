@@ -18,6 +18,11 @@
       "env": {
         "RSS_FEEDS": "https://medium.com/feed/coinsnacks"
       }
+    },
+    "youtube-transcript": {
+      "command": "npx",
+      "args": ["-y", "@sinco-lab/mcp-youtube-transcript"],
+      "description": "YouTube transcript extractor - get transcripts and metadata from YouTube videos"
     }
   }
 }
