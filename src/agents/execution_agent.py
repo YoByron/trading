@@ -24,6 +24,9 @@ try:
 except Exception:  # pragma: no cover - optional dependency in lightweight test envs
     AlpacaOptionsClient = None  # type: ignore[misc,assignment]
 
+from src.utils.market_data import MarketDataProvider
+from src.utils.technical_indicators import calculate_macd, calculate_rsi
+
 from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -54,6 +57,7 @@ class ExecutionAgent(BaseAgent):
         self.execution_history: list = []
         # Lazily instantiated options client (False sentinel == permanently unavailable)
         self._options_client: AlpacaOptionsClient | None | bool = options_client
+        self.data_provider = MarketDataProvider()
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -79,6 +83,19 @@ class ExecutionAgent(BaseAgent):
         # Check market status
         market_status = self._check_market_status()
 
+        # Fetch historical data and calculate technicals
+        macd_hist = 0.0
+        rsi = 50.0
+        try:
+            # Fetch 60 days of data to ensure enough for MACD/RSI
+            hist_result = self.data_provider.get_daily_bars(symbol, lookback_days=60)
+            if not hist_result.data.empty:
+                prices = hist_result.data["Close"]
+                _, _, macd_hist = calculate_macd(prices)
+                rsi = calculate_rsi(prices)
+        except Exception as e:
+            logger.warning(f"Failed to calculate technicals for {symbol}: {e}")
+
         # Build execution analysis prompt
         memory_context = self.get_memory_context(limit=3)
 
@@ -87,6 +104,7 @@ class ExecutionAgent(BaseAgent):
 
 ORDER: {action} {symbol} ${position_size:,.0f} (Market) | Status: {market_status["status"]}
 CONDITIONS: Spread {market_conditions.get("spread", "N/A")} | Vol {market_conditions.get("volume", "N/A")} | Volatility {market_conditions.get("volatility", "N/A")}
+TECHNICALS: MACD Hist {macd_hist:.3f} | RSI {rsi:.1f}
 
 {memory_context}
 
@@ -95,6 +113,10 @@ PRINCIPLES:
 - Low volume (<50% avg) = expect higher slippage, consider splitting
 - First/last 15 min of day = higher volatility, avoid if not urgent
 - Market closed = queue for open (unless overnight risk is acceptable)
+- RSI > 70 = Overbought, be cautious with BUYs (consider DELAY)
+- RSI < 30 = Oversold, potential bounce (good for BUYs)
+- MACD Hist < 0 = Bearish momentum (be cautious with BUYs)
+- MACD Hist > 0 = Bullish momentum
 
 EXAMPLES:
 Example 1 - Execute Now:
