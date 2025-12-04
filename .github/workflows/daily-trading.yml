@@ -116,12 +116,12 @@ jobs:
           path: data/backtests/cache
           key: backtest-cache-${{ hashFiles('config/backtest_scenarios.yaml') }}
 
-      - name: Install dependencies
+      - name: Install dependencies (lean)
         env:
           PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install --no-cache-dir -r requirements.txt
+          python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Run backtest scenario matrix
         timeout-minutes: 20
