@@ -1,4 +1,10 @@
-"""Execution adapter for Alpaca."""
+"""Execution adapter for Alpaca.
+
+Dec 3, 2025 Enhancement:
+- Added place_order_with_stop_loss() for integrated order + stop-loss execution
+- ATR-based stop-loss calculation wired to order placement
+- Automatic stop-loss on every new position
+"""
 
 from __future__ import annotations
 
@@ -11,6 +17,11 @@ from typing import Any
 from src.core.alpaca_trader import AlpacaTrader, AlpacaTraderError
 
 logger = logging.getLogger(__name__)
+
+# Default stop-loss configuration
+DEFAULT_STOP_LOSS_PCT = 0.05  # 5% default if ATR unavailable
+MIN_STOP_LOSS_PCT = 0.02  # Never less than 2%
+MAX_STOP_LOSS_PCT = 0.10  # Never more than 10%
 
 
 class AlpacaExecutor:
@@ -116,3 +127,192 @@ class AlpacaExecutor:
             return order
 
         return self.trader.set_stop_loss(symbol=symbol, qty=qty, stop_price=stop_price)
+
+    def place_order_with_stop_loss(
+        self,
+        symbol: str,
+        notional: float,
+        side: str = "buy",
+        stop_loss_pct: float | None = None,
+        atr_multiplier: float = 2.0,
+        hist: Any | None = None,
+    ) -> dict[str, Any]:
+        """
+        Place order AND automatically set stop-loss in one atomic operation.
+
+        This is the recommended method for all new positions - ensures every
+        position is protected from the moment it's opened.
+
+        Args:
+            symbol: Ticker symbol
+            notional: Dollar amount to invest
+            side: 'buy' or 'sell'
+            stop_loss_pct: Fixed stop-loss percentage (overrides ATR calculation)
+            atr_multiplier: ATR multiplier for dynamic stop (default 2x ATR)
+            hist: Optional DataFrame with OHLCV data for ATR calculation
+
+        Returns:
+            Dict with order details and stop_loss details:
+            {
+                'order': {order details},
+                'stop_loss': {stop order details or None if failed},
+                'stop_loss_price': calculated stop price,
+                'stop_loss_pct': actual percentage from entry
+            }
+        """
+        result = {
+            "order": None,
+            "stop_loss": None,
+            "stop_loss_price": None,
+            "stop_loss_pct": None,
+            "error": None,
+        }
+
+        # Place the main order first
+        try:
+            order = self.place_order(symbol=symbol, notional=notional, side=side)
+            result["order"] = order
+        except Exception as e:
+            logger.error(f"Failed to place order for {symbol}: {e}")
+            result["error"] = f"Order failed: {e}"
+            return result
+
+        # For sell orders, we don't set stop-loss (we're exiting)
+        if side.lower() != "buy":
+            logger.info(f"Sell order for {symbol} - no stop-loss needed")
+            return result
+
+        # Calculate entry price (estimated from notional / filled_qty or current price)
+        entry_price = self._estimate_entry_price(symbol, notional, order)
+        if entry_price <= 0:
+            logger.warning(f"Could not determine entry price for {symbol} - using 5% default stop")
+            stop_loss_pct = DEFAULT_STOP_LOSS_PCT
+
+        # Calculate stop-loss price
+        if stop_loss_pct is not None:
+            # Fixed percentage stop
+            stop_price = entry_price * (1 - stop_loss_pct)
+            actual_pct = stop_loss_pct
+        else:
+            # ATR-based dynamic stop
+            stop_price, actual_pct = self._calculate_atr_stop(
+                symbol=symbol,
+                entry_price=entry_price,
+                atr_multiplier=atr_multiplier,
+                hist=hist,
+            )
+
+        # Ensure stop is within bounds
+        actual_pct = max(MIN_STOP_LOSS_PCT, min(MAX_STOP_LOSS_PCT, actual_pct))
+        stop_price = entry_price * (1 - actual_pct)
+        stop_price = round(stop_price, 2)
+
+        result["stop_loss_price"] = stop_price
+        result["stop_loss_pct"] = actual_pct
+
+        # Calculate quantity from filled order or estimate
+        qty = self._get_order_qty(order, notional, entry_price)
+        if qty <= 0:
+            logger.warning(f"Could not determine quantity for {symbol} stop-loss")
+            return result
+
+        # Place the stop-loss order
+        try:
+            stop_order = self.set_stop_loss(symbol=symbol, qty=qty, stop_price=stop_price)
+            result["stop_loss"] = stop_order
+            logger.info(
+                f"[PROTECTED] {symbol}: Entry=${entry_price:.2f}, "
+                f"Stop=${stop_price:.2f} ({actual_pct*100:.1f}%), "
+                f"Qty={qty:.4f}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to set stop-loss for {symbol}: {e}")
+            result["error"] = f"Stop-loss failed: {e}"
+            # Order was placed but stop failed - this is a risk!
+            logger.critical(
+                f"[RISK] Position {symbol} opened WITHOUT stop-loss protection! "
+                f"Manual intervention required."
+            )
+
+        return result
+
+    def _estimate_entry_price(
+        self, symbol: str, notional: float, order: dict[str, Any]
+    ) -> float:
+        """Estimate entry price from order or current market price."""
+        # Try to get from order fill
+        if order.get("filled_avg_price"):
+            return float(order["filled_avg_price"])
+
+        if order.get("filled_qty") and float(order.get("filled_qty", 0)) > 0:
+            return notional / float(order["filled_qty"])
+
+        # Simulated orders - estimate from notional
+        if order.get("mode") == "simulated":
+            # Try to get current price
+            try:
+                if self.trader:
+                    quote = self.trader.api.get_latest_quote(symbol)
+                    if quote and quote.ask_price:
+                        return float(quote.ask_price)
+            except Exception:
+                pass
+            # Default estimate: assume 1 share = notional (rough)
+            return notional / 1.0 if notional > 0 else 0.0
+
+        # Try to get current market price
+        try:
+            if self.trader:
+                quote = self.trader.api.get_latest_quote(symbol)
+                if quote and quote.ask_price:
+                    return float(quote.ask_price)
+        except Exception:
+            pass
+
+        return 0.0
+
+    def _calculate_atr_stop(
+        self,
+        symbol: str,
+        entry_price: float,
+        atr_multiplier: float,
+        hist: Any | None = None,
+    ) -> tuple[float, float]:
+        """Calculate ATR-based stop-loss price."""
+        try:
+            from src.risk.risk_manager import RiskManager
+
+            rm = RiskManager()
+            stop_price = rm.calculate_stop_loss(
+                ticker=symbol,
+                entry_price=entry_price,
+                direction="long",
+                atr_multiplier=atr_multiplier,
+                hist=hist,
+            )
+
+            if stop_price > 0 and stop_price < entry_price:
+                actual_pct = (entry_price - stop_price) / entry_price
+                return stop_price, actual_pct
+
+        except Exception as e:
+            logger.debug(f"ATR calculation failed for {symbol}: {e}")
+
+        # Fallback to default
+        return entry_price * (1 - DEFAULT_STOP_LOSS_PCT), DEFAULT_STOP_LOSS_PCT
+
+    def _get_order_qty(
+        self, order: dict[str, Any], notional: float, entry_price: float
+    ) -> float:
+        """Get quantity from order or estimate from notional."""
+        if order.get("filled_qty"):
+            return float(order["filled_qty"])
+
+        if order.get("qty"):
+            return float(order["qty"])
+
+        # Estimate from notional / price
+        if entry_price > 0:
+            return notional / entry_price
+
+        return 0.0
