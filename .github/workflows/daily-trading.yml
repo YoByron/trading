@@ -55,7 +55,7 @@ jobs:
 
       - name: Install dependencies (lean)
         env:
-          PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           sudo rm -rf /tmp/pip-* /tmp/pipcache ~/.cache/pip ~/.cache/torch || true
           df -h .
@@ -128,7 +128,7 @@ jobs:
 
       - name: Install dependencies (lean)
         env:
-          PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
@@ -206,7 +206,7 @@ jobs:
       - name: Install trading dependencies (lean set)
         timeout-minutes: 8
         env:
-          PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
           PIP_DISABLE_PIP_VERSION_CHECK: 1
           PIP_DEFAULT_TIMEOUT: 300
         run: |
