@@ -21,6 +21,7 @@ from src.orchestrator.smart_dca import SmartDCAAllocator
 from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.capital_efficiency import get_capital_calculator
 from src.risk.options_risk_monitor import OptionsRiskMonitor
+from src.risk.position_manager import PositionManager, ExitConditions
 from src.risk.risk_manager import RiskManager
 from src.risk.trade_gateway import RejectionReason, TradeGateway, TradeRequest
 from src.signals.microstructure_features import MicrostructureFeatureExtractor
@@ -94,6 +95,16 @@ class TradingOrchestrator:
 
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
+        # Position manager for active exit management
+        self.position_manager = PositionManager(
+            conditions=ExitConditions(
+                take_profit_pct=float(os.getenv("TAKE_PROFIT_PCT", "0.03")),
+                stop_loss_pct=float(os.getenv("STOP_LOSS_PCT", "0.03")),
+                max_holding_days=int(os.getenv("MAX_HOLDING_DAYS", "10")),
+                enable_momentum_exit=os.getenv("ENABLE_MOMENTUM_EXIT", "true").lower() in {"1", "true"},
+                enable_atr_stop=os.getenv("ENABLE_ATR_STOP", "true").lower() in {"1", "true"},
+            )
+        )
         self.bias_fresh_minutes = int(os.getenv("BIAS_FRESHNESS_MINUTES", "90"))
         self.bias_snapshot_ttl_minutes = int(
             os.getenv("BIAS_TTL_MINUTES", str(max(self.bias_fresh_minutes, 360)))
@@ -141,6 +152,10 @@ class TradingOrchestrator:
             ", ".join(active_tickers),
         )
 
+        # CRITICAL: Manage existing positions FIRST (exits before entries)
+        # This ensures win/loss tracking works properly
+        self._manage_open_positions()
+
         for ticker in active_tickers:
             self._process_ticker(ticker, rl_threshold=session_profile["rl_threshold"])
 
@@ -180,6 +195,186 @@ class TradingOrchestrator:
                 logger.info("Skipping Treasury Ladder: allocation amount is too small.")
         except Exception as e:
             logger.error(f"Failed to run Treasury Ladder Strategy: {e}", exc_info=True)
+
+    def _manage_open_positions(self) -> dict[str, Any]:
+        """
+        CRITICAL: Manage existing positions - check for exits and record closed trades.
+
+        This method solves the core problem of positions never being closed (0% win rate).
+        It evaluates all open positions against exit conditions and executes sells when
+        triggered, recording closed trades for proper win/loss tracking.
+
+        Returns:
+            Dict with management results: positions checked, exits executed, trades recorded
+        """
+        logger.info("=" * 80)
+        logger.info("POSITION MANAGEMENT - ACTIVE EXIT EVALUATION")
+        logger.info("=" * 80)
+
+        results = {
+            "positions_checked": 0,
+            "exits_executed": 0,
+            "trades_recorded": 0,
+            "errors": [],
+        }
+
+        try:
+            # Get current positions from Alpaca
+            positions = self.executor.get_positions()
+            results["positions_checked"] = len(positions)
+
+            if not positions:
+                logger.info("No open positions to manage.")
+                return results
+
+            logger.info(f"Found {len(positions)} open positions to evaluate.")
+
+            # Evaluate positions for exits
+            exits_to_execute = self.position_manager.manage_all_positions(positions)
+
+            if not exits_to_execute:
+                logger.info("No positions flagged for exit.")
+                return results
+
+            logger.info(f"Processing {len(exits_to_execute)} exit signals...")
+
+            # Execute exits and record closed trades
+            for exit_info in exits_to_execute:
+                try:
+                    symbol = exit_info["symbol"]
+                    position = exit_info["position"]
+                    reason = exit_info["reason"]
+
+                    logger.info(f"Executing exit for {symbol}: {reason}")
+
+                    # Create sell request through trade gateway
+                    trade_request = TradeRequest(
+                        symbol=symbol,
+                        side="sell",
+                        quantity=position.quantity,
+                        source=f"position_manager.{reason}",
+                    )
+
+                    decision = self.trade_gateway.evaluate(trade_request)
+
+                    if not decision.approved:
+                        logger.warning(
+                            f"Exit rejected by gateway for {symbol}: {[r.value for r in decision.rejection_reasons]}"
+                        )
+                        results["errors"].append(f"{symbol}: gateway rejection")
+                        continue
+
+                    # Execute the sell order
+                    order = self.trade_gateway.execute(decision)
+                    results["exits_executed"] += 1
+
+                    # Record the closed trade for win/loss tracking
+                    self._record_closed_trade(
+                        symbol=symbol,
+                        entry_price=position.entry_price,
+                        exit_price=position.current_price,
+                        quantity=position.quantity,
+                        entry_date=position.entry_date.isoformat() if position.entry_date else None,
+                        exit_reason=reason,
+                    )
+                    results["trades_recorded"] += 1
+
+                    # Log telemetry
+                    self.telemetry.record(
+                        event_type="position.exit",
+                        ticker=symbol,
+                        status="executed",
+                        payload={
+                            "reason": reason,
+                            "entry_price": position.entry_price,
+                            "exit_price": position.current_price,
+                            "pl_pct": position.unrealized_plpc * 100,
+                            "order": order,
+                        },
+                    )
+
+                    # Clear entry tracking
+                    self.position_manager.clear_entry(symbol)
+
+                    logger.info(
+                        f"✅ Closed {symbol}: {reason} (P/L: {position.unrealized_plpc * 100:.2f}%)"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Error executing exit for {exit_info.get('symbol')}: {e}")
+                    results["errors"].append(f"{exit_info.get('symbol')}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            logger.error(f"Position management failed: {e}", exc_info=True)
+            results["errors"].append(f"Overall failure: {str(e)}")
+
+        logger.info("=" * 80)
+        logger.info(
+            f"POSITION MANAGEMENT COMPLETE: {results['exits_executed']} exits, "
+            f"{results['trades_recorded']} trades recorded"
+        )
+        logger.info("=" * 80)
+
+        return results
+
+    def _record_closed_trade(
+        self,
+        symbol: str,
+        entry_price: float,
+        exit_price: float,
+        quantity: float,
+        entry_date: str | None,
+        exit_reason: str,
+    ) -> None:
+        """
+        Record a closed trade to system state for win/loss tracking.
+
+        This updates the performance metrics that feed the win rate calculation.
+        """
+        try:
+            from scripts.state_manager import StateManager
+
+            state_manager = StateManager()
+
+            # Calculate P/L
+            pl = (exit_price - entry_price) * quantity
+            is_winner = pl > 0
+
+            # Record via state manager
+            state_manager.record_closed_trade(
+                symbol=symbol,
+                entry_price=entry_price,
+                exit_price=exit_price,
+                quantity=quantity,
+                entry_date=entry_date or datetime.now().isoformat(),
+            )
+
+            # Update win/loss counts
+            if is_winner:
+                state_manager.state["performance"]["winning_trades"] = (
+                    state_manager.state["performance"].get("winning_trades", 0) + 1
+                )
+            else:
+                state_manager.state["performance"]["losing_trades"] = (
+                    state_manager.state["performance"].get("losing_trades", 0) + 1
+                )
+
+            # Recalculate win rate
+            total_closed = len(state_manager.state["performance"].get("closed_trades", []))
+            winning = state_manager.state["performance"].get("winning_trades", 0)
+            if total_closed > 0:
+                state_manager.state["performance"]["win_rate"] = (winning / total_closed) * 100
+
+            state_manager.save()
+
+            logger.info(
+                f"Recorded closed trade: {symbol} {'WIN' if is_winner else 'LOSS'} "
+                f"(${pl:.2f}, {((exit_price - entry_price) / entry_price) * 100:.2f}%)"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to record closed trade for {symbol}: {e}")
 
     def _build_session_profile(self) -> dict[str, Any]:
         today = datetime.utcnow().date()
