@@ -118,9 +118,11 @@ jobs:
           key: backtest-cache-${{ hashFiles('config/backtest_scenarios.yaml') }}
 
       - name: Install dependencies
+        env:
+          PIP_CACHE_DIR: /tmp/pipcache
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
+          python3 -m pip install --no-cache-dir -r requirements.txt
 
       - name: Run backtest scenario matrix
         timeout-minutes: 20
@@ -189,9 +191,11 @@ jobs:
 
       - name: Install dependencies
         timeout-minutes: 12
+        env:
+          PIP_CACHE_DIR: /tmp/pipcache
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
+          python3 -m pip install --no-cache-dir -r requirements.txt
 
       - name: Set up Go for ADK orchestrator
         uses: actions/setup-go@v5
