@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-12-04 04:03 PM ET
+**Last Updated**: 2025-12-04 04:07 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -207,6 +207,25 @@
 **Status**: ✅ Fixed - Bonds will execute when daily allocation >= $6.67
 
 **Documentation**: [Bonds Trading Analysis](docs/BONDS_TRADING_ANALYSIS.md)
+
+---
+
+## 🏢 REITs Trading Status
+
+### Current Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **REITs Exposure** | $0.00 | ⏸️ Not Executing |
+| **REITs Trades** | 0 | ⏸️ None Yet |
+| **VNQ Allocation** | 10% of Tier 1 | ✅ Configured |
+| **O Allocation** | 5% of Tier 1 | ✅ Configured |
+
+### Execution Requirements
+
+**Alpaca API Minimum Order Size: $1.00 USD**
+
+**Status**: ✅ Configured - REITs will execute when daily allocation >= $10.00 (10% of $100)
 
 ---
 
