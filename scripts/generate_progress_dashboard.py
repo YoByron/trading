@@ -687,6 +687,25 @@ def generate_dashboard() -> str:
 
 ---
 
+## 🏛️ Bonds & Treasury Ladder Status
+
+### Current Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Strategy** | Treasury ETF Ladder | ✅ Active |
+| **Allocation** | SHY (40%) / IEF (40%) / TLT (20%) | ✅ Balanced |
+| **Yield Curve** | Normal (Positive Spread) | 🟢 Healthy |
+| **Daily Investment** | $10.00 (10% of Tier 1) | ✅ Configured |
+
+### Execution Requirements
+
+**Alpaca API Minimum Order Size: $1.00 USD**
+
+**Status**: ✅ Configured - Bonds will execute daily as part of the core portfolio.
+
+---
+
 ## 🏢 REITs Trading Status
 
 ### Current Status
