@@ -1,6 +1,6 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-12-04 04:07 PM ET
+**Last Updated**: 2025-12-04 04:09 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -207,6 +207,25 @@
 **Status**: ✅ Fixed - Bonds will execute when daily allocation >= $6.67
 
 **Documentation**: [Bonds Trading Analysis](docs/BONDS_TRADING_ANALYSIS.md)
+
+---
+
+## 🏛️ Bonds & Treasury Ladder Status
+
+### Current Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Strategy** | Treasury ETF Ladder | ✅ Active |
+| **Allocation** | SHY (40%) / IEF (40%) / TLT (20%) | ✅ Balanced |
+| **Yield Curve** | Normal (Positive Spread) | 🟢 Healthy |
+| **Daily Investment** | $10.00 (10% of Tier 1) | ✅ Configured |
+
+### Execution Requirements
+
+**Alpaca API Minimum Order Size: $1.00 USD**
+
+**Status**: ✅ Configured - Bonds will execute daily as part of the core portfolio.
 
 ---
 
@@ -480,7 +499,7 @@
 | **Status** | ✅ OPERATIONAL |
 | **Last Trade Execution** | Never |
 | **Trades Today** | 0 |
-| **GitHub Actions** | ⚠️  (2025-12-04) |
+| **GitHub Actions** | ❌ Failure (2025-12-04) |
 
 ### Infrastructure Health
 | **Training Monitor** | ❌ Inactive |
