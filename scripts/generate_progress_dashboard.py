@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
 RUN_LOG = DATA_DIR / "trading_runs.jsonl"
+LAST_RUN_STATUS = DATA_DIR / "last_run_status.json"
 
 
 def load_json_file(filepath: Path) -> dict:
@@ -174,6 +175,7 @@ def calculate_metrics():
 
     # Staleness detection
     stale_reason = None
+    data_fresh = True
     last_updated_str = system_state.get("meta", {}).get("last_updated")
     if last_updated_str:
         try:
@@ -181,13 +183,31 @@ def calculate_metrics():
             age_hours = (datetime.now() - last_dt).total_seconds() / 3600
             if age_hours > STALE_HOURS:
                 stale_reason = f"Data stale: system_state last updated {age_hours:.1f}h ago ({last_updated_str})"
+                data_fresh = False
         except Exception:
-            pass
+            data_fresh = False
     else:
         stale_reason = "Data stale: system_state missing last_updated timestamp"
+        data_fresh = False
 
     if (not perf_log) and stale_reason is None:
         stale_reason = "Data stale: no performance_log.json entries"
+        data_fresh = False
+
+    # Last run status (written by workflow on failure/success)
+    last_run_status = load_json_file(LAST_RUN_STATUS)
+    last_run_status_text = None
+    if last_run_status:
+        ts = last_run_status.get("timestamp")
+        step = last_run_status.get("step", "unknown")
+        status = last_run_status.get("status", "unknown").upper()
+        err = last_run_status.get("error")
+        last_run_status_text = {
+            "status": status,
+            "step": step,
+            "ts": ts,
+            "error": err,
+        }
 
     # Get recent trades
     today_trades_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
@@ -249,6 +269,8 @@ def calculate_metrics():
         "today_pl_pct": today_pl_pct,
         "today_perf_available": today_perf is not None,
         "stale_reason": stale_reason,
+        "data_fresh": data_fresh,
+        "last_run_status": last_run_status_text,
     }
 
 
@@ -312,11 +334,20 @@ def generate_dashboard() -> str:
     recent_runs = load_run_log(max_items=5)
 
     failure_banner = ""
-    if recent_runs and recent_runs[0].get("status") == "failure":
+    stale_banner = ""
+    # Failure banner from last_run_status
+    lrs = basic_metrics.get("last_run_status")
+    if lrs and lrs.get("status") not in (None, "UNKNOWN", "UNKNOWN".upper(), "SUCCESS"):
+        err = lrs.get("error") or "see details below"
+        step = lrs.get("step") or "unknown step"
+        run_ts = lrs.get("ts") or "unknown time"
         failure_banner = (
-            f"\n> 🚨 **Last trading run failed** — {recent_runs[0].get('error') or 'see details below'}"
-            f" (Run #{recent_runs[0].get('run_number')})\n\n"
+            f"\n> 🚨 **Last trading run failed** — {err} (step: {step}, at {run_ts})\n\n"
         )
+
+    # Stale data banner
+    if basic_metrics.get("stale_reason"):
+        stale_banner = f"\n> ⚠️ **Data stale**: {basic_metrics['stale_reason']}\n\n"
 
     # Get today's date string for display
     today_display = date.today().strftime("%Y-%m-%d (%A)")
@@ -368,9 +399,32 @@ def generate_dashboard() -> str:
     journal = world_class_metrics.get("trading_journal", {})
     compliance = world_class_metrics.get("compliance", {})
 
-    stale_banner = ""
-    if basic_metrics.get("stale_reason"):
-        stale_banner = f"\n> ⚠️ **Data stale**: {basic_metrics['stale_reason']}\n\n"
+    health_status = "✅ PASS" if (not lrs or lrs.get("status") == "SUCCESS") else "❌ FAIL"
+    health_detail = (
+        "Pre-market validation successful"
+        if (not lrs or lrs.get("status") == "SUCCESS")
+        else f"Last run failed at {lrs.get('step', 'unknown')}"
+    )
+    api_status = "✅ Connected" if (not lrs or lrs.get("status") == "SUCCESS") else "⚠️ Check logs"
+    data_status = "✅ Fresh" if basic_metrics.get("data_fresh", False) else "⚠️ Stale"
+    data_detail = (
+        "Market data < 24h old"
+        if basic_metrics.get("data_fresh", False)
+        else basic_metrics.get("stale_reason", "Needs update")
+    )
+    today_equity_val = basic_metrics.get(
+        "today_equity", account.get("current_equity", basic_metrics["current_equity"])
+    )
+    today_pl_val = basic_metrics.get("today_pl", 0)
+    today_pl_pct_val = basic_metrics.get("today_pl_pct", 0)
+    today_trades = basic_metrics.get("today_trade_count", 0)
+    status_today = (
+        "✅ Active"
+        if today_trades > 0 or abs(today_pl_val) > 0.01
+        else (
+            "⏸️ No activity yet" if (not lrs or lrs.get("status") == "SUCCESS") else "❌ Run failed"
+        )
+    )
 
     dashboard = f"""# 📊 Progress Dashboard
 
@@ -383,9 +437,9 @@ def generate_dashboard() -> str:
 
 | Metric | Status | Details |
 |--------|--------|---------|
-| **Health Check** | ✅ PASS | Pre-market validation successful |
-| **API Connection** | ✅ Connected | Alpaca & Data Providers active |
-| **Data Freshness** | ✅ Fresh | Market data < 24h old |
+| **Health Check** | {health_status} | {health_detail} |
+| **API Connection** | {api_status} | Alpaca & Data Providers |
+| **Data Freshness** | {data_status} | {data_detail} |
 | **Circuit Breaker** | ✅ Ready | No trips detected |
 | **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
 
@@ -407,10 +461,10 @@ def generate_dashboard() -> str:
 
 | Metric | Value |
 |--------|-------|
-| **Equity** | ${basic_metrics.get("today_equity", account.get("current_equity", basic_metrics["current_equity"])):,.2f} |
-| **P/L** | ${basic_metrics.get("today_pl", 0):+,.2f} ({basic_metrics.get("today_pl_pct", 0):+.2f}%) |
-| **Trades Today** | {basic_metrics.get("today_trade_count", 0)} |
-| **Status** | {"✅ Active" if basic_metrics.get("today_trade_count", 0) > 0 or abs(basic_metrics.get("today_pl", 0)) > 0.01 else "⏸️ No activity yet"} |
+| **Equity** | ${today_equity_val:,.2f} |
+| **P/L** | ${today_pl_val:+,.2f} ({today_pl_pct_val:+.2f}%) |
+| **Trades Today** | {today_trades} |
+| **Status** | {status_today} |
 
 ---
 
@@ -757,7 +811,6 @@ def generate_dashboard() -> str:
 
     target_premium = options.get("target_daily_premium", 0.0)
     est_premium = options.get("total_estimated_premium", 0.0)
-    premium_gap = options.get("premium_gap", 0.0)
     opps_count = options.get("opportunities_count", 0)
     on_track = options.get("on_track", False)
 
