@@ -85,6 +85,10 @@ class RiskManager:
         if notional < baseline:
             notional = baseline
 
+        # Enforce the daily budget as a hard per-trade cap so a high Kelly fraction
+        # cannot overshoot small-budget scenarios (e.g., paper trading).
+        notional = min(notional, baseline)
+
         # Optional volatility-aware scaling using ATR if price history available
         scale = 1.0
         if self.use_atr_scaling and current_price and current_price > 0:
