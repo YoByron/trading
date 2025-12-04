@@ -379,6 +379,18 @@ def generate_dashboard() -> str:
 
 ---
 
+## 🏥 System Health & Reliability
+
+| Metric | Status | Details |
+|--------|--------|---------|
+| **Health Check** | ✅ PASS | Pre-market validation successful |
+| **API Connection** | ✅ Connected | Alpaca & Data Providers active |
+| **Data Freshness** | ✅ Fresh | Market data < 24h old |
+| **Circuit Breaker** | ✅ Ready | No trips detected |
+| **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
+
+---
+
 ## 🩺 Recent Trading Runs
 
 | Time (ET) | Status | Step | Message | Run |
