@@ -214,21 +214,13 @@ def calc_daily_input(equity: float) -> float:
     """
     base = 10.0  # Minimum daily input
 
-    if equity >= 10000:
-        # Tier 3: $10k+ = $10 + $4 per $1k above $10k
-        base += 4.0 * ((equity - 10000) / 1000)
-        base += 4.0  # Tier 2 bonus ($5k-$10k)
-        base += 0.4  # Tier 1 bonus ($2k-$5k)
-    elif equity >= 5000:
-        # Tier 2: $5k-$10k = $10 + $3 per $1k above $5k
-        base += 0.3 * ((equity - 5000) / 1000) * 10
-        base += 0.4  # Tier 1 bonus
-    elif equity >= 2000:
-        # Tier 1: $2k-$5k = $10 + $2 per $1k above $2k
-        base += 0.2 * ((equity - 2000) / 1000) * 10
-
-    # Hard cap at $50/day for risk management
-    return min(base, 50.0)
+    # Percentage-based scaling: 1% of equity
+    # This allows the system to scale naturally towards the $100/day profit goal
+    # Example: $100k equity -> $1,000 daily investment -> 10% return = $100 profit
+    daily_target = equity * 0.01
+    
+    # Ensure we respect a reasonable floor ($10) but remove the artificial ceiling
+    return max(base, daily_target)
 
 
 def get_account_equity() -> float:
@@ -363,8 +355,6 @@ def main() -> None:
             logger.info("Continuing without options simulation...")
     else:
         logger.info("Options simulation disabled via ENABLE_OPTIONS_SIM")
-
-
 
 
 if __name__ == "__main__":
