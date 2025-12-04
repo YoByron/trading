@@ -71,8 +71,13 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           echo "🔑 Validating required secrets..."
-          python3 scripts/validate_secrets.py
-          echo "secrets_valid=true" >> $GITHUB_OUTPUT
+          # CRITICAL: Use --gha-output flag so script sets secrets_valid properly
+          # Previously this always returned true, masking credential failures
+          if ! python3 scripts/validate_secrets.py --gha-output; then
+            echo "❌ SECRETS VALIDATION FAILED - workflow will not proceed"
+            echo "secrets_valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
       - name: Run tests
         timeout-minutes: 5
@@ -169,9 +174,12 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: |
+          # CRITICAL: Fail workflow if credentials are missing - don't silently skip
           if [ -z "$ALPACA_API_KEY" ] || [ -z "$ALPACA_SECRET_KEY" ]; then
-            echo "No Alpaca keys; skipping MCP server startup (trading will skip)."
-            exit 0
+            echo "❌ FATAL: Alpaca credentials missing!"
+            echo "   ALPACA_API_KEY and ALPACA_SECRET_KEY must be set in GitHub secrets"
+            echo "   Go to: Settings → Secrets → Actions → Add secret"
+            exit 1
           fi
           nohup uvx alpaca-mcp-server serve \
             --host 127.0.0.1 --port 8801 \
@@ -180,7 +188,12 @@ jobs:
             --alpaca-secret "$ALPACA_SECRET_KEY" \
             --transport http \
             > /tmp/alpaca_mcp.log 2>&1 &
-          echo "MCP server started on 127.0.0.1:8801"
+          sleep 2
+          if ! curl -s http://127.0.0.1:8801/health > /dev/null 2>&1; then
+            echo "⚠️ MCP server may not have started - check logs"
+            cat /tmp/alpaca_mcp.log || true
+          fi
+          echo "✅ MCP server started on 127.0.0.1:8801"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -472,7 +485,50 @@ jobs:
           LLM_COUNCIL_ENABLED: ${{ secrets.LLM_COUNCIL_ENABLED || 'true' }}
           DEEPAGENTS_ENABLED: ${{ secrets.DEEPAGENTS_ENABLED || 'false' }}
         run: |
-          python scripts/autonomous_trader.py
+          echo "🚀 ========================================"
+          echo "🚀 EXECUTING DAILY TRADING - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "🚀 ========================================"
+
+          # Track execution start
+          EXEC_START=$(date +%s)
+
+          # Run the trading script and capture exit code
+          if python scripts/autonomous_trader.py; then
+            EXEC_STATUS="SUCCESS"
+            echo "✅ Trading execution completed successfully"
+          else
+            EXEC_STATUS="FAILED"
+            echo "❌ Trading execution failed with exit code $?"
+          fi
+
+          # Track execution end
+          EXEC_END=$(date +%s)
+          EXEC_DURATION=$((EXEC_END - EXEC_START))
+
+          # Log execution summary
+          echo ""
+          echo "📊 EXECUTION SUMMARY"
+          echo "   Status: $EXEC_STATUS"
+          echo "   Duration: ${EXEC_DURATION}s"
+          echo "   Date: $(date -u +'%Y-%m-%d')"
+          echo "   Time: $(date -u +'%H:%M:%S UTC')"
+
+          # Verify trades were placed by checking system_state.json
+          if [ -f "data/system_state.json" ]; then
+            echo ""
+            echo "📈 PORTFOLIO STATUS:"
+            python3 -c "
+import json
+with open('data/system_state.json') as f:
+    state = json.load(f)
+    acct = state.get('account', {})
+    perf = state.get('performance', {})
+    print(f\"   Equity: \${acct.get('current_equity', 0):,.2f}\")
+    print(f\"   P/L: \${acct.get('total_pl', 0):,.2f} ({acct.get('total_pl_pct', 0):.4f}%)\")
+    print(f\"   Total Trades: {perf.get('total_trades', 0)}\")
+    print(f\"   Win Rate: {perf.get('win_rate', 0):.1f}%\")
+"
+          fi
 
       - name: Check for state changes
         id: check_state_changes
