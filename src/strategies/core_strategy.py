@@ -59,6 +59,13 @@ from src.utils.sentiment_loader import (
     load_latest_sentiment,
 )
 from src.utils.trend_snapshot import TrendMetrics, TrendSnapshotBuilder
+from src.risk.position_manager import (
+    ExitConditions,
+    ExitReason,
+    PositionInfo,
+    PositionManager,
+    get_position_manager,
+)
 
 # Optional LLM Council integration
 try:
@@ -182,15 +189,21 @@ class CoreStrategy:
     MACD_SLOW_PERIOD = 26
     MACD_SIGNAL_PERIOD = 9
 
-    # Risk parameters
-    DEFAULT_STOP_LOSS_PCT = 0.05  # 5% trailing stop (fallback)
+    # Risk parameters - TIGHTENED for active trading (Dec 3, 2025)
+    # Previous: 5% stop/profit resulted in 0 closed trades, 0% win rate
+    # New: 3% thresholds ensure positions are actively managed
+    DEFAULT_STOP_LOSS_PCT = 0.03  # 3% stop loss (tighter for active trading)
     ATR_STOP_MULTIPLIER = 2.0  # ATR multiplier for dynamic stops
     USE_ATR_STOPS = True  # Use ATR-based stops (more adaptive)
     REBALANCE_THRESHOLD = 0.05  # 5% deviation triggers rebalance (research-optimized)
     REBALANCE_FREQUENCY_DAYS = 90  # Quarterly rebalancing (research-optimized)
 
-    # Profit-taking parameters
-    TAKE_PROFIT_PCT = 0.05  # 5% profit target (conservative for Day 9 R&D)
+    # Profit-taking parameters - TIGHTENED for active trading
+    TAKE_PROFIT_PCT = 0.03  # 3% profit target (active trading)
+
+    # Time-based exit parameters (NEW Dec 3, 2025)
+    MAX_HOLDING_DAYS = 10  # Close positions after 10 days regardless of P/L
+    ENABLE_MOMENTUM_EXIT = True  # Exit on MACD bearish crossover
 
     # Diversification allocation (guaranteed minimums)
     # 50% equity, 15% bonds, 15% REITs, 10% treasuries, 10% crypto proxy
@@ -333,11 +346,27 @@ class CoreStrategy:
                 max_consecutive_losses=5,
             )
             logger.info("Successfully initialized core dependencies")
+
+            # Initialize Position Manager with tighter exit conditions (Dec 3, 2025)
+            # Previous 5% thresholds resulted in 0 closed trades
+            self.position_manager = get_position_manager(
+                conditions=ExitConditions(
+                    take_profit_pct=self.take_profit_pct,
+                    stop_loss_pct=self.stop_loss_pct,
+                    max_holding_days=self.MAX_HOLDING_DAYS,
+                    enable_momentum_exit=self.ENABLE_MOMENTUM_EXIT,
+                    enable_atr_stop=self.USE_ATR_STOPS,
+                    atr_multiplier=self.ATR_STOP_MULTIPLIER,
+                )
+            )
+            logger.info("Position Manager initialized with active trading conditions")
+
         except Exception as e:
             logger.warning(f"Failed to initialize some dependencies: {e}")
             self.llm_analyzer = None
             self.alpaca_trader = None
             self.risk_manager = None
+            self.position_manager = None
 
         # Initialize LLM Council (ENABLED BY DEFAULT per CEO directive Nov 24, 2025)
         # CEO directive: Enable all systems with $100/mo budget - move fast towards North Star
@@ -758,6 +787,9 @@ class CoreStrategy:
                     logger.info(
                         f"Momentum ETF: {executed_order['id']} - {best_etf} ${equity_amount:.2f}"
                     )
+                    # Track entry for time-based exits
+                    if hasattr(self, 'position_manager') and self.position_manager:
+                        self.position_manager.track_entry(best_etf)
 
                     # 9b: BND - Bonds (15%)
                     # Alpaca minimum order size is $1.00 - orders below this will be rejected
@@ -788,6 +820,9 @@ class CoreStrategy:
                                     f"✅ Bond ETF order executed successfully: BND ${bond_amount:.2f} "
                                     f"(order_id: {bond_order.get('id', 'N/A')})"
                                 )
+                                # Track entry for time-based exits
+                                if hasattr(self, 'position_manager') and self.position_manager:
+                                    self.position_manager.track_entry("BND")
                             except Exception as e:
                                 logger.error(
                                     f"❌ Bond order FAILED: BND ${bond_amount:.2f} - {type(e).__name__}: {e}",
@@ -821,6 +856,9 @@ class CoreStrategy:
                                     f"✅ REIT ETF order executed successfully: VNQ ${reit_amount:.2f} "
                                     f"(order_id: {reit_order.get('id', 'N/A')})"
                                 )
+                                # Track entry for time-based exits
+                                if hasattr(self, 'position_manager') and self.position_manager:
+                                    self.position_manager.track_entry("VNQ")
                             except Exception as e:
                                 logger.error(
                                     f"❌ REIT order FAILED: VNQ ${reit_amount:.2f} - {type(e).__name__}: {e}",
@@ -1096,21 +1134,145 @@ class CoreStrategy:
                     except Exception as e:
                         logger.error(f"  ❌ Failed to close position {symbol}: {e}")
                 else:
+                    # Check additional exit conditions using Position Manager
+                    # TIME-BASED EXIT: Close positions held too long
+                    if hasattr(self, 'position_manager') and self.position_manager:
+                        entry_date = self.position_manager.get_entry_date(symbol)
+                        if entry_date:
+                            days_held = (datetime.now() - entry_date).days
+                            if days_held >= self.MAX_HOLDING_DAYS:
+                                logger.info(
+                                    f"  ⏰ TIME-DECAY EXIT: Position held {days_held} days >= {self.MAX_HOLDING_DAYS} day limit"
+                                )
+                                try:
+                                    executed_order = self.alpaca_trader.execute_order(
+                                        symbol=symbol,
+                                        amount_usd=market_value,
+                                        side="sell",
+                                        tier="T1_CORE",
+                                    )
+                                    logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
+                                    exit_order = TradeOrder(
+                                        symbol=symbol,
+                                        action="sell",
+                                        quantity=qty,
+                                        amount=market_value,
+                                        price=current_price,
+                                        order_type="market",
+                                        stop_loss=None,
+                                        timestamp=datetime.now(),
+                                        reason=f"Time-decay exit after {days_held} days held",
+                                    )
+                                    closed_positions.append(exit_order)
+                                    self.trades_executed.append(exit_order)
+                                    self._update_holdings(symbol, -qty)
+                                    self._reward_rl(symbol, unrealized_plpc)
+                                    self.position_manager.clear_entry(symbol)
+                                    continue
+                                except Exception as e:
+                                    logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+                            else:
+                                logger.info(f"  📅 Days held: {days_held}/{self.MAX_HOLDING_DAYS}")
+
+                    # MOMENTUM REVERSAL EXIT: Close on MACD bearish cross
+                    if self.ENABLE_MOMENTUM_EXIT:
+                        momentum_reversal = self._check_momentum_reversal_exit(symbol)
+                        if momentum_reversal:
+                            logger.info(
+                                f"  📉 MOMENTUM REVERSAL EXIT: MACD crossed bearish for {symbol}"
+                            )
+                            try:
+                                executed_order = self.alpaca_trader.execute_order(
+                                    symbol=symbol,
+                                    amount_usd=market_value,
+                                    side="sell",
+                                    tier="T1_CORE",
+                                )
+                                logger.info(f"  ✅ Position closed: Order ID {executed_order['id']}")
+                                exit_order = TradeOrder(
+                                    symbol=symbol,
+                                    action="sell",
+                                    quantity=qty,
+                                    amount=market_value,
+                                    price=current_price,
+                                    order_type="market",
+                                    stop_loss=None,
+                                    timestamp=datetime.now(),
+                                    reason="Momentum reversal - MACD bearish cross",
+                                )
+                                closed_positions.append(exit_order)
+                                self.trades_executed.append(exit_order)
+                                self._update_holdings(symbol, -qty)
+                                self._reward_rl(symbol, unrealized_plpc)
+                                if hasattr(self, 'position_manager') and self.position_manager:
+                                    self.position_manager.clear_entry(symbol)
+                                continue
+                            except Exception as e:
+                                logger.error(f"  ❌ Failed to close position {symbol}: {e}")
+
                     logger.info(
                         f"  ✅ Holding position (P/L {unrealized_plpc * 100:.2f}% < target {self.take_profit_pct * 100:.1f}%)"
                     )
 
             logger.info("=" * 80)
             if closed_positions:
-                logger.info(f"Closed {len(closed_positions)} winning positions")
+                logger.info(f"Closed {len(closed_positions)} positions (take-profit, stop-loss, time-decay, or momentum)")
             else:
-                logger.info("No positions ready for take-profit exit")
+                logger.info("No positions ready for exit")
 
             return closed_positions
 
         except Exception as e:
             logger.error(f"Error managing positions: {str(e)}", exc_info=True)
             return closed_positions
+
+    def _check_momentum_reversal_exit(self, symbol: str) -> bool:
+        """
+        Check if MACD has crossed bearish (momentum reversal exit signal).
+
+        This method detects when momentum has turned against a position,
+        signaling it's time to exit even if other conditions aren't met.
+
+        Args:
+            symbol: Stock symbol to check
+
+        Returns:
+            True if MACD crossed bearish (should exit), False otherwise
+        """
+        try:
+            # Get recent price data
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="1mo")
+
+            if hist.empty or len(hist) < 26:  # Need enough data for MACD
+                logger.debug(f"Insufficient data for MACD calculation on {symbol}")
+                return False
+
+            # Calculate MACD
+            close = hist["Close"]
+            ema12 = close.ewm(span=self.MACD_FAST_PERIOD, adjust=False).mean()
+            ema26 = close.ewm(span=self.MACD_SLOW_PERIOD, adjust=False).mean()
+            macd_line = ema12 - ema26
+            signal_line = macd_line.ewm(span=self.MACD_SIGNAL_PERIOD, adjust=False).mean()
+            histogram = macd_line - signal_line
+
+            # Check for bearish crossover (MACD crossing below signal)
+            if len(histogram) >= 2:
+                current_hist = histogram.iloc[-1]
+                prev_hist = histogram.iloc[-2]
+
+                # Bearish cross: histogram went from positive to negative
+                if prev_hist > 0 and current_hist < 0:
+                    logger.info(f"  MACD bearish cross detected for {symbol}")
+                    logger.info(f"    Previous histogram: {prev_hist:.4f}")
+                    logger.info(f"    Current histogram: {current_hist:.4f}")
+                    return True
+
+            return False
+
+        except Exception as e:
+            logger.debug(f"Error checking momentum for {symbol}: {e}")
+            return False
 
     def calculate_momentum(self, symbol: str, relaxed_filters: bool = False) -> float:
         """
