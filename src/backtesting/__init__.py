@@ -36,9 +36,9 @@ from src.backtesting.walk_forward_matrix import (
     run_walk_forward_matrix,
 )
 from src.backtesting.monte_carlo import (
-    MonteCarloResult,
+    MonteCarloResults,
     MonteCarloSimulator,
-    run_monte_carlo_validation,
+    run_monte_carlo_analysis,
 )
 
 __all__ = [
@@ -59,7 +59,7 @@ __all__ = [
     "save_target_evaluation",
     "BacktestTargetValidator",
     "TargetBacktestReport",
-    "MonteCarloResult",
+    "MonteCarloResults",
     "MonteCarloSimulator",
-    "run_monte_carlo_validation",
+    "run_monte_carlo_analysis",
 ]
