@@ -4,43 +4,43 @@ BACKTEST RESULTS SUMMARY
 
 PERIOD INFORMATION
 --------------------------------------------------------------------------------
-Start Date:        2022-04-01
-End Date:          2022-06-30
-Trading Days:      65
+Start Date:        2020-02-01
+End Date:          2020-04-30
+Trading Days:      64
 
 CAPITAL & RETURNS
 --------------------------------------------------------------------------------
 Initial Capital:   $100,000.00
-Final Capital:     $99,952.56
-Total Return:      $-47.44 (-0.05%)
-Annualized Return: -0.18%
+Final Capital:     $100,045.56
+Total Return:      $45.56 (0.05%)
+Annualized Return: 0.18%
 
 RISK METRICS
 --------------------------------------------------------------------------------
-Sharpe Ratio:      -40.87
-Max Drawdown:      0.07%
-Volatility:        0.10%
+Sharpe Ratio:      -30.06
+Max Drawdown:      0.05%
+Volatility:        0.13%
 
 EXECUTION COSTS
 --------------------------------------------------------------------------------
 Slippage Model:    Enabled
-Total Slippage:    $0.12
-Slippage % of PnL: 0.00%
+Total Slippage:    $0.42
+Slippage % of PnL: 0.91%
 
 $100/DAY TARGET METRICS
 --------------------------------------------------------------------------------
-Avg Daily P&L:     $-0.73
+Avg Daily P&L:     $0.71
 % Days ≥ $100:     0.0%
-Worst 5-Day DD:    $51.00
-Worst 20-Day DD:   $41.99
+Worst 5-Day DD:    $26.82
+Worst 20-Day DD:   $15.06
 
 TRADE STATISTICS (Daily-Based)
 --------------------------------------------------------------------------------
-Total Trades:      65
-Profitable Trades: 9
-Losing Trades:     56
-Win Rate (Daily):  41.54%
-Avg Trade Return:  -0.00%
+Total Trades:      64
+Profitable Trades: 55
+Losing Trades:     9
+Win Rate (Daily):  53.12%
+Avg Trade Return:  0.00%
 
 TRADE-BASED METRICS (More Accurate)
 --------------------------------------------------------------------------------
@@ -58,14 +58,14 @@ Avg Holding Days:  0.0
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
-Overall Rating:    NEEDS IMPROVEMENT
+Overall Rating:    FAIR
 
 RECENT TRADES (Last 5)
 --------------------------------------------------------------------------------
-  2022-06-24: BUY VOO @ $349.23 ($10.00)
-  2022-06-27: BUY VOO @ $360.11 ($10.00)
-  2022-06-28: BUY VOO @ $358.75 ($10.00)
-  2022-06-29: BUY VOO @ $351.00 ($10.00)
-  2022-06-30: BUY SPY @ $380.40 ($10.00)
+  2020-04-24: BUY TLT @ $170.52 ($10.00)
+  2020-04-27: BUY TLT @ $170.92 ($10.00)
+  2020-04-28: BUY TLT @ $167.74 ($10.00)
+  2020-04-29: BUY TLT @ $169.67 ($10.00)
+  2020-04-30: BUY TLT @ $168.79 ($10.00)
 
 ================================================================================

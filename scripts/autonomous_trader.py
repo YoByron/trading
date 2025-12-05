@@ -220,7 +220,8 @@ def calc_daily_input(equity: float) -> float:
     daily_target = equity * 0.01
 
     # Ensure we respect a reasonable floor ($10) but remove the artificial ceiling
-    return max(base, daily_target)
+    # Update: Cap at $1000.0 to satisfy AppConfig validator until config is updated
+    return min(max(base, daily_target), 1000.0)
 
 
 def get_account_equity() -> float:

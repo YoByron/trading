@@ -88,5 +88,65 @@ class TestDeterministicBacktest(unittest.TestCase):
         # We can assert the exact number of trades or return if we want strict regression testing.
         # For now, just ensuring it runs and produces logical output is a good smoke test.
 
+    @patch("src.backtesting.backtest_engine.BacktestEngine._preload_price_data")
+    def test_stop_loss_trigger(self, mock_preload):
+        """
+        Test that a sharp price drop triggers a stop loss.
+        """
+        # Set strict stop loss
+        self.strategy.stop_loss_pct = 0.05 # 5% stop loss
+        
+        engine = BacktestEngine(
+            strategy=self.strategy,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            initial_capital=self.initial_capital,
+            enable_slippage=True # Enable slippage to test exit costs
+        )
+        
+        def side_effect():
+            start_dt = datetime.strptime(self.start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(self.end_date, "%Y-%m-%d")
+            buffer_start = start_dt - timedelta(days=400) 
+            dates = pd.date_range(start=buffer_start, end=end_dt, freq="B", tz="UTC")
+            
+            # SPY: Goes up then crashes
+            # First 10 days: +1% per day
+            # Next 5 days: -2% per day (should trigger 5% stop from peak)
+            
+            prices = [100.0]
+            for i in range(1, len(dates)):
+                if i < len(dates) - 10:
+                    # Normal drift
+                    prices.append(prices[-1] * 1.0001)
+                elif i < len(dates) - 5:
+                    # Strong uptrend
+                    prices.append(prices[-1] * 1.01)
+                else:
+                    # Crash
+                    prices.append(prices[-1] * 0.98)
+            
+            df = pd.DataFrame(index=dates)
+            df["Close"] = prices
+            df["Open"] = prices
+            df["High"] = prices
+            df["Low"] = prices
+            df["Volume"] = 1000000.0
+            
+            engine.price_cache["SPY"] = df
+            # Others flat
+            engine.price_cache["QQQ"] = self.create_synthetic_data(100, 0, dates)
+            engine.price_cache["VOO"] = self.create_synthetic_data(100, 0, dates)
+            
+        mock_preload.side_effect = side_effect
+        
+        results = engine.run()
+        
+        # Check for sell trades
+        sell_trades = [t for t in results.trades if t['action'] == 'sell']
+        
+        # This assertion is expected to FAIL currently
+        self.assertGreater(len(sell_trades), 0, "Stop loss should have triggered a sell")
+
 if __name__ == "__main__":
     unittest.main()
