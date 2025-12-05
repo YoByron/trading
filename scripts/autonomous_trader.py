@@ -381,9 +381,7 @@ def main() -> None:
             )
 
             if result.returncode == 0:
-                logger.info(
-                    "✅ RL retraining completed successfully - system learned from today's trades."
-                )
+                logger.info("✅ RL retraining completed successfully - system learned from today's trades.")
             else:
                 logger.warning(f"⚠️  RL retraining exited with code {result.returncode}")
         except Exception as e:
