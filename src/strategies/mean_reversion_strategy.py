@@ -20,7 +20,7 @@ Reference: Quantified Strategies (2024), RSI(2) Mean Reversion
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -267,9 +267,7 @@ class MeanReversionStrategy:
             take_profit_pct=0.02,
         )
 
-    def scan_universe(
-        self, symbols: list[str] = None
-    ) -> list[MeanReversionSignal]:
+    def scan_universe(self, symbols: list[str] = None) -> list[MeanReversionSignal]:
         """
         Scan multiple symbols for mean reversion opportunities.
 
@@ -292,18 +290,11 @@ class MeanReversionStrategy:
                 logger.error(f"Error scanning {symbol}: {e}")
 
         # Sort by confidence (BUY signals first, then by confidence)
-        signals.sort(
-            key=lambda s: (
-                0 if s.signal_type == "BUY" else 1,
-                -s.confidence
-            )
-        )
+        signals.sort(key=lambda s: (0 if s.signal_type == "BUY" else 1, -s.confidence))
 
         return signals
 
-    def get_active_signals(
-        self, symbols: list[str] = None
-    ) -> list[MeanReversionSignal]:
+    def get_active_signals(self, symbols: list[str] = None) -> list[MeanReversionSignal]:
         """
         Get only actionable (BUY/SELL) signals.
 
@@ -357,6 +348,8 @@ if __name__ == "__main__":
             print(f"  {sig.symbol}: {sig.signal_type} @ {sig.confidence:.1%} confidence")
             print(f"    Reason: {sig.reason}")
             if sig.signal_type == "BUY":
-                print(f"    Size: {sig.suggested_size_pct:.1%} | Stop: {sig.stop_loss_pct:.1%} | Target: {sig.take_profit_pct:.1%}")
+                print(
+                    f"    Size: {sig.suggested_size_pct:.1%} | Stop: {sig.stop_loss_pct:.1%} | Target: {sig.take_profit_pct:.1%}"
+                )
     else:
         print("\nNo active signals - market in neutral RSI range")
