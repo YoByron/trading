@@ -202,8 +202,6 @@ def check_health(
     # Load audit trail
     audits = load_audit_trail(data_dir)
 
-    # Load system state for additional context
-
     # Analyze each expected market day
     day_statuses = []
     for day in expected_days:
