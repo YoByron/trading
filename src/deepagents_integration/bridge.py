@@ -8,7 +8,7 @@ TradingAgent framework, allowing gradual migration and hybrid approaches.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from src.agent_framework import AgentResult, RunContext, TradingAgent
 
@@ -27,7 +27,7 @@ class DeepAgentsTradingAgent(TradingAgent):
         self,
         agent_name: str,
         deepagent: Any,
-        task_prompt_template: str | None = None,
+        task_prompt_template: Optional[str] = None,
     ) -> None:
         """
         Initialize adapter.
@@ -127,8 +127,8 @@ class HybridTradingAgent(TradingAgent):
     def __init__(
         self,
         agent_name: str,
-        deepagent: Any | None = None,
-        fallback_agent: TradingAgent | None = None,
+        deepagent: Optional[Any] = None,
+        fallback_agent: Optional[TradingAgent] = None,
     ) -> None:
         """
         Initialize hybrid agent.
@@ -199,7 +199,7 @@ def create_deepagents_research_agent() -> DeepAgentsTradingAgent:
 
 
 def create_hybrid_analysis_agent(
-    fallback_agent: TradingAgent | None = None,
+    fallback_agent: Optional[TradingAgent] = None,
 ) -> HybridTradingAgent:
     """
     Factory function to create a hybrid analysis agent.

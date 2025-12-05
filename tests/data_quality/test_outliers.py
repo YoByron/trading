@@ -6,6 +6,21 @@ Detects suspicious data points that might be errors.
 
 import numpy as np
 import pandas as pd
+import pytest
+
+
+@pytest.fixture
+def data_fixture():
+    """Provide a clean price/volume series with no outliers."""
+    dates = pd.date_range("2023-01-02", periods=30, freq="B")
+    close = np.linspace(100, 110, len(dates)) + np.random.normal(0, 0.1, len(dates))
+    volume = np.full(len(dates), 1_000_000)
+    return pd.DataFrame({"Close": close, "Volume": volume}, index=dates)
+
+
+@pytest.fixture(name="data")
+def _data_alias(data_fixture):
+    return data_fixture
 
 
 def test_price_outliers(data: pd.DataFrame, method: str = "zscore", threshold: float = 3.0) -> bool:
