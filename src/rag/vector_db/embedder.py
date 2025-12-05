@@ -85,6 +85,9 @@ class NewsEmbedder:
             logger.error(f"Error embedding text: {e}")
             raise
 
+    # Alias for compatibility
+    embed_single = embed_text
+
     def embed_batch(self, texts: list[str], batch_size: int = 32) -> list[np.ndarray]:
         """
         Generate embeddings for multiple texts (batch processing).

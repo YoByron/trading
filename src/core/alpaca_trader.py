@@ -380,6 +380,9 @@ class AlpacaTrader:
         if amount_usd <= 0:
             raise ValueError(f"Amount must be positive. Got {amount_usd}")
 
+        # Alpaca API requires notional values to be limited to 2 decimal places
+        amount_usd = round(amount_usd, 2)
+
         symbol = symbol.upper().strip()
 
         # CRITICAL: Validate order amount before proceeding

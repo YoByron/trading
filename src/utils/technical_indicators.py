@@ -245,8 +245,8 @@ def calculate_technical_score(
     technical_score = price * (1 + macd_histogram / 10) * (1 + (70 - rsi_val) / 100) * volume_ratio
 
     logger.info(
-        f"{symbol}: Score {technical_score:.2f} | "
-        f"MACD: {macd_histogram:.3f} | RSI: {rsi_val:.1f} | Vol: {volume_ratio:.2f}x"
+        f"{symbol}: Score {float(technical_score):.2f} | "
+        f"MACD: {float(macd_histogram):.3f} | RSI: {float(rsi_val):.1f} | Vol: {float(volume_ratio):.2f}x"
     )
 
     return (technical_score, indicators)
