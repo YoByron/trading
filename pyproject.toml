@@ -63,7 +63,6 @@ dependencies = [
     # Dashboard
     "streamlit>=1.40.0,<1.46.0",
     "matplotlib>=3.7.0",
-    "xai-sdk>=1.4.0,<1.5.0",  # Grok client capped to keep packaging<25 for streamlit
 ]
 
 [project.optional-dependencies]
@@ -89,6 +88,10 @@ rag = [
 
 deepagents = [
     "deepagents>=0.2.5",
+]
+
+xai = [
+    "xai-sdk>=1.4.0,<1.5.0",
 ]
 
 [project.urls]
