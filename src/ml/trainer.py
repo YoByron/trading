@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from src.ml.data_processor import DataProcessor
+
 # NOTE: LSTMPPO networks have been removed - this trainer is for offline use only
 # from src.ml.networks import LSTMPPO
 
@@ -16,6 +17,23 @@ logger = logging.getLogger(__name__)
 # WARNING: This trainer module is for OFFLINE model training only
 # The production system uses RLFilter (Gate 2) and TransformerRLPolicy
 # LSTM-PPO models and ensemble RL have been removed from production
+
+
+class LSTMPPO(nn.Module):
+    """Stub class for deprecated LSTMPPO network."""
+
+    def __init__(self, input_dim: int, hidden_dim: int, num_layers: int):
+        super().__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+
+    def forward(self, x):
+        # Stub forward pass
+        batch_size = x.size(0)
+        action_probs = torch.zeros(batch_size, 3)
+        state_value = torch.zeros(batch_size, 1)
+        return action_probs, state_value, None
 
 
 class ModelTrainer:

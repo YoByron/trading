@@ -41,7 +41,6 @@ from src.backtesting.walk_forward_matrix import (
     run_walk_forward_matrix,
 )
 
-
 __all__ = [
     "BacktestEngine",
     "BacktestResults",

@@ -658,7 +658,9 @@ class CoreStrategy:
                     logger.warning(f"Intelligent Investor safety check error (proceeding): {e}")
                     # Fail-open: continue with trade if safety check unavailable
             elif is_etf:
-                logger.info(f"Skipping Intelligent Investor check for ETF {best_etf} (inherently safe)")
+                logger.info(
+                    f"Skipping Intelligent Investor check for ETF {best_etf} (inherently safe)"
+                )
                 # ETFs are inherently diversified and don't need Graham-Buffett individual stock checks
 
             # Step 5.6: LLM Council Validation (if enabled) - After safety checks

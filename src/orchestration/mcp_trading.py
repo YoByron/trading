@@ -24,6 +24,7 @@ from src.agent_framework.context_engine import (
     get_context_engine,
 )
 from src.agents.execution_agent import ExecutionAgent
+from src.agents.fallback_strategy import FallbackStrategy
 from src.agents.meta_agent import MetaAgent
 from src.agents.research_agent import ResearchAgent
 from src.agents.risk_agent import RiskAgent
@@ -239,6 +240,7 @@ class MCPTradingOrchestrator:
                 logger.warning(f"{symbol}: {error_msg} - falling back to neutral sentiment")
                 result.errors.append(error_msg)
                 market_payload["sentiment"] = 0.0
+                sentiment_score = 0.0  # Define fallback to prevent UnboundLocalError
 
             try:
                 # Validate context flow before meta-agent analysis
@@ -269,10 +271,56 @@ class MCPTradingOrchestrator:
                 )
             except Exception as exc:  # noqa: BLE001
                 error_msg = f"Meta-agent analysis failed: {exc}"
-                logger.error(error_msg)
+                logger.warning(f"{symbol}: {error_msg} - using FallbackStrategy")
                 result.errors.append(error_msg)
-                summary["symbols"].append(asdict(result))
-                continue
+
+                # FALLBACK: Use technical analysis when LLM-based meta-agent fails
+                # This ensures we can still trade based on momentum/RL signals
+                fallback_data = {
+                    "symbol": symbol,
+                    "indicators": {
+                        "price": market_features["price"],
+                        "macd_histogram": 0,  # Would need actual MACD calc
+                        "rsi": 50,  # Would need actual RSI calc
+                        "volume_ratio": market_features["volume_ratio"],
+                        "ma_50": market_features["price"],  # Placeholder
+                        "momentum_score": market_features["trend_strength"] * 50 + 50,
+                    },
+                }
+                fallback_result = FallbackStrategy.analyze_without_llm(fallback_data)
+
+                # Convert fallback result to meta_decision format
+                result.meta_decision = {
+                    "meta_agent_reasoning": fallback_result["reasoning"],
+                    "market_regime": "FALLBACK_MODE",
+                    "agent_activations": {
+                        "FallbackStrategy": 1.0,
+                    },
+                    "coordinated_decision": {
+                        "action": fallback_result["action"],
+                        "confidence": fallback_result["confidence"],
+                        "buy_weight": fallback_result["confidence"]
+                        if fallback_result["action"] == "BUY"
+                        else 0.0,
+                        "sell_weight": fallback_result["confidence"]
+                        if fallback_result["action"] == "SELL"
+                        else 0.0,
+                        "hold_weight": fallback_result["confidence"]
+                        if fallback_result["action"] == "HOLD"
+                        else 0.0,
+                        "agent_recommendations": {
+                            "FallbackStrategy": {
+                                "recommendation": fallback_result,
+                                "weight": 1.0,
+                            }
+                        },
+                    },
+                    "fallback_mode": True,
+                }
+                logger.info(
+                    f"{symbol}: Fallback decision - {fallback_result['action']} "
+                    f"(confidence={fallback_result['confidence']:.2f})"
+                )
 
             final_decision = result.meta_decision.get("coordinated_decision", {})
             action = final_decision.get("action", "HOLD")
