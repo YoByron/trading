@@ -23,6 +23,7 @@ import sys
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -73,13 +74,14 @@ def format_recent_runs(runs: list[dict]) -> str:
     if not runs:
         return "| — | — | — | — | — |"
 
+    eastern = ZoneInfo("America/New_York")
     lines = []
     for run in runs:
         ts = run.get("ts")
         try:
             ts_et = (
                 datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                .astimezone()
+                .astimezone(eastern)
                 .strftime("%Y-%m-%d %I:%M %p")
             )
         except Exception:
@@ -180,7 +182,9 @@ def calculate_metrics():
     if last_updated_str:
         try:
             last_dt = datetime.fromisoformat(last_updated_str.replace("Z", "+00:00"))
-            age_hours = (datetime.now() - last_dt).total_seconds() / 3600
+            # Use timezone-aware datetime for proper comparison
+            now_utc = datetime.now(ZoneInfo("UTC"))
+            age_hours = (now_utc - last_dt).total_seconds() / 3600
             if age_hours > STALE_HOURS:
                 stale_reason = f"Data stale: system_state last updated {age_hours:.1f}h ago ({last_updated_str})"
                 data_fresh = False
@@ -330,7 +334,9 @@ def generate_dashboard() -> str:
         logger.warning(f"Chart generation failed: {e}")
         chart_paths = {}
 
-    now = datetime.now()
+    # Use Eastern Time for display (system may be in different timezone)
+    eastern = ZoneInfo("America/New_York")
+    now = datetime.now(eastern)
     recent_runs = load_run_log(max_items=5)
 
     failure_banner = ""

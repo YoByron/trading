@@ -376,7 +376,9 @@ class EliteOrchestrator:
         # Use adaptive orchestrator if enabled
         if self.enable_adaptive and self.adaptive_orchestrator:
             logger.info("🔄 Using adaptive agent organization")
-            return self.adaptive_orchestrator.create_adaptive_plan(symbols, context)
+            plan = self.adaptive_orchestrator.create_adaptive_plan(symbols, context)
+            self._save_plan(plan)
+            return plan
 
         # Fallback to fixed organization
         logger.info("📋 Using fixed agent organization")

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 TradingView Ideas Collector for RAG System
 

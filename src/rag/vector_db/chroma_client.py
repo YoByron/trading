@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 ChromaDB Vector Database Client for Trading RAG System
 
@@ -7,7 +8,7 @@ Provides persistent vector storage for market news, sentiment, and research.
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from src.utils.pydantic_compat import ensure_pydantic_base_settings
 
@@ -352,7 +353,7 @@ class TradingRAGDatabase:
         self,
         documents: list[str],
         metadatas: list[dict[str, Any]],
-        ids: Optional[list[str]] = None,
+        ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Add documents to the vector database.
@@ -403,7 +404,7 @@ class TradingRAGDatabase:
         self,
         query_text: str,
         n_results: int = 5,
-        where: Optional[dict[str, Any]] = None,
+        where: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Query the vector database with semantic search.
@@ -442,7 +443,7 @@ class TradingRAGDatabase:
             return {"status": "error", "message": str(e)}
 
     def get_ticker_news(
-        self, ticker: str, n_results: int = 20, date_filter: Optional[str] = None
+        self, ticker: str, n_results: int = 20, date_filter: str | None = None
     ) -> list[dict[str, Any]]:
         """
         Get all news for a specific ticker.
@@ -484,7 +485,7 @@ class TradingRAGDatabase:
 
         return articles
 
-    def get_by_id(self, doc_id: str) -> Optional[dict[str, Any]]:
+    def get_by_id(self, doc_id: str) -> dict[str, Any] | None:
         """
         Retrieve a document by its ID.
 

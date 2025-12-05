@@ -582,7 +582,12 @@ class ContextEngine:
             # Add memories to context (prioritize by importance)
             token_count = len(json.dumps(context))
             for memory in memories:
-                memory_json = json.dumps(asdict(memory))
+                memory_json = json.dumps(
+                    asdict(memory),
+                    default=lambda o: list(o)
+                    if isinstance(o, set)
+                    else (getattr(o, "value", str(o))),
+                )
                 if token_count + len(memory_json) < max_tokens:
                     context["memories"].append(asdict(memory))
                     token_count += len(memory_json)
@@ -597,7 +602,12 @@ class ContextEngine:
 
             token_count = len(json.dumps(context))
             for memory in agent_memories[:10]:  # Limit to top 10 memories
-                memory_json = json.dumps(asdict(memory))
+                memory_json = json.dumps(
+                    asdict(memory),
+                    default=lambda o: list(o)
+                    if isinstance(o, set)
+                    else (getattr(o, "value", str(o))),
+                )
                 if token_count + len(memory_json) < max_tokens:
                     context["memories"].append(asdict(memory))
                     token_count += len(memory_json)

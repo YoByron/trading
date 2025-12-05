@@ -472,19 +472,22 @@ class TradeGateway:
         request = decision.request
 
         try:
-            # Use adjusted notional if available (from batching)
-            notional = decision.adjusted_notional or request.notional
-
-            logger.info(
-                f"🚀 Gateway executing: {request.side.upper()} {request.symbol} ${notional:.2f}"
-            )
-
             # Execute through the broker
-            order = self.executor.place_order(
-                symbol=request.symbol,
-                notional=notional,
-                side=request.side,
-            )
+            # Prioritize quantity if available (critical for closing positions)
+            if request.quantity is not None:
+                order = self.executor.place_order(
+                    symbol=request.symbol,
+                    qty=request.quantity,
+                    side=request.side,
+                )
+            else:
+                # Use adjusted notional if available (from batching)
+                notional = decision.adjusted_notional or request.notional
+                order = self.executor.place_order(
+                    symbol=request.symbol,
+                    notional=notional,
+                    side=request.side,
+                )
 
             # Track the trade
             self.recent_trades.append(datetime.now())
