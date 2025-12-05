@@ -47,6 +47,7 @@ dependencies = [
     "loguru>=0.7.2",
     "anthropic>=0.73.0,<1.0.0",
     "google-generativeai>=0.8.0,<1.0.0",
+    "xai-sdk>=1.4.0,<1.5.0",  # Grok client capped to keep packaging<25 for streamlit
 
     # Deep Learning
     "torch>=2.0.0,<3.0.0",
