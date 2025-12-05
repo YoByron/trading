@@ -3,7 +3,7 @@ name = "trading"
 version = "1.0.0"
 description = "Validated profitable automated trading system with AI-powered decision making"
 readme = "README.md"
-requires-python = ">=3.9,<3.12"  # CI uses Python 3.11
+requires-python = ">=3.11,<3.12"  # CI uses Python 3.11
 license = {text = "MIT"}
 authors = [
     {name = "Igor Ganapolsky"}
@@ -214,4 +214,4 @@ exclude_lines = [
 
 # Poetry compatibility for workflows that still read tool.poetry
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.11,<3.12"
