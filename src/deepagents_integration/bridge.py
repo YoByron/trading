@@ -8,7 +8,7 @@ TradingAgent framework, allowing gradual migration and hybrid approaches.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.agent_framework import AgentResult, RunContext, TradingAgent
 
@@ -27,7 +27,7 @@ class DeepAgentsTradingAgent(TradingAgent):
         self,
         agent_name: str,
         deepagent: Any,
-        task_prompt_template: Optional[str] = None,
+        task_prompt_template: str | None = None,
     ) -> None:
         """
         Initialize adapter.
@@ -35,7 +35,7 @@ class DeepAgentsTradingAgent(TradingAgent):
         Args:
             agent_name: Name for the agent
             deepagent: DeepAgent instance from create_deep_agent
-            task_prompt_template: Optional template for converting context to prompt
+            task_prompt_template:  template for converting context to prompt
         """
         super().__init__(agent_name)
         self.deepagent = deepagent
@@ -127,15 +127,15 @@ class HybridTradingAgent(TradingAgent):
     def __init__(
         self,
         agent_name: str,
-        deepagent: Optional[Any] = None,
-        fallback_agent: Optional[TradingAgent] = None,
+        deepagent: Any | None = None,
+        fallback_agent: TradingAgent | None = None,
     ) -> None:
         """
         Initialize hybrid agent.
 
         Args:
             agent_name: Name for the agent
-            deepagent: Optional deepagent for complex analysis
+            deepagent:  deepagent for complex analysis
             fallback_agent: Fallback agent if deepagent unavailable
         """
         super().__init__(agent_name)
@@ -199,13 +199,13 @@ def create_deepagents_research_agent() -> DeepAgentsTradingAgent:
 
 
 def create_hybrid_analysis_agent(
-    fallback_agent: Optional[TradingAgent] = None,
+    fallback_agent: TradingAgent | None = None,
 ) -> HybridTradingAgent:
     """
     Factory function to create a hybrid analysis agent.
 
     Args:
-        fallback_agent: Optional fallback agent
+        fallback_agent:  fallback agent
 
     Returns:
         HybridTradingAgent with deepagent and fallback

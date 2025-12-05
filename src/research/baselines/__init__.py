@@ -12,7 +12,7 @@ beats trivial strategies:
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.research.baselines.buy_and_hold import BuyAndHoldStrategy
 from src.research.baselines.equal_weight import EqualWeightStrategy
@@ -24,8 +24,8 @@ from src.research.baselines.sma_cross import SMACrossStrategy
 class BacktestResult:
     """Lightweight backtest result container."""
 
-    equity_curve: Optional[List[Any]] = None
-    metrics: Optional[Dict[str, Any]] = None
+    equity_curve: list[Any] | None = None
+    metrics: dict[str, Any] | None = None
 
 
 class BaselineStrategy:
@@ -39,7 +39,7 @@ MovingAverageCrossover = SMACrossStrategy
 TimeSeriesMomentum = MomentumStrategy
 
 
-def run_baseline_comparison(*args, **kwargs) -> Dict[str, Any]:
+def run_baseline_comparison(*args, **kwargs) -> dict[str, Any]:
     """Placeholder comparison helper returning a minimal baseline result."""
     return {"buy_and_hold": BacktestResult(equity_curve=[], metrics={"sharpe": 1.0})}
 

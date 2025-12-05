@@ -5,7 +5,6 @@ DeepAgents-based trading agents with planning and sub-agent capabilities.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -103,7 +102,7 @@ Trade recommendations must include:
 
 
 def create_trading_research_agent(
-    model: Optional[str | BaseChatModel] = None,
+    model: str | BaseChatModel | None = None,
     include_mcp_tools: bool = True,
     temperature: float = 0.3,
 ) -> any:
@@ -149,10 +148,10 @@ def create_trading_research_agent(
 
 
 def create_market_analysis_agent(
-    model: Optional[str | BaseChatModel] = None,
+    model: str | BaseChatModel | None = None,
     include_mcp_tools: bool = True,
     temperature: float = 0.2,
-    subagents: Optional[list] = None,
+    subagents: list | None = None,
 ) -> any:
     """
     Create a deepagent for market analysis with sub-agent delegation.
@@ -161,7 +160,7 @@ def create_market_analysis_agent(
         model: Model name or instance (default: claude-sonnet-4-5-20250929)
         include_mcp_tools: Whether to include MCP trading tools
         temperature: Model temperature (default: 0.2 for more deterministic analysis)
-        subagents: Optional list of sub-agent configurations
+        subagents:  list of sub-agent configurations
 
     Returns:
         DeepAgent instance configured for market analysis

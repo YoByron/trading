@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from src.core.alpaca_trader import AlpacaTrader
 from src.rag.collectors import FredCollector
@@ -53,7 +53,7 @@ class ReitStrategy(StrategyInterface):
         "Residential": ["AVB", "EQR", "INVH"],  # Apartments
     }
 
-    def __init__(self, trader: Optional[AlpacaTrader] = None):
+    def __init__(self, trader: AlpacaTrader | None = None):
         self._name = "reit_smart_income"
         self.trader = trader
         self.market_data = get_market_data_provider()
