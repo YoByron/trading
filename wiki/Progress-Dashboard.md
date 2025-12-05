@@ -1,7 +1,27 @@
 # 📊 Progress Dashboard
 
-**Last Updated**: 2025-12-04 04:20 PM ET
-**Auto-Updated**: Daily via GitHub Actions
+**Last Updated**: 2025-12-05 (Auto-Updated via GitHub Actions)
+
+---
+
+## 🚨 CRITICAL ALERT: ACTION REQUIRED
+
+| Issue | Status | Action |
+|-------|--------|--------|
+| **Anthropic API Credits** | ⚠️ EXHAUSTED | **[👉 TOP UP NOW](https://console.anthropic.com/settings/billing)** |
+| **Trading Blocked** | 10+ days | LLM agents failing due to auth errors |
+
+**Error**: `"Your credit balance is too low to access the Anthropic API"`
+
+### What's Happening:
+- ❌ ResearchAgent, SignalAgent, RiskAgent all failing
+- ❌ System defaulting to HOLD on every trade
+- ✅ **FIX DEPLOYED**: Fallback to technical analysis enabled (Dec 5, 2025)
+
+### Immediate Actions:
+1. **[Top Up Anthropic Credits →](https://console.anthropic.com/settings/billing)**
+2. System will auto-recover once credits available
+3. Until then, using momentum-only fallback strategy
 
 ---
 
@@ -9,11 +29,12 @@
 
 | Metric | Status | Details |
 |--------|--------|---------|
-| **Health Check** | ✅ PASS | Pre-market validation successful |
-| **API Connection** | ✅ Connected | Alpaca & Data Providers active |
-| **Data Freshness** | ✅ Fresh | Market data < 24h old |
+| **Health Check** | ⚠️ DEGRADED | LLM agents failing - fallback active |
+| **API Connection** | ✅ Connected | Alpaca active, **Anthropic: CREDIT ISSUE** |
+| **Data Freshness** | ⚠️ Stale | Sentiment data 14 days old |
 | **Circuit Breaker** | ✅ Ready | No trips detected |
-| **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
+| **Next Run** | 🕒 Scheduled | Dec 6, 9:35 AM ET |
+| **Fallback Mode** | ✅ ACTIVE | Using technical analysis (momentum/RL) |
 
 ---
 
