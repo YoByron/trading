@@ -1386,9 +1386,7 @@ Be honest and critical in your assessment."""
         delay_idx = 0
         for model in self.council_models:
             if model.value in first_opinions and first_opinions[model.value].success:
-                review_tasks.append(
-                    review_with_delay(model, delay_idx * self.rate_limit_delay)
-                )
+                review_tasks.append(review_with_delay(model, delay_idx * self.rate_limit_delay))
                 delay_idx += 1
             else:
                 review_tasks.append(None)
