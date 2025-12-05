@@ -1,6 +1,5 @@
-import yfinance as yf
 import pandas as pd
-import numpy as np
+import yfinance as yf
 
 print(f"yfinance version: {yf.__version__}")
 print(f"pandas version: {pd.__version__}")
@@ -28,11 +27,13 @@ print(f"Last EMA value: {last}")
 
 if isinstance(last, pd.Series):
     print("Last EMA is a Series. iloc[0]:", last.iloc[0], type(last.iloc[0]))
-    
+
+
 def get_scalar(val):
     if isinstance(val, pd.Series):
         val = val.iloc[0]
     return float(val) if not pd.isna(val) else 0.0
+
 
 try:
     scalar = get_scalar(last)

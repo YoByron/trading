@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Backtest Engine Module
 
@@ -20,7 +21,7 @@ Created: 2025-11-02
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -82,9 +83,9 @@ class BacktestEngine:
         enable_slippage: bool = True,
         slippage_bps: float = 5.0,
         use_hybrid_gates: bool = False,
-        hybrid_options: Optional[dict[str, Any]] = None,
+        hybrid_options: dict[str, Any] | None = None,
         bias_replay: BiasReplay | None = None,
-        sentiment_store: "SentimentSQLiteStore | None" = None,
+        sentiment_store: SentimentSQLiteStore | None = None,
     ):
         """
         Initialize the backtest engine.
@@ -138,9 +139,9 @@ class BacktestEngine:
         self.total_slippage_cost = 0.0  # Track cumulative slippage
         self.use_hybrid_gates = use_hybrid_gates
         self.hybrid_options = hybrid_options or {}
-        self.hybrid_gate_rl: Optional[RLFilter] = None
-        self.hybrid_risk: Optional[RiskManager] = None
-        self.hybrid_sentiment: Optional[SyntheticSentimentModel] = None
+        self.hybrid_gate_rl: RLFilter | None = None
+        self.hybrid_risk: RiskManager | None = None
+        self.hybrid_sentiment: SyntheticSentimentModel | None = None
         self.momentum_min_score = float(os.getenv("MOMENTUM_MIN_SCORE", "0.0"))
         self.momentum_macd_threshold = float(os.getenv("MOMENTUM_MACD_THRESHOLD", "0.0"))
         self.momentum_rsi_overbought = float(os.getenv("MOMENTUM_RSI_OVERBOUGHT", "70.0"))
@@ -248,7 +249,7 @@ class BacktestEngine:
         alpaca_key = os.getenv("ALPACA_API_KEY")
         alpaca_secret = os.getenv("ALPACA_SECRET_KEY")
         use_alpaca = bool(alpaca_key and alpaca_secret)
-        client: Optional[StockHistoricalDataClient] = None
+        client: StockHistoricalDataClient | None = None
 
         if use_alpaca:
             client = StockHistoricalDataClient(alpaca_key, alpaca_secret)
@@ -409,7 +410,7 @@ class BacktestEngine:
             # Calculate average entry price
             total_cost = self.position_costs.get(symbol, 0.0)
             avg_entry_price = total_cost / quantity if quantity > 0 else 0.0
-            
+
             if avg_entry_price <= 0:
                 continue
 
@@ -425,7 +426,7 @@ class BacktestEngine:
                     date_str=date_str,
                     quantity=quantity,
                     price=current_price,
-                    reason=f"Stop Loss ({return_pct:.2%})"
+                    reason=f"Stop Loss ({return_pct:.2%})",
                 )
                 continue
 
@@ -438,29 +439,19 @@ class BacktestEngine:
                     date_str=date_str,
                     quantity=quantity,
                     price=current_price,
-                    reason=f"Take Profit ({return_pct:.2%})"
+                    reason=f"Take Profit ({return_pct:.2%})",
                 )
 
     def _execute_sell(
-        self,
-        symbol: str,
-        date: datetime,
-        date_str: str,
-        quantity: float,
-        price: float,
-        reason: str
+        self, symbol: str, date: datetime, date_str: str, quantity: float, price: float, reason: str
     ) -> None:
         """Execute a sell order."""
         executed_price, slippage_cost = self._apply_slippage_adjustment(
-            symbol=symbol,
-            date=date,
-            base_price=price,
-            notional=quantity * price,
-            side="sell"
+            symbol=symbol, date=date, base_price=price, notional=quantity * price, side="sell"
         )
 
         sale_value = quantity * executed_price
-        
+
         trade = {
             "date": date_str,
             "symbol": symbol,
@@ -472,7 +463,9 @@ class BacktestEngine:
             "amount": sale_value,
             "reason": reason,
             "pnl": sale_value - self.position_costs[symbol],
-            "return_pct": (executed_price - (self.position_costs[symbol]/quantity)) / (self.position_costs[symbol]/quantity) * 100
+            "return_pct": (executed_price - (self.position_costs[symbol] / quantity))
+            / (self.position_costs[symbol] / quantity)
+            * 100,
         }
         self.trades.append(trade)
 
@@ -480,7 +473,7 @@ class BacktestEngine:
         self.current_capital += sale_value
         del self.positions[symbol]
         del self.position_costs[symbol]
-        
+
         logger.info(f"{date_str}: SOLD {symbol} - {reason}")
 
     def _simulate_dca_day(self, date: datetime, date_str: str) -> None:
@@ -694,7 +687,7 @@ class BacktestEngine:
 
         return executed_price, slippage_cost
 
-    def _get_historical_data(self, symbol: str, date: datetime) -> Optional[pd.DataFrame]:
+    def _get_historical_data(self, symbol: str, date: datetime) -> pd.DataFrame | None:
         """
         Get historical data for a symbol up to a specific date.
 
@@ -747,7 +740,7 @@ class BacktestEngine:
             },
         }
 
-    def _calculate_momentum_for_date(self, symbol: str, date: datetime) -> Optional[float]:
+    def _calculate_momentum_for_date(self, symbol: str, date: datetime) -> float | None:
         """
         Calculate momentum score for a symbol at a specific date.
 
@@ -856,7 +849,7 @@ class BacktestEngine:
             "source": "rag_store",
         }
 
-    def _get_price(self, symbol: str, date: datetime) -> Optional[float]:
+    def _get_price(self, symbol: str, date: datetime) -> float | None:
         """
         Get the closing price for a symbol on a specific date.
 

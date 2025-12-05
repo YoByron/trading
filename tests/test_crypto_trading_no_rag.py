@@ -20,8 +20,13 @@ class TestCryptoTradingImports:
         from src.rag.vector_db import embedder
 
         # But trying to get embedder should raise ImportError
-        with pytest.raises(ImportError, match="sentence-transformers"):
-            embedder._get_sentence_transformer()
+        try:
+            import sentence_transformers  # noqa: F401
+
+            pytest.skip("sentence-transformers installed - skipping missing dependency test")
+        except ImportError:
+            with pytest.raises(ImportError, match="sentence-transformers"):
+                embedder._get_sentence_transformer()
 
     def test_autonomous_trader_imports(self):
         """Test that autonomous_trader can be imported."""

@@ -17,6 +17,7 @@ Updated: 2025-12-03
 """
 
 from __future__ import annotations
+
 import json
 from dataclasses import dataclass, field
 from typing import Any
@@ -61,7 +62,7 @@ class TradeMetrics:
     avg_losing_hold_days: float = 0.0
 
     @classmethod
-    def from_trades(cls, trades: list[dict[str, Any]]) -> "TradeMetrics":
+    def from_trades(cls, trades: list[dict[str, Any]]) -> TradeMetrics:
         """
         Calculate trade metrics from a list of trade records.
 
