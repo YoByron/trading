@@ -42,7 +42,7 @@ def test_price_outliers(data: pd.DataFrame, method: str = "zscore", threshold: f
         outlier_dates = data[outliers].index.tolist()
         outlier_prices = prices[outliers]
         print(f"Found {outliers.sum()} price outliers")
-        for date, price in zip(outlier_dates, outlier_prices):
+        for date, price in zip(outlier_dates, outlier_prices, strict=True):
             print(f"  {date}: ${price:.2f}")
         # This is informational - outliers might be legitimate
         return True  # Don't fail, just warn
