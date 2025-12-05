@@ -90,10 +90,6 @@ deepagents = [
     "deepagents>=0.2.5",
 ]
 
-xai = [
-    "xai-sdk>=1.4.0,<1.5.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/IgorGanapolsky/trading"
 Repository = "https://github.com/IgorGanapolsky/trading"
