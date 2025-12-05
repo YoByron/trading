@@ -7,7 +7,7 @@ Provides reusable functions to create supervised learning targets:
 - Event-based labels (triple-barrier method)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from src.research.labeling.directional import create_directional_labels
 from src.research.labeling.triple_barrier import create_triple_barrier_labels
@@ -28,7 +28,7 @@ class _LabelContainer:
 
 
 class DirectionalLabeler:
-    def label(self, data) -> Dict[str, Any]:
+    def label(self, data) -> dict[str, Any]:
         return {"labels": create_directional_labels(data)}
 
     def fit(self, data):
@@ -42,7 +42,7 @@ class DirectionalLabeler:
 
 
 class TripleBarrierLabeler:
-    def label(self, data) -> Dict[str, Any]:
+    def label(self, data) -> dict[str, Any]:
         import pandas as pd
 
         # Simple placeholder: zeros aligned to index to avoid complex barrier logic
@@ -60,7 +60,7 @@ class TripleBarrierLabeler:
 
 
 class VolatilityLabeler:
-    def label(self, data) -> Dict[str, Any]:
+    def label(self, data) -> dict[str, Any]:
         return {"labels": create_volatility_labels(data)}
 
     def fit(self, data):
@@ -73,7 +73,7 @@ class VolatilityLabeler:
         return self.transform(data)
 
 
-def create_complete_labels(data) -> Dict[str, Any]:
+def create_complete_labels(data) -> dict[str, Any]:
     """Compose all label types into a single payload (placeholder)."""
     return {
         "directional": create_directional_labels(data),

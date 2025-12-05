@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.agent_framework import AgentResult, RunContext, TradingAgent
 
@@ -27,7 +27,7 @@ class DeepAgentsAdapter(TradingAgent):
         self,
         agent_name: str,
         deepagent: Any,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
     ) -> None:
         """
         Initialize adapter.
