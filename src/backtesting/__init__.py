@@ -40,6 +40,11 @@ from src.backtesting.walk_forward_matrix import (
     WalkForwardMatrixValidator,
     run_walk_forward_matrix,
 )
+from src.backtesting.monte_carlo import (
+    MonteCarloResult,
+    MonteCarloSimulator,
+    run_monte_carlo_validation,
+)
 
 __all__ = [
     "BacktestEngine",
