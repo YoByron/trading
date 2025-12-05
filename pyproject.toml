@@ -152,6 +152,8 @@ ignore = [
     "SIM105", # contextlib.suppress (readability preference)
     "SIM108", # ternary operator (readability preference)
     "SIM117", # nested with statements (readability preference)
+    "UP035",  # prefer collections.abc imports (not yet migrated)
+    "UP045",  # pipe-style Optional annotations (not yet migrated)
 ]
 
 [tool.ruff.lint.per-file-ignores]
