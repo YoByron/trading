@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
+from typing import Optional
 
 from langchain_core.tools import tool
 
@@ -82,7 +83,7 @@ def get_market_data(
 @tool
 def query_sentiment(
     query: str,
-    ticker: str | None = None,
+    ticker: Optional[str] = None,
     limit: int = 5,
 ) -> str:
     """

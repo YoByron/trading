@@ -247,6 +247,25 @@ class FREDCollector(BaseNewsCollector):
         logger.info(f"Collected {len(articles)} FRED economic indicators")
         return articles
 
+    def get_series(
+        self, series_id: str, limit: int = 10, sort_order: str = "desc"
+    ) -> list[dict[str, Any]]:
+        """
+        Lightweight helper to fetch a series without date math.
+        Used by strategies that just need the latest observations.
+        """
+        url = f"{self.BASE_URL}/series/observations"
+        params = {
+            "series_id": series_id,
+            "api_key": self.api_key,
+            "file_type": "json",
+            "sort_order": sort_order,
+            "limit": limit,
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("observations", [])
+
     def _fetch_series(
         self, series_id: str, start_date: str, end_date: str
     ) -> Optional[dict[str, Any]]:
@@ -266,10 +285,12 @@ class FREDCollector(BaseNewsCollector):
             "series_id": series_id,
             "api_key": self.api_key,
             "file_type": "json",
-            "observation_start": start_date,
-            "observation_end": end_date,
+            "observation_start": (datetime.now() - timedelta(days=90)).strftime(
+                "%Y-%m-%d"
+            ),  # Fetch 90 days to ensure enough data
+            "observation_end": datetime.now().strftime("%Y-%m-%d"),
             "sort_order": "desc",
-            "limit": 10,
+            "limit": 1,  # Only need the very latest value
         }
 
         try:
@@ -596,6 +617,9 @@ Historical Context:
             "timestamp": datetime.now().isoformat(),
         }
 
+
+# Backward compatibility: some modules import FredCollector (camel case)
+FredCollector = FREDCollector
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
