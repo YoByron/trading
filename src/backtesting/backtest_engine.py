@@ -17,7 +17,6 @@ Author: Trading System
 Created: 2025-11-02
 """
 
-from __future__ import annotations
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -377,6 +376,9 @@ class BacktestEngine:
         """
         date_str = date.strftime("%Y-%m-%d")
 
+        # Check for exit conditions (stop-loss / take-profit)
+        self._check_exit_conditions(date, date_str)
+
         try:
             if self.use_hybrid_gates:
                 self._simulate_hybrid_day(date, date_str)
@@ -389,6 +391,97 @@ class BacktestEngine:
         self._update_portfolio_value(date)
         self.equity_curve.append(self.portfolio_value)
         self.dates.append(date_str)
+
+    def _check_exit_conditions(self, date: datetime, date_str: str) -> None:
+        """
+        Check and execute exit conditions for current positions.
+        """
+        # Create a copy of keys to allow modification during iteration
+        for symbol in list(self.positions.keys()):
+            quantity = self.positions[symbol]
+            if quantity <= 0:
+                continue
+
+            current_price = self._get_price(symbol, date)
+            if not current_price:
+                continue
+
+            # Calculate average entry price
+            total_cost = self.position_costs.get(symbol, 0.0)
+            avg_entry_price = total_cost / quantity if quantity > 0 else 0.0
+            
+            if avg_entry_price <= 0:
+                continue
+
+            # Calculate return percentage
+            return_pct = (current_price - avg_entry_price) / avg_entry_price
+
+            # Check Stop Loss
+            stop_loss_pct = getattr(self.strategy, "stop_loss_pct", None)
+            if stop_loss_pct and return_pct < -stop_loss_pct:
+                self._execute_sell(
+                    symbol=symbol,
+                    date=date,
+                    date_str=date_str,
+                    quantity=quantity,
+                    price=current_price,
+                    reason=f"Stop Loss ({return_pct:.2%})"
+                )
+                continue
+
+            # Check Take Profit
+            take_profit_pct = getattr(self.strategy, "take_profit_pct", None)
+            if take_profit_pct and return_pct > take_profit_pct:
+                self._execute_sell(
+                    symbol=symbol,
+                    date=date,
+                    date_str=date_str,
+                    quantity=quantity,
+                    price=current_price,
+                    reason=f"Take Profit ({return_pct:.2%})"
+                )
+
+    def _execute_sell(
+        self,
+        symbol: str,
+        date: datetime,
+        date_str: str,
+        quantity: float,
+        price: float,
+        reason: str
+    ) -> None:
+        """Execute a sell order."""
+        executed_price, slippage_cost = self._apply_slippage_adjustment(
+            symbol=symbol,
+            date=date,
+            base_price=price,
+            notional=quantity * price,
+            side="sell"
+        )
+
+        sale_value = quantity * executed_price
+        
+        trade = {
+            "date": date_str,
+            "symbol": symbol,
+            "action": "sell",
+            "quantity": quantity,
+            "price": executed_price,
+            "base_price": price,
+            "slippage_cost": slippage_cost,
+            "amount": sale_value,
+            "reason": reason,
+            "pnl": sale_value - self.position_costs[symbol],
+            "return_pct": (executed_price - (self.position_costs[symbol]/quantity)) / (self.position_costs[symbol]/quantity) * 100
+        }
+        self.trades.append(trade)
+
+        # Update state
+        self.current_capital += sale_value
+        del self.positions[symbol]
+        del self.position_costs[symbol]
+        
+        logger.info(f"{date_str}: SOLD {symbol} - {reason}")
 
     def _simulate_dca_day(self, date: datetime, date_str: str) -> None:
         """Legacy DCA-style backtest flow (pre-hybrid)."""
@@ -571,6 +664,7 @@ class BacktestEngine:
         date: datetime,
         base_price: float,
         notional: float,
+        side: str = "buy",
         hist: pd.DataFrame | None = None,
     ) -> tuple[float, float]:
         executed_price = base_price
@@ -589,7 +683,7 @@ class BacktestEngine:
             slippage_result = self.slippage_model.calculate_slippage(
                 price=base_price,
                 quantity=quantity_estimate,
-                side="buy",
+                side=side,
                 symbol=symbol,
                 volume=avg_volume,
                 volatility=volatility,

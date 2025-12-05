@@ -4,42 +4,42 @@ BACKTEST RESULTS SUMMARY
 
 PERIOD INFORMATION
 --------------------------------------------------------------------------------
-Start Date:        2022-04-01
-End Date:          2022-06-30
-Trading Days:      65
+Start Date:        2021-01-01
+End Date:          2021-03-31
+Trading Days:      64
 
 CAPITAL & RETURNS
 --------------------------------------------------------------------------------
 Initial Capital:   $100,000.00
-Final Capital:     $99,952.56
-Total Return:      $-47.44 (-0.05%)
-Annualized Return: -0.18%
+Final Capital:     $99,999.47
+Total Return:      $-0.53 (-0.00%)
+Annualized Return: -0.00%
 
 RISK METRICS
 --------------------------------------------------------------------------------
-Sharpe Ratio:      -40.87
-Max Drawdown:      0.07%
-Volatility:        0.10%
+Sharpe Ratio:      -2086.59
+Max Drawdown:      0.00%
+Volatility:        0.00%
 
 EXECUTION COSTS
 --------------------------------------------------------------------------------
 Slippage Model:    Enabled
-Total Slippage:    $0.12
+Total Slippage:    $0.17
 Slippage % of PnL: 0.00%
 
 $100/DAY TARGET METRICS
 --------------------------------------------------------------------------------
-Avg Daily P&L:     $-0.73
+Avg Daily P&L:     $-0.01
 % Days ≥ $100:     0.0%
-Worst 5-Day DD:    $51.00
-Worst 20-Day DD:   $41.99
+Worst 5-Day DD:    $0.71
+Worst 20-Day DD:   $0.78
 
 TRADE STATISTICS (Daily-Based)
 --------------------------------------------------------------------------------
-Total Trades:      65
-Profitable Trades: 9
-Losing Trades:     56
-Win Rate (Daily):  41.54%
+Total Trades:      64
+Profitable Trades: 4
+Losing Trades:     60
+Win Rate (Daily):  34.38%
 Avg Trade Return:  -0.00%
 
 TRADE-BASED METRICS (More Accurate)
@@ -62,10 +62,10 @@ Overall Rating:    NEEDS IMPROVEMENT
 
 RECENT TRADES (Last 5)
 --------------------------------------------------------------------------------
-  2022-06-24: BUY VOO @ $349.23 ($10.00)
-  2022-06-27: BUY VOO @ $360.11 ($10.00)
-  2022-06-28: BUY VOO @ $358.75 ($10.00)
-  2022-06-29: BUY VOO @ $351.00 ($10.00)
-  2022-06-30: BUY SPY @ $380.40 ($10.00)
+  2021-03-25: BUY SHY @ $86.31 ($10.00)
+  2021-03-26: BUY SHY @ $86.32 ($10.00)
+  2021-03-29: BUY SHY @ $86.32 ($10.00)
+  2021-03-30: BUY SHY @ $86.30 ($10.00)
+  2021-03-31: BUY SHY @ $86.30 ($10.00)
 
 ================================================================================

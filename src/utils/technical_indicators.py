@@ -71,9 +71,14 @@ def calculate_macd(
 
     # Helper to safely get scalar float
     def get_scalar(val):
-        if isinstance(val, pd.Series):
-            val = val.iloc[0]
-        return float(val) if not pd.isna(val) else 0.0
+        try:
+            if hasattr(val, "item"):
+                return float(val.item())
+            if hasattr(val, "iloc") and len(val) > 0:
+                return get_scalar(val.iloc[0])
+            return float(val) if not pd.isna(val) else 0.0
+        except Exception:
+            return 0.0
 
     # Return most recent values
     return (
