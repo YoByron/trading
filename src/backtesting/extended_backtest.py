@@ -23,7 +23,7 @@ from typing import Any, Callable, Optional
 import pandas as pd
 
 from src.backtesting.backtest_results import BacktestResults
-from src.backtesting.monte_carlo import MonteCarloResults, MonteCarloSimulator
+from src.backtesting.monte_carlo import MonteCarloResult, MonteCarloSimulator
 from src.backtesting.walk_forward_enhanced import (
     EnhancedWalkForwardResults,
     EnhancedWalkForwardValidator,
@@ -67,7 +67,7 @@ class ExtendedValidationResults:
     backtest_results: Optional[BacktestResults]
 
     # Monte Carlo
-    monte_carlo_results: Optional[MonteCarloResults]
+    monte_carlo_results: Optional[MonteCarloResult]
     monte_carlo_valid: bool
     monte_carlo_failures: list[str]
 
@@ -347,7 +347,7 @@ class ExtendedBacktester:
     def _run_monte_carlo(
         self,
         trades: list[dict],
-    ) -> tuple[Optional[MonteCarloResults], bool, list[str]]:
+    ) -> tuple[Optional[MonteCarloResult], bool, list[str]]:
         """Run Monte Carlo simulation and validate."""
         try:
             results = self.monte_carlo.run_from_trades(
@@ -449,7 +449,7 @@ class ExtendedBacktester:
     def _calculate_overall_score(
         self,
         backtest_results: BacktestResults,
-        mc_results: Optional[MonteCarloResults],
+        mc_results: Optional[MonteCarloResult],
         wf_results: Optional[EnhancedWalkForwardResults],
         cost_adjusted_sharpe: float,
         regime_score: float,
@@ -476,9 +476,9 @@ class ExtendedBacktester:
         # Monte Carlo score (weight: 25%)
         if mc_results:
             mc_score = (
-                mc_results.profit_probability * 50
-                + max(0, 1 - mc_results.ruin_probability * 10) * 30
-                + max(0, 1 - mc_results.worst_max_drawdown / 0.5) * 20
+                (1 - mc_results.probability_of_loss) * 50
+                + max(0, 1 - mc_results.probability_of_ruin * 10) * 30
+                + max(0, 1 - mc_results.drawdown_95_upper / 0.5) * 20
             )
             scores.append(mc_score)
             weights.append(0.25)
@@ -587,10 +587,10 @@ class ExtendedBacktester:
             mc_status = "[PASS]" if results.monte_carlo_valid else "[FAIL]"
             report.append(f"\n  Status: {mc_status}")
             report.append(f"  Simulations: {mc.num_simulations:,}")
-            report.append(f"  Profit Probability: {mc.profit_probability:.1%}")
-            report.append(f"  Ruin Probability: {mc.ruin_probability:.1%}")
-            report.append(f"  Mean Return: {mc.mean_return:.1f}%")
-            report.append(f"  95% CI: ${mc.percentile_5:,.0f} - ${mc.percentile_95:,.0f}")
+            report.append(f"  Profit Probability: {(1 - mc.probability_of_loss):.1%}")
+            report.append(f"  Ruin Probability: {mc.probability_of_ruin:.1%}")
+            report.append(f"  Mean Return: {mc.total_return_mean:.1f}%")
+            report.append(f"  95% CI: {mc.return_95_lower*100:,.1f}% - {mc.return_95_upper*100:,.1f}%")
 
             if results.monte_carlo_failures:
                 report.append("  Failures:")
