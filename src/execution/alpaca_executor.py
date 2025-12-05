@@ -104,19 +104,26 @@ class AlpacaExecutor:
 
         return []
 
-    def place_order(self, symbol: str, notional: float, side: str = "buy") -> dict[str, Any]:
+    def place_order(
+        self,
+        symbol: str,
+        notional: float | None = None,
+        qty: float | None = None,
+        side: str = "buy",
+    ) -> dict[str, Any]:
         logger.debug(
-            "Submitting %s order via AlpacaExecutor: %s for $%.2f",
+            "Submitting %s order via AlpacaExecutor: %s for %s",
             side,
             symbol,
-            notional,
+            f"${notional:.2f}" if notional else f"{qty} shares",
         )
         if self.simulated:
             order = {
                 "id": str(uuid.uuid4()),
                 "symbol": symbol,
                 "side": side,
-                "notional": round(notional, 2),
+                "notional": round(notional, 2) if notional else None,
+                "qty": float(qty) if qty else None,
                 "status": "filled",
                 "filled_at": datetime.utcnow().isoformat(),
                 "mode": "simulated",
@@ -127,6 +134,7 @@ class AlpacaExecutor:
         order = self.trader.execute_order(
             symbol=symbol,
             amount_usd=notional,
+            qty=qty,
             side=side,
             tier="T1_CORE",
         )

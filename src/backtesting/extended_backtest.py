@@ -590,7 +590,9 @@ class ExtendedBacktester:
             report.append(f"  Profit Probability: {(1 - mc.probability_of_loss):.1%}")
             report.append(f"  Ruin Probability: {mc.probability_of_ruin:.1%}")
             report.append(f"  Mean Return: {mc.total_return_mean:.1f}%")
-            report.append(f"  95% CI: {mc.return_95_lower*100:,.1f}% - {mc.return_95_upper*100:,.1f}%")
+            report.append(
+                f"  95% CI: {mc.return_95_lower * 100:,.1f}% - {mc.return_95_upper * 100:,.1f}%"
+            )
 
             if results.monte_carlo_failures:
                 report.append("  Failures:")

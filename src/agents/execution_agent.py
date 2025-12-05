@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Execution Agent: Order execution and timing optimization
 
@@ -14,7 +15,7 @@ Ensures best execution
 import builtins
 import contextlib
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
@@ -46,10 +47,10 @@ class ExecutionAgent(BaseAgent):
 
     def __init__(
         self,
-        alpaca_api: Optional[TradingClient] = None,
+        alpaca_api: TradingClient | None = None,
         *,
         paper: bool = True,
-        options_client: "AlpacaOptionsClient | None" = None,
+        options_client: AlpacaOptionsClient | None = None,
     ):
         super().__init__(name="ExecutionAgent", role="Order execution and timing optimization")
         self.alpaca_api = alpaca_api
@@ -173,7 +174,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
     # ------------------------------------------------------------------ #
     # Options execution helpers
     # ------------------------------------------------------------------ #
-    def _get_options_client(self) -> "AlpacaOptionsClient | None":
+    def _get_options_client(self) -> AlpacaOptionsClient | None:
         """
         Lazily resolve an Alpaca options client if credentials are available.
 

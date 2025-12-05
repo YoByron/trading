@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Walk-Forward Backtest Matrix Evaluation
 
@@ -239,7 +240,7 @@ class WalkForwardMatrixValidator:
         start_date: str,
         end_date: str,
         initial_capital: float = 100000.0,
-        param_grid: Optional[dict[str, list]] = None,
+        param_grid: dict[str, list] | None = None,
     ) -> BacktestMatrixResults:
         """
         Run full walk-forward matrix evaluation.
@@ -380,7 +381,7 @@ class WalkForwardMatrixValidator:
         self,
         strategy_name: str,
         windows: list[WalkForwardWindow],
-        param_grid: Optional[dict[str, list]] = None,
+        param_grid: dict[str, list] | None = None,
     ) -> BacktestMatrixResults:
         """Aggregate window results into matrix results."""
 
