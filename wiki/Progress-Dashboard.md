@@ -1,10 +1,6 @@
 # 📊 Progress Dashboard
 
-
-> ⚠️ **Data stale**: Data stale: no performance_log.json entries
-
-**Last Updated**: 2025-12-05 12:40 PM ET
-**Auto-Updated**: Daily via GitHub Actions
+**Last Updated**: 2025-12-05 (Auto-Updated via GitHub Actions)
 
 ---
 
@@ -32,11 +28,11 @@
 
 ## 📅 Today's Performance
 
-**Date**: 2025-12-05 (Friday)
+**Date**: 2025-12-04 (Thursday)
 
 | Metric | Value |
 |--------|-------|
-| **Equity** | $100,005.50 |
+| **Equity** | $99,999.95 |
 | **P/L** | $+0.00 (+0.00%) |
 | **Trades Today** | 0 |
 | **Status** | ⏸️ No activity yet |
@@ -49,11 +45,11 @@
 
 | Metric | Current | Target | Progress |
 |--------|---------|--------|----------|
-| **Average Daily Profit** | $0.14/day | $100.00/day | 0.14% |
-| **Total P/L** | $+5.50 (+0.01%) | TBD | ✅ |
+| **Average Daily Profit** | $-0.03/day | $100.00/day | -0.03% |
+| **Total P/L** | $-0.05 (-0.00%) | TBD | ⚠️ |
 | **Win Rate** | 0.0% | >55% | ⚠️ |
 
-**Progress Bar**: `█░░░░░░░░░░░░░░░░░░░` (0.14%)
+**Progress Bar**: `░░░░░░░░░░░░░░░░░░░░` (-0.03%)
 
 **Assessment**: ⚠️ **R&D PHASE** - Learning, not earning yet
 
@@ -81,7 +77,7 @@
 ## 📈 90-Day R&D Challenge Progress
 
 **Current**: Day 9 of 90 (10.0% complete)
-**Phase**: R&D Phase - Month 1 (Days 1-30)
+**Phase**: Production Scaling - Month 2 (Days 31-60)
 **Days Remaining**: 81
 
 **Progress Bar**: `██░░░░░░░░░░░░░░░░░░` (10.0%)
@@ -111,11 +107,11 @@
 
 | Metric | Overall | Today |
 |--------|---------|-------|
-| **Equity** | $100,005.50 | $100,005.50 |
+| **Equity** | $100,005.50 | $99,999.95 |
 | **P/L** | $+5.50 (+0.01%) | $+0.00 (+0.00%) |
 | **Starting Balance** | $100,000.00 | - |
-| **Average Daily Profit** | $+0.14 | - |
-| **Peak Equity** | $100,005.50 | - |
+| **Average Daily Profit** | $-0.03 | - |
+| **Peak Equity** | $100,000.00 | - |
 
 ### Trading Performance
 
@@ -136,12 +132,12 @@
 | Metric | Value | Target |
 |--------|-------|--------|
 | **Max Drawdown** | 0.00% | <10% |
-| **Current Drawdown** | 0.00% | <5% |
+| **Current Drawdown** | -0.01% | <5% |
 | **Sharpe Ratio** | 0.00 | >1.0 |
 | **Sortino Ratio** | 0.00 | >1.5 |
 | **Volatility (Annualized)** | 0.00% | <20% |
-| **Worst Daily Loss** | 0.00% | >-5% |
-| **VaR (95th percentile)** | 0.00% | >-3% |
+| **Worst Daily Loss** | -0.00% | >-5% |
+| **VaR (95th percentile)** | -0.00% | >-3% |
 
 ### Risk-Adjusted Performance
 
@@ -269,7 +265,7 @@
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| **Last Harvest** | 2025-12-05 05:26 PM | ✅ Active |
+| **Last Harvest** | 2025-12-04 09:00 PM | ✅ Active |
 | **Target Premium** | $10.00/day | -
 | **Est. Premium** | $30.00/day | ✅ On Track |
 | **Opportunities** | 3 found | -
@@ -310,7 +306,7 @@
 
 | Metric | Portfolio | Benchmark | Difference |
 |--------|-----------|-----------|------------|
-| **Total Return** | +0.00% | +0.00% | +0.00% |
+| **Total Return** | -0.00% | +0.00% | +0.00% |
 | **Alpha** | +0.00% | - | ⚠️ Underperforming |
 | **Beta** | 0.00 | 1.0 | Lower Risk |
 | **Data Status** | ⚠️ Limited | - | - |
@@ -327,7 +323,7 @@
 | **Uptime** | 100.0% |
 | **Reliability Streak** | 1 executions |
 | **Last Execution** | 2025-11-11T21:11:00 |
-| **Days Since Execution** | 23 days |
+| **Days Since Execution** | 22 days |
 | **Total Executions** | 1 |
 | **Failures** | 0 |
 | **Health Checks** | ✅ Integrated |
@@ -348,20 +344,23 @@
 
 ### Visual Charts
 
-*Charts require at least 2 data points (currently have 0). Charts will appear automatically as data accumulates.*
+*Charts will be generated when matplotlib is available in the environment.*
 
 
 ### Daily Profit Trend
 
 **Last 10 Days**:
 
-*No performance data available yet*
+| Date | Equity | P/L | P/L % |
+|------|--------|-----|-------|
+| 2025-10-29 | $100,000.00 | $+0.00 | +0.00% |
+| 2025-10-30 | $99,999.95 | $-0.05 | -0.01% |
 
 ### Equity Curve Summary
 
 | Metric | Value |
 |--------|-------|
-| **Trading Days Tracked** | 0 |
+| **Trading Days Tracked** | 1 |
 | **Rolling Sharpe (7d)** | 0.00 |
 | **Rolling Sharpe (30d)** | 0.00 |
 | **Rolling Max DD (30d)** | 0.00% |
@@ -371,6 +370,13 @@
 **P/L by Ticker**:
 
 *No closed trades available for cohort analysis*
+
+**P/L by Time of Day** (Optimal Execution Windows):
+
+| Hour (ET) | Trades | Closed | Total P/L | Avg P/L | Win Rate |
+|-----------|--------|--------|-----------|---------|---------|
+| 09:00 | 2 | 0 | $+0.00 | $+0.00 | 0.0% |
+| 17:00 | 2 | 0 | $+0.00 | $+0.00 | 0.0% |
 
 ---
 
@@ -430,7 +436,7 @@
 | Metric | Value |
 |--------|-------|
 | **AI Enabled** | ✅ Yes |
-| **AI Trades** | 0 / 0 |
+| **AI Trades** | 0 / 4 |
 | **AI Usage Rate** | 0.0% |
 | **Prediction Accuracy** | 0.0% |
 | **Prediction Latency** | 0 ms |
@@ -463,7 +469,7 @@
 | Metric | Current | Limit | Status |
 |--------|---------|-------|--------|
 | **Capital Usage** | 0.0% | 100.0% | ✅ Compliant |
-| **Max Position Size** | 0.00% | 10.0% | ✅ Compliant |
+| **Max Position Size** | 0.01% | 10.0% | ✅ Compliant |
 
 ### Stop-Loss Adherence
 
@@ -490,7 +496,7 @@
 
 **Key Metrics**:
 - Win Rate: 0.0% (Target: >55%) ⚠️
-- Average Daily: $+0.14 (Target: $100/day)
+- Average Daily: $-0.03 (Target: $100/day)
 - System Reliability: ✅
 - Sharpe Ratio: 0.00 (Target: >1.0) ⚠️
 - Market Regime: UNKNOWN (0 confidence)
@@ -504,8 +510,12 @@
 | **Status** | ✅ OPERATIONAL |
 | **Last Trade Execution** | Never |
 | **Trades Today** | 0 |
+| **GitHub Actions** | ❌ Failure (2025-12-04) |
 
 ### Infrastructure Health
+| **Training Monitor** | ❌ Inactive |
+| **Continuous Training** | ❌ Inactive |
+| **Trading Backup** | ❌ Inactive |
 
 ---
 
@@ -515,7 +525,8 @@
 | **Status** | ⚠️ No training data available |
 
 ### LangSmith Monitoring
-| **Status** | ⚠️ LangSmith monitor error: No module named 'dotenv' |
+| **Status** | ✅ Healthy (no stats available) |
+| **Project Dashboard** | [trading-rl-training →](https://smith.langchain.com/o/bb00a62e-c62a-4c42-9031-43e1f74bb5b3/projects/p/04fa554e-f155-4039-bb7f-e866f082103b) |
 
 ---
 
@@ -526,7 +537,6 @@
 
 ### Key Insights
 - ⚠️ **No closed trades yet** - System is collecting data
-- ✅ **Profitable** - $+5.50 total P/L
 - ✅ **Automation Active** - System running smoothly
 
 ---
