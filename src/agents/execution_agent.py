@@ -13,7 +13,6 @@ Ensures best execution
 
 import builtins
 import contextlib
-from __future__ import annotations
 import logging
 from typing import Any, Optional
 
