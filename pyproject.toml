@@ -212,3 +212,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
 ]
+
+# Poetry compatibility for workflows that still read tool.poetry
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
