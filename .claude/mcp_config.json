@@ -1,6 +1,11 @@
 {
   "$schema": "https://schema.claudedesktop.com/mcp.json",
   "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless"],
+      "description": "Playwright MCP for browser automation - sentiment scraping and trade verification"
+    },
     "alpaca": {
       "command": "uvx",
       "args": ["alpaca-mcp-server"],
