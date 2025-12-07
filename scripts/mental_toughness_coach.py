@@ -72,11 +72,11 @@ def cmd_status(coach: MentalToughnessCoach, args) -> None:
     print(f"Win Streak:      {summary['consecutive_wins']}")
     print(f"Loss Streak:     {summary['consecutive_losses']}")
 
-    if summary['active_biases']:
+    if summary["active_biases"]:
         print(f"Active Biases:   {', '.join(summary['active_biases'])}")
 
     print("\nSiebold Principle Scores (0-10):")
-    for name, score in summary['siebold_scores'].items():
+    for name, score in summary["siebold_scores"].items():
         print(f"  {name.replace('_', ' ').title()}: {score:.1f}")
 
 
