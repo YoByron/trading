@@ -26,6 +26,7 @@ from .interventions import (
     get_intervention_for_bias,
     get_purpose_reminder,
     get_random_emotional_reset,
+    get_random_long_term_perspective,
     get_random_pre_trade,
     get_random_session_start,
     get_random_win_grounding,
@@ -443,10 +444,39 @@ class MentalToughnessCoach:
             # Zealots for Change (#12)
             "I embrace evolution. My system improves daily through compound engineering. "
             "What worked yesterday may need adjustment today. I adapt and thrive.",
+
+            # FIRE: Compound Thinking
+            "FIRE: Compound growth is my superpower. Small gains today become massive "
+            "wealth tomorrow. I'm not trading for today - I'm building for decades.",
+
+            # FIRE: Delayed Gratification
+            "FIRE: I delay gratification like the wealthy do. This R&D phase is "
+            "front-loading the work. By Month 6, the system trades FOR me.",
+
+            # FIRE: Systems > Goals
+            "FIRE: Goals are for amateurs. Systems are for professionals. I don't have "
+            "a profit goal - I have a wealth-building SYSTEM that compounds daily.",
+
+            # FIRE: Abundance
+            "FIRE: The market offers unlimited opportunities. I operate from abundance, "
+            "not scarcity. Missing one trade means nothing. There's always tomorrow.",
         ]
 
         import random
         return random.choice(affirmations)
+
+    def get_long_term_perspective(self) -> CoachingIntervention:
+        """Get a FIRE-inspired long-term perspective intervention.
+
+        Based on Financial Independence, Retire Early principles to help
+        maintain focus on long-term wealth building over daily P/L.
+
+        Returns:
+            Long-term perspective coaching intervention
+        """
+        intervention = get_random_long_term_perspective()
+        self._record_intervention(intervention)
+        return intervention
 
     def get_state_summary(self) -> dict[str, Any]:
         """Get a summary of current psychological state.

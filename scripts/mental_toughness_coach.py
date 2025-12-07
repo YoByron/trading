@@ -147,6 +147,12 @@ def cmd_end(coach: MentalToughnessCoach, args) -> None:
     print("\nSession ended. Rest well and come back sharp!")
 
 
+def cmd_perspective(coach: MentalToughnessCoach, args) -> None:
+    """Get FIRE-inspired long-term perspective coaching."""
+    intervention = coach.get_long_term_perspective()
+    print(format_intervention(intervention))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Mental Toughness Coach - World-class trading psychology",
@@ -185,6 +191,9 @@ def main() -> None:
     # End session
     subparsers.add_parser("end", help="End the coaching session")
 
+    # Long-term perspective (FIRE-inspired)
+    subparsers.add_parser("perspective", help="Get FIRE-inspired long-term perspective")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -206,6 +215,7 @@ def main() -> None:
         "ready": cmd_ready,
         "coach": cmd_coach,
         "end": cmd_end,
+        "perspective": cmd_perspective,
     }
 
     cmd_func = commands.get(args.command)

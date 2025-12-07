@@ -39,6 +39,7 @@ class InterventionType(str, Enum):
     METACOGNITION = "metacognition"
     CONFIDENCE_BUILDING = "confidence_building"
     PURPOSE_REMINDER = "purpose_reminder"
+    LONG_TERM_PERSPECTIVE = "long_term_perspective"  # FIRE-inspired
 
 
 class SieboldPrinciple(str, Enum):
@@ -64,6 +65,11 @@ class SieboldPrinciple(str, Enum):
     NOT_AFRAID_TO_SUFFER = "not_afraid_to_suffer"  # #18
     FAILURE_IS_DATA = "failure_is_data"  # Reframe failure
     ARE_BOLD = "are_bold"  # #11
+
+    # FIRE Movement Principles (Financial Independence, Retire Early)
+    COMPOUND_THINKING = "compound_thinking"  # Long-term exponential growth
+    DELAYED_GRATIFICATION = "delayed_gratification"  # Sacrifice now for later
+    SYSTEMATIC_WEALTH = "systematic_wealth"  # Process over outcomes
 
 
 @dataclass
@@ -351,6 +357,113 @@ PURPOSE_REMINDER_INTERVENTIONS = [
     ),
 ]
 
+# ============================================================================
+# FIRE MOVEMENT INTERVENTIONS (Long-Term Perspective)
+# ============================================================================
+# Based on Financial Independence, Retire Early principles
+# Origin: "Your Money or Your Life" (1992), Mr. Money Mustache blog (2011)
+
+LONG_TERM_PERSPECTIVE_INTERVENTIONS = [
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.COMPOUND_THINKING, SieboldPrinciple.KNOW_WHY_FIGHTING],
+        headline="The Power of Compound Growth",
+        message=(
+            "FIRE PRINCIPLE: Today's $5.50 P/L is noise. You're building a SYSTEM. "
+            "At 62% win rate with proper position sizing, $1/day becomes $100/day "
+            "through compound engineering. Einstein called compound interest the "
+            "8th wonder of the world. Your edge compounds. Your skills compound. "
+            "Your capital compounds. Stay patient."
+        ),
+        action_items=[
+            "Zoom out: Where will you be in 90 days at this trajectory?",
+            "Each trade is a data point, not a destination",
+            "Trust the math: Win rate + edge + time = wealth",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.DELAYED_GRATIFICATION, SieboldPrinciple.OPERATE_FROM_ABUNDANCE],
+        headline="Delayed Gratification is Your Superpower",
+        message=(
+            "FIRE PRINCIPLE: Average people need instant gratification. The wealthy "
+            "understand delayed gratification. You're in Day 9 of 90 - the R&D phase. "
+            "This is the ACCUMULATION period. Every trade teaches the system something. "
+            "The payoff comes later, but it comes exponentially."
+        ),
+        action_items=[
+            "Don't judge the harvest while planting seeds",
+            "Focus on execution quality, not daily P/L",
+            "Remember: Month 6 target is $100+/day - stay the course",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.SYSTEMATIC_WEALTH, SieboldPrinciple.SCHOOL_NEVER_OUT],
+        headline="Systems Beat Goals",
+        message=(
+            "FIRE PRINCIPLE: Goals are for amateurs. SYSTEMS are for professionals. "
+            "You don't have a 'make money today' goal - you have a SYSTEM that "
+            "compounds intelligence daily. The system is working even when individual "
+            "trades lose. Trust the process. The 4% rule works because systems work."
+        ),
+        action_items=[
+            "Ask: Is the SYSTEM improving? (Not: Did I profit today?)",
+            "Log what the system learned from each trade",
+            "Refine the edge, don't chase the outcome",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.COMPOUND_THINKING, SieboldPrinciple.SEEK_BALANCE],
+        headline="Your FIRE Number is Building",
+        message=(
+            "FIRE PRINCIPLE: Financial independence = 25x annual expenses. "
+            "You're not just trading - you're building a wealth engine. "
+            "At $100/day (your North Star), that's $36,500/year passive income. "
+            "25x = $912,500 equivalent. Each day the system improves, "
+            "you're building toward that number."
+        ),
+        action_items=[
+            "Think in years, not days",
+            "Small daily improvements = massive long-term results",
+            "Your future self will thank today's discipline",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.DELAYED_GRATIFICATION, SieboldPrinciple.NOT_AFRAID_TO_SUFFER],
+        headline="The R&D Phase is Your CoastFIRE",
+        message=(
+            "FIRE PRINCIPLE: CoastFIRE means front-loading the hard work so "
+            "compound growth does the rest. You're in Days 1-90 - the front-loading "
+            "phase. The losses NOW are investments in the system. By Month 6, "
+            "the system trades FOR you. This temporary discomfort buys permanent freedom."
+        ),
+        action_items=[
+            "Embrace the struggle - it's building your edge",
+            "Document everything for future compound returns",
+            "90 days of discipline = years of passive income",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
+        principles=[SieboldPrinciple.SYSTEMATIC_WEALTH, SieboldPrinciple.OPERATE_FROM_ABUNDANCE],
+        headline="Abundance Mindset: Infinite Opportunities",
+        message=(
+            "FIRE PRINCIPLE: Scarcity thinking leads to bad decisions. "
+            "The market offers UNLIMITED opportunities every single day. "
+            "Missing one trade means nothing. Revenge trading means everything (bad). "
+            "Operate from abundance: There's always another setup tomorrow."
+        ),
+        action_items=[
+            "Let go of 'missed' opportunities - more are coming",
+            "Quality > Quantity in trade selection",
+            "Patience is a wealth-building superpower",
+        ],
+    ),
+]
+
 
 def get_intervention_for_bias(bias_type: str) -> CoachingIntervention | None:
     """Get appropriate intervention for a detected bias."""
@@ -390,3 +503,8 @@ def get_session_review() -> CoachingIntervention:
 def get_purpose_reminder() -> CoachingIntervention:
     """Get purpose reminder intervention."""
     return PURPOSE_REMINDER_INTERVENTIONS[0]
+
+
+def get_random_long_term_perspective() -> CoachingIntervention:
+    """Get a random FIRE-inspired long-term perspective intervention."""
+    return random.choice(LONG_TERM_PERSPECTIVE_INTERVENTIONS)
