@@ -5,7 +5,7 @@ Provides rank-based features (percentile ranks, z-scores) for relative compariso
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_percentile_ranks(
-    data: pd.Series | pd.DataFrame,
+    data: Union[pd.Series, pd.DataFrame],
     window: Optional[int] = None,
     method: str = "linear",
-) -> pd.Series | pd.DataFrame:
+) -> Union[pd.Series, pd.DataFrame]:
     """
     Calculate percentile ranks (0-100) for cross-sectional comparison.
 
@@ -57,9 +57,9 @@ def calculate_percentile_ranks(
 
 
 def calculate_z_scores(
-    data: pd.Series | pd.DataFrame,
+    data: Union[pd.Series, pd.DataFrame],
     window: Optional[int] = None,
-) -> pd.Series | pd.DataFrame:
+) -> Union[pd.Series, pd.DataFrame]:
     """
     Calculate z-scores (standardized values) for cross-sectional comparison.
 
