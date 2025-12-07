@@ -184,6 +184,9 @@ def create_mock_sentiment_data():
 
 def test_sentiment_loader():
     """Test sentiment loader functionality."""
+    # Ensure mock data exists
+    create_mock_sentiment_data()
+
     print("\n" + "=" * 80)
     print("TEST 1: SENTIMENT LOADER")
     print("=" * 80)
