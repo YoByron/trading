@@ -126,7 +126,9 @@ def ingest_berkshire_letters(force_reparse: bool = False) -> dict[str, Any]:
     logger.info(f"Found {len(pdf_files)} PDF files")
 
     if not pdf_files and not existing_parsed:
-        logger.warning("No PDF files or parsed texts found. Run collector.download_all_letters() first.")
+        logger.warning(
+            "No PDF files or parsed texts found. Run collector.download_all_letters() first."
+        )
         return {"status": "error", "message": "No PDF files or parsed texts found"}
 
     # Parse PDFs if not already parsed or if force_reparse

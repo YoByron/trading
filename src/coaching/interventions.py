@@ -115,7 +115,10 @@ class CoachingIntervention:
 PRE_TRADE_INTERVENTIONS = [
     CoachingIntervention(
         intervention_type=InterventionType.PRE_TRADE_PREP,
-        principles=[SieboldPrinciple.EMBRACE_METACOGNITION, SieboldPrinciple.MASTER_MENTAL_ORGANIZATION],
+        principles=[
+            SieboldPrinciple.EMBRACE_METACOGNITION,
+            SieboldPrinciple.MASTER_MENTAL_ORGANIZATION,
+        ],
         headline="Pre-Trade Mental Check",
         message=(
             "Champions think about their thinking (Siebold #5). Before this trade: "
@@ -149,7 +152,10 @@ PRE_TRADE_INTERVENTIONS = [
 SESSION_START_INTERVENTIONS = [
     CoachingIntervention(
         intervention_type=InterventionType.SESSION_START,
-        principles=[SieboldPrinciple.OPERATE_FROM_ABUNDANCE, SieboldPrinciple.SUPREME_SELF_CONFIDENCE],
+        principles=[
+            SieboldPrinciple.OPERATE_FROM_ABUNDANCE,
+            SieboldPrinciple.SUPREME_SELF_CONFIDENCE,
+        ],
         headline="World-Class Session Start",
         message=(
             "World-class performers operate from love and abundance (Siebold #8). "
@@ -253,7 +259,10 @@ BIAS_CORRECTION_INTERVENTIONS = {
     ),
     "fomo": CoachingIntervention(
         intervention_type=InterventionType.BIAS_CORRECTION,
-        principles=[SieboldPrinciple.OPERATE_FROM_ABUNDANCE, SieboldPrinciple.SUPREME_SELF_CONFIDENCE],
+        principles=[
+            SieboldPrinciple.OPERATE_FROM_ABUNDANCE,
+            SieboldPrinciple.SUPREME_SELF_CONFIDENCE,
+        ],
         headline="FOMO Detected",
         message=(
             "You're feeling fear of missing out. World-class performers operate from "
@@ -391,7 +400,10 @@ LONG_TERM_PERSPECTIVE_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.LONG_TERM_PERSPECTIVE,
-        principles=[SieboldPrinciple.DELAYED_GRATIFICATION, SieboldPrinciple.OPERATE_FROM_ABUNDANCE],
+        principles=[
+            SieboldPrinciple.DELAYED_GRATIFICATION,
+            SieboldPrinciple.OPERATE_FROM_ABUNDANCE,
+        ],
         headline="Delayed Gratification is Your Superpower",
         message=(
             "FIRE PRINCIPLE: Average people need instant gratification. The wealthy "
@@ -499,7 +511,10 @@ SYSTEM_TWO_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
-        principles=[SieboldPrinciple.LOSS_AVERSION_AWARENESS, SieboldPrinciple.NOT_AFRAID_TO_SUFFER],
+        principles=[
+            SieboldPrinciple.LOSS_AVERSION_AWARENESS,
+            SieboldPrinciple.NOT_AFRAID_TO_SUFFER,
+        ],
         headline="Loss Aversion Alert",
         message=(
             "KAHNEMAN: Humans feel losses 2x more intensely than equivalent gains. "
@@ -563,7 +578,10 @@ SYSTEM_TWO_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
-        principles=[SieboldPrinciple.SYSTEM_TWO_THINKING, SieboldPrinciple.MASTER_MENTAL_ORGANIZATION],
+        principles=[
+            SieboldPrinciple.SYSTEM_TWO_THINKING,
+            SieboldPrinciple.MASTER_MENTAL_ORGANIZATION,
+        ],
         headline="The Planning Fallacy",
         message=(
             "KAHNEMAN: We systematically underestimate time, costs, and risks while "

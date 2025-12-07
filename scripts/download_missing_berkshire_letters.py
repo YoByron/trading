@@ -22,7 +22,6 @@ Letter URLs (for manual download if needed):
 
 import argparse
 import logging
-import re
 import sys
 from pathlib import Path
 
@@ -82,9 +81,7 @@ def download_letter(year: int, cache_dir: Path) -> bool:
         response.raise_for_status()
 
         # Determine file type
-        is_pdf = url.endswith(".pdf") or "pdf" in response.headers.get(
-            "Content-Type", ""
-        ).lower()
+        is_pdf = url.endswith(".pdf") or "pdf" in response.headers.get("Content-Type", "").lower()
         ext = "pdf" if is_pdf else "html"
         raw_file = raw_dir / f"{year}.{ext}"
 
@@ -123,15 +120,11 @@ def download_letter(year: int, cache_dir: Path) -> bool:
             for alt_url in alternates:
                 if alt_url != url:
                     try:
-                        response = requests.get(
-                            alt_url, headers=get_headers(), timeout=30
-                        )
+                        response = requests.get(alt_url, headers=get_headers(), timeout=30)
                         if response.status_code == 200:
                             logger.info(f"  Found at alternate URL: {alt_url}")
                             # Save and parse...
-                            return download_letter_from_response(
-                                year, alt_url, response, cache_dir
-                            )
+                            return download_letter_from_response(year, alt_url, response, cache_dir)
                     except Exception:
                         pass
         logger.error(f"  ✗ HTTP Error downloading {year}: {e}")
@@ -141,16 +134,12 @@ def download_letter(year: int, cache_dir: Path) -> bool:
         return False
 
 
-def download_letter_from_response(
-    year: int, url: str, response, cache_dir: Path
-) -> bool:
+def download_letter_from_response(year: int, url: str, response, cache_dir: Path) -> bool:
     """Save letter from an already-fetched response."""
     raw_dir = cache_dir / "raw"
     parsed_dir = cache_dir / "parsed"
 
-    is_pdf = url.endswith(".pdf") or "pdf" in response.headers.get(
-        "Content-Type", ""
-    ).lower()
+    is_pdf = url.endswith(".pdf") or "pdf" in response.headers.get("Content-Type", "").lower()
     ext = "pdf" if is_pdf else "html"
     raw_file = raw_dir / f"{year}.{ext}"
 
@@ -226,7 +215,9 @@ def main():
         return
 
     if not args.year and not args.all:
-        logger.info(f"Missing {len(missing)} years: {missing[:10]}{'...' if len(missing) > 10 else ''}")
+        logger.info(
+            f"Missing {len(missing)} years: {missing[:10]}{'...' if len(missing) > 10 else ''}"
+        )
         logger.info("\nUsage:")
         logger.info("  --list        List all missing years")
         logger.info("  --year 2024   Download specific year")

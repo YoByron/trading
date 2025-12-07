@@ -34,8 +34,6 @@ from .interventions import (
     get_session_review,
 )
 from .psychology_state import (
-    CognitiveBias,
-    ConfidenceLevel,
     EmotionalZone,
     PsychologyState,
     PsychologyStateManager,
@@ -226,11 +224,13 @@ class MentalToughnessCoach:
             # Check for overconfidence after winning streak
             if self.state.consecutive_wins >= self.OVERCONFIDENCE_WIN_STREAK:
                 intervention = get_random_win_grounding()
-                intervention.context.update({
-                    "ticker": ticker,
-                    "pnl": pnl,
-                    "consecutive_wins": self.state.consecutive_wins,
-                })
+                intervention.context.update(
+                    {
+                        "ticker": ticker,
+                        "pnl": pnl,
+                        "consecutive_wins": self.state.consecutive_wins,
+                    }
+                )
                 interventions.append(intervention)
 
         # Handle losses
@@ -239,21 +239,25 @@ class MentalToughnessCoach:
             if self.state.consecutive_losses >= self.MAX_CONSECUTIVE_LOSSES_BEFORE_RESET:
                 if not self._is_on_cooldown(InterventionType.EMOTIONAL_RESET):
                     intervention = get_random_emotional_reset()
-                    intervention.context.update({
-                        "ticker": ticker,
-                        "pnl": pnl,
-                        "consecutive_losses": self.state.consecutive_losses,
-                    })
+                    intervention.context.update(
+                        {
+                            "ticker": ticker,
+                            "pnl": pnl,
+                            "consecutive_losses": self.state.consecutive_losses,
+                        }
+                    )
                     interventions.append(intervention)
                     self._set_cooldown(InterventionType.EMOTIONAL_RESET)
 
             # Circuit breaker for severe losing streak
             if self.state.consecutive_losses >= self.MAX_CONSECUTIVE_LOSSES_BEFORE_CIRCUIT_BREAKER:
                 intervention = get_circuit_breaker()
-                intervention.context.update({
-                    "consecutive_losses": self.state.consecutive_losses,
-                    "drawdown_today": self.state.max_drawdown_today,
-                })
+                intervention.context.update(
+                    {
+                        "consecutive_losses": self.state.consecutive_losses,
+                        "drawdown_today": self.state.max_drawdown_today,
+                    }
+                )
                 interventions.append(intervention)
                 if self._session:
                     self._session.circuit_breakers_triggered += 1
@@ -262,10 +266,12 @@ class MentalToughnessCoach:
         for bias in new_biases:
             bias_intervention = get_intervention_for_bias(bias.bias_type.value)
             if bias_intervention:
-                bias_intervention.context.update({
-                    "bias_severity": bias.severity,
-                    "trigger": bias.trigger,
-                })
+                bias_intervention.context.update(
+                    {
+                        "bias_severity": bias.severity,
+                        "trigger": bias.trigger,
+                    }
+                )
                 interventions.append(bias_intervention)
 
         # Apply coaching effect
@@ -385,13 +391,15 @@ class MentalToughnessCoach:
 
         # Add session stats to context
         if self._session:
-            intervention.context.update({
-                "trades_coached": self._session.trades_coached,
-                "biases_detected": self._session.biases_detected,
-                "circuit_breakers": self._session.circuit_breakers_triggered,
-                "final_zone": self.state.current_zone.value,
-                "final_readiness": self.state.get_readiness_score(),
-            })
+            intervention.context.update(
+                {
+                    "trades_coached": self._session.trades_coached,
+                    "biases_detected": self._session.biases_detected,
+                    "circuit_breakers": self._session.circuit_breakers_triggered,
+                    "final_zone": self.state.current_zone.value,
+                    "final_readiness": self.state.get_readiness_score(),
+                }
+            )
 
         self._record_intervention(intervention)
 
@@ -417,69 +425,55 @@ class MentalToughnessCoach:
             # Supreme Self Confidence (#4)
             "I trust my system completely. Each trade is executed with confidence, "
             "regardless of recent results. I am a world-class trader in development.",
-
             # Operate from Abundance (#8)
             "There are unlimited opportunities in the market. I don't chase or force. "
             "I wait for my setups with patience and strike with precision.",
-
             # Know Why Fighting (#7)
             "I am building something bigger than today's P/L. My North Star is clear: "
             "$100+/day through compound engineering. Every trade moves me closer.",
-
             # School Never Out (#10)
             "Every trade, win or loss, teaches me something. I am a perpetual student "
             "of the market. Today I will learn something that makes tomorrow easier.",
-
             # Not Afraid to Suffer (#18)
             "Losses are the cost of doing business. I accept them without emotional "
             "attachment. Pain is temporary; the lessons are permanent.",
-
             # Compartmentalize Emotions (#2)
             "Each trade is independent. Yesterday's results don't affect today's "
             "opportunities. I execute with fresh eyes and a clear mind.",
-
             # Embrace Metacognition (#5)
             "I think about my thinking. Before each decision, I ask: Am I trading "
             "my system or my emotions? Clarity precedes action.",
-
             # Zealots for Change (#12)
             "I embrace evolution. My system improves daily through compound engineering. "
             "What worked yesterday may need adjustment today. I adapt and thrive.",
-
             # FIRE: Compound Thinking
             "FIRE: Compound growth is my superpower. Small gains today become massive "
             "wealth tomorrow. I'm not trading for today - I'm building for decades.",
-
             # FIRE: Delayed Gratification
             "FIRE: I delay gratification like the wealthy do. This R&D phase is "
             "front-loading the work. By Month 6, the system trades FOR me.",
-
             # FIRE: Systems > Goals
             "FIRE: Goals are for amateurs. Systems are for professionals. I don't have "
             "a profit goal - I have a wealth-building SYSTEM that compounds daily.",
-
             # FIRE: Abundance
             "FIRE: The market offers unlimited opportunities. I operate from abundance, "
             "not scarcity. Missing one trade means nothing. There's always tomorrow.",
-
             # Kahneman: System 2 Thinking
             "KAHNEMAN: I engage System 2 before every trade. Slow, deliberate, logical. "
             "System 1 is for catching balls, not for trading. I pause. I breathe. I verify.",
-
             # Kahneman: Loss Aversion
             "KAHNEMAN: My brain lies about losses - they FEEL 2x worse than they are. "
             "I trust my system, not my feelings. The rational move often feels wrong.",
-
             # Kahneman: WYSIATI
             "KAHNEMAN: What I See Is NOT All There Is. My analysis is incomplete. "
             "Overconfidence comes from coherent stories, not complete information. Stay humble.",
-
             # Kahneman: Regression to Mean
             "KAHNEMAN: Streaks end. Hot cools off. Cold warms up. I don't chase wins "
             "or despair over losses. The mean is coming. I stay consistent.",
         ]
 
         import random
+
         return random.choice(affirmations)
 
     def get_long_term_perspective(self) -> CoachingIntervention:
@@ -554,8 +548,8 @@ class MentalToughnessCoach:
         from datetime import timedelta
 
         minutes = self._cooldown_minutes.get(intervention_type, 10)
-        self._intervention_cooldown[intervention_type] = (
-            datetime.now(timezone.utc) + timedelta(minutes=minutes)
+        self._intervention_cooldown[intervention_type] = datetime.now(timezone.utc) + timedelta(
+            minutes=minutes
         )
 
     def _record_intervention(self, intervention: CoachingIntervention) -> None:

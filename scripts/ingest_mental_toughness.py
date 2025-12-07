@@ -13,7 +13,6 @@ Usage:
 
 import logging
 import sys
-from pathlib import Path
 from typing import Any
 
 sys.path.append(".")
@@ -243,19 +242,21 @@ Failure is simply data for the next iteration.
     ]
 
     for principle in siebold_principles:
-        documents.append({
-            "id": principle["id"],
-            "content": f"{principle['title']}\n\n{principle['content'].strip()}",
-            "metadata": {
-                "source": "mental_toughness_coach",
-                "framework": "siebold_177_secrets",
-                "author": "Steve Siebold",
-                "principle_number": principle["principle_number"],
-                "category": principle["category"],
-                "type": "trading_psychology",
-                "ticker": "PSYCHOLOGY",
+        documents.append(
+            {
+                "id": principle["id"],
+                "content": f"{principle['title']}\n\n{principle['content'].strip()}",
+                "metadata": {
+                    "source": "mental_toughness_coach",
+                    "framework": "siebold_177_secrets",
+                    "author": "Steve Siebold",
+                    "principle_number": principle["principle_number"],
+                    "category": principle["category"],
+                    "type": "trading_psychology",
+                    "ticker": "PSYCHOLOGY",
+                },
             }
-        })
+        )
 
     # ===========================================================================
     # FIRE MOVEMENT PRINCIPLES
@@ -354,18 +355,20 @@ Patience is a wealth-building superpower.
     ]
 
     for principle in fire_principles:
-        documents.append({
-            "id": principle["id"],
-            "content": f"{principle['title']}\n\n{principle['content'].strip()}",
-            "metadata": {
-                "source": "mental_toughness_coach",
-                "framework": "fire_movement",
-                "author": "FIRE Movement",
-                "category": principle["category"],
-                "type": "trading_psychology",
-                "ticker": "PSYCHOLOGY",
+        documents.append(
+            {
+                "id": principle["id"],
+                "content": f"{principle['title']}\n\n{principle['content'].strip()}",
+                "metadata": {
+                    "source": "mental_toughness_coach",
+                    "framework": "fire_movement",
+                    "author": "FIRE Movement",
+                    "category": principle["category"],
+                    "type": "trading_psychology",
+                    "ticker": "PSYCHOLOGY",
+                },
             }
-        })
+        )
 
     # ===========================================================================
     # KAHNEMAN PRINCIPLES (Thinking, Fast and Slow)
@@ -503,18 +506,20 @@ Does this meet my documented criteria? Yes or No. Nothing else matters.
     ]
 
     for principle in kahneman_principles:
-        documents.append({
-            "id": principle["id"],
-            "content": f"{principle['title']}\n\n{principle['content'].strip()}",
-            "metadata": {
-                "source": "mental_toughness_coach",
-                "framework": "kahneman_thinking_fast_slow",
-                "author": "Daniel Kahneman",
-                "category": principle["category"],
-                "type": "trading_psychology",
-                "ticker": "PSYCHOLOGY",
+        documents.append(
+            {
+                "id": principle["id"],
+                "content": f"{principle['title']}\n\n{principle['content'].strip()}",
+                "metadata": {
+                    "source": "mental_toughness_coach",
+                    "framework": "kahneman_thinking_fast_slow",
+                    "author": "Daniel Kahneman",
+                    "category": principle["category"],
+                    "type": "trading_psychology",
+                    "ticker": "PSYCHOLOGY",
+                },
             }
-        })
+        )
 
     return documents
 
@@ -560,7 +565,9 @@ def ingest_mental_toughness() -> dict[str, Any]:
     # Summary by framework
     siebold_count = sum(1 for d in documents if d["metadata"]["framework"] == "siebold_177_secrets")
     fire_count = sum(1 for d in documents if d["metadata"]["framework"] == "fire_movement")
-    kahneman_count = sum(1 for d in documents if d["metadata"]["framework"] == "kahneman_thinking_fast_slow")
+    kahneman_count = sum(
+        1 for d in documents if d["metadata"]["framework"] == "kahneman_thinking_fast_slow"
+    )
 
     logger.info("\n" + "=" * 80)
     logger.info("INGESTION COMPLETE")
@@ -577,7 +584,7 @@ def ingest_mental_toughness() -> dict[str, Any]:
             "siebold": siebold_count,
             "fire": fire_count,
             "kahneman": kahneman_count,
-        }
+        },
     }
 
 

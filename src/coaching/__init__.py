@@ -7,9 +7,9 @@ The coach provides real-time psychological interventions, tracks emotional
 state, and helps the trading system maintain world-class mental discipline.
 """
 
-from .mental_toughness_coach import MentalToughnessCoach
-from .psychology_state import PsychologyState, EmotionalZone
 from .interventions import CoachingIntervention, InterventionType
+from .mental_toughness_coach import MentalToughnessCoach
+from .psychology_state import EmotionalZone, PsychologyState
 
 __all__ = [
     "MentalToughnessCoach",
