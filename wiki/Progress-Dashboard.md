@@ -1,9 +1,9 @@
 # 📊 Progress Dashboard
 
 
-> ⚠️ **Data stale**: Data stale: system_state last updated 52.9h ago (2025-12-05T17:53:47.415584+00:00)
+> ⚠️ **Data stale**: Data stale: no performance_log.json entries
 
-**Last Updated**: 2025-12-07 05:48 PM ET
+**Last Updated**: 2025-12-07 06:42 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 
 ---
@@ -14,7 +14,7 @@
 |--------|--------|---------|
 | **Health Check** | ✅ PASS | Pre-market validation successful |
 | **API Connection** | ✅ Connected | Alpaca & Data Providers |
-| **Data Freshness** | ⚠️ Stale | Data stale: system_state last updated 52.9h ago (2025-12-05T17:53:47.415584+00:00) |
+| **Data Freshness** | ⚠️ Stale | Data stale: no performance_log.json entries |
 | **Circuit Breaker** | ✅ Ready | No trips detected |
 | **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
 
@@ -36,10 +36,18 @@
 
 | Metric | Value |
 |--------|-------|
-| **Equity** | $100,005.50 |
+| **Equity** | $100,017.49 |
 | **P/L** | $+0.00 (+0.00%) |
 | **Trades Today** | 1 |
 | **Status** | ✅ Active |
+
+
+### 📝 Execution Details
+
+| Time | Symbol | Action | Amount | Price | Status |
+|------|--------|--------|--------|-------|--------|
+| 17:11 | **BTCUSD** | BUY | $10.00 | $89,150.54 | FILLED |
+
 
 ---
 
@@ -49,11 +57,11 @@
 
 | Metric | Current | Target | Progress |
 |--------|---------|--------|----------|
-| **Average Daily Profit** | $0.14/day | $100.00/day | 0.14% |
-| **Total P/L** | $+5.50 (+0.01%) | TBD | ✅ |
+| **Average Daily Profit** | $0.44/day | $100.00/day | 0.44% |
+| **Total P/L** | $+17.49 (+0.02%) | TBD | ✅ |
 | **Win Rate** | 0.0% | >55% | ⚠️ |
 
-**Progress Bar**: `█░░░░░░░░░░░░░░░░░░░` (0.14%)
+**Progress Bar**: `█░░░░░░░░░░░░░░░░░░░` (0.44%)
 
 **Assessment**: ⚠️ **R&D PHASE** - Learning, not earning yet
 
@@ -111,11 +119,11 @@
 
 | Metric | Overall | Today |
 |--------|---------|-------|
-| **Equity** | $100,005.50 | $100,005.50 |
-| **P/L** | $+5.50 (+0.01%) | $+0.00 (+0.00%) |
+| **Equity** | $100,017.49 | $100,017.49 |
+| **P/L** | $+17.49 (+0.02%) | $+0.00 (+0.00%) |
 | **Starting Balance** | $100,000.00 | - |
-| **Average Daily Profit** | $+0.14 | - |
-| **Peak Equity** | $100,005.50 | - |
+| **Average Daily Profit** | $+0.44 | - |
+| **Peak Equity** | $100,017.49 | - |
 
 ### Trading Performance
 
@@ -175,21 +183,26 @@
 
 | Ticker | Position $ | % of Equity | Sector | Strategy |
 |--------|-------------|-------------|--------|----------|
-| *No open positions* | - | - | - | - |
+| BIL | $11,998.57 | 12.00% | *TBD* | *TBD* |
+| SPY | $4,114.14 | 4.11% | *TBD* | *TBD* |
+| SHY | $459.72 | 0.46% | *TBD* | *TBD* |
+| IEF | $119.98 | 0.12% | *TBD* | *TBD* |
+| TLT | $19.98 | 0.02% | *TBD* | *TBD* |
+| BTCUSD | $19.68 | 0.02% | *TBD* | *TBD* |
 
 ### Exposure Summary
 
 | Metric | Value |
 |--------|-------|
-| **Largest Position** | 0.00% of equity |
-| **Total Exposure** | $0.00 |
+| **Largest Position** | 12.00% of equity |
+| **Total Exposure** | $16,732.07 |
 
 ### Asset Class Breakdown
 
 | Asset Class | Exposure | % of Equity | % of Portfolio |
 |-------------|----------|-------------|----------------|
-| **Crypto** | $0.00 | 0.00% | 0.00% |
-| **Equities** | $0.00 | 0.00% | 0.00% |
+| **Crypto** | $19.68 | 0.02% | 0.12% |
+| **Equities** | $16,712.39 | 16.71% | 99.88% |
 | **Bonds** | $0.00 | 0.00% | 0.00% |
 
 ### Investment by Asset Class (Total Invested)
@@ -287,8 +300,8 @@
 
 | Guardrail | Current | Limit | Status |
 |-----------|---------|-------|--------|
-| **Daily Loss Used** | $0.00 (0.0%) | $2,000.11 | ✅ |
-| **Max Position Size** | 0.00% | 10.0% | ✅ |
+| **Daily Loss Used** | $0.00 (0.0%) | $2,000.35 | ✅ |
+| **Max Position Size** | 12.00% | 10.0% | ⚠️ |
 | **Consecutive Losses** | 0 | 5 | ✅ |
 
 ---
@@ -496,7 +509,7 @@
 
 **Key Metrics**:
 - Win Rate: 0.0% (Target: >55%) ⚠️
-- Average Daily: $+0.14 (Target: $100/day)
+- Average Daily: $+0.44 (Target: $100/day)
 - System Reliability: ✅
 - Sharpe Ratio: 0.00 (Target: >1.0) ⚠️
 - Market Regime: UNKNOWN (0 confidence)
@@ -537,7 +550,7 @@
 
 ### Key Insights
 - ⚠️ **No closed trades yet** - System is collecting data
-- ✅ **Profitable** - $+5.50 total P/L
+- ✅ **Profitable** - $+17.49 total P/L
 - ✅ **Automation Active** - System running smoothly
 
 ---
