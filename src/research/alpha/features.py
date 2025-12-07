@@ -228,6 +228,10 @@ class FeatureLibrary:
 
         return features
 
+    # Backward-compatible alias used in tests
+    def compute_all_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        return self.compute_all(df)
+
     def compute_subset(
         self,
         df: pd.DataFrame,
