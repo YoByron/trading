@@ -129,7 +129,7 @@ class MultiLLMAnalyzer:
         models: Optional[list[LLMModel]] = None,
         max_retries: int = 3,
         timeout: int = 60,
-        rate_limit_delay: float = 1.0,
+        rate_limit_delay: float = 2.0,  # Increased from 1.0 to reduce 429/500 errors
         use_async: bool = True,
     ):
         """
@@ -262,9 +262,20 @@ class MultiLLMAnalyzer:
                 )
 
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{self.max_retries} failed for {model.value}: {str(e)}"
-                )
+                # Enhanced error logging to identify specific failure patterns
+                error_type = type(e).__name__
+                error_msg = str(e)
+                status_code = getattr(e, 'status_code', None)
+                if status_code:
+                    logger.warning(
+                        f"[MultiLLM-Async] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: HTTP {status_code} - {error_type}: {error_msg}"
+                    )
+                else:
+                    logger.warning(
+                        f"[MultiLLM-Async] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: {error_type}: {error_msg}"
+                    )
 
                 if attempt == self.max_retries - 1:
                     return LLMResponse(
@@ -273,7 +284,7 @@ class MultiLLMAnalyzer:
                         tokens_used=0,
                         latency=0,
                         success=False,
-                        error=str(e),
+                        error=f"{error_type}: {error_msg}",
                     )
 
                 # Exponential backoff
@@ -320,9 +331,20 @@ class MultiLLMAnalyzer:
                 )
 
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{self.max_retries} failed for {model.value}: {str(e)}"
-                )
+                # Enhanced error logging to identify specific failure patterns
+                error_type = type(e).__name__
+                error_msg = str(e)
+                status_code = getattr(e, 'status_code', None)
+                if status_code:
+                    logger.warning(
+                        f"[MultiLLM-Sync] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: HTTP {status_code} - {error_type}: {error_msg}"
+                    )
+                else:
+                    logger.warning(
+                        f"[MultiLLM-Sync] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: {error_type}: {error_msg}"
+                    )
 
                 if attempt == self.max_retries - 1:
                     return LLMResponse(
@@ -331,7 +353,7 @@ class MultiLLMAnalyzer:
                         tokens_used=0,
                         latency=0,
                         success=False,
-                        error=str(e),
+                        error=f"{error_type}: {error_msg}",
                     )
 
                 # Exponential backoff
@@ -1094,7 +1116,7 @@ class LLMCouncilAnalyzer:
         chairman_model: Optional[LLMModel] = None,
         max_retries: int = 3,
         timeout: int = 60,
-        rate_limit_delay: float = 1.0,
+        rate_limit_delay: float = 2.0,  # Increased from 1.0 to reduce 429/500 errors
         use_async: bool = True,
     ):
         """
@@ -1221,9 +1243,20 @@ class LLMCouncilAnalyzer:
                 )
 
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{self.max_retries} failed for {model.value}: {str(e)}"
-                )
+                # Enhanced error logging to identify specific failure patterns
+                error_type = type(e).__name__
+                error_msg = str(e)
+                status_code = getattr(e, 'status_code', None)
+                if status_code:
+                    logger.warning(
+                        f"[Council] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: HTTP {status_code} - {error_type}: {error_msg}"
+                    )
+                else:
+                    logger.warning(
+                        f"[Council] Attempt {attempt + 1}/{self.max_retries} failed for "
+                        f"{model.value}: {error_type}: {error_msg}"
+                    )
 
                 if attempt == self.max_retries - 1:
                     return LLMResponse(
@@ -1232,7 +1265,7 @@ class LLMCouncilAnalyzer:
                         tokens_used=0,
                         latency=0,
                         success=False,
-                        error=str(e),
+                        error=f"{error_type}: {error_msg}",
                     )
 
                 # Exponential backoff
