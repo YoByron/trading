@@ -265,7 +265,7 @@ class MultiLLMAnalyzer:
                 # Enhanced error logging to identify specific failure patterns
                 error_type = type(e).__name__
                 error_msg = str(e)
-                status_code = getattr(e, 'status_code', None)
+                status_code = getattr(e, "status_code", None)
                 if status_code:
                     logger.warning(
                         f"[MultiLLM-Async] Attempt {attempt + 1}/{self.max_retries} failed for "
@@ -334,7 +334,7 @@ class MultiLLMAnalyzer:
                 # Enhanced error logging to identify specific failure patterns
                 error_type = type(e).__name__
                 error_msg = str(e)
-                status_code = getattr(e, 'status_code', None)
+                status_code = getattr(e, "status_code", None)
                 if status_code:
                     logger.warning(
                         f"[MultiLLM-Sync] Attempt {attempt + 1}/{self.max_retries} failed for "
@@ -1246,7 +1246,7 @@ class LLMCouncilAnalyzer:
                 # Enhanced error logging to identify specific failure patterns
                 error_type = type(e).__name__
                 error_msg = str(e)
-                status_code = getattr(e, 'status_code', None)
+                status_code = getattr(e, "status_code", None)
                 if status_code:
                     logger.warning(
                         f"[Council] Attempt {attempt + 1}/{self.max_retries} failed for "
