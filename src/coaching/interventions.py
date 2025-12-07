@@ -40,6 +40,7 @@ class InterventionType(str, Enum):
     CONFIDENCE_BUILDING = "confidence_building"
     PURPOSE_REMINDER = "purpose_reminder"
     LONG_TERM_PERSPECTIVE = "long_term_perspective"  # FIRE-inspired
+    SYSTEM_TWO_ACTIVATION = "system_two_activation"  # Kahneman-inspired
 
 
 class SieboldPrinciple(str, Enum):
@@ -70,6 +71,13 @@ class SieboldPrinciple(str, Enum):
     COMPOUND_THINKING = "compound_thinking"  # Long-term exponential growth
     DELAYED_GRATIFICATION = "delayed_gratification"  # Sacrifice now for later
     SYSTEMATIC_WEALTH = "systematic_wealth"  # Process over outcomes
+
+    # Kahneman Principles (Thinking, Fast and Slow)
+    SYSTEM_TWO_THINKING = "system_two_thinking"  # Slow, deliberate, logical
+    LOSS_AVERSION_AWARENESS = "loss_aversion_awareness"  # Losses hurt 2x more
+    ANCHORING_AWARENESS = "anchoring_awareness"  # Don't anchor to entry price
+    WYSIATI_AWARENESS = "wysiati_awareness"  # What You See Is All There Is
+    REGRESSION_TO_MEAN = "regression_to_mean"  # Extremes revert to average
 
 
 @dataclass
@@ -464,6 +472,129 @@ LONG_TERM_PERSPECTIVE_INTERVENTIONS = [
     ),
 ]
 
+# ============================================================================
+# KAHNEMAN INTERVENTIONS (System 2 Thinking)
+# ============================================================================
+# Based on Daniel Kahneman's "Thinking, Fast and Slow" (Nobel Prize Economics)
+# System 1: Fast, intuitive, emotional (causes trading errors)
+# System 2: Slow, deliberate, logical (what we need for trading)
+
+SYSTEM_TWO_INTERVENTIONS = [
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.SYSTEM_TWO_THINKING, SieboldPrinciple.EMBRACE_METACOGNITION],
+        headline="SLOW DOWN: Activate System 2",
+        message=(
+            "KAHNEMAN: Your System 1 (fast, emotional) is trying to make this decision. "
+            "STOP. Engage System 2 (slow, logical). System 1 is great for catching a ball, "
+            "terrible for trading. Take 30 seconds. Breathe. Now ask: Does this trade "
+            "meet ALL my criteria, or am I feeling pressure to act?"
+        ),
+        action_items=[
+            "Pause for 30 seconds before ANY trade decision",
+            "Verbalize your reasoning out loud (activates System 2)",
+            "Check: Am I trading the SETUP or trading my EMOTIONS?",
+        ],
+        severity="warning",
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.LOSS_AVERSION_AWARENESS, SieboldPrinciple.NOT_AFRAID_TO_SUFFER],
+        headline="Loss Aversion Alert",
+        message=(
+            "KAHNEMAN: Humans feel losses 2x more intensely than equivalent gains. "
+            "A $10 loss FEELS like a $20 gain. Your brain is lying to you. "
+            "This asymmetry causes holding losers too long and cutting winners too early. "
+            "The rational move often FEELS wrong. Trust your system, not your feelings."
+        ),
+        action_items=[
+            "Ask: Would I enter this position TODAY at this price?",
+            "If NO: Exit. The sunk cost is irrelevant.",
+            "Remember: A loss realized is better than a loss compounded",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.ANCHORING_AWARENESS, SieboldPrinciple.EMBRACE_METACOGNITION],
+        headline="Anchoring Bias Detected",
+        message=(
+            "KAHNEMAN: You're ANCHORED to a reference point (likely your entry price). "
+            "The market doesn't care what you paid. Your entry price is IRRELEVANT "
+            "to where the stock goes next. Evaluate this position as if you just "
+            "discovered it today. Would you buy it NOW at the current price?"
+        ),
+        action_items=[
+            "Forget your entry price - it's a sunk cost",
+            "Evaluate: Is this a GOOD position at TODAY's price?",
+            "The market owes you nothing. Trade what IS, not what WAS.",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.WYSIATI_AWARENESS, SieboldPrinciple.ARE_COACHABLE],
+        headline="WYSIATI Warning: Limited Information",
+        message=(
+            "KAHNEMAN: 'What You See Is All There Is' - your brain builds confident "
+            "stories from limited data. You're seeing a FRACTION of relevant information. "
+            "The chart, the news, your analysis - it's incomplete. Overconfidence comes "
+            "from coherent stories, not complete information. Stay humble."
+        ),
+        action_items=[
+            "Ask: What am I NOT seeing that could matter?",
+            "Reduce position size when uncertainty is high",
+            "The less you know, the smaller you should bet",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.REGRESSION_TO_MEAN, SieboldPrinciple.SEEK_BALANCE],
+        headline="Regression to Mean: Streaks End",
+        message=(
+            "KAHNEMAN: Extreme results regress to the mean. Hot streaks cool off. "
+            "Cold streaks warm up. This isn't mystical - it's mathematics. "
+            "Your recent performance (good OR bad) is partially luck. "
+            "Don't increase risk after wins or despair after losses. The mean is coming."
+        ),
+        action_items=[
+            "After wins: Don't increase risk - regression is coming",
+            "After losses: Don't despair - regression is coming",
+            "Stay consistent. The system works over MANY trades.",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.SYSTEM_TWO_THINKING, SieboldPrinciple.MASTER_MENTAL_ORGANIZATION],
+        headline="The Planning Fallacy",
+        message=(
+            "KAHNEMAN: We systematically underestimate time, costs, and risks while "
+            "overestimating benefits. 'This trade is different' is usually wrong. "
+            "Your best prediction of how THIS trade will go is how SIMILAR trades went. "
+            "Use base rates, not hopes. What's your historical win rate on setups like this?"
+        ),
+        action_items=[
+            "Check historical win rate for this setup type",
+            "Size the position based on ACTUAL data, not hope",
+            "Remember: You're not special. Base rates apply to you.",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SYSTEM_TWO_ACTIVATION,
+        principles=[SieboldPrinciple.SYSTEM_TWO_THINKING, SieboldPrinciple.SUPREME_SELF_CONFIDENCE],
+        headline="Substitution: Easy Question for Hard One",
+        message=(
+            "KAHNEMAN: When faced with a hard question, System 1 secretly substitutes "
+            "an easier one. 'Is this a good trade?' becomes 'Do I FEEL good about this trade?' "
+            "Feelings are not analysis. Force yourself to answer the ACTUAL question: "
+            "Does this meet my documented criteria? Yes or No. Nothing else matters."
+        ),
+        action_items=[
+            "Write down your ACTUAL criteria for entry",
+            "Check each criterion with Yes/No (no maybes)",
+            "If any criterion is No, the answer is No.",
+        ],
+    ),
+]
+
 
 def get_intervention_for_bias(bias_type: str) -> CoachingIntervention | None:
     """Get appropriate intervention for a detected bias."""
@@ -508,3 +639,8 @@ def get_purpose_reminder() -> CoachingIntervention:
 def get_random_long_term_perspective() -> CoachingIntervention:
     """Get a random FIRE-inspired long-term perspective intervention."""
     return random.choice(LONG_TERM_PERSPECTIVE_INTERVENTIONS)
+
+
+def get_random_system_two() -> CoachingIntervention:
+    """Get a random Kahneman System 2 intervention."""
+    return random.choice(SYSTEM_TWO_INTERVENTIONS)
