@@ -153,6 +153,12 @@ def cmd_perspective(coach: MentalToughnessCoach, args) -> None:
     print(format_intervention(intervention))
 
 
+def cmd_slowdown(coach: MentalToughnessCoach, args) -> None:
+    """Activate System 2 thinking (Kahneman)."""
+    intervention = coach.activate_system_two()
+    print(format_intervention(intervention))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Mental Toughness Coach - World-class trading psychology",
@@ -194,6 +200,9 @@ def main() -> None:
     # Long-term perspective (FIRE-inspired)
     subparsers.add_parser("perspective", help="Get FIRE-inspired long-term perspective")
 
+    # System 2 activation (Kahneman-inspired)
+    subparsers.add_parser("slowdown", help="Activate System 2 thinking (Kahneman)")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -216,6 +225,7 @@ def main() -> None:
         "coach": cmd_coach,
         "end": cmd_end,
         "perspective": cmd_perspective,
+        "slowdown": cmd_slowdown,
     }
 
     cmd_func = commands.get(args.command)

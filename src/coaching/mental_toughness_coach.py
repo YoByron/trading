@@ -29,6 +29,7 @@ from .interventions import (
     get_random_long_term_perspective,
     get_random_pre_trade,
     get_random_session_start,
+    get_random_system_two,
     get_random_win_grounding,
     get_session_review,
 )
@@ -460,6 +461,22 @@ class MentalToughnessCoach:
             # FIRE: Abundance
             "FIRE: The market offers unlimited opportunities. I operate from abundance, "
             "not scarcity. Missing one trade means nothing. There's always tomorrow.",
+
+            # Kahneman: System 2 Thinking
+            "KAHNEMAN: I engage System 2 before every trade. Slow, deliberate, logical. "
+            "System 1 is for catching balls, not for trading. I pause. I breathe. I verify.",
+
+            # Kahneman: Loss Aversion
+            "KAHNEMAN: My brain lies about losses - they FEEL 2x worse than they are. "
+            "I trust my system, not my feelings. The rational move often feels wrong.",
+
+            # Kahneman: WYSIATI
+            "KAHNEMAN: What I See Is NOT All There Is. My analysis is incomplete. "
+            "Overconfidence comes from coherent stories, not complete information. Stay humble.",
+
+            # Kahneman: Regression to Mean
+            "KAHNEMAN: Streaks end. Hot cools off. Cold warms up. I don't chase wins "
+            "or despair over losses. The mean is coming. I stay consistent.",
         ]
 
         import random
@@ -476,6 +493,27 @@ class MentalToughnessCoach:
         """
         intervention = get_random_long_term_perspective()
         self._record_intervention(intervention)
+        return intervention
+
+    def activate_system_two(self) -> CoachingIntervention:
+        """Activate System 2 thinking with Kahneman-inspired coaching.
+
+        Based on Daniel Kahneman's "Thinking, Fast and Slow" (Nobel Prize).
+        System 1 = fast, intuitive, emotional (causes trading errors)
+        System 2 = slow, deliberate, logical (what we need for trading)
+
+        Use this when you feel rushed, emotional, or uncertain about a trade.
+
+        Returns:
+            System 2 activation coaching intervention
+        """
+        intervention = get_random_system_two()
+        self._record_intervention(intervention)
+
+        # Reduce mental energy slightly (System 2 is effortful)
+        self.state.mental_energy = max(0.0, self.state.mental_energy - 0.05)
+        self.state_manager.save_state()
+
         return intervention
 
     def get_state_summary(self) -> dict[str, Any]:
