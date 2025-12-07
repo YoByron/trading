@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 
-def test_price_outliers(data: pd.DataFrame, method: str = "zscore", threshold: float = 3.0) -> bool:
+def check_price_outliers(
+    data: pd.DataFrame, method: str = "zscore", threshold: float = 3.0
+) -> bool:
     """
     Test for price outliers using z-score or IQR method.
 
@@ -42,7 +44,7 @@ def test_price_outliers(data: pd.DataFrame, method: str = "zscore", threshold: f
         outlier_dates = data[outliers].index.tolist()
         outlier_prices = prices[outliers]
         print(f"Found {outliers.sum()} price outliers")
-        for date, price in zip(outlier_dates, outlier_prices):
+        for date, price in zip(outlier_dates, outlier_prices, strict=False):
             print(f"  {date}: ${price:.2f}")
         # This is informational - outliers might be legitimate
         return True  # Don't fail, just warn
@@ -50,7 +52,7 @@ def test_price_outliers(data: pd.DataFrame, method: str = "zscore", threshold: f
     return True
 
 
-def test_return_outliers(data: pd.DataFrame, threshold: float = 0.2) -> bool:
+def check_return_outliers(data: pd.DataFrame, threshold: float = 0.2) -> bool:
     """
     Test for return outliers (suspiciously large returns).
 
@@ -79,7 +81,7 @@ def test_return_outliers(data: pd.DataFrame, threshold: float = 0.2) -> bool:
     return True
 
 
-def test_volume_outliers(
+def check_volume_outliers(
     data: pd.DataFrame, method: str = "zscore", threshold: float = 3.0
 ) -> bool:
     """
@@ -126,16 +128,18 @@ def test_volume_outliers(
 # Pytest test functions
 def test_price_outliers_check(data_fixture):
     """Pytest test for price outliers."""
-    assert test_price_outliers(data_fixture, method="zscore", threshold=3.0), "Found price outliers"
+    assert check_price_outliers(data_fixture, method="zscore", threshold=3.0), (
+        "Found price outliers"
+    )
 
 
 def test_return_outliers_check(data_fixture):
     """Pytest test for return outliers."""
-    assert test_return_outliers(data_fixture, threshold=0.2), "Found return outliers"
+    assert check_return_outliers(data_fixture, threshold=0.2), "Found return outliers"
 
 
 def test_volume_outliers_check(data_fixture):
     """Pytest test for volume outliers."""
-    assert test_volume_outliers(data_fixture, method="zscore", threshold=3.0), (
+    assert check_volume_outliers(data_fixture, method="zscore", threshold=3.0), (
         "Found volume outliers"
     )
