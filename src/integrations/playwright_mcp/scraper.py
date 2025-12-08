@@ -514,13 +514,13 @@ class SentimentScraper:
                 }
 
                 # Extract title from heading
-                headings = []
+                headings: list[dict] = []
                 self._find_by_role(element, "heading", headings)
                 if headings:
                     post["title"] = headings[0].get("name", "")
 
                 # Extract link
-                links = []
+                links: list[dict] = []
                 self._find_by_role(element, "link", links)
                 for link in links:
                     href = link.get("href", "")
@@ -532,10 +532,21 @@ class SentimentScraper:
                     else:
                         try:
                             parsed = urlparse(href)
-                            domain = parsed.netloc.lower()
-                            is_safe_domain = domain == "reddit.com" or domain.endswith(
-                                ".reddit.com"
-                            )
+                            # Ensure scheme is http or https
+                            if parsed.scheme not in ("http", "https"):
+                                is_safe_domain = False
+                            else:
+                                domain = parsed.netloc.lower()
+                                # Prepare domain for strict validation (remove valid port if present)
+                                if ":" in domain:
+                                    domain = domain.split(":")[0]
+
+                                # Strict allowlist for reddit domains
+                                is_safe_domain = (
+                                    domain == "reddit.com"
+                                    or domain == "www.reddit.com"
+                                    or domain == "old.reddit.com"
+                                )
                         except Exception:
                             is_safe_domain = False
 

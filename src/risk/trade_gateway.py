@@ -568,7 +568,7 @@ class TradeGateway:
         if self.executor:
             try:
                 return float(self.executor.account_equity or 100000)
-            except:
+            except Exception:
                 pass
         return float(os.getenv("ACCOUNT_EQUITY", "100000"))
 
@@ -577,7 +577,7 @@ class TradeGateway:
         if self.executor:
             try:
                 return self.executor.get_positions() or []
-            except:
+            except Exception:
                 pass
         return []
 

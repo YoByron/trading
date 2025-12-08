@@ -202,7 +202,7 @@ class EmergencyAlerts:
 
     def _send_email(self, subject: str, body: str) -> bool:
         """Send email via SMTP."""
-        if not all([self.smtp_user, self.smtp_pass, self.email_to]):
+        if not (self.smtp_user and self.smtp_pass and self.email_to and self.smtp_host):
             logger.debug("Email not configured, skipping")
             return False
 
@@ -238,6 +238,8 @@ class EmergencyAlerts:
             return False
 
         try:
+            from typing import Any
+
             # Color based on priority
             colors = {
                 self.PRIORITY_CRITICAL: "#FF0000",  # Red
@@ -246,7 +248,7 @@ class EmergencyAlerts:
                 self.PRIORITY_LOW: "#00CC00",  # Green
             }
 
-            payload = {
+            payload: dict[str, Any] = {
                 "attachments": [
                     {
                         "color": colors.get(priority, "#808080"),
@@ -303,6 +305,8 @@ class EmergencyAlerts:
             return False
 
         try:
+            from typing import Any
+
             # Color based on priority (Discord uses decimal)
             colors = {
                 self.PRIORITY_CRITICAL: 16711680,  # Red
@@ -311,7 +315,7 @@ class EmergencyAlerts:
                 self.PRIORITY_LOW: 65280,  # Green
             }
 
-            payload = {
+            payload: dict[str, Any] = {
                 "embeds": [
                     {
                         "title": f"🚨 {title}",

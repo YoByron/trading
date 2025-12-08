@@ -94,7 +94,11 @@ def retry_with_backoff(
                     )
                     time.sleep(delay)
 
-            raise last_exception
+            if last_exception:
+                raise last_exception
+            raise RuntimeError(
+                f"{func.__name__} failed: Max retries exceeded with no caught exception"
+            )
 
         return wrapper
 
@@ -263,6 +267,8 @@ class FailoverSystem:
 
             client = TradingClient(api_key, secret_key, paper=True)
             account = client.get_account()
+            if isinstance(account, dict):
+                return account.get("status") == "ACTIVE"
             return account.status == "ACTIVE"
         except Exception as e:
             logger.warning(f"Alpaca health check failed: {e}")
