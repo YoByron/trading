@@ -10,15 +10,15 @@ Author: Trading System
 Created: 2025-12-08
 """
 
+import json
 import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,7 @@ class OrderStatus(Enum):
 @dataclass
 class TradierOrder:
     """Order response from Tradier."""
+
     id: str
     symbol: str
     side: str
@@ -65,6 +66,7 @@ class TradierOrder:
 @dataclass
 class TradierPosition:
     """Position from Tradier."""
+
     symbol: str
     quantity: float
     cost_basis: float
@@ -77,6 +79,7 @@ class TradierPosition:
 @dataclass
 class TradierAccount:
     """Account info from Tradier."""
+
     account_number: str
     equity: float
     cash: float
@@ -185,15 +188,17 @@ class TradierClient:
 
         positions = []
         for pos in position_list:
-            positions.append(TradierPosition(
-                symbol=pos.get("symbol", ""),
-                quantity=float(pos.get("quantity", 0)),
-                cost_basis=float(pos.get("cost_basis", 0)),
-                current_price=0.0,  # Need separate quote call
-                market_value=float(pos.get("market_value", 0)),
-                unrealized_pl=float(pos.get("unrealized_pl", 0)),
-                unrealized_pl_pct=float(pos.get("unrealized_plpc", 0)),
-            ))
+            positions.append(
+                TradierPosition(
+                    symbol=pos.get("symbol", ""),
+                    quantity=float(pos.get("quantity", 0)),
+                    cost_basis=float(pos.get("cost_basis", 0)),
+                    current_price=0.0,  # Need separate quote call
+                    market_value=float(pos.get("market_value", 0)),
+                    unrealized_pl=float(pos.get("unrealized_pl", 0)),
+                    unrealized_pl_pct=float(pos.get("unrealized_plpc", 0)),
+                )
+            )
 
         return positions
 
@@ -271,7 +276,9 @@ class TradierClient:
             quantity=float(order.get("quantity", 0)),
             filled_quantity=float(order.get("exec_quantity", 0)),
             price=float(order.get("price", 0)) if order.get("price") else None,
-            avg_fill_price=float(order.get("avg_fill_price", 0)) if order.get("avg_fill_price") else None,
+            avg_fill_price=float(order.get("avg_fill_price", 0))
+            if order.get("avg_fill_price")
+            else None,
             status=order.get("status", "unknown"),
             created_at=order.get("create_date", ""),
             order_type=order.get("type", ""),

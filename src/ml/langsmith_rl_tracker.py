@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 
 # Check LangSmith availability
 try:
-    from langsmith import Client, traceable
-    from langsmith.run_helpers import get_current_run_tree
+    from langsmith import Client, traceable  # noqa: F401
+    from langsmith.run_helpers import get_current_run_tree  # noqa: F401
 
     LANGSMITH_AVAILABLE = True
 except ImportError:
@@ -363,9 +363,7 @@ class RLExperimentTracker:
         return self.run_id
 
     @contextmanager
-    def track_episode(
-        self, symbol: str
-    ) -> Generator[EpisodeTracker, None, None]:
+    def track_episode(self, symbol: str) -> Generator[EpisodeTracker, None, None]:
         """
         Context manager for tracking an episode.
 
@@ -540,9 +538,7 @@ class RLExperimentTracker:
     def get_experiment_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent experiment runs."""
         runs = []
-        for run_file in sorted(
-            self.experiments_dir.glob("*_summary.json"), reverse=True
-        )[:limit]:
+        for run_file in sorted(self.experiments_dir.glob("*_summary.json"), reverse=True)[:limit]:
             try:
                 with open(run_file) as f:
                     runs.append(json.load(f))

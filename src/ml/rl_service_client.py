@@ -249,9 +249,7 @@ class RLServiceClient:
             job = CustomJob.from_local_script(
                 display_name=job_name,
                 script_path="src/ml/training_script.py",
-                container_uri=self.TRAINING_IMAGES.get(
-                    algorithm, self.TRAINING_IMAGES["PPO"]
-                ),
+                container_uri=self.TRAINING_IMAGES.get(algorithm, self.TRAINING_IMAGES["PPO"]),
                 args=args,
                 requirements=["torch", "numpy", "pandas"],
                 machine_type="n1-standard-4",
@@ -356,9 +354,7 @@ class RLServiceClient:
 
         return {"job_id": job_id, "status": "unknown", "error": "Job not found"}
 
-    def list_jobs(
-        self, status: Optional[str] = None, limit: int = 10
-    ) -> list[dict[str, Any]]:
+    def list_jobs(self, status: Optional[str] = None, limit: int = 10) -> list[dict[str, Any]]:
         """
         List training jobs.
 

@@ -33,16 +33,18 @@ logger = logging.getLogger(__name__)
 
 class HealthStatus(Enum):
     """API health status levels."""
-    HEALTHY = "healthy"           # All systems go
-    DEGRADED = "degraded"         # Slow but working
-    UNHEALTHY = "unhealthy"       # Failing, retrying
-    CRITICAL = "critical"         # Multiple failures, stop trading
-    UNKNOWN = "unknown"           # Not yet checked
+
+    HEALTHY = "healthy"  # All systems go
+    DEGRADED = "degraded"  # Slow but working
+    UNHEALTHY = "unhealthy"  # Failing, retrying
+    CRITICAL = "critical"  # Multiple failures, stop trading
+    UNKNOWN = "unknown"  # Not yet checked
 
 
 @dataclass
 class HealthCheckResult:
     """Result of a health check."""
+
     status: HealthStatus
     latency_ms: float
     error: str | None
@@ -64,6 +66,7 @@ class HealthCheckResult:
 @dataclass
 class QueuedOrder:
     """Order queued for retry after API failure."""
+
     symbol: str
     amount_usd: float
     side: str
@@ -87,14 +90,14 @@ class AlpacaHealthMonitor:
     """
 
     # Thresholds
-    LATENCY_WARNING_MS = 2000      # Warn if API > 2 seconds
-    LATENCY_CRITICAL_MS = 5000     # Critical if API > 5 seconds
-    MAX_CONSECUTIVE_FAILURES = 3   # Trip circuit breaker after 3 failures
+    LATENCY_WARNING_MS = 2000  # Warn if API > 2 seconds
+    LATENCY_CRITICAL_MS = 5000  # Critical if API > 5 seconds
+    MAX_CONSECUTIVE_FAILURES = 3  # Trip circuit breaker after 3 failures
     CIRCUIT_BREAKER_RESET_MINUTES = 5  # Reset circuit breaker after 5 min
 
     # Retry settings
     MAX_RETRIES = 4
-    BASE_RETRY_DELAY_SECONDS = 2   # 2s, 4s, 8s, 16s
+    BASE_RETRY_DELAY_SECONDS = 2  # 2s, 4s, 8s, 16s
 
     def __init__(
         self,
@@ -142,6 +145,7 @@ class AlpacaHealthMonitor:
             if not self.client:
                 # Try to create client if not provided
                 from alpaca.trading.client import TradingClient
+
                 api_key = os.getenv("ALPACA_API_KEY")
                 api_secret = os.getenv("ALPACA_SECRET_KEY")
 
@@ -247,7 +251,7 @@ class AlpacaHealthMonitor:
                 self.consecutive_failures += 1
 
                 if attempt < self.MAX_RETRIES - 1:
-                    delay = self.BASE_RETRY_DELAY_SECONDS * (2 ** attempt)
+                    delay = self.BASE_RETRY_DELAY_SECONDS * (2**attempt)
                     logger.warning(
                         f"{operation_name} failed (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}. "
                         f"Retrying in {delay}s..."
@@ -324,9 +328,7 @@ class AlpacaHealthMonitor:
             order.retry_count += 1
 
             if order.retry_count > order.max_retries:
-                logger.error(
-                    f"Order exceeded max retries, discarding: {order.side} {order.symbol}"
-                )
+                logger.error(f"Order exceeded max retries, discarding: {order.side} {order.symbol}")
                 self._send_alert(
                     f"FAILED ORDER DISCARDED: {order.side} {order.symbol} ${order.amount_usd:.2f}",
                     {"retries": order.retry_count, "last_error": order.last_error},
@@ -381,9 +383,7 @@ class AlpacaHealthMonitor:
                 else None
             ),
             "last_successful_check": (
-                self.last_successful_check.isoformat()
-                if self.last_successful_check
-                else None
+                self.last_successful_check.isoformat() if self.last_successful_check else None
             ),
             "queued_orders": len(self.order_queue),
             "trading_allowed": self.is_trading_allowed()[0],
@@ -442,6 +442,7 @@ class AlpacaHealthMonitor:
         if self.alert_webhook_url:
             try:
                 import requests
+
                 requests.post(
                     self.alert_webhook_url,
                     json=alert_data,

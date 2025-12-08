@@ -1179,11 +1179,21 @@ def generate_world_class_dashboard() -> str:
     current_day = challenge.get("current_day", 1)
     total_days = challenge.get("total_days", 90)
 
-    # Calculate today's performance metrics
-    today_str = date.today().isoformat()
-    today_trades_file = DATA_DIR / f"trades_{today_str}.json"
-    today_trades = load_json_file(today_trades_file)
-    today_trade_count = len(today_trades) if isinstance(today_trades, list) else 0
+    # Calculate today's performance metrics (Use NY time for trading day alignment)
+    from zoneinfo import ZoneInfo
+
+    ny_time = datetime.now(ZoneInfo("America/New_York"))
+    today_str = ny_time.date().isoformat()
+
+    # Calculate trades today from system_state open positions (reliable source in CI)
+    today_trade_count = 0
+    open_positions = system_state.get("performance", {}).get("open_positions", [])
+    for pos in open_positions:
+        entry_date = pos.get("entry_date", "")
+        # Check if entry date starts with today's date (YYYY-MM-DD)
+        # Handle ISO format timestamps e.g. 2025-12-07T18:16:23
+        if entry_date and entry_date.startswith(today_str):
+            today_trade_count += 1
 
     today_perf = None
     today_equity = current_equity
@@ -1208,11 +1218,11 @@ def generate_world_class_dashboard() -> str:
             today_pl = current_equity - yesterday_equity
             today_pl_pct = ((today_pl / yesterday_equity) * 100) if yesterday_equity > 0 else 0.0
 
-    # Get today's date string for display
-    today_display = date.today().strftime("%Y-%m-%d (%A)")
+    # Get today's date string for display (aligned with trading day)
+    today_display = ny_time.strftime("%Y-%m-%d (%A)")
 
     # Generate dashboard
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("America/New_York"))
 
     # Progress bar
     north_star_bars = 1 if total_pl > 0 and progress_pct < 5.0 else min(int(progress_pct / 5), 20)

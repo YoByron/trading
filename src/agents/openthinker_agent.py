@@ -21,7 +21,6 @@ from typing import Any
 from src.agents.base_agent import BaseAgent
 from src.core.local_llm import (
     LocalLLMBackend,
-    LocalLLMClient,
     LocalModel,
     OpenThinkerReasoner,
 )
@@ -74,9 +73,7 @@ class OpenThinkerAgent(BaseAgent):
         self.backend = backend
         self._available: bool | None = None
 
-        logger.info(
-            f"Initialized OpenThinkerAgent: model={model.value}, backend={backend.value}"
-        )
+        logger.info(f"Initialized OpenThinkerAgent: model={model.value}, backend={backend.value}")
 
     async def check_availability(self) -> bool:
         """Check if OpenThinker is available for inference."""
@@ -108,9 +105,7 @@ class OpenThinkerAgent(BaseAgent):
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        asyncio.run, self.analyze_async(data)
-                    )
+                    future = executor.submit(asyncio.run, self.analyze_async(data))
                     return future.result()
             else:
                 return loop.run_until_complete(self.analyze_async(data))
@@ -417,7 +412,7 @@ if __name__ == "__main__":
                 },
             )
 
-            print(f"\n=== Trade Validation ===")
+            print("\n=== Trade Validation ===")
             print(f"Approved: {result['approved']}")
             print(f"Confidence: {result['confidence']}")
             print(f"Concerns: {result['concerns']}")

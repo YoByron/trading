@@ -262,8 +262,7 @@ class PPOTrainer:
                 ratio = torch.exp(new_log_probs - batch_old_log_probs)
                 surr1 = ratio * batch_advantages
                 surr2 = (
-                    torch.clamp(ratio, 1 - self.clip_range, 1 + self.clip_range)
-                    * batch_advantages
+                    torch.clamp(ratio, 1 - self.clip_range, 1 + self.clip_range) * batch_advantages
                 )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
@@ -350,8 +349,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
 
         if iteration % 10 == 0:
             logger.info(
-                f"Iteration {iteration}: reward={mean_reward:.4f}, "
-                f"loss={update_stats['loss']:.4f}"
+                f"Iteration {iteration}: reward={mean_reward:.4f}, loss={update_stats['loss']:.4f}"
             )
 
         # Save best model
@@ -469,7 +467,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        results = train(args)
+        _results = train(args)
         logger.info("Training completed successfully")
         sys.exit(0)
     except Exception as e:

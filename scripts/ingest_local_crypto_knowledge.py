@@ -36,7 +36,9 @@ def load_existing_store() -> dict:
         try:
             with open(RAG_STORE_PATH) as f:
                 store = json.load(f)
-                logger.info(f"Loaded existing store with {len(store.get('documents', []))} documents")
+                logger.info(
+                    f"Loaded existing store with {len(store.get('documents', []))} documents"
+                )
                 return store
         except Exception as e:
             logger.warning(f"Failed to load existing store: {e}")
@@ -129,7 +131,11 @@ def main():
         logger.info("No new chunks to add (all already present)")
 
     # Verify crypto content
-    crypto_docs = [d for d in store["documents"] if "crypto" in d.lower() or "btc" in d.lower() or "bitcoin" in d.lower()]
+    crypto_docs = [
+        d
+        for d in store["documents"]
+        if "crypto" in d.lower() or "btc" in d.lower() or "bitcoin" in d.lower()
+    ]
     logger.info(f"Total crypto-related documents in RAG: {len(crypto_docs)}")
 
     logger.info("=" * 60)

@@ -17,7 +17,6 @@ Author: Trading System
 Created: 2025-12-08
 """
 
-import gzip
 import json
 import logging
 import os
@@ -89,6 +88,7 @@ class DataBackup:
 
         # Add trade logs with glob patterns
         import glob
+
         for pattern in self.TRADE_LOG_PATTERNS:
             for match in glob.glob(pattern):
                 path = Path(match)
@@ -139,6 +139,7 @@ class DataBackup:
 
             # Create compressed archive
             import tarfile
+
             with tarfile.open(backup_path, "w:gz") as tar:
                 for file in temp_dir.iterdir():
                     tar.add(file, arcname=file.name)
@@ -182,7 +183,7 @@ class DataBackup:
         )
 
         removed = 0
-        for backup in backups[self.max_backups:]:
+        for backup in backups[self.max_backups :]:
             try:
                 backup.unlink()
                 removed += 1
@@ -269,7 +270,10 @@ class DataBackup:
             import tarfile
 
             with tarfile.open(backup_file, "r:gz") as tar:
-                tar.extractall(restore_path)
+                if hasattr(tarfile, "data_filter"):
+                    tar.extractall(restore_path, filter="data")
+                else:
+                    tar.extractall(restore_path)  # nosec B202  # noqa: S202
 
             logger.info(f"✅ Restored backup to: {restore_path}")
 
@@ -293,12 +297,14 @@ class DataBackup:
             reverse=True,
         ):
             stat = backup_file.stat()
-            backups.append({
-                "name": backup_file.name,
-                "size_bytes": stat.st_size,
-                "size_kb": f"{stat.st_size / 1024:.1f} KB",
-                "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            })
+            backups.append(
+                {
+                    "name": backup_file.name,
+                    "size_bytes": stat.st_size,
+                    "size_kb": f"{stat.st_size / 1024:.1f} KB",
+                    "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                }
+            )
 
         return backups
 
@@ -343,7 +349,7 @@ class DataBackup:
                 capture_output=True,
             )
 
-            logger.info(f"✅ Git backup committed to data-backup branch")
+            logger.info("✅ Git backup committed to data-backup branch")
 
             return {
                 "status": "success",
