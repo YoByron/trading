@@ -177,7 +177,7 @@ def calculate_metrics():
             start_date = datetime.fromisoformat(start_date_str).date()
             today = date.today()
             days_elapsed = max((today - start_date).days + 1, 1)  # At least 1 day
-        except:
+        except Exception:
             days_elapsed = max(system_state.get("challenge", {}).get("current_day", 1), 1)
         starting_balance = 100000.0
 
@@ -530,7 +530,7 @@ def generate_dashboard() -> str:
                     dt = datetime.fromisoformat(trade.get("timestamp", ""))
                     # Convert to ET if possible, otherwise just show raw
                     ts = dt.strftime("%H:%M")
-                except:
+                except Exception:
                     ts = ts[11:16] if len(ts) > 16 else ts
 
             sym = trade.get("symbol", "?")
@@ -938,7 +938,7 @@ def generate_dashboard() -> str:
             theta_harvest_time = datetime.fromisoformat(
                 theta_harvest_time.replace("Z", "+00:00")
             ).strftime("%Y-%m-%d %I:%M %p")
-        except:
+        except Exception:
             pass
 
     target_premium = options.get("target_daily_premium", 0.0)

@@ -48,7 +48,7 @@ def load_todays_trades() -> list[dict[str, Any]]:
     try:
         with open(trades_file) as f:
             return json.load(f)
-    except:
+    except Exception:
         return []
 
 
@@ -109,7 +109,7 @@ def get_rl_stats() -> dict[str, Any]:
                 "action_distribution": action_counts,
                 "exploration_rate": data.get("exploration_rate", 0.2),
             }
-    except:
+    except Exception:
         return {"states_learned": 0, "action_distribution": {}}
 
 
@@ -140,7 +140,7 @@ def get_manual_trading_status() -> dict[str, Any]:
                 "total_pl": total_pl,
                 "trade_count": len(data.get("trades", [])),
             }
-    except:
+    except Exception:
         return {"positions": [], "total_equity": 0.0, "total_pl": 0.0, "trade_count": 0}
 
 
@@ -151,7 +151,7 @@ def get_circuit_breaker_status() -> dict[str, Any]:
 
         breaker = CircuitBreaker()
         return breaker.get_status()
-    except:
+    except Exception:
         return {"error": "Could not load circuit breaker status"}
 
 

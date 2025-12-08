@@ -311,7 +311,7 @@ def execute_crypto_trading() -> None:
                     try:
                         with open(trades_file) as f:
                             daily_trades = json.load(f)
-                    except:
+                    except Exception:
                         daily_trades = []
                 else:
                     daily_trades = []

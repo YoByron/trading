@@ -56,7 +56,7 @@ def generate_equity_curve_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -103,7 +103,7 @@ def generate_drawdown_chart(perf_log: list[dict], output_path: Path | None = Non
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -159,7 +159,7 @@ def generate_daily_pl_chart(perf_log: list[dict], output_path: Path | None = Non
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 pl_values.append(pl)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -208,7 +208,7 @@ def generate_rolling_sharpe_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < window + 1:
@@ -353,7 +353,7 @@ def generate_regime_timeline_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:

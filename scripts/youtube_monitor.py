@@ -290,7 +290,7 @@ class YouTubeMonitor:
             # Get English transcript (auto-generated or manual)
             try:
                 transcript_obj = transcript_list.find_transcript(["en"])
-            except:
+            except Exception:
                 # Try auto-generated
                 transcript_obj = transcript_list.find_generated_transcript(["en"])
 
