@@ -9,7 +9,7 @@ on:
     description: "Manual workflow health check"
 
 permissions:
-  actions: read
+  actions: write
   contents: read
   issues: write
 

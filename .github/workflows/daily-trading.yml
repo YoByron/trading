@@ -229,6 +229,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+          cache-dependency-path: go/adk_trading/go.sum
         env:
           ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
 
@@ -432,7 +433,9 @@ jobs:
       - name: Enforce promotion gate
         run: |
           echo "🛡️  Enforcing promotion gate..."
-          python3 scripts/enforce_promotion_gate.py
+          ls -l scripts/enforce_promotion_gate.py
+          python --version
+          python scripts/enforce_promotion_gate.py
 
       - name: Check if today's trade already executed
         id: check_execution
