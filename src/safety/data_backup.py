@@ -270,10 +270,19 @@ class DataBackup:
             import tarfile
 
             with tarfile.open(backup_file, "r:gz") as tar:
-                if hasattr(tarfile, "data_filter"):
-                    tar.extractall(restore_path, filter="data")
-                else:
-                    tar.extractall(restore_path)  # nosec B202  # noqa: S202
+                # Secure extraction preventing Zip Slip
+                def is_safe_member(member, path):
+                    member_path = os.path.join(path, member.name)
+                    abs_directory = os.path.abspath(path)
+                    abs_target = os.path.abspath(member_path)
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    return prefix == abs_directory
+
+                for member in tar.getmembers():
+                    if is_safe_member(member, str(restore_path)):
+                        tar.extract(member, restore_path)
+                    else:
+                        logger.warning(f"Skipping unsafe file in backup: {member.name}")
 
             logger.info(f"✅ Restored backup to: {restore_path}")
 

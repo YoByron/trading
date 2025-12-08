@@ -31,7 +31,7 @@ class AccessibilitySnapshot:
 
     def find_elements(self, role: str | None = None, name: str | None = None) -> list[dict]:
         """Find elements in the accessibility tree by role or name."""
-        results = []
+        results: list[dict] = []
         self._search_tree(self.tree, role, name, results)
         return results
 
@@ -363,7 +363,7 @@ class PlaywrightMCPClient:
             else:
                 elements = [snapshot.tree]
 
-            texts = []
+            texts: list[str] = []
             for element in elements:
                 self._extract_text_recursive(element, texts)
 
