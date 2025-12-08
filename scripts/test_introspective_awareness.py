@@ -461,7 +461,7 @@ class TestUncertaintyTracker:
 
         # Verify averages
         expected_avg_epistemic = (40 + 60 + 70) / 3
-        expected_avg_conf = (0.75 + 0.55 + 0.40) / 3
+        _expected_avg_conf = (0.75 + 0.55 + 0.40) / 3
 
         return {
             "status": "PASSED",

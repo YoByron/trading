@@ -158,12 +158,14 @@ class KillSwitch:
             self._state["auto_disable_at"] = None
 
         # Add to history
-        self._state["history"].append({
-            "action": "activated",
-            "timestamp": now.isoformat(),
-            "activated_by": activated_by,
-            "reason": reason,
-        })
+        self._state["history"].append(
+            {
+                "action": "activated",
+                "timestamp": now.isoformat(),
+                "activated_by": activated_by,
+                "reason": reason,
+            }
+        )
 
         # Keep last 100 history entries
         self._state["history"] = self._state["history"][-100:]
@@ -173,7 +175,7 @@ class KillSwitch:
         # Create kill switch file as backup trigger
         try:
             with open(self.kill_file, "w") as f:
-                f.write(f"KILL SWITCH ACTIVE\n")
+                f.write("KILL SWITCH ACTIVE\n")
                 f.write(f"Activated: {now.isoformat()}\n")
                 f.write(f"By: {activated_by}\n")
                 f.write(f"Reason: {reason}\n")
@@ -186,6 +188,7 @@ class KillSwitch:
         if send_alert:
             try:
                 from src.safety.emergency_alerts import get_alerts
+
                 alerts = get_alerts()
                 alerts.kill_switch_alert(activated_by, reason)
             except Exception as e:
@@ -229,13 +232,15 @@ class KillSwitch:
         self._state["auto_disable_at"] = None
 
         # Add to history
-        self._state["history"].append({
-            "action": "deactivated",
-            "timestamp": now.isoformat(),
-            "deactivated_by": deactivated_by,
-            "reason": reason,
-            "was_active_since": was_active_since,
-        })
+        self._state["history"].append(
+            {
+                "action": "deactivated",
+                "timestamp": now.isoformat(),
+                "deactivated_by": deactivated_by,
+                "reason": reason,
+                "was_active_since": was_active_since,
+            }
+        )
 
         self._save_state()
 
@@ -252,6 +257,7 @@ class KillSwitch:
         if send_alert:
             try:
                 from src.safety.emergency_alerts import get_alerts
+
                 alerts = get_alerts()
                 alerts.send_alert(
                     title="Kill Switch Deactivated",
@@ -277,7 +283,8 @@ class KillSwitch:
             "reason": self._state.get("reason"),
             "auto_disable_at": self._state.get("auto_disable_at"),
             "file_exists": self.kill_file.exists(),
-            "env_var_set": os.environ.get("TRADING_KILL_SWITCH", "").lower() in ("1", "true", "yes"),
+            "env_var_set": os.environ.get("TRADING_KILL_SWITCH", "").lower()
+            in ("1", "true", "yes"),
         }
 
     def check_and_block(self) -> tuple[bool, Optional[str]]:

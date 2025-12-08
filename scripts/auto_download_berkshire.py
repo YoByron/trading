@@ -16,10 +16,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +54,7 @@ def attempt_download() -> dict:
                 if download_letter(year, cache_dir):
                     downloaded += 1
                     logger.info(f"  Downloaded {year}")
-            except Exception as e:
+            except Exception:
                 failed.append(year)
                 # Don't log every failure - network might be blocked
 
@@ -67,6 +64,7 @@ def attempt_download() -> dict:
             # Ingest into RAG
             try:
                 from scripts.ingest_berkshire_letters import ingest_berkshire_letters
+
                 result = ingest_berkshire_letters()
                 logger.info(f"Ingested into RAG: {result.get('letters_ingested', 0)} letters")
             except Exception as e:

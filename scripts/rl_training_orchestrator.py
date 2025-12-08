@@ -244,7 +244,9 @@ class RLTrainingOrchestrator:
             experiment_tracker = RLExperimentTracker(project_name="trading-rl-training")
 
             # Create experiment in LangSmith
-            experiment_name = f"{algorithm.lower()}_{symbol.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            experiment_name = (
+                f"{algorithm.lower()}_{symbol.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             experiment_id = experiment_tracker.create_experiment(
                 name=experiment_name,
                 algorithm=algorithm,

@@ -20,7 +20,7 @@ async def test_local_llm_client():
     print("TEST 1: Local LLM Client")
     print("=" * 60)
 
-    from src.core.local_llm import LocalLLMClient, LocalLLMBackend, LocalModel
+    from src.core.local_llm import LocalLLMBackend, LocalLLMClient, LocalModel
 
     client = LocalLLMClient(
         backend=LocalLLMBackend.OLLAMA,
@@ -57,7 +57,7 @@ async def test_openthinker_reasoner():
     print("TEST 2: OpenThinker Reasoner")
     print("=" * 60)
 
-    from src.core.local_llm import OpenThinkerReasoner, LocalModel
+    from src.core.local_llm import LocalModel, OpenThinkerReasoner
 
     reasoner = OpenThinkerReasoner(model=LocalModel.OPENTHINKER_7B)
 

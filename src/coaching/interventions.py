@@ -714,7 +714,10 @@ SELF_DECEPTION_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.SELF_DECEPTION_CHECK,
-        principles=[SieboldPrinciple.RESPONSIBILITY_MINDSET, SieboldPrinciple.SUPREME_SELF_CONFIDENCE],
+        principles=[
+            SieboldPrinciple.RESPONSIBILITY_MINDSET,
+            SieboldPrinciple.SUPREME_SELF_CONFIDENCE,
+        ],
         headline="100% Responsibility Mindset",
         message=(
             "ARBINGER: World-class performers take 100% responsibility for their results. "
@@ -904,7 +907,10 @@ TONY_ROBBINS_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.PURPOSE_REMINDER,
-        principles=[SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS, SieboldPrinciple.EMBRACE_METACOGNITION],
+        principles=[
+            SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS,
+            SieboldPrinciple.EMBRACE_METACOGNITION,
+        ],
         headline="80% Psychology, 20% Mechanics",
         message=(
             "ROBBINS: '80% of success is psychology, 20% is mechanics.' You can have the best "
@@ -936,7 +942,10 @@ TONY_ROBBINS_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.PURPOSE_REMINDER,
-        principles=[SieboldPrinciple.BEAR_MARKET_OPPORTUNITY, SieboldPrinciple.OPERATE_FROM_ABUNDANCE],
+        principles=[
+            SieboldPrinciple.BEAR_MARKET_OPPORTUNITY,
+            SieboldPrinciple.OPERATE_FROM_ABUNDANCE,
+        ],
         headline="Bear Markets = Opportunity",
         message=(
             "ROBBINS: 'Market turmoil isn't something to fear. It's the greatest opportunity to "
@@ -968,7 +977,10 @@ TONY_ROBBINS_INTERVENTIONS = [
     ),
     CoachingIntervention(
         intervention_type=InterventionType.BIAS_CORRECTION,
-        principles=[SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS, SieboldPrinciple.LOSS_AVERSION_AWARENESS],
+        principles=[
+            SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS,
+            SieboldPrinciple.LOSS_AVERSION_AWARENESS,
+        ],
         headline="The 6 Psychological Mistakes",
         message=(
             "ROBBINS' 6 mistakes that destroy wealth:\n"

@@ -52,6 +52,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PositionDiff:
     """Difference between local and Alpaca position."""
+
     symbol: str
     local_qty: float
     alpaca_qty: float
@@ -65,6 +66,7 @@ class PositionDiff:
 @dataclass
 class ReconciliationReport:
     """Full reconciliation report."""
+
     timestamp: datetime
     local_equity: float
     alpaca_equity: float
@@ -142,7 +144,7 @@ class PositionReconciler:
         alpaca_positions = self.client.get_all_positions()
 
         alpaca_equity = float(alpaca_account.equity)
-        alpaca_cash = float(alpaca_account.cash)
+        _alpaca_cash = float(alpaca_account.cash)
         starting_balance = 100000.0  # Known starting balance
         alpaca_pl = alpaca_equity - starting_balance
 
@@ -259,42 +261,48 @@ class PositionReconciler:
                 else:
                     status = "match"
 
-                diffs.append(PositionDiff(
-                    symbol=symbol,
-                    local_qty=local_qty,
-                    alpaca_qty=alpaca_qty,
-                    local_value=local_value,
-                    alpaca_value=alpaca_value,
-                    qty_diff=qty_diff,
-                    value_diff=value_diff,
-                    status=status,
-                ))
+                diffs.append(
+                    PositionDiff(
+                        symbol=symbol,
+                        local_qty=local_qty,
+                        alpaca_qty=alpaca_qty,
+                        local_value=local_value,
+                        alpaca_value=alpaca_value,
+                        qty_diff=qty_diff,
+                        value_diff=value_diff,
+                        status=status,
+                    )
+                )
 
             elif local_pos and not alpaca_pos:
                 # Local has position but Alpaca doesn't (phantom)
-                diffs.append(PositionDiff(
-                    symbol=symbol,
-                    local_qty=float(local_pos.get("quantity", 0)),
-                    alpaca_qty=0,
-                    local_value=float(local_pos.get("amount", 0)),
-                    alpaca_value=0,
-                    qty_diff=float(local_pos.get("quantity", 0)),
-                    value_diff=float(local_pos.get("amount", 0)),
-                    status="missing_alpaca",
-                ))
+                diffs.append(
+                    PositionDiff(
+                        symbol=symbol,
+                        local_qty=float(local_pos.get("quantity", 0)),
+                        alpaca_qty=0,
+                        local_value=float(local_pos.get("amount", 0)),
+                        alpaca_value=0,
+                        qty_diff=float(local_pos.get("quantity", 0)),
+                        value_diff=float(local_pos.get("amount", 0)),
+                        status="missing_alpaca",
+                    )
+                )
 
             elif alpaca_pos and not local_pos:
                 # Alpaca has position but local doesn't (missing)
-                diffs.append(PositionDiff(
-                    symbol=symbol,
-                    local_qty=0,
-                    alpaca_qty=float(alpaca_pos.qty),
-                    local_value=0,
-                    alpaca_value=float(alpaca_pos.market_value),
-                    qty_diff=float(alpaca_pos.qty),
-                    value_diff=float(alpaca_pos.market_value),
-                    status="missing_local",
-                ))
+                diffs.append(
+                    PositionDiff(
+                        symbol=symbol,
+                        local_qty=0,
+                        alpaca_qty=float(alpaca_pos.qty),
+                        local_value=0,
+                        alpaca_value=float(alpaca_pos.market_value),
+                        qty_diff=float(alpaca_pos.qty),
+                        value_diff=float(alpaca_pos.market_value),
+                        status="missing_local",
+                    )
+                )
 
         return diffs
 
@@ -321,19 +329,21 @@ class PositionReconciler:
         # Rebuild positions from Alpaca
         new_positions = []
         for pos in alpaca_positions:
-            new_positions.append({
-                "symbol": pos.symbol,
-                "tier": "unknown",
-                "amount": float(pos.market_value),
-                "order_id": None,
-                "entry_date": datetime.now().isoformat(),
-                "entry_price": float(pos.avg_entry_price),
-                "current_price": float(pos.current_price),
-                "quantity": float(pos.qty),
-                "unrealized_pl": float(pos.unrealized_pl),
-                "unrealized_pl_pct": float(pos.unrealized_plpc) * 100,
-                "last_updated": datetime.now().isoformat(),
-            })
+            new_positions.append(
+                {
+                    "symbol": pos.symbol,
+                    "tier": "unknown",
+                    "amount": float(pos.market_value),
+                    "order_id": None,
+                    "entry_date": datetime.now().isoformat(),
+                    "entry_price": float(pos.avg_entry_price),
+                    "current_price": float(pos.current_price),
+                    "quantity": float(pos.qty),
+                    "unrealized_pl": float(pos.unrealized_pl),
+                    "unrealized_pl_pct": float(pos.unrealized_plpc) * 100,
+                    "last_updated": datetime.now().isoformat(),
+                }
+            )
 
         local_state["performance"]["open_positions"] = new_positions
         fixes.append(f"Synced {len(new_positions)} positions from Alpaca")
@@ -384,7 +394,9 @@ class PositionReconciler:
         report_dir = Path("data/reconciliation")
         report_dir.mkdir(parents=True, exist_ok=True)
 
-        report_file = report_dir / f"reconciliation_{report.timestamp.strftime('%Y%m%d_%H%M%S')}.json"
+        report_file = (
+            report_dir / f"reconciliation_{report.timestamp.strftime('%Y%m%d_%H%M%S')}.json"
+        )
 
         report_data = {
             "timestamp": report.timestamp.isoformat(),

@@ -24,9 +24,8 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 from urllib.request import Request, urlopen
-from urllib.error import URLError
 
 logger = logging.getLogger(__name__)
 
@@ -242,30 +241,38 @@ class EmergencyAlerts:
             # Color based on priority
             colors = {
                 self.PRIORITY_CRITICAL: "#FF0000",  # Red
-                self.PRIORITY_HIGH: "#FF9900",      # Orange
-                self.PRIORITY_MEDIUM: "#FFCC00",    # Yellow
-                self.PRIORITY_LOW: "#00CC00",       # Green
+                self.PRIORITY_HIGH: "#FF9900",  # Orange
+                self.PRIORITY_MEDIUM: "#FFCC00",  # Yellow
+                self.PRIORITY_LOW: "#00CC00",  # Green
             }
 
             payload = {
-                "attachments": [{
-                    "color": colors.get(priority, "#808080"),
-                    "title": f"🚨 {title}",
-                    "text": message,
-                    "fields": [
-                        {"title": "Priority", "value": priority.upper(), "short": True},
-                        {"title": "Time", "value": datetime.now().strftime("%H:%M:%S"), "short": True},
-                    ],
-                    "footer": "Trading System Alert",
-                }]
+                "attachments": [
+                    {
+                        "color": colors.get(priority, "#808080"),
+                        "title": f"🚨 {title}",
+                        "text": message,
+                        "fields": [
+                            {"title": "Priority", "value": priority.upper(), "short": True},
+                            {
+                                "title": "Time",
+                                "value": datetime.now().strftime("%H:%M:%S"),
+                                "short": True,
+                            },
+                        ],
+                        "footer": "Trading System Alert",
+                    }
+                ]
             }
 
             if data:
-                payload["attachments"][0]["fields"].append({
-                    "title": "Details",
-                    "value": f"```{json.dumps(data, indent=2)[:500]}```",
-                    "short": False,
-                })
+                payload["attachments"][0]["fields"].append(
+                    {
+                        "title": "Details",
+                        "value": f"```{json.dumps(data, indent=2)[:500]}```",
+                        "short": False,
+                    }
+                )
 
             req = Request(
                 self.slack_webhook,
@@ -299,30 +306,38 @@ class EmergencyAlerts:
             # Color based on priority (Discord uses decimal)
             colors = {
                 self.PRIORITY_CRITICAL: 16711680,  # Red
-                self.PRIORITY_HIGH: 16744192,      # Orange
-                self.PRIORITY_MEDIUM: 16776960,    # Yellow
-                self.PRIORITY_LOW: 65280,          # Green
+                self.PRIORITY_HIGH: 16744192,  # Orange
+                self.PRIORITY_MEDIUM: 16776960,  # Yellow
+                self.PRIORITY_LOW: 65280,  # Green
             }
 
             payload = {
-                "embeds": [{
-                    "title": f"🚨 {title}",
-                    "description": message,
-                    "color": colors.get(priority, 8421504),
-                    "fields": [
-                        {"name": "Priority", "value": priority.upper(), "inline": True},
-                        {"name": "Time", "value": datetime.now().strftime("%H:%M:%S"), "inline": True},
-                    ],
-                    "footer": {"text": "Trading System Alert"},
-                }]
+                "embeds": [
+                    {
+                        "title": f"🚨 {title}",
+                        "description": message,
+                        "color": colors.get(priority, 8421504),
+                        "fields": [
+                            {"name": "Priority", "value": priority.upper(), "inline": True},
+                            {
+                                "name": "Time",
+                                "value": datetime.now().strftime("%H:%M:%S"),
+                                "inline": True,
+                            },
+                        ],
+                        "footer": {"text": "Trading System Alert"},
+                    }
+                ]
             }
 
             if data:
-                payload["embeds"][0]["fields"].append({
-                    "name": "Details",
-                    "value": f"```json\n{json.dumps(data, indent=2)[:500]}\n```",
-                    "inline": False,
-                })
+                payload["embeds"][0]["fields"].append(
+                    {
+                        "name": "Details",
+                        "value": f"```json\n{json.dumps(data, indent=2)[:500]}\n```",
+                        "inline": False,
+                    }
+                )
 
             req = Request(
                 self.discord_webhook,
@@ -357,14 +372,16 @@ class EmergencyAlerts:
                     alerts = json.load(f)
 
             # Add new alert
-            alerts.append({
-                "timestamp": datetime.now().isoformat(),
-                "title": title,
-                "message": message,
-                "priority": priority,
-                "data": data,
-                "delivery_results": results,
-            })
+            alerts.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "title": title,
+                    "message": message,
+                    "priority": priority,
+                    "data": data,
+                    "delivery_results": results,
+                }
+            )
 
             # Keep last 1000 alerts
             alerts = alerts[-1000:]

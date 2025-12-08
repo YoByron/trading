@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
@@ -35,6 +35,7 @@ T = TypeVar("T")
 
 class ComponentStatus(Enum):
     """Health status of system components."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     FAILED = "failed"
@@ -44,6 +45,7 @@ class ComponentStatus(Enum):
 @dataclass
 class HealthCheckResult:
     """Result of a health check."""
+
     component: str
     status: ComponentStatus
     message: str
@@ -65,6 +67,7 @@ def retry_with_backoff(
     This is how you handle transient failures - not by alerting,
     but by automatically retrying.
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -77,11 +80,13 @@ def retry_with_backoff(
                     last_exception = e
 
                     if attempt == max_retries:
-                        logger.error(f"{func.__name__} failed after {max_retries + 1} attempts: {e}")
+                        logger.error(
+                            f"{func.__name__} failed after {max_retries + 1} attempts: {e}"
+                        )
                         raise
 
                     # Calculate delay with exponential backoff
-                    delay = min(base_delay * (exponential_base ** attempt), max_delay)
+                    delay = min(base_delay * (exponential_base**attempt), max_delay)
 
                     logger.warning(
                         f"{func.__name__} failed (attempt {attempt + 1}/{max_retries + 1}), "
@@ -90,14 +95,17 @@ def retry_with_backoff(
                     time.sleep(delay)
 
             raise last_exception
+
         return wrapper
+
     return decorator
 
 
 class CircuitState(Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, reject calls
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject calls
     HALF_OPEN = "half_open"  # Testing recovery
 
 
@@ -246,7 +254,9 @@ class FailoverSystem:
             from alpaca.trading.client import TradingClient
 
             api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("APCA_API_KEY_ID")
-            secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("APCA_API_SECRET_KEY")
+            secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+                "APCA_API_SECRET_KEY"
+            )
 
             if not api_key or not secret_key:
                 return True  # Skip check if not configured
@@ -448,7 +458,7 @@ class FailoverSystem:
         if self.STATE_FILE.exists():
             try:
                 with open(self.STATE_FILE) as f:
-                    state = json.load(f)
+                    _ = json.load(f)
                     # Could restore circuit breaker states here
                     logger.debug("Loaded failover state")
             except Exception as e:
@@ -482,10 +492,7 @@ class FailoverSystem:
 
         # State persistence should work
         state_result = self.check_component("state_persistence")
-        if state_result.status == ComponentStatus.FAILED:
-            return False
-
-        return True
+        return state_result.status != ComponentStatus.FAILED
 
 
 class Watchdog:
@@ -587,6 +594,7 @@ def with_failover(component: str = "alpaca_api"):
         def place_order(...):
             ...
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -601,12 +609,13 @@ def with_failover(component: str = "alpaca_api"):
                 if circuit:
                     circuit.record_success()
                 return result
-            except Exception as e:
+            except Exception:
                 if circuit:
                     circuit.record_failure()
                 raise
 
         return wrapper
+
     return decorator
 
 
