@@ -341,11 +341,10 @@ def execute_crypto_trading() -> None:
                 # NEW: Update performance log so dashboard sees the impact
                 try:
                     import subprocess
+
                     perf_script = Path(os.path.dirname(__file__)) / "update_performance_log.py"
                     subprocess.run(
-                        [sys.executable, str(perf_script)],
-                        check=False,
-                        env=os.environ.copy()
+                        [sys.executable, str(perf_script)], check=False, env=os.environ.copy()
                     )
                     logger.info("✅ Performance log updated via subprocess")
                 except Exception as e:
@@ -522,14 +521,28 @@ def main() -> None:
     logger.info("Starting hybrid funnel orchestrator entrypoint.")
     tickers = _parse_tickers()
 
-    try:
-        orchestrator = TradingOrchestrator(tickers=tickers)
-        orchestrator.run()
-        logger.info("Trading session completed.")
-    except Exception as e:
-        logger.critical(f"❌ CRITICAL: Trading session crashed: {e}", exc_info=True)
-        # We re-raise to ensure the workflow still fails, but now it's logged with stack trace
-        raise
+    MAX_RETRIES = 3
+    RETRY_DELAY = 30  # seconds
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            logger.info(f"Attempt {attempt}/{MAX_RETRIES}: Starting hybrid funnel orchestrator...")
+            orchestrator = TradingOrchestrator(tickers=tickers)
+            orchestrator.run()
+            logger.info("Trading session completed successfully.")
+            break
+        except Exception as e:
+            logger.error(f"❌ Attempt {attempt} failed: {e}", exc_info=True)
+            if attempt < MAX_RETRIES:
+                logger.info(f"Retrying in {RETRY_DELAY} seconds...")
+                import time
+
+                time.sleep(RETRY_DELAY)
+            else:
+                logger.critical(
+                    f"❌ CRITICAL: All {MAX_RETRIES} attempts failed. Trading session crashed."
+                )
+                raise
 
     # Execute options live simulation (theta harvest)
     options_enabled = _flag_enabled("ENABLE_OPTIONS_SIM", "true")
