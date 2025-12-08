@@ -155,7 +155,7 @@ jobs:
   # Main trading execution job
   execute-trading:
     runs-on: ubuntu-22.04  # Pinned Ubuntu version
-    timeout-minutes: 20  # Reduced from 30 since backtests are separate
+    timeout-minutes: 30  # Increased to handle retries
     needs: validate-and-test
     if: needs.validate-and-test.outputs.secrets_valid == 'true'
     env:
@@ -450,7 +450,7 @@ jobs:
       - name: Pre-market health check
         id: health_check
         if: steps.check_execution.outputs.skip != 'true'
-        timeout-minutes: 1  # Fail fast if health check hangs
+        timeout-minutes: 5  # Increased from 1 to allow efficient API checks
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
@@ -462,11 +462,9 @@ jobs:
 
           if [ $? -ne 0 ]; then
             echo "❌ HEALTH CHECK FAILED - Aborting trading execution"
-            echo "health_check_passed=false" >> $GITHUB_OUTPUT
             exit 1
           else
             echo "✅ HEALTH CHECK PASSED - Proceeding with trading"
-            echo "health_check_passed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Execute daily trading
