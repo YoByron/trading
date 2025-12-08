@@ -440,14 +440,18 @@ def calculate_ai_attribution_enhanced(trades: list[dict[str, Any]]) -> dict[str,
         else:
             # Fallback to agent_type field
             agent_type_raw = trade.get("agent_type", "unknown")
+            strategy = trade.get("strategy", "")
+
             if "rl" in agent_type_raw.lower() or "reinforcement" in agent_type_raw.lower():
                 agent_type = "rl_policy"
             elif "llm" in agent_type_raw.lower() or "claude" in agent_type_raw.lower():
                 agent_type = "llm_analyst"
             elif "heuristic" in agent_type_raw.lower():
-                agent_type = "heuristic"
+                agent_type = "momentum_heuristic"
             elif "fallback" in agent_type_raw.lower():
                 agent_type = "fallback"
+            elif strategy == "CryptoStrategy" or "Crypto" in strategy or "Strategy" in strategy:
+                agent_type = "momentum_heuristic"
             else:
                 agent_type = "unknown"
 
