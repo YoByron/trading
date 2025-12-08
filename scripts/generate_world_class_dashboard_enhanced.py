@@ -51,7 +51,7 @@ def calculate_basic_metrics():
             start_date = datetime.fromisoformat(start_date_str).date()
             today = date.today()
             days_elapsed = max((today - start_date).days + 1, 1)
-        except:
+        except Exception:
             days_elapsed = max(system_state.get("challenge", {}).get("current_day", 1), 1)
         starting_balance = 100000.0
 

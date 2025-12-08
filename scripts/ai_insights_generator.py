@@ -134,7 +134,7 @@ class AIInsightsGenerator:
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             return 9 <= dt.hour < 12
-        except:
+        except Exception:
             return False
 
     def _detect_anomalies(self, perf_log: list[dict], all_trades: list[dict]) -> list[str]:
