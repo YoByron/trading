@@ -153,7 +153,7 @@ class InMemoryCollection:
     def query(self, query_texts: list[str], n_results: int = 5, where: dict | None = None):
         # Filter first
         indices = []
-        for i, (meta, _doc_id) in enumerate(zip(self.metadatas, self.ids)):
+        for i, (meta, _doc_id) in enumerate(zip(self.metadatas, self.ids, strict=False)):
             if where:
                 match = all(meta.get(k) == v for k, v in where.items())
                 if not match:
@@ -196,7 +196,9 @@ class InMemoryCollection:
 
             # Combine: 0.7 Semantic + 0.3 Keyword
             candidates = []
-            for idx, (sem_score, bm_score) in enumerate(zip(semantic_scores, bm25_scores)):
+            for idx, (sem_score, bm_score) in enumerate(
+                zip(semantic_scores, bm25_scores, strict=False)
+            ):
                 original_idx = indices[idx]
                 hybrid_score = (0.7 * float(sem_score)) + (0.3 * float(bm_score))
 
