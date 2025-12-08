@@ -13,10 +13,10 @@ Usage:
 """
 
 from .multi_broker import (
-    MultiBroker,
-    get_multi_broker,
     BrokerType,
+    MultiBroker,
     OrderResult,
+    get_multi_broker,
 )
 from .tradier_client import (
     TradierClient,

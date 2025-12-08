@@ -19,7 +19,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Optional, TypeVar
 
-from src.safety.failover_system import retry_with_backoff, CircuitBreakerPattern
+from src.safety.failover_system import CircuitBreakerPattern
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ T = TypeVar("T")
 
 class BrokerType(Enum):
     """Available broker types."""
+
     ALPACA = "alpaca"
     TRADIER = "tradier"
 
@@ -35,6 +36,7 @@ class BrokerType(Enum):
 @dataclass
 class BrokerHealth:
     """Health status of a broker."""
+
     broker: BrokerType
     is_healthy: bool
     last_check: datetime
@@ -45,6 +47,7 @@ class BrokerHealth:
 @dataclass
 class OrderResult:
     """Unified order result across brokers."""
+
     broker: BrokerType
     order_id: str
     symbol: str
@@ -97,7 +100,9 @@ class MultiBroker:
         self._alpaca_client = None
         self._tradier_client = None
 
-        logger.info(f"MultiBroker initialized with primary={primary.value}, failover={enable_failover}")
+        logger.info(
+            f"MultiBroker initialized with primary={primary.value}, failover={enable_failover}"
+        )
 
     @property
     def alpaca(self):
@@ -107,7 +112,9 @@ class MultiBroker:
                 from alpaca.trading.client import TradingClient
 
                 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("APCA_API_KEY_ID")
-                secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("APCA_API_SECRET_KEY")
+                secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+                    "APCA_API_SECRET_KEY"
+                )
 
                 if api_key and secret_key:
                     self._alpaca_client = TradingClient(api_key, secret_key, paper=True)
@@ -227,23 +234,29 @@ class MultiBroker:
 
         def alpaca_call():
             positions = self.alpaca.get_all_positions()
-            return [{
-                "symbol": pos.symbol,
-                "quantity": float(pos.qty),
-                "market_value": float(pos.market_value),
-                "unrealized_pl": float(pos.unrealized_pl),
-                "cost_basis": float(pos.cost_basis),
-            } for pos in positions]
+            return [
+                {
+                    "symbol": pos.symbol,
+                    "quantity": float(pos.qty),
+                    "market_value": float(pos.market_value),
+                    "unrealized_pl": float(pos.unrealized_pl),
+                    "cost_basis": float(pos.cost_basis),
+                }
+                for pos in positions
+            ]
 
         def tradier_call():
             positions = self.tradier.get_positions()
-            return [{
-                "symbol": pos.symbol,
-                "quantity": pos.quantity,
-                "market_value": pos.market_value,
-                "unrealized_pl": pos.unrealized_pl,
-                "cost_basis": pos.cost_basis,
-            } for pos in positions]
+            return [
+                {
+                    "symbol": pos.symbol,
+                    "quantity": pos.quantity,
+                    "market_value": pos.market_value,
+                    "unrealized_pl": pos.unrealized_pl,
+                    "cost_basis": pos.cost_basis,
+                }
+                for pos in positions
+            ]
 
         return self._execute_with_failover(alpaca_call, tradier_call, "get_positions")
 
@@ -268,8 +281,8 @@ class MultiBroker:
         Returns:
             OrderResult with broker info
         """
-        from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
+        from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest
 
         def alpaca_call():
             alpaca_side = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
@@ -314,7 +327,9 @@ class MultiBroker:
                 symbol=symbol,
                 side=side,
                 quantity=qty,
-                status=result.status.value if hasattr(result.status, 'value') else str(result.status),
+                status=result.status.value
+                if hasattr(result.status, "value")
+                else str(result.status),
                 filled_price=float(result.filled_avg_price) if result.filled_avg_price else None,
                 timestamp=datetime.now().isoformat(),
             )
@@ -332,13 +347,14 @@ class MultiBroker:
 
     def get_quote(self, symbol: str) -> tuple[dict, BrokerType]:
         """Get quote from available broker."""
-        from alpaca.data.live import StockDataStream
-        from alpaca.data.requests import StockLatestQuoteRequest
         from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests import StockLatestQuoteRequest
 
         def alpaca_call():
             api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("APCA_API_KEY_ID")
-            secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("APCA_API_SECRET_KEY")
+            secret_key = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+                "APCA_API_SECRET_KEY"
+            )
 
             client = StockHistoricalDataClient(api_key, secret_key)
             request = StockLatestQuoteRequest(symbol_or_symbols=[symbol])
@@ -419,8 +435,8 @@ def get_multi_broker() -> MultiBroker:
 
 # CLI interface
 if __name__ == "__main__":
-    import sys
     import json
+    import sys
 
     logging.basicConfig(level=logging.INFO)
 

@@ -19,8 +19,8 @@ from youtube_transcript_api import YouTubeTranscriptApi
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.utils.ytdlp_cli import run_ytdlp_dump_json
 from src.core.multi_llm_analysis import MultiLLMAnalyzer
+from src.utils.ytdlp_cli import run_ytdlp_dump_json
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent
@@ -197,9 +197,7 @@ class YouTubeMonitor:
                 if not video_id:
                     continue
 
-                video_info = run_ytdlp_dump_json(
-                    f"https://www.youtube.com/watch?v={video_id}"
-                )
+                video_info = run_ytdlp_dump_json(f"https://www.youtube.com/watch?v={video_id}")
 
                 # Check if already processed
                 if video_id in self.processed_videos:

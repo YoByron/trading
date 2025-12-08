@@ -118,9 +118,7 @@ class EnhancedTradingCouncil(TradingCouncil):
         # OpenThinker contrarian validation
         if self._openthinker_available and self.openthinker_agent:
             openthinker_task = asyncio.create_task(
-                self.openthinker_agent.validate_trade(
-                    symbol, action, market_data, context
-                )
+                self.openthinker_agent.validate_trade(symbol, action, market_data, context)
             )
             tasks.append(("openthinker", openthinker_task))
 
@@ -205,9 +203,7 @@ class EnhancedTradingCouncil(TradingCouncil):
         await self._initialize_openthinker()
 
         # Get cloud recommendation
-        cloud_result = await super().get_trading_recommendation(
-            symbol, market_data, context
-        )
+        cloud_result = await super().get_trading_recommendation(symbol, market_data, context)
 
         # Get OpenThinker analysis if available
         openthinker_result = None
@@ -395,7 +391,7 @@ if __name__ == "__main__":
 
         if result.get("openthinker_result"):
             ot = result["openthinker_result"]
-            print(f"\nOpenThinker Analysis:")
+            print("\nOpenThinker Analysis:")
             print(f"  Approved: {ot.get('approved')}")
             print(f"  Confidence: {ot.get('confidence')}")
             print(f"  Concerns: {ot.get('concerns', [])[:3]}")
