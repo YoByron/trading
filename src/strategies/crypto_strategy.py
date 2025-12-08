@@ -235,6 +235,14 @@ class CryptoStrategy:
         logger.info("=" * 70)
 
         try:
+            # CRITICAL FIX: Manage existing positions FIRST (check stop-loss/take-profit)
+            # This was missing - positions would never exit!
+            closed_positions = self.manage_positions()
+            if closed_positions:
+                logger.info(f"Closed {len(closed_positions)} positions before new trades")
+                for pos in closed_positions:
+                    logger.info(f"  - {pos.symbol}: {pos.reason}")
+
             # Execute daily logic
             order = self.execute_daily()
 
@@ -246,12 +254,28 @@ class CryptoStrategy:
                     "quantity": order.quantity,
                     "price": order.price,
                     "reason": order.reason,
+                    "closed_positions": len(closed_positions),
+                    "closed_details": [
+                        {"symbol": p.symbol, "reason": p.reason} for p in closed_positions
+                    ],
                 }
             else:
+                # Still return success if we closed positions (even if no new trades)
+                if closed_positions:
+                    return {
+                        "success": True,
+                        "reason": "positions_managed",
+                        "message": f"Closed {len(closed_positions)} positions, no new trades",
+                        "closed_positions": len(closed_positions),
+                        "closed_details": [
+                            {"symbol": p.symbol, "reason": p.reason} for p in closed_positions
+                        ],
+                    }
                 return {
                     "success": False,
                     "reason": "no_valid_trades",
                     "message": "No valid crypto opportunities today",
+                    "closed_positions": 0,
                 }
 
         except Exception as e:
