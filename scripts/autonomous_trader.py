@@ -180,10 +180,118 @@ def execute_crypto_trading() -> None:
         )
 
         # Execute crypto trading
-        order = crypto_strategy.execute_daily()
+        result = crypto_strategy.execute()
 
+        # Handle Closed Positions
+        closed_positions = result.get("closed_positions", [])
+        if closed_positions:
+            logger.info(f"Processing {len(closed_positions)} closed positions")
+
+            try:
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                trades_file = Path(f"data/trades_{today_str}.json")
+
+                # Load existing or init new
+                if trades_file.exists():
+                    try:
+                        with open(trades_file) as f:
+                            daily_trades = json.load(f)
+                    except:
+                        daily_trades = []
+                else:
+                    daily_trades = []
+
+                for exit_order in closed_positions:
+                    logger.info(
+                        f"✅ Crypto position closed: {exit_order.symbol} (P/L: {exit_order.pl_pct * 100:.2f}%)"
+                    )
+
+                    trade_record = {
+                        "symbol": exit_order.symbol,
+                        "action": "SELL",
+                        "amount": exit_order.amount,
+                        "quantity": exit_order.quantity,
+                        "price": exit_order.price,
+                        "timestamp": exit_order.timestamp.isoformat(),
+                        "status": "FILLED",
+                        "strategy": "CryptoStrategy",
+                        "reason": exit_order.reason,
+                        "mode": "ANALYSIS" if trader is None else "LIVE",
+                        "pl": exit_order.pl,
+                        "pl_pct": exit_order.pl_pct,
+                        "attribution_metadata": exit_order.attribution,
+                        "agent_type": "momentum_heuristic",
+                    }
+                    daily_trades.append(trade_record)
+                    _update_system_state_with_closed_position(trade_record, logger)
+
+                # Write back
+                with open(trades_file, "w") as f:
+                    json.dump(daily_trades, f, indent=4)
+
+                logger.info(f"💾 Closed trades saved to {trades_file}")
+
+            except Exception as e:
+                logger.error(f"Failed to persist closed trades: {e}")
+
+        # Handle New Buy Order
+        order = result.get("order")
         if order:
             logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
+
+            # PERSISTENCE: Save trade to daily JSON ledger so dashboard sees it
+            try:
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                trades_file = Path(f"data/trades_{today_str}.json")
+
+                # Load existing or init new
+                if trades_file.exists():
+                    try:
+                        with open(trades_file) as f:
+                            daily_trades = json.load(f)
+                    except:
+                        daily_trades = []
+                else:
+                    daily_trades = []
+
+                # Append new trade
+                trade_record = {
+                    "symbol": order.symbol,
+                    "action": order.action.upper(),
+                    "amount": order.amount,
+                    "quantity": order.quantity,
+                    "price": order.price,
+                    "timestamp": order.timestamp.isoformat(),
+                    "status": "FILLED",
+                    "strategy": "CryptoStrategy",
+                    "reason": order.reason,
+                    "mode": "ANALYSIS" if trader is None else "LIVE",
+                    "attribution_metadata": order.attribution,  # Add attribution!
+                    "agent_type": "momentum_heuristic",
+                }
+                daily_trades.append(trade_record)
+
+                # Write back
+                with open(trades_file, "w") as f:
+                    json.dump(daily_trades, f, indent=4)
+
+                logger.info(f"💾 Trade saved to {trades_file}")
+                _update_system_state_with_crypto_trade(trade_record, logger)
+
+                # NEW: Update performance log so dashboard sees the impact
+                try:
+                    import subprocess
+
+                    perf_script = Path(os.path.dirname(__file__)) / "update_performance_log.py"
+                    subprocess.run(
+                        [sys.executable, str(perf_script)], check=False, env=os.environ.copy()
+                    )
+                    logger.info("✅ Performance log updated via subprocess")
+                except Exception as e:
+                    logger.warning(f"Failed to update performance log: {e}")
+
+            except Exception as e:
+                logger.error(f"Failed to persist trade to JSON: {e}")
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
 
@@ -241,6 +349,56 @@ def get_account_equity() -> float:
         logger = setup_logging()
         logger.warning(f"Could not fetch account equity: {e}. Using base input.")
         return 0.0
+
+
+def _update_system_state_with_crypto_trade(trade_record: dict, logger) -> None:
+    """Update system state with new crypto trade."""
+    try:
+        if SYSTEM_STATE_PATH.exists():
+            with open(SYSTEM_STATE_PATH) as f:
+                state = json.load(f)
+        else:
+            state = {}
+
+        strategies = state.get("strategies", {})
+        tier5 = strategies.get("tier5", {})
+
+        tier5["trades_executed"] = tier5.get("trades_executed", 0) + 1
+        tier5["total_invested"] = tier5.get("total_invested", 0.0) + trade_record.get("amount", 0.0)
+        tier5["last_execution"] = datetime.now().isoformat()
+
+        strategies["tier5"] = tier5
+        state["strategies"] = strategies
+
+        with open(SYSTEM_STATE_PATH, "w") as f:
+            json.dump(state, f, indent=4)
+    except Exception as e:
+        logger.warning(f"Failed to update system state: {e}")
+
+
+def _update_system_state_with_closed_position(trade_record: dict, logger) -> None:
+    """Update system state with closed crypto position."""
+    try:
+        if SYSTEM_STATE_PATH.exists():
+            with open(SYSTEM_STATE_PATH) as f:
+                state = json.load(f)
+        else:
+            state = {}
+
+        strategies = state.get("strategies", {})
+        tier5 = strategies.get("tier5", {})
+
+        # Update realized P/L
+        current_pl = tier5.get("realized_pl", 0.0)
+        tier5["realized_pl"] = current_pl + trade_record.get("pl", 0.0)
+
+        strategies["tier5"] = tier5
+        state["strategies"] = strategies
+
+        with open(SYSTEM_STATE_PATH, "w") as f:
+            json.dump(state, f, indent=4)
+    except Exception as e:
+        logger.warning(f"Failed to update system state: {e}")
 
 
 def main() -> None:
