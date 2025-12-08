@@ -85,6 +85,12 @@ class CryptoOrder:
     stop_loss: float | None
     timestamp: datetime
     reason: str
+    attribution: dict | None = None
+    pl: float | None = None
+    pl_pct: float | None = None
+    attribution: dict | None = None
+    pl: float | None = None
+    pl_pct: float | None = None
 
 
 class CryptoStrategy:
@@ -287,6 +293,21 @@ class CryptoStrategy:
 
             logger.info(f"Selected crypto (algorithm): {best_coin}")
 
+            # Find the score object for the selected coin
+            best_score = next((s for s in scores if s.symbol == best_coin), None)
+
+            # Retrieve RAG insights
+            metrics_dict = (
+                {
+                    "rsi": best_score.rsi,
+                    "macd": best_score.macd_histogram,
+                    "volume_ratio": best_score.volume_ratio,
+                }
+                if best_score
+                else {}
+            )
+            rag_insights = self.get_rag_insights(best_coin, metrics_dict)
+
             # Step 2.5: Validate against CoinSnacks newsletter
             validation = self.get_newsletter_validation(best_coin)
 
@@ -327,10 +348,27 @@ class CryptoStrategy:
                 return None
 
             # Step 6: Create order
+            # Construct attribution metadata
+            attribution = {
+                "agent_type": "CryptoStrategy",
+                "gate1_momentum": {
+                    "score": best_score.score if best_score else 0,
+                    "rsi": best_score.rsi if best_score else 0,
+                    "macd": best_score.macd_histogram if best_score else 0,
+                },
+                "gate2_rag": rag_insights
+                if rag_insights and rag_insights.get("available")
+                else None,
+                "gate3_newsletter": validation
+                if validation and validation.get("available")
+                else None,
+            }
+
             order = self._create_buy_order(
                 symbol=best_coin,
                 quantity=quantity,
                 price=current_price,
+                attribution=attribution,
             )
 
             # Step 7: Execute order via Alpaca
@@ -974,6 +1012,7 @@ class CryptoStrategy:
         symbol: str,
         quantity: float,
         price: float,
+        attribution: dict | None = None,
     ) -> CryptoOrder:
         """Create a buy order with stop-loss."""
         amount = quantity * price
@@ -989,6 +1028,7 @@ class CryptoStrategy:
             stop_loss=stop_loss_price,
             timestamp=datetime.now(),
             reason="Daily crypto purchase - best momentum coin",
+            attribution=attribution,
         )
 
     def _update_holdings(self, symbol: str, quantity: float) -> None:
@@ -1094,6 +1134,12 @@ class CryptoStrategy:
                             stop_loss=None,
                             timestamp=datetime.now(),
                             reason=f"Stop-loss triggered at {unrealized_plpc * 100:.2f}% loss",
+                            pl=unrealized_pl,
+                            pl_pct=unrealized_plpc,
+                            attribution={
+                                "reason": "Stop-loss triggered",
+                                "pl_pct": unrealized_plpc,
+                            },
                         )
 
                         closed_positions.append(exit_order)
@@ -1130,6 +1176,12 @@ class CryptoStrategy:
                             stop_loss=None,
                             timestamp=datetime.now(),
                             reason=f"Take-profit triggered at {unrealized_plpc * 100:.2f}% profit",
+                            pl=unrealized_pl,
+                            pl_pct=unrealized_plpc,
+                            attribution={
+                                "reason": "Take-profit triggered",
+                                "pl_pct": unrealized_plpc,
+                            },
                         )
 
                         closed_positions.append(exit_order)

@@ -93,7 +93,7 @@ class SentimentRAGStore:
         embeddings = self.embedder.embed_batch([doc.text for doc in docs])
 
         with self.connection:
-            for doc, embedding in zip(docs, embeddings):
+            for doc, embedding in zip(docs, embeddings, strict=False):
                 metadata = doc.metadata
                 created_at = _resolve_created_at(metadata)
                 payload = (
