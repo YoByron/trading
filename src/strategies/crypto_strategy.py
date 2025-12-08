@@ -17,11 +17,13 @@ Target: High-risk experimental returns
 Risk Level: VERY HIGH
 """
 
+import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -41,6 +43,15 @@ try:
 except ImportError:
     NEWSLETTER_AVAILABLE = False
     logger.info("NewsletterAnalyzer not available - crypto trades will use algo-only signals")
+
+# RAG integration (optional)
+try:
+    from src.agents.crypto_learner_agent import CryptoLearnerAgent
+
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    logger.info("CryptoLearnerAgent not available - crypto trades will use algo-only signals")
 
 
 class CryptoSentiment(Enum):
@@ -86,11 +97,6 @@ class CryptoOrder:
     timestamp: datetime
     reason: str
     attribution: dict | None = None
-    pl: float | None = None
-    pl_pct: float | None = None
-    attribution: dict | None = None
-    pl: float | None = None
-    pl_pct: float | None = None
 
 
 class CryptoStrategy:
@@ -115,7 +121,12 @@ class CryptoStrategy:
     """
 
     # Default crypto universe (Alpaca crypto symbols)
-    DEFAULT_CRYPTO_UNIVERSE = ["BTCUSD", "ETHUSD"]
+    # Updated Dec 2025: Added SOL based on Luke Belmar's top 5 crypto picks
+    # - ETH: $10,000+ target (ETF catalyst)
+    # - SOL: $500 target (bull run performer)
+    # - TON: On watchlist (Telegram ecosystem, not yet on Alpaca)
+    # - Monad: Future watch (Layer 1, not launched yet)
+    DEFAULT_CRYPTO_UNIVERSE = ["BTCUSD", "ETHUSD", "SOLUSD"]
 
     # RSI parameters (tighter for crypto volatility)
     RSI_PERIOD = 14
@@ -187,7 +198,17 @@ class CryptoStrategy:
 
         # Initialize dependencies (use provided or create new)
         try:
-            self.trader = trader or AlpacaTrader(paper=True)
+            from src.core.alpaca_trader import AlpacaTraderError
+
+            self.trader = trader
+            if self.trader is None:
+                try:
+                    self.trader = AlpacaTrader(paper=True)
+                except AlpacaTraderError as e:
+                    logger.warning(f"⚠️  Trading capabilities unavailable: {e}")
+                    logger.warning("   -> Running in ANALYSIS ONLY mode (Real Data, No Execution)")
+                    self.trader = None
+
             self.risk_manager = risk_manager or RiskManager(
                 max_daily_loss_pct=2.0,
                 max_position_size_pct=self.MAX_POSITION_PCT * 100,  # Convert to percentage
@@ -212,6 +233,18 @@ class CryptoStrategy:
                 logger.warning(f"Failed to initialize NewsletterAnalyzer: {e}")
                 self.newsletter = None
 
+        # Initialize RAG learner (optional)
+        self.rag_learner = None
+        if RAG_AVAILABLE:
+            try:
+                self.rag_learner = CryptoLearnerAgent()
+                logger.info(
+                    "CryptoLearnerAgent initialized - will use RAG knowledge for trade decisions"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize CryptoLearnerAgent: {e}")
+                self.rag_learner = None
+
         logger.info(
             f"CryptoStrategy initialized: daily_amount=${daily_amount}, "
             f"crypto_universe={self.crypto_universe}, stop_loss={stop_loss_pct * 100}%"
@@ -229,24 +262,22 @@ class CryptoStrategy:
         logger.info("=" * 70)
 
         try:
+            # CRITICAL FIX: Manage existing positions FIRST (check stop-loss/take-profit)
+            # This was missing - positions would never exit!
+            closed_positions = self.manage_positions()
+            if closed_positions:
+                logger.info(f"Closed {len(closed_positions)} positions before new trades")
+                for pos in closed_positions:
+                    logger.info(f"  - {pos.symbol}: {pos.reason}")
+
             # Execute daily logic
             order = self.execute_daily()
 
-            if order:
-                return {
-                    "success": True,
-                    "symbol": order.symbol,
-                    "amount": order.amount,
-                    "quantity": order.quantity,
-                    "price": order.price,
-                    "reason": order.reason,
-                }
-            else:
-                return {
-                    "success": False,
-                    "reason": "no_valid_trades",
-                    "message": "No valid crypto opportunities today",
-                }
+            return {
+                "success": bool(order or closed_positions),
+                "order": order,
+                "closed_positions": closed_positions,  # Return full CryptoOrder objects
+            }
 
         except Exception as e:
             logger.error(f"Crypto strategy execution failed: {e}")
@@ -293,21 +324,6 @@ class CryptoStrategy:
 
             logger.info(f"Selected crypto (algorithm): {best_coin}")
 
-            # Find the score object for the selected coin
-            best_score = next((s for s in scores if s.symbol == best_coin), None)
-
-            # Retrieve RAG insights
-            metrics_dict = (
-                {
-                    "rsi": best_score.rsi,
-                    "macd": best_score.macd_histogram,
-                    "volume_ratio": best_score.volume_ratio,
-                }
-                if best_score
-                else {}
-            )
-            rag_insights = self.get_rag_insights(best_coin, metrics_dict)
-
             # Step 2.5: Validate against CoinSnacks newsletter
             validation = self.get_newsletter_validation(best_coin)
 
@@ -332,6 +348,36 @@ class CryptoStrategy:
                     )
             else:
                 logger.info(f"Newsletter validation not available: {validation['reasoning']}")
+
+            # Step 2.6: Get RAG insights for the selected coin
+            best_score = next((s for s in scores if s.symbol == best_coin), None)
+            if best_score:
+                rag_metrics = {
+                    "rsi": best_score.rsi,
+                    "macd_histogram": best_score.macd_histogram,
+                    "volume_ratio": best_score.volume_ratio,
+                }
+                rag_insights = self.get_rag_insights(best_coin, rag_metrics)
+
+                if rag_insights["available"]:
+                    logger.info(
+                        f"RAG Insights: recommendation={rag_insights['recommendation']}, "
+                        f"adjustment={rag_insights['confidence_adjustment']:+d}"
+                    )
+                    if rag_insights["insights"]:
+                        logger.info(f"  Top insight: {rag_insights['insights'][0][:100]}...")
+
+                    # Apply RAG adjustment to decision
+                    if (
+                        rag_insights["recommendation"] == "bearish"
+                        and rag_insights["confidence_adjustment"] < -5
+                    ):
+                        logger.warning(
+                            f"RAG recommends CAUTION for {best_coin}: {rag_insights['reasoning']}"
+                        )
+                        # Note: We still proceed but reduce position size could be implemented
+                else:
+                    logger.info(f"RAG insights not available: {rag_insights['reasoning']}")
 
             # Step 3: Get current price
             current_price = self._get_current_price(best_coin)
@@ -382,6 +428,16 @@ class CryptoStrategy:
                         tier="CRYPTO",
                     )
                     logger.info(f"Alpaca order executed: {executed_order['id']}")
+
+                    # Step 7.5: Save trade to daily file for dashboard tracking
+                    self._save_trade_to_daily_file(
+                        symbol=best_coin,
+                        action="BUY",
+                        amount=self.daily_amount,
+                        quantity=quantity,
+                        price=current_price,
+                        order_id=executed_order.get("id", ""),
+                    )
                 except Exception as e:
                     logger.error(f"Failed to execute order via Alpaca: {e}")
                     return None
@@ -414,6 +470,115 @@ class CryptoStrategy:
         except Exception as e:
             logger.error(f"Error in daily execution: {str(e)}", exc_info=True)
             raise
+
+    def get_rag_insights(self, symbol: str, metrics: dict) -> dict:
+        """
+        Query RAG knowledge base for trading insights on the given symbol.
+
+        Args:
+            symbol: Crypto symbol (e.g., "BTCUSD")
+            metrics: Dict of current technical metrics (RSI, MACD, etc.)
+
+        Returns:
+            Dictionary with:
+            - insights: List of relevant knowledge from RAG
+            - recommendation: str ("bullish", "bearish", "neutral")
+            - confidence_adjustment: int (-10 to +10 score adjustment)
+            - reasoning: str explaining the RAG-based assessment
+        """
+        if not self.rag_learner:
+            return {
+                "insights": [],
+                "recommendation": "neutral",
+                "confidence_adjustment": 0,
+                "reasoning": "RAG learner not available",
+                "available": False,
+            }
+
+        try:
+            coin_name = symbol.replace("USD", "")  # BTCUSD -> BTC
+
+            # Build query based on current market conditions
+            rsi = metrics.get("rsi", 50)
+            macd = metrics.get("macd_histogram", 0)
+
+            if rsi < 40:
+                query = f"{coin_name} oversold RSI trading strategy"
+            elif rsi > 60:
+                query = f"{coin_name} overbought RSI exit strategy"
+            elif macd > 0:
+                query = f"{coin_name} bullish MACD momentum trading"
+            else:
+                query = f"{coin_name} crypto weekend trading strategy entry rules"
+
+            # Query RAG
+            knowledge = self.rag_learner.research_strategy(query)
+
+            if not knowledge or knowledge == "RAG unavailable.":
+                return {
+                    "insights": [],
+                    "recommendation": "neutral",
+                    "confidence_adjustment": 0,
+                    "reasoning": "No relevant knowledge found",
+                    "available": False,
+                }
+
+            # Parse insights
+            insights = knowledge.split("\n\n") if knowledge else []
+
+            # Determine recommendation based on keywords
+            knowledge_lower = knowledge.lower()
+            bullish_signals = sum(
+                [
+                    "bullish" in knowledge_lower,
+                    "buy" in knowledge_lower,
+                    "accumulate" in knowledge_lower,
+                    "uptrend" in knowledge_lower,
+                    "momentum" in knowledge_lower and macd > 0,
+                ]
+            )
+            bearish_signals = sum(
+                [
+                    "bearish" in knowledge_lower,
+                    "sell" in knowledge_lower,
+                    "exit" in knowledge_lower,
+                    "overbought" in knowledge_lower,
+                    "caution" in knowledge_lower,
+                ]
+            )
+
+            if bullish_signals > bearish_signals:
+                recommendation = "bullish"
+                confidence_adjustment = min(10, bullish_signals * 3)
+            elif bearish_signals > bullish_signals:
+                recommendation = "bearish"
+                confidence_adjustment = max(-10, -bearish_signals * 3)
+            else:
+                recommendation = "neutral"
+                confidence_adjustment = 0
+
+            logger.info(
+                f"RAG Insights for {symbol}: {recommendation} "
+                f"(adjustment: {confidence_adjustment:+d})"
+            )
+
+            return {
+                "insights": insights[:3],  # Top 3 insights
+                "recommendation": recommendation,
+                "confidence_adjustment": confidence_adjustment,
+                "reasoning": f"Based on {len(insights)} knowledge chunks: {recommendation}",
+                "available": True,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting RAG insights: {e}")
+            return {
+                "insights": [],
+                "recommendation": "neutral",
+                "confidence_adjustment": 0,
+                "reasoning": f"Error: {str(e)}",
+                "available": False,
+            }
 
     def get_newsletter_validation(self, our_pick: str) -> dict:
         """
@@ -1048,6 +1213,73 @@ class CryptoStrategy:
                 total += quantity * price
         return total
 
+    def _save_trade_to_daily_file(
+        self,
+        symbol: str,
+        action: str,
+        amount: float,
+        quantity: float,
+        price: float,
+        order_id: str,
+        data_dir: Path = Path("data"),
+    ) -> None:
+        """
+        Save trade to daily trade file (trades_YYYY-MM-DD.json).
+
+        This ensures crypto trades are tracked in the same format as stock trades
+        for dashboard reporting and system state updates.
+
+        Args:
+            symbol: Crypto symbol (e.g., "BTCUSD")
+            action: Trade action ("BUY" or "SELL")
+            amount: Dollar amount traded
+            quantity: Quantity of crypto purchased
+            price: Execution price
+            order_id: Alpaca order ID
+            data_dir: Data directory path (default: data/)
+        """
+        today = date.today().isoformat()
+        trade_file = data_dir / f"trades_{today}.json"
+
+        # Load existing trades for today
+        trades = []
+        if trade_file.exists():
+            try:
+                with open(trade_file) as f:
+                    trades = json.load(f)
+                    if not isinstance(trades, list):
+                        trades = [trades] if trades else []
+            except Exception:
+                trades = []
+
+        # Create trade record
+        trade_data = {
+            "symbol": symbol,
+            "action": action,
+            "amount": round(amount, 2),
+            "quantity": quantity,
+            "price": round(price, 2),
+            "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "status": "FILLED",
+            "strategy": "CryptoStrategy",
+            "order_id": order_id,
+        }
+
+        # Add new trade
+        trades.append(trade_data)
+
+        # Save updated trades
+        try:
+            # Ensure data directory exists
+            data_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(trade_file, "w") as f:
+                json.dump(trades, f, indent=2, default=str)
+
+            logger.info(f"✅ Trade saved to {trade_file}: {symbol} {action} ${amount:.2f}")
+        except Exception as e:
+            logger.error(f"Failed to save trade to daily file: {e}")
+
     def manage_positions(self) -> list[CryptoOrder]:
         """
         Manage existing crypto positions - check stop-losses and take-profits.
@@ -1134,10 +1366,9 @@ class CryptoStrategy:
                             stop_loss=None,
                             timestamp=datetime.now(),
                             reason=f"Stop-loss triggered at {unrealized_plpc * 100:.2f}% loss",
-                            pl=unrealized_pl,
-                            pl_pct=unrealized_plpc,
                             attribution={
-                                "reason": "Stop-loss triggered",
+                                "agent_type": "RiskManager",
+                                "action": "STOP_LOSS",
                                 "pl_pct": unrealized_plpc,
                             },
                         )
@@ -1176,10 +1407,9 @@ class CryptoStrategy:
                             stop_loss=None,
                             timestamp=datetime.now(),
                             reason=f"Take-profit triggered at {unrealized_plpc * 100:.2f}% profit",
-                            pl=unrealized_pl,
-                            pl_pct=unrealized_plpc,
                             attribution={
-                                "reason": "Take-profit triggered",
+                                "agent_type": "RiskManager",
+                                "action": "TAKE_PROFIT",
                                 "pl_pct": unrealized_plpc,
                             },
                         )
