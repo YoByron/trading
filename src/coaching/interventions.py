@@ -94,6 +94,14 @@ class SieboldPrinciple(str, Enum):
     SLAM_FORMULA = "slam_formula"  # Simplify, Leverage, Accelerate, Multiply
     WINNING_HABITS = "winning_habits"  # Build automatic positive behaviors
 
+    # Tony Robbins Principles (Money Master the Game + Unshakeable)
+    DONT_LOSE_MONEY = "dont_lose_money"  # #1 rule: Protect capital first
+    ASYMMETRIC_RISK_REWARD = "asymmetric_risk_reward"  # Risk little to gain a lot
+    PSYCHOLOGY_OVER_MECHANICS = "psychology_over_mechanics"  # 80% psychology, 20% mechanics
+    UNSHAKEABLE_MINDSET = "unshakeable_mindset"  # Peace of mind in volatility
+    BEAR_MARKET_OPPORTUNITY = "bear_market_opportunity"  # Turmoil = opportunity
+    MONEY_MACHINE = "money_machine"  # Build income-generating portfolio
+
 
 @dataclass
 class CoachingIntervention:
@@ -854,6 +862,133 @@ FOCAL_POINT_INTERVENTIONS = [
 ]
 
 
+# ============================================================================
+# TONY ROBBINS INTERVENTIONS (Money Master the Game + Unshakeable)
+# ============================================================================
+# Based on Tony Robbins' financial freedom books combining investing wisdom
+# from 50+ billionaires with psychology of wealth creation
+# Core insight: 80% of success is psychology, 20% is mechanics
+
+TONY_ROBBINS_INTERVENTIONS = [
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.DONT_LOSE_MONEY, SieboldPrinciple.SEEK_BALANCE],
+        headline="Rule #1: Don't Lose Money",
+        message=(
+            "ROBBINS: Every billionaire investor shares ONE obsession: Don't lose money. "
+            "Warren Buffett's Rule #1: Never lose money. Rule #2: Never forget Rule #1. "
+            "Why? A 50% loss requires a 100% gain just to break even. Protect your capital FIRST. "
+            "In trading, this means: Honor stop losses. Size positions correctly. Never risk ruin."
+        ),
+        action_items=[
+            "Set stop losses BEFORE entering any trade",
+            "Never risk more than 1-2% of capital on a single trade",
+            "Ask: 'What's the worst case?' before every entry",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.ASYMMETRIC_RISK_REWARD, SieboldPrinciple.ARE_BOLD],
+        headline="Asymmetric Risk/Reward",
+        message=(
+            "ROBBINS: The wealthy risk a LITTLE to make a LOT. They seek asymmetric opportunities "
+            "where the upside far exceeds the downside. In trading: If you risk $1 to potentially "
+            "make $3, you only need to win 33% of the time to break even. At 62% win rate, you're "
+            "printing money. Always calculate risk/reward BEFORE entering."
+        ),
+        action_items=[
+            "Minimum 2:1 reward-to-risk ratio on every trade",
+            "Calculate exact profit target and stop loss before entry",
+            "Pass on trades where reward doesn't justify risk",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS, SieboldPrinciple.EMBRACE_METACOGNITION],
+        headline="80% Psychology, 20% Mechanics",
+        message=(
+            "ROBBINS: '80% of success is psychology, 20% is mechanics.' You can have the best "
+            "strategy in the world, but if your psychology is broken, you'll sabotage yourself. "
+            "The parts of your brain that process financial losses are the SAME parts that respond "
+            "to mortal threats. Your brain is designed to make dumb investing decisions. Override it."
+        ),
+        action_items=[
+            "Acknowledge: Your emotions are trying to sabotage you",
+            "Use automation to remove emotion from execution",
+            "Pre-commit to decisions BEFORE the market opens",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.UNSHAKEABLE_MINDSET, SieboldPrinciple.NOT_AFRAID_TO_SUFFER],
+        headline="Become Unshakeable",
+        message=(
+            "ROBBINS: Being 'unshakeable' means maintaining peace of mind in volatility, uncertainty, "
+            "and chaos - while PROFITING from the fear that paralyzes others. The unshakeable trader "
+            "doesn't panic during drawdowns, doesn't get euphoric during wins, and executes the system "
+            "regardless of recent results. Volatility is your friend, not your enemy."
+        ),
+        action_items=[
+            "Expect volatility - it's normal, not an emergency",
+            "Have a plan for drawdowns BEFORE they happen",
+            "Use fear as a signal to LOOK for opportunities, not run",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.BEAR_MARKET_OPPORTUNITY, SieboldPrinciple.OPERATE_FROM_ABUNDANCE],
+        headline="Bear Markets = Opportunity",
+        message=(
+            "ROBBINS: 'Market turmoil isn't something to fear. It's the greatest opportunity to "
+            "leapfrog to financial freedom.' Every bear market in US history has been followed by "
+            "a bull market - without exception. The wealthy buy when others are panicking. "
+            "90% of surviving a bear market is PREPARATION, 10% is emotional reaction."
+        ),
+        action_items=[
+            "Have cash ready to deploy during market panics",
+            "View corrections as sales, not disasters",
+            "Remember: Today's crisis is tomorrow's opportunity",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.MONEY_MACHINE, SieboldPrinciple.COMPOUND_THINKING],
+        headline="Build Your Money Machine",
+        message=(
+            "ROBBINS: 'You're never going to EARN your way to financial freedom. The real route "
+            "is to invest and let it compound over years. That's how you make money your slave "
+            "instead of being a slave to money.' Your trading system IS your money machine. "
+            "Each day it gets smarter. Each trade compounds the edge. Build the machine."
+        ),
+        action_items=[
+            "Think of your system as a machine that produces income",
+            "Reinvest profits to compound the machine's power",
+            "Your job: Maintain and improve the machine, not work harder",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.BIAS_CORRECTION,
+        principles=[SieboldPrinciple.PSYCHOLOGY_OVER_MECHANICS, SieboldPrinciple.LOSS_AVERSION_AWARENESS],
+        headline="The 6 Psychological Mistakes",
+        message=(
+            "ROBBINS' 6 mistakes that destroy wealth:\n"
+            "1. CONFIRMATION BIAS: Seeking info that confirms your view\n"
+            "2. RECENCY BIAS: Over-weighting recent events\n"
+            "3. OVERCONFIDENCE: Thinking you know more than you do\n"
+            "4. GREED & IMPATIENCE: Wanting returns too fast\n"
+            "5. HOME BIAS: Over-concentrating in familiar assets\n"
+            "6. LOSS AVERSION: Feeling losses 2x more than gains"
+        ),
+        action_items=[
+            "Which of these 6 biases is affecting you RIGHT NOW?",
+            "Name it to tame it - awareness reduces impact",
+            "Use rules and automation to override these biases",
+        ],
+        severity="warning",
+    ),
+]
+
+
 def get_intervention_for_bias(bias_type: str) -> CoachingIntervention | None:
     """Get appropriate intervention for a detected bias."""
     return BIAS_CORRECTION_INTERVENTIONS.get(bias_type.lower())
@@ -912,3 +1047,8 @@ def get_random_self_deception() -> CoachingIntervention:
 def get_random_focal_point() -> CoachingIntervention:
     """Get a random Brian Tracy Focal Point intervention."""
     return random.choice(FOCAL_POINT_INTERVENTIONS)
+
+
+def get_random_tony_robbins() -> CoachingIntervention:
+    """Get a random Tony Robbins (Money/Unshakeable) intervention."""
+    return random.choice(TONY_ROBBINS_INTERVENTIONS)
