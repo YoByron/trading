@@ -273,8 +273,8 @@ def calculate_metrics():
     # Get recent trades - Look at today AND yesterday to handle timezone overlaps
     today_trades = []
 
-    # Check today and yesterday
-    for day_offset in [0, 1]:
+    # Check today only
+    for day_offset in [0]:
         d = date.today() - timedelta(days=day_offset)
         t_file = DATA_DIR / f"trades_{d.isoformat()}.json"
 
