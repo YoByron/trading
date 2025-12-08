@@ -462,12 +462,15 @@ jobs:
 
           if [ $? -ne 0 ]; then
             echo "❌ HEALTH CHECK FAILED - Aborting trading execution"
+            echo "health_check_passed=false" >> $GITHUB_OUTPUT
             exit 1
           else
             echo "✅ HEALTH CHECK PASSED - Proceeding with trading"
+            echo "health_check_passed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Execute daily trading
+        id: execute_trading
         if: steps.check_execution.outputs.skip != 'true' && steps.health_check.outputs.health_check_passed == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -539,6 +542,80 @@ jobs:
             print(f"   Win Rate: {perf.get('win_rate', 0):.1f}%")
             PY
           fi
+
+      - name: Verify Positions (Alpaca vs Local)
+        id: verify_positions
+        if: steps.execute_trading.outcome == 'success'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Verifying positions match between Alpaca and local state..."
+          python3 scripts/verify_positions.py || {
+            echo "::error::Position mismatch detected! Our records don't match Alpaca."
+            echo "::error::This could indicate failed trades or sync issues."
+            exit 1
+          }
+
+      - name: Verify Orders (Trust But Verify)
+        id: verify_orders
+        if: steps.execute_trading.outcome == 'success'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Verifying orders in Alpaca match our trade logs..."
+          python3 scripts/verify_orders.py || {
+            echo "::error::Order verification failed!"
+            echo "::error::Orders we logged may not exist in Alpaca or have wrong status."
+            exit 1
+          }
+
+      - name: P/L Sanity Check
+        id: sanity_check
+        if: always()
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Running P/L sanity check..."
+          echo "   This detects zombie mode (system running but not trading)"
+
+          if python3 scripts/verify_pl_sanity.py --verbose; then
+            echo "✅ P/L sanity check passed - system is healthy"
+          else
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 1 ]; then
+              echo "::error::🚨 P/L SANITY CHECK FAILED!"
+              echo "::error::Alert: ${{ steps.sanity_check.outputs.alert_reason }}"
+              echo "::error::Days since equity change: ${{ steps.sanity_check.outputs.days_since_change }}"
+              echo "::error::Days since last trade: ${{ steps.sanity_check.outputs.days_since_trade }}"
+              echo ""
+              echo "This indicates the system may be in zombie mode (running but not trading)."
+              echo "Review the performance log and recent trades immediately."
+              exit 1
+            else
+              echo "::warning::P/L sanity check script error (exit code $EXIT_CODE)"
+              echo "Continuing workflow but investigate the script failure."
+            fi
+          fi
+
+      - name: ALERT - Trading step was skipped
+        if: |
+          always() &&
+          steps.check_execution.outputs.skip != 'true' &&
+          steps.health_check.outputs.health_check_passed == 'true' &&
+          steps.execute_trading.outcome == 'skipped'
+        run: |
+          echo "::error::CRITICAL: Trading step was SKIPPED despite passing all checks!"
+          echo "::error::This is the bug that caused 30+ days of silent failures."
+          echo "::error::Check workflow conditions and GITHUB_OUTPUT writes."
+          echo ""
+          echo "Debug info:"
+          echo "  check_execution.skip: ${{ steps.check_execution.outputs.skip }}"
+          echo "  health_check.passed: ${{ steps.health_check.outputs.health_check_passed }}"
+          echo "  execute_trading.outcome: ${{ steps.execute_trading.outcome }}"
+          exit 1
 
       - name: Record workflow execution
         if: always()
