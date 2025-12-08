@@ -504,7 +504,7 @@ class ExtendedBacktester:
         normalized_weights = [w / total_weight for w in weights]
 
         # Weighted average
-        overall = sum(s * w for s, w in zip(scores, normalized_weights))
+        overall = sum(s * w for s, w in zip(scores, normalized_weights, strict=False))
 
         return min(100, max(0, overall))
 

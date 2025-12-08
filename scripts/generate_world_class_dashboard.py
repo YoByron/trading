@@ -1185,15 +1185,16 @@ def generate_world_class_dashboard() -> str:
     ny_time = datetime.now(ZoneInfo("America/New_York"))
     today_str = ny_time.date().isoformat()
 
-    # Calculate trades today from system_state open positions (reliable source in CI)
-    today_trade_count = 0
-    open_positions = system_state.get("performance", {}).get("open_positions", [])
-    for pos in open_positions:
-        entry_date = pos.get("entry_date", "")
-        # Check if entry date starts with today's date (YYYY-MM-DD)
-        # Handle ISO format timestamps e.g. 2025-12-07T18:16:23
-        if entry_date and entry_date.startswith(today_str):
-            today_trade_count += 1
+    def get_today_trades_from_notes(system_state: dict, current_date_str: str) -> int:
+        trades_today = 0
+        notes = system_state.get("notes", [])
+        for note in notes:
+            if note.startswith(f"[{current_date_str}") and "trade:" in note:
+                # Basic parsing: count entries containing "trade:" for the current date
+                trades_today += 1
+        return trades_today
+
+    today_trade_count = get_today_trades_from_notes(system_state, today_str)
 
     today_perf = None
     today_equity = current_equity

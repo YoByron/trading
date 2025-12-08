@@ -452,7 +452,7 @@ class ReOptimizationScheduler:
         param_values = list(parameter_grid.values())
 
         for combo in itertools.product(*param_values):
-            params = dict(zip(param_names, combo))
+            params = dict(zip(param_names, combo, strict=False))
 
             try:
                 results = validator.run_matrix_evaluation(
