@@ -41,6 +41,7 @@ class InterventionType(str, Enum):
     PURPOSE_REMINDER = "purpose_reminder"
     LONG_TERM_PERSPECTIVE = "long_term_perspective"  # FIRE-inspired
     SYSTEM_TWO_ACTIVATION = "system_two_activation"  # Kahneman-inspired
+    SELF_DECEPTION_CHECK = "self_deception_check"  # Arbinger-inspired
 
 
 class SieboldPrinciple(str, Enum):
@@ -78,6 +79,20 @@ class SieboldPrinciple(str, Enum):
     ANCHORING_AWARENESS = "anchoring_awareness"  # Don't anchor to entry price
     WYSIATI_AWARENESS = "wysiati_awareness"  # What You See Is All There Is
     REGRESSION_TO_MEAN = "regression_to_mean"  # Extremes revert to average
+
+    # Arbinger Principles (Leadership and Self-Deception)
+    IN_THE_BOX = "in_the_box"  # Self-deception: seeing market/others as objects
+    OUT_OF_THE_BOX = "out_of_the_box"  # Clear vision: seeing reality objectively
+    SELF_BETRAYAL = "self_betrayal"  # Not following system when you know you should
+    SELF_JUSTIFICATION = "self_justification"  # Blaming market for your mistakes
+    RESPONSIBILITY_MINDSET = "responsibility_mindset"  # Own your decisions fully
+
+    # Brian Tracy Principles (Focal Point)
+    FOCAL_POINT = "focal_point"  # Focus on highest-value activity at any moment
+    PARETO_PRINCIPLE = "pareto_principle"  # 80/20 rule - 20% of actions = 80% of results
+    CLARITY_OF_PURPOSE = "clarity_of_purpose"  # Know exactly what you want
+    SLAM_FORMULA = "slam_formula"  # Simplify, Leverage, Accelerate, Multiply
+    WINNING_HABITS = "winning_habits"  # Build automatic positive behaviors
 
 
 @dataclass
@@ -613,6 +628,231 @@ SYSTEM_TWO_INTERVENTIONS = [
     ),
 ]
 
+# ============================================================================
+# ARBINGER INTERVENTIONS (Leadership and Self-Deception)
+# ============================================================================
+# Based on The Arbinger Institute's "Leadership and Self-Deception"
+# Core concept: "The Box" - self-deception that prevents seeing reality clearly
+# Self-betrayal → Self-justification → Self-deception cycle
+
+SELF_DECEPTION_INTERVENTIONS = [
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[SieboldPrinciple.IN_THE_BOX, SieboldPrinciple.RESPONSIBILITY_MINDSET],
+        headline="Are You 'In The Box'?",
+        message=(
+            "ARBINGER: When you're 'in the box', you see the market as an enemy to defeat, "
+            "blame external factors for losses, and justify deviations from your system. "
+            "Signs you're in the box: 'The market is rigged', 'Market makers hunted my stop', "
+            "'This time is different'. These are self-justifications, not analysis."
+        ),
+        action_items=[
+            "Ask: Am I blaming something external for my results?",
+            "Check: Did I follow my system EXACTLY, or did I deviate?",
+            "Reframe: The market is neutral. MY decisions created MY results.",
+        ],
+        severity="warning",
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[SieboldPrinciple.OUT_OF_THE_BOX, SieboldPrinciple.EMBRACE_METACOGNITION],
+        headline="Get 'Out of The Box'",
+        message=(
+            "ARBINGER: Being 'out of the box' means seeing reality objectively. "
+            "The market is not your enemy - it's an aggregate of millions of decisions. "
+            "Your losses are not persecution - they're feedback. Your wins are not validation - "
+            "they're data points. See clearly. Trade clearly."
+        ),
+        action_items=[
+            "View losses as tuition, not injustice",
+            "View wins as data, not destiny",
+            "See the market as a teacher, not an adversary",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[SieboldPrinciple.SELF_BETRAYAL, SieboldPrinciple.ARE_COACHABLE],
+        headline="Self-Betrayal Detected",
+        message=(
+            "ARBINGER: Self-betrayal is when you KNOW what you should do but don't do it. "
+            "You sensed you should follow your stop loss - but didn't. "
+            "You sensed you should skip this trade - but entered anyway. "
+            "You sensed the position was too large - but you sized up. "
+            "This is the ROOT of all trading psychology problems."
+        ),
+        action_items=[
+            "Identify: What did I KNOW I should do that I didn't?",
+            "Acknowledge: I betrayed my own system/judgment",
+            "Commit: Next time, I will honor my sense of what's right",
+        ],
+        severity="warning",
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[SieboldPrinciple.SELF_JUSTIFICATION, SieboldPrinciple.FAILURE_IS_DATA],
+        headline="Self-Justification Warning",
+        message=(
+            "ARBINGER: After self-betrayal comes self-justification. You inflate your own virtue "
+            "('I was being aggressive, not greedy') and demonize others ('The algos are cheating'). "
+            "This distorts reality and guarantees you'll repeat the mistake. "
+            "The cure: RADICAL HONESTY. What actually happened? What did YOU do?"
+        ),
+        action_items=[
+            "Strip away the story - what are the raw facts?",
+            "Own it fully: 'I made this decision. I created this result.'",
+            "No excuses, no blame - just data for improvement",
+        ],
+        severity="warning",
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[SieboldPrinciple.RESPONSIBILITY_MINDSET, SieboldPrinciple.SUPREME_SELF_CONFIDENCE],
+        headline="100% Responsibility Mindset",
+        message=(
+            "ARBINGER: World-class performers take 100% responsibility for their results. "
+            "Not 50/50 with the market. Not 80/20 with news events. 100% YOU. "
+            "This isn't about blame - it's about POWER. If it's your fault, you can fix it. "
+            "If it's the market's fault, you're helpless. Choose power. Choose responsibility."
+        ),
+        action_items=[
+            "Reframe every loss: 'What could I have done differently?'",
+            "Reject victim language: 'The market made me...' → 'I chose to...'",
+            "Embrace control: Your system, your rules, your results",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.SELF_DECEPTION_CHECK,
+        principles=[
+            SieboldPrinciple.OUT_OF_THE_BOX,
+            SieboldPrinciple.OPERATE_FROM_ABUNDANCE,
+        ],
+        headline="See The Market As People",
+        message=(
+            "ARBINGER: The market isn't a machine or enemy - it's millions of people making "
+            "decisions based on their hopes, fears, and analysis. When you 'lose', someone else "
+            "'won' - they're not evil, they just had different information or timing. "
+            "This perspective reduces anger and increases learning."
+        ),
+        action_items=[
+            "Remember: Every trade has a counterparty with their own reasons",
+            "Ask: What might they know that I don't?",
+            "Respect the collective wisdom while trusting your edge",
+        ],
+    ),
+]
+
+# ============================================================================
+# BRIAN TRACY INTERVENTIONS (Focal Point)
+# ============================================================================
+# Based on Brian Tracy's "Focal Point: A Proven System to Simplify Your Life,
+# Double Your Productivity, and Achieve All Your Goals"
+# Core concept: Find your focal point - the highest-value activity at any moment
+
+FOCAL_POINT_INTERVENTIONS = [
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.FOCAL_POINT, SieboldPrinciple.KNOW_WHY_FIGHTING],
+        headline="Find Your Focal Point",
+        message=(
+            "TRACY: At any moment, there is ONE activity that will provide the greatest benefit. "
+            "In trading, your focal point is EXECUTING YOUR SYSTEM - not checking P/L, not reading "
+            "news, not second-guessing entries. What is the single most valuable thing you can do "
+            "RIGHT NOW to move toward $100+/day? Do that. Ignore everything else."
+        ),
+        action_items=[
+            "Identify: What is MY highest-value activity right now?",
+            "Execute: Do ONLY that activity until complete",
+            "Resist: All distractions from your focal point",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.PARETO_PRINCIPLE, SieboldPrinciple.SYSTEMATIC_WEALTH],
+        headline="The 80/20 Rule in Trading",
+        message=(
+            "TRACY: 20% of your activities produce 80% of your results. In trading: "
+            "20% of your setups generate 80% of your profits. 20% of your analysis matters. "
+            "80% of market noise is irrelevant. IDENTIFY your high-value 20% and focus there. "
+            "Eliminate or minimize the 80% that's just busy-work disguised as trading."
+        ),
+        action_items=[
+            "Audit: Which setups have generated most profits historically?",
+            "Focus: Trade ONLY your best setups, not every opportunity",
+            "Eliminate: News-checking, over-analysis, ticker-watching",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.CLARITY_OF_PURPOSE, SieboldPrinciple.EMBRACE_METACOGNITION],
+        headline="Clarity Creates Success",
+        message=(
+            "TRACY: 'Successful people have tremendous clarity about who they are, what they want, "
+            "and how they are going to get it.' Your clarity: You are building a compound engineering "
+            "trading system. You want $100+/day passive income. You achieve it through systematic "
+            "execution of validated strategies. This clarity should drive EVERY decision."
+        ),
+        action_items=[
+            "State your trading identity: 'I am a systematic trader'",
+            "State your goal: '$100+/day through compound engineering'",
+            "State your method: 'Execute validated strategies without emotion'",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.SLAM_FORMULA, SieboldPrinciple.COMPOUND_THINKING],
+        headline="The SLAM Formula for Trading",
+        message=(
+            "TRACY's SLAM Formula applied to trading:\n"
+            "• SIMPLIFY: Reduce to 2-3 high-quality setups, eliminate complexity\n"
+            "• LEVERAGE: Use RL agents, automation, multi-LLM analysis\n"
+            "• ACCELERATE: Execute decisions quickly once criteria are met\n"
+            "• MULTIPLY: Let compounding do the heavy lifting over time"
+        ),
+        action_items=[
+            "Simplify: What can I REMOVE from my trading process?",
+            "Leverage: What tools/automation am I underutilizing?",
+            "Accelerate: Where am I hesitating when I should act?",
+            "Multiply: Am I letting profits compound or withdrawing?",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[SieboldPrinciple.WINNING_HABITS, SieboldPrinciple.SCHOOL_NEVER_OUT],
+        headline="Build Winning Trading Habits",
+        message=(
+            "TRACY: 'Habits shape behavior.' Your trading success depends on automatic habits: "
+            "Morning market prep at 9:00 AM. Execute at 9:35 AM. Review at market close. "
+            "Log every trade. Never revenge trade. Never skip stops. These habits, repeated daily, "
+            "become your trading character. Character determines destiny."
+        ),
+        action_items=[
+            "Morning routine: Market conditions check, setup identification",
+            "Execution routine: Criteria met → Trade. Not met → No trade.",
+            "Evening routine: Log trades, grade execution, identify improvements",
+        ],
+    ),
+    CoachingIntervention(
+        intervention_type=InterventionType.PURPOSE_REMINDER,
+        principles=[
+            SieboldPrinciple.RESPONSIBILITY_MINDSET,
+            SieboldPrinciple.FOCAL_POINT,
+        ],
+        headline="Stop Doing Low-Value Activities",
+        message=(
+            "TRACY: There are four ways to improve - do more of some things, less of others, "
+            "start new things, and STOP some things entirely. What should you STOP in trading? "
+            "Checking P/L every 5 minutes. Reading news during market hours. Trading out of boredom. "
+            "Discussing trades in chat rooms. These activities feel productive but destroy focus."
+        ),
+        action_items=[
+            "STOP: Checking P/L more than once per hour",
+            "STOP: Trading setups not in your documented strategy",
+            "STOP: Seeking validation from others for your trades",
+            "START: Trusting your system and executing mechanically",
+        ],
+    ),
+]
+
 
 def get_intervention_for_bias(bias_type: str) -> CoachingIntervention | None:
     """Get appropriate intervention for a detected bias."""
@@ -662,3 +902,13 @@ def get_random_long_term_perspective() -> CoachingIntervention:
 def get_random_system_two() -> CoachingIntervention:
     """Get a random Kahneman System 2 intervention."""
     return random.choice(SYSTEM_TWO_INTERVENTIONS)
+
+
+def get_random_self_deception() -> CoachingIntervention:
+    """Get a random Arbinger self-deception intervention."""
+    return random.choice(SELF_DECEPTION_INTERVENTIONS)
+
+
+def get_random_focal_point() -> CoachingIntervention:
+    """Get a random Brian Tracy Focal Point intervention."""
+    return random.choice(FOCAL_POINT_INTERVENTIONS)
