@@ -1189,16 +1189,7 @@ def generate_world_class_dashboard() -> str:
     ny_time = datetime.now(ZoneInfo("America/New_York"))
     today_str = ny_time.date().isoformat()
 
-    def get_today_trades_from_notes(system_state: dict, current_date_str: str) -> int:
-        trades_today = 0
-        notes = system_state.get("notes", [])
-        for note in notes:
-            if note.startswith(f"[{current_date_str}") and "trade:" in note:
-                # Basic parsing: count entries containing "trade:" for the current date
-                trades_today += 1
-        return trades_today
-
-    today_trade_count = get_today_trades_from_notes(system_state, today_str)
+    today_trade_count = len([t for t in trades if t.get("timestamp", "").startswith(today_str)])
 
     today_perf = None
     today_equity = current_equity
