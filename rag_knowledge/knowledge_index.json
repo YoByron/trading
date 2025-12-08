@@ -13,6 +13,13 @@
       "chunks_file": "rag_knowledge/chunks/systematic_trading_chunks.json",
       "chunk_count": 66,
       "ingested_at": "2025-12-05T00:29:49.449329"
+    },
+    "crypto_ai": {
+      "title": "Crypto AI Playbook",
+      "author": "Igor Ganapolsky (curated summary)",
+      "chunks_file": "rag_knowledge/chunks/crypto_ai_2025.json",
+      "chunk_count": 4,
+      "ingested_at": "2025-12-08T19:42:37.675000"
     }
   },
   "papers": {},

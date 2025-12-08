@@ -631,50 +631,78 @@ def generate_world_class_dashboard() -> str:
 
 """
 
+    # Load today's trades for mode detection
+    today_trades_file = DATA_DIR / f"trades_{date.today().isoformat()}.json"
+    today_trades = load_json_file(today_trades_file)
+
     # Determine active strategy
     is_crypto_mode = False
-    try:
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        log_files = [
-            Path("logs/trading_system.log"),
-            Path("logs/launchd_stdout.log"),
-            Path("logs/launchd_stderr.log"),
-        ]
+    
+    # Check today's trades for crypto
+    today_crypto_trades_count = 0
+    today_crypto_invested = 0.0
+    
+    if today_trades and isinstance(today_trades, list):
+        for trade in today_trades:
+            if trade.get("symbol", "").endswith("USD") or trade.get("strategy") == "CryptoStrategy":
+                is_crypto_mode = True
+                today_crypto_trades_count += 1
+                today_crypto_invested += float(trade.get("amount", 0.0))
 
-        for log_file in log_files:
-            if log_file.exists():
-                # Check last 1000 lines for today's execution mode
-                with open(log_file) as f:
-                    try:
-                        lines = f.readlines()[-1000:]
-                        for line in lines:
-                            if today_str in line and "CRYPTO STRATEGY - Daily Execution" in line:
-                                is_crypto_mode = True
-                                break
-                    except Exception:
-                        continue
-            if is_crypto_mode:
-                break
-    except Exception:
-        pass
+    if not is_crypto_mode:
+        try:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            log_files = [
+                Path("logs/trading_system.log"),
+                Path("logs/launchd_stdout.log"),
+                Path("logs/launchd_stderr.log"),
+            ]
+
+            for log_file in log_files:
+                if log_file.exists():
+                    # Check last 1000 lines for today's execution mode
+                    with open(log_file) as f:
+                        try:
+                            lines = f.readlines()[-1000:]
+                            for line in lines:
+                                if today_str in line and "CRYPTO STRATEGY - Daily Execution" in line:
+                                    is_crypto_mode = True
+                                    break
+                        except Exception:
+                            continue
+                if is_crypto_mode:
+                    break
+        except Exception:
+            pass
 
     dashboard += """
 **Current Strategy**:
 """
-    # Get crypto strategy info
+    # Get crypto strategy info from system state
     strategies = system_state.get("strategies", {})
     tier5 = strategies.get("tier5", {})
-    crypto_trades = tier5.get("trades_executed", 0)
-    crypto_invested = tier5.get("total_invested", 0.0)
+    
+    # Use system state cumulative values, OR today's values if system state lags
+    crypto_trades_total = tier5.get("trades_executed", 0)
+    crypto_invested_total = tier5.get("total_invested", 0.0)
+    
+    # If today has trades but state doesn't reflect them (common during day), add them
+    # This is a heuristic: if state total < today's total, assume state is stale
+    if crypto_trades_total < today_crypto_trades_count:
+         crypto_trades_total += today_crypto_trades_count
+         crypto_invested_total += today_crypto_invested
+
     crypto_last_execution = tier5.get("last_execution")
+    if is_crypto_mode and not crypto_last_execution:
+        crypto_last_execution = date.today().isoformat()
 
     if is_crypto_mode:
         dashboard += "- **MODE**: 🌐 CRYPTO (Weekend/Holiday)\n"
         dashboard += "- **Strategy**: Tier 5 - Cryptocurrency 24/7 (BTC/ETH)\n"
         dashboard += "- **Allocation**: $10/day fixed (Crypto only)\n"
-        dashboard += "- **Status**: ✅ Active (Monitoring BTC/ETH)\n"
-        dashboard += f"- **Crypto Trades Executed**: {crypto_trades}\n"
-        dashboard += f"- **Total Crypto Invested**: ${crypto_invested:.2f}\n"
+        dashboard += "- **Status**: ✅ Active (Executed Today)\n"
+        dashboard += f"- **Crypto Trades Executed**: {crypto_trades_total}\n"
+        dashboard += f"- **Total Crypto Invested**: ${crypto_invested_total:.2f}\n"
         if crypto_last_execution:
             dashboard += f"- **Last Crypto Execution**: {crypto_last_execution}\n"
     else:
