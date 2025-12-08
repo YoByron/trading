@@ -321,7 +321,9 @@ def calculate_win_rate_from_trades(
     Returns:
         (win_rate_pct, winning_trades, total_closed_trades)
     """
-    closed_trades = [t for t in trades if t.get("status") == "filled" and t.get("pl") is not None]
+    closed_trades = [
+        t for t in trades if t.get("status", "").lower() == "filled" and t.get("pl") is not None
+    ]
 
     if not closed_trades:
         return 0.0, 0, 0
@@ -701,7 +703,7 @@ def calculate_market_regime() -> dict[str, Any]:
 
         # Get SPY and VIX data
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=30)  # Get 30 days for 20-day calculation
+        start_date = end_date - timedelta(days=60)  # Get 60 days for 20-day calculation
 
         spy = yf.Ticker("SPY")
         spy_data = spy.history(start=start_date, end=end_date)
@@ -1169,7 +1171,7 @@ def generate_world_class_dashboard() -> str:
                 today_perf = entry
                 today_equity = entry.get("equity", current_equity)
                 today_pl = entry.get("pl", 0.0)
-                today_pl_pct = entry.get("pl_pct", 0.0) * 100  # Convert to percentage
+                today_pl_pct = entry.get("pl_pct", 0.0)  # Already in percentage
                 break
 
         # If no entry for today, calculate from yesterday
@@ -1334,11 +1336,11 @@ def generate_world_class_dashboard() -> str:
 ## 📅 Today's Performance
 
 **Date**: {today_display}
-
-| Metric | Value |
-|--------|-------|
+| **Metric** | **Value** |
+|------------|-----------|
 | **Equity** | ${today_equity:,.2f} |
-| **P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
+| **Total P/L** | ${total_pl:+,.2f} |
+| **Daily P/L** | ${today_pl:+,.2f} ({today_pl_pct:+.2f}%) |
 | **Trades Today** | {today_trade_count} |
 | **Status** | {system_health["emoji"]} {system_health["status"]} |
 
