@@ -130,9 +130,7 @@ class LocalLLMClient:
 
         try:
             if self.backend == LocalLLMBackend.OLLAMA:
-                result = await self._generate_ollama(
-                    prompt, system_prompt, temperature, max_tokens
-                )
+                result = await self._generate_ollama(prompt, system_prompt, temperature, max_tokens)
             else:
                 result = await self._generate_openai_compatible(
                     prompt, system_prompt, temperature, max_tokens
@@ -424,11 +422,11 @@ Analyze thoroughly and provide your recommendation."""
         query = f"""Should we {action} {symbol}?
 
 Market Data:
-- Current Price: ${market_data.get('price', 'N/A')}
-- Change: {market_data.get('change_pct', 0):.2f}%
-- RSI: {market_data.get('rsi', 'N/A')}
-- MACD Signal: {market_data.get('macd_signal', 'N/A')}
-- Volume: {market_data.get('volume', 'N/A')}
+- Current Price: ${market_data.get("price", "N/A")}
+- Change: {market_data.get("change_pct", 0):.2f}%
+- RSI: {market_data.get("rsi", "N/A")}
+- MACD Signal: {market_data.get("macd_signal", "N/A")}
+- Volume: {market_data.get("volume", "N/A")}
 
 Evaluate this trade proposal considering:
 1. Technical indicators and momentum
@@ -509,9 +507,7 @@ Show all calculations step-by-step."""
         # Extract confidence
         import re
 
-        confidence_match = re.search(
-            r"confidence[:\s]+(\d+\.?\d*)", content.lower()
-        )
+        confidence_match = re.search(r"confidence[:\s]+(\d+\.?\d*)", content.lower())
         if confidence_match:
             try:
                 result["confidence"] = min(1.0, max(0.0, float(confidence_match.group(1))))
@@ -527,9 +523,7 @@ Show all calculations step-by-step."""
         if factors_match:
             factors_text = factors_match.group(1)
             result["key_factors"] = [
-                line.strip("- •*").strip()
-                for line in factors_text.split("\n")
-                if line.strip()
+                line.strip("- •*").strip() for line in factors_text.split("\n") if line.strip()
             ]
 
         # Extract risks
@@ -541,9 +535,7 @@ Show all calculations step-by-step."""
         if risks_match:
             risks_text = risks_match.group(1)
             result["risks"] = [
-                line.strip("- •*").strip()
-                for line in risks_text.split("\n")
-                if line.strip()
+                line.strip("- •*").strip() for line in risks_text.split("\n") if line.strip()
             ]
 
         return result
@@ -582,8 +574,7 @@ async def get_openthinker_reasoner(
     # Check availability
     if not await reasoner.is_available():
         logger.warning(
-            f"OpenThinker ({model.value}) not available. "
-            "Run: ollama pull openthinker:7b"
+            f"OpenThinker ({model.value}) not available. Run: ollama pull openthinker:7b"
         )
 
     return reasoner

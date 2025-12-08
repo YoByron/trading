@@ -24,7 +24,6 @@ Usage:
 import argparse
 import json
 import logging
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -116,9 +115,7 @@ class WorkflowHealthMonitor:
         self._save_executions()
         logger.info(f"Recorded {workflow_id} execution: {status}")
 
-    def get_expected_executions(
-        self, workflow_id: str, days: int = 7
-    ) -> list[datetime]:
+    def get_expected_executions(self, workflow_id: str, days: int = 7) -> list[datetime]:
         """Calculate expected execution times for a workflow."""
         schedule = WORKFLOW_SCHEDULES.get(workflow_id, {})
         schedule_type = schedule.get("schedule", "")
@@ -133,11 +130,13 @@ class WorkflowHealthMonitor:
             weekday = check_date.weekday()  # 0=Mon, 6=Sun
 
             should_run = False
-            if schedule_type == "weekdays" and weekday < 5:
-                should_run = True
-            elif schedule_type == "weekends" and weekday >= 5:
-                should_run = True
-            elif schedule_type == "daily":
+            if (
+                schedule_type == "weekdays"
+                and weekday < 5
+                or schedule_type == "weekends"
+                and weekday >= 5
+                or schedule_type == "daily"
+            ):
                 should_run = True
 
             if should_run:
@@ -145,9 +144,7 @@ class WorkflowHealthMonitor:
 
         return expected
 
-    def get_actual_executions(
-        self, workflow_id: str, days: int = 7
-    ) -> list[datetime]:
+    def get_actual_executions(self, workflow_id: str, days: int = 7) -> list[datetime]:
         """Get actual execution times from log."""
         cutoff = datetime.now() - timedelta(days=days)
         actual = []
@@ -220,7 +217,7 @@ class WorkflowHealthMonitor:
                 alert = {
                     "severity": "CRITICAL",
                     "workflow": workflow_id,
-                    "message": f"{schedule['name']} has only {actual_count}/{expected_count} executions ({execution_rate*100:.0f}%)",
+                    "message": f"{schedule['name']} has only {actual_count}/{expected_count} executions ({execution_rate * 100:.0f}%)",
                     "missed_dates": workflow_health["missed_dates"][:5],
                 }
                 report["alerts"].append(alert)
@@ -254,7 +251,9 @@ class WorkflowHealthMonitor:
 
             print(f"\n{status_icon} {health['name']} ({workflow_id})")
             print(f"   Status: {health['status']}")
-            print(f"   Executions: {health['actual_executions']}/{health['expected_executions']} ({health['execution_rate']}%)")
+            print(
+                f"   Executions: {health['actual_executions']}/{health['expected_executions']} ({health['execution_rate']}%)"
+            )
             if health["last_execution"]:
                 print(f"   Last Run: {health['last_execution']}")
             if health["missed_dates"]:

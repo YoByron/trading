@@ -75,16 +75,16 @@ def generate_dashboard():
     recent_trades = get_recent_trades(lookback_days=30)
 
     # Separate Live vs Analysis
-    live_trades = [t for t in recent_trades if t.get("mode", "LIVE") == "LIVE"]
+    _live_trades = [t for t in recent_trades if t.get("mode", "LIVE") == "LIVE"]
     analysis_trades = [t for t in recent_trades if t.get("mode") == "ANALYSIS"]
 
     # Calculate Metrics
-    shadow_pl = sum(
+    _shadow_pl = sum(
         t.get("amount", 0) * 0.05 for t in analysis_trades
     )  # Mock P&L calculation (5% random win)
 
     # Today's Snapshot
-    today_trades = [
+    _today_trades = [
         t for t in recent_trades if t.get("timestamp", "").startswith(date.today().isoformat())
     ]
 
