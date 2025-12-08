@@ -1,6 +1,6 @@
 # 🌟 World-Class Trading Dashboard
 
-**Last Updated**: 2025-12-08 09:58 AM ET
+**Last Updated**: 2025-12-08 12:12 PM ET
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: World-Class Elite Analytics v2.0
 
@@ -28,7 +28,7 @@
 | Metric | Value |
 |--------|-------|
 | **SPY 20-Day Return** | +2.19% |
-| **VIX Level** | 16.47 |
+| **VIX Level** | 16.89 |
 | **Market Regime** | Bull |
 | **Volatility Regime** | Low Vol |
 
@@ -102,11 +102,11 @@ Optimal conditions for momentum strategies. Focus on breakout entries.
 
 ### 🤖 AI Attribution (Per-Agent P&L)
 
-**Decision Breakdown**: 🤖 AI: 0 (0%) | 📊 Rules: 2 (100%) | ❓ Unattributed: 0
+**Decision Breakdown**: 🤖 AI: 0 (0%) | 📊 Rules: 3 (100%) | ❓ Unattributed: 0
 
 | Decision Maker | Type | Trades | Closed | Win Rate | Total P/L | Avg P/L | Cost |
 |----------------|------|--------|--------|----------|-----------|---------|------|
-| 📊 Momentum Rules | Rules | 2 | 0 | N/A | $+0.00 | $+0.00 | $0.00 |
+| 📊 Momentum Rules | Rules | 3 | 0 | N/A | $+0.00 | $+0.00 | $0.00 |
 
 *Win rates marked with * have low confidence (< 10 closed trades)*
 
@@ -342,6 +342,7 @@ No trades executed yet. System is ready for trading.
 
 | Date | Symbol | Side | Quantity | Price | Amount | Tier |
 |------|--------|------|----------|-------|--------|------|
+| 2025-12-08 | BTCUSD | BUY | 0.0001 | $98,500.00 | $10.00 | CryptoStrategy |
 | 2025-12-07 | BTCUSD | BUY | 0.0001 | $90,490.59 | $10.00 | CryptoStrategy |
 | 2025-12-07 | BTCUSD | BUY | 0.0001 | $89,150.54 | $10.00 | CryptoStrategy |
 
