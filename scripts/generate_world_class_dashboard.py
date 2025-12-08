@@ -1362,6 +1362,12 @@ def generate_world_class_dashboard() -> str:
 
 ---
 
+## 💼 Current Holdings
+
+{holdings_section}
+
+---
+
 ## 🚨 CRITICAL ISSUES - IMMEDIATE ATTENTION REQUIRED
 
 """
