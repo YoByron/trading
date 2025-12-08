@@ -25,6 +25,11 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

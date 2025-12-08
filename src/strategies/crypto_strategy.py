@@ -1354,7 +1354,6 @@ class CryptoStrategy:
                             order_type="market",
                             stop_loss=None,
                             timestamp=datetime.now(),
-                            timestamp=datetime.now(),
                             reason=f"Stop-loss triggered at {unrealized_plpc * 100:.2f}% loss",
                             attribution={
                                 "agent_type": "RiskManager",
@@ -1395,7 +1394,6 @@ class CryptoStrategy:
                             price=current_price,
                             order_type="market",
                             stop_loss=None,
-                            timestamp=datetime.now(),
                             timestamp=datetime.now(),
                             reason=f"Take-profit triggered at {unrealized_plpc * 100:.2f}% profit",
                             attribution={
