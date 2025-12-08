@@ -107,7 +107,7 @@ class HyperparameterOptimizer:
         logger.info(f"📊 Testing {len(combinations)} hyperparameter combinations...")
 
         for i, combination in enumerate(combinations):
-            params = dict(zip(param_names, combination))
+            params = dict(zip(param_names, combination, strict=False))
 
             logger.info(f"Trial {i + 1}/{len(combinations)}: {params}")
 

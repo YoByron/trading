@@ -337,7 +337,9 @@ class WalkForwardValidator:
                 report.append(f"  {key}: {value}")
 
         report.append("\nFold Details:")
-        for i, (fold, fold_result) in enumerate(zip(results.folds, results.fold_results)):
+        for i, (fold, fold_result) in enumerate(
+            zip(results.folds, results.fold_results, strict=False)
+        ):
             report.append(f"\n  Fold {i + 1}:")
             report.append(f"    Train: {fold.train_start.date()} to {fold.train_end.date()}")
             report.append(f"    Test: {fold.test_start.date()} to {fold.test_end.date()}")

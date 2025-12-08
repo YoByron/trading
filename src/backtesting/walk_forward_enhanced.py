@@ -274,7 +274,7 @@ class EnhancedWalkForwardValidator:
         best_result = None
 
         for combo in combinations:
-            params = dict(zip(param_names, combo))
+            params = dict(zip(param_names, combo, strict=False))
 
             try:
                 strategy = strategy_factory(**params, **strategy_kwargs)
@@ -374,7 +374,7 @@ class EnhancedWalkForwardValidator:
                 curr_val = curr_params[key]
 
                 # Handle numeric comparison
-                if isinstance(prev_val, (int, float)) and isinstance(curr_val, (int, float)):
+                if isinstance(prev_val, int | float) and isinstance(curr_val, int | float):
                     if prev_val != 0:
                         diff = abs(curr_val - prev_val) / abs(prev_val)
                         matching += max(0, 1 - diff)  # 0% diff = 1, 100% diff = 0
