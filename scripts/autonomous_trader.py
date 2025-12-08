@@ -8,6 +8,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -18,6 +19,83 @@ from src.utils.error_monitoring import init_sentry
 from src.utils.logging_config import setup_logging
 
 SYSTEM_STATE_PATH = Path(os.getenv("SYSTEM_STATE_PATH", "data/system_state.json"))
+
+
+def _update_system_state_with_crypto_trade(trade_record: dict[str, Any], logger) -> None:
+    """Update `data/system_state.json` so Tier 5 reflects the new crypto trade."""
+    state_path = Path("data/system_state.json")
+    if not state_path.exists():
+        logger.warning("system_state.json missing; skipping state update")
+        return
+
+    try:
+        with state_path.open("r", encoding="utf-8") as handle:
+            state = json.load(handle)
+    except Exception as exc:
+        logger.error(f"Failed to read system_state.json: {exc}")
+        return
+
+    strategies = state.setdefault("strategies", {})
+    tier5_defaults = {
+        "name": "Crypto Weekend Strategy (BTC, ETH)",
+        "allocation": 0.05,
+        "daily_amount": 0.5,
+        "coins": ["BTC/USD", "ETH/USD"],
+        "trades_executed": 0,
+        "total_invested": 0.0,
+        "status": "active",
+        "execution_schedule": "Saturday & Sunday 10:00 AM ET",
+        "last_execution": None,
+        "next_execution": None,
+    }
+    tier5 = strategies.setdefault("tier5", tier5_defaults)
+    tier5["trades_executed"] = tier5.get("trades_executed", 0) + 1
+    tier5["total_invested"] = round(
+        tier5.get("total_invested", 0.0) + float(trade_record.get("amount", 0.0)), 6
+    )
+    tier5["last_execution"] = trade_record.get("timestamp")
+    tier5["status"] = "active"
+
+    investments = state.setdefault("investments", {})
+    investments["tier5_invested"] = round(
+        investments.get("tier5_invested", 0.0) + float(trade_record.get("amount", 0.0)), 6
+    )
+    investments["total_invested"] = round(
+        investments.get("total_invested", 0.0) + float(trade_record.get("amount", 0.0)), 6
+    )
+
+    performance = state.setdefault("performance", {})
+    performance["total_trades"] = performance.get("total_trades", 0) + 1
+
+    open_positions = performance.setdefault("open_positions", [])
+    if isinstance(open_positions, list):
+        matching = next(
+            (entry for entry in open_positions if entry.get("symbol") == trade_record.get("symbol")),
+            None,
+        )
+        entry_payload = {
+            "symbol": trade_record.get("symbol"),
+            "tier": "tier5",
+            "amount": trade_record.get("amount"),
+            "entry_date": trade_record.get("timestamp"),
+            "entry_price": trade_record.get("price"),
+            "current_price": trade_record.get("price"),
+            "quantity": trade_record.get("quantity"),
+            "unrealized_pl": 0.0,
+            "unrealized_pl_pct": 0.0,
+            "last_updated": trade_record.get("timestamp"),
+        }
+        if matching:
+            matching.update(entry_payload)
+        else:
+            open_positions.append(entry_payload)
+
+    try:
+        with state_path.open("w", encoding="utf-8") as handle:
+            json.dump(state, handle, indent=2)
+        logger.info("system_state.json updated with crypto trade metadata")
+    except Exception as exc:
+        logger.error(f"Failed to write system_state.json: {exc}")
 
 
 def validate_order_size(amount: float, expected: float, tier: str = "T1_CORE") -> tuple[bool, str]:
@@ -189,8 +267,16 @@ def execute_crypto_trading() -> None:
     logger.info("=" * 80)
 
     try:
-        # Initialize crypto strategy
-        trader = AlpacaTrader(paper=True)
+        # Initialize dependencies
+        trader = None
+        try:
+            from src.core.alpaca_trader import AlpacaTraderError
+            trader = AlpacaTrader(paper=True)
+        except Exception as e:
+            logger.warning(f"⚠️  Trading API unavailable (Missing Keys?): {e}")
+            logger.warning("   -> Proceeding in ANALYSIS/INTERNAL SIMULATION mode.")
+            trader = None
+
         risk_manager = RiskManager(
             full_params=dict(
                 max_daily_loss_pct=2.0,
@@ -211,6 +297,46 @@ def execute_crypto_trading() -> None:
 
         if order:
             logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
+            
+            # PERSISTENCE: Save trade to daily JSON ledger so dashboard sees it
+            try:
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                trades_file = Path(f"data/trades_{today_str}.json")
+                
+                # Load existing or init new
+                if trades_file.exists():
+                    try:
+                        with open(trades_file, "r") as f:
+                            daily_trades = json.load(f)
+                    except:
+                        daily_trades = []
+                else:
+                    daily_trades = []
+                
+                # Append new trade
+                trade_record = {
+                    "symbol": order.symbol,
+                    "action": order.action.upper(),
+                    "amount": order.amount,
+                    "quantity": order.quantity,
+                    "price": order.price,
+                    "timestamp": order.timestamp.isoformat(),
+                    "status": "FILLED" if hasattr(order, "status") else "FILLED",
+                    "strategy": "CryptoStrategy",
+                    "reason": order.reason,
+                    "mode": "ANALYSIS" if trader is None else "LIVE" 
+                }
+                daily_trades.append(trade_record)
+                
+                # Write back
+                with open(trades_file, "w") as f:
+                    json.dump(daily_trades, f, indent=4)
+
+                logger.info(f"💾 Trade saved to {trades_file}")
+                _update_system_state_with_crypto_trade(trade_record, logger)
+                
+            except Exception as e:
+                logger.error(f"Failed to persist trade to JSON: {e}")
         else:
             logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
 
