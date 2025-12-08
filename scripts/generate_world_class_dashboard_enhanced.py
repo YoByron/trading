@@ -637,11 +637,11 @@ def generate_world_class_dashboard() -> str:
 
     # Determine active strategy
     is_crypto_mode = False
-    
+
     # Check today's trades for crypto
     today_crypto_trades_count = 0
     today_crypto_invested = 0.0
-    
+
     if today_trades and isinstance(today_trades, list):
         for trade in today_trades:
             if trade.get("symbol", "").endswith("USD") or trade.get("strategy") == "CryptoStrategy":
@@ -665,7 +665,10 @@ def generate_world_class_dashboard() -> str:
                         try:
                             lines = f.readlines()[-1000:]
                             for line in lines:
-                                if today_str in line and "CRYPTO STRATEGY - Daily Execution" in line:
+                                if (
+                                    today_str in line
+                                    and "CRYPTO STRATEGY - Daily Execution" in line
+                                ):
                                     is_crypto_mode = True
                                     break
                         except Exception:
@@ -681,16 +684,16 @@ def generate_world_class_dashboard() -> str:
     # Get crypto strategy info from system state
     strategies = system_state.get("strategies", {})
     tier5 = strategies.get("tier5", {})
-    
+
     # Use system state cumulative values, OR today's values if system state lags
     crypto_trades_total = tier5.get("trades_executed", 0)
     crypto_invested_total = tier5.get("total_invested", 0.0)
-    
+
     # If today has trades but state doesn't reflect them (common during day), add them
     # This is a heuristic: if state total < today's total, assume state is stale
     if crypto_trades_total < today_crypto_trades_count:
-         crypto_trades_total += today_crypto_trades_count
-         crypto_invested_total += today_crypto_invested
+        crypto_trades_total += today_crypto_trades_count
+        crypto_invested_total += today_crypto_invested
 
     crypto_last_execution = tier5.get("last_execution")
     if is_crypto_mode and not crypto_last_execution:

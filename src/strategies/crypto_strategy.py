@@ -182,7 +182,7 @@ class CryptoStrategy:
         # Initialize dependencies (use provided or create new)
         try:
             from src.core.alpaca_trader import AlpacaTraderError
-            
+
             self.trader = trader
             if self.trader is None:
                 try:
@@ -191,7 +191,7 @@ class CryptoStrategy:
                     logger.warning(f"⚠️  Trading capabilities unavailable: {e}")
                     logger.warning("   -> Running in ANALYSIS ONLY mode (Real Data, No Execution)")
                     self.trader = None
-            
+
             self.risk_manager = risk_manager or RiskManager(
                 max_daily_loss_pct=2.0,
                 max_position_size_pct=self.MAX_POSITION_PCT * 100,  # Convert to percentage
