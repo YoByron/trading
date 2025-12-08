@@ -384,7 +384,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
                 try:
                     slippage_str = line.split(":")[1].strip().replace("%", "")
                     analysis["slippage"] = float(slippage_str) / 100
-                except:
+                except Exception:
                     pass
             elif line.startswith("CONFIDENCE:"):
                 with contextlib.suppress(builtins.BaseException):

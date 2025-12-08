@@ -428,7 +428,7 @@ class TradeVerifier:
         snapshot: Any,
     ) -> list[dict]:
         """Extract position data from accessibility snapshot."""
-        positions = []
+        positions: list[dict] = []
 
         if not snapshot:
             return positions
@@ -507,7 +507,7 @@ class TradeVerifier:
 
     def _extract_account_data(self, snapshot: Any) -> dict:
         """Extract account data from accessibility snapshot."""
-        data = {}
+        data: dict[str, str] = {}
 
         if not snapshot:
             return data
