@@ -506,12 +506,26 @@ jobs:
           EXEC_START=$(date +%s)
 
           # Run the trading script and capture exit code
-          if python3 scripts/autonomous_trader.py; then
+          echo "🚀 Running autonomous_trader.py..."
+          set +e  # Don't exit on error
+          OUTPUT=$(python3 scripts/autonomous_trader.py 2>&1)
+          EXIT_CODE=$?
+          set -e
+          
+          # Always print the output
+          echo "$OUTPUT"
+          
+          if [ $EXIT_CODE -eq 0 ]; then
             EXEC_STATUS="SUCCESS"
             echo "✅ Trading execution completed successfully"
           else
             EXEC_STATUS="FAILED"
-            echo "❌ Trading execution failed with exit code $?"
+            echo "::error::Trading execution failed with exit code $EXIT_CODE"
+            echo "❌ Trading execution failed with exit code $EXIT_CODE"
+            
+            # Save output for debugging
+            echo "$OUTPUT" > logs/trading_output.log 2>/dev/null || true
+            exit $EXIT_CODE
           fi
 
           # Track execution end
