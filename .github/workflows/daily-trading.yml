@@ -41,7 +41,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -111,7 +110,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -169,8 +167,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Always fetch latest to get any YouTube analysis updates
-          ref: main
+          # Use the ref that triggered the workflow (branch or main)
           fetch-depth: 1
 
       - name: Install uv (for MCP server)
