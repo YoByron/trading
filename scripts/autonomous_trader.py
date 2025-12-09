@@ -431,7 +431,6 @@ def get_account_equity() -> float:
 
 
 def main() -> None:
-    print("::error::RUN267_TEST_ERROR_ANNOTATION", flush=True)
     print("::notice::Entering main()", flush=True)
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument(
@@ -458,7 +457,7 @@ def main() -> None:
     print("::notice::Logger initialized", flush=True)
 
     # SIMPLIFIED PATH: Skip dynamic budget and market checks, go straight to trading
-    print("::notice::RUN266_MARKER - Skipping ALL budget/market checks", flush=True)
+    print("::notice::Skipping budget/market checks (debug mode)", flush=True)
 
     # Set safe defaults
     is_weekend_day = False
@@ -501,8 +500,16 @@ def main() -> None:
 
     # Normal stock trading - import only when needed
     print("::notice::Importing TradingOrchestrator...", flush=True)
-    from src.orchestrator.main import TradingOrchestrator
-    print("::notice::TradingOrchestrator imported", flush=True)
+    try:
+        from src.orchestrator.main import TradingOrchestrator
+        print("::notice::TradingOrchestrator imported", flush=True)
+    except Exception as e:
+        print(f"::error::TradingOrchestrator import FAILED: {type(e).__name__}: {e}", flush=True)
+        import traceback
+        for line in traceback.format_exc().split("\n"):
+            if line.strip():
+                print(f"::error::{line}", flush=True)
+        raise
 
     # Ensure Go ADK service is running if enabled
     adk_enabled = _flag_enabled("ENABLE_ADK_AGENTS", "true")
