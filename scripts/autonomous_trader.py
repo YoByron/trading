@@ -499,9 +499,27 @@ def main() -> None:
         logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
 
     # Normal stock trading - import only when needed
-    print("::notice::Importing TradingOrchestrator...", flush=True)
+    print("::notice::PRE-IMPORT: About to import TradingOrchestrator", flush=True)
     sys.stdout.flush()
     sys.stderr.flush()
+
+    # Test individual imports first to isolate failure
+    print("::notice::Testing MomentumAgent import...", flush=True)
+    from src.agents.momentum_agent import MomentumAgent
+    print("::notice::MomentumAgent OK", flush=True)
+
+    print("::notice::Testing RLFilter import...", flush=True)
+    from src.agents.rl_agent import RLFilter
+    print("::notice::RLFilter OK", flush=True)
+
+    print("::notice::Testing MacroeconomicAgent import...", flush=True)
+    from src.agents.macro_agent import MacroeconomicAgent
+    print("::notice::MacroeconomicAgent OK", flush=True)
+
+    print("::notice::Now importing TradingOrchestrator...", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
+
     try:
         from src.orchestrator.main import TradingOrchestrator
         print("::notice::TradingOrchestrator imported", flush=True)
