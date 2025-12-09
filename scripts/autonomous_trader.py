@@ -455,7 +455,10 @@ def main() -> None:
     init_sentry()
     logger = setup_logging()
     print("::notice::Logger initialized", flush=True)
+
+    print("::notice::Applying dynamic budget...", flush=True)
     _apply_dynamic_daily_budget(logger)
+    print("::notice::Dynamic budget applied", flush=True)
 
     # Auto-scale daily input if enabled
     if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {
@@ -468,10 +471,12 @@ def main() -> None:
         os.environ["DAILY_INVESTMENT"] = str(scaled_input)
         logger.info(f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})")
 
+    print("::notice::Checking market conditions...", flush=True)
     crypto_allowed = crypto_enabled()
     is_holiday = is_market_holiday()
     is_weekend_day = is_weekend()
     weekend_proxy_enabled = _flag_enabled("ENABLE_WEEKEND_PROXY", "true")
+    print(f"::notice::Market checks done: crypto={crypto_allowed}, holiday={is_holiday}, weekend={is_weekend_day}", flush=True)
     weekend_proxy_active = (
         weekend_proxy_enabled and (is_weekend_day or is_holiday) and not args.crypto_only
     )
