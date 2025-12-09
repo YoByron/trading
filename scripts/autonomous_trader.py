@@ -608,12 +608,17 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        # Print BEFORE logging in case logger is broken
+        # Use GitHub Actions annotations for visibility
+        tb = traceback.format_exc()
         print("=" * 80, flush=True)
-        print("CRITICAL ERROR IN AUTONOMOUS_TRADER.PY", flush=True)
+        print("::error::CRITICAL ERROR IN AUTONOMOUS_TRADER.PY", flush=True)
+        print(f"::error::Exception: {type(e).__name__}: {e}", flush=True)
         print("=" * 80, flush=True)
-        print(f"Exception: {type(e).__name__}: {e}", flush=True)
         print("Full traceback:", flush=True)
-        traceback.print_exc()
+        for line in tb.split("\n"):
+            print(f"::error::{line}", flush=True)
         print("=" * 80, flush=True)
+        # Also write to file for artifact
+        with open("logs/trading_crash.log", "w") as f:
+            f.write(tb)
         sys.exit(2)
