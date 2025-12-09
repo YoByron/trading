@@ -457,7 +457,7 @@ def main() -> None:
     print("::notice::Logger initialized", flush=True)
 
     # SIMPLIFIED PATH: Skip dynamic budget and market checks, go straight to trading
-    print("::notice::Skipping dynamic budget/market checks (CI debug mode)", flush=True)
+    print("::notice::RUN266_MARKER - Skipping ALL budget/market checks", flush=True)
 
     # Set safe defaults
     is_weekend_day = False
