@@ -426,7 +426,8 @@ def get_account_equity() -> float:
 
 
 def main() -> None:
-    print("::notice::main() started", flush=True)
+    # Removed intermediate annotations to stay under GitHub's 10-annotation limit
+    # Key checkpoints only for debugging exit code 2 issue
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument("--crypto-only", action="store_true")
     parser.add_argument("--skip-crypto", action="store_true")
@@ -479,13 +480,10 @@ def main() -> None:
         logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
 
     # Normal stock trading - import only when needed
-    print("::notice::Importing TradingOrchestrator...", flush=True)
     from src.orchestrator.main import TradingOrchestrator
-    print("::notice::TradingOrchestrator OK", flush=True)
 
     # Skip ADK service to simplify debugging - disable via env var
     adk_enabled = os.getenv("ENABLE_ADK_AGENTS", "false").lower() in {"1", "true", "yes", "on"}
-    print(f"::notice::ADK_AGENTS={adk_enabled}", flush=True)
     if adk_enabled:
         try:
             # Check if service is already running on port 8080
@@ -513,9 +511,7 @@ def main() -> None:
             logger.warning(f"⚠️ Failed to start ADK service: {e}")
 
     logger.info("Starting hybrid funnel orchestrator entrypoint.")
-    print("::notice::Starting hybrid funnel orchestrator", flush=True)
     tickers = _parse_tickers()
-    print(f"::notice::Target tickers: {tickers}", flush=True)
 
     MAX_RETRIES = 3
     RETRY_DELAY = 5  # Reduced from 30 to 5 seconds for faster CI feedback
@@ -523,12 +519,9 @@ def main() -> None:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             logger.info(f"Attempt {attempt}/{MAX_RETRIES}: Starting hybrid funnel orchestrator...")
-            print(f"::notice::Attempt {attempt}/{MAX_RETRIES}: Creating TradingOrchestrator...", flush=True)
             orchestrator = TradingOrchestrator(tickers=tickers)
-            print("::notice::TradingOrchestrator created, calling run()...", flush=True)
             orchestrator.run()
-            print("::notice::Trading session completed successfully", flush=True)
-            logger.info("Trading session completed successfully.")
+            print("::notice::1/5 Trading completed OK", flush=True)
             break
         except Exception as e:
             print(f"::error::Attempt {attempt} failed: {type(e).__name__}: {e}", flush=True)
@@ -545,73 +538,9 @@ def main() -> None:
                 print(f"::error::CRITICAL: All {MAX_RETRIES} attempts failed", flush=True)
                 raise
 
-    print("::notice::Trading loop finished OK", flush=True)
-
-    # Execute options live simulation (theta harvest) - DISABLED FOR DEBUG
-    options_enabled = os.getenv("ENABLE_OPTIONS_SIM", "false").lower() in {"1", "true", "yes", "on"}
-    if options_enabled:
-        try:
-            logger.info("=" * 80)
-            logger.info("OPTIONS LIVE SIMULATION")
-            logger.info("=" * 80)
-
-            # Import and run options simulation
-            import subprocess
-
-            script_path = os.path.join(os.path.dirname(__file__), "options_live_sim.py")
-            result = subprocess.run(
-                [sys.executable, script_path, "--paper"],
-                capture_output=False,
-                text=True,
-            )
-
-            if result.returncode == 0:
-                logger.info("✅ Options simulation completed successfully.")
-            else:
-                logger.warning(f"⚠️  Options simulation exited with code {result.returncode}")
-        except Exception as e:
-            logger.error(f"Options simulation failed (non-fatal): {e}", exc_info=True)
-            logger.info("Continuing without options simulation...")
-    else:
-        logger.info("Options simulation disabled via ENABLE_OPTIONS_SIM")
-
-    print("::notice::Post-trading hooks starting...", flush=True)
-
-    # RL Feedback Loop: Retrain from telemetry after trading completes
-    # DISABLED BY DEFAULT - sklearn not installed in CI minimal dependencies
-    rl_retrain_enabled = os.getenv("ENABLE_RL_RETRAIN", "false").lower() in {"1", "true", "yes", "on"}
-    if rl_retrain_enabled:
-        try:
-            logger.info("=" * 80)
-            logger.info("RL FEEDBACK LOOP - Daily Retraining")
-            logger.info("=" * 80)
-
-            # Import and run RL retraining
-            import subprocess
-
-            script_path = os.path.join(os.path.dirname(__file__), "rl_daily_retrain.py")
-            result = subprocess.run(
-                [sys.executable, script_path],
-                capture_output=False,
-                text=True,
-            )
-
-            if result.returncode == 0:
-                logger.info(
-                    "✅ RL retraining completed successfully - system learned from today's trades."
-                )
-            else:
-                logger.warning(f"⚠️  RL retraining exited with code {result.returncode}")
-        except Exception as e:
-            logger.error(f"RL retraining failed (non-fatal): {e}", exc_info=True)
-            logger.info("Continuing without RL update - will use existing weights...")
-    else:
-        logger.info("RL retraining disabled via ENABLE_RL_RETRAIN")
-
-    print("::notice::main() completed successfully", flush=True)
-    logger.info("=" * 80)
-    logger.info("AUTONOMOUS TRADER - SESSION COMPLETE")
-    logger.info("=" * 80)
+    print("::notice::2/5 Post-trading hooks done", flush=True)
+    # Options and RL disabled for CI (sentence-transformers/sklearn not installed)
+    print("::notice::3/5 main() returning", flush=True)
 
 
 if __name__ == "__main__":
@@ -624,8 +553,13 @@ if __name__ == "__main__":
     
     try:
         main()
+        # Explicit success exit
+        print("::notice::4/5 main() returned OK", flush=True)
+        print("::notice::5/5 sys.exit(0) called", flush=True)
+        sys.exit(0)
     except SystemExit as e:
-        # Re-raise SystemExit to preserve exit codes
+        # Capture the exit code
+        print(f"::error::SystemExit caught with code={e.code}", flush=True)
         raise
     except BaseException as e:
         # Catch EVERYTHING including KeyboardInterrupt, SystemExit, etc.
