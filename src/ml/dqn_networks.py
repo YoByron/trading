@@ -13,7 +13,6 @@ DiscoRL Integration (Dec 2025):
 """
 
 import logging
-from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -29,7 +28,7 @@ class DQNNetwork(nn.Module):
         self,
         input_dim: int,
         num_actions: int = 3,
-        hidden_dims: Tuple[int, ...] = (256, 128, 64),
+        hidden_dims: tuple[int, ...] = (256, 128, 64),
     ):
         super().__init__()
         self.input_dim = input_dim
@@ -73,7 +72,7 @@ class DuelingDQNNetwork(nn.Module):
         self,
         input_dim: int,
         num_actions: int = 3,
-        hidden_dims: Tuple[int, ...] = (256, 128),
+        hidden_dims: tuple[int, ...] = (256, 128),
         value_hidden: int = 64,
         advantage_hidden: int = 64,
     ):
@@ -173,15 +172,13 @@ class LSTMDQNNetwork(nn.Module):
 
     def _init_weights(self):
         for name, param in self.lstm.named_parameters():
-            if "weight_ih" in name:
-                nn.init.orthogonal_(param)
-            elif "weight_hh" in name:
+            if "weight_ih" in name or "weight_hh" in name:
                 nn.init.orthogonal_(param)
             elif "bias" in name:
                 nn.init.constant_(param, 0)
 
     def forward(
-        self, x: torch.Tensor, hidden: Tuple[torch.Tensor, torch.Tensor] | None = None
+        self, x: torch.Tensor, hidden: tuple[torch.Tensor, torch.Tensor] | None = None
     ) -> torch.Tensor:
         # Handle both single states and sequences
         if x.dim() == 2:
@@ -223,7 +220,7 @@ class CategoricalDQNNetwork(nn.Module):
         self,
         input_dim: int,
         num_actions: int = 3,
-        hidden_dims: Tuple[int, ...] = (256, 128),
+        hidden_dims: tuple[int, ...] = (256, 128),
         num_bins: int = 51,  # C51 default, can use 601 like DiscoRL
         v_min: float = -10.0,  # Min value (scaled for % returns)
         v_max: float = 10.0,   # Max value (scaled for % returns)
@@ -349,12 +346,12 @@ class CategoricalDQNNetwork(nn.Module):
 
         # Compute projection indices
         b = (tz - self.v_min) / self.delta_z
-        l = b.floor().long()
-        u = b.ceil().long()
+        lower_idx = b.floor().long()
+        upper_idx = b.ceil().long()
 
         # Handle edge cases
-        l = l.clamp(0, self.num_bins - 1)
-        u = u.clamp(0, self.num_bins - 1)
+        lower_idx = lower_idx.clamp(0, self.num_bins - 1)
+        upper_idx = upper_idx.clamp(0, self.num_bins - 1)
 
         # Distribute probability mass
         projected = torch.zeros(batch_size, self.num_bins, device=rewards.device)
@@ -363,11 +360,11 @@ class CategoricalDQNNetwork(nn.Module):
 
         # Lower bound contribution
         projected.view(-1).index_add_(
-            0, (l + offset).view(-1), (next_dist * (u.float() - b)).view(-1)
+            0, (lower_idx + offset).view(-1), (next_dist * (upper_idx.float() - b)).view(-1)
         )
         # Upper bound contribution
         projected.view(-1).index_add_(
-            0, (u + offset).view(-1), (next_dist * (b - l.float())).view(-1)
+            0, (upper_idx + offset).view(-1), (next_dist * (b - lower_idx.float())).view(-1)
         )
 
         return projected
@@ -387,7 +384,7 @@ class DiscoInspiredNetwork(nn.Module):
         self,
         input_dim: int,
         num_actions: int = 3,
-        hidden_dims: Tuple[int, ...] = (512, 512),
+        hidden_dims: tuple[int, ...] = (512, 512),
         num_bins: int = 601,  # DiscoRL uses 601 bins
         v_min: float = -300.0,  # DiscoRL max_abs_value = 300
         v_max: float = 300.0,
@@ -450,7 +447,7 @@ class DiscoInspiredNetwork(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        hidden: Tuple[torch.Tensor, torch.Tensor] | None = None,
+        hidden: tuple[torch.Tensor, torch.Tensor] | None = None,
     ) -> dict:
         """
         Forward pass returning Q-values and auxiliary outputs.

@@ -59,7 +59,7 @@ class RLFilter:
         self.weights = self._load_weights()
         self.default_threshold = float(os.getenv("RL_CONFIDENCE_THRESHOLD", "0.6"))
         self.transformer: TransformerRLPolicy | None = None
-        self.disco_dqn: "DiscoDQNAgent | None" = None
+        self.disco_dqn: DiscoDQNAgent | None = None
 
         # Transformer initialization
         flag = (
