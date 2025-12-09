@@ -53,9 +53,9 @@ class LegacyMomentumCalculator:
         self.volume_min = float(os.getenv("MOMENTUM_VOLUME_MIN", "0.6"))
 
         # ADX REGIME FILTER (Dec 5, 2025): Skip trades in ranging/trendless markets
-        # ADX < 20 indicates weak/no trend (high whipsaw risk)
+        # ADX < 10 indicates very weak trend - lowered from 20 to allow more trades during R&D
         # ADX 20-40 = moderate trend, ADX > 40 = strong trend
-        self.adx_min = float(os.getenv("MOMENTUM_ADX_MIN", "20.0"))
+        self.adx_min = float(os.getenv("MOMENTUM_ADX_MIN", "10.0"))
 
     def evaluate(self, symbol: str) -> MomentumPayload:
         result = self._provider.get_daily_bars(symbol, lookback_days=self.lookback_days)
