@@ -149,7 +149,7 @@ class ReitStrategy(StrategyInterface):
             return
 
         allocation = amount or self.daily_allocation
-        if allocation < 10:
+        if allocation < 2.0:
             logger.info(f"Skipping REIT execution: Allocation ${allocation} too low")
             return
 
