@@ -431,6 +431,7 @@ def get_account_equity() -> float:
 
 
 def main() -> None:
+    print("::error::RUN267_TEST_ERROR_ANNOTATION", flush=True)
     print("::notice::Entering main()", flush=True)
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument(
