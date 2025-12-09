@@ -575,8 +575,11 @@ def main() -> None:
     else:
         logger.info("Options simulation disabled via ENABLE_OPTIONS_SIM")
 
+    print("::notice::Post-trading hooks starting...", flush=True)
+
     # RL Feedback Loop: Retrain from telemetry after trading completes
-    rl_retrain_enabled = _flag_enabled("ENABLE_RL_RETRAIN", "true")
+    # DISABLED BY DEFAULT - sklearn not installed in CI minimal dependencies
+    rl_retrain_enabled = os.getenv("ENABLE_RL_RETRAIN", "false").lower() in {"1", "true", "yes", "on"}
     if rl_retrain_enabled:
         try:
             logger.info("=" * 80)
@@ -604,6 +607,11 @@ def main() -> None:
             logger.info("Continuing without RL update - will use existing weights...")
     else:
         logger.info("RL retraining disabled via ENABLE_RL_RETRAIN")
+
+    print("::notice::main() completed successfully", flush=True)
+    logger.info("=" * 80)
+    logger.info("AUTONOMOUS TRADER - SESSION COMPLETE")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":
