@@ -56,6 +56,8 @@ class SentimentRAGStore:
         else:
             try:
                 self.embedder = get_embedder()
+                if self.embedder is None:
+                    raise ImportError("RAG features disabled or embedder unavailable")
             except ImportError as e:
                 logger.warning(f"Embedder unavailable (sentence-transformers not installed): {e}")
                 raise  # Re-raise to let caller handle it
