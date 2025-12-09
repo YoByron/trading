@@ -500,15 +500,19 @@ def main() -> None:
 
     # Normal stock trading - import only when needed
     print("::notice::Importing TradingOrchestrator...", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
     try:
         from src.orchestrator.main import TradingOrchestrator
         print("::notice::TradingOrchestrator imported", flush=True)
-    except Exception as e:
+    except BaseException as e:
         print(f"::error::TradingOrchestrator import FAILED: {type(e).__name__}: {e}", flush=True)
         import traceback
         for line in traceback.format_exc().split("\n"):
             if line.strip():
                 print(f"::error::{line}", flush=True)
+        sys.stdout.flush()
+        sys.stderr.flush()
         raise
 
     # Ensure Go ADK service is running if enabled
