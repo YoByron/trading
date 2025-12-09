@@ -41,7 +41,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -111,7 +110,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -169,8 +167,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Always fetch latest to get any YouTube analysis updates
-          ref: main
+          # Use the ref that triggered the workflow (branch or main)
           fetch-depth: 1
 
       - name: Install uv (for MCP server)
@@ -556,21 +553,25 @@ jobs:
           "
 
           set +e  # Don't exit on error
-          OUTPUT=$(python3 scripts/autonomous_trader.py 2>&1)
-          EXIT_CODE=$?
+          # Run directly (not captured) to ensure all output is immediately visible
+          python3 -u scripts/autonomous_trader.py 2>&1 | tee /tmp/trading_output.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "::notice::BASH: Python exit code captured = $EXIT_CODE"
           set -e
-          
-          # Always print the output
-          echo "$OUTPUT"
+
+          # Read output for later use if needed
+          OUTPUT=$(cat /tmp/trading_output.log 2>/dev/null || echo "No output captured")
           
           if [ $EXIT_CODE -eq 0 ]; then
             EXEC_STATUS="SUCCESS"
+            echo "::notice::BASH: EXIT_CODE is 0 - SUCCESS branch"
             echo "✅ Trading execution completed successfully"
           else
             EXEC_STATUS="FAILED"
+            echo "::error::BASH: EXIT_CODE is $EXIT_CODE - FAILURE branch"
             echo "::error::Trading execution failed with exit code $EXIT_CODE"
             echo "❌ Trading execution failed with exit code $EXIT_CODE"
-            
+
             # Save output for debugging
             echo "$OUTPUT" > logs/trading_output.log 2>/dev/null || true
             exit $EXIT_CODE
