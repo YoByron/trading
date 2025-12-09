@@ -19,18 +19,15 @@ import logging
 import random
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from .dqn_networks import (
     CategoricalDQNNetwork,
     DiscoInspiredNetwork,
-    DuelingDQNNetwork,
 )
 from .prioritized_replay import MovingAverage, PrioritizedReplayBuffer
 
@@ -189,7 +186,7 @@ class DiscoDQNAgent:
         self.update_count = 0
         self.losses = deque(maxlen=1000)
 
-        logger.info(f"DiscoDQNAgent initialized:")
+        logger.info("DiscoDQNAgent initialized:")
         logger.info(f"  State dim: {state_dim}, Actions: {action_dim}")
         logger.info(f"  Categorical: {num_bins} bins, range [{v_min}, {v_max}]")
         logger.info(f"  EMA normalization: adv={use_advantage_normalization}, td={use_td_normalization}")
@@ -199,7 +196,7 @@ class DiscoDQNAgent:
         self,
         state: np.ndarray,
         training: bool = True,
-    ) -> Tuple[int, Dict[str, Any]]:
+    ) -> tuple[int, dict[str, Any]]:
         """
         Select action using epsilon-greedy with distributional Q-values.
 
@@ -253,7 +250,7 @@ class DiscoDQNAgent:
             done=done,
         )
 
-    def train_step(self) -> Optional[Dict[str, float]]:
+    def train_step(self) -> Optional[dict[str, float]]:
         """
         Perform one training step with distributional Bellman update.
 
@@ -308,13 +305,13 @@ class DiscoDQNAgent:
         next_states: torch.Tensor,
         dones: torch.Tensor,
         weights: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, float]]:
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, float]]:
         """
         Compute categorical distributional loss (C51-style).
 
         This is the core of distributional RL, as used in DiscoRL.
         """
-        batch_size = states.shape[0]
+        _batch_size = states.shape[0]  # Used implicitly in tensor operations
 
         # Current distributions
         current_dist = self.q_network.get_distribution(states)  # [B, A, num_bins]
@@ -387,12 +384,12 @@ class DiscoDQNAgent:
 
         # Compute projection indices
         b = (tz - self.v_min) / self.delta_z
-        l = b.floor().long()
-        u = b.ceil().long()
+        lower_idx = b.floor().long()
+        upper_idx = b.ceil().long()
 
         # Handle edge cases
-        l = l.clamp(0, self.num_bins - 1)
-        u = u.clamp(0, self.num_bins - 1)
+        lower_idx = lower_idx.clamp(0, self.num_bins - 1)
+        upper_idx = upper_idx.clamp(0, self.num_bins - 1)
 
         # Distribute probability mass
         projected = torch.zeros(batch_size, self.num_bins, device=self.device)
@@ -401,9 +398,9 @@ class DiscoDQNAgent:
         for i in range(batch_size):
             for j in range(self.num_bins):
                 # Lower bound contribution
-                projected[i, l[i, j]] += next_dist[i, j] * (u[i, j].float() - b[i, j])
+                projected[i, lower_idx[i, j]] += next_dist[i, j] * (upper_idx[i, j].float() - b[i, j])
                 # Upper bound contribution
-                projected[i, u[i, j]] += next_dist[i, j] * (b[i, j] - l[i, j].float())
+                projected[i, upper_idx[i, j]] += next_dist[i, j] * (b[i, j] - lower_idx[i, j].float())
 
         return projected
 
@@ -420,8 +417,8 @@ class DiscoDQNAgent:
 
     def calculate_reward(
         self,
-        trade_result: Dict[str, Any],
-        market_state: Optional[Dict[str, Any]] = None,
+        trade_result: dict[str, Any],
+        market_state: Optional[dict[str, Any]] = None,
     ) -> float:
         """
         Calculate reward from trade result.
@@ -503,7 +500,7 @@ class DiscoDQNAgent:
 
         logger.info(f"DiscoDQNAgent loaded from {filepath}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get training statistics."""
         avg_loss = np.mean(self.losses) if self.losses else 0.0
         stats = {
