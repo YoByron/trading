@@ -125,7 +125,9 @@ class TradingOrchestrator:
         if enable_coaching and COACHING_AVAILABLE:
             try:
                 self.mental_coach = MentalToughnessCoach()
-                logger.info("Gate 0: MentalToughnessCoach initialized (psychology-based trading guard)")
+                logger.info(
+                    "Gate 0: MentalToughnessCoach initialized (psychology-based trading guard)"
+                )
             except Exception as e:
                 logger.warning(f"MentalToughnessCoach init failed: {e}")
 
@@ -227,8 +229,12 @@ class TradingOrchestrator:
                         ticker="SYSTEM",
                         status="blocked",
                         payload={
-                            "reason": blocking_intervention.headline if blocking_intervention else "Tilt/Danger zone",
-                            "message": blocking_intervention.message if blocking_intervention else "",
+                            "reason": blocking_intervention.headline
+                            if blocking_intervention
+                            else "Tilt/Danger zone",
+                            "message": blocking_intervention.message
+                            if blocking_intervention
+                            else "",
                             "zone": state_summary["zone"],
                         },
                     )
@@ -527,7 +533,7 @@ class TradingOrchestrator:
             if total_closed > 0:
                 state_manager.state["performance"]["win_rate"] = (winning / total_closed) * 100
 
-            state_manager.save()
+            state_manager.save_state()
 
             logger.info(
                 f"Recorded closed trade: {symbol} {'WIN' if is_winner else 'LOSS'} "
@@ -551,7 +557,9 @@ class TradingOrchestrator:
                         logger.info(
                             "Gate 0 Coaching: %s - %s",
                             intervention.headline,
-                            intervention.message[:100] + "..." if len(intervention.message) > 100 else intervention.message,
+                            intervention.message[:100] + "..."
+                            if len(intervention.message) > 100
+                            else intervention.message,
                         )
                         self.telemetry.record(
                             event_type="coaching.intervention",
@@ -573,14 +581,18 @@ class TradingOrchestrator:
                     if not ready:
                         logger.warning(
                             "Gate 0: CIRCUIT BREAKER - Mental state degraded: %s",
-                            blocking_intervention.headline if blocking_intervention else "Tilt detected",
+                            blocking_intervention.headline
+                            if blocking_intervention
+                            else "Tilt detected",
                         )
                         self.telemetry.record(
                             event_type="coaching.circuit_breaker",
                             ticker=symbol,
                             status="triggered",
                             payload={
-                                "reason": blocking_intervention.headline if blocking_intervention else "Mental state",
+                                "reason": blocking_intervention.headline
+                                if blocking_intervention
+                                else "Mental state",
                                 "zone": state_summary["zone"],
                                 "readiness_score": state_summary["readiness_score"],
                             },
@@ -697,8 +709,12 @@ class TradingOrchestrator:
                         "coaching",
                         ticker,
                         {
-                            "reason": blocking_intervention.headline if blocking_intervention else "Mental state",
-                            "severity": blocking_intervention.severity if blocking_intervention else "critical",
+                            "reason": blocking_intervention.headline
+                            if blocking_intervention
+                            else "Mental state",
+                            "severity": blocking_intervention.severity
+                            if blocking_intervention
+                            else "critical",
                         },
                     )
                     return
@@ -1662,7 +1678,11 @@ class TradingOrchestrator:
         logger.info("--- Gate 6: Phil Town Rule #1 Options Strategy ---")
 
         # Check if theta automation is enabled
-        theta_enabled = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower() in ("true", "1", "yes")
+        theta_enabled = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
 
         if not theta_enabled:
             # Options disabled - log but don't execute
