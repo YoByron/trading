@@ -461,15 +461,18 @@ def main() -> None:
     print("::notice::Dynamic budget applied", flush=True)
 
     # Auto-scale daily input if enabled
+    print("::notice::Checking auto-scale...", flush=True)
     if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {
         "1",
         "true",
         "yes",
     }:
+        print("::notice::Auto-scale enabled, getting equity...", flush=True)
         equity = get_account_equity()
         scaled_input = calc_daily_input(equity)
         os.environ["DAILY_INVESTMENT"] = str(scaled_input)
         logger.info(f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})")
+    print("::notice::Auto-scale check done", flush=True)
 
     print("::notice::Checking market conditions...", flush=True)
     crypto_allowed = crypto_enabled()
