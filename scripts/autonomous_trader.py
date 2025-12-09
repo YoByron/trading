@@ -1,13 +1,15 @@
 """Bootstrap entry point for the hybrid trading orchestrator."""
-# Very early diagnostic output - print before ANY imports
-import sys
-print("::notice::autonomous_trader.py starting - Python version:", sys.version, flush=True)
 
 from __future__ import annotations
 
+# Early diagnostic output for CI visibility
+import sys
+import os
+
+print("::notice::autonomous_trader.py starting - Python version:", sys.version.split()[0], flush=True)
+
 import argparse
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
