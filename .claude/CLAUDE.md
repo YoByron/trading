@@ -207,19 +207,53 @@ If I catch myself about to suggest manual intervention:
    - If you're only working on ONE branch in a session, you MAY work directly in main repo
    - If you need to switch branches or work on multiple features, use worktrees
 
+### 🚨 NEVER MERGE DIRECTLY TO MAIN (Added Dec 9, 2025)
+
+**ABSOLUTE RULE - NO EXCEPTIONS:**
+- ❌ NEVER use `git merge` to main
+- ❌ NEVER use `git push origin main`
+- ❌ NEVER bypass the PR process
+- ✅ ALWAYS create a PR for every change
+- ✅ ALWAYS merge through GitHub PR interface
+
+**Why This Matters:**
+- PRs provide audit trail for all changes
+- PRs trigger CI checks before merge
+- PRs allow review and rollback
+- Direct pushes to main bypass all safety checks
+
+**CEO Directive (Dec 9, 2025)**: *"We can never merge to main. We must always open and merge PRs."*
+
 ### GitHub PR Creation Protocol
 
-**YOU HAVE FULL ACCESS TO `gh` CLI - USE IT!**
+**YOU HAVE FULL AGENTIC CONTROL TO CREATE AND MERGE PRs!**
 
+**Available Tools (CEO Directive Dec 9, 2025):**
+- GitHub PAT with full repo permissions
+- GitHub MCP server
+- `gh` CLI (GitHub CLI)
+- `gh copilot` CLI
+
+**Authentication:**
 ```bash
-# Fix for Enterprise Managed User restrictions:
-unset GITHUB_TOKEN && gh auth switch --user IgorGanapolsky
+# Use PAT for authentication
+export GH_TOKEN=<PAT>
+gh auth status
+```
 
-# Then create PR:
+**Create PR:**
+```bash
 gh pr create --base main --head <branch-name> \
   --title "type: Brief description" \
   --body "PR description with Summary, Changes, Test Plan"
 ```
+
+**Merge PR (after CI passes):**
+```bash
+gh pr merge <PR_NUMBER> --squash --delete-branch
+```
+
+**CEO Directive (Dec 9, 2025)**: *"You have full agentic control, a GitHub PAT, GitHub MCP, gh copilot cli. Use them to create and merge PRs autonomously - don't ask me to do it!"*
 
 **See `.claude/skills/github_pr_manager/skill.md` for full protocol.**
 
