@@ -132,6 +132,8 @@ jobs:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
+          # Install multitasking first with binary-only to avoid build failures
+          python3 -m pip install --only-binary :all: multitasking || true
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Run backtest scenario matrix
@@ -221,6 +223,8 @@ jobs:
           PIP_DEFAULT_TIMEOUT: 300
         run: |
           python3 -m pip install --upgrade pip
+          # Install multitasking first with binary-only to avoid build failures
+          python3 -m pip install --only-binary :all: multitasking || true
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Set up Go for ADK orchestrator
