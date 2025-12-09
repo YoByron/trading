@@ -545,8 +545,10 @@ def main() -> None:
                 print(f"::error::CRITICAL: All {MAX_RETRIES} attempts failed", flush=True)
                 raise
 
-    # Execute options live simulation (theta harvest)
-    options_enabled = _flag_enabled("ENABLE_OPTIONS_SIM", "true")
+    print("::notice::Trading loop finished OK", flush=True)
+
+    # Execute options live simulation (theta harvest) - DISABLED FOR DEBUG
+    options_enabled = os.getenv("ENABLE_OPTIONS_SIM", "false").lower() in {"1", "true", "yes", "on"}
     if options_enabled:
         try:
             logger.info("=" * 80)
