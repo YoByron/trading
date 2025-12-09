@@ -50,7 +50,15 @@ class SentimentRAGStore:
         sentiment_dir: Path = DEFAULT_SENTIMENT_DIR,
     ):
         self.db_path = Path(db_path)
-        self.embedder = embedder or get_embedder()
+        # Handle missing sentence-transformers gracefully
+        if embedder is not None:
+            self.embedder = embedder
+        else:
+            try:
+                self.embedder = get_embedder()
+            except ImportError as e:
+                logger.warning(f"Embedder unavailable (sentence-transformers not installed): {e}")
+                raise  # Re-raise to let caller handle it
         self.sentiment_dir = Path(sentiment_dir)
         self.connection = sqlite3.connect(self.db_path)
         self.connection.execute("PRAGMA journal_mode=WAL;")
