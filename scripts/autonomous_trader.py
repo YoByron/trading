@@ -604,4 +604,16 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import traceback
+    try:
+        main()
+    except Exception as e:
+        # Print BEFORE logging in case logger is broken
+        print("=" * 80, flush=True)
+        print("CRITICAL ERROR IN AUTONOMOUS_TRADER.PY", flush=True)
+        print("=" * 80, flush=True)
+        print(f"Exception: {type(e).__name__}: {e}", flush=True)
+        print("Full traceback:", flush=True)
+        traceback.print_exc()
+        print("=" * 80, flush=True)
+        sys.exit(2)
