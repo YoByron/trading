@@ -55,9 +55,9 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
     Returns:
         (is_valid, list of missing secrets)
     """
-    # ALL secrets that MUST be passed to daily-trading workflow
-    # This is the source of truth - add any new secrets here
-    REQUIRED_SECRETS = {
+    # ALL secret names that MUST be passed to daily-trading workflow
+    # This is the source of truth - add any new secret names here
+    REQUIRED_SECRET_NAMES = {
         # Trading - Critical
         "ALPACA_API_KEY",
         "ALPACA_SECRET_KEY",
@@ -67,8 +67,8 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
         "HELICONE_API_KEY",
     }
 
-    # Secrets that SHOULD be passed (warnings only)
-    RECOMMENDED_SECRETS = {
+    # Secret names that SHOULD be passed (warnings only)
+    RECOMMENDED_SECRET_NAMES = {
         "ALPHA_VANTAGE_API_KEY",
         "POLYGON_API_KEY",
         "FINNHUB_API_KEY",
@@ -82,13 +82,13 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
     missing_required = []
     missing_recommended = []
 
-    for secret in REQUIRED_SECRETS:
-        if secret not in env_vars:
-            missing_required.append(secret)
+    for secret_name in REQUIRED_SECRET_NAMES:
+        if secret_name not in env_vars:
+            missing_required.append(secret_name)
 
-    for secret in RECOMMENDED_SECRETS:
-        if secret not in env_vars:
-            missing_recommended.append(secret)
+    for secret_name in RECOMMENDED_SECRET_NAMES:
+        if secret_name not in env_vars:
+            missing_recommended.append(secret_name)
 
     # Report
     print(f"🔍 Validating: {workflow_path.name}")
@@ -97,8 +97,8 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
 
     if missing_required:
         print("❌ MISSING REQUIRED SECRETS (FAIL):")
-        for secret in missing_required:
-            print(f"   - {secret}")
+        for secret_name in missing_required:
+            print(f"   - {secret_name}")
         print()
         print("   These secrets MUST be added to the workflow's 'env' section!")
         print("   Example:")
@@ -107,14 +107,15 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
 
     if missing_recommended:
         print("⚠️  MISSING RECOMMENDED SECRETS (WARNING):")
-        for secret in missing_recommended:
-            print(f"   - {secret}")
+        for secret_name in missing_recommended:
+            print(f"   - {secret_name}")
         print()
 
     if not missing_required:
         print("✅ All required secrets are passed to workflow")
 
     return len(missing_required) == 0, missing_required
+
 
 
 def validate_all_workflows() -> bool:
@@ -154,8 +155,8 @@ def validate_all_workflows() -> bool:
         print(f"❌ VALIDATION FAILED: {len(total_missing)} missing secrets")
         print()
         print("To fix: Add these secrets to the workflow's 'env' section:")
-        for secret in set(total_missing):
-            print(f"  {secret}: ${{{{ secrets.{secret} }}}}")
+        for secret_name in set(total_missing):
+            print(f"  {secret_name}: ${{{{ secrets.{secret_name} }}}}")
         return False
 
 
