@@ -6,7 +6,8 @@ from __future__ import annotations
 import sys
 import os
 
-print("::notice::autonomous_trader.py starting - Python version:", sys.version.split()[0], flush=True)
+# Reduced annotations to avoid GitHub 10-annotation limit
+print("autonomous_trader.py starting - Python:", sys.version.split()[0], flush=True)
 
 import argparse
 import json
@@ -14,27 +15,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-print("::notice::Standard library imports successful", flush=True)
+# Removed annotation to stay under limit
 
 try:
     from dotenv import load_dotenv
-    print("::notice::dotenv imported", flush=True)
-except ImportError as e:
-    print(f"::warning::dotenv import failed: {e}", flush=True)
+except ImportError:
     def load_dotenv(): pass  # Stub
 
 # Ensure src is on the path when executed via GitHub Actions
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-print("::notice::Importing src utilities...", flush=True)
 try:
     from src.utils.error_monitoring import init_sentry
     from src.utils.logging_config import setup_logging
-    print("::notice::src utilities imported successfully", flush=True)
 except Exception as e:
-    print(f"::error::Failed to import src utilities: {type(e).__name__}: {e}", flush=True)
-    import traceback
-    traceback.print_exc()
+    print(f"::error::Failed to import src utilities: {e}", flush=True)
     sys.exit(2)
 
 SYSTEM_STATE_PATH = Path(os.getenv("SYSTEM_STATE_PATH", "data/system_state.json"))
@@ -431,33 +426,18 @@ def get_account_equity() -> float:
 
 
 def main() -> None:
-    print("::notice::Entering main()", flush=True)
+    print("::notice::main() started", flush=True)
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
-    parser.add_argument(
-        "--crypto-only",
-        action="store_true",
-        help="Force crypto trading even on weekdays (requires ENABLE_CRYPTO_AGENT=true)",
-    )
-    parser.add_argument(
-        "--skip-crypto",
-        action="store_true",
-        help="Skip legacy crypto flow even on weekends.",
-    )
-    parser.add_argument(
-        "--auto-scale",
-        action="store_true",
-        help="Enable auto-scaling of daily input based on equity.",
-    )
+    parser.add_argument("--crypto-only", action="store_true")
+    parser.add_argument("--skip-crypto", action="store_true")
+    parser.add_argument("--auto-scale", action="store_true")
     args = parser.parse_args()
-    print("::notice::Arguments parsed", flush=True)
 
     load_dotenv()
     init_sentry()
     logger = setup_logging()
-    print("::notice::Logger initialized", flush=True)
 
-    # SIMPLIFIED PATH: Skip dynamic budget and market checks, go straight to trading
-    print("::notice::Skipping budget/market checks (debug mode)", flush=True)
+    # SIMPLIFIED PATH: Skip dynamic budget and market checks
 
     # Set safe defaults
     is_weekend_day = False
