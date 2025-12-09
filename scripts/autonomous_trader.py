@@ -519,19 +519,25 @@ def main() -> None:
             logger.warning(f"⚠️ Failed to start ADK service: {e}")
 
     logger.info("Starting hybrid funnel orchestrator entrypoint.")
+    print("::notice::Starting hybrid funnel orchestrator", flush=True)
     tickers = _parse_tickers()
+    print(f"::notice::Target tickers: {tickers}", flush=True)
 
     MAX_RETRIES = 3
-    RETRY_DELAY = 30  # seconds
+    RETRY_DELAY = 5  # Reduced from 30 to 5 seconds for faster CI feedback
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             logger.info(f"Attempt {attempt}/{MAX_RETRIES}: Starting hybrid funnel orchestrator...")
+            print(f"::notice::Attempt {attempt}/{MAX_RETRIES}: Creating TradingOrchestrator...", flush=True)
             orchestrator = TradingOrchestrator(tickers=tickers)
+            print("::notice::TradingOrchestrator created, calling run()...", flush=True)
             orchestrator.run()
+            print("::notice::Trading session completed successfully", flush=True)
             logger.info("Trading session completed successfully.")
             break
         except Exception as e:
+            print(f"::error::Attempt {attempt} failed: {type(e).__name__}: {e}", flush=True)
             logger.error(f"❌ Attempt {attempt} failed: {e}", exc_info=True)
             if attempt < MAX_RETRIES:
                 logger.info(f"Retrying in {RETRY_DELAY} seconds...")
@@ -542,6 +548,7 @@ def main() -> None:
                 logger.critical(
                     f"❌ CRITICAL: All {MAX_RETRIES} attempts failed. Trading session crashed."
                 )
+                print(f"::error::CRITICAL: All {MAX_RETRIES} attempts failed", flush=True)
                 raise
 
     # Execute options live simulation (theta harvest)
