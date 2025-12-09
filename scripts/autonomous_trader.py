@@ -431,6 +431,7 @@ def get_account_equity() -> float:
 
 
 def main() -> None:
+    print("::notice::Entering main()", flush=True)
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument(
         "--crypto-only",
@@ -448,10 +449,12 @@ def main() -> None:
         help="Enable auto-scaling of daily input based on equity.",
     )
     args = parser.parse_args()
+    print("::notice::Arguments parsed", flush=True)
 
     load_dotenv()
     init_sentry()
     logger = setup_logging()
+    print("::notice::Logger initialized", flush=True)
     _apply_dynamic_daily_budget(logger)
 
     # Auto-scale daily input if enabled
@@ -507,7 +510,9 @@ def main() -> None:
         logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
 
     # Normal stock trading - import only when needed
+    print("::notice::Importing TradingOrchestrator...", flush=True)
     from src.orchestrator.main import TradingOrchestrator
+    print("::notice::TradingOrchestrator imported", flush=True)
 
     # Ensure Go ADK service is running if enabled
     adk_enabled = _flag_enabled("ENABLE_ADK_AGENTS", "true")
