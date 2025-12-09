@@ -44,5 +44,13 @@
       "ingested_at": "2025-12-05T00:29:49.451816"
     }
   },
-  "youtube": {}
+  "youtube": {
+    "tfcdts_i2jU": {
+      "title": "Crypto to buy for 2026",
+      "channel": "ODES - All about crypto",
+      "insights_file": "rag_knowledge/youtube/insights/tfcdts_i2jU.json",
+      "picks": ["BTC", "SOL", "XRP", "ETH"],
+      "ingested_at": "2025-12-09T00:00:00.000000"
+    }
+  }
 }
