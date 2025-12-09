@@ -604,21 +604,40 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Super-safe error handling that catches everything
     import traceback
+    import os
+    
+    # Ensure logs directory exists
+    os.makedirs("logs", exist_ok=True)
+    
     try:
         main()
-    except Exception as e:
-        # Use GitHub Actions annotations for visibility
+    except SystemExit as e:
+        # Re-raise SystemExit to preserve exit codes
+        raise
+    except BaseException as e:
+        # Catch EVERYTHING including KeyboardInterrupt, SystemExit, etc.
         tb = traceback.format_exc()
+        
+        # Write to stdout with GHA annotations
         print("=" * 80, flush=True)
         print("::error::CRITICAL ERROR IN AUTONOMOUS_TRADER.PY", flush=True)
-        print(f"::error::Exception: {type(e).__name__}: {e}", flush=True)
+        print(f"::error::Exception Type: {type(e).__name__}", flush=True)
+        print(f"::error::Exception Message: {str(e)[:500]}", flush=True)
         print("=" * 80, flush=True)
-        print("Full traceback:", flush=True)
+        
+        # Print full traceback as annotations
         for line in tb.split("\n"):
-            print(f"::error::{line}", flush=True)
-        print("=" * 80, flush=True)
-        # Also write to file for artifact
-        with open("logs/trading_crash.log", "w") as f:
-            f.write(tb)
+            if line.strip():
+                print(f"::error::{line}", flush=True)
+        
+        # Write to file for artifact
+        try:
+            with open("logs/trading_crash.log", "w") as f:
+                f.write(f"Exception: {type(e).__name__}: {e}\n\n")
+                f.write(tb)
+        except:
+            pass
+        
         sys.exit(2)
