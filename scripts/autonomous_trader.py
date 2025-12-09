@@ -479,45 +479,13 @@ def main() -> None:
         logger.info("Weekend detected but crypto branch disabled. Proceeding with hybrid funnel.")
 
     # Normal stock trading - import only when needed
-    print("::notice::PRE-IMPORT: About to import TradingOrchestrator", flush=True)
-    sys.stdout.flush()
-    sys.stderr.flush()
+    print("::notice::Importing TradingOrchestrator...", flush=True)
+    from src.orchestrator.main import TradingOrchestrator
+    print("::notice::TradingOrchestrator OK", flush=True)
 
-    # Test individual imports first to isolate failure
-    print("::notice::Testing MomentumAgent import...", flush=True)
-    from src.agents.momentum_agent import MomentumAgent
-    print("::notice::MomentumAgent OK", flush=True)
-
-    print("::notice::Testing RLFilter import...", flush=True)
-    from src.agents.rl_agent import RLFilter
-    print("::notice::RLFilter OK", flush=True)
-
-    print("::notice::Testing MacroeconomicAgent import...", flush=True)
-    from src.agents.macro_agent import MacroeconomicAgent
-    print("::notice::MacroeconomicAgent OK", flush=True)
-
-    print("::notice::Now importing TradingOrchestrator...", flush=True)
-    sys.stdout.flush()
-    sys.stderr.flush()
-
-    try:
-        from src.orchestrator.main import TradingOrchestrator
-        print("::notice::TradingOrchestrator imported", flush=True)
-    except BaseException as e:
-        print(f"::error::TradingOrchestrator import FAILED: {type(e).__name__}: {e}", flush=True)
-        import traceback
-        for line in traceback.format_exc().split("\n"):
-            if line.strip():
-                print(f"::error::{line}", flush=True)
-        sys.stdout.flush()
-        sys.stderr.flush()
-        raise
-
-    print("::notice::Checking ADK service...", flush=True)
-
-    # Ensure Go ADK service is running if enabled
-    adk_enabled = _flag_enabled("ENABLE_ADK_AGENTS", "true")
-    print(f"::notice::ADK enabled: {adk_enabled}", flush=True)
+    # Skip ADK service to simplify debugging - disable via env var
+    adk_enabled = os.getenv("ENABLE_ADK_AGENTS", "false").lower() in {"1", "true", "yes", "on"}
+    print(f"::notice::ADK_AGENTS={adk_enabled}", flush=True)
     if adk_enabled:
         try:
             # Check if service is already running on port 8080
