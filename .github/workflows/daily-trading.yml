@@ -515,23 +515,41 @@ jobs:
           echo "📦 Working directory: $(pwd)"
           echo "📦 Python version: $(python3 --version)"
 
-          # Test imports first
-          echo "🔍 Testing critical imports..."
+          # Test imports and instantiation first
+          echo "🔍 Testing critical imports and initialization..."
           python3 -c "
           import sys
+          import os
+          import traceback
           sys.path.insert(0, '.')
+
+          # Test 1: Import orchestrator
           try:
               from src.orchestrator.main import TradingOrchestrator
               print('✓ TradingOrchestrator import OK')
           except Exception as e:
               print(f'✗ TradingOrchestrator import FAILED: {e}')
+              traceback.print_exc()
               sys.exit(2)
+
+          # Test 2: MacroAgent init
           try:
               from src.agents.macro_agent import MacroeconomicAgent
               agent = MacroeconomicAgent()
               print(f'✓ MacroeconomicAgent init OK (RAG store: {agent.rag_store is not None})')
           except Exception as e:
-              print(f'✗ MacroeconomicAgent init FAILED: {e}')
+              print(f'⚠ MacroeconomicAgent init failed (non-fatal): {e}')
+
+          # Test 3: Orchestrator instantiation
+          try:
+              orch = TradingOrchestrator(tickers=['SPY'])
+              print('✓ TradingOrchestrator instantiation OK')
+          except Exception as e:
+              print(f'✗ TradingOrchestrator instantiation FAILED: {e}')
+              traceback.print_exc()
+              sys.exit(2)
+
+          print('✅ All pre-flight checks passed')
           "
 
           set +e  # Don't exit on error
