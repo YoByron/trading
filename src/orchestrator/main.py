@@ -32,11 +32,7 @@ from src.utils.regime_detector import RegimeDetector
 
 # Mental Toughness Coach - Psychology-based trading guard (Dec 2025)
 try:
-    from src.coaching.mental_toughness_coach import (
-        MentalToughnessCoach,
-        coach_post_trade,
-        is_ready_to_trade,
-    )
+    from src.coaching.mental_toughness_coach import MentalToughnessCoach
 
     COACHING_AVAILABLE = True
 except ImportError:

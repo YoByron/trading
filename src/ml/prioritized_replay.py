@@ -13,7 +13,7 @@ DiscoRL Integration (Dec 2025):
 
 import logging
 from dataclasses import dataclass
-from typing import Any, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -85,7 +85,7 @@ class SumTree:
         self.tree[idx] = priority
         self._propagate(idx, change)
 
-    def get(self, s: float) -> Tuple[int, float, Any]:
+    def get(self, s: float) -> tuple[int, float, Any]:
         """Sample based on cumulative sum."""
         idx = self._retrieve(0, s)
         data_idx = idx - self.capacity + 1
@@ -229,7 +229,7 @@ class PrioritizedReplayBuffer:
 
     def sample(
         self, batch_size: int
-    ) -> Tuple[List[Experience], np.ndarray, np.ndarray]:
+    ) -> tuple[list[Experience], np.ndarray, np.ndarray]:
         """
         Sample batch with importance sampling weights.
 
@@ -303,7 +303,7 @@ class UniformReplayBuffer:
 
     def __init__(self, capacity: int = 100000):
         self.capacity = capacity
-        self.buffer: List[Experience] = []
+        self.buffer: list[Experience] = []
         self.position = 0
 
     def __len__(self) -> int:
@@ -331,6 +331,6 @@ class UniformReplayBuffer:
             self.buffer[self.position] = experience
         self.position = (self.position + 1) % self.capacity
 
-    def sample(self, batch_size: int) -> List[Experience]:
+    def sample(self, batch_size: int) -> list[Experience]:
         indices = np.random.choice(len(self.buffer), batch_size, replace=False)
         return [self.buffer[i] for i in indices]
