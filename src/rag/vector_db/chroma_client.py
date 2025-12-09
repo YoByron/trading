@@ -7,6 +7,7 @@ Provides persistent vector storage for market news, sentiment, and research.
 """
 
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -16,13 +17,19 @@ logger = logging.getLogger(__name__)
 
 ensure_pydantic_base_settings()
 
-try:
-    from sentence_transformers import CrossEncoder, SentenceTransformer, util
+# Environment variable to disable RAG features (useful for CI or minimal environments)
+RAG_ENABLED = os.getenv("ENABLE_RAG_FEATURES", "true").lower() in {"1", "true", "yes", "on"}
 
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    logger.warning("sentence-transformers not found. InMemoryCollection will use dummy similarity.")
+SENTENCE_TRANSFORMERS_AVAILABLE = False
+if RAG_ENABLED:
+    try:
+        from sentence_transformers import CrossEncoder, SentenceTransformer, util
+
+        SENTENCE_TRANSFORMERS_AVAILABLE = True
+    except ImportError:
+        logger.warning("sentence-transformers not found. InMemoryCollection will use dummy similarity.")
+else:
+    logger.info("RAG features disabled via ENABLE_RAG_FEATURES=false")
 
 try:
     from rank_bm25 import BM25Okapi

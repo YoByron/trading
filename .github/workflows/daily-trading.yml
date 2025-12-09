@@ -501,6 +501,8 @@ jobs:
           DEEPAGENTS_ENABLED: ${{ secrets.DEEPAGENTS_ENABLED || 'true' }}
           # RL feedback loop disabled by default (requires sklearn not in requirements-minimal.txt)
           ENABLE_RL_RETRAIN: ${{ secrets.ENABLE_RL_RETRAIN || 'false' }}
+          # RAG features disabled by default in CI (sentence-transformers downloads from HuggingFace)
+          ENABLE_RAG_FEATURES: ${{ secrets.ENABLE_RAG_FEATURES || 'false' }}
         run: |
           echo "🚀 ========================================"
           echo "🚀 EXECUTING DAILY TRADING - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
