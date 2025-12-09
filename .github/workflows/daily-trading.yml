@@ -511,6 +511,29 @@ jobs:
 
           # Run the trading script and capture exit code
           echo "🚀 Running autonomous_trader.py..."
+          echo "📦 Python path: $PYTHONPATH"
+          echo "📦 Working directory: $(pwd)"
+          echo "📦 Python version: $(python3 --version)"
+
+          # Test imports first
+          echo "🔍 Testing critical imports..."
+          python3 -c "
+          import sys
+          sys.path.insert(0, '.')
+          try:
+              from src.orchestrator.main import TradingOrchestrator
+              print('✓ TradingOrchestrator import OK')
+          except Exception as e:
+              print(f'✗ TradingOrchestrator import FAILED: {e}')
+              sys.exit(2)
+          try:
+              from src.agents.macro_agent import MacroeconomicAgent
+              agent = MacroeconomicAgent()
+              print(f'✓ MacroeconomicAgent init OK (RAG store: {agent.rag_store is not None})')
+          except Exception as e:
+              print(f'✗ MacroeconomicAgent init FAILED: {e}')
+          "
+
           set +e  # Don't exit on error
           OUTPUT=$(python3 scripts/autonomous_trader.py 2>&1)
           EXIT_CODE=$?
