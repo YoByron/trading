@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import os
+
 # Early diagnostic output for CI visibility
 import sys
-import os
 
 # Reduced annotations to avoid GitHub 10-annotation limit
 print("autonomous_trader.py starting - Python:", sys.version.split()[0], flush=True)
@@ -20,7 +21,10 @@ from typing import Any
 try:
     from dotenv import load_dotenv
 except ImportError:
-    def load_dotenv(): pass  # Stub
+
+    def load_dotenv():
+        pass  # Stub
+
 
 # Ensure src is on the path when executed via GitHub Actions
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -454,7 +458,7 @@ def execute_prediction_trading() -> None:
 
     try:
         # Check if Kalshi is configured
-        from src.brokers.kalshi_client import KalshiClient, get_kalshi_client
+        from src.brokers.kalshi_client import get_kalshi_client
 
         kalshi = get_kalshi_client(paper=True)
 
@@ -481,7 +485,7 @@ def execute_prediction_trading() -> None:
             exit_trades = result.get("exit_trades", [])
             signals = result.get("signals", [])
 
-            logger.info(f"✅ Prediction strategy executed:")
+            logger.info("✅ Prediction strategy executed:")
             logger.info(f"   Entry trades: {len(entry_trades)}")
             logger.info(f"   Exit trades: {len(exit_trades)}")
             logger.info(f"   Signals found: {len(signals)}")
@@ -593,7 +597,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Trading orchestrator entrypoint")
     parser.add_argument("--crypto-only", action="store_true")
     parser.add_argument("--skip-crypto", action="store_true")
-    parser.add_argument("--prediction-only", action="store_true", help="Run only prediction markets (Kalshi)")
+    parser.add_argument(
+        "--prediction-only", action="store_true", help="Run only prediction markets (Kalshi)"
+    )
     parser.add_argument("--skip-prediction", action="store_true", help="Skip prediction markets")
     parser.add_argument("--auto-scale", action="store_true")
     args = parser.parse_args()
@@ -631,10 +637,7 @@ def main() -> None:
         and not weekend_proxy_active
     )
 
-    should_run_prediction = (
-        not args.skip_prediction
-        and prediction_allowed
-    )
+    should_run_prediction = not args.skip_prediction and prediction_allowed
 
     if args.crypto_only and not crypto_allowed:
         logger.warning(
@@ -662,7 +665,9 @@ def main() -> None:
 
         # Also run prediction markets on weekends (Kalshi trades 24/7)
         if should_run_prediction and (is_weekend_day or is_holiday):
-            logger.info("Weekend/holiday detected - also executing prediction markets (24/7 trading).")
+            logger.info(
+                "Weekend/holiday detected - also executing prediction markets (24/7 trading)."
+            )
             execute_prediction_trading()
             logger.info("Prediction trading session completed.")
 
@@ -741,9 +746,10 @@ def main() -> None:
 
     # Generate profit target report and wire recommendations into budget
     try:
-        from src.analytics.profit_target_tracker import ProfitTargetTracker
         import json
         from pathlib import Path
+
+        from src.analytics.profit_target_tracker import ProfitTargetTracker
 
         logger.info("Generating profit target report...")
         tracker = ProfitTargetTracker(target_daily_profit=100.0)
@@ -768,8 +774,14 @@ def main() -> None:
         logger.info(f"Profit target report saved to {report_path}")
 
         # Log $100/day progress
-        progress_pct = (plan.current_daily_profit / plan.target_daily_profit * 100) if plan.target_daily_profit > 0 else 0
-        logger.info(f"$100/day Progress: {progress_pct:.1f}% (current: ${plan.current_daily_profit:.2f}/day)")
+        progress_pct = (
+            (plan.current_daily_profit / plan.target_daily_profit * 100)
+            if plan.target_daily_profit > 0
+            else 0
+        )
+        logger.info(
+            f"$100/day Progress: {progress_pct:.1f}% (current: ${plan.current_daily_profit:.2f}/day)"
+        )
 
         # If avg_return is positive and we have a recommended budget, log it
         if plan.recommended_daily_budget and plan.avg_return_pct > 0:
@@ -789,12 +801,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     # Super-safe error handling that catches everything
-    import traceback
     import os
-    
+    import traceback
+
     # Ensure logs directory exists
     os.makedirs("logs", exist_ok=True)
-    
+
     try:
         main()
         # Explicit success exit
@@ -806,24 +818,24 @@ if __name__ == "__main__":
         if e.code != 0:
             print(f"::error::SystemExit caught with code={e.code}", flush=True)
         else:
-            print(f"::notice::SystemExit caught with code=0 (success)", flush=True)
+            print("::notice::SystemExit caught with code=0 (success)", flush=True)
         raise
     except BaseException as e:
         # Catch EVERYTHING including KeyboardInterrupt, SystemExit, etc.
         tb = traceback.format_exc()
-        
+
         # Write to stdout with GHA annotations
         print("=" * 80, flush=True)
         print("::error::CRITICAL ERROR IN AUTONOMOUS_TRADER.PY", flush=True)
         print(f"::error::Exception Type: {type(e).__name__}", flush=True)
         print(f"::error::Exception Message: {str(e)[:500]}", flush=True)
         print("=" * 80, flush=True)
-        
+
         # Print full traceback as annotations
         for line in tb.split("\n"):
             if line.strip():
                 print(f"::error::{line}", flush=True)
-        
+
         # Write to file for artifact
         try:
             with open("logs/trading_crash.log", "w") as f:
@@ -831,5 +843,5 @@ if __name__ == "__main__":
                 f.write(tb)
         except:
             pass
-        
+
         sys.exit(2)

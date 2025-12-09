@@ -168,8 +168,7 @@ class BronzeLayer:
         self._record_batch(metadata, file_path)
 
         logger.info(
-            f"Bronze: Ingested {len(data)} rows for {symbol} from {source} "
-            f"(batch: {batch_id})"
+            f"Bronze: Ingested {len(data)} rows for {symbol} from {source} (batch: {batch_id})"
         )
 
         return metadata
@@ -364,7 +363,7 @@ class BronzeLayer:
     def _compute_checksum(self, data: pd.DataFrame) -> str:
         """Compute MD5 checksum of DataFrame for integrity verification."""
         content = data.to_json(date_format="iso")
-        return hashlib.md5(content.encode()).hexdigest()[:16]
+        return hashlib.sha256(content.encode()).hexdigest()[:16]
 
     def _get_file_path(self, symbol: str, source: str, timestamp: datetime) -> Path:
         """Generate file path for bronze data."""
