@@ -28,10 +28,20 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from openai import AsyncOpenAI, OpenAI
+# OpenAI client - optional dependency (may use OpenRouter instead)
+try:
+    from openai import AsyncOpenAI, OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    AsyncOpenAI = None  # type: ignore
+    OpenAI = None  # type: ignore
+    OPENAI_AVAILABLE = False
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+if not OPENAI_AVAILABLE:
+    logger.warning("openai package not installed - MultiLLMAnalyzer will be unavailable")
 
 
 class LLMModel(Enum):
@@ -143,6 +153,12 @@ class MultiLLMAnalyzer:
             rate_limit_delay: Delay between requests to avoid rate limits
             use_async: Whether to use async client (recommended)
         """
+        if not OPENAI_AVAILABLE:
+            raise ImportError(
+                "openai package is required for MultiLLMAnalyzer. "
+                "Install with: pip install openai"
+            )
+
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         if not self.api_key:
             raise ValueError(
