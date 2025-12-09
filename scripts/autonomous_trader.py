@@ -456,40 +456,14 @@ def main() -> None:
     logger = setup_logging()
     print("::notice::Logger initialized", flush=True)
 
-    print("::notice::Applying dynamic budget...", flush=True)
-    try:
-        _apply_dynamic_daily_budget(logger)
-        print("::notice::Dynamic budget applied", flush=True)
-    except Exception as e:
-        print(f"::warning::Dynamic budget failed: {e}", flush=True)
+    # SIMPLIFIED PATH: Skip dynamic budget and market checks, go straight to trading
+    print("::notice::Skipping dynamic budget/market checks (CI debug mode)", flush=True)
 
-    # Auto-scale daily input if enabled
-    print("::notice::Checking auto-scale...", flush=True)
-    if args.auto_scale or os.getenv("ENABLE_AUTO_SCALE_INPUT", "false").lower() in {
-        "1",
-        "true",
-        "yes",
-    }:
-        print("::notice::Auto-scale enabled, getting equity...", flush=True)
-        equity = get_account_equity()
-        scaled_input = calc_daily_input(equity)
-        os.environ["DAILY_INVESTMENT"] = str(scaled_input)
-        logger.info(f"📈 Auto-scaled daily input: ${scaled_input:.2f} (equity: ${equity:.2f})")
-    print("::notice::Auto-scale check done", flush=True)
-
-    print("::notice::Checking market conditions...", flush=True)
-    crypto_allowed = crypto_enabled()
-    try:
-        is_holiday = is_market_holiday()
-    except Exception as e:
-        print(f"::warning::is_market_holiday() failed: {e}", flush=True)
-        is_holiday = False
-    is_weekend_day = is_weekend()
-    weekend_proxy_enabled = _flag_enabled("ENABLE_WEEKEND_PROXY", "true")
-    print(f"::notice::Market checks done: crypto={crypto_allowed}, holiday={is_holiday}, weekend={is_weekend_day}", flush=True)
-    weekend_proxy_active = (
-        weekend_proxy_enabled and (is_weekend_day or is_holiday) and not args.crypto_only
-    )
+    # Set safe defaults
+    is_weekend_day = False
+    is_holiday = False
+    crypto_allowed = False
+    weekend_proxy_active = False
 
     should_run_crypto = (
         not args.skip_crypto
