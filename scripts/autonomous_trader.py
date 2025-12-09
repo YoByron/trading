@@ -1,22 +1,39 @@
 """Bootstrap entry point for the hybrid trading orchestrator."""
+# Very early diagnostic output - print before ANY imports
+import sys
+print("::notice::autonomous_trader.py starting - Python version:", sys.version, flush=True)
 
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+print("::notice::Standard library imports successful", flush=True)
+
+try:
+    from dotenv import load_dotenv
+    print("::notice::dotenv imported", flush=True)
+except ImportError as e:
+    print(f"::warning::dotenv import failed: {e}", flush=True)
+    def load_dotenv(): pass  # Stub
 
 # Ensure src is on the path when executed via GitHub Actions
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from src.utils.error_monitoring import init_sentry
-from src.utils.logging_config import setup_logging
+print("::notice::Importing src utilities...", flush=True)
+try:
+    from src.utils.error_monitoring import init_sentry
+    from src.utils.logging_config import setup_logging
+    print("::notice::src utilities imported successfully", flush=True)
+except Exception as e:
+    print(f"::error::Failed to import src utilities: {type(e).__name__}: {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    sys.exit(2)
 
 SYSTEM_STATE_PATH = Path(os.getenv("SYSTEM_STATE_PATH", "data/system_state.json"))
 
