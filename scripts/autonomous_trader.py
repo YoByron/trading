@@ -513,8 +513,11 @@ def main() -> None:
         sys.stderr.flush()
         raise
 
+    print("::notice::Checking ADK service...", flush=True)
+
     # Ensure Go ADK service is running if enabled
     adk_enabled = _flag_enabled("ENABLE_ADK_AGENTS", "true")
+    print(f"::notice::ADK enabled: {adk_enabled}", flush=True)
     if adk_enabled:
         try:
             # Check if service is already running on port 8080
