@@ -68,6 +68,7 @@ build/
 !data/system_state.json
 !data/tier2_watchlist.json
 !data/performance_log.json
+!data/trades_*.json
 data/google_sheets_credentials.json
 
 # Local CI/CD
