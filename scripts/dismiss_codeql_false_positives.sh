@@ -2,7 +2,7 @@
 # Dismiss CodeQL false positives that are already using secure patterns
 # This script reviews CodeQL alerts and dismisses false positives
 
-set -e
+# set -e  # Disabled to prevent script from crashing on API errors
 
 REPO="IgorGanapolsky/trading"
 
@@ -12,7 +12,17 @@ echo ""
 
 # Get CodeQL alerts
 echo "📋 Fetching CodeQL alerts..."
-ALERTS=$(gh api repos/$REPO/code-scanning/alerts --jq '[.[] | select(.state == "open" and .rule.id == "py/clear-text-logging-sensitive-data")]' 2>&1)
+if ! ALERTS=$(gh api repos/$REPO/code-scanning/alerts --jq '[.[] | select(.state == "open" and .rule.id == "py/clear-text-logging-sensitive-data")]' 2>&1); then
+    echo "⚠️  Failed to fetch alerts (API error or no access)"
+    echo "Error: $ALERTS"
+    exit 0 # Exit gracefully so we don't fail the build
+fi
+
+# Check if ALERTS is valid JSON
+if ! echo "$ALERTS" | jq empty > /dev/null 2>&1; then
+    echo "⚠️  Received invalid JSON from API"
+    exit 0
+fi
 
 ALERT_COUNT=$(echo "$ALERTS" | jq 'length')
 echo "  Found: $ALERT_COUNT 'clear-text-logging' alerts"

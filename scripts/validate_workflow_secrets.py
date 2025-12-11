@@ -74,6 +74,10 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
         "FINNHUB_API_KEY",
         "GOOGLE_API_KEY",
         "ANTHROPIC_API_KEY",
+        # Dialogflow CX
+        "DIALOGFLOW_PROJECT_ID",
+        "DIALOGFLOW_LOCATION",
+        "DIALOGFLOW_AGENT_ID",
     }
 
     workflow = load_workflow(workflow_path)

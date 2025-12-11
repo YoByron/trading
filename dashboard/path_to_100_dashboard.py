@@ -14,6 +14,14 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import uuid
+
+# Try to import Dialogflow Client (fail gracefully if not installed)
+try:
+    from src.agents.dialogflow_client import DialogflowClient
+    DIALOGFLOW_AVAILABLE = True
+except ImportError:
+    DIALOGFLOW_AVAILABLE = False
 
 # Page config
 st.set_page_config(
@@ -339,7 +347,7 @@ def main():
     if not df.empty and "date" in df.columns:
         st.header("📊 Historical Performance")
 
-        tab1, tab2, tab3 = st.tabs(["Equity Curve", "Daily P/L", "Win Rate Trend"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Equity Curve", "Daily P/L", "Win Rate Trend", "🤖 AI Assistant"])
 
         with tab1:
             if "equity" in df.columns:
@@ -360,6 +368,51 @@ def main():
                 st.line_chart(df.set_index("date")["win_rate"])
             else:
                 st.info("No win rate data available")
+
+        with tab4:
+            st.subheader("💬 Chat with Trading Agent")
+            
+            if not DIALOGFLOW_AVAILABLE:
+                st.warning("⚠️ Dialogflow client not available. Install 'google-cloud-dialogflow-cx' to enable.")
+            else:
+                # Initialize session state for chat history and session ID
+                if "messages" not in st.session_state:
+                    st.session_state.messages = []
+                if "session_id" not in st.session_state:
+                    st.session_state.session_id = str(uuid.uuid4())
+
+                # Display chat messages from history on app rerun
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+
+                # Accept user input
+                if prompt := st.chat_input("Ask about market trends, strategy status, or commands..."):
+                    # Add user message to chat history
+                    st.session_state.messages.append({"role": "user", "content": prompt})
+                    # Display user message in chat message container
+                    with st.chat_message("user"):
+                        st.markdown(prompt)
+
+                    # Display assistant response in chat message container
+                    with st.chat_message("assistant"):
+                        message_placeholder = st.empty()
+                        full_response = ""
+                        
+                        try:
+                            client = DialogflowClient()
+                            response_text = client.detect_intent(
+                                session_id=st.session_state.session_id, 
+                                text=prompt
+                            )
+                            full_response = response_text
+                        except Exception as e:
+                            full_response = f"⚠️ Error communicating with agent: {str(e)}"
+                        
+                        message_placeholder.markdown(full_response)
+                    
+                    # Add assistant response to chat history
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
 
     # Milestone roadmap
     st.header("🗺️ Milestone Roadmap")

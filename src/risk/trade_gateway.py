@@ -118,6 +118,7 @@ class TradeGateway:
     MIN_TRADE_BATCH = 10.0  # $10 minimum - lowered from $200 to match daily investment
     MAX_DAILY_LOSS_PCT = 0.03  # 3% max daily loss
     MAX_DRAWDOWN_PCT = 0.10  # 10% max drawdown
+    MAX_RISK_PER_TRADE_PCT = 0.01  # 1% max risk to equity per trade (NEW)
     MAX_RISK_SCORE = 0.75  # Risk score threshold
 
     # Correlation matrix for common holdings (simplified)
@@ -416,6 +417,47 @@ class TradeGateway:
                     }
 
         # ============================================================
+        # CHECK 11: Per-Trade Risk Cap (1% of Equity)
+        # ============================================================
+        # Enforce that (Entry - Stop) * Qty <= 1% of Equity
+        # This requires knowing the stop price.
+        if request.side == "buy":
+            entry_price = self._get_price(request.symbol)
+            qty = request.quantity or (request.notional / entry_price if entry_price > 0 else 0)
+
+            # If stop price is not provided, we must assume a default or reject
+            # Here we enforce that a stop price MUST be part of the strategy or we use a default 5%
+            stop_price = request.stop_price
+
+            if stop_price is None:
+                # If no stop provided, assume default 5% risk for calculation
+                # But warn that explicit stop is better
+                stop_price = entry_price * 0.95
+                warnings.append("No stop_price provided. Assuming 5% risk for calculation.")
+
+            risk_per_share = max(0, entry_price - stop_price)
+            total_risk = risk_per_share * qty
+
+            max_risk_allowed = account_equity * self.MAX_RISK_PER_TRADE_PCT
+
+            if total_risk > max_risk_allowed:
+                # Auto-reduce quantity if possible?
+                # For now, REJECT to force AI to size correctly.
+                rejection_reasons.append(
+                    RejectionReason.MAX_ALLOCATION_EXCEEDED
+                )  # Reuse or add new enum
+                logger.warning(
+                    f"❌ REJECTED: Trade risk ${total_risk:.2f} exceeds unit risk cap "
+                    f"${max_risk_allowed:.2f} (1% of equity). Reduce size or tighten stop."
+                )
+                metadata["risk_check"] = {
+                    "total_risk": total_risk,
+                    "max_allowed": max_risk_allowed,
+                    "risk_per_share": risk_per_share,
+                }
+                risk_score += 0.5
+
+        # ============================================================
         # FINAL DECISION
         # ============================================================
         approved = len(rejection_reasons) == 0
@@ -702,3 +744,19 @@ if __name__ == "__main__":
     result = gateway.add_daily_deposit(10.0)
     print(f"Status: {result['status']}")
     print(f"Accumulated: ${result['accumulated']:.2f}")
+
+    # Test 4: High Risk Trade (Exceeds 1% Equity Risk)
+    print("\n--- Test 4: High Risk Trade (Risk > 1%) ---")
+    # Equity = 100k. 1% = $1000.
+    # Trade: Buy $50,000 of SPY. Stop Loss 10% away.
+    # Risk = $50,000 * 0.10 = $5,000 > $1000 allowed.
+    high_risk_request = TradeRequest(
+        symbol="SPY",
+        side="buy",
+        notional=50000,
+        stop_price=90.0,  # Assume entry 100, stop 90 (10% risk)
+    )
+    decision = gateway.evaluate(high_risk_request)
+    print(f"Approved: {decision.approved}")
+    if not decision.approved:
+        print(f"Rejections: {[r.value for r in decision.rejection_reasons]}")

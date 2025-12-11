@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-12-11T09:39:42.690163",
+    "last_updated": "2025-12-12T09:37:01.887568",
     "last_audit": "2025-11-17T09:00:00.000000",
     "audit_notes": "Day 9 - Added Tier 5 crypto tracking (BTC/ETH weekend strategy)"
   },
@@ -31,20 +31,20 @@
   },
   "performance": {
     "total_trades": 7,
-    "winning_trades": 4,
+    "winning_trades": 8,
     "losing_trades": 7,
-    "win_rate": 66.66666666666666,
+    "win_rate": 100.0,
     "best_trade": {
       "symbol": "SPY260123P00660000",
-      "pl": 0.8200000000000003,
-      "pl_pct": -12.852664576802514
+      "pl": 197.0,
+      "pl_pct": -30.877742946708466
     },
     "worst_trade": {
       "symbol": "SPY",
       "pl": -14.25,
       "pl_pct": -1.17
     },
-    "avg_return": -0.46836611444557175,
+    "avg_return": -6.96522974230833,
     "closed_trades": [
       {
         "symbol": "ETHUSD",
@@ -110,6 +110,28 @@
         "exit_date": "2025-12-11T09:39:42.684703",
         "pl": 0.8200000000000003,
         "pl_pct": -12.852664576802514,
+        "tier": "unknown"
+      },
+      {
+        "symbol": "AMD260116P00200000",
+        "entry_price": 590.0,
+        "exit_price": 460.0,
+        "quantity": -1.0,
+        "entry_date": "2025-11-12T09:36:56.892430",
+        "exit_date": "2025-12-12T09:37:01.799799",
+        "pl": 130.0,
+        "pl_pct": -22.033898305084744,
+        "tier": "unknown"
+      },
+      {
+        "symbol": "SPY260123P00660000",
+        "entry_price": 638.0,
+        "exit_price": 441.0,
+        "quantity": -1.0,
+        "entry_date": "2025-11-12T09:37:01.688079",
+        "exit_date": "2025-12-12T09:37:01.885612",
+        "pl": 197.0,
+        "pl_pct": -30.877742946708466,
         "tier": "unknown"
       }
     ],
@@ -223,12 +245,24 @@
       "last_execution": "2025-12-07T20:07:08",
       "next_execution": "2025-12-08T15:00:00Z",
       "price_targets": {
-        "ETH": {"target": 10000, "source": "Luke Belmar (ETF catalyst)"},
-        "SOL": {"target": 500, "source": "Luke Belmar (bull run performer)"}
+        "ETH": {
+          "target": 10000,
+          "source": "Luke Belmar (ETF catalyst)"
+        },
+        "SOL": {
+          "target": 500,
+          "source": "Luke Belmar (bull run performer)"
+        }
       },
       "watchlist": [
-        {"symbol": "TON", "reason": "Telegram ecosystem - await Alpaca listing"},
-        {"symbol": "MONAD", "reason": "Layer 1 - await mainnet launch"}
+        {
+          "symbol": "TON",
+          "reason": "Telegram ecosystem - await Alpaca listing"
+        },
+        {
+          "symbol": "MONAD",
+          "reason": "Layer 1 - await mainnet launch"
+        }
       ],
       "strategy_update": "2025-12-08: Added SOL per Luke Belmar recommendations"
     }
@@ -431,7 +465,9 @@
     "[2025-12-11 09:37] Position closed: BTCUSD - Entry: $94125.63, Exit: $90188.20, P/L: $-0.41 (-4.18%)",
     "[2025-12-11 09:38] Position closed: SOLUSD - Entry: $130.82, Exit: $130.70, P/L: $-0.01 (-0.09%)",
     "[2025-12-11 09:39] Position closed: BIL - Entry: $91.56, Exit: $91.56, P/L: $0.00 (+0.01%)",
-    "[2025-12-11 09:39] Position closed: SPY260123P00660000 - Entry: $6.38, Exit: $5.56, P/L: $0.82 (-12.85%)"
+    "[2025-12-11 09:39] Position closed: SPY260123P00660000 - Entry: $6.38, Exit: $5.56, P/L: $0.82 (-12.85%)",
+    "[2025-12-12 09:37] Position closed: AMD260116P00200000 - Entry: $590.00, Exit: $460.00, P/L: $130.00 (-22.03%)",
+    "[2025-12-12 09:37] Position closed: SPY260123P00660000 - Entry: $638.00, Exit: $441.00, P/L: $197.00 (-30.88%)"
   ],
   "options": {
     "last_theta_harvest": "2025-12-05T17:53:46.287290+00:00",

@@ -68,51 +68,127 @@ def get_system_state():
 
 
 def get_account_summary():
-    """Get account summary from Alpaca API."""
+    """Get account summary from Alpaca API and Kalshi."""
+    account_data = {
+        "equity": 0.0,
+        "cash": 0.0,
+        "buying_power": 0.0,
+        "portfolio_value": 0.0,
+        "last_equity": 0.0,
+        "positions": [],
+        "daytrade_count": 0,
+        "pattern_day_trader": False,
+    }
+
+    # 1. Alpaca (Equities, ETFs, Crypto)
     try:
         import alpaca_trade_api as tradeapi
 
         api_key = os.getenv("ALPACA_API_KEY")
         api_secret = os.getenv("ALPACA_SECRET_KEY")
+        
+        # Check mode (default to Paper if not specified or explicit 'true')
+        is_paper = os.getenv("ALPACA_PAPER", "true").lower() in ("true", "1", "yes", "on")
+        base_url = "https://paper-api.alpaca.markets" if is_paper else "https://api.alpaca.markets"
 
-        if not api_key or not api_secret:
-            return None
+        if api_key and api_secret:
+            api = tradeapi.REST(api_key, api_secret, base_url)
+            account = api.get_account()
+            positions = api.list_positions()
 
-        api = tradeapi.REST(api_key, api_secret, "https://paper-api.alpaca.markets")
-        account = api.get_account()
-        positions = api.list_positions()
+            account_data["equity"] = float(account.equity)
+            account_data["cash"] = float(account.cash)
+            account_data["buying_power"] = float(account.buying_power)
+            
+            # Use portfolio_value if available, else equity
+            if hasattr(account, "portfolio_value"):
+                account_data["portfolio_value"] = float(account.portfolio_value)
+            else:
+                account_data["portfolio_value"] = float(account.equity)
 
-        return {
-            "equity": float(account.equity),
-            "cash": float(account.cash),
-            "buying_power": float(account.buying_power),
-            "portfolio_value": float(account.portfolio_value),
-            "last_equity": (
+            account_data["last_equity"] = (
                 float(account.last_equity)
                 if hasattr(account, "last_equity")
                 else float(account.equity)
-            ),
-            "positions": [
-                {
+            )
+            
+            account_data["daytrade_count"] = getattr(
+                account, "daytrade_count", getattr(account, "day_trade_count", 0)
+            )
+            account_data["pattern_day_trader"] = (
+                account.pattern_day_trader if hasattr(account, "pattern_day_trader") else False
+            )
+
+            for pos in positions:
+                # Determine asset class
+                asset_class = pos.asset_class if hasattr(pos, "asset_class") else "Unknown"
+                if asset_class == "us_equity":
+                    # Simple heuristic: ETFs often not tagged explicitly in all APIs, 
+                    # but we can label them generally as Equity/ETF
+                    asset_class = "Equity/ETF"
+                elif asset_class == "crypto":
+                    asset_class = "Crypto"
+
+                account_data["positions"].append({
                     "symbol": pos.symbol,
                     "qty": float(pos.qty),
                     "entry_price": float(pos.avg_entry_price),
                     "current_price": float(pos.current_price),
                     "unrealized_pl": float(pos.unrealized_pl),
                     "unrealized_plpc": float(pos.unrealized_plpc) * 100,
-                }
-                for pos in positions
-            ],
-            "daytrade_count": getattr(
-                account, "daytrade_count", getattr(account, "day_trade_count", 0)
-            ),
-            "pattern_day_trader": (
-                account.pattern_day_trader if hasattr(account, "pattern_day_trader") else False
-            ),
-        }
+                    "asset_class": asset_class,
+                    "source": "Alpaca"
+                })
     except Exception as e:
-        st.error(f"Error fetching account data: {e}")
-        return None
+        st.error(f"Error fetching Alpaca data: {e}")
+
+    # 2. Kalshi (Prediction Markets)
+    try:
+        from src.brokers.kalshi_client import get_kalshi_client
+        
+        # Check mode for Kalshi (can be independent, but using same env var pattern)
+        is_kalshi_paper = os.getenv("KALSHI_PAPER", "true").lower() in ("true", "1", "yes", "on")
+        kalshi = get_kalshi_client(paper=is_kalshi_paper)
+        
+        if kalshi.is_configured():
+            try:
+                # Add Kalshi balance to cash/equity
+                k_account = kalshi.get_account()
+                account_data["cash"] += k_account.balance
+                account_data["equity"] += k_account.portfolio_value
+                account_data["portfolio_value"] += k_account.portfolio_value
+                
+                # We assume Kalshi doesn't have "margin" same as Alpaca, so buying power += balance
+                account_data["buying_power"] += k_account.balance
+
+                k_positions = kalshi.get_positions()
+                for k_pos in k_positions:
+                    # Kalshi positions: Side (Yes/No) is important
+                    symbol_display = f"{k_pos.market_ticker} ({k_pos.side.upper()})"
+                    
+                    # Calculate P/L %
+                    pl_pct = (k_pos.unrealized_pl / k_pos.cost_basis * 100) if k_pos.cost_basis > 0 else 0.0
+
+                    account_data["positions"].append({
+                        "symbol": symbol_display,
+                        "qty": float(k_pos.quantity),
+                        "entry_price": k_pos.avg_price / 100.0, # Cents to Dollars
+                        "current_price": (k_pos.market_value / k_pos.quantity) if k_pos.quantity > 0 else 0.0,
+                        "unrealized_pl": k_pos.unrealized_pl,
+                        "unrealized_plpc": pl_pct,
+                        "asset_class": "Prediction",
+                        "source": "Kalshi"
+                    })
+            except Exception as ke:
+                # Log but don't crash if just Kalshi fails
+                print(f"Kalshi fetch error: {ke}")
+                
+    except ImportError:
+        pass # Kalshi module not found
+    except Exception as e:
+        st.error(f"Error fetching Kalshi data: {e}")
+
+    return account_data
 
 
 def calculate_win_rate(trades):
@@ -260,9 +336,11 @@ def main():
             display_df["P/L"] = display_df["unrealized_pl"].apply(lambda x: f"${x:,.2f}")
             display_df["P/L %"] = display_df["unrealized_plpc"].apply(lambda x: f"{x:.2f}%")
             display_df["Qty"] = display_df["qty"]
+            display_df["Class"] = display_df.get("asset_class", "Unknown")
+            display_df["Source"] = display_df.get("source", "Unknown")
 
             st.dataframe(
-                display_df[["symbol", "Entry", "Current", "P/L", "P/L %", "Qty"]],
+                display_df[["symbol", "Class", "Entry", "Current", "P/L", "P/L %", "Qty", "Source"]],
                 use_container_width=True,
                 hide_index=True,
             )

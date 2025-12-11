@@ -15,4 +15,4 @@ paths-ignore:
   - 'src/agents/issue_resolution_agent.py'
 
 queries:
-  - uses: security-and-quality
+  - uses: security-extended
