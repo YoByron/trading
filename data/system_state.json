@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2025-12-09T13:43:11.682416",
+    "last_updated": "2025-12-11T09:39:42.690163",
     "last_audit": "2025-11-17T09:00:00.000000",
     "audit_notes": "Day 9 - Added Tier 5 crypto tracking (BTC/ETH weekend strategy)"
   },
@@ -31,20 +31,20 @@
   },
   "performance": {
     "total_trades": 7,
-    "winning_trades": 0,
-    "losing_trades": 1,
-    "win_rate": 0.0,
+    "winning_trades": 4,
+    "losing_trades": 7,
+    "win_rate": 66.66666666666666,
     "best_trade": {
-      "symbol": "ETHUSD",
-      "pl": -0.009490667219999579,
-      "pl_pct": -0.09706557614402507
+      "symbol": "SPY260123P00660000",
+      "pl": 0.8200000000000003,
+      "pl_pct": -12.852664576802514
     },
     "worst_trade": {
       "symbol": "SPY",
       "pl": -14.25,
       "pl_pct": -1.17
     },
-    "avg_return": -0.09706557614402507,
+    "avg_return": -0.46836611444557175,
     "closed_trades": [
       {
         "symbol": "ETHUSD",
@@ -56,35 +56,64 @@
         "pl": -0.009490667219999579,
         "pl_pct": -0.09706557614402507,
         "tier": "unknown"
-      }
-    ],
-    "open_positions": [
+      },
       {
-        "symbol": "BIL",
-        "tier": "unknown",
-        "amount": 11998.568967,
-        "order_id": null,
-        "entry_date": "2025-12-07T18:16:23.571342",
-        "entry_price": 91.53,
-        "current_price": 91.52,
-        "quantity": 131.103244836,
-        "unrealized_pl": -1.3110324483606706,
-        "unrealized_pl_pct": -0.010925379656948668,
-        "last_updated": "2025-12-07T18:16:23.571354"
+        "symbol": "AMD260116P00200000",
+        "entry_price": 5.9,
+        "exit_price": 6.75,
+        "quantity": -1.0,
+        "entry_date": "2025-11-11T09:36:32.905534",
+        "exit_date": "2025-12-11T09:36:33.652262",
+        "pl": -0.8499999999999996,
+        "pl_pct": 14.406779661016941,
+        "tier": "unknown"
       },
       {
         "symbol": "BTCUSD",
-        "tier": "unknown",
-        "amount": 19.677416,
-        "order_id": null,
-        "entry_date": "2025-12-07T18:16:23.571363",
-        "entry_price": 88915.401420298,
-        "current_price": 89518.89,
-        "quantity": 0.000219813,
-        "unrealized_pl": 0.13265463517003487,
-        "unrealized_pl_pct": 0.6787222124200285,
-        "last_updated": "2025-12-07T18:16:23.571366"
+        "entry_price": 94125.628,
+        "exit_price": 90188.2,
+        "quantity": 0.000103949,
+        "entry_date": "2025-11-11T09:36:32.906462",
+        "exit_date": "2025-12-11T09:37:36.563197",
+        "pl": -0.409291703172,
+        "pl_pct": -4.183162528275509,
+        "tier": "unknown"
       },
+      {
+        "symbol": "SOLUSD",
+        "entry_price": 130.82,
+        "exit_price": 130.7,
+        "quantity": 0.074595054,
+        "entry_date": "2025-11-11T09:36:32.906597",
+        "exit_date": "2025-12-11T09:38:39.691435",
+        "pl": -0.008951406480000338,
+        "pl_pct": -0.09172909341079694,
+        "tier": "unknown"
+      },
+      {
+        "symbol": "BIL",
+        "entry_price": 91.558,
+        "exit_price": 91.565,
+        "quantity": 0.109111164,
+        "entry_date": "2025-11-11T09:36:32.906303",
+        "exit_date": "2025-12-11T09:39:42.611261",
+        "pl": 0.0007637781479989952,
+        "pl_pct": 0.007645426942474487,
+        "tier": "unknown"
+      },
+      {
+        "symbol": "SPY260123P00660000",
+        "entry_price": 6.38,
+        "exit_price": 5.56,
+        "quantity": -1.0,
+        "entry_date": "2025-11-11T09:36:33.608299",
+        "exit_date": "2025-12-11T09:39:42.684703",
+        "pl": 0.8200000000000003,
+        "pl_pct": -12.852664576802514,
+        "tier": "unknown"
+      }
+    ],
+    "open_positions": [
       {
         "symbol": "IEF",
         "tier": "unknown",
@@ -385,7 +414,12 @@
     "[2025-11-25 15:40] Action: Increasing Daily Investment from $10 to $1,500 (150x scaling)",
     "[2025-11-25 15:40] New Allocation: Core Strategy $900/day, Growth Strategy $1,500/week ($300/day)",
     "[2025-11-25 15:40] Expected Outcome: ~$100/day profit if 62% win rate holds",
-    "[2025-12-09 13:43] Position closed: ETHUSD - Entry: $3384.31, Exit: $3381.03, P/L: $-0.01 (-0.10%)"
+    "[2025-12-09 13:43] Position closed: ETHUSD - Entry: $3384.31, Exit: $3381.03, P/L: $-0.01 (-0.10%)",
+    "[2025-12-11 09:36] Position closed: AMD260116P00200000 - Entry: $5.90, Exit: $6.75, P/L: $-0.85 (+14.41%)",
+    "[2025-12-11 09:37] Position closed: BTCUSD - Entry: $94125.63, Exit: $90188.20, P/L: $-0.41 (-4.18%)",
+    "[2025-12-11 09:38] Position closed: SOLUSD - Entry: $130.82, Exit: $130.70, P/L: $-0.01 (-0.09%)",
+    "[2025-12-11 09:39] Position closed: BIL - Entry: $91.56, Exit: $91.56, P/L: $0.00 (+0.01%)",
+    "[2025-12-11 09:39] Position closed: SPY260123P00660000 - Entry: $6.38, Exit: $5.56, P/L: $0.82 (-12.85%)"
   ],
   "options": {
     "last_theta_harvest": "2025-12-05T17:53:46.287290+00:00",

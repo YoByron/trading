@@ -14,9 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from agents.tool import function_tool
-
 from agents import Agent, GuardrailFunctionOutput, Runner, SQLiteSession, output_guardrail
+from agents.tool import function_tool
 from src.utils.market_data import DataSource, get_market_data_provider
 
 logger = logging.getLogger(__name__)

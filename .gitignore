@@ -87,3 +87,14 @@ data/options_signals/
 data/trading_plans/
 data/evaluations/
 data/sentiment/news_*.json
+
+# Runtime artifacts and logs
+*.db
+manual_run*.txt
+failed_log.txt
+reports/*.txt
+data/audit_trail/
+data/sentiment/
+data/bronze/
+data/silver/
+data/gold/

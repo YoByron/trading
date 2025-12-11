@@ -8,7 +8,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Create cron job entry
 # Runs every weekday at 9:35 AM ET
-CRON_JOB="35 9 * * 1-5 cd $SCRIPT_DIR && /usr/bin/python3 autonomous_trader.py >> logs/cron.log 2>&1"
+# Daily Trading Execution (Weekdays 9:35 AM ET)
+# We cd to the project root so imports and logs work correctly
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python3"
+CRON_JOB="35 9 * * 1-5 cd $PROJECT_ROOT && $VENV_PYTHON scripts/autonomous_trader.py >> logs/cron.log 2>&1"
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "autonomous_trader.py"; then

@@ -2,86 +2,86 @@ Title: The Term Structure of U.S. Interest Rates and Treasury Risk
 URL: https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr1091.pdf
 Citation: New York Fed Staff Report 1091 (2025)
 Extracted: 2025-12-08T04:57:51.640291 UTC
-International Banking and  
-Nonbank Financial Intermediation:  
-Global Liquidity, Regulation, and 
-Implications  
- 
-Claudia M. Buch  | Linda S. Goldberg  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- NO. 10 91  
-M ARCH  2 024 
+International Banking and
+Nonbank Financial Intermediation:
+Global Liquidity, Regulation, and
+Implications
 
-International Banking and Non bank Financial Intermediation:   
-Global Liquidity, Regulation, and Implications  
-Claudia M. Buch and Linda S. Goldberg  
-Federal Reserve Bank of New York Staff Reports , no. 1091  
-March 2024  
-https://doi.org/10.59576/sr. 1091  
- 
- 
- 
- 
- 
- 
- 
-Abstract  
-Global liquidity flows are largely channeled through banks and nonbank financial institutions.  The 
-common drivers of global liquidity flows include monetary policy in advanced economies and risk 
-conditions. At the same time, the sensitivities of liquidity flows to changes  in these drivers differ across 
-institutions and have been evolving over time. Microprudential regulation of banks plays a role, 
-influencing leverage and capitalization, changing sensitivities to  shocks , and also driving risk migration 
-from bank s to nonbank finan cial institutions. Risk  sensitivities and flightiness of global liquidity are now 
-strongest in more leveraged nonbank  financial  institutions, raising challenges in stress episodes. Current 
-policy initiatives target  linkages across different types of financial institutions and associated risks. 
-Meanwhile, significant gaps remain. This paper concludes by discussing policy options for addressing 
-systemic risk in banks and nonbanks.  
- 
-JEL classification:  F3, G21, G23, G28  
-Key words : international bank, nonbank financial institution, global liquidity, regulation, prudential 
-policy  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-_________________  
- 
-Goldberg: Federal Reserve Bank of New York (email: linda.goldberg @ny.frb.org). Buch : European 
-Central Bank (email : claudia. buch@ecb.europa.eu ). Buch  was employed by the Deutsche Bundesbank 
-when she contributed to this paper . The authors thank  Allen Berger,  Valentina Bruno, Tobias Etzel, 
-Leonardo Gambacorta, Phil Molyneux, Friederike Niepmann,  Matthias Weis , and John Wilson for their 
-most helpful input and feedback on an earlier version of this text.  
- 
-This paper presents preliminary findings and is being distributed to economists and other interested 
-readers solely to stimulate discussion and elicit comments. The views expressed in this paper are those of 
-the author(s) and do not necessarily reflect the  position of the Federal Reserve Bank of New York , the 
-Federal Reserve System , or the European Central Bank . Any errors or omissions are the responsibility of 
-the author(s).  
-To view the authors’ disclosure statements, visit 
-https://www.newyorkfed.org/research/sta ff_reports/sr 1091 .html.  
+Claudia M. Buch  | Linda S. Goldberg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ NO. 10 91
+M ARCH  2 024
+
+International Banking and Non bank Financial Intermediation:
+Global Liquidity, Regulation, and Implications
+Claudia M. Buch and Linda S. Goldberg
+Federal Reserve Bank of New York Staff Reports , no. 1091
+March 2024
+https://doi.org/10.59576/sr. 1091
+
+
+
+
+
+
+
+Abstract
+Global liquidity flows are largely channeled through banks and nonbank financial institutions.  The
+common drivers of global liquidity flows include monetary policy in advanced economies and risk
+conditions. At the same time, the sensitivities of liquidity flows to changes  in these drivers differ across
+institutions and have been evolving over time. Microprudential regulation of banks plays a role,
+influencing leverage and capitalization, changing sensitivities to  shocks , and also driving risk migration
+from bank s to nonbank finan cial institutions. Risk  sensitivities and flightiness of global liquidity are now
+strongest in more leveraged nonbank  financial  institutions, raising challenges in stress episodes. Current
+policy initiatives target  linkages across different types of financial institutions and associated risks.
+Meanwhile, significant gaps remain. This paper concludes by discussing policy options for addressing
+systemic risk in banks and nonbanks.
+
+JEL classification:  F3, G21, G23, G28
+Key words : international bank, nonbank financial institution, global liquidity, regulation, prudential
+policy
+
+
+
+
+
+
+
+
+
+
+
+_________________
+
+Goldberg: Federal Reserve Bank of New York (email: linda.goldberg @ny.frb.org). Buch : European
+Central Bank (email : claudia. buch@ecb.europa.eu ). Buch  was employed by the Deutsche Bundesbank
+when she contributed to this paper . The authors thank  Allen Berger,  Valentina Bruno, Tobias Etzel,
+Leonardo Gambacorta, Phil Molyneux, Friederike Niepmann,  Matthias Weis , and John Wilson for their
+most helpful input and feedback on an earlier version of this text.
+
+This paper presents preliminary findings and is being distributed to economists and other interested
+readers solely to stimulate discussion and elicit comments. The views expressed in this paper are those of
+the author(s) and do not necessarily reflect the  position of the Federal Reserve Bank of New York , the
+Federal Reserve System , or the European Central Bank . Any errors or omissions are the responsibility of
+the author(s).
+To view the authors’ disclosure statements, visit
+https://www.newyorkfed.org/research/sta ff_reports/sr 1091 .html.
 
 1 Motivation
 Global financial markets have grown over the past decades. In the early 2000s, global financial

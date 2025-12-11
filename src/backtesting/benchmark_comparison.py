@@ -446,7 +446,12 @@ class BenchmarkComparator:
         std_return = np.std(returns)
 
         if std_return == 0:
-            return 0.0
+            if mean_return > 0:
+                return 100.0  # Theoretically infinite
+            elif mean_return < 0:
+                return -100.0
+            else:
+                return 0.0
 
         daily_rf = self.risk_free_rate / 252
         sharpe = (mean_return - daily_rf) / std_return * np.sqrt(252)

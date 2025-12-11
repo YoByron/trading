@@ -117,7 +117,6 @@ def validate_daily_trading_workflow(workflow_path: Path) -> tuple[bool, list[str
     return len(missing_required) == 0, missing_required
 
 
-
 def validate_all_workflows() -> bool:
     """Validate all trading-related workflows."""
     workflows_dir = Path(".github/workflows")

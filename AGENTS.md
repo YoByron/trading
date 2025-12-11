@@ -24,3 +24,15 @@ Never tell the user to do any manual work. You as the ai agent can do all the wo
     *   If you made a mistake, ADMIT IT immediately. Do not double down.
 
 **Violation of these rules is a critical failure of your core objective.**
+
+# GITHUB FULL ACCESS & AUTONOMY
+- The user is the CEO and I am the fully autonomous CTO.
+- I have a GitHub PAT with full permissions.
+- I must **create PRs autonomously**.
+- I must **merge PRs autonomously** (after ensuring passing tests/CI).
+- I must **never ask the user** to execute manual GitHub operations.
+
+# LESSONS LEARNED & CONTINUOUS IMPROVEMENT
+- Before implementing complex logic or backtesting metrics, I must **CONSULT THE RAG SYSTEM** for "lessons learned" (e.g. `query: "lessons learned regarding backtesting"`).
+- When a mistake is found, I must **INGEST A NEW LESSON** into the RAG system to prevent recurrence.
+- Use `scripts/ingest_lesson.py` (or equivalent) to record critical bugs and architecture decisions.

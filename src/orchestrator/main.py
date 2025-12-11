@@ -362,6 +362,36 @@ class TradingOrchestrator:
         except Exception as e:
             logger.error(f"Failed to run REIT Strategy: {e}", exc_info=True)
 
+        # --- Growth Strategy (Tier 2) ---
+        try:
+            from src.strategies.growth_strategy import GrowthStrategy
+
+            growth_strategy = GrowthStrategy(
+                weekly_allocation=float(os.getenv("GROWTH_WEEKLY_ALLOCATION", "1500.0")),
+                use_sentiment=True,
+                use_intelligent_investor=True,
+            )
+
+            # Check if it's Monday (run weekly)
+            # In production, we might want to run this check inside the strategy,
+            # but for now we'll trigger it if it's the start of the week or forced
+            is_monday = datetime.utcnow().weekday() == 0
+            force_growth = os.getenv("FORCE_GROWTH_RUN", "false").lower() in {"1", "true"}
+
+            if is_monday or force_growth:
+                logger.info("Executing Growth Strategy (Tier 2)...")
+                # Note: execute_weekly returns orders but handles its own execution internally via AlpacaTrader
+                # However, the class definition shows it returns orders and has a 'trader' attribute.
+                # We should verify if it executes or just returns orders.
+                # Looking at execute_weekly implementation: it calls self._generate_buy_orders which calls trader.submit_order
+                # So it seems to execute internally.
+                growth_strategy.execute_weekly()
+            else:
+                logger.info("Skipping Growth Strategy: Runs weekly on Mondays.")
+
+        except Exception as e:
+            logger.error(f"Failed to run Growth Strategy: {e}", exc_info=True)
+
     def _manage_open_positions(self) -> dict[str, Any]:
         """
         CRITICAL: Manage existing positions - check for exits and record closed trades.
