@@ -1,3 +1,0 @@
-Trigger daily trading workflow
-Timestamp: $(date -u)
-Reason: Manual trigger after Dec 11 incident fix
