@@ -13,13 +13,14 @@ def load_fixture(name: str):
 
 
 def base_args() -> Namespace:
-    return Namespace(
+    args = Namespace(
         required_win_rate=60.0,
         required_sharpe=1.5,
         max_drawdown=10.0,
         min_profitable_days=30,
-        min_trades=100,
     )
+    args.min_trades = 100
+    return args
 
 
 def test_promotion_gate_passes_with_valid_metrics():

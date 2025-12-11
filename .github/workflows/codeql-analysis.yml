@@ -37,10 +37,12 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-        # config-file: .github/codeql/codeql-config.yml # Removed to resolve configuration error
+        config-file: .github/codeql/codeql-config.yml
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    # Autobuild removed to prevent installation of heavy ML dependencies (numpy, torch, etc.)
+    # which are not strictly necessary for static analysis security checks
+    # and were causing timeouts/failures.
+
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
