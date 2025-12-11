@@ -254,3 +254,58 @@ jobs:
           echo "::error::WORKFLOW INTEGRITY COMPROMISED - Fix before merging!"
           echo "::error::These tests catch bugs that cause silent trading failures."
           exit 1
+
+  # Added Dec 11, 2025 after syntax error incident
+  # See: rag_knowledge/lessons_learned/ll_009_ci_syntax_failure_dec11.md
+  syntax-and-imports:
+    name: Syntax & Import Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Verify All Python Files Compile
+        run: |
+          echo "Checking all Python files for syntax errors..."
+          find src -name "*.py" -exec python3 -m py_compile {} \;
+          find scripts -name "*.py" -exec python3 -m py_compile {} \;
+          echo "✅ All Python files compile successfully"
+      
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . --quiet
+      
+      - name: Verify Critical Imports
+        run: |
+          python3 << 'EOF'
+          print("Verifying critical trading system imports...")
+          
+          critical_imports = [
+              ("TradingOrchestrator", "from src.orchestrator.main import TradingOrchestrator"),
+              ("AlpacaExecutor", "from src.execution.alpaca_executor import AlpacaExecutor"),
+              ("TradeGateway", "from src.risk.trade_gateway import TradeGateway"),
+              ("CoreStrategy", "from src.strategies.core_strategy import CoreStrategy"),
+          ]
+          
+          failed = []
+          for name, import_stmt in critical_imports:
+              try:
+                  exec(import_stmt)
+                  print(f"✅ {name}")
+              except Exception as e:
+                  print(f"❌ {name}: {e}")
+                  failed.append(name)
+          
+          if failed:
+              print(f"\n🚨 CRITICAL: {len(failed)} import(s) failed!")
+              print("These must be fixed before merge.")
+              exit(1)
+          
+          print("\n✅ All critical imports successful")
+          EOF
