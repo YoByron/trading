@@ -380,7 +380,7 @@ class GrowthStrategy:
         self,
         weekly_allocation: float = 1500.0,
         use_sentiment: bool = True,
-        use_intelligent_investor: bool = True,
+        use_intelligent_investor: bool = False,  # DISABLED (Dec 11, 2025): Was blocking trades
     ):
         """
         Initialize the Growth Strategy.
@@ -608,11 +608,12 @@ class GrowthStrategy:
                     else 0.5
                 )
 
-                # HARD FILTER: Skip ranging markets (ADX < 20) to avoid whipsaws
-                if adx_value < 20.0:
+                # RELAXED (Dec 11, 2025): ADX filter was blocking too many trades
+                # Changed from 20 to 10 - allow more ranging markets
+                if adx_value < 10.0:
                     logger.debug(
-                        f"{symbol}: FILTERED OUT - ADX regime filter (ADX={adx_value:.1f} < 20). "
-                        "Market is ranging/trendless."
+                        f"{symbol}: FILTERED OUT - ADX regime filter (ADX={adx_value:.1f} < 10). "
+                        "Market is extremely flat/trendless."
                     )
                     continue
 
@@ -813,37 +814,31 @@ class GrowthStrategy:
             # Store sentiment modifier for logging
             candidate.sentiment_modifier = sentiment_modifier
 
-            # Fetch DCF valuation and enforce margin of safety
+            # DISABLED (Dec 11, 2025): DCF gate was blocking ALL trades when API unavailable
+            # DCF valuation is now OPTIONAL - we proceed without it
             dcf_result = self.dcf_calculator.get_intrinsic_value(candidate.symbol)
-            if not dcf_result:
-                logger.info(
-                    "Skipping %s - DCF valuation unavailable (requires Alpha Vantage fundamentals)",
-                    candidate.symbol,
-                )
-                continue
-
-            intrinsic_value = dcf_result.intrinsic_value
-            if intrinsic_value <= 0:
-                logger.info(
-                    "Skipping %s - intrinsic value invalid (%.2f)",
+            if dcf_result and dcf_result.intrinsic_value > 0:
+                intrinsic_value = dcf_result.intrinsic_value
+                discount = (intrinsic_value - candidate.current_price) / intrinsic_value
+                candidate.intrinsic_value = intrinsic_value
+                candidate.dcf_discount = discount
+                logger.debug(
+                    "%s: DCF intrinsic=%.2f, discount=%.1f%%",
                     candidate.symbol,
                     intrinsic_value,
-                )
-                continue
-
-            discount = (intrinsic_value - candidate.current_price) / intrinsic_value
-            candidate.intrinsic_value = intrinsic_value
-            candidate.dcf_discount = discount
-
-            if discount < self.required_margin_of_safety:
-                logger.info(
-                    "Skipping %s - margin of safety %.1f%% below threshold %.1f%%",
-                    candidate.symbol,
                     discount * 100,
-                    self.required_margin_of_safety * 100,
                 )
-                continue
+            else:
+                # No DCF data - use neutral values instead of blocking
+                candidate.intrinsic_value = candidate.current_price
+                candidate.dcf_discount = 0.0
+                logger.debug(
+                    "%s: DCF unavailable - using neutral values (no blocking)",
+                    candidate.symbol,
+                )
 
+            # DISABLED (Dec 11, 2025): External signal gate was blocking trades
+            # External signals now INFORM but do NOT block trades
             external_signal = get_signal_for_ticker(
                 candidate.symbol, signals=self.external_signals_cache
             )
@@ -852,12 +847,12 @@ class GrowthStrategy:
                 candidate.external_signal_confidence = external_signal.get("confidence", 0.0)
 
                 if candidate.external_signal_score < -20:
-                    logger.info(
-                        "Skipping %s - external signals bearish (score=%.1f)",
+                    # Warn but don't block - external signals are informational only
+                    logger.warning(
+                        "%s: external signals bearish (score=%.1f) - PROCEEDING ANYWAY",
                         candidate.symbol,
                         candidate.external_signal_score,
                     )
-                    continue
             else:
                 candidate.external_signal_score = 0.0
                 candidate.external_signal_confidence = 0.0
@@ -868,8 +863,8 @@ class GrowthStrategy:
                 consensus_score,
                 sentiment_modifier,
                 candidate.macd_histogram,
-                intrinsic_value,
-                discount * 100,
+                candidate.intrinsic_value or candidate.current_price,
+                (candidate.dcf_discount or 0.0) * 100,
                 candidate.external_signal_score,
             )
 
