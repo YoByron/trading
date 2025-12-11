@@ -607,3 +607,36 @@ Phase 3: $3/day  → Funded by profits from Phase 2
 
 **Last Optimized**: November 23, 2025
 **File Size**: ~11k characters (73% reduction from 43.5k)
+
+---
+
+## PRE-MERGE CHECKLIST (MANDATORY - Added Dec 11, 2025)
+
+⚠️ **CRITICAL**: On Dec 11, 2025, a syntax error was merged to main, causing 0 trades
+to execute for the entire day. This checklist prevents that from happening again.
+
+### Before Merging ANY PR, Claude MUST:
+
+```
+[ ] 1. Run pre-merge gate: python3 scripts/pre_merge_gate.py
+[ ] 2. Verify CI workflow passed (ALL jobs green, not just some)
+[ ] 3. If PR changes >10 files, request human review first
+[ ] 4. Verify no syntax errors: find src -name "*.py" -exec python3 -m py_compile {} \;
+[ ] 5. Test critical import: python3 -c "from src.orchestrator.main import TradingOrchestrator"
+```
+
+### Post-Merge Verification:
+
+After merging, immediately verify:
+```bash
+python3 -c "from src.orchestrator.main import TradingOrchestrator; print('✅ Trading system OK')"
+```
+
+### If Pre-Merge Gate Fails:
+
+1. DO NOT MERGE
+2. Fix the failing check
+3. Re-run gate
+4. Only merge when ALL checks pass
+
+See: `rag_knowledge/lessons_learned/ll_009_ci_syntax_failure_dec11.md`
