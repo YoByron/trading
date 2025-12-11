@@ -18,18 +18,10 @@
     },
     "rss": {
       "command": "npx",
-      "args": ["-y", "rss-mcp"],
-      "description": "RSS feed reader for consuming newsletters and market analysis (Note: Package has Node compatibility issues, use Python script fetch_options_rss.py instead)",
+      "args": ["-y", "@veithly/rss-mcp"],
+      "description": "RSS feed reader for consuming crypto newsletters and market analysis",
       "env": {
-        "RSS_FEEDS": "https://medium.com/feed/coinsnacks,https://www.tastytrade.com/news/rss,https://optionsalpha.com/feed,https://www.cboe.com/rss/options-news"
-      }
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "description": "GitHub MCP Server - PRs, issues, commits, and repo management",
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+        "RSS_FEEDS": "https://medium.com/feed/coinsnacks"
       }
     },
     "youtube-transcript": {
@@ -46,11 +38,6 @@
         "PAL_ENABLED_TOOLS": "challenge,debug,chat",
         "PAL_DEFAULT_MODEL": "openrouter/anthropic/claude-sonnet-4"
       }
-    },
-    "microsoft-learn": {
-      "type": "http",
-      "url": "https://learn.microsoft.com/api/mcp",
-      "description": "Microsoft Learn MCP Server - Real-time access to official Microsoft documentation, .NET, Azure, and code samples. No API key required."
     }
   }
 }

@@ -1,17 +1,12 @@
 """
-Options Accumulation Strategy - Accelerated Share Building
+Options Accumulation Strategy - NVDA Focus
 
-This strategy accelerates accumulation of shares for options trading (covered calls).
-It runs daily and prioritizes share purchases to reach the 50-share threshold faster.
+This strategy accelerates accumulation of NVDA shares specifically for options trading.
+It runs daily and prioritizes NVDA purchases to reach the 50-share threshold faster.
 
-Strategy (Updated Dec 9, 2025):
-- Daily investment: $100/day (configurable via OPTIONS_ACCUMULATION_DAILY env)
-- Target: 50 shares (configurable via OPTIONS_MIN_SHARES env)
-- Default symbol: INTC (~$24/share) - can reach 50 shares in ~12 days
-- Alternative symbols ranked by time-to-50-shares at $100/day:
-  * INTC: ~12 days ($24/share)
-  * AMD: ~65 days ($130/share)
-  * NVDA: ~70 days ($140/share)
+Strategy:
+- Daily investment: $25/day (configurable via OPTIONS_ACCUMULATION_DAILY env)
+- Target: 50 shares of NVDA
 - Once threshold reached, switches to maintenance mode
 - Integrates with existing options strategy for covered calls
 """
@@ -25,48 +20,32 @@ from src.core.alpaca_trader import AlpacaTrader
 
 logger = logging.getLogger(__name__)
 
-# Recommended accumulation symbols ranked by cost efficiency
-ACCUMULATION_CANDIDATES = [
-    {"symbol": "INTC", "approx_price": 24, "days_at_100": 12, "options_liquidity": "HIGH"},
-    {"symbol": "F", "approx_price": 11, "days_at_100": 6, "options_liquidity": "HIGH"},
-    {"symbol": "AMD", "approx_price": 130, "days_at_100": 65, "options_liquidity": "HIGH"},
-    {"symbol": "NVDA", "approx_price": 140, "days_at_100": 70, "options_liquidity": "HIGH"},
-    {"symbol": "AAPL", "approx_price": 195, "days_at_100": 98, "options_liquidity": "HIGH"},
-]
-
 
 class OptionsAccumulationStrategy:
     """
-    Options Accumulation Strategy - Accelerated path to covered calls.
+    Options Accumulation Strategy - Focused on NVDA for fastest path to covered calls.
 
     This strategy:
-    1. Tracks position accumulation for configurable symbol (default: INTC)
+    1. Tracks NVDA position accumulation
     2. Executes daily purchases to accelerate toward 50-share threshold
     3. Monitors progress and reports status
     4. Integrates with OptionsStrategy once threshold reached
-
-    Updated Dec 9, 2025:
-    - Default symbol changed from NVDA to INTC (faster accumulation)
-    - Daily amount increased from $25 to $100
-    - Added candidate ranking for alternative symbols
     """
 
-    def __init__(self, paper: bool = True, symbol: str | None = None):
+    def __init__(self, paper: bool = True):
         """
         Initialize Options Accumulation Strategy.
 
         Args:
             paper: If True, use paper trading environment
-            symbol: Target symbol (default: from env or INTC)
         """
         self.paper = paper
         self.trader = AlpacaTrader(paper=paper)
 
-        # Strategy configuration - Updated Dec 9, 2025
-        # Default to INTC for faster accumulation (~12 days vs 280 days for NVDA at old rate)
-        self.target_symbol = symbol or os.getenv("OPTIONS_ACCUMULATION_SYMBOL", "INTC")
+        # Strategy configuration
+        self.target_symbol = "NVDA"
         self.target_shares = int(os.getenv("OPTIONS_MIN_SHARES", "50"))
-        self.daily_amount = float(os.getenv("OPTIONS_ACCUMULATION_DAILY", "100.0"))
+        self.daily_amount = float(os.getenv("OPTIONS_ACCUMULATION_DAILY", "25.0"))
 
         logger.info(
             f"Options Accumulation Strategy initialized: "
@@ -84,19 +63,17 @@ class OptionsAccumulationStrategy:
         """
         try:
             positions = self.trader.get_positions()
-            target_position = None
+            nvda_position = None
 
             for pos in positions:
                 if pos.get("symbol") == self.target_symbol and pos.get("side") == "long":
-                    target_position = pos
+                    nvda_position = pos
                     break
-            else:
-                target_position = None
 
-            current_shares = float(target_position["qty"]) if target_position else 0.0
+            current_shares = float(nvda_position["qty"]) if nvda_position else 0.0
             current_price = (
-                float(target_position["current_price"])
-                if target_position
+                float(nvda_position["current_price"])
+                if nvda_position
                 else self._get_current_price()
             )
 
@@ -173,7 +150,7 @@ class OptionsAccumulationStrategy:
             current_price = status["current_price"]
             shares_to_buy = self.daily_amount / current_price
 
-            logger.info(f"Current {self.target_symbol} position: {current_shares:.2f} shares")
+            logger.info(f"Current NVDA position: {current_shares:.2f} shares")
             logger.info(f"Target: {self.target_shares} shares")
             logger.info(f"Shares needed: {shares_needed:.2f}")
             logger.info(

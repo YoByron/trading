@@ -89,8 +89,6 @@ class RLFilter:
                 logger.warning("Transformer RL initialisation failed: %s", exc)
 
         # DiscoRL-inspired DQN initialization (Dec 2025)
-        # Dec 10, 2025: ENABLED by default - CEO mandate: no dead code!
-        # Will learn from real trades as they close
         disco_flag = (
             enable_disco_dqn
             if enable_disco_dqn is not None

@@ -14,23 +14,6 @@ Features:
     - Works with existing CoreStrategy class
     - Uses yfinance for historical price data
 
-ARCHITECTURE NOTE (Dec 2025 - per Carlos Perez's LLM finance critique):
-========================================================================
-This engine uses DETERMINISTIC Python code for all backtesting operations.
-We deliberately DO NOT use LLMs for:
-  - Applying trading rules to historical data
-  - Sequential condition checking over time series
-  - Any multi-step rule-based logic
-
-LLMs suffer from "process corruption" - they may silently drop conditions
-(e.g., "RSI < 70" or "not Friday") after processing many data points,
-producing invalid backtest results with no error message.
-
-All rule application is done via pandas/numpy for guaranteed consistency.
-LLMs are reserved for sentiment analysis and market outlook only.
-
-See: @IntuitMachine's analysis on LLM working memory limitations.
-
 Author: Trading System
 Created: 2025-11-02
 """
@@ -38,7 +21,7 @@ Created: 2025-11-02
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -59,19 +42,13 @@ try:  # Optional dependency for point-in-time sentiment
 except Exception:  # noqa: BLE001
     SentimentSQLiteStore = None  # type: ignore[misc]
 
-# Import slippage and commission models for realistic execution costs
+# Import slippage model for realistic execution costs
 try:
-    from src.risk.slippage_model import (
-        SlippageModel,
-        SlippageModelType,
-        CommissionModel,
-        get_default_commission_model,
-    )
+    from src.risk.slippage_model import SlippageModel, SlippageModelType
 
     SLIPPAGE_AVAILABLE = True
 except ImportError:
     SLIPPAGE_AVAILABLE = False
-    CommissionModel = None  # type: ignore[misc]
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -105,10 +82,9 @@ class BacktestEngine:
         initial_capital: float = 100000.0,
         enable_slippage: bool = True,
         slippage_bps: float = 5.0,
-        enable_commissions: bool = True,
-        bias_replay: BiasReplay | None = None,
         use_hybrid_gates: bool = False,
         hybrid_options: dict[str, Any] | None = None,
+        bias_replay: BiasReplay | None = None,
         sentiment_store: SentimentSQLiteStore | None = None,
     ):
         """
@@ -121,7 +97,6 @@ class BacktestEngine:
             initial_capital: Starting capital amount (default: $100,000)
             enable_slippage: Whether to model execution slippage (default: True)
             slippage_bps: Base slippage in basis points (default: 5 bps)
-            enable_commissions: Whether to model SEC/FINRA fees (default: True)
 
         Raises:
             ValueError: If dates are invalid or strategy is None
@@ -162,12 +137,6 @@ class BacktestEngine:
         self.enable_slippage = enable_slippage and SLIPPAGE_AVAILABLE
         self.slippage_model = None
         self.total_slippage_cost = 0.0  # Track cumulative slippage
-
-        # Commission model for regulatory fees (SEC, FINRA)
-        self.enable_commissions = enable_commissions and SLIPPAGE_AVAILABLE
-        self.commission_model = None
-        self.total_commission_cost = 0.0  # Track cumulative commissions
-
         self.use_hybrid_gates = use_hybrid_gates
         self.hybrid_options = hybrid_options or {}
         self.hybrid_gate_rl: RLFilter | None = None
@@ -188,12 +157,6 @@ class BacktestEngine:
             logger.info(f"Slippage model enabled: {slippage_bps} bps base spread")
         else:
             logger.warning("Slippage model disabled - results may be optimistic")
-
-        if self.enable_commissions:
-            self.commission_model = get_default_commission_model()
-            logger.info("Commission model enabled: SEC + FINRA fees")
-        else:
-            logger.info("Commission model disabled - regulatory fees not included")
 
         if self.use_hybrid_gates:
             logger.info("Hybrid funnel simulation enabled for backtests.")
@@ -489,10 +452,6 @@ class BacktestEngine:
 
         sale_value = quantity * executed_price
 
-        # Calculate P&L correctly: subtract slippage cost from gross P&L
-        gross_pnl = sale_value - self.position_costs[symbol]
-        net_pnl = gross_pnl - slippage_cost  # Slippage reduces actual profit
-
         trade = {
             "date": date_str,
             "symbol": symbol,
@@ -503,9 +462,10 @@ class BacktestEngine:
             "slippage_cost": slippage_cost,
             "amount": sale_value,
             "reason": reason,
-            "pnl": net_pnl,  # Fixed: now accounts for slippage cost
-            "gross_pnl": gross_pnl,  # Track gross for analysis
-            "return_pct": (net_pnl / self.position_costs[symbol]) * 100,  # Fixed: net return %
+            "pnl": sale_value - self.position_costs[symbol],
+            "return_pct": (executed_price - (self.position_costs[symbol] / quantity))
+            / (self.position_costs[symbol] / quantity)
+            * 100,
         }
         self.trades.append(trade)
 
@@ -517,35 +477,15 @@ class BacktestEngine:
         logger.info(f"{date_str}: SOLD {symbol} - {reason}")
 
     def _simulate_dca_day(self, date: datetime, date_str: str) -> None:
-        """Legacy DCA-style backtest flow (pre-hybrid) with basic risk checks."""
+        """Legacy DCA-style backtest flow (pre-hybrid)."""
         # Update portfolio value with current prices
         self._update_portfolio_value(date)
-
-        # ============================================================
-        # RISK CHECK 1: Daily Loss Circuit Breaker
-        # ============================================================
-        max_daily_loss_pct = float(os.getenv("MAX_DAILY_LOSS_PCT", "2.0")) / 100
-        if self.portfolio_value < self.initial_capital * (1 - max_daily_loss_pct):
-            daily_loss = (self.initial_capital - self.portfolio_value) / self.initial_capital
-            logger.warning(
-                f"{date_str}: Daily loss circuit breaker triggered "
-                f"({daily_loss * 100:.2f}% > {max_daily_loss_pct * 100:.1f}% limit)"
-            )
-            return
 
         # Calculate momentum scores for this date
         momentum_scores = []
 
         for symbol in self.strategy.etf_universe:
             try:
-                # Check bias replay first (if enabled)
-                if self._bias_blocks_trade(symbol, date):
-                    logger.debug(
-                        "%s: Bias replay blocked %s due to negative sentiment.",
-                        date_str,
-                        symbol,
-                    )
-                    continue
                 hist = self._get_historical_data(symbol, date)
                 if hist is None:
                     logger.warning(f"{date_str}: No historical data for {symbol}")
@@ -604,45 +544,11 @@ class BacktestEngine:
         if self.current_capital < effective_allocation:
             return
 
-        # ============================================================
-        # RISK CHECK 2: Maximum Position Size (15% of portfolio per symbol)
-        # ============================================================
-        max_position_pct = float(os.getenv("MAX_POSITION_SIZE_PCT", "15.0")) / 100
-        current_position_value = self.positions.get(best_etf, 0.0) * price
-        new_position_value = current_position_value + effective_allocation
-        position_pct = new_position_value / self.portfolio_value if self.portfolio_value > 0 else 0
-
-        if position_pct > max_position_pct:
-            # Cap allocation to stay within limit
-            max_additional = (max_position_pct * self.portfolio_value) - current_position_value
-            if max_additional <= 0:
-                logger.warning(
-                    f"{date_str}: {best_etf} already at max position ({position_pct * 100:.1f}% "
-                    f"> {max_position_pct * 100:.0f}% limit). Skipping."
-                )
-                return
-            logger.info(
-                f"{date_str}: Capping {best_etf} allocation from ${effective_allocation:.2f} "
-                f"to ${max_additional:.2f} (position limit)"
-            )
-            effective_allocation = max_additional
-
-        # ============================================================
-        # RISK CHECK 3: Minimum Trade Size
-        # ============================================================
-        min_trade_size = float(os.getenv("MIN_TRADE_SIZE", "3.0"))
-        if effective_allocation < min_trade_size:
-            logger.debug(
-                f"{date_str}: Allocation ${effective_allocation:.2f} below minimum ${min_trade_size}"
-            )
-            return
-
-        executed_price, slippage_cost, commission_cost = self._apply_slippage_adjustment(
+        executed_price, slippage_cost = self._apply_slippage_adjustment(
             symbol=best_etf,
             date=date,
             base_price=price,
             notional=effective_allocation,
-            side="buy",
         )
 
         quantity = effective_allocation / executed_price
@@ -654,10 +560,8 @@ class BacktestEngine:
             "price": executed_price,
             "base_price": price,
             "slippage_cost": slippage_cost,
-            "commission_cost": commission_cost,
             "amount": effective_allocation,
             "reason": f"Daily {allocation_type} purchase",
-            "risk_checks_passed": ["circuit_breaker", "position_limit", "min_trade_size"],
         }
         self.trades.append(trade)
 
@@ -713,12 +617,11 @@ class BacktestEngine:
                 continue
 
             notional = min(notional, self.current_capital)
-            executed_price, slippage_cost, commission_cost = self._apply_slippage_adjustment(
+            executed_price, slippage_cost = self._apply_slippage_adjustment(
                 symbol=symbol,
                 date=date,
                 base_price=price,
                 notional=notional,
-                side="buy",
                 hist=hist,
             )
 
@@ -735,7 +638,6 @@ class BacktestEngine:
                     "price": executed_price,
                     "amount": notional,
                     "slippage_cost": slippage_cost,
-                    "commission_cost": commission_cost,
                     "reason": "hybrid_funnel_pass",
                     "gate_payload": {
                         "momentum": momentum_signal,
@@ -757,28 +659,10 @@ class BacktestEngine:
         notional: float,
         side: str = "buy",
         hist: pd.DataFrame | None = None,
-    ) -> tuple[float, float, float]:
-        """
-        Apply slippage and commission costs to a trade.
-
-        Args:
-            symbol: Ticker symbol
-            date: Trade date
-            base_price: Base execution price
-            notional: Trade notional value
-            side: "buy" or "sell"
-            hist: Optional historical data for volatility calculation
-
-        Returns:
-            Tuple of (executed_price, slippage_cost, commission_cost)
-        """
+    ) -> tuple[float, float]:
         executed_price = base_price
         slippage_cost = 0.0
-        commission_cost = 0.0
 
-        quantity_estimate = notional / base_price if base_price > 0 else 0
-
-        # Calculate slippage
         if self.enable_slippage and self.slippage_model:
             hist = hist or self._get_historical_data(symbol, date)
             avg_volume = None
@@ -788,6 +672,7 @@ class BacktestEngine:
                 returns = hist["Close"].pct_change().dropna()
                 volatility = returns.tail(20).std() if len(returns) >= 20 else 0.02
 
+            quantity_estimate = notional / base_price
             slippage_result = self.slippage_model.calculate_slippage(
                 price=base_price,
                 quantity=quantity_estimate,
@@ -800,18 +685,7 @@ class BacktestEngine:
             slippage_cost = slippage_result.slippage_amount * quantity_estimate
             self.total_slippage_cost += slippage_cost
 
-        # Calculate commissions (SEC + FINRA fees)
-        if self.enable_commissions and self.commission_model:
-            commission_result = self.commission_model.calculate_commission(
-                trade_value=notional,
-                quantity=quantity_estimate,
-                side=side,
-                is_option=False,
-            )
-            commission_cost = commission_result.total_fee
-            self.total_commission_cost += commission_cost
-
-        return executed_price, slippage_cost, commission_cost
+        return executed_price, slippage_cost
 
     def _get_historical_data(self, symbol: str, date: datetime) -> pd.DataFrame | None:
         """
@@ -1105,34 +979,18 @@ class BacktestEngine:
             trading_days=len(self.dates) - 1,
             total_slippage_cost=self.total_slippage_cost,
             slippage_enabled=self.enable_slippage,
-            total_commission_cost=self.total_commission_cost,
-            commissions_enabled=self.enable_commissions,
             avg_daily_pnl=avg_daily_pnl,
             pct_days_above_target=pct_days_above_target,
             worst_5day_drawdown=worst_5day_drawdown,
             worst_20day_drawdown=worst_20day_drawdown,
         )
 
-        # Log execution cost impact
-        pnl = final_capital - self.initial_capital
-        total_exec_costs = self.total_slippage_cost + self.total_commission_cost
-
+        # Log slippage impact
         if self.enable_slippage and self.total_slippage_cost > 0:
+            pnl = final_capital - self.initial_capital
             slippage_pct = (self.total_slippage_cost / pnl * 100) if pnl > 0 else 0
             logger.info(
                 f"Total Slippage Cost: ${self.total_slippage_cost:.2f} ({slippage_pct:.1f}% of P&L)"
-            )
-
-        if self.enable_commissions and self.total_commission_cost > 0:
-            commission_pct = (self.total_commission_cost / pnl * 100) if pnl > 0 else 0
-            logger.info(
-                f"Total Commission Cost: ${self.total_commission_cost:.2f} ({commission_pct:.1f}% of P&L)"
-            )
-
-        if total_exec_costs > 0:
-            total_pct = (total_exec_costs / pnl * 100) if pnl > 0 else 0
-            logger.info(
-                f"Total Execution Costs: ${total_exec_costs:.2f} ({total_pct:.1f}% of P&L)"
             )
 
         return results

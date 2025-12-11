@@ -4,11 +4,6 @@ Dec 3, 2025 Enhancement:
 - Added place_order_with_stop_loss() for integrated order + stop-loss execution
 - ATR-based stop-loss calculation wired to order placement
 - Automatic stop-loss on every new position
-
-Dec 5, 2025 Enhancement:
-- Added live execution cost tracking (expected vs actual fill prices)
-- Integration with SlippageModel to validate backtest assumptions
-- Automatic slippage divergence alerts
 """
 
 from __future__ import annotations
@@ -17,12 +12,9 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
-from src.brokers.multi_broker import MultiBroker, get_multi_broker
 from src.core.alpaca_trader import AlpacaTrader, AlpacaTraderError
-from src.execution.cost_tracker import ExecutionCostTracker, get_cost_tracker
-from src.risk.slippage_model import SlippageModel, get_default_slippage_model
 
 logger = logging.getLogger(__name__)
 
@@ -35,45 +27,16 @@ MAX_STOP_LOSS_PCT = 0.10  # Never more than 10%
 class AlpacaExecutor:
     """Handles portfolio sync and order placement."""
 
-    def __init__(
-        self,
-        paper: bool = True,
-        allow_simulator: bool = True,
-        track_costs: bool = True,
-    ) -> None:
+    def __init__(self, paper: bool = True, allow_simulator: bool = True) -> None:
         self.simulated_orders: list[dict[str, Any]] = []
         self.account_snapshot: dict[str, Any] = {}
         self.positions: list[dict[str, Any]] = []
         self.simulated = os.getenv("ALPACA_SIMULATED", "false").lower() in {"1", "true"}
         self.paper = paper
 
-        # Multi-broker failover support (opt-in via env var)
-        self.enable_failover = os.getenv("ENABLE_BROKER_FAILOVER", "false").lower() in {"1", "true"}
-        self.multi_broker: MultiBroker | None = None
-
-        # Cost tracking for live vs modeled slippage validation
-        self.track_costs = track_costs
-        self.cost_tracker: Optional[ExecutionCostTracker] = None
-        self.slippage_model: Optional[SlippageModel] = None
-
-        if track_costs:
-            try:
-                self.cost_tracker = get_cost_tracker()
-                self.slippage_model = get_default_slippage_model()
-                logger.info("Execution cost tracking enabled")
-            except Exception as e:
-                logger.warning(f"Cost tracking initialization failed: {e}")
-                self.track_costs = False
-
         if not self.simulated:
             try:
                 self.trader = AlpacaTrader(paper=paper)
-
-                # Initialize multi-broker if failover is enabled
-                if self.enable_failover:
-                    self.multi_broker = get_multi_broker()
-                    logger.info("Multi-broker failover ENABLED (Alpaca → IBKR → Tradier)")
-
             except AlpacaTraderError as exc:
                 if not allow_simulator:
                     raise
@@ -154,24 +117,7 @@ class AlpacaExecutor:
             symbol,
             f"${notional:.2f}" if notional else f"{qty} shares",
         )
-
-        # Capture expected price BEFORE placing order (for cost tracking)
-        expected_price = self._get_expected_price(symbol, side)
-        modeled_slippage_bps = self._get_modeled_slippage(
-            symbol, notional, side, expected_price
-        )
-
         if self.simulated:
-            # Simulate realistic fill with modeled slippage
-            if expected_price > 0:
-                slippage_pct = modeled_slippage_bps / 10000
-                if side.lower() == "buy":
-                    fill_price = expected_price * (1 + slippage_pct)
-                else:
-                    fill_price = expected_price * (1 - slippage_pct)
-            else:
-                fill_price = notional  # Fallback
-
             order = {
                 "id": str(uuid.uuid4()),
                 "symbol": symbol,
@@ -180,62 +126,11 @@ class AlpacaExecutor:
                 "qty": float(qty) if qty else None,
                 "status": "filled",
                 "filled_at": datetime.utcnow().isoformat(),
-                "filled_avg_price": round(fill_price, 4),
-                "filled_qty": round(notional / fill_price, 6) if fill_price > 0 else 0,
                 "mode": "simulated",
             }
             self.simulated_orders.append(order)
-
-            # Track simulated fill for cost validation
-            self._track_fill_if_enabled(
-                order=order,
-                symbol=symbol,
-                side=side,
-                expected_price=expected_price,
-                modeled_slippage_bps=modeled_slippage_bps,
-            )
-
             return order
 
-<<<<<<< HEAD
-        # Use multi-broker failover if enabled
-        if self.enable_failover and self.multi_broker:
-            # Convert notional to qty if needed (MultiBroker expects qty)
-            if notional and not qty:
-                # Get current price to estimate qty
-                try:
-                    quote_data, _ = self.multi_broker.get_quote(symbol)
-                    price = quote_data.get("last", 0) or quote_data.get("ask", 0)
-                    if price > 0:
-                        qty = notional / price
-                except Exception as e:
-                    logger.warning(f"Failed to get quote for {symbol}, falling back to Alpaca: {e}")
-                    # Fall through to regular Alpaca order
-
-            if qty:
-                # Submit via MultiBroker with automatic failover
-                order_result = self.multi_broker.submit_order(
-                    symbol=symbol,
-                    qty=qty,
-                    side=side,
-                    order_type="market",
-                )
-
-                # Convert OrderResult to dict format expected by caller
-                return {
-                    "id": order_result.order_id,
-                    "symbol": order_result.symbol,
-                    "side": order_result.side,
-                    "qty": order_result.quantity,
-                    "status": order_result.status,
-                    "filled_avg_price": order_result.filled_price,
-                    "broker": order_result.broker.value,
-                }
-
-        # Standard Alpaca-only path (no failover)
-=======
-        # Live/paper order execution
->>>>>>> dff591e (feat: add live execution cost tracking (Task 1))
         order = self.trader.execute_order(
             symbol=symbol,
             amount_usd=notional,
@@ -243,106 +138,7 @@ class AlpacaExecutor:
             side=side,
             tier="T1_CORE",
         )
-
-        # Track live fill for cost validation
-        self._track_fill_if_enabled(
-            order=order,
-            symbol=symbol,
-            side=side,
-            expected_price=expected_price,
-            modeled_slippage_bps=modeled_slippage_bps,
-        )
-
         return order
-
-    def _get_expected_price(self, symbol: str, side: str) -> float:
-        """Get expected fill price from current quote."""
-        if self.simulated or not self.trader:
-            # No live quote available in simulation
-            return 0.0
-
-        try:
-            quote = self.trader.api.get_latest_quote(symbol)
-            if quote:
-                # Use ask for buys, bid for sells
-                if side.lower() == "buy":
-                    return float(quote.ask_price) if quote.ask_price else 0.0
-                else:
-                    return float(quote.bid_price) if quote.bid_price else 0.0
-        except Exception as e:
-            logger.debug(f"Could not get quote for {symbol}: {e}")
-
-        return 0.0
-
-    def _get_modeled_slippage(
-        self,
-        symbol: str,
-        notional: float,
-        side: str,
-        price: float,
-    ) -> float:
-        """Calculate modeled slippage using SlippageModel."""
-        if not self.slippage_model or price <= 0:
-            return 5.0  # Default 5 bps if model unavailable
-
-        try:
-            quantity = notional / price if price > 0 else 1.0
-            result = self.slippage_model.calculate_slippage(
-                price=price,
-                quantity=quantity,
-                side=side,
-                symbol=symbol,
-            )
-            return result.components.get("total_bps", result.slippage_pct * 100)
-        except Exception as e:
-            logger.debug(f"Slippage model calculation failed: {e}")
-            return 5.0
-
-    def _track_fill_if_enabled(
-        self,
-        order: dict[str, Any],
-        symbol: str,
-        side: str,
-        expected_price: float,
-        modeled_slippage_bps: float,
-    ) -> None:
-        """Track fill for cost validation if tracking is enabled."""
-        if not self.track_costs or not self.cost_tracker:
-            return
-
-        # Get actual fill price
-        actual_price = float(order.get("filled_avg_price", 0))
-        if actual_price <= 0:
-            logger.debug(f"No fill price available for order {order.get('id')}")
-            return
-
-        # Get quantity
-        quantity = float(order.get("filled_qty", 0))
-        if quantity <= 0:
-            # Estimate from notional
-            notional = float(order.get("notional", 0))
-            quantity = notional / actual_price if actual_price > 0 else 0
-
-        if quantity <= 0:
-            return
-
-        # If no expected price (simulation), use actual as baseline
-        if expected_price <= 0:
-            expected_price = actual_price
-
-        try:
-            self.cost_tracker.track_fill(
-                order_id=str(order.get("id", "")),
-                symbol=symbol,
-                side=side,
-                quantity=quantity,
-                expected_price=expected_price,
-                actual_price=actual_price,
-                modeled_slippage_bps=modeled_slippage_bps,
-                order_type="market",
-            )
-        except Exception as e:
-            logger.warning(f"Failed to track fill: {e}")
 
     def set_stop_loss(self, symbol: str, qty: float, stop_price: float) -> dict[str, Any]:
         """Place or simulate a stop-loss order.
@@ -367,30 +163,6 @@ class AlpacaExecutor:
             self.simulated_orders.append(order)
             return order
 
-        # Use multi-broker failover if enabled
-        if self.enable_failover and self.multi_broker:
-            # Submit stop-loss via MultiBroker with automatic failover
-            order_result = self.multi_broker.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side="sell",
-                order_type="limit",  # Use limit order with stop price
-                limit_price=stop_price,
-            )
-
-            # Convert OrderResult to dict format expected by caller
-            return {
-                "id": order_result.order_id,
-                "symbol": order_result.symbol,
-                "side": "sell",
-                "type": "stop",
-                "qty": order_result.quantity,
-                "stop_price": stop_price,
-                "status": order_result.status,
-                "broker": order_result.broker.value,
-            }
-
-        # Standard Alpaca-only path (no failover)
         return self.trader.set_stop_loss(symbol=symbol, qty=qty, stop_price=stop_price)
 
     def place_order_with_stop_loss(
@@ -583,19 +355,3 @@ class AlpacaExecutor:
             return notional / entry_price
 
         return 0.0
-
-    def get_execution_cost_summary(self) -> dict[str, Any]:
-        """
-        Get summary of execution costs for model validation.
-
-        Returns weekly summary comparing modeled vs actual slippage,
-        plus model health status.
-        """
-        if not self.track_costs or not self.cost_tracker:
-            return {"error": "Cost tracking not enabled"}
-
-        return {
-            "weekly_summary": self.cost_tracker.get_weekly_summary(),
-            "model_health": self.cost_tracker.check_model_health(),
-            "today": self.cost_tracker.get_daily_summary(),
-        }

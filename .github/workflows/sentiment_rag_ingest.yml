@@ -6,29 +6,31 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   ingest:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: 'pip'
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
+          python -m venv venv
+          source venv/bin/activate
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Run ingestion script
         env:
           PYTHONPATH: .
         run: |
+          source venv/bin/activate
           python scripts/ingest_sentiment_rag.py --days 60 --rebuild
 
       - name: Upload sentiment DB artifact

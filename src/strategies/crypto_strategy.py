@@ -128,24 +128,15 @@ class CryptoStrategy:
     # - Monad: Future watch (Layer 1, not launched yet)
     DEFAULT_CRYPTO_UNIVERSE = ["BTCUSD", "ETHUSD", "SOLUSD"]
 
-    # RSI parameters - LOOSENED Dec 10, 2025 for more trading opportunities
-    # CEO directive: "We need to trade, not sit on sidelines"
+    # RSI parameters (tighter for crypto volatility)
     RSI_PERIOD = 14
-    RSI_OVERSOLD = 35  # More aggressive entry (was 40)
-    RSI_OVERBOUGHT = 70  # Allow buying in stronger uptrends (was 60)
+    RSI_OVERSOLD = 40  # Tighter than stocks (30)
+    RSI_OVERBOUGHT = 60  # Tighter than stocks (70)
 
-    # MACD parameters - OPTIMIZED FOR CRYPTO 24/7 TRADING
-    # Stock defaults (12, 26, 9) lag by ~4x in crypto because:
-    # - Stocks: "Daily candle" = 6.5 hours of trading
-    # - Crypto: "Daily candle" = 24 hours of trading
-    #
-    # Faster settings (8, 17, 6) are better for crypto:
-    # - Responds faster to momentum shifts
-    # - Better suited for 24/7 volatile markets
-    # - Can be overridden via env vars for A/B testing
-    MACD_FAST_PERIOD = int(os.getenv("CRYPTO_MACD_FAST", "8"))  # Default: 8 (was 12)
-    MACD_SLOW_PERIOD = int(os.getenv("CRYPTO_MACD_SLOW", "17"))  # Default: 17 (was 26)
-    MACD_SIGNAL_PERIOD = int(os.getenv("CRYPTO_MACD_SIGNAL", "6"))  # Default: 6 (was 9)
+    # MACD parameters
+    MACD_FAST_PERIOD = 12
+    MACD_SLOW_PERIOD = 26
+    MACD_SIGNAL_PERIOD = 9
 
     # Risk parameters (adapted for crypto)
     DEFAULT_STOP_LOSS_PCT = 0.07  # 7% (wider than stocks' 3-5%)
@@ -318,37 +309,23 @@ class CryptoStrategy:
         logger.info(f"Daily allocation: ${self.daily_amount}")
 
         try:
-            # Check FORCE_TRADE mode - bypass all filters and force buy first coin
-            force_trade = os.getenv("FORCE_TRADE", "").lower() in {"1", "true", "yes", "force"}
+            # Step 1: Calculate scores for all coins
+            scores = self._calculate_all_scores()
 
-            if force_trade:
-                logger.info("🔥 FORCE_TRADE MODE - Bypassing all analysis, buying first coin")
-                best_coin = self.crypto_universe[0]  # BTCUSD
-                logger.info(f"Forced selection: {best_coin}")
-            else:
-                # Step 1: Calculate scores for all coins
-                scores = self._calculate_all_scores()
+            if not scores:
+                logger.warning("No valid crypto opportunities today")
+                return None
 
-                if not scores:
-                    logger.warning("No valid crypto opportunities today")
-                    return None
+            # Step 2: Select best coin based on our algorithm
+            best_coin = self.select_crypto()
+            if not best_coin:
+                logger.warning("No crypto selected - all failed filters")
+                return None
 
-                # Step 2: Select best coin based on our algorithm
-                best_coin = self.select_crypto()
-                if not best_coin:
-                    logger.warning("No crypto selected - all failed filters")
-                    return None
+            logger.info(f"Selected crypto (algorithm): {best_coin}")
 
-            logger.info(f"Selected crypto: {best_coin}")
-
-            # Skip validation steps in FORCE_TRADE mode
-            if force_trade:
-                logger.info("🔥 FORCE_TRADE - Skipping newsletter and RAG validation")
-                validation = {"available": False, "reasoning": "Skipped in FORCE_TRADE mode"}
-                rag_insights = {"available": False, "reasoning": "Skipped in FORCE_TRADE mode"}
-            else:
-                # Step 2.5: Validate against CoinSnacks newsletter
-                validation = self.get_newsletter_validation(best_coin)
+            # Step 2.5: Validate against CoinSnacks newsletter
+            validation = self.get_newsletter_validation(best_coin)
 
             if validation["available"]:
                 logger.info(
@@ -372,66 +349,49 @@ class CryptoStrategy:
             else:
                 logger.info(f"Newsletter validation not available: {validation['reasoning']}")
 
-            # Step 2.6: Get RAG insights for the selected coin (skip in FORCE_TRADE)
-            best_score = None  # Initialize for FORCE_TRADE mode
-            if not force_trade:
-                best_score = next((s for s in scores if s.symbol == best_coin), None)
-                if best_score:
-                    rag_metrics = {
-                        "rsi": best_score.rsi,
-                        "macd_histogram": best_score.macd_histogram,
-                        "volume_ratio": best_score.volume_ratio,
-                    }
-                    rag_insights = self.get_rag_insights(best_coin, rag_metrics)
+            # Step 2.6: Get RAG insights for the selected coin
+            best_score = next((s for s in scores if s.symbol == best_coin), None)
+            if best_score:
+                rag_metrics = {
+                    "rsi": best_score.rsi,
+                    "macd_histogram": best_score.macd_histogram,
+                    "volume_ratio": best_score.volume_ratio,
+                }
+                rag_insights = self.get_rag_insights(best_coin, rag_metrics)
 
-                    if rag_insights["available"]:
-                        logger.info(
-                            f"RAG Insights: recommendation={rag_insights['recommendation']}, "
-                            f"adjustment={rag_insights['confidence_adjustment']:+d}"
+                if rag_insights["available"]:
+                    logger.info(
+                        f"RAG Insights: recommendation={rag_insights['recommendation']}, "
+                        f"adjustment={rag_insights['confidence_adjustment']:+d}"
+                    )
+                    if rag_insights["insights"]:
+                        logger.info(f"  Top insight: {rag_insights['insights'][0][:100]}...")
+
+                    # Apply RAG adjustment to decision
+                    if (
+                        rag_insights["recommendation"] == "bearish"
+                        and rag_insights["confidence_adjustment"] < -5
+                    ):
+                        logger.warning(
+                            f"RAG recommends CAUTION for {best_coin}: {rag_insights['reasoning']}"
                         )
-                        if rag_insights["insights"]:
-                            logger.info(f"  Top insight: {rag_insights['insights'][0][:100]}...")
+                        # Note: We still proceed but reduce position size could be implemented
+                else:
+                    logger.info(f"RAG insights not available: {rag_insights['reasoning']}")
 
-                        # Apply RAG adjustment to decision
-                        if (
-                            rag_insights["recommendation"] == "bearish"
-                            and rag_insights["confidence_adjustment"] < -5
-                        ):
-                            logger.warning(
-                                f"RAG recommends CAUTION for {best_coin}: {rag_insights['reasoning']}"
-                            )
-                            # Note: We still proceed but reduce position size could be implemented
-                    else:
-                        logger.info(f"RAG insights not available: {rag_insights['reasoning']}")
-
-            # Step 3: Get current price (with FORCE_TRADE fallback)
+            # Step 3: Get current price
             current_price = self._get_current_price(best_coin)
             if current_price is None:
-                if force_trade:
-                    # Fallback: Use a recent price from yfinance or hardcoded
-                    logger.warning(
-                        f"🔥 FORCE_TRADE: Price fetch failed, using fallback price for {best_coin}"
-                    )
-                    if best_coin == "BTCUSD":
-                        current_price = 97000.0  # Approximate Dec 2025 BTC price
-                    elif best_coin == "ETHUSD":
-                        current_price = 3500.0
-                    else:
-                        current_price = 100.0  # SOL fallback
-                    logger.info(f"Using fallback price: ${current_price:.2f}")
-                else:
-                    logger.error(f"Failed to get price for {best_coin}")
-                    return None
+                logger.error(f"Failed to get price for {best_coin}")
+                return None
 
             # Step 4: Calculate quantity
             quantity = self.daily_amount / current_price
 
-            # Step 5: Risk validation (skip in FORCE_TRADE mode)
-            if not force_trade and not self._validate_trade(best_coin, quantity, current_price):
+            # Step 5: Risk validation
+            if not self._validate_trade(best_coin, quantity, current_price):
                 logger.warning("Trade failed risk validation")
                 return None
-            elif force_trade:
-                logger.info("🔥 FORCE_TRADE - Skipping risk validation")
 
             # Step 6: Create order
             # Construct attribution metadata
@@ -480,21 +440,8 @@ class CryptoStrategy:
                     )
                 except Exception as e:
                     logger.error(f"Failed to execute order via Alpaca: {e}")
-                    # In FORCE_TRADE mode, still update system_state.json to record the attempt
-                    # This ensures git diff detects changes and the workflow doesn't skip
-                    if force_trade:
-                        logger.warning(
-                            "🔥 FORCE_TRADE: Recording attempted trade to system_state.json"
-                        )
-                        self._save_trade_to_daily_file(
-                            symbol=best_coin,
-                            action="BUY_ATTEMPTED",
-                            amount=self.daily_amount,
-                            quantity=quantity,
-                            price=current_price,
-                            order_id=f"FORCE_TRADE_FAILED_{datetime.now().strftime('%H%M%S')}",
-                        )
                     return None
+
                 # Set stop-loss order (optional - crypto may not support stop orders)
                 if order.stop_loss:
                     try:
@@ -509,21 +456,6 @@ class CryptoStrategy:
                             f"Stop-loss order failed (this is expected for crypto): {stop_loss_error}. "
                             f"Trade executed successfully: {executed_order['id']}"
                         )
-            else:
-                # No trader available - in FORCE_TRADE mode, still record to system_state
-                if force_trade:
-                    logger.warning("🔥 FORCE_TRADE: No trader available, recording simulated trade")
-                    self._save_trade_to_daily_file(
-                        symbol=best_coin,
-                        action="BUY_SIMULATED",
-                        amount=self.daily_amount,
-                        quantity=quantity,
-                        price=current_price,
-                        order_id=f"FORCE_TRADE_NO_TRADER_{datetime.now().strftime('%H%M%S')}",
-                    )
-                else:
-                    logger.warning("No trader instance available - skipping order execution")
-                    return None
 
             # Step 8: Update state
             self._update_holdings(best_coin, quantity)
@@ -940,46 +872,27 @@ class CryptoStrategy:
                 macd_value, macd_signal, macd_histogram = self._calculate_macd(hist["Close"])
                 volume_ratio = self._calculate_volume_ratio(hist)
 
-                # Check if we should bypass hard filters (FORCE_TRADE mode)
-                bypass_filters = os.getenv("FORCE_TRADE", "").lower() in {
-                    "1",
-                    "true",
-                    "yes",
-                    "force",
-                }
-
-                if bypass_filters:
-                    logger.info(f"{symbol}: FORCE_TRADE enabled - bypassing hard filters")
-                    logger.info(
-                        f"  RSI={rsi:.1f}, MACD={macd_histogram:.4f}, Vol={volume_ratio:.2f}"
+                # HARD FILTER 1: Reject strongly bearish MACD (allow slightly negative for less conservative approach)
+                # Changed from < 0 to < -50 to allow trades when MACD is recovering from bearish
+                macd_threshold = float(os.getenv("CRYPTO_MACD_THRESHOLD", "-50.0"))
+                if macd_histogram < macd_threshold:
+                    logger.warning(
+                        f"{symbol} REJECTED - Bearish MACD histogram ({macd_histogram:.4f} < {macd_threshold})"
                     )
-                else:
-                    # HARD FILTER 1: Reject strongly bearish MACD
-                    # Made more permissive: -200 threshold (was -50)
-                    macd_threshold = float(os.getenv("CRYPTO_MACD_THRESHOLD", "-200.0"))
-                    if macd_histogram < macd_threshold:
-                        logger.warning(
-                            f"{symbol} REJECTED - Bearish MACD histogram ({macd_histogram:.4f} < {macd_threshold})"
-                        )
-                        continue
+                    continue
 
-                    # HARD FILTER 2: Reject overbought RSI
-                    # Made more permissive: 80 threshold (was 70)
-                    rsi_threshold = float(os.getenv("CRYPTO_RSI_THRESHOLD", "80.0"))
-                    if rsi > rsi_threshold:
-                        logger.warning(
-                            f"{symbol} REJECTED - Overbought RSI ({rsi:.2f} > {rsi_threshold})"
-                        )
-                        continue
+                # HARD FILTER 2: Reject overbought RSI (>60 for crypto)
+                if rsi > self.RSI_OVERBOUGHT:
+                    logger.warning(
+                        f"{symbol} REJECTED - Overbought RSI ({rsi:.2f} > {self.RSI_OVERBOUGHT})"
+                    )
+                    continue
 
-                    # HARD FILTER 3: Require volume confirmation
-                    # Made more permissive: 0.1 threshold (was 0.3)
-                    vol_threshold = float(os.getenv("CRYPTO_VOL_THRESHOLD", "0.1"))
-                    if volume_ratio < vol_threshold:
-                        logger.warning(
-                            f"{symbol} REJECTED - Low volume ({volume_ratio:.2f} < {vol_threshold})"
-                        )
-                        continue
+                # HARD FILTER 3: Require volume confirmation
+                # Note: Weekend volume is typically lower, so threshold is 0.3 (30% of avg)
+                if volume_ratio < 0.3:
+                    logger.warning(f"{symbol} REJECTED - Low volume ({volume_ratio:.2f} < 0.3)")
+                    continue
 
                 # Calculate composite score
                 score = self._calculate_score(
@@ -1366,88 +1279,6 @@ class CryptoStrategy:
             logger.info(f"✅ Trade saved to {trade_file}: {symbol} {action} ${amount:.2f}")
         except Exception as e:
             logger.error(f"Failed to save trade to daily file: {e}")
-
-        # CRITICAL: Also update system_state.json so git diff detects changes
-        # The workflow only commits if system_state.json changes!
-        self._update_system_state(symbol, action, amount, quantity, price, order_id, data_dir)
-
-    def _update_system_state(
-        self,
-        symbol: str,
-        action: str,
-        amount: float,
-        quantity: float,
-        price: float,
-        order_id: str,
-        data_dir: Path = Path("data"),
-    ) -> None:
-        """
-        Update system_state.json with the latest trade.
-
-        CRITICAL: The GitHub Actions workflow only triggers commits when
-        system_state.json changes. Without this update, trades would be
-        silently lost because the workflow's git diff check fails.
-
-        Args:
-            symbol: Crypto symbol (e.g., "BTCUSD")
-            action: Trade action ("BUY" or "SELL")
-            amount: Dollar amount traded
-            quantity: Quantity of crypto purchased
-            price: Execution price
-            order_id: Alpaca order ID
-            data_dir: Data directory path (default: data/)
-        """
-        state_file = data_dir / "system_state.json"
-
-        try:
-            # Load existing state
-            state = {}
-            if state_file.exists():
-                try:
-                    with open(state_file) as f:
-                        state = json.load(f)
-                except Exception:
-                    state = {}
-
-            # Ensure structure exists
-            if "crypto" not in state:
-                state["crypto"] = {}
-            if "trades" not in state["crypto"]:
-                state["crypto"]["trades"] = []
-            if "meta" not in state:
-                state["meta"] = {}
-
-            # Add trade record
-            trade_record = {
-                "symbol": symbol,
-                "action": action,
-                "amount": round(amount, 2),
-                "quantity": quantity,
-                "price": round(price, 2),
-                "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                "order_id": order_id,
-            }
-            state["crypto"]["trades"].append(trade_record)
-
-            # Update last crypto trade info
-            state["crypto"]["last_trade"] = trade_record
-            state["crypto"]["last_execution"] = datetime.now().isoformat()
-
-            # Update meta timestamp (CRITICAL for git diff detection)
-            state["meta"]["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            state["meta"]["last_crypto_trade"] = datetime.now().isoformat()
-
-            # Save updated state
-            data_dir.mkdir(parents=True, exist_ok=True)
-            with open(state_file, "w") as f:
-                json.dump(state, f, indent=2, default=str)
-
-            logger.info(f"✅ System state updated: {symbol} {action} ${amount:.2f}")
-            logger.info(f"   system_state.json last_updated: {state['meta']['last_updated']}")
-
-        except Exception as e:
-            logger.error(f"Failed to update system_state.json: {e}")
-            # Don't raise - trade already executed, this is just tracking
 
     def manage_positions(self) -> list[CryptoOrder]:
         """

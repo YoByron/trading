@@ -206,61 +206,8 @@ def _flag_enabled(env_name: str, default: str = "true") -> bool:
 
 
 def _parse_tickers() -> list[str]:
-    """
-    Parse trading tickers from env var or tier2_watchlist.json.
-
-    Priority:
-    1. TARGET_TICKERS env var (if set)
-    2. Tier 2 watchlist (current_holdings from tier2_watchlist.json)
-    3. Default: SPY,QQQ,VOO,NVDA,GOOGL,AMZN (Tier 1 ETFs + Tier 2 growth stocks)
-
-    Returns:
-        List of ticker symbols to trade
-    """
-    # Check if TARGET_TICKERS is explicitly set
-    raw = os.getenv("TARGET_TICKERS")
-    if raw:
-        return [ticker.strip().upper() for ticker in raw.split(",") if ticker.strip()]
-
-    # Try loading from tier2_watchlist.json
-    try:
-        watchlist_path = Path("data/tier2_watchlist.json")
-        if watchlist_path.exists():
-            with open(watchlist_path) as f:
-                watchlist_data = json.load(f)
-                tier2_tickers = []
-
-                # Get current holdings (active stocks we want to trade)
-                holdings = watchlist_data.get("current_holdings", [])
-                tier2_tickers.extend([h["ticker"] for h in holdings if h.get("status") == "active"])
-
-                # Also include high-priority watchlist items (e.g., AMZN)
-                watchlist_items = watchlist_data.get("watchlist", [])
-                tier2_tickers.extend(
-                    [
-                        w["ticker"]
-                        for w in watchlist_items
-                        if w.get("priority") == "high" and w.get("status") == "watchlist"
-                    ]
-                )
-
-                if tier2_tickers:
-                    # Combine Tier 1 ETFs with Tier 2 growth stocks (deduplicate)
-                    combined = ["SPY", "QQQ", "VOO"] + list(set(tier2_tickers))
-                    logger = setup_logging()
-                    logger.info(
-                        "Loaded %d Tier 2 tickers from tier2_watchlist.json: %s",
-                        len(tier2_tickers),
-                        ", ".join(tier2_tickers),
-                    )
-                    return combined
-    except Exception as e:
-        logger = setup_logging()
-        logger.warning("Failed to load tier2_watchlist.json: %s. Using default tickers.", e)
-
-    # Default: Tier 1 ETFs + top Tier 2 growth stocks (Dec 9, 2025)
-    # Added NVDA, GOOGL, AMZN to allow more trading opportunities during R&D phase
-    return ["SPY", "QQQ", "VOO", "NVDA", "GOOGL", "AMZN"]
+    raw = os.getenv("TARGET_TICKERS", "SPY,QQQ,VOO")
+    return [ticker.strip().upper() for ticker in raw.split(",") if ticker.strip()]
 
 
 def is_weekend() -> bool:
@@ -390,12 +337,7 @@ def _apply_dynamic_daily_budget(logger) -> float | None:
 
 
 def execute_crypto_trading() -> None:
-    """Execute crypto trading strategy.
-
-    Dec 10, 2025: Added CryptoWeekendAgent integration for mean-reversion
-    strategy on weekends. The agent identifies RSI oversold conditions
-    and provides buy signals with higher confidence on weekends.
-    """
+    """Execute crypto trading strategy."""
     from src.core.alpaca_trader import AlpacaTrader
     from src.risk.unified import UnifiedRiskManager as RiskManager
     from src.strategies.crypto_strategy import CryptoStrategy
@@ -405,45 +347,15 @@ def execute_crypto_trading() -> None:
     logger.info("CRYPTO TRADING MODE")
     logger.info("=" * 80)
 
-    # Dec 10, 2025: Use CryptoWeekendAgent for weekend mean-reversion signals
-    if is_weekend():
-        try:
-            from src.agents.crypto_weekend_agent import CryptoWeekendAgent
-
-            weekend_agent = CryptoWeekendAgent()
-            logger.info("🌙 WEEKEND DETECTED - Using CryptoWeekendAgent for mean-reversion signals")
-
-            # Scan for oversold opportunities
-            opportunities = weekend_agent.scan_opportunities()
-            for signal in opportunities:
-                if signal.is_buy and signal.confidence > 0.7:
-                    logger.info(
-                        f"📈 Weekend mean-reversion opportunity: {signal.symbol} "
-                        f"RSI={signal.rsi:.1f}, Confidence={signal.confidence:.1%}"
-                    )
-                    logger.info(f"   Rationale: {signal.rationale}")
-                elif signal.is_sell:
-                    logger.info(f"📉 Weekend exit signal: {signal.symbol} RSI={signal.rsi:.1f}")
-
-            if not opportunities:
-                logger.info("No weekend mean-reversion opportunities found")
-        except ImportError as e:
-            logger.warning(f"CryptoWeekendAgent not available: {e}")
-        except Exception as e:
-            logger.warning(f"Weekend agent scan failed (non-fatal): {e}")
-
     try:
-        # Initialize dependencies - MUST have valid trader for crypto
+        # Initialize dependencies
+        trader = None
         try:
             trader = AlpacaTrader(paper=True)
-            logger.info(
-                f"✅ AlpacaTrader initialized in {'PAPER' if trader.paper else 'LIVE'} mode"
-            )
         except Exception as e:
-            logger.error(f"❌ Trading API unavailable - cannot execute crypto trades: {e}")
-            logger.error("   -> Crypto trading requires valid Alpaca credentials")
-            logger.error("   -> Set ALPACA_API_KEY and ALPACA_SECRET_KEY in .env")
-            raise RuntimeError(f"Crypto trading failed: Alpaca API unavailable - {e}") from e
+            logger.warning(f"⚠️  Trading API unavailable (Missing Keys?): {e}")
+            logger.warning("   -> Proceeding in ANALYSIS/INTERNAL SIMULATION mode.")
+            trader = None
 
         risk_manager = RiskManager(
             full_params=dict(
@@ -492,7 +404,7 @@ def execute_crypto_trading() -> None:
                     "status": "FILLED" if hasattr(order, "status") else "FILLED",
                     "strategy": "CryptoStrategy",
                     "reason": order.reason,
-                    "mode": "PAPER" if trader.paper else "LIVE",
+                    "mode": "ANALYSIS" if trader is None else "LIVE",
                 }
                 daily_trades.append(trade_record)
 
@@ -528,147 +440,6 @@ def execute_crypto_trading() -> None:
 def prediction_enabled() -> bool:
     """Feature flag for prediction markets (Kalshi)."""
     return os.getenv("ENABLE_PREDICTION_MARKETS", "true").lower() in {"1", "true", "yes"}
-
-
-def options_enabled() -> bool:
-    """Feature flag for options trading (theta harvest)."""
-    return os.getenv("ENABLE_OPTIONS_TRADING", "true").lower() in {"1", "true", "yes"}
-
-
-def execute_options_trading() -> None:
-    """
-    Execute theta harvest options trading strategy.
-
-    Options strategies are enabled based on equity gates:
-    - $5k+: Poor man's covered calls
-    - $10k+: Iron condors
-    - $25k+: Full options suite
-    """
-    logger = setup_logging()
-    logger.info("=" * 80)
-    logger.info("OPTIONS TRADING MODE (Theta Harvest)")
-    logger.info("=" * 80)
-
-    try:
-        # Import theta executor
-        from src.analytics.options_profit_planner import ThetaHarvestExecutor
-        from src.core.alpaca_trader import AlpacaTrader
-
-        # Get current account equity to determine available strategies
-        try:
-            trader = AlpacaTrader(paper=True)
-            account = trader.get_account_info()
-            account_equity = float(account.get("equity", 0.0))
-            logger.info(f"📊 Current account equity: ${account_equity:.2f}")
-        except Exception as e:
-            logger.error(f"❌ Failed to fetch account equity: {e}")
-            logger.info("   -> Options trading requires account equity information")
-            return
-
-        # Initialize theta executor with paper trading enabled
-        executor = ThetaHarvestExecutor(paper=True, auto_execute=True)
-
-        # Check equity gates
-        gate = executor.check_equity_gate(account_equity)
-        logger.info(f"🔐 Equity gate status: {gate}")
-
-        if not gate["theta_enabled"]:
-            logger.info(
-                f"⚠️  Options trading disabled - equity ${account_equity:.2f} "
-                f"below minimum ${gate.get('gap_to_next_tier', 5000):.2f}"
-            )
-            logger.info(
-                f"   -> Need ${gate['gap_to_next_tier']:.2f} more to unlock "
-                f"{gate['next_tier']} strategy"
-            )
-            return
-
-        # Generate theta plan for target symbols
-        symbols = ["SPY", "QQQ", "IWM"]
-        regime_label = os.getenv("MARKET_REGIME", "calm")  # Can be set by regime detector
-
-        logger.info(f"🎯 Generating theta plan for {', '.join(symbols)} in {regime_label} regime")
-        plan = executor.generate_theta_plan(
-            account_equity=account_equity, regime_label=regime_label, symbols=symbols
-        )
-
-        # Log plan summary
-        logger.info(f"📋 Theta Plan Summary: {plan.get('summary', 'No summary')}")
-        logger.info(f"   Opportunities found: {len(plan.get('opportunities', []))}")
-        logger.info(f"   Est. daily premium: ${plan.get('total_estimated_premium', 0):.2f}")
-        logger.info(f"   Premium gap to target: ${plan.get('premium_gap', 0):.2f}")
-
-        # Execute theta trades if opportunities found
-        opportunities = plan.get("opportunities", [])
-        if opportunities:
-            logger.info(f"✅ Executing {len(opportunities)} theta opportunities...")
-
-            # Persist plan to daily trades file
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            trades_file = Path(f"data/trades_{today_str}.json")
-
-            # Load existing trades
-            if trades_file.exists():
-                try:
-                    with open(trades_file) as f:
-                        daily_trades = json.load(f)
-                except Exception:
-                    daily_trades = []
-            else:
-                daily_trades = []
-
-            # Record each executed opportunity
-            for opp in opportunities:
-                if opp.get("executed"):
-                    trade_record = {
-                        "symbol": opp.get("symbol"),
-                        "action": "SELL_TO_OPEN",
-                        "amount": opp.get("estimated_premium", 0),
-                        "quantity": opp.get("contracts", 1),
-                        "price": opp.get("limit_price"),
-                        "timestamp": datetime.now().isoformat(),
-                        "status": "FILLED" if opp.get("executed") else "PENDING",
-                        "strategy": f"ThetaHarvest_{opp.get('strategy', 'unknown')}",
-                        "reason": opp.get("reason", "Theta harvest opportunity"),
-                        "mode": "PAPER",
-                        "option_symbol": opp.get("option_symbol"),
-                        "expiration": opp.get("expiration"),
-                        "strike": opp.get("strike"),
-                        "iv_percentile": opp.get("iv_percentile"),
-                    }
-                    daily_trades.append(trade_record)
-                    logger.info(
-                        f"   💾 Recorded: {opp.get('strategy')} {opp.get('symbol')} "
-                        f"x{opp.get('contracts')} for ${opp.get('estimated_premium', 0):.2f}"
-                    )
-
-            # Write back to daily trades file
-            if any(opp.get("executed") for opp in opportunities):
-                with open(trades_file, "w") as f:
-                    json.dump(daily_trades, f, indent=4)
-                logger.info(f"💾 Options trades saved to {trades_file}")
-
-                # Update performance log
-                try:
-                    import subprocess
-
-                    subprocess.run(
-                        [sys.executable, "scripts/update_performance_log.py"],
-                        check=False,
-                        env=os.environ.copy(),
-                    )
-                    logger.info("✅ Performance log updated")
-                except Exception as e:
-                    logger.warning(f"Failed to update performance log: {e}")
-        else:
-            logger.info("⚠️  No theta opportunities found (market conditions not favorable)")
-
-    except ImportError as e:
-        logger.warning(f"⚠️  Options trading not available: {e}")
-        logger.info("   -> Install required dependencies: pip install yfinance")
-    except Exception as e:
-        logger.error(f"❌ Options trading failed: {e}", exc_info=True)
-        # Don't raise - options are supplementary, shouldn't crash main workflow
 
 
 def execute_prediction_trading() -> None:
@@ -972,14 +743,6 @@ def main() -> None:
                 raise
 
     print("::notice::2/5 Post-trading hooks done", flush=True)
-
-    # Execute options trading after equity strategies (Tier 7 - Options)
-    # Options trade during market hours alongside equities
-    options_allowed = options_enabled()
-    if options_allowed and not (is_weekend_day or is_holiday):
-        logger.info("Executing Tier 7 - Options Trading (Theta Harvest)...")
-        execute_options_trading()
-        logger.info("Options trading session completed.")
 
     # Generate profit target report and wire recommendations into budget
     try:

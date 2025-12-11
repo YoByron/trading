@@ -5,6 +5,8 @@ Provides centralized error tracking for the trading system.
 Integrates with GitHub Actions, workflow failures, and runtime errors.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 

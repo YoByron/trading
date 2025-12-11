@@ -101,7 +101,6 @@ class AlpacaTrader:
         "T2_GROWTH": 0.20,  # 20% of daily investment
         "T3_IPO": 0.10,  # 10% of daily investment
         "T4_CROWD": 0.10,  # 10% of daily investment
-        "CRYPTO": 1.00,  # Crypto uses separate $10/day allocation (not from equity budget)
     }
 
     # Safety multiplier: reject orders >10x expected amount
@@ -411,28 +410,6 @@ class AlpacaTrader:
             # But we can calculate qty from notional if we have a price.
             # For qty-based orders, we can use limit.
             use_limit_order = self.config.USE_LIMIT_ORDERS and quote is not None
-
-            # ============================================================
-            # SPREAD VALIDATION: Reject orders with excessively wide spreads
-            # ============================================================
-            max_spread_pct = float(os.getenv("MAX_BID_ASK_SPREAD_PCT", "2.0")) / 100
-            if quote and quote["bid"] > 0:
-                spread = quote["ask"] - quote["bid"]
-                mid_price = (quote["ask"] + quote["bid"]) / 2
-                spread_pct = spread / mid_price if mid_price > 0 else 0
-
-                if spread_pct > max_spread_pct:
-                    raise OrderExecutionError(
-                        f"Spread too wide for {symbol}: {spread_pct * 100:.2f}% "
-                        f"(bid=${quote['bid']:.2f}, ask=${quote['ask']:.2f}). "
-                        f"Max allowed: {max_spread_pct * 100:.1f}%"
-                    )
-                elif spread_pct > max_spread_pct * 0.5:
-                    # Warn on moderately wide spreads (>1% if max is 2%)
-                    logger.warning(
-                        f"Moderately wide spread for {symbol}: {spread_pct * 100:.2f}% "
-                        f"(bid=${quote['bid']:.2f}, ask=${quote['ask']:.2f})"
-                    )
 
             if quote:
                 # Set intended price based on side

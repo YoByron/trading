@@ -34,18 +34,6 @@ from src.core.prompt_engineering import (
     PromptEngineer,
 )
 
-# Psychology integration - inject bias mitigation into LLM prompts
-try:
-    from src.coaching.mental_toughness_coach import get_prompt_context as get_psychology_context
-
-    PSYCHOLOGY_AVAILABLE = True
-except ImportError:
-    PSYCHOLOGY_AVAILABLE = False
-
-    def get_psychology_context() -> str:
-        return ""  # No-op if coaching not available
-
-
 # OpenAI client - optional dependency (may use OpenRouter instead)
 try:
     from openai import AsyncOpenAI, OpenAI
@@ -700,13 +688,8 @@ Format your response as JSON:
 }}
 """
 
-        # Build system prompt with psychology context injection
-        base_prompt = """You are an expert financial analyst specializing in market sentiment analysis.
+        system_prompt = """You are an expert financial analyst specializing in market sentiment analysis.
 Provide objective, data-driven sentiment scores based on technical indicators and news sentiment."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         if self.use_async:
             responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
@@ -760,13 +743,8 @@ Format your response as JSON:
 }}
 """
 
-        # Build system prompt with psychology context injection
-        base_prompt = """You are an expert financial analyst specializing in market sentiment analysis.
+        system_prompt = """You are an expert financial analyst specializing in market sentiment analysis.
 Provide objective, data-driven sentiment scores with detailed reasoning."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         if self.use_async:
             responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
@@ -1145,14 +1123,9 @@ Format your response as JSON:
 }}
 """
 
-        # Build system prompt with psychology context injection
-        base_prompt = """You are an expert IPO analyst with deep experience evaluating pre-IPO companies.
+        system_prompt = """You are an expert IPO analyst with deep experience evaluating pre-IPO companies.
 Provide thorough, objective analysis considering market conditions, company fundamentals,
 valuation, competitive landscape, and risk factors."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         if self.use_async:
             responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
@@ -1272,13 +1245,8 @@ Format your response as JSON:
 }}
 """
 
-        # Build system prompt with psychology context injection
-        base_prompt = """You are an expert stock analyst with expertise in technical analysis,
+        system_prompt = """You are an expert stock analyst with expertise in technical analysis,
 fundamental analysis, and market sentiment. Provide objective, actionable recommendations."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         if self.use_async:
             responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
@@ -1379,13 +1347,8 @@ Format your response as JSON:
 }
 """
 
-        # Build system prompt with psychology context injection
-        base_prompt = """You are a senior market strategist with expertise in macroeconomic analysis,
+        system_prompt = """You are a senior market strategist with expertise in macroeconomic analysis,
 market trends, and investment strategy. Provide comprehensive, balanced market outlook."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         if self.use_async:
             responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.5)
@@ -2022,13 +1985,8 @@ Provide:
 6. Potential concerns or risks
 
 Format your response clearly with reasoning."""
-        # Build system prompt with psychology context injection
-        base_prompt = """You are an expert trading analyst. Provide objective, data-driven
+        system_prompt = """You are an expert trading analyst. Provide objective, data-driven
 trading recommendations based on technical analysis, market conditions, and risk management principles."""
-
-        # Inject psychology context (bias mitigation, state awareness)
-        psychology_context = get_psychology_context() if PSYCHOLOGY_AVAILABLE else ""
-        system_prompt = base_prompt + psychology_context
 
         return await self.query_council(query, system_prompt, include_reviews=True)
 

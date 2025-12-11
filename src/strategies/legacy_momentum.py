@@ -45,23 +45,17 @@ class LegacyMomentumCalculator:
         self._provider = get_market_data_provider()
 
         # Runtime tunables (env)
-        # TIGHTENED THRESHOLDS (Dec 10, 2025): Fix 0% win rate by requiring confirmed signals
-        # Previous (R&D data collection): macd=-0.1, rsi=75, volume=0.6, adx=5.0
-        # Problem: 0% live win rate, negative Sharpe (-7 to -72), trades in ranging markets
-        # New: Require confirmed bullish signals in trending markets only
-        self.macd_threshold = float(
-            os.getenv("MOMENTUM_MACD_THRESHOLD", "0.0")
-        )  # Confirmed bullish
-        self.rsi_overbought = float(
-            os.getenv("MOMENTUM_RSI_OVERBOUGHT", "65.0")
-        )  # Avoid overbought
-        self.volume_min = float(os.getenv("MOMENTUM_VOLUME_MIN", "1.0"))  # Require avg+ volume
+        # RELAXED THRESHOLDS (Dec 4, 2025): Allow more trades through Gate 1
+        # Previous: macd=0.0 (bullish only), rsi=70, volume=0.8 → rejected 70-80% of candidates
+        # New: macd=-0.1 (near-crossover OK), rsi=75, volume=0.6 → more permissive
+        self.macd_threshold = float(os.getenv("MOMENTUM_MACD_THRESHOLD", "-0.1"))
+        self.rsi_overbought = float(os.getenv("MOMENTUM_RSI_OVERBOUGHT", "75.0"))
+        self.volume_min = float(os.getenv("MOMENTUM_VOLUME_MIN", "0.6"))
 
-        # ADX REGIME FILTER (Dec 10, 2025): Only trade in trending markets
-        # Research shows: ADX < 20 = ranging market with 50% whipsaw failure rate
-        # ADX 20-40 = trending (55-65% win rate), ADX 40+ = strong trend (65-75% win rate)
-        # Setting to 20.0 to filter out ranging markets that killed our win rate
-        self.adx_min = float(os.getenv("MOMENTUM_ADX_MIN", "20.0"))
+        # ADX REGIME FILTER (Dec 5, 2025): Skip trades in ranging/trendless markets
+        # ADX < 10 indicates very weak trend - lowered from 20 to allow more trades during R&D
+        # ADX 20-40 = moderate trend, ADX > 40 = strong trend
+        self.adx_min = float(os.getenv("MOMENTUM_ADX_MIN", "10.0"))
 
     def evaluate(self, symbol: str) -> MomentumPayload:
         result = self._provider.get_daily_bars(symbol, lookback_days=self.lookback_days)

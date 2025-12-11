@@ -98,7 +98,6 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `refactor:` - Code refactoring
 - `test:` - Adding or updating tests
 - `chore:` - Maintenance tasks
-- `perf:` - Performance improvements
 
 ### Pull Request Process
 
@@ -135,9 +134,6 @@ pytest tests/test_promotion_gate.py -v
 
 # Run with coverage
 pytest tests/ --cov=src --cov-report=html
-
-# Run smoke tests
-python tests/test_smoke.py
 ```
 
 ### Writing Tests
@@ -155,8 +151,6 @@ python tests/test_smoke.py
 - Use type hints
 - Maximum line length: 100 characters
 - Use descriptive variable names
-- We use `ruff` for linting and formatting
-- We use `mypy` for static type checking
 
 ### Documentation
 

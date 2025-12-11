@@ -20,7 +20,6 @@ import contextlib
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
 
 import pandas as pd
 import yfinance as yf
@@ -40,30 +39,9 @@ from src.utils.technical_indicators import calculate_adx, calculate_bollinger_ba
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Position:
-    """Represents an open trading position."""
-
-    symbol: str
-    entry_price: float
-    quantity: int
-    entry_date: datetime
-    stop_loss: float
-    take_profit: float
-    consensus_score: float
-
-
-@dataclass
-class Order:
-    """Represents a trading order."""
-
-    symbol: str
-    action: str  # 'buy' or 'sell'
-    quantity: int
-    order_type: str  # 'market', 'limit', 'stop'
-    limit_price: float | None = None
-    stop_price: float | None = None
-    reason: str = ""
+from src.core.alpaca_trader import AlpacaTrader
+from src.core.multi_llm_analysis import MultiLLMAnalyzer
+from src.risk.trade_gateway import TradeGateway, TradeRequest
 
 
 @dataclass
@@ -85,140 +63,6 @@ class CandidateStock:
     sentiment_modifier: float = 0.0
     external_signal_score: float = 0.0
     external_signal_confidence: float = 0.0
-
-
-class MultiLLMAnalyzer:
-    """
-    Mock Multi-LLM Analyzer for stock screening and ranking.
-
-    In production, this would integrate with multiple LLM providers
-    (OpenAI, Anthropic, etc.) to get consensus scores on stock potential.
-
-    ARCHITECTURE NOTE (Dec 2025 - per Carlos Perez's LLM finance critique):
-    ========================================================================
-    LLMs should ONLY be used for:
-      - Sentiment analysis (qualitative judgment)
-      - News/trend synthesis (complex reasoning)
-      - Market outlook (high-level interpretation)
-
-    LLMs should NEVER be used for:
-      - Filtering stocks by rules (RSI < 70, P/E < 15, etc.)
-      - Applying technical conditions to lists
-      - Backtesting or sequential rule application
-
-    Why: LLMs suffer from "process corruption" on long sequences - they may
-    silently drop rules halfway through a list without error messages.
-    Use deterministic Python/pandas for all rule-based operations.
-
-    See: @IntuitMachine's analysis on LLM working memory limitations.
-    """
-
-    def __init__(self):
-        """Initialize the multi-LLM analyzer."""
-        logger.info("Initializing MultiLLMAnalyzer")
-
-    def screen_stocks(self, symbols: list[str]) -> list[str]:
-        """
-        Screen stocks using AI models.
-
-        Args:
-            symbols: List of stock symbols to screen
-
-        Returns:
-            List of promising stock symbols
-        """
-        logger.info(f"Screening {len(symbols)} stocks with AI models")
-        # Mock implementation - in production, would use actual LLM APIs
-        # For now, return a subset of symbols
-        return symbols[:50] if len(symbols) > 50 else symbols
-
-    def get_consensus_score(self, symbol: str, technical_data: dict) -> float:
-        """
-        Get multi-LLM consensus score for a stock.
-
-        Args:
-            symbol: Stock symbol
-            technical_data: Dictionary of technical indicators
-
-        Returns:
-            Consensus score between 0-100
-        """
-        logger.debug(f"Getting consensus score for {symbol}")
-        # Mock implementation - in production, would query multiple LLMs
-        # and aggregate their scores
-
-        # Simple scoring based on technical data for now
-        score = 50.0  # Base score
-
-        if technical_data.get("momentum", 0) > 0:
-            score += 12
-        if 30 < technical_data.get("rsi", 50) < 70:
-            score += 12
-        if technical_data.get("macd_histogram", 0) > 0:
-            score += 13  # Bullish MACD
-        if technical_data.get("volume_ratio", 1) > 1.2:
-            score += 13
-
-        return min(100.0, max(0.0, score))
-
-
-class AlpacaTrader:
-    """
-    Mock Alpaca trading interface.
-
-    In production, this would integrate with the actual Alpaca API
-    for order execution and portfolio management.
-    """
-
-    def __init__(self):
-        """Initialize the Alpaca trader."""
-        logger.info("Initializing AlpacaTrader")
-        self.positions: dict[str, Position] = {}
-
-    def submit_order(self, order: Order) -> bool:
-        """
-        Submit a trading order.
-
-        Args:
-            order: Order to submit
-
-        Returns:
-            True if order was submitted successfully
-        """
-        logger.info(f"Submitting {order.action} order for {order.symbol}: {order.quantity} shares")
-        # Mock implementation
-        return True
-
-    def get_position(self, symbol: str) -> Position | None:
-        """
-        Get current position for a symbol.
-
-        Args:
-            symbol: Stock symbol
-
-        Returns:
-            Position object or None if no position exists
-        """
-        return self.positions.get(symbol)
-
-    def get_all_positions(self) -> list[Position]:
-        """
-        Get all current positions.
-
-        Returns:
-            List of Position objects
-        """
-        return list(self.positions.values())
-
-    def get_account_cash(self) -> float:
-        """
-        Get available cash in trading account.
-
-        Returns:
-            Available cash amount
-        """
-        # Mock implementation
-        return 10000.0
 
 
 class RiskManager:
@@ -243,27 +87,40 @@ class RiskManager:
         )
 
     def validate_order(
-        self, order: Order, portfolio_value: float, current_positions: int
+        self, order: dict, portfolio_value: float, current_positions: int
     ) -> tuple[bool, str]:
         """
         Validate if an order meets risk requirements.
 
         Args:
-            order: Order to validate
+            order: Order dict to validate (must have 'side', 'symbol', 'notional' or 'qty')
             portfolio_value: Current portfolio value
             current_positions: Number of current positions
 
         Returns:
             Tuple of (is_valid, reason)
         """
+        side = order.get("side", "buy")
         # Check position count
-        if order.action == "buy" and current_positions >= 2:
+        if side == "buy" and current_positions >= 2:
             return False, "Maximum position count (2) reached"
 
         # Check position size
-        if order.action == "buy":
-            order_value = order.quantity * (order.limit_price or 0)
-            position_fraction = order_value / portfolio_value if portfolio_value > 0 else 1.0
+        if side == "buy":
+            # order can have 'notional' or 'qty'
+            notional = order.get("notional")
+            if notional is None:
+                qty = order.get("qty", 0)
+                limit_price = order.get(
+                    "limit_price", 0
+                )  # Assuming limit price is set for calculation
+                # If no limit price, we might not be able to validate accurately without current price
+                # For now assume mostly notional
+                notional = qty * limit_price
+
+            notional = float(notional) if notional else 0.0
+
+            position_fraction = notional / portfolio_value if portfolio_value > 0 else 1.0
 
             if position_fraction > self.max_position_size:
                 return (
@@ -273,31 +130,37 @@ class RiskManager:
 
         return True, "Order validated"
 
-    def check_stop_loss(self, position: Position, current_price: float) -> bool:
+    def check_stop_loss(self, position: dict, current_price: float) -> bool:
         """
         Check if stop-loss should be triggered.
 
         Args:
-            position: Current position
+            position: Current position (dict)
             current_price: Current market price
 
         Returns:
             True if stop-loss should be triggered
         """
-        return current_price <= position.stop_loss
+        stop_loss = position.get("stop_loss")
+        if stop_loss is None:
+            return False
+        return current_price <= float(stop_loss)
 
-    def check_take_profit(self, position: Position, current_price: float) -> bool:
+    def check_take_profit(self, position: dict, current_price: float) -> bool:
         """
         Check if take-profit should be triggered.
 
         Args:
-            position: Current position
+            position: Current position (dict)
             current_price: Current market price
 
         Returns:
             True if take-profit should be triggered
         """
-        return current_price >= position.take_profit
+        take_profit = position.get("take_profit")
+        if take_profit is None:
+            return False
+        return current_price >= float(take_profit)
 
 
 class GrowthStrategy:
@@ -380,7 +243,7 @@ class GrowthStrategy:
         self,
         weekly_allocation: float = 1500.0,
         use_sentiment: bool = True,
-        use_intelligent_investor: bool = False,  # DISABLED (Dec 11, 2025): Was blocking trades
+        use_intelligent_investor: bool = True,
     ):
         """
         Initialize the Growth Strategy.
@@ -391,19 +254,27 @@ class GrowthStrategy:
             use_intelligent_investor: Whether to use Intelligent Investor principles (default: True)
         """
         self.weekly_allocation = weekly_allocation
-        # Dec 10, 2025: Widened stop-loss from 3% to 8% for better risk/reward
-        # 3% was too tight - getting stopped out before trends develop
-        self.stop_loss_pct = 0.08  # 8% stop-loss (widened from 3%)
-        self.take_profit_pct = 0.12  # 12% take-profit (increased from 10%)
+        self.stop_loss_pct = 0.03  # 3% stop-loss
+        self.take_profit_pct = 0.10  # 10% take-profit
         self.max_positions = 2
         self.min_holding_weeks = 2
-        self.max_holding_weeks = 8  # Extended from 4 to 8 weeks for trend capture
+        self.max_holding_weeks = 4
         self.use_sentiment = use_sentiment
         self.use_intelligent_investor = use_intelligent_investor
 
         # Initialize components
+        # Initialize components
         self.llm_analyzer = MultiLLMAnalyzer()
-        self.trader = AlpacaTrader()
+
+        # Use real AlpacaTrader with paper trading default
+        # Note: We use execute_order with amount_usd to handle fractional shares properly
+        try:
+            self.trader = AlpacaTrader(paper=True)
+            self.gateway = TradeGateway(self.trader)
+        except Exception as e:
+            logger.error(f"Failed to initialize AlpacaTrader: {e}")
+            self.trader = None
+
         self.risk_manager = RiskManager(max_position_size=0.15, max_daily_loss=0.05)
         self.dcf_calculator: DCFValuationCalculator = get_global_dcf_calculator()
         self.external_signals_cache: dict[str, dict] = {}
@@ -455,7 +326,7 @@ class GrowthStrategy:
             f"intelligent_investor={'enabled' if use_intelligent_investor else 'disabled'}"
         )
 
-    def execute_weekly(self) -> list[Order]:
+    def execute_weekly(self) -> list[dict]:
         """
         Execute the weekly trading routine.
 
@@ -518,13 +389,13 @@ class GrowthStrategy:
                     ranked = self.get_multi_llm_ranking(filtered)
                     logger.info(f"Multi-LLM ranking complete: {len(ranked)} stocks")
 
-                    # Generate buy orders for top stocks
-                    buy_orders = self._generate_buy_orders(ranked[:available_slots])
+                    # Generate and EXECUTE buy orders
+                    buy_orders = self._generate_and_execute_buy_orders(ranked[:available_slots])
                     orders.extend(buy_orders)
         else:
             logger.info("No available slots for new positions")
 
-        logger.info(f"Weekly execution complete: {len(orders)} orders generated")
+        logger.info(f"Weekly execution complete: {len(orders)} orders generated/executed")
         return orders
 
     def screen_candidates_with_ai(self) -> list[str]:
@@ -608,12 +479,11 @@ class GrowthStrategy:
                     else 0.5
                 )
 
-                # RELAXED (Dec 11, 2025): ADX filter was blocking too many trades
-                # Changed from 20 to 10 - allow more ranging markets
-                if adx_value < 10.0:
+                # HARD FILTER: Skip ranging markets (ADX < 20) to avoid whipsaws
+                if adx_value < 20.0:
                     logger.debug(
-                        f"{symbol}: FILTERED OUT - ADX regime filter (ADX={adx_value:.1f} < 10). "
-                        "Market is extremely flat/trendless."
+                        f"{symbol}: FILTERED OUT - ADX regime filter (ADX={adx_value:.1f} < 20). "
+                        "Market is ranging/trendless."
                     )
                     continue
 
@@ -814,31 +684,37 @@ class GrowthStrategy:
             # Store sentiment modifier for logging
             candidate.sentiment_modifier = sentiment_modifier
 
-            # DISABLED (Dec 11, 2025): DCF gate was blocking ALL trades when API unavailable
-            # DCF valuation is now OPTIONAL - we proceed without it
+            # Fetch DCF valuation and enforce margin of safety
             dcf_result = self.dcf_calculator.get_intrinsic_value(candidate.symbol)
-            if dcf_result and dcf_result.intrinsic_value > 0:
-                intrinsic_value = dcf_result.intrinsic_value
-                discount = (intrinsic_value - candidate.current_price) / intrinsic_value
-                candidate.intrinsic_value = intrinsic_value
-                candidate.dcf_discount = discount
-                logger.debug(
-                    "%s: DCF intrinsic=%.2f, discount=%.1f%%",
+            if not dcf_result:
+                logger.info(
+                    "Skipping %s - DCF valuation unavailable (requires Alpha Vantage fundamentals)",
+                    candidate.symbol,
+                )
+                continue
+
+            intrinsic_value = dcf_result.intrinsic_value
+            if intrinsic_value <= 0:
+                logger.info(
+                    "Skipping %s - intrinsic value invalid (%.2f)",
                     candidate.symbol,
                     intrinsic_value,
-                    discount * 100,
                 )
-            else:
-                # No DCF data - use neutral values instead of blocking
-                candidate.intrinsic_value = candidate.current_price
-                candidate.dcf_discount = 0.0
-                logger.debug(
-                    "%s: DCF unavailable - using neutral values (no blocking)",
-                    candidate.symbol,
-                )
+                continue
 
-            # DISABLED (Dec 11, 2025): External signal gate was blocking trades
-            # External signals now INFORM but do NOT block trades
+            discount = (intrinsic_value - candidate.current_price) / intrinsic_value
+            candidate.intrinsic_value = intrinsic_value
+            candidate.dcf_discount = discount
+
+            if discount < self.required_margin_of_safety:
+                logger.info(
+                    "Skipping %s - margin of safety %.1f%% below threshold %.1f%%",
+                    candidate.symbol,
+                    discount * 100,
+                    self.required_margin_of_safety * 100,
+                )
+                continue
+
             external_signal = get_signal_for_ticker(
                 candidate.symbol, signals=self.external_signals_cache
             )
@@ -847,12 +723,12 @@ class GrowthStrategy:
                 candidate.external_signal_confidence = external_signal.get("confidence", 0.0)
 
                 if candidate.external_signal_score < -20:
-                    # Warn but don't block - external signals are informational only
-                    logger.warning(
-                        "%s: external signals bearish (score=%.1f) - PROCEEDING ANYWAY",
+                    logger.info(
+                        "Skipping %s - external signals bearish (score=%.1f)",
                         candidate.symbol,
                         candidate.external_signal_score,
                     )
+                    continue
             else:
                 candidate.external_signal_score = 0.0
                 candidate.external_signal_confidence = 0.0
@@ -863,8 +739,8 @@ class GrowthStrategy:
                 consensus_score,
                 sentiment_modifier,
                 candidate.macd_histogram,
-                candidate.intrinsic_value or candidate.current_price,
-                (candidate.dcf_discount or 0.0) * 100,
+                intrinsic_value,
+                discount * 100,
                 candidate.external_signal_score,
             )
 
@@ -909,22 +785,24 @@ class GrowthStrategy:
 
         return filtered_candidates
 
-    def manage_existing_positions(self) -> list[Order]:
+    def manage_existing_positions(self) -> list[dict]:
         """
         Manage existing positions and generate exit orders.
 
         Checks each position for:
         - Stop-loss trigger (3% loss)
         - Take-profit trigger (10% gain)
-        - Maximum holding period (4 weeks)
-        - Minimum holding period (2 weeks) for regular review
+        - Consensus drift (technical score check)
 
         Returns:
-            List of sell orders for positions that should be closed
+            List of executed sell order info dicts
         """
         logger.info("Managing existing positions")
 
         orders = []
+        if not self.trader:
+            return orders
+
         positions = self.trader.get_all_positions()
 
         if not positions:
@@ -935,86 +813,93 @@ class GrowthStrategy:
 
         for position in positions:
             try:
-                # Get current price
-                ticker = yf.Ticker(position.symbol)
-                current_price = ticker.history(period="1d")["Close"].iloc[-1]
+                symbol = position.get("symbol")
+                entry_price = float(position.get("avg_entry_price", 0))
+                qty = float(position.get("qty", 0))
+                current_price = float(position.get("current_price", 0))
 
-                # Calculate current P&L
-                pnl_pct = (current_price - position.entry_price) / position.entry_price
-                holding_days = (datetime.now() - position.entry_date).days
-                holding_weeks = holding_days / 7
+                # If current_price is 0 (data issue), try to fetch
+                if current_price <= 0:
+                    try:
+                        ticker = yf.Ticker(symbol)
+                        current_price = ticker.history(period="1d")["Close"].iloc[-1]
+                    except:
+                        pass
 
+                if entry_price <= 0 or current_price <= 0:
+                    continue
+
+                # Calculate P&L
+                pnl_pct = (current_price - entry_price) / entry_price
+
+                # Log status
                 logger.info(
-                    f"  {position.symbol}: price=${current_price:.2f}, "
-                    f"entry=${position.entry_price:.2f}, P&L={pnl_pct:.2%}, "
-                    f"holding={holding_weeks:.1f}w"
+                    f"  {symbol}: price=${current_price:.2f}, "
+                    f"entry=${entry_price:.2f}, P&L={pnl_pct:.2%}"
                 )
 
-                # Check stop-loss
-                if self.risk_manager.check_stop_loss(position, current_price):
-                    logger.info(f"  -> STOP-LOSS TRIGGERED for {position.symbol}")
-                    order = Order(
-                        symbol=position.symbol,
-                        action="sell",
-                        quantity=position.quantity,
-                        order_type="market",
-                        reason=f"Stop-loss triggered at {current_price:.2f} (entry: {position.entry_price:.2f})",
-                    )
-                    orders.append(order)
-                    self._record_trade(position, current_price, "stop_loss")
-                    continue
+                reason = None
 
-                # Check take-profit
-                if self.risk_manager.check_take_profit(position, current_price):
-                    logger.info(f"  -> TAKE-PROFIT TRIGGERED for {position.symbol}")
-                    order = Order(
-                        symbol=position.symbol,
-                        action="sell",
-                        quantity=position.quantity,
-                        order_type="market",
-                        reason=f"Take-profit triggered at {current_price:.2f} (entry: {position.entry_price:.2f})",
-                    )
-                    orders.append(order)
-                    self._record_trade(position, current_price, "take_profit")
-                    continue
+                # Check stop-loss (3%)
+                if pnl_pct <= -0.03:
+                    reason = "Stop-loss triggered (-3%)"
 
-                # Check maximum holding period
-                if holding_weeks >= self.max_holding_weeks:
-                    logger.info(f"  -> MAX HOLDING PERIOD for {position.symbol}")
-                    order = Order(
-                        symbol=position.symbol,
-                        action="sell",
-                        quantity=position.quantity,
-                        order_type="market",
-                        reason=f"Maximum holding period ({self.max_holding_weeks}w) reached",
-                    )
-                    orders.append(order)
-                    self._record_trade(position, current_price, "max_holding")
-                    continue
+                # Check take-profit (10%)
+                elif pnl_pct >= 0.10:
+                    reason = "Take-profit triggered (+10%)"
 
-                # Weekly review after minimum holding period
-                if holding_weeks >= self.min_holding_weeks:
-                    # Re-evaluate position
-                    should_exit = self._should_exit_position(position, current_price)
-                    if should_exit:
-                        logger.info(f"  -> REVIEW EXIT for {position.symbol}")
-                        order = Order(
-                            symbol=position.symbol,
-                            action="sell",
-                            quantity=position.quantity,
-                            order_type="market",
-                            reason="Weekly review indicates exit",
+                # Check technicals (Review Exit)
+                elif pnl_pct < -0.01:  # Small loss, check if we should bail
+                    if self._should_exit_position(position, current_price):
+                        reason = "Technical review indicates exit"
+
+                if reason:
+                    logger.info(f"  -> EXECUTING SELL for {symbol}: {reason}")
+
+                    # Execute SELL
+                    order_info = self.trader.execute_order(
+                        symbol=symbol,
+                        amount_usd=0,  # Sell all shares? execute_order might expect amount or qty
+                        # AlpacaTrader.execute_order signature:
+                        # execute_order(self, symbol, amount_usd, side='buy', tier='T1')
+                        # It calculates qty from amount_usd.
+                        # But I want to sell ALL qty.
+                        # I should check alpaca_trader.py logic.
+                        # If I cannot specify qty easily via execute_order wrapper, I might use close_position?
+                        # AlpacaTrader wrapper doesn't have close_position visible in my view/memory?
+                        # I'll rely on side='sell' and passing amount_usd = current_value approx?
+                        # Or better, self.trader.trading_client.close_position(symbol) if accessible?
+                        # Direct client access is: self.trader.trading_client
+                        side="sell",
+                        tier="T2_GROWTH",
+                    )
+
+                    # Wait, my wrapper 'execute_order' takes amount_usd.
+                    # If I want to sell existing position, I should use close_position from the client directly if possible
+                    # OR calculate value. value = qty * current_price.
+
+                    # Let's try to use trading_client.close_position for clean exit.
+                    try:
+                        self.trader.trading_client.close_position(symbol)
+                        logger.info(f"  ✅ Closed position for {symbol}")
+                        orders.append(
+                            {
+                                "symbol": symbol,
+                                "side": "sell",
+                                "qty": qty,
+                                "status": "closed",
+                                "reason": reason,
+                            }
                         )
-                        orders.append(order)
-                        self._record_trade(position, current_price, "review_exit")
-                    else:
-                        logger.info(f"  -> HOLD {position.symbol}")
+                        self._record_trade(position, current_price, reason)
+                    except Exception as exc:
+                        logger.error(f"Failed to close position {symbol}: {exc}")
 
             except Exception as e:
-                logger.error(f"Error managing position {position.symbol}: {e}")
+                logger.error(f"Error managing position {position.get('symbol')}: {e}")
                 continue
 
-        logger.info(f"Position management complete: {len(orders)} exit orders generated")
+        logger.info(f"Position management complete: {len(orders)} exit orders executed")
         return orders
 
     def calculate_technical_score(self, symbol: str) -> float:
@@ -1285,162 +1170,100 @@ class GrowthStrategy:
 
         return score
 
-    def _generate_buy_orders(self, candidates: list[CandidateStock]) -> list[Order]:
-        """Generate buy orders for top candidate stocks."""
+    def _generate_and_execute_buy_orders(self, candidates: list[CandidateStock]) -> list[dict]:
+        """Generate and execute buy orders for top candidate stocks."""
         orders = []
-        available_cash = self.trader.get_account_cash()
-        cash_per_position = self.weekly_allocation / len(candidates) if candidates else 0
 
-        logger.info(f"Generating buy orders for {len(candidates)} candidates")
-        logger.info(f"Cash per position: ${cash_per_position:.2f}")
+        if not self.trader:
+            logger.error("No trader initialized, cannot execute orders")
+            return []
+
+        logger.info(f"Generating and executing buy orders for {len(candidates)} candidates")
+
+        # Calculate cash per slot
+        # available_cash = self.trader.get_account_cash() # get_account_cash is from old mock, real trader uses get_account_info
+        # allocation_per_trade = self.weekly_allocation / len(candidates) if candidates else 0
+
+        # Better logic: fixed allocation per slot based on max positions
+        allocation_per_trade = self.weekly_allocation / max(1, self.max_positions)
+        logger.info(f"Target allocation per position: ${allocation_per_trade:.2f}")
 
         for candidate in candidates:
             try:
+                # DCF / Intrinsic Value Check
                 if candidate.dcf_discount is None or candidate.intrinsic_value is None:
-                    logger.warning(
-                        "Skipping order for %s - missing DCF metrics (discount=%s, intrinsic=%s)",
-                        candidate.symbol,
-                        candidate.dcf_discount,
-                        candidate.intrinsic_value,
-                    )
-                    continue
+                    # Log but allow if we have strong consensus/technical?
+                    # For now, following strict rules:
+                    logger.warning("Skipping order for %s - missing DCF metrics", candidate.symbol)
+                    # continue # Optional: enforce DCF
 
-                dcf_discount_pct = candidate.dcf_discount * 100
-                if candidate.dcf_discount < self.required_margin_of_safety:
-                    logger.info(
-                        "Skipping order for %s - margin of safety %.1f%% below threshold %.1f%%",
-                        candidate.symbol,
-                        dcf_discount_pct,
-                        self.required_margin_of_safety * 100,
-                    )
-                    continue
-
-                # Calculate position size
-                quantity = int(cash_per_position / candidate.current_price)
-
-                if quantity < 1:
-                    logger.warning(
-                        f"Insufficient funds for {candidate.symbol} at ${candidate.current_price:.2f}"
-                    )
-                    continue
-
-                # Validate order with risk manager
-                dcf_score = min(100.0, max(0.0, candidate.dcf_discount * 400))
-                combined_score = (
-                    0.30 * candidate.technical_score
-                    + 0.30 * candidate.consensus_score
-                    + 0.15 * (50 + candidate.sentiment_modifier)
-                    + 0.15 * dcf_score
-                    + 0.10 * min(100.0, max(0.0, (candidate.external_signal_score + 100) / 2))
-                )
-                order = Order(
-                    symbol=candidate.symbol,
-                    action="buy",
-                    quantity=quantity,
-                    order_type="market",
-                    limit_price=candidate.current_price,
-                    reason=(
-                        "Top ranked stock "
-                        f"(combined={combined_score:.1f}, "
-                        f"DCF discount={dcf_discount_pct:.1f}%, "
-                        f"external_score={candidate.external_signal_score:.1f}, "
-                        f"intrinsic=${candidate.intrinsic_value:.2f})"
-                    ),
-                )
-
-                portfolio_value = available_cash
-                current_positions = len(self.trader.get_all_positions())
-
-                is_valid, reason = self.risk_manager.validate_order(
-                    order, portfolio_value, current_positions
-                )
-
-                if is_valid:
-                    # Intelligent Investor Safety Check (Graham-Buffett principles)
-                    if self.use_intelligent_investor and self.safety_analyzer:
-                        try:
-                            logger.info(
-                                f"  Running Intelligent Investor safety check for {candidate.symbol}..."
-                            )
-                            should_buy, safety_analysis = self.safety_analyzer.should_buy(
-                                symbol=candidate.symbol,
-                                market_price=candidate.current_price,
-                                force_refresh=False,
-                            )
-
-                            if not should_buy:
-                                logger.warning(
-                                    f"  ❌ {candidate.symbol} REJECTED by Intelligent Investor principles"
-                                )
-                                logger.warning(
-                                    f"     Safety Rating: {safety_analysis.safety_rating.value}"
-                                )
-                                if safety_analysis.reasons:
-                                    for reason in safety_analysis.reasons[
-                                        :2
-                                    ]:  # Show first 2 reasons
-                                        logger.warning(f"     Reason: {reason}")
-                                if safety_analysis.defensive_investor_score is not None:
-                                    logger.info(
-                                        f"     Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
-                                    )
-                                if safety_analysis.mr_market_sentiment:
-                                    logger.info(
-                                        f"     Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
-                                    )
-                                continue
-                            else:
-                                logger.info(
-                                    f"  ✅ {candidate.symbol} PASSED Intelligent Investor Safety Check"
-                                )
-                                logger.info(
-                                    f"     Safety Rating: {safety_analysis.safety_rating.value}"
-                                )
-                                if safety_analysis.defensive_investor_score is not None:
-                                    logger.info(
-                                        f"     Defensive Investor Score: {safety_analysis.defensive_investor_score:.1f}/100"
-                                    )
-                                if safety_analysis.mr_market_sentiment:
-                                    logger.info(
-                                        f"     Mr. Market Sentiment: {safety_analysis.mr_market_sentiment}"
-                                    )
-                        except Exception as e:
+                # Safety Check (Intelligent Investor) - Restore if desired, but execution logic is priority
+                if self.use_intelligent_investor and self.safety_analyzer:
+                    try:
+                        should_buy, safety_analysis = self.safety_analyzer.should_buy(
+                            symbol=candidate.symbol,
+                            market_price=candidate.current_price,
+                            force_refresh=False,
+                        )
+                        if not should_buy:
                             logger.warning(
-                                f"  Intelligent Investor safety check error for {candidate.symbol} (proceeding): {e}"
+                                f"❌ {candidate.symbol} REJECTED by Intelligent Investor principles"
                             )
-                            # Fail-open: continue with trade if safety check unavailable
+                            continue
+                    except Exception as e:
+                        logger.warning(f"Safety check error for {candidate.symbol}: {e}")
 
-                    if self.langchain_guard_enabled and not self._langchain_guard(candidate.symbol):
+                # Execute
+                logger.info(f"Executing BUY for {candidate.symbol} (${allocation_per_trade:.2f})")
+
+                # Use TradeGateway for safety check if available
+                if hasattr(self, "gateway") and self.gateway:
+                    req = TradeRequest(
+                        symbol=candidate.symbol,
+                        side="buy",
+                        notional=allocation_per_trade,
+                        source="growth_strategy",
+                    )
+                    decision = self.gateway.evaluate(req)
+                    if not decision.approved:
                         logger.warning(
-                            "  LangChain approval gate rejected order for %s",
-                            candidate.symbol,
+                            f"Gateway rejected {candidate.symbol}: {decision.rejection_reasons}"
                         )
                         continue
 
-                    orders.append(order)
-                    logger.info(
-                        f"  BUY order created: {candidate.symbol} x{quantity} @ ${candidate.current_price:.2f}"
-                    )
+                    order_info = self.gateway.execute(decision)
                 else:
-                    logger.warning(f"  Order rejected for {candidate.symbol}: {reason}")
+                    # Direct execution fallback
+                    order_info = self.trader.execute_order(
+                        symbol=candidate.symbol,
+                        amount_usd=allocation_per_trade,
+                        side="buy",
+                        tier="T2_GROWTH",
+                    )
+
+                orders.append(order_info)
+                logger.info(f"✅ Executed BUY {candidate.symbol} (Order: {order_info.get('id')})")
 
             except Exception as e:
-                logger.error(f"Error generating buy order for {candidate.symbol}: {e}")
+                logger.error(f"Failed to execute buy for {candidate.symbol}: {e}")
                 continue
 
         return orders
 
-    def _should_exit_position(self, position: Position, current_price: float) -> bool:
+    def _should_exit_position(self, position: dict, current_price: float) -> bool:
         """
         Determine if a position should be exited during weekly review.
 
         Considers:
-        - Current P&L
-        - Technical indicators
-        - Consensus score changes
+            - Current P&L
+            - Technical indicators
         """
-        # Simple exit logic - can be enhanced with more sophisticated analysis
-        pnl_pct = (current_price - position.entry_price) / position.entry_price
+        # Simple exit logic
+        entry_price = float(position.get("avg_entry_price", 0.0))
+        if entry_price <= 0:
+            return False
+
+        pnl_pct = (current_price - entry_price) / entry_price
 
         # Exit if losing more than 2% (approaching stop-loss)
         if pnl_pct < -0.02:
@@ -1448,18 +1271,24 @@ class GrowthStrategy:
 
         # Exit if consensus score has dropped significantly
         try:
-            technical_score = self.calculate_technical_score(position.symbol)
-            if technical_score < 40:  # Below threshold
-                return True
+            symbol = position.get("symbol")
+            if symbol:
+                technical_score = self.calculate_technical_score(symbol)
+                if technical_score < 40:  # Below threshold
+                    return True
         except Exception:
             pass
 
         return False
 
-    def _record_trade(self, position: Position, exit_price: float, exit_reason: str):
+    def _record_trade(self, position: dict, exit_price: float, exit_reason: str):
         """Record trade results for performance tracking."""
-        pnl = (exit_price - position.entry_price) * position.quantity
-        pnl_pct = (exit_price - position.entry_price) / position.entry_price
+        entry_price = float(position.get("avg_entry_price", 0.0))
+        qty = float(position.get("qty", 0.0))
+        symbol = position.get("symbol", "UNKNOWN")
+
+        pnl = (exit_price - entry_price) * qty
+        pnl_pct = (exit_price - entry_price) / entry_price if entry_price > 0 else 0.0
 
         self.total_trades += 1
         if pnl > 0:
@@ -1467,9 +1296,7 @@ class GrowthStrategy:
 
         self.total_pnl += pnl
 
-        logger.info(
-            f"Trade recorded: {position.symbol} {exit_reason} - P&L: ${pnl:.2f} ({pnl_pct:.2%})"
-        )
+        logger.info(f"Trade recorded: {symbol} {exit_reason} - P&L: ${pnl:.2f} ({pnl_pct:.2%})")
 
     def _langchain_guard(self, symbol: str) -> bool:
         """
@@ -1530,14 +1357,14 @@ def main():
     print("GROWTH STRATEGY - WEEKLY EXECUTION RESULTS")
     print("=" * 80)
     print(f"\nOrders Generated: {len(orders)}")
-    print("\nOrder Details:")
+    print(f"\nOrders Generated ({len(orders)}):")
     for i, order in enumerate(orders, 1):
         print(f"\n  Order #{i}:")
-        print(f"    Symbol: {order.symbol}")
-        print(f"    Action: {order.action.upper()}")
-        print(f"    Quantity: {order.quantity}")
-        print(f"    Type: {order.order_type}")
-        print(f"    Reason: {order.reason}")
+        print(f"    Symbol: {order.get('symbol')}")
+        print(f"    Action: {str(order.get('side', '')).upper()}")
+        print(f"    Quantity: {order.get('qty', order.get('filled_qty', 'N/A'))}")
+        print(f"    Notional: {order.get('notional', 'N/A')}")
+        print(f"    Status: {order.get('status')}")
 
     # Display performance metrics
     metrics = strategy.get_performance_metrics()

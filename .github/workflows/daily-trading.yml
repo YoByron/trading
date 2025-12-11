@@ -2,16 +2,13 @@ name: Daily Trading Execution
 
 on:
   schedule:
-    # Run every weekday at 3:55 PM Eastern (Market-on-Close execution)
-    # Dec 10, 2025: Changed from 9:35 AM to 3:55 PM
-    # RATIONALE: First 30 minutes of trading = "amateur hour" with high volatility
-    # and fake-outs. MOC execution captures the true daily trend.
+    # Run every weekday at 9:35 AM Eastern
     # AUTOMATIC DST HANDLING: Runs at both times to cover EST/EDT transitions
-    # EST (Nov-Mar): UTC-5 -> 3:55 PM ET = 20:55 UTC
-    # EDT (Mar-Nov): UTC-4 -> 3:55 PM ET = 19:55 UTC
-    # Run: python3 scripts/get_utc_time.py 15 55 1-5
+    # EST (Nov-Mar): UTC-5 -> 9:35 AM ET = 14:35 UTC
+    # EDT (Mar-Nov): UTC-4 -> 9:35 AM ET = 13:35 UTC
+    # Run: python3 scripts/get_utc_time.py 9 35 1-5
     # NOTE: On market holidays, the script automatically switches to crypto trading mode
-    - cron: '55 19,20 * * 1-5'   # 3:55 PM Eastern (covers both EST and EDT)
+    - cron: '35 13,14 * * 1-5'   # 9:35 AM Eastern (covers both EST and EDT)
   workflow_dispatch:
     inputs:
       force_trade:
@@ -165,21 +162,6 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
       ENABLE_WEEKEND_PROXY: 'false'
       ALLOW_PROMOTION_OVERRIDE: '1'  # Temporary override to allow trading while metrics are repaired
-      # Multi-broker failover for resilience (Alpaca → Tradier)
-      ENABLE_BROKER_FAILOVER: 'true'
-      TRADIER_API_KEY: ${{ secrets.TRADIER_API_KEY }}
-      TRADIER_ACCOUNT_NUMBER: ${{ secrets.TRADIER_ACCOUNT_NUMBER }}
-      # ============================================================
-      # STRATEGY ALLOCATION FIX (Dec 10, 2025)
-      # Problem: System was only trading Treasuries (SHY/IEF/TLT) during
-      # a bond bear market, resulting in negative Sharpe (-7 to -2086).
-      # Fix: Disable losing strategies, lower thresholds for equity trades.
-      # ============================================================
-      TREASURY_ALLOCATION_PCT: '0.0'      # Disable treasury ladder (bond bear market)
-      REIT_ALLOCATION_PCT: '0.0'          # Disable REITs (underperforming)
-      RL_CONFIDENCE_THRESHOLD: '0.30'     # Lower from 0.45 to allow more equity trades
-      MOMENTUM_MIN_SCORE: '-0.05'         # Allow slight negative momentum
-      LLM_NEGATIVE_SENTIMENT_THRESHOLD: '-0.3'  # More lenient sentiment filter
 
     steps:
       - name: Checkout repository
@@ -448,12 +430,8 @@ jobs:
           "
 
       - name: Enforce promotion gate
-        env:
-          # Per ll_009: Catch-22 - can't get good metrics without trades, can't trade without good metrics
-          # Override enabled until system has sufficient trade history to pass naturally
-          ALLOW_PROMOTION_OVERRIDE: "1"
         run: |
-          echo "🛡️  Enforcing promotion gate (with override during R&D phase)..."
+          echo "🛡️  Enforcing promotion gate..."
           ls -l scripts/enforce_promotion_gate.py
           python --version
           python scripts/enforce_promotion_gate.py
@@ -508,41 +486,21 @@ jobs:
           PAPER_TRADING: 'true'
           ENABLE_CRYPTO_AGENT: 'true'
           CRYPTO_DAILY_AMOUNT: ${{ secrets.CRYPTO_DAILY_AMOUNT || '10.00' }}
-          # FORCE_TRADE: Enable daily crypto DCA (bypass momentum filters)
-          # CEO directive Dec 10, 2025: Trade crypto every day, not just when signals align
-          FORCE_TRADE: 'true'
           # TURBO MODE: Enable ADK orchestrator
           ADK_ENABLED: ${{ secrets.ADK_ENABLED || '1' }}
           ADK_BASE_URL: ${{ secrets.ADK_BASE_URL || 'http://127.0.0.1:8080/api' }}
           ADK_APP_NAME: ${{ secrets.ADK_APP_NAME || 'trading_orchestrator' }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          # ============================================================
-          # SIMPLIFICATION MODE (Dec 10, 2025)
-          # Backtest Sharpe was -7 to -72 (all negative) with complex gates.
-          # Disabling all complexity to run simple Momentum + Risk strategy.
-          # Per Carver: "Simple rules beat complex ones"
-          # Per López de Prado: "Beware of backtest overfitting"
-          # ============================================================
-          # DISABLED: LLM sentiment gates (adding noise, not signal)
-          LANGCHAIN_ENABLE_MCP: 'false'
-          LLM_COUNCIL_ENABLED: 'false'
-          # DISABLED: DeepAgents planning (over-engineering)
-          DEEPAGENTS_ENABLED: 'false'
-          # DISABLED: RL filter (overfitting on limited data)
-          RL_FILTER_ENABLED: 'false'
-          # DISABLED: Debate agents (complexity without proven alpha)
-          ENABLE_DEBATE_AGENTS: 'false'
-          # DISABLED: Psychology coach (not core to trading edge)
-          ENABLE_PSYCHOLOGY_COACH: 'false'
-          # ============================================================
-          # ENABLED: Only core momentum + risk gates
-          # Gate 1: MomentumAgent (MACD, RSI, Volume) - ENABLED
-          # Gate 4: RiskManager (position sizing, stops) - ENABLED
-          # ============================================================
-          # RL feedback loop - CEO directive Dec 11, 2025: Enable continuous learning
-          ENABLE_RL_RETRAIN: ${{ secrets.ENABLE_RL_RETRAIN || 'true' }}
-          # RAG features - Enable for strategy insights from books/videos
-          ENABLE_RAG_FEATURES: ${{ secrets.ENABLE_RAG_FEATURES || 'true' }}
+          # Enable Langchain agents
+          LANGCHAIN_ENABLE_MCP: ${{ secrets.LANGCHAIN_ENABLE_MCP || 'true' }}
+          LANGCHAIN_MODEL: ${{ secrets.LANGCHAIN_MODEL || 'claude-3-5-sonnet-20241022' }}
+          # Enable all agent integrations (CEO directive Nov 24, 2025: $100/mo budget)
+          LLM_COUNCIL_ENABLED: ${{ secrets.LLM_COUNCIL_ENABLED || 'true' }}
+          DEEPAGENTS_ENABLED: ${{ secrets.DEEPAGENTS_ENABLED || 'true' }}
+          # RL feedback loop disabled by default (requires sklearn not in requirements-minimal.txt)
+          ENABLE_RL_RETRAIN: ${{ secrets.ENABLE_RL_RETRAIN || 'false' }}
+          # RAG features disabled by default in CI (sentence-transformers downloads from HuggingFace)
+          ENABLE_RAG_FEATURES: ${{ secrets.ENABLE_RAG_FEATURES || 'false' }}
         run: |
           echo "🚀 ========================================"
           echo "🚀 EXECUTING DAILY TRADING - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
@@ -735,113 +693,52 @@ jobs:
         id: check_state_changes
         if: steps.check_execution.outputs.skip != 'true'
         run: |
-          echo "🔍 Checking for trading data updates..."
+          echo "🔍 Checking for system_state.json updates..."
 
-          CHANGES_FOUND=false
-
-          # Check if system_state.json changed
-          if ! git diff --quiet data/system_state.json 2>/dev/null; then
-            echo "  ✓ system_state.json changed"
-            CHANGES_FOUND=true
-          fi
-
-          # Check if performance_log.json changed
-          if ! git diff --quiet data/performance_log.json 2>/dev/null; then
-            echo "  ✓ performance_log.json changed"
-            CHANGES_FOUND=true
-          fi
-
-          # Check for NEW or modified trade files (untracked or modified)
-          if git status --short data/trades_*.json 2>/dev/null | grep -q .; then
-            echo "  ✓ Trade files detected"
-            CHANGES_FOUND=true
-          fi
-
-          # Check for any untracked files in data/ directory
-          if git status --short data/ 2>/dev/null | grep -q "^??"; then
-            echo "  ✓ New data files detected"
-            CHANGES_FOUND=true
-          fi
-
-          if [ "$CHANGES_FOUND" = "true" ]; then
-            echo "state_changed=true" >> $GITHUB_OUTPUT
-            echo "✅ Trading data updates detected"
-            echo "Changes summary:"
-            git status --short data/ 2>/dev/null || true
-          else
+          # Check if system_state.json changed during execution
+          if git diff --quiet data/system_state.json; then
             echo "state_changed=false" >> $GITHUB_OUTPUT
-            echo "📋 No trading data changes detected"
+            echo "📋 No changes to system state"
+          else
+            echo "state_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ System state updated after trading"
+
+            # Show summary of changes
+            echo "Changes detected:"
+            git diff --stat data/system_state.json
           fi
 
       - name: Commit system state updates
         if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        continue-on-error: true  # Non-fatal - trading already succeeded
         run: |
-          echo "💾 Committing trading data updates..."
+          echo "💾 Committing system_state.json updates..."
 
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-          # Pull latest changes to avoid conflicts (with retry)
-          MAX_RETRIES=3
-          for i in $(seq 1 $MAX_RETRIES); do
-            if git pull --rebase origin main; then
-              echo "✅ Pull successful"
-              break
-            else
-              echo "⚠️  Pull attempt $i failed"
-              if [ $i -eq $MAX_RETRIES ]; then
-                echo "::error::Failed to pull after $MAX_RETRIES attempts"
-                # Try to abort rebase if stuck
-                git rebase --abort 2>/dev/null || true
-                git checkout main 2>/dev/null || true
-              fi
-              sleep 2
-            fi
-          done
+          # Pull latest changes to avoid conflicts
+          git pull --rebase origin main || {
+            echo "⚠️  Merge conflict detected - resolving..."
+            git checkout --ours data/system_state.json
+            git add data/system_state.json
+            git rebase --continue || echo "::warning::Rebase continue failed"
+          }
 
-          # Stage all trading data files
-          git add data/system_state.json 2>/dev/null || true
-          git add data/performance_log.json 2>/dev/null || true
-          git add data/trades_*.json 2>/dev/null || true
-          git add data/trades/*.json 2>/dev/null || true
-          git add data/last_run_status.json 2>/dev/null || true
-          git add dashboard.md 2>/dev/null || true
+          # Stage system_state.json
+          git add data/system_state.json
 
-          # Show what's being committed
-          echo "📋 Files staged for commit:"
-          git diff --cached --name-only
-
-          # Check if there are changes to commit
-          if git diff --cached --quiet; then
-            echo "📋 No changes to commit"
+          # Simple commit message (heredoc variables don't expand with 'EOF')
+          git commit -m "chore: Update system state after trading (${{ github.run_id }})" || {
+            echo "::warning::No changes to commit or commit failed"
             exit 0
-          fi
+          }
 
-          # Commit with descriptive message
-          git commit -m "chore: Update trading data after execution (${{ github.run_id }})"
-
-          # Push changes with retry and exponential backoff
-          PUSH_SUCCESS=false
-          for i in 1 2 3 4; do
-            echo "🚀 Push attempt $i..."
-            if git push origin main; then
-              PUSH_SUCCESS=true
-              echo "✅ Push successful!"
-              break
-            else
-              echo "⚠️  Push attempt $i failed"
-              WAIT_TIME=$((2 ** i))
-              echo "   Waiting ${WAIT_TIME}s before retry..."
-              sleep $WAIT_TIME
-            fi
-          done
-
-          if [ "$PUSH_SUCCESS" = "false" ]; then
-            echo "::error::❌ CRITICAL: Failed to push trading data after 4 attempts!"
-            echo "::error::Data was committed locally but NOT pushed to remote."
-            echo "::error::Manual intervention required: git push origin main"
-            exit 1
-          fi
+          # Push changes
+          git push origin main || {
+            echo "::warning::Push failed - may need manual sync"
+            exit 0
+          }
 
           echo "✅ System state changes committed and pushed"
 

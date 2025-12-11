@@ -74,16 +74,6 @@ except ImportError:
     LLM_COUNCIL_AVAILABLE = False
     TradingCouncil = None
 
-# Kalshi Oracle integration (prediction markets as leading indicators)
-try:
-    from src.signals.kalshi_oracle import KalshiOracle, get_kalshi_oracle
-
-    KALSHI_ORACLE_AVAILABLE = True
-except ImportError:
-    KALSHI_ORACLE_AVAILABLE = False
-    KalshiOracle = None
-    get_kalshi_oracle = None
-
 # VCA Strategy integration
 try:
     from src.strategies.vca_strategy import VCACalculation, VCAStrategy
@@ -197,22 +187,20 @@ class CoreStrategy:
     MACD_SLOW_PERIOD = 26
     MACD_SIGNAL_PERIOD = 9
 
-    # Risk parameters - WIDENED for better risk/reward (Dec 10, 2025)
-    # Previous: 3% stop/profit was too tight - profit/trade ($0.39) < costs ($1.22)
-    # Analysis: Tight stops resulted in -7 to -2086 Sharpe ratios across all scenarios
-    # New: 7% stop / 10% profit allows capturing larger moves to overcome costs
-    DEFAULT_STOP_LOSS_PCT = 0.07  # 7% stop loss (wider for trend following)
-    ATR_STOP_MULTIPLIER = 2.5  # ATR multiplier for dynamic stops (increased)
+    # Risk parameters - TIGHTENED for active trading (Dec 3, 2025)
+    # Previous: 5% stop/profit resulted in 0 closed trades, 0% win rate
+    # New: 3% thresholds ensure positions are actively managed
+    DEFAULT_STOP_LOSS_PCT = 0.03  # 3% stop loss (tighter for active trading)
+    ATR_STOP_MULTIPLIER = 2.0  # ATR multiplier for dynamic stops
     USE_ATR_STOPS = True  # Use ATR-based stops (more adaptive)
     REBALANCE_THRESHOLD = 0.05  # 5% deviation triggers rebalance (research-optimized)
     REBALANCE_FREQUENCY_DAYS = 90  # Quarterly rebalancing (research-optimized)
 
-    # Profit-taking parameters - WIDENED to capture larger moves
-    # 10% target means avg profit/trade can exceed transaction costs
-    TAKE_PROFIT_PCT = 0.10  # 10% profit target (trend following)
+    # Profit-taking parameters - TIGHTENED for active trading
+    TAKE_PROFIT_PCT = 0.03  # 3% profit target (active trading)
 
-    # Time-based exit parameters (ADJUSTED Dec 10, 2025)
-    MAX_HOLDING_DAYS = 30  # Extended from 10 to 30 days for trend capture
+    # Time-based exit parameters (NEW Dec 3, 2025)
+    MAX_HOLDING_DAYS = 10  # Close positions after 10 days regardless of P/L
     ENABLE_MOMENTUM_EXIT = True  # Exit on MACD bearish crossover
 
     # Diversification allocation (guaranteed minimums)
@@ -380,10 +368,7 @@ class CoreStrategy:
 
         # Initialize LLM Council (ENABLED BY DEFAULT per CEO directive Nov 24, 2025)
         # CEO directive: Enable all systems with $100/mo budget - move fast towards North Star
-        # DISABLED (Dec 11, 2025): LLM Council was blocking trades
-        # Gates audit revealed too many AI validators blocking progress
-        # Re-enable via env var LLM_COUNCIL_ENABLED=true when strategy is profitable
-        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "false").lower() == "true"
+        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "true"
         self._llm_council = None
         if self.llm_council_enabled and LLM_COUNCIL_AVAILABLE and TradingCouncil:
             try:
@@ -395,8 +380,7 @@ class CoreStrategy:
 
         # Initialize Intelligent Investor safety analyzer
         self.use_intelligent_investor = (
-            # DISABLED (Dec 11, 2025): Was blocking trades
-            os.getenv("USE_INTELLIGENT_INVESTOR", "false").lower() == "true"
+            os.getenv("USE_INTELLIGENT_INVESTOR", "true").lower() == "true"
         )
         if self.use_intelligent_investor:
             try:
@@ -407,21 +391,6 @@ class CoreStrategy:
                 self.safety_analyzer = None
         else:
             self.safety_analyzer = None
-
-        # Initialize Kalshi Oracle (prediction markets as leading indicators)
-        # ENABLED BY DEFAULT per CEO directive - use prediction markets as data oracles
-        # DISABLED (Dec 11, 2025): Was blocking trades
-        self.use_kalshi_oracle = os.getenv("USE_KALSHI_ORACLE", "false").lower() == "true"
-        self.kalshi_oracle = None
-        if self.use_kalshi_oracle and KALSHI_ORACLE_AVAILABLE and get_kalshi_oracle:
-            try:
-                self.kalshi_oracle = get_kalshi_oracle()
-                logger.info(
-                    "Kalshi Oracle initialized - using prediction markets as leading indicators"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to initialize Kalshi Oracle: {e}")
-                self.kalshi_oracle = None
 
         allocation_mode = "VCA" if self.use_vca else "DCA"
         logger.info(
@@ -614,35 +583,6 @@ class CoreStrategy:
                 except Exception as e:
                     logger.warning(f"Gemini 3 validation error (proceeding): {e}")
                     # Fail-open: continue with trade if Gemini 3 unavailable
-
-            # Step 4.6: Kalshi Oracle Validation (prediction markets as leading indicators)
-            # Uses Kalshi odds to validate trade direction against macro signals
-            if self.use_kalshi_oracle and self.kalshi_oracle:
-                try:
-                    logger.info("Checking Kalshi Oracle for prediction market signals...")
-                    should_trade, kalshi_reason = self.kalshi_oracle.should_trade_symbol(
-                        symbol=best_etf, proposed_direction="buy"
-                    )
-
-                    if not should_trade:
-                        logger.warning(f"Kalshi Oracle contra-indicates trade: {kalshi_reason}")
-                        logger.info("SKIPPING TRADE - Prediction markets signal caution")
-                        _clear_pending_rl_state()
-                        return None
-                    else:
-                        logger.info(f"✅ Kalshi Oracle: {kalshi_reason}")
-
-                    # Also fetch any actionable signals for logging
-                    kalshi_signals = self.kalshi_oracle.get_all_signals()
-                    if kalshi_signals:
-                        for sig in kalshi_signals:
-                            logger.info(
-                                f"   Kalshi Signal: {sig.signal_type} → "
-                                f"{sig.direction.value} ({sig.confidence:.0%} confidence)"
-                            )
-                except Exception as e:
-                    logger.warning(f"Kalshi Oracle check error (proceeding): {e}")
-                    # Fail-open: continue with trade if Kalshi unavailable
 
             # Step 5: Get current price
             current_price = self._get_current_price(best_etf)

@@ -37,7 +37,7 @@ class TestKalshiClientInit:
         """Test initialization with email/password."""
         client = KalshiClient(
             email="test@example.com",
-            password="REDACTED_TEST",
+            password="testpass",
             paper=True,
         )
 
@@ -50,7 +50,7 @@ class TestKalshiClientInit:
         """Test initialization for production."""
         client = KalshiClient(
             email="test@example.com",
-            password="REDACTED_TEST",
+            password="testpass",
             paper=False,
         )
 
@@ -60,7 +60,7 @@ class TestKalshiClientInit:
         """Test is_configured with credentials."""
         client = KalshiClient(
             email="test@example.com",
-            password="REDACTED_TEST",
+            password="testpass",
         )
 
         assert client.is_configured() is True
@@ -186,7 +186,7 @@ class TestKalshiClientMocked:
         """Create client with mocked auth."""
         client = KalshiClient(
             email="test@example.com",
-            password="REDACTED_TEST",
+            password="testpass",
             paper=True,
         )
 
@@ -375,7 +375,7 @@ class TestKalshiOrderSideValidation:
 
     def test_valid_yes_side(self):
         """Test valid YES side."""
-        KalshiClient(email="test@example.com", password="REDACTED_TEST")
+        KalshiClient(email="test@example.com", password="pass")
         # Validation happens in place_order, tested via mocked tests
         assert KalshiOrderSide.YES.value == "yes"
 
