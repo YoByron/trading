@@ -12,6 +12,14 @@ import holidays
 from src.agents.macro_agent import MacroeconomicAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
+
+# Mental toughness coaching (Dec 2025 - wire into trading flow)
+try:
+    from src.coaching.mental_toughness_coach import MentalToughnessCoach
+
+    COACHING_AVAILABLE = True
+except ImportError:
+    COACHING_AVAILABLE = False
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.integrations.playwright_mcp import SentimentScraper, TradeVerifier
@@ -184,6 +192,20 @@ class TradingOrchestrator:
             except Exception as e:
                 logger.warning(f"IntrospectiveCouncil init failed: {e}")
 
+        # Gate 0: Mental Toughness Coaching (Dec 2025 - psychology before execution)
+        self.mental_coach: MentalToughnessCoach | None = None
+        enable_coaching = os.getenv("ENABLE_MENTAL_COACHING", "true").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if enable_coaching and COACHING_AVAILABLE:
+            try:
+                self.mental_coach = MentalToughnessCoach()
+                logger.info("Gate 0: MentalToughnessCoach initialized (psychology-informed trading)")
+            except Exception as e:
+                logger.warning(f"MentalToughnessCoach init failed: {e}")
+
     def run(self) -> None:
         session_profile = self._build_session_profile()
         active_tickers = session_profile["tickers"]
@@ -270,11 +292,38 @@ class TradingOrchestrator:
             ", ".join(active_tickers),
         )
 
+        # Gate 0 Check: Are we psychologically ready to trade?
+        if self.mental_coach:
+            is_ready, intervention = self.mental_coach.is_ready_to_trade()
+            if not is_ready:
+                logger.warning(
+                    "🛑 Mental Coach: NOT READY TO TRADE - %s",
+                    intervention.title if intervention else "Low readiness",
+                )
+                self.telemetry.record(
+                    event_type="coaching.circuit_breaker",
+                    ticker="SYSTEM",
+                    status="blocked",
+                    payload={
+                        "reason": intervention.title if intervention else "Low readiness",
+                        "readiness": self.mental_coach.state.get_readiness_score(),
+                    },
+                )
+                # Still manage positions (exits), but skip new entries
+                self._manage_open_positions()
+                return
+
         # CRITICAL: Manage existing positions FIRST (exits before entries)
         # This ensures win/loss tracking works properly
         self._manage_open_positions()
 
         for ticker in active_tickers:
+            # Pre-trade psychology check for each ticker
+            if self.mental_coach:
+                pre_trade = self.mental_coach.pre_trade_check(ticker)
+                if pre_trade:
+                    logger.info("🧠 Pre-trade coaching for %s: %s", ticker, pre_trade.title)
+
             self._process_ticker(ticker, rl_threshold=session_profile["rl_threshold"])
 
         # Allocate any unused DCA budget into the safety bucket
@@ -495,6 +544,30 @@ class TradingOrchestrator:
                     logger.info(
                         f"✅ Closed {symbol}: {reason} (P/L: {position.unrealized_plpc * 100:.2f}%)"
                     )
+
+                    # Mental toughness coaching: Process closed trade result
+                    if self.mental_coach:
+                        is_win = position.unrealized_plpc > 0
+                        pnl_amount = position.current_price * position.quantity - position.entry_price * position.quantity
+                        interventions = self.mental_coach.process_trade_result(
+                            is_win=is_win,
+                            pnl=pnl_amount,
+                            ticker=symbol,
+                            trade_reason=reason,
+                        )
+                        for intervention in interventions:
+                            logger.info(f"🧠 Post-trade coaching for {symbol}: {intervention.title}")
+                        self.telemetry.record(
+                            event_type="coaching.post_trade",
+                            ticker=symbol,
+                            status="win" if is_win else "loss",
+                            payload={
+                                "pnl": pnl_amount,
+                                "interventions": [i.title for i in interventions],
+                                "zone": self.mental_coach.state.current_zone.value,
+                                "readiness": self.mental_coach.state.get_readiness_score(),
+                            },
+                        )
 
                 except Exception as e:
                     logger.error(f"Error executing exit for {exit_info.get('symbol')}: {e}")

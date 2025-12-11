@@ -271,7 +271,7 @@ def _apply_daily_input_scaling(logger) -> None:
 
 def crypto_enabled() -> bool:
     """Feature flag for the legacy crypto branch."""
-    return os.getenv("ENABLE_CRYPTO_AGENT", "false").lower() in {"1", "true", "yes"}
+    return os.getenv("ENABLE_CRYPTO_AGENT", "true").lower() in {"1", "true", "yes"}
 
 
 def crypto_daily_enabled() -> bool:

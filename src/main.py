@@ -226,7 +226,8 @@ class TradingOrchestrator:
         self.skills = get_skills()  # Initialize Claude Skills
 
         # Elite Orchestrator (planning-first multi-agent system)
-        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "false").lower() == "true"
+        # ENABLED BY DEFAULT per CEO directive Nov 24, 2025
+        elite_enabled = os.getenv("ELITE_ORCHESTRATOR_ENABLED", "true").lower() == "true"
         self.elite_orchestrator: EliteOrchestrator | None = None
 
         # Autonomous Meta-Agents
@@ -513,7 +514,8 @@ class TradingOrchestrator:
                 self.logger.info("ADK orchestrator integration disabled via ADK_ENABLED=0")
 
             # Initialize DeepAgents adapter
-            deepagents_enabled_env = os.getenv("DEEPAGENTS_ENABLED", "false").lower()
+            # ENABLED BY DEFAULT per CEO directive Nov 24, 2025
+            deepagents_enabled_env = os.getenv("DEEPAGENTS_ENABLED", "true").lower()
             deepagents_enabled = deepagents_enabled_env not in {
                 "0",
                 "false",
