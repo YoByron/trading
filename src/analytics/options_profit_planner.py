@@ -402,7 +402,7 @@ class ThetaHarvestExecutor:
     ) -> None:
         self.paper = paper
         self.planner = OptionsProfitPlanner()
-        env_flag = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower()
+        env_flag = os.getenv("ENABLE_THETA_AUTOMATION", "true").lower()
         self.auto_execute = (
             auto_execute
             if auto_execute is not None

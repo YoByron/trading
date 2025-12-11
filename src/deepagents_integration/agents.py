@@ -6,8 +6,25 @@ from __future__ import annotations
 
 import logging
 
-from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
+
+# init_chat_model moved in langchain 0.3.x - use lazy import with fallback
+try:
+    from langchain.chat_models import init_chat_model
+except ImportError:
+    # Fallback: create a simple wrapper that uses ChatAnthropic directly
+    def init_chat_model(model_name: str, **kwargs) -> BaseChatModel:
+        """Fallback init_chat_model for langchain 0.3.x compatibility."""
+        if "anthropic" in model_name.lower() or "claude" in model_name.lower():
+            from langchain_anthropic import ChatAnthropic
+            return ChatAnthropic(model=model_name, **kwargs)
+        elif "openai" in model_name.lower() or "gpt" in model_name.lower():
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(model=model_name, **kwargs)
+        else:
+            # Generic fallback
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(model=model_name, **kwargs)
 
 from .mcp_tools import build_mcp_tools_for_deepagents
 from .tools import build_trading_tools
