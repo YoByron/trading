@@ -1,0 +1,58 @@
+name: Debug Trade
+
+on:
+  push:
+    paths:
+      - '.github/DEBUG_TRADE'
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check secrets
+        env:
+          HAS_KEY: ${{ secrets.ALPACA_API_KEY != '' }}
+          HAS_SECRET: ${{ secrets.ALPACA_SECRET_KEY != '' }}
+        run: |
+          echo "ALPACA_API_KEY exists: $HAS_KEY"
+          echo "ALPACA_SECRET_KEY exists: $HAS_SECRET"
+          
+      - name: List all secrets (names only)
+        run: |
+          echo "Checking environment..."
+          env | grep -i alpaca || echo "No ALPACA vars in env"
+          
+      - name: Try trade
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          pip install alpaca-py
+          python3 << 'PY'
+import os
+print("ALPACA_API_KEY length:", len(os.environ.get("ALPACA_API_KEY", "")))
+print("ALPACA_SECRET_KEY length:", len(os.environ.get("ALPACA_SECRET_KEY", "")))
+
+key = os.environ.get("ALPACA_API_KEY")
+secret = os.environ.get("ALPACA_SECRET_KEY")
+
+if not key:
+    print("ERROR: ALPACA_API_KEY is empty or not set")
+    exit(1)
+if not secret:
+    print("ERROR: ALPACA_SECRET_KEY is empty or not set")
+    exit(1)
+
+try:
+    from alpaca.trading.client import TradingClient
+    client = TradingClient(key, secret, paper=True)
+    account = client.get_account()
+    print(f"SUCCESS! Account equity: ${float(account.equity):,.2f}")
+except Exception as e:
+    print(f"ERROR connecting to Alpaca: {e}")
+    exit(1)
+PY
