@@ -1,18 +1,10 @@
 """
-Monitoring module for live trading performance tracking.
+Trading System Monitoring
 
-This module provides tools for monitoring live trading performance
-and comparing it against backtest expectations.
+Continuous monitoring daemon that watches for issues and alerts.
 """
 
-from src.monitoring.performance_monitor import (
-    LivePerformanceMonitor,
-    PerformanceAlert,
-    PerformanceComparison,
-)
+from .trading_daemon import TradingDaemon
+from .health_monitor import HealthMonitor
 
-__all__ = [
-    "LivePerformanceMonitor",
-    "PerformanceAlert",
-    "PerformanceComparison",
-]
+__all__ = ["TradingDaemon", "HealthMonitor"]
