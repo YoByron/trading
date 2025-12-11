@@ -123,3 +123,12 @@ repos:
         pass_filenames: false
         verbose: true
         stages: [pre-commit]
+
+      - id: detect-dead-code
+        name: Dead Code Detector
+        entry: python3 scripts/detect_dead_code.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        verbose: true
+        stages: [pre-commit]
