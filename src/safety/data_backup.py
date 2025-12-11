@@ -280,7 +280,9 @@ class DataBackup:
 
                 for member in tar.getmembers():
                     if is_safe_member(member, str(restore_path)):
-                        tar.extract(member, restore_path)
+                        tar.extract(
+                            member, restore_path
+                        )  # codeql[py/tarslip] - Path validated by is_safe_member
                     else:
                         logger.warning(f"Skipping unsafe file in backup: {member.name}")
 
