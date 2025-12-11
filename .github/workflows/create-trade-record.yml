@@ -1,0 +1,29 @@
+name: Create Trade Record
+
+on:
+  push:
+    paths:
+      - '.github/CREATE_RECORD'
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create trade record file
+        run: |
+          mkdir -p data
+          TODAY=$(date -u +%Y-%m-%d)
+          echo '[{"symbol":"MANUAL","action":"RECORD","note":"Created manually due to workflow failures","timestamp":"'$(date -u -Iseconds)'","status":"MANUAL_ENTRY"}]' > "data/trades_${TODAY}.json"
+          cat "data/trades_${TODAY}.json"
+      
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          git commit -m "chore: manual trade record for $(date -u +%Y-%m-%d) [skip ci]"
+          git push
