@@ -245,24 +245,7 @@ After comprehensive research, Interactive Brokers is the clear winner as the bes
 
 ## Final Recommendation
 
-### IMPLEMENTED FAILOVER ARCHITECTURE (Updated Dec 9, 2025)
-
-```
-Primary:   Alpaca     (self-clearing, best API)
-Secondary: IBKR       (enterprise-grade, battle-tested)
-Tertiary:  Tradier    (API-first cloud brokerage)
-```
-
-**Why Three Brokers?**
-- **True Redundancy**: Three different clearing infrastructures
-- **Risk Mitigation**: If one broker has issues, two backups available
-- **API Quality**: All three have official, production-grade APIs
-
-### PRIMARY: Alpaca (Current)
-
-Already implemented as our main broker with excellent API.
-
-### SECONDARY BACKUP: Interactive Brokers (IBKR)
+### PRIMARY BACKUP: Interactive Brokers (IBKR)
 
 **Rationale:**
 1. **Enterprise-Grade Reliability**: IBKR is the gold standard for algorithmic trading APIs
@@ -273,59 +256,66 @@ Already implemented as our main broker with excellent API.
 6. **Battle-Tested**: Used by professional quant traders and hedge funds worldwide
 7. **Active Community**: Extensive resources, books, tutorials available
 
-**Implementation Status:** ✅ Implemented in `src/brokers/ibkr_client.py`
+**Implementation Plan:**
+1. Open IBKR account (Pro tier for API access)
+2. Install TWS or IB Gateway (Gateway recommended for automation)
+3. Install official Python API: `pip install ibapi`
+4. Consider IBridgePy for easier integration
+5. Test extensively in paper trading mode
+6. Document integration in `/home/user/trading/docs/ibkr_integration.md`
 
-### TERTIARY BACKUP: Tradier (Updated - Dec 9, 2025)
+**Cost Considerations:**
+- No inactivity fees (2025 update)
+- Tiered commissions: $0.0005-$0.0035/share
+- For $10/day trading (~1-3 trades): $0.01-$0.10/trade
+- Monthly cost: ~$1-5 (negligible)
 
-**Rationale:**
-1. **Official REST API**: Best-in-class API designed for algorithmic trading
-2. **Cloud-Based**: No desktop client required
-3. **Low Commissions**: $0 stock trades, competitive options pricing
-4. **Real-Time Streaming**: Built-in quote streaming support
-5. **Simple Integration**: Clean REST API with excellent documentation
+### SECONDARY BACKUP: Tradier
 
-**Implementation Status:** ✅ Implemented in `src/brokers/tradier_client.py`
-
-**Environment Variables Required:**
-```bash
-TRADIER_ACCOUNT_NUMBER=your_account_number
-TRADIER_API_KEY=your_api_key
-```
+**Why Consider Tradier:**
+- Simpler setup than IBKR (no desktop client required)
+- Cloud-based API platform
+- Low fees
+- Good for rapid deployment if IBKR setup is blocked
 
 ### NOT RECOMMENDED:
 - ❌ **Robinhood**: Unofficial API, high risk of breakage
 - ❌ **E*TRADE**: Authentication limitations, not automation-friendly
 - ❌ **FirstTrade**: No API access
-- ❌ **Webull**: No official API available for retail traders
 - ⏸️ **Schwab**: Wait for clear retail API availability
 
 ---
 
-## Integration Status (Updated Dec 9, 2025)
+## Integration Timeline
 
-### Completed ✅
-- [x] Research broker alternatives
-- [x] Implement IBKR client (`src/brokers/ibkr_client.py`)
-- [x] Implement Tradier client (`src/brokers/tradier_client.py`)
-- [x] Create multi-broker failover system (`src/brokers/multi_broker.py`)
-- [x] Add circuit breaker patterns for resilience
-- [x] Integrate all three brokers into failover chain
+### Week 1: Research & Account Setup
+- [x] Research broker alternatives (COMPLETED)
+- [ ] Open IBKR account
+- [ ] Apply for API access
+- [ ] Set up paper trading account
 
-### Pending Account Setup
-- [ ] Open IBKR account (when ready for live trading)
-- [ ] Configure Tradier credentials (already set in .env)
-- [ ] Configure environment variables for each broker
-- [ ] Test paper trading on all three brokers
+### Week 2: Development Environment
+- [ ] Install IB Gateway
+- [ ] Install Python API
+- [ ] Test basic connectivity
+- [ ] Implement authentication
 
-### Stock Lending Setup (When Live)
-- [ ] Enable Alpaca FPSL program
-- [ ] Enable IBKR stock lending (if available)
-- [ ] Track combined lending income in system state
+### Week 3: Core Integration
+- [ ] Port Alpaca trading logic to IBKR API
+- [ ] Implement order placement
+- [ ] Implement position tracking
+- [ ] Implement account data retrieval
 
-### Go-Live Checklist
-- [ ] 30 days successful paper trading on primary
-- [ ] Verify failover works correctly
+### Week 4: Testing & Validation
+- [ ] Paper trading tests (50+ trades)
+- [ ] Validate all order types
+- [ ] Test error handling
+- [ ] Document integration
+
+### Go-Live Decision
+- [ ] 30 days successful paper trading
 - [ ] Zero critical bugs
+- [ ] Full feature parity with Alpaca
 - [ ] CEO approval
 
 ---
@@ -371,7 +361,6 @@ TRADIER_API_KEY=your_api_key
 ---
 
 **Document Created**: December 8, 2025
-**Last Updated**: December 9, 2025
 **Research Completed By**: Claude (CTO)
-**Status**: ✅ Implementation Complete
-**Architecture**: Alpaca → IBKR → Tradier (3-broker failover)
+**Status**: Ready for CEO Review
+**Next Action**: Await CEO approval to proceed with IBKR integration

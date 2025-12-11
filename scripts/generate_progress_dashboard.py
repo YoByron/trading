@@ -249,6 +249,118 @@ def format_psychology_section(psych_state: dict, coaching_log: list[dict]) -> st
     return section
 
 
+def format_ml_rag_status() -> str:
+    """Format ML/RAG system status section with honest metrics.
+
+    This shows the ACTUAL status of AI systems, not aspirational claims.
+    """
+    import os
+    from pathlib import Path
+
+    # Check RAG status
+    rag_store_path = Path("data/rag/in_memory_store.json")
+    chroma_path = Path("data/rag/chroma_db/chroma.sqlite3")
+
+    rag_docs = 0
+    rag_vectors = 0
+    rag_status = "❌ Not Available"
+
+    if rag_store_path.exists():
+        try:
+            import json
+            with open(rag_store_path) as f:
+                data = json.load(f)
+            rag_docs = len(data.get("documents", []))
+            # Vectors are generated at runtime, not stored in JSON
+            # Check if sentence-transformers is available
+            try:
+                from sentence_transformers import SentenceTransformer
+                rag_vectors = rag_docs  # Will be vectorized at runtime
+                rag_status = "✅ Active" if rag_docs > 0 else "⚠️ Empty"
+            except ImportError:
+                rag_status = "⚠️ No Embedder (keyword search only)"
+        except Exception:
+            pass
+
+    chroma_size = 0
+    if chroma_path.exists():
+        chroma_size = chroma_path.stat().st_size // 1024  # KB
+
+    # Check ML model status
+    rl_weights_path = Path("models/ml/rl_filter_weights.json")
+    transformer_path = Path("models/ml/rl_transformer_state.pt")
+    disco_path = Path("models/ml/disco_dqn.pt")
+
+    rl_weights_status = "✅ Loaded" if rl_weights_path.exists() else "❌ Missing"
+    transformer_status = "✅ Loaded" if transformer_path.exists() else "❌ Missing"
+    disco_status = "✅ Trained" if disco_path.exists() else "⚠️ Untrained (learning)"
+
+    # Check if ML is actually being used (look for recent predictions)
+    ml_decisions = 0
+    rule_decisions = 0
+    try:
+        runs_path = Path("data/trading_runs.jsonl")
+        if runs_path.exists():
+            lines = runs_path.read_text().splitlines()[-20:]  # Last 20 runs
+            for line in lines:
+                import json
+                run = json.loads(line)
+                if run.get("ml_decision"):
+                    ml_decisions += 1
+                else:
+                    rule_decisions += 1
+    except Exception:
+        pass
+
+    # Check psychology state
+    psych_path = Path("data/psychology_state.json")
+    coaching_log_path = Path("data/audit_trail/coaching_log.jsonl")
+    psych_active = psych_path.exists() and psych_path.stat().st_size > 10
+    coaching_active = coaching_log_path.exists() and coaching_log_path.stat().st_size > 10
+
+    section = f"""
+## 🤖 ML/AI System Status (Honest Assessment)
+
+> This section shows the **actual** status of AI systems, not aspirational claims.
+
+### RAG (Retrieval-Augmented Generation)
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Documents Ingested** | {rag_docs:,} | In-memory store |
+| **Vector Embeddings** | {"✅ Runtime" if rag_vectors > 0 else "❌ None"} | {"Computed on query" if rag_vectors > 0 else "No embedder available"} |
+| **ChromaDB** | {chroma_size} KB | Persistent vector store |
+| **Retrieval Status** | {rag_status} | |
+
+### ML Models
+
+| Model | Status | Training | Usage |
+|-------|--------|----------|-------|
+| **RL Filter Weights** | {rl_weights_status} | Hand-tuned heuristics | Gate 2 confidence scoring |
+| **Transformer Policy** | {transformer_status} | Pre-trained (307KB) | Context-aware signals |
+| **DiscoRL DQN** | {disco_status} | Learning from trades | 15% blend weight (unvalidated) |
+
+### AI Decision Attribution
+
+| Decision Source | Count | Percentage |
+|-----------------|-------|------------|
+| **🤖 ML/AI Decisions** | {ml_decisions} | {100 * ml_decisions / max(ml_decisions + rule_decisions, 1):.0f}% |
+| **📊 Rule-Based Decisions** | {rule_decisions} | {100 * rule_decisions / max(ml_decisions + rule_decisions, 1):.0f}% |
+
+### Mental Toughness System
+
+| Component | Status |
+|-----------|--------|
+| **Psychology State** | {"✅ Active" if psych_active else "⚠️ No state file"} |
+| **Coaching Log** | {"✅ Logging" if coaching_active else "⚠️ No interventions logged"} |
+
+**Honest Summary**: {"ML systems are scaffolded but not yet driving decisions. Trades are rule-based." if ml_decisions == 0 else f"ML is contributing to {ml_decisions} decisions."}
+
+---
+"""
+    return section
+
+
 def format_recent_runs(runs: list[dict]) -> str:
     if not runs:
         return "| — | — | — | — | — |"
@@ -591,6 +703,9 @@ def generate_dashboard() -> str:
     coaching_log = load_coaching_log(max_items=5)
     psychology_section = format_psychology_section(psych_state, coaching_log)
 
+    # Generate ML/RAG status section (honest assessment)
+    ml_rag_section = format_ml_rag_status()
+
     failure_banner = ""
     stale_banner = ""
     # Failure banner from last_run_status
@@ -752,6 +867,8 @@ def generate_dashboard() -> str:
 | **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
 
 {psychology_section}
+
+{ml_rag_section}
 
 ## 🩺 Recent Trading Runs
 
