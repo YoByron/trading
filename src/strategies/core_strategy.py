@@ -380,7 +380,10 @@ class CoreStrategy:
 
         # Initialize LLM Council (ENABLED BY DEFAULT per CEO directive Nov 24, 2025)
         # CEO directive: Enable all systems with $100/mo budget - move fast towards North Star
-        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "true").lower() == "true"
+        # DISABLED (Dec 11, 2025): LLM Council was blocking trades
+        # Gates audit revealed too many AI validators blocking progress
+        # Re-enable via env var LLM_COUNCIL_ENABLED=true when strategy is profitable
+        self.llm_council_enabled = os.getenv("LLM_COUNCIL_ENABLED", "false").lower() == "true"
         self._llm_council = None
         if self.llm_council_enabled and LLM_COUNCIL_AVAILABLE and TradingCouncil:
             try:
@@ -392,7 +395,8 @@ class CoreStrategy:
 
         # Initialize Intelligent Investor safety analyzer
         self.use_intelligent_investor = (
-            os.getenv("USE_INTELLIGENT_INVESTOR", "true").lower() == "true"
+            # DISABLED (Dec 11, 2025): Was blocking trades
+            os.getenv("USE_INTELLIGENT_INVESTOR", "false").lower() == "true"
         )
         if self.use_intelligent_investor:
             try:
@@ -406,7 +410,8 @@ class CoreStrategy:
 
         # Initialize Kalshi Oracle (prediction markets as leading indicators)
         # ENABLED BY DEFAULT per CEO directive - use prediction markets as data oracles
-        self.use_kalshi_oracle = os.getenv("USE_KALSHI_ORACLE", "true").lower() == "true"
+        # DISABLED (Dec 11, 2025): Was blocking trades
+        self.use_kalshi_oracle = os.getenv("USE_KALSHI_ORACLE", "false").lower() == "true"
         self.kalshi_oracle = None
         if self.use_kalshi_oracle and KALSHI_ORACLE_AVAILABLE and get_kalshi_oracle:
             try:
