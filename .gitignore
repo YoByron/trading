@@ -67,6 +67,8 @@ build/
 !data/.gitkeep
 !data/system_state.json
 !data/tier2_watchlist.json
+!data/performance_log.json
+!data/trades_*.json
 data/google_sheets_credentials.json
 
 # Local CI/CD
@@ -85,3 +87,14 @@ data/options_signals/
 data/trading_plans/
 data/evaluations/
 data/sentiment/news_*.json
+
+# Runtime artifacts and logs
+*.db
+manual_run*.txt
+failed_log.txt
+reports/*.txt
+data/audit_trail/
+data/sentiment/
+data/bronze/
+data/silver/
+data/gold/

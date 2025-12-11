@@ -114,7 +114,7 @@ class TradeGateway:
     MAX_SYMBOL_ALLOCATION_PCT = 0.15  # 15% max per symbol
     MAX_CORRELATION_THRESHOLD = 0.80  # 80% correlation threshold
     MAX_TRADES_PER_HOUR = 5  # Frequency limit
-    MIN_TRADE_BATCH = 200.0  # $200 minimum to reduce noise
+    MIN_TRADE_BATCH = 10.0  # $10 minimum - lowered from $200 to match daily investment
     MAX_DAILY_LOSS_PCT = 0.03  # 3% max daily loss
     MAX_DRAWDOWN_PCT = 0.10  # 10% max drawdown
     MAX_RISK_SCORE = 0.75  # Risk score threshold
@@ -568,7 +568,7 @@ class TradeGateway:
         if self.executor:
             try:
                 return float(self.executor.account_equity or 100000)
-            except:
+            except Exception:
                 pass
         return float(os.getenv("ACCOUNT_EQUITY", "100000"))
 
@@ -577,7 +577,7 @@ class TradeGateway:
         if self.executor:
             try:
                 return self.executor.get_positions() or []
-            except:
+            except Exception:
                 pass
         return []
 

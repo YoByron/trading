@@ -41,7 +41,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -111,7 +110,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 1
 
       # Note: pip cache is disabled to avoid large post-job tar uploads that
@@ -132,6 +130,8 @@ jobs:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
         run: |
           python3 -m pip install --upgrade pip
+          # Install multitasking with legacy setup.py to avoid pyproject.toml build issues
+          python3 -m pip install --no-build-isolation multitasking || python3 -m pip install multitasking==0.0.11
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Run backtest scenario matrix
@@ -155,7 +155,7 @@ jobs:
   # Main trading execution job
   execute-trading:
     runs-on: ubuntu-22.04  # Pinned Ubuntu version
-    timeout-minutes: 20  # Reduced from 30 since backtests are separate
+    timeout-minutes: 30  # Increased to handle retries
     needs: validate-and-test
     if: needs.validate-and-test.outputs.secrets_valid == 'true'
     env:
@@ -167,8 +167,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Always fetch latest to get any YouTube analysis updates
-          ref: main
+          # Use the ref that triggered the workflow (branch or main)
           fetch-depth: 1
 
       - name: Install uv (for MCP server)
@@ -221,6 +220,8 @@ jobs:
           PIP_DEFAULT_TIMEOUT: 300
         run: |
           python3 -m pip install --upgrade pip
+          # Install multitasking with legacy setup.py to avoid pyproject.toml build issues
+          python3 -m pip install --no-build-isolation multitasking || python3 -m pip install multitasking==0.0.11
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Set up Go for ADK orchestrator
@@ -450,7 +451,7 @@ jobs:
       - name: Pre-market health check
         id: health_check
         if: steps.check_execution.outputs.skip != 'true'
-        timeout-minutes: 1  # Fail fast if health check hangs
+        timeout-minutes: 5  # Increased from 1 to allow efficient API checks
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
@@ -470,11 +471,13 @@ jobs:
           fi
 
       - name: Execute daily trading
+        id: execute_trading
         if: steps.check_execution.outputs.skip != 'true' && steps.health_check.outputs.health_check_passed == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HELICONE_API_KEY: ${{ secrets.HELICONE_API_KEY }}
           ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
           # Phase 1: Polygon.io + Finnhub integration
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
@@ -494,8 +497,10 @@ jobs:
           # Enable all agent integrations (CEO directive Nov 24, 2025: $100/mo budget)
           LLM_COUNCIL_ENABLED: ${{ secrets.LLM_COUNCIL_ENABLED || 'true' }}
           DEEPAGENTS_ENABLED: ${{ secrets.DEEPAGENTS_ENABLED || 'true' }}
-          # Enable RL feedback loop (close the learning loop)
-          ENABLE_RL_RETRAIN: ${{ secrets.ENABLE_RL_RETRAIN || 'true' }}
+          # RL feedback loop disabled by default (requires sklearn not in requirements-minimal.txt)
+          ENABLE_RL_RETRAIN: ${{ secrets.ENABLE_RL_RETRAIN || 'false' }}
+          # RAG features disabled by default in CI (sentence-transformers downloads from HuggingFace)
+          ENABLE_RAG_FEATURES: ${{ secrets.ENABLE_RAG_FEATURES || 'false' }}
         run: |
           echo "🚀 ========================================"
           echo "🚀 EXECUTING DAILY TRADING - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
@@ -505,12 +510,71 @@ jobs:
           EXEC_START=$(date +%s)
 
           # Run the trading script and capture exit code
-          if python3 scripts/autonomous_trader.py; then
+          echo "🚀 Running autonomous_trader.py..."
+          echo "📦 Python path: $PYTHONPATH"
+          echo "📦 Working directory: $(pwd)"
+          echo "📦 Python version: $(python3 --version)"
+
+          # Test imports and instantiation first
+          echo "🔍 Testing critical imports and initialization..."
+          python3 -c "
+          import sys
+          import os
+          import traceback
+          sys.path.insert(0, '.')
+
+          # Test 1: Import orchestrator
+          try:
+              from src.orchestrator.main import TradingOrchestrator
+              print('✓ TradingOrchestrator import OK')
+          except Exception as e:
+              print(f'✗ TradingOrchestrator import FAILED: {e}')
+              traceback.print_exc()
+              sys.exit(2)
+
+          # Test 2: MacroAgent init
+          try:
+              from src.agents.macro_agent import MacroeconomicAgent
+              agent = MacroeconomicAgent()
+              print(f'✓ MacroeconomicAgent init OK (RAG store: {agent.rag_store is not None})')
+          except Exception as e:
+              print(f'⚠ MacroeconomicAgent init failed (non-fatal): {e}')
+
+          # Test 3: Orchestrator instantiation
+          try:
+              orch = TradingOrchestrator(tickers=['SPY'])
+              print('✓ TradingOrchestrator instantiation OK')
+          except Exception as e:
+              print(f'✗ TradingOrchestrator instantiation FAILED: {e}')
+              traceback.print_exc()
+              sys.exit(2)
+
+          print('✅ All pre-flight checks passed')
+          "
+
+          set +e  # Don't exit on error
+          # Run directly (not captured) to ensure all output is immediately visible
+          python3 -u scripts/autonomous_trader.py 2>&1 | tee /tmp/trading_output.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "::notice::BASH: Python exit code captured = $EXIT_CODE"
+          set -e
+
+          # Read output for later use if needed
+          OUTPUT=$(cat /tmp/trading_output.log 2>/dev/null || echo "No output captured")
+
+          if [ $EXIT_CODE -eq 0 ]; then
             EXEC_STATUS="SUCCESS"
+            echo "::notice::BASH: EXIT_CODE is 0 - SUCCESS branch"
             echo "✅ Trading execution completed successfully"
           else
             EXEC_STATUS="FAILED"
-            echo "❌ Trading execution failed with exit code $?"
+            echo "::error::BASH: EXIT_CODE is $EXIT_CODE - FAILURE branch"
+            echo "::error::Trading execution failed with exit code $EXIT_CODE"
+            echo "❌ Trading execution failed with exit code $EXIT_CODE"
+
+            # Save output for debugging
+            echo "$OUTPUT" > logs/trading_output.log 2>/dev/null || true
+            exit $EXIT_CODE
           fi
 
           # Track execution end
@@ -525,22 +589,95 @@ jobs:
           echo "   Date: $(date -u +'%Y-%m-%d')"
           echo "   Time: $(date -u +'%H:%M:%S UTC')"
 
-          # Verify trades were placed by checking system_state.json
-          if [ -f "data/system_state.json" ]; then
-            echo ""
-            echo "📈 PORTFOLIO STATUS:"
-            python3 - <<'PY'
-            import json
-            with open("data/system_state.json") as f:
-                state = json.load(f)
-            acct = state.get("account", {})
-            perf = state.get("performance", {})
-            print(f"   Equity: ${acct.get('current_equity', 0):,.2f}")
-            print(f"   P/L: ${acct.get('total_pl', 0):,.2f} ({acct.get('total_pl_pct', 0):.4f}%)")
-            print(f"   Total Trades: {perf.get('total_trades', 0)}")
-            print(f"   Win Rate: {perf.get('win_rate', 0):.1f}%")
-            PY
+          # Portfolio status moved to separate step to prevent failures
+
+      - name: Update performance log
+        if: steps.execute_trading.outcome == 'success'
+        continue-on-error: true  # Non-fatal - trading succeeded
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          PAPER_TRADING: 'true'
+        run: |
+          echo "📊 Updating performance log with current account data..."
+          python3 scripts/update_performance_log.py
+
+      - name: Verify Positions (Alpaca vs Local)
+        id: verify_positions
+        if: steps.execute_trading.outcome == 'success'
+        continue-on-error: true  # Non-fatal - trading succeeded, sync issues shouldn't fail workflow
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Verifying positions match between Alpaca and local state..."
+          python3 scripts/verify_positions.py || {
+            echo "::warning::Position mismatch detected! Our records don't match Alpaca."
+            echo "::warning::This is informational - Alpaca is source of truth. Local state may need sync."
+          }
+
+      - name: Verify Orders (Trust But Verify)
+        id: verify_orders
+        if: steps.execute_trading.outcome == 'success'
+        continue-on-error: true  # Non-fatal - Alpaca is source of truth
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Verifying orders in Alpaca match our trade logs..."
+          python3 scripts/verify_orders.py || {
+            echo "::warning::Order verification issue detected."
+            echo "::warning::This is informational - Alpaca API is the source of truth."
+          }
+
+      - name: P/L Sanity Check
+        id: sanity_check
+        if: always()
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "🔍 Running P/L sanity check..."
+          echo "   This detects zombie mode (system running but not trading)"
+
+          if python3 scripts/verify_pl_sanity.py --verbose; then
+            echo "✅ P/L sanity check passed - system is healthy"
+            echo "alert_reason=" >> $GITHUB_OUTPUT
+            echo "days_since_change=0" >> $GITHUB_OUTPUT
+            echo "days_since_trade=0" >> $GITHUB_OUTPUT
+          else
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 1 ]; then
+              echo "::error::🚨 P/L SANITY CHECK FAILED!"
+              echo "::error::Alert: ${{ steps.sanity_check.outputs.alert_reason }}"
+              echo "::error::Days since equity change: ${{ steps.sanity_check.outputs.days_since_change }}"
+              echo "::error::Days since last trade: ${{ steps.sanity_check.outputs.days_since_trade }}"
+              echo ""
+              echo "This indicates the system may be in zombie mode (running but not trading)."
+              echo "Review the performance log and recent trades immediately."
+              exit 1
+            else
+              echo "::warning::P/L sanity check script error (exit code $EXIT_CODE)"
+              echo "Continuing workflow but investigate the script failure."
+            fi
           fi
+
+      - name: ALERT - Trading step was skipped
+        if: |
+          always() &&
+          steps.check_execution.outputs.skip != 'true' &&
+          steps.health_check.outputs.health_check_passed == 'true' &&
+          steps.execute_trading.outcome == 'skipped'
+        run: |
+          echo "::error::CRITICAL: Trading step was SKIPPED despite passing all checks!"
+          echo "::error::This is the bug that caused 30+ days of silent failures."
+          echo "::error::Check workflow conditions and GITHUB_OUTPUT writes."
+          echo ""
+          echo "Debug info:"
+          echo "  check_execution.skip: ${{ steps.check_execution.outputs.skip }}"
+          echo "  health_check.passed: ${{ steps.health_check.outputs.health_check_passed }}"
+          echo "  execute_trading.outcome: ${{ steps.execute_trading.outcome }}"
+          exit 1
 
       - name: Record workflow execution
         if: always()
@@ -573,6 +710,7 @@ jobs:
 
       - name: Commit system state updates
         if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        continue-on-error: true  # Non-fatal - trading already succeeded
         run: |
           echo "💾 Committing system_state.json updates..."
 
@@ -582,40 +720,25 @@ jobs:
           # Pull latest changes to avoid conflicts
           git pull --rebase origin main || {
             echo "⚠️  Merge conflict detected - resolving..."
-
-            # Keep our version (trading execution takes precedence)
             git checkout --ours data/system_state.json
             git add data/system_state.json
-            git rebase --continue
+            git rebase --continue || echo "::warning::Rebase continue failed"
           }
 
           # Stage system_state.json
           git add data/system_state.json
 
-          # Create commit with trading execution details
-          git commit -m "$(cat <<'EOF'
-          chore: Update system state after trading execution
-
-          Daily trading execution completed and system state updated.
-
-          Execution details:
-          - Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          - Workflow: daily-trading.yml
-          - Run ID: ${{ github.run_id }}
-
-          Changes:
-          - Updated account balances
-          - Recorded trade execution results
-          - Updated performance metrics
-
-          🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-          Co-Authored-By: Claude <noreply@anthropic.com>
-          EOF
-          )"
+          # Simple commit message (heredoc variables don't expand with 'EOF')
+          git commit -m "chore: Update system state after trading (${{ github.run_id }})" || {
+            echo "::warning::No changes to commit or commit failed"
+            exit 0
+          }
 
           # Push changes
-          git push origin main
+          git push origin main || {
+            echo "::warning::Push failed - may need manual sync"
+            exit 0
+          }
 
           echo "✅ System state changes committed and pushed"
 

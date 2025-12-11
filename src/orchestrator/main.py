@@ -38,6 +38,14 @@ from src.signals.microstructure_features import MicrostructureFeatureExtractor
 from src.strategies.treasury_ladder_strategy import TreasuryLadderStrategy
 from src.utils.regime_detector import RegimeDetector
 
+# Mental Toughness Coach - Psychology-based trading guard (Dec 2025)
+try:
+    from src.coaching.mental_toughness_coach import MentalToughnessCoach
+
+    COACHING_AVAILABLE = True
+except ImportError:
+    COACHING_AVAILABLE = False
+
 # Introspective awareness imports (Dec 2025)
 try:
     from src.core.introspective_council import IntrospectiveCouncil
@@ -115,6 +123,22 @@ class TradingOrchestrator:
         self.smart_dca = SmartDCAAllocator()
         self.treasury_ladder_strategy = TreasuryLadderStrategy(paper=paper)
 
+        # Gate 0: Mental Toughness Coach - Prevents emotional/tilt trading
+        self.mental_coach: MentalToughnessCoach | None = None
+        enable_coaching = os.getenv("ENABLE_MENTAL_COACHING", "true").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if enable_coaching and COACHING_AVAILABLE:
+            try:
+                self.mental_coach = MentalToughnessCoach()
+                logger.info(
+                    "Gate 0: MentalToughnessCoach initialized (psychology-based trading guard)"
+                )
+            except Exception as e:
+                logger.warning(f"MentalToughnessCoach init failed: {e}")
+
         bias_dir = os.getenv("BIAS_DATA_DIR", "data/bias")
         self.bias_store = BiasStore(bias_dir)
         # Position manager for active exit management
@@ -188,25 +212,60 @@ class TradingOrchestrator:
         self.session_profile = session_profile
         self.smart_dca.reset_session(active_tickers)
 
-        # Gate 0: Mental Toughness - Start coaching session
+        # Gate 0: Mental Toughness Coach - Start session and check readiness
+        coaching_intervention = None
         if self.mental_coach:
-            coaching_start = self.mental_coach.start_session()
-            logger.info(
-                "🧠 Mental Coach: %s (Zone: %s, Readiness: %.0f%%)",
-                coaching_start.title,
-                self.mental_coach.state.current_zone.value,
-                self.mental_coach.state.get_readiness_score(),
-            )
-            self.telemetry.record(
-                event_type="coaching.session_start",
-                ticker="SYSTEM",
-                status="info",
-                payload={
-                    "intervention": coaching_start.title,
-                    "zone": self.mental_coach.state.current_zone.value,
-                    "readiness": self.mental_coach.state.get_readiness_score(),
-                },
-            )
+            try:
+                coaching_intervention = self.mental_coach.start_session()
+                state_summary = self.mental_coach.get_state_summary()
+
+                self.telemetry.record(
+                    event_type="coaching.session_start",
+                    ticker="SYSTEM",
+                    status="info",
+                    payload={
+                        "intervention": coaching_intervention.headline,
+                        "zone": state_summary["zone"],
+                        "readiness_score": state_summary["readiness_score"],
+                        "mental_energy": state_summary["mental_energy"],
+                        "active_biases": state_summary["active_biases"],
+                    },
+                )
+
+                logger.info(
+                    "Gate 0: Session started - Zone: %s, Readiness: %s, Energy: %s",
+                    state_summary["zone"],
+                    state_summary["readiness_score"],
+                    state_summary["mental_energy"],
+                )
+
+                # Check if ready to trade at all
+                ready, blocking_intervention = self.mental_coach.is_ready_to_trade()
+                if not ready:
+                    logger.warning(
+                        "Gate 0: BLOCKED - Not psychologically ready: %s",
+                        blocking_intervention.headline if blocking_intervention else "Unknown",
+                    )
+                    self.telemetry.record(
+                        event_type="coaching.session_blocked",
+                        ticker="SYSTEM",
+                        status="blocked",
+                        payload={
+                            "reason": blocking_intervention.headline
+                            if blocking_intervention
+                            else "Tilt/Danger zone",
+                            "message": blocking_intervention.message
+                            if blocking_intervention
+                            else "",
+                            "zone": state_summary["zone"],
+                        },
+                    )
+                    # In strict mode, abort the session entirely
+                    if os.getenv("COACHING_STRICT_MODE", "false").lower() in {"1", "true"}:
+                        logger.error("Gate 0: STRICT MODE - Session aborted due to mental state")
+                        return
+            except Exception as e:
+                logger.warning(f"Gate 0: Coaching check failed, continuing: {e}")
 
         # Determine the macro context for this session
         macro_context = self.macro_agent.get_macro_context()
@@ -279,6 +338,36 @@ class TradingOrchestrator:
         # Gate 6: Phil Town Rule #1 Options Strategy
         self.run_options_strategy()
 
+        # Gate 0: Mental Toughness Coach - End session with review
+        if self.mental_coach:
+            try:
+                end_intervention = self.mental_coach.end_session()
+                state_summary = self.mental_coach.get_state_summary()
+
+                self.telemetry.record(
+                    event_type="coaching.session_end",
+                    ticker="SYSTEM",
+                    status="completed",
+                    payload={
+                        "intervention": end_intervention.headline,
+                        "final_zone": state_summary["zone"],
+                        "final_readiness": state_summary["readiness_score"],
+                        "trades_today": state_summary["trades_today"],
+                        "consecutive_wins": state_summary["consecutive_wins"],
+                        "consecutive_losses": state_summary["consecutive_losses"],
+                        "active_biases": state_summary["active_biases"],
+                    },
+                )
+
+                logger.info(
+                    "Gate 0: Session ended - Zone: %s, Readiness: %s, Trades: %d",
+                    state_summary["zone"],
+                    state_summary["readiness_score"],
+                    state_summary["trades_today"],
+                )
+            except Exception as e:
+                logger.warning(f"Gate 0: Session end coaching failed: {e}")
+
     def _run_portfolio_strategies(self) -> None:
         """Run strategies that operate on the portfolio level."""
         logger.info("--- Running Portfolio-Level Strategies ---")
@@ -322,41 +411,33 @@ class TradingOrchestrator:
         except Exception as e:
             logger.error(f"Failed to run REIT Strategy: {e}", exc_info=True)
 
-        # --- Growth Strategy (Tier 2 - 20% allocation) with RAG Integration ---
-        # Re-enabled Dec 8, 2025: RAG-based sentiment now active for stock selection
+        # --- Growth Strategy (Tier 2) ---
         try:
             from src.strategies.growth_strategy import GrowthStrategy
 
-            growth_alloc_pct = float(os.getenv("GROWTH_ALLOCATION_PCT", "0.20"))
-            daily_investment = float(os.getenv("DAILY_INVESTMENT", "10.0"))
-            growth_amount = daily_investment * growth_alloc_pct
+            growth_strategy = GrowthStrategy(
+                weekly_allocation=float(os.getenv("GROWTH_WEEKLY_ALLOCATION", "1500.0")),
+                use_sentiment=True,
+                use_intelligent_investor=True,
+            )
 
-            if growth_amount >= 1.0:
-                logger.info(f"Executing Growth Strategy (RAG-enabled) with ${growth_amount:.2f}...")
-                growth_strategy = GrowthStrategy(
-                    trader=self.executor.trader,
-                    daily_budget=growth_amount,
-                )
-                # Execute weekly scan (will skip if not Monday unless forced)
-                is_monday = datetime.now().weekday() == 0
-                force_scan = os.getenv("FORCE_GROWTH_SCAN", "false").lower() in {"1", "true"}
+            # Check if it's Monday (run weekly)
+            # In production, we might want to run this check inside the strategy,
+            # but for now we'll trigger it if it's the start of the week or forced
+            is_monday = datetime.utcnow().weekday() == 0
+            force_growth = os.getenv("FORCE_GROWTH_RUN", "false").lower() in {"1", "true"}
 
-                if is_monday or force_scan:
-                    orders = growth_strategy.execute_daily()
-                    self.telemetry.record(
-                        event_type="strategy.growth",
-                        ticker="GROWTH_TIER2",
-                        status="executed",
-                        payload={
-                            "orders": len(orders) if orders else 0,
-                            "rag_enabled": growth_strategy.rag_db is not None,
-                            "amount": growth_amount,
-                        },
-                    )
-                else:
-                    logger.info("Skipping Growth Strategy: Only runs on Mondays (use FORCE_GROWTH_SCAN=true to override)")
+            if is_monday or force_growth:
+                logger.info("Executing Growth Strategy (Tier 2)...")
+                # Note: execute_weekly returns orders but handles its own execution internally via AlpacaTrader
+                # However, the class definition shows it returns orders and has a 'trader' attribute.
+                # We should verify if it executes or just returns orders.
+                # Looking at execute_weekly implementation: it calls self._generate_buy_orders which calls trader.submit_order
+                # So it seems to execute internally.
+                growth_strategy.execute_weekly()
             else:
-                logger.info("Skipping Growth Strategy: allocation amount is too small.")
+                logger.info("Skipping Growth Strategy: Runs weekly on Mondays.")
+
         except Exception as e:
             logger.error(f"Failed to run Growth Strategy: {e}", exc_info=True)
 
@@ -519,6 +600,7 @@ class TradingOrchestrator:
         Record a closed trade to system state for win/loss tracking.
 
         This updates the performance metrics that feed the win rate calculation.
+        Also feeds the Mental Toughness Coach for psychological state updates.
         """
         try:
             from scripts.state_manager import StateManager
@@ -554,12 +636,73 @@ class TradingOrchestrator:
             if total_closed > 0:
                 state_manager.state["performance"]["win_rate"] = (winning / total_closed) * 100
 
-            state_manager.save()
+            state_manager.save_state()
 
             logger.info(
                 f"Recorded closed trade: {symbol} {'WIN' if is_winner else 'LOSS'} "
                 f"(${pl:.2f}, {((exit_price - entry_price) / entry_price) * 100:.2f}%)"
             )
+
+            # Gate 0: Mental Toughness Coach - Process trade result for psychological state
+            if self.mental_coach:
+                try:
+                    coaching_interventions = self.mental_coach.process_trade_result(
+                        is_win=is_winner,
+                        pnl=pl,
+                        ticker=symbol,
+                        trade_reason=exit_reason,
+                    )
+
+                    state_summary = self.mental_coach.get_state_summary()
+
+                    # Log coaching feedback
+                    for intervention in coaching_interventions:
+                        logger.info(
+                            "Gate 0 Coaching: %s - %s",
+                            intervention.headline,
+                            intervention.message[:100] + "..."
+                            if len(intervention.message) > 100
+                            else intervention.message,
+                        )
+                        self.telemetry.record(
+                            event_type="coaching.intervention",
+                            ticker=symbol,
+                            status="triggered",
+                            payload={
+                                "intervention_type": intervention.intervention_type.value,
+                                "headline": intervention.headline,
+                                "severity": intervention.severity,
+                                "action_items": intervention.action_items,
+                                "zone": state_summary["zone"],
+                                "consecutive_wins": state_summary["consecutive_wins"],
+                                "consecutive_losses": state_summary["consecutive_losses"],
+                            },
+                        )
+
+                    # Check if we should stop trading due to psychological state
+                    ready, blocking_intervention = self.mental_coach.is_ready_to_trade()
+                    if not ready:
+                        logger.warning(
+                            "Gate 0: CIRCUIT BREAKER - Mental state degraded: %s",
+                            blocking_intervention.headline
+                            if blocking_intervention
+                            else "Tilt detected",
+                        )
+                        self.telemetry.record(
+                            event_type="coaching.circuit_breaker",
+                            ticker=symbol,
+                            status="triggered",
+                            payload={
+                                "reason": blocking_intervention.headline
+                                if blocking_intervention
+                                else "Mental state",
+                                "zone": state_summary["zone"],
+                                "readiness_score": state_summary["readiness_score"],
+                            },
+                        )
+
+                except Exception as coach_err:
+                    logger.warning(f"Gate 0: Coaching feedback failed: {coach_err}")
 
         except Exception as e:
             logger.error(f"Failed to record closed trade for {symbol}: {e}")
@@ -635,6 +778,51 @@ class TradingOrchestrator:
 
     def _process_ticker(self, ticker: str, rl_threshold: float) -> None:
         logger.info("--- Processing %s ---", ticker)
+
+        # Gate 0: Pre-trade psychological readiness check
+        if self.mental_coach:
+            try:
+                pre_trade_intervention = self.mental_coach.pre_trade_check(ticker)
+                if pre_trade_intervention:
+                    logger.info(
+                        "Gate 0 (%s): Pre-trade coaching - %s",
+                        ticker,
+                        pre_trade_intervention.headline,
+                    )
+                    self.telemetry.record(
+                        event_type="coaching.pre_trade",
+                        ticker=ticker,
+                        status="intervention",
+                        payload={
+                            "headline": pre_trade_intervention.headline,
+                            "severity": pre_trade_intervention.severity,
+                            "action_items": pre_trade_intervention.action_items,
+                        },
+                    )
+
+                # Check if still ready to trade (may have degraded during session)
+                ready, blocking_intervention = self.mental_coach.is_ready_to_trade()
+                if not ready:
+                    logger.warning(
+                        "Gate 0 (%s): SKIPPED - Not ready to trade: %s",
+                        ticker,
+                        blocking_intervention.headline if blocking_intervention else "Tilt/Danger",
+                    )
+                    self.telemetry.gate_reject(
+                        "coaching",
+                        ticker,
+                        {
+                            "reason": blocking_intervention.headline
+                            if blocking_intervention
+                            else "Mental state",
+                            "severity": blocking_intervention.severity
+                            if blocking_intervention
+                            else "critical",
+                        },
+                    )
+                    return
+            except Exception as e:
+                logger.warning(f"Gate 0 (%s): Pre-trade check failed, continuing: {e}", ticker)
 
         # Gate 1: deterministic momentum
         momentum_outcome = self.failure_manager.run(
@@ -1592,12 +1780,19 @@ class TradingOrchestrator:
 
         logger.info("--- Gate 6: Phil Town Rule #1 Options Strategy ---")
 
-        # UNIFIED OPTIONS STRATEGY:
-        # We now use the dedicated ThetaHarvestExecutor (scripts/options_live_sim.py)
-        # as the single source of truth for options trading.
-        # This prevents "two brains" fighting over buying power.
-        logger.info("Gate 6: Legacy Rule #1 Options disabled in favor of ThetaHarvestExecutor")
-        return {"action": "disabled", "reason": "Unified into ThetaHarvestExecutor"}
+        # Check if theta automation is enabled
+        theta_enabled = os.getenv("ENABLE_THETA_AUTOMATION", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+
+        if not theta_enabled:
+            # Options disabled - log but don't execute
+            logger.info("Gate 6: Options disabled (set ENABLE_THETA_AUTOMATION=true to enable)")
+            return {"action": "disabled", "reason": "ENABLE_THETA_AUTOMATION not set"}
+
+        logger.info("Gate 6: Theta automation ENABLED - executing options strategy")
 
         results: dict[str, Any] = {
             "put_signals": 0,

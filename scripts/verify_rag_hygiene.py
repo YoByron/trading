@@ -172,7 +172,7 @@ class RAGHygieneVerifier:
 
             corpus = [["hello", "world"], ["test", "document"]]
             bm25 = BM25Okapi(corpus)
-            scores = bm25.get_scores(["hello"])
+            _scores = bm25.get_scores(["hello"])
 
             self.checks.append(
                 HygieneCheck(
@@ -257,7 +257,7 @@ class RAGHygieneVerifier:
             from src.rag.config import CHUNK_CONFIG
 
             overlap = CHUNK_CONFIG.get("overlap", 0)
-            max_tokens = CHUNK_CONFIG.get("max_tokens", 0)
+            _max_tokens = CHUNK_CONFIG.get("max_tokens", 0)
 
             if overlap >= 50:
                 status = "PASS"
@@ -447,7 +447,10 @@ class RAGHygieneVerifier:
     def _check_hybrid_search(self) -> None:
         """Check hybrid search implementation."""
         try:
-            from src.rag.vector_db.chroma_client import BM25_AVAILABLE, SENTENCE_TRANSFORMERS_AVAILABLE
+            from src.rag.vector_db.chroma_client import (
+                BM25_AVAILABLE,
+                SENTENCE_TRANSFORMERS_AVAILABLE,
+            )
 
             if SENTENCE_TRANSFORMERS_AVAILABLE and BM25_AVAILABLE:
                 status = "PASS"
@@ -581,9 +584,7 @@ class RAGHygieneVerifier:
 
         return report
 
-    def _print_summary(
-        self, report: HygieneReport, passed: int, warned: int, failed: int
-    ) -> None:
+    def _print_summary(self, report: HygieneReport, passed: int, warned: int, failed: int) -> None:
         """Print formatted summary."""
         print("\n" + "=" * 60)
         print("RAG HYGIENE REPORT")

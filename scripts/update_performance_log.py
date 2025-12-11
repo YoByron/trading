@@ -2,6 +2,7 @@
 """
 Standalone script to update performance log with current account status.
 Can be run independently of trading execution to capture daily P/L.
+Also ensures daily trades are synced from Alpaca if the local trades file is missing.
 """
 
 import json
@@ -11,6 +12,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 import alpaca.trading.client as trading_client
+from alpaca.trading.enums import QueryOrderStatus
+from alpaca.trading.requests import GetOrdersRequest
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -21,17 +24,18 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 PERF_FILE = DATA_DIR / "performance_log.json"
 
 
-def get_account_summary():
+def get_account_summary(client=None):
     """Get current account performance from Alpaca API"""
-    api_key = os.getenv("ALPACA_API_KEY")
-    secret_key = os.getenv("ALPACA_SECRET_KEY")
-    paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
+    if client is None:
+        api_key = os.getenv("ALPACA_API_KEY")
+        secret_key = os.getenv("ALPACA_SECRET_KEY")
+        paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
 
-    if not api_key or not secret_key:
-        print("ERROR: Missing ALPACA_API_KEY or ALPACA_SECRET_KEY in .env")
-        sys.exit(1)
+        if not api_key or not secret_key:
+            print("ERROR: Missing ALPACA_API_KEY or ALPACA_SECRET_KEY in .env")
+            sys.exit(1)
 
-    client = trading_client.TradingClient(api_key, secret_key, paper=paper_trading)
+        client = trading_client.TradingClient(api_key, secret_key, paper=paper_trading)
 
     account = client.get_account()
     starting_balance = 100000.0  # From challenge_start.json
@@ -45,11 +49,80 @@ def get_account_summary():
     }
 
 
+def sync_daily_trades(client):
+    """Fetch today's trades from Alpaca and save if local file missing."""
+    today = date.today()
+    trades_file = DATA_DIR / f"trades_{today.isoformat()}.json"
+
+    if trades_file.exists():
+        print(f"✅ Trades file for {today} already exists. Skipping sync.")
+        return
+
+    print(f"Testing for trades from Alpaca for {today}...")
+
+    try:
+        # Get filled orders from today
+        request_params = GetOrdersRequest(
+            status=QueryOrderStatus.CLOSED,
+            after=datetime.combine(today, datetime.min.time()),
+            limit=500,
+        )
+
+        orders = client.get_orders(filter=request_params)
+
+        if not orders:
+            print("ℹ️ No trades found on Alpaca for today.")
+            return
+
+        trades = []
+        for order in orders:
+            # Check filled_at to be sure it's today
+            if order.filled_at and order.filled_at.date() == today:
+                trades.append(
+                    {
+                        "symbol": order.symbol,
+                        "action": order.side.name,
+                        "amount": float(order.filled_avg_price or 0) * float(order.filled_qty or 0),
+                        "quantity": float(order.filled_qty or 0),
+                        "price": float(order.filled_avg_price or 0),
+                        "timestamp": order.filled_at.isoformat(),
+                        "status": "FILLED",
+                        "strategy": "Unknown (Synced)",
+                        "reason": "Synced from Alpaca",
+                        "mode": "PAPER",
+                    }
+                )
+
+        if trades:
+            print(f"✅ Recovered {len(trades)} trades from Alpaca.")
+            with open(trades_file, "w") as f:
+                json.dump(trades, f, indent=4)
+        else:
+            print("ℹ️ No filled trades found for today (after filtering).")
+
+    except Exception as e:
+        print(f"⚠️ Failed to sync trades: {e}")
+
+
 def update_performance_log():
     """Update daily performance log"""
     print("=" * 70)
     print("📊 UPDATING PERFORMANCE LOG")
     print("=" * 70)
+
+    # Initialize client once
+    api_key = os.getenv("ALPACA_API_KEY")
+    secret_key = os.getenv("ALPACA_SECRET_KEY")
+    paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
+
+    if not api_key or not secret_key:
+        print("ERROR: Missing ALPACA_API_KEY or ALPACA_SECRET_KEY in .env")
+        sys.exit(1)
+
+    client = trading_client.TradingClient(api_key, secret_key, paper=paper_trading)
+
+    # Sync trades first
+    sync_daily_trades(client)
 
     # Load existing data
     perf_data = []
@@ -62,7 +135,7 @@ def update_performance_log():
 
     # Get current account status
     print("\n📡 Fetching current account status from Alpaca...")
-    summary = get_account_summary()
+    summary = get_account_summary(client)
     summary["date"] = date.today().isoformat()
     summary["timestamp"] = datetime.now().isoformat()
 

@@ -56,7 +56,7 @@ def generate_equity_curve_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -103,7 +103,7 @@ def generate_drawdown_chart(perf_log: list[dict], output_path: Path | None = Non
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -159,7 +159,7 @@ def generate_daily_pl_chart(perf_log: list[dict], output_path: Path | None = Non
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 pl_values.append(pl)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -208,7 +208,7 @@ def generate_rolling_sharpe_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < window + 1:
@@ -353,7 +353,7 @@ def generate_regime_timeline_chart(
                 dt = datetime.fromisoformat(date_str)
                 dates.append(dt)
                 equity_values.append(equity)
-            except:
+            except Exception:
                 pass
 
     if len(dates) < 2:
@@ -398,7 +398,7 @@ def generate_regime_timeline_chart(
     ax.plot(dates, equity_values, linewidth=2, color="#2563eb", alpha=0.3, label="Equity")
 
     # Color background by regime
-    for i, (date, regime) in enumerate(zip(regime_dates, regimes)):
+    for i, (date, regime) in enumerate(zip(regime_dates, regimes, strict=False)):
         if i < len(regime_dates) - 1:
             next_date = regime_dates[i + 1]
             color = regime_colors.get(regime, "#6b7280")

@@ -50,6 +50,13 @@ repos:
           ]
         exclude: ^tests/|.pc-venv/
 
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package.lock.json
+
   # Keep the custom hygiene script if needed, but ensure it works
   - repo: local
     hooks:
@@ -102,6 +109,17 @@ repos:
         additional_dependencies: [numpy, pyyaml]
         types: [python]
         files: '(scripts/|src/|tests/)'
+        pass_filenames: false
+        verbose: true
+        stages: [pre-commit]
+
+      - id: validate-workflow-secrets
+        name: Validate Workflow Secrets (Zero Tolerance)
+        entry: python3 scripts/validate_workflow_secrets.py
+        language: python
+        additional_dependencies: [pyyaml]
+        types: [yaml]
+        files: '\.github/workflows/.*\.yml$'
         pass_filenames: false
         verbose: true
         stages: [pre-commit]

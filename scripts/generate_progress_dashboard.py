@@ -25,14 +25,18 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import yfinance as yf
 from src.utils.data_validator import DataValidator
 
 from scripts.dashboard_metrics import TradingMetricsCalculator
-import yfinance as yf
-import pandas as pd
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -41,6 +45,8 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path("data")
 RUN_LOG = DATA_DIR / "trading_runs.jsonl"
 LAST_RUN_STATUS = DATA_DIR / "last_run_status.json"
+PSYCHOLOGY_STATE = DATA_DIR / "psychology_state.json"
+COACHING_LOG = DATA_DIR / "audit_trail" / "coaching_log.jsonl"
 
 
 def load_json_file(filepath: Path) -> dict:
@@ -70,6 +76,177 @@ def load_run_log(max_items: int = 5) -> list[dict]:
         return []
 
     return list(reversed(records[-max_items:]))
+
+
+def load_psychology_state() -> dict:
+    """Load psychology state from file."""
+    if not PSYCHOLOGY_STATE.exists():
+        return {
+            "current_zone": "flow",
+            "confidence_level": "normal",
+            "mental_energy": 1.0,
+            "consecutive_wins": 0,
+            "consecutive_losses": 0,
+            "trades_today": 0,
+            "readiness_score": 88.6,
+            "active_biases": [],
+        }
+    return load_json_file(PSYCHOLOGY_STATE)
+
+
+def load_coaching_log(max_items: int = 5) -> list[dict]:
+    """Load recent coaching interventions from jsonl log."""
+    if not COACHING_LOG.exists():
+        return []
+
+    try:
+        lines = COACHING_LOG.read_text().splitlines()
+        records = [json.loads(line) for line in lines if line.strip()]
+        return list(reversed(records[-max_items:]))
+    except Exception:
+        return []
+
+
+def format_psychology_section(psych_state: dict, coaching_log: list[dict]) -> str:
+    """Format mental toughness section for dashboard."""
+    zone = psych_state.get("current_zone", "unknown")
+    confidence = psych_state.get("confidence_level", "normal")
+    energy = psych_state.get("mental_energy", 1.0)
+    readiness = psych_state.get("readiness_score", 0)
+    consecutive_wins = psych_state.get("consecutive_wins", 0)
+    consecutive_losses = psych_state.get("consecutive_losses", 0)
+    trades_today = psych_state.get("trades_today", 0)
+    active_biases = psych_state.get("active_biases", [])
+
+    # Zone emoji mapping
+    zone_emoji = {
+        "flow": "🟢",
+        "challenge": "🟡",
+        "caution": "🟠",
+        "danger": "🔴",
+        "tilt": "⛔",
+    }
+
+    # Confidence emoji mapping
+    confidence_emoji = {
+        "elite": "💪",
+        "high": "✅",
+        "normal": "➡️",
+        "shaken": "⚠️",
+        "broken": "❌",
+    }
+
+    zone_display = f"{zone_emoji.get(zone, '❓')} {zone.upper()}"
+    confidence_display = f"{confidence_emoji.get(confidence, '❓')} {confidence.upper()}"
+    energy_pct = energy * 100
+
+    # Readiness status
+    if readiness >= 70:
+        readiness_status = "✅ Ready"
+    elif readiness >= 50:
+        readiness_status = "⚠️ Caution"
+    else:
+        readiness_status = "❌ Not Ready"
+
+    # Circuit breaker status
+    circuit_breaker = "✅ Inactive"
+    if zone in ["danger", "tilt"]:
+        circuit_breaker = "🛑 ACTIVE - Trading Blocked"
+    elif consecutive_losses >= 3:
+        circuit_breaker = "⚠️ Warning - 3+ Losses"
+
+    section = f"""
+## 🧠 Mental Toughness & Psychology
+
+### Psychological State (Gate 0)
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Emotional Zone** | {zone_display} | {"✅ Optimal" if zone == "flow" else "⚠️ Monitor" if zone in ["challenge", "caution"] else "❌ Critical"} |
+| **Confidence Level** | {confidence_display} | {"✅ Strong" if confidence in ["elite", "high"] else "➡️ Normal" if confidence == "normal" else "⚠️ Low"} |
+| **Mental Energy** | {energy_pct:.0f}% | {"✅" if energy >= 0.7 else "⚠️" if energy >= 0.3 else "❌"} |
+| **Readiness Score** | {readiness:.1f}/100 | {readiness_status} |
+| **Circuit Breaker** | {circuit_breaker} | - |
+
+### Trading Psychology Metrics
+
+| Metric | Value |
+|--------|-------|
+| **Consecutive Wins** | {consecutive_wins} {"🔥" if consecutive_wins >= 3 else ""} |
+| **Consecutive Losses** | {consecutive_losses} {"⚠️" if consecutive_losses >= 2 else ""} |
+| **Trades Today** | {trades_today} |
+
+"""
+
+    # Active biases section
+    if active_biases:
+        section += """### Active Cognitive Biases Detected
+
+| Bias Type | Severity | Trigger |
+|-----------|----------|---------|
+"""
+        for bias in active_biases[:5]:
+            bias_type = bias.get("type", "unknown").replace("_", " ").title()
+            severity = bias.get("severity", 0)
+            trigger = bias.get("trigger", "N/A")[:50]
+            severity_emoji = "🔴" if severity > 0.7 else "🟠" if severity > 0.4 else "🟡"
+            section += f"| {bias_type} | {severity_emoji} {severity:.0%} | {trigger} |\n"
+    else:
+        section += """### Active Cognitive Biases
+
+✅ No active biases detected - Trading psychology is clear.
+
+"""
+
+    # Recent coaching interventions
+    if coaching_log:
+        section += """### Recent Coaching Interventions
+
+| Time | Type | Headline |
+|------|------|----------|
+"""
+        for entry in coaching_log[:5]:
+            ts = entry.get("ts", "")
+            try:
+                ts_display = datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%H:%M")
+            except Exception:
+                ts_display = ts[:5] if ts else "?"
+
+            intervention = entry.get("intervention", {})
+            int_type = intervention.get("intervention_type", "unknown").replace("_", " ").title()
+            headline = intervention.get("headline", "N/A")[:40]
+            section += f"| {ts_display} | {int_type} | {headline} |\n"
+    else:
+        section += """### Recent Coaching Interventions
+
+*No recent coaching interventions recorded.*
+
+"""
+
+    section += """
+### Mental Toughness Framework
+
+**Based on**: Steve Siebold's "177 Mental Toughness Secrets of the World Class"
+
+| Principle | Score |
+|-----------|-------|
+"""
+    siebold = psych_state.get("siebold_principles", {})
+    principles = [
+        ("Emotional Compartmentalization", siebold.get("emotional_compartmentalization", 7.0)),
+        ("Metacognition Level", siebold.get("metacognition_level", 7.0)),
+        ("Abundance Mindset", siebold.get("abundance_mindset", 7.0)),
+        ("Coachability", siebold.get("coachability", 8.0)),
+        ("Purpose Clarity", siebold.get("purpose_clarity", 8.0)),
+    ]
+    for name, score in principles:
+        bar = "█" * int(score) + "░" * (10 - int(score))
+        section += f"| {name} | `{bar}` {score:.1f}/10 |\n"
+
+    section += """
+---
+"""
+    return section
 
 
 def format_recent_runs(runs: list[dict]) -> str:
@@ -107,35 +284,43 @@ def fetch_real_time_market_regime():
     try:
         spy = yf.Ticker("SPY")
         vix = yf.Ticker("^VIX")
-        
+
         # Get 6 months of data for trend
         spy_hist = spy.history(period="6mo")
         vix_hist = vix.history(period="5d")
-        
+
         if spy_hist.empty:
             return None
-            
+
         current_price = spy_hist["Close"].iloc[-1]
-        sma_200 = spy_hist["Close"].rolling(window=200).mean().iloc[-1] if len(spy_hist) >= 200 else spy_hist["Close"].mean()
-        sma_50 = spy_hist["Close"].rolling(window=50).mean().iloc[-1] if len(spy_hist) >= 50 else spy_hist["Close"].mean()
-        
+        sma_200 = (
+            spy_hist["Close"].rolling(window=200).mean().iloc[-1]
+            if len(spy_hist) >= 200
+            else spy_hist["Close"].mean()
+        )
+        sma_50 = (
+            spy_hist["Close"].rolling(window=50).mean().iloc[-1]
+            if len(spy_hist) >= 50
+            else spy_hist["Close"].mean()
+        )
+
         vix_val = vix_hist["Close"].iloc[-1] if not vix_hist.empty else 15.0
-        
+
         # Calculate returns
         ret_20d = spy_hist["Close"].pct_change(20).iloc[-1] * 100
-        
+
         # Determine regime
         regime = "Bullish" if current_price > sma_50 else "Bearish"
         if vix_val > 25:
             regime += " Volatile"
         elif vix_val < 15:
             regime += " Calm"
-            
+
         return {
             "regime": regime,
             "spy_20d": ret_20d,
             "vix": vix_val,
-            "trend": "Uptrend" if current_price > sma_200 else "Downtrend"
+            "trend": "Uptrend" if current_price > sma_200 else "Downtrend",
         }
     except Exception as e:
         logger.warning(f"Failed to fetch market regime: {e}")
@@ -153,7 +338,7 @@ def calculate_metrics():
         start_date = datetime.fromisoformat(challenge_data["start_date"]).date()
         today = date.today()
         # Fix: Use UTC now for calculation to match trade file conventions
-        # today = datetime.now(ZoneInfo("UTC")).date() 
+        # today = datetime.now(ZoneInfo("UTC")).date()
         days_elapsed = (today - start_date).days + 1
         starting_balance = challenge_data.get("starting_balance", 100000.0)
     else:
@@ -165,7 +350,7 @@ def calculate_metrics():
             start_date = datetime.fromisoformat(start_date_str).date()
             today = date.today()
             days_elapsed = max((today - start_date).days + 1, 1)  # At least 1 day
-        except:
+        except Exception:
             days_elapsed = max(system_state.get("challenge", {}).get("current_day", 1), 1)
         starting_balance = 100000.0
 
@@ -260,22 +445,22 @@ def calculate_metrics():
     # Get recent trades
     # Get recent trades - Look at today AND yesterday to handle timezone overlaps
     today_trades = []
-    
-    # Check today and yesterday
-    for day_offset in [0, 1]:
+
+    # Check today only
+    for day_offset in [0]:
         d = date.today() - timedelta(days=day_offset)
         t_file = DATA_DIR / f"trades_{d.isoformat()}.json"
-        
+
         if t_file.exists():
             day_trades = load_json_file(t_file)
             if isinstance(day_trades, list):
                 # Only add if we haven't seen this order_id? Simple append for now
                 # Filter for "Analysis" or "Live" logic if needed, but for now show everything
                 today_trades.extend(day_trades)
-                
+
     # Sort by timestamp desc
     today_trades.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-    
+
     # Determine count (deduplication could happen here if needed)
     today_trade_count = len(today_trades)
 
@@ -401,6 +586,11 @@ def generate_dashboard() -> str:
     now = datetime.now(eastern)
     recent_runs = load_run_log(max_items=5)
 
+    # Load psychology state for mental toughness section
+    psych_state = load_psychology_state()
+    coaching_log = load_coaching_log(max_items=5)
+    psychology_section = format_psychology_section(psych_state, coaching_log)
+
     failure_banner = ""
     stale_banner = ""
     # Failure banner from last_run_status
@@ -461,7 +651,7 @@ def generate_dashboard() -> str:
     guardrails = world_class_metrics.get("risk_guardrails", {})
     account = world_class_metrics.get("account_summary", {})
     market_regime = world_class_metrics.get("market_regime", {})
-    
+
     # FALLBACK: If market regime is unknown, fetch it real-time
     if market_regime.get("regime", "Unknown") == "Unknown" or not market_regime:
         real_time_regime = fetch_real_time_market_regime()
@@ -470,7 +660,7 @@ def generate_dashboard() -> str:
                 "regime": real_time_regime["regime"],
                 "spy_20d_return": real_time_regime["spy_20d"],
                 "vix_level": real_time_regime["vix"],
-                "volatility_regime": real_time_regime["trend"]
+                "volatility_regime": real_time_regime["trend"],
             }
     benchmark = world_class_metrics.get("benchmark_comparison", {})
     ai_kpis = world_class_metrics.get("ai_kpis", {})
@@ -518,7 +708,7 @@ def generate_dashboard() -> str:
                     dt = datetime.fromisoformat(trade.get("timestamp", ""))
                     # Convert to ET if possible, otherwise just show raw
                     ts = dt.strftime("%H:%M")
-                except:
+                except Exception:
                     ts = ts[11:16] if len(ts) > 16 else ts
 
             sym = trade.get("symbol", "?")
@@ -526,19 +716,21 @@ def generate_dashboard() -> str:
             amt = trade.get("amount", 0)
             px = trade.get("price", 0)
             px = trade.get("price", 0)
-            
+
             # Highlight Analysis Mode
             mode = trade.get("mode", "LIVE")
             status_icon = "🟢" if mode == "LIVE" else "🟡"
             st = trade.get("status", "FILLED")
-            
-            # Add Mode column to output if "Analysis" exists? 
+
+            # Add Mode column to output if "Analysis" exists?
             # Or just append to status
             status_display = f"{status_icon} {st}"
             if mode != "LIVE":
                 status_display += f" ({mode})"
-                
-            trades_table_md += f"| {ts} | **{sym}** | {act} | ${amt:,.2f} | ${px:,.2f} | {status_display} |\n"
+
+            trades_table_md += (
+                f"| {ts} | **{sym}** | {act} | ${amt:,.2f} | ${px:,.2f} | {status_display} |\n"
+            )
     elif today_trades > 0:
         trades_table_md = "\n*Trade details unavailable.*\n"
 
@@ -559,7 +751,7 @@ def generate_dashboard() -> str:
 | **Circuit Breaker** | ✅ Ready | No trips detected |
 | **Next Run** | 🕒 Scheduled | Tomorrow at 9:35 AM ET |
 
----
+{psychology_section}
 
 ## 🩺 Recent Trading Runs
 
@@ -924,7 +1116,7 @@ def generate_dashboard() -> str:
             theta_harvest_time = datetime.fromisoformat(
                 theta_harvest_time.replace("Z", "+00:00")
             ).strftime("%Y-%m-%d %I:%M %p")
-        except:
+        except Exception:
             pass
 
     target_premium = options.get("target_daily_premium", 0.0)

@@ -8,6 +8,10 @@ import argparse
 import os
 import sys
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def validate_secrets() -> tuple[bool, list[str]]:
     """Validate required secrets are present and non-empty."""

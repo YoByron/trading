@@ -51,7 +51,7 @@ def calculate_basic_metrics():
             start_date = datetime.fromisoformat(start_date_str).date()
             today = date.today()
             days_elapsed = max((today - start_date).days + 1, 1)
-        except:
+        except Exception:
             days_elapsed = max(system_state.get("challenge", {}).get("current_day", 1), 1)
         starting_balance = 100000.0
 
@@ -165,9 +165,7 @@ def get_recent_trades(days: int = 7) -> list[dict]:
                     recent_trades.append(trade)
 
     # Sort by timestamp descending (most recent first)
-    recent_trades.sort(
-        key=lambda x: x.get("timestamp", x.get("trade_date", "")), reverse=True
-    )
+    recent_trades.sort(key=lambda x: x.get("timestamp", x.get("trade_date", "")), reverse=True)
     return recent_trades
 
 
@@ -357,7 +355,13 @@ def generate_world_class_dashboard() -> str:
             else:
                 price_display = "Market"
 
-            status_icon = "✅" if status in ["FILLED", "COMPLETED", "SUCCESS"] else "⏳" if status == "PENDING" else "❌"
+            status_icon = (
+                "✅"
+                if status in ["FILLED", "COMPLETED", "SUCCESS"]
+                else "⏳"
+                if status == "PENDING"
+                else "❌"
+            )
             recent_trades_rows.append(
                 f"| {trade_date} | **{symbol}** | {side} | {qty_display} | {price_display} | {status_icon} {status} |"
             )
@@ -780,7 +784,7 @@ def generate_world_class_dashboard() -> str:
         dashboard += "- **Strategy**: Momentum (MACD + RSI + Volume)\n"
         dashboard += "- **Allocation**: 70% Core ETFs (SPY/QQQ/VOO), 30% Growth (NVDA/GOOGL/AMZN)\n"
         dashboard += "- **Daily Investment**: $10/day fixed\n"
-        dashboard += f"- **Crypto Trades (Weekend)**: {crypto_trades} executed, ${crypto_invested:.2f} invested\n"
+        dashboard += f"- **Crypto Trades (Weekend)**: {crypto_trades_total} executed, ${crypto_invested_total:.2f} invested\n"
 
     dashboard += """
 ---

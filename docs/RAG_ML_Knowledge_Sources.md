@@ -8,6 +8,15 @@ Document the curated external materials that will enrich the trading system's RA
 2. Run `python3.11 scripts/ingest_rag_knowledge.py --sync` (use `TMPDIR=$(pwd)/tmp` on macOS if ONNXRuntime tries to write to `/private/var/…`).
 3. Confirm the new chunk is present in `data/rag/chroma_db` and `data/rag/in_memory_store.json` if fallback is used.
 
+### PDF ingestion automation
+- Run `python3 scripts/download_pdf_sources.py --date 20251208` after adding new sources to the `PDF_SOURCES` list. The script downloads the public PDFs, converts them to plain text under `rag_knowledge/raw/20251208_<slug>.txt`, and can be re-run with `--force` when the upstream material refreshes.
+- The new curated PDFs feed the RAG pipeline with up-to-date reference material covering:
+  - Options foundations/hedge construction (`Options Trading for Beginners`, OptionsTrading.org, 2025).
+  - REIT qualification and dividend rules (`Investor Bulletin: REITs`, SEC, 2023) so the agents can explain payout coverage and leverage limits when evaluating income candidates.
+  - The agentic crypto playbook (`An Adaptive Multi-Agent Bitcoin Trading System`, ArXiv 2025) and the neural execution stack (`Neural Network-Based Algorithmic Trading Systems`, ArXiv 2025) so the RAG layer stays current with AI-driven trade automation.
+  - Macro/liquidity context for the Treasury term structure (`International Banking and Nonbank Financial Intermediation`, New York Fed Staff Report 1091, 2024), giving the knowledge store the right vocabulary for duration/term premium narratives.
+- After the script runs, add the new chunk file (`rag_knowledge/chunks/investment_playbooks_2025.json`) and update `rag_knowledge/knowledge_index.json` so the collector exposes the new strategies to the thesis generator.
+
 > The ingestion script already loads every JSON file from `rag_knowledge/chunks/`. When adding a new chunk, mirror the format in existing files (source_type, content, topics, citation) so the metadata remains consistent.
 
 ## Source matrix
