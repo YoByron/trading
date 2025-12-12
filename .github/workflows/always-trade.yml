@@ -50,6 +50,22 @@ jobs:
           git status
           git add data/*.json
           git diff --cached --stat
-          git commit -m "trade: SPY executed $(date +%Y-%m-%d) [skip ci]" || echo "Nothing to commit"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "trade: SPY executed $(date +%Y-%m-%d) [skip ci]"
+          echo "Pulling latest and rebasing..."
+          git pull --rebase origin main || true
           echo "Pushing to main..."
-          git push origin main || echo "Push failed - check permissions"
+          for i in 1 2 3; do
+            if git push origin main; then
+              echo "Push succeeded!"
+              exit 0
+            fi
+            echo "Push attempt $i failed, retrying..."
+            sleep 5
+            git pull --rebase origin main || true
+          done
+          echo "Push failed after 3 attempts"
+          exit 1
