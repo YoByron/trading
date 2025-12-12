@@ -35,6 +35,31 @@ jobs:
       - name: Run Ruff formatter check
         run: ruff format --check .
 
+  # Added Dec 12, 2025: Workflow validation to prevent dependency issues (LL-021)
+  workflow-validation:
+    name: Validate Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+
+      - name: Run workflow dependency tests
+        run: |
+          python -m pytest tests/test_workflow_dependencies.py -v --tb=short
+
+      - name: RAG pre-deployment check
+        run: |
+          python scripts/rag_pre_deployment_check.py --check-workflows
+
   tests:
     name: Run All Tests
     runs-on: ubuntu-latest
