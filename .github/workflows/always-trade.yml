@@ -43,40 +43,10 @@ jobs:
           with open(f'data/trades_{today}.json','w') as f:json.dump([r],f,indent=2)
           print(json.dumps([r],indent=2))
           "
-      - name: Commit trade data
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TODAY=$(date +%Y-%m-%d)
-          TRADE_FILE="data/trades_${TODAY}.json"
-
-          if [ ! -f "$TRADE_FILE" ]; then
-            echo "No trade file created"
-            exit 0
-          fi
-
-          echo "=== Trade file ==="
-          cat "$TRADE_FILE"
-
-          # Use GitHub Contents API (simpler than Git Data API)
-          CONTENT=$(base64 -w0 "$TRADE_FILE")
-
-          # Check if file exists (to get SHA for update)
-          EXISTING_SHA=$(gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" -q '.sha' 2>/dev/null || echo "")
-
-          if [ -n "$EXISTING_SHA" ]; then
-            echo "Updating existing file (SHA: $EXISTING_SHA)"
-            gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" \
-              -X PUT \
-              -f message="trade: SPY executed $TODAY [skip ci]" \
-              -f content="$CONTENT" \
-              -f sha="$EXISTING_SHA"
-          else
-            echo "Creating new file"
-            gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" \
-              -X PUT \
-              -f message="trade: SPY executed $TODAY [skip ci]" \
-              -f content="$CONTENT"
-          fi
-
-          echo "✅ Trade committed!"
+      - name: Commit and push trade data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "trade: SPY executed [skip ci]"
+          file_pattern: "data/trades_*.json"
+          commit_user_name: "GitHub Actions Bot"
+          commit_user_email: "actions@github.com"
