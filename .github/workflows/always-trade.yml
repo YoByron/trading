@@ -43,7 +43,7 @@ jobs:
           with open(f'data/trades_{today}.json','w') as f:json.dump([r],f,indent=2)
           print(json.dumps([r],indent=2))
           "
-      - name: Commit trade data via API
+      - name: Commit trade data
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -55,46 +55,28 @@ jobs:
             exit 0
           fi
 
-          echo "=== Trade file created ==="
+          echo "=== Trade file ==="
           cat "$TRADE_FILE"
 
-          # Get current main SHA
-          MAIN_SHA=$(gh api /repos/${{ github.repository }}/git/refs/heads/main -q '.object.sha')
-          echo "Current main: $MAIN_SHA"
-
-          # Create blob for trade file
+          # Use GitHub Contents API (simpler than Git Data API)
           CONTENT=$(base64 -w0 "$TRADE_FILE")
-          BLOB_SHA=$(gh api /repos/${{ github.repository }}/git/blobs \
-            -f content="$CONTENT" \
-            -f encoding="base64" \
-            -q '.sha')
-          echo "Blob SHA: $BLOB_SHA"
 
-          # Get current tree
-          TREE_SHA=$(gh api /repos/${{ github.repository }}/git/commits/$MAIN_SHA -q '.tree.sha')
-          echo "Tree SHA: $TREE_SHA"
+          # Check if file exists (to get SHA for update)
+          EXISTING_SHA=$(gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" -q '.sha' 2>/dev/null || echo "")
 
-          # Create new tree with trade file
-          NEW_TREE=$(gh api /repos/${{ github.repository }}/git/trees \
-            -f base_tree="$TREE_SHA" \
-            -f "tree[][path]=$TRADE_FILE" \
-            -f "tree[][mode]=100644" \
-            -f "tree[][type]=blob" \
-            -f "tree[][sha]=$BLOB_SHA" \
-            -q '.sha')
-          echo "New tree: $NEW_TREE"
+          if [ -n "$EXISTING_SHA" ]; then
+            echo "Updating existing file (SHA: $EXISTING_SHA)"
+            gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" \
+              -X PUT \
+              -f message="trade: SPY executed $TODAY [skip ci]" \
+              -f content="$CONTENT" \
+              -f sha="$EXISTING_SHA"
+          else
+            echo "Creating new file"
+            gh api "/repos/${{ github.repository }}/contents/$TRADE_FILE" \
+              -X PUT \
+              -f message="trade: SPY executed $TODAY [skip ci]" \
+              -f content="$CONTENT"
+          fi
 
-          # Create commit
-          NEW_COMMIT=$(gh api /repos/${{ github.repository }}/git/commits \
-            -f message="trade: SPY executed $TODAY [skip ci]" \
-            -f tree="$NEW_TREE" \
-            -f "parents[]=$MAIN_SHA" \
-            -q '.sha')
-          echo "New commit: $NEW_COMMIT"
-
-          # Update main ref
-          gh api /repos/${{ github.repository }}/git/refs/heads/main \
-            -X PATCH \
-            -f sha="$NEW_COMMIT"
-
-          echo "✅ Trade data committed successfully!"
+          echo "✅ Trade committed!"
