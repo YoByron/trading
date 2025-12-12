@@ -694,30 +694,37 @@ jobs:
             python3 scripts/workflow_health_monitor.py --record daily-trading --status failure
           fi
 
-      - name: Check for state changes
+      - name: Check for trading data changes
         id: check_state_changes
         if: steps.check_execution.outputs.skip != 'true'
         run: |
-          echo "🔍 Checking for system_state.json updates..."
+          echo "🔍 Checking for trading data updates..."
 
-          # Check if system_state.json changed during execution
-          if git diff --quiet data/system_state.json; then
+          # Check for any changes in data/ directory (trades, performance, state)
+          if git diff --quiet data/; then
             echo "state_changed=false" >> $GITHUB_OUTPUT
-            echo "📋 No changes to system state"
+            echo "📋 No changes to trading data"
           else
             echo "state_changed=true" >> $GITHUB_OUTPUT
-            echo "✅ System state updated after trading"
+            echo "✅ Trading data updated"
 
             # Show summary of changes
             echo "Changes detected:"
-            git diff --stat data/system_state.json
+            git diff --stat data/
           fi
 
-      - name: Commit system state updates
-        if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+          # Also check for new untracked trade files
+          TODAY=$(date +%Y-%m-%d)
+          if [ -f "data/trades_${TODAY}.json" ]; then
+            git status data/trades_${TODAY}.json
+            echo "state_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit trading data updates
+        if: steps.check_execution.outputs.skip != 'true'
         continue-on-error: true  # Non-fatal - trading already succeeded
         run: |
-          echo "💾 Committing system_state.json updates..."
+          echo "💾 Committing trading data updates..."
 
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
@@ -725,17 +732,25 @@ jobs:
           # Pull latest changes to avoid conflicts
           git pull --rebase origin main || {
             echo "⚠️  Merge conflict detected - resolving..."
-            git checkout --ours data/system_state.json
-            git add data/system_state.json
+            git checkout --ours data/
+            git add data/
             git rebase --continue || echo "::warning::Rebase continue failed"
           }
 
-          # Stage system_state.json
-          git add data/system_state.json
+          # Stage ALL trading data files (FIX: was only staging system_state.json)
+          # This ensures trade files and performance log are committed
+          git add data/system_state.json data/performance_log.json data/trades_*.json 2>/dev/null || true
 
-          # Simple commit message (heredoc variables don't expand with 'EOF')
-          git commit -m "chore: Update system state after trading (${{ github.run_id }})" || {
-            echo "::warning::No changes to commit or commit failed"
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "📋 No trading data changes to commit"
+            exit 0
+          fi
+
+          # Commit with descriptive message
+          TODAY=$(date +%Y-%m-%d)
+          git commit -m "chore: Update trading data ($TODAY) [${{ github.run_id }}]" || {
+            echo "::warning::Commit failed"
             exit 0
           }
 
@@ -745,7 +760,7 @@ jobs:
             exit 0
           }
 
-          echo "✅ System state changes committed and pushed"
+          echo "✅ Trading data committed and pushed"
 
       - name: Stop ADK service
         if: always()
