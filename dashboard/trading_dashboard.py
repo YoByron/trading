@@ -174,8 +174,8 @@ def main():
             st.rerun()
 
     # Main dashboard
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["📈 Performance", "💼 Positions", "🛡️ Risk", "📋 Trades", "🚀 Sentiment Boost"]
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+        ["📈 Performance", "💼 Positions", "🛡️ Risk", "📋 Trades", "🚀 Sentiment Boost", "🧠 RAG Insights"]
     )
 
     # Tab 1: Performance
@@ -435,6 +435,163 @@ def main():
             st.metric("Sentiment Threshold", "0.8", "80%")
         with col2:
             st.metric("Boost Multiplier", "1.2x", "+20%")
+
+    # Tab 6: RAG Insights - Knowledge that helped trading decisions
+    with tab6:
+        st.header("🧠 RAG Knowledge Insights")
+        st.caption("Latest knowledge from our RAG system that informed trading decisions")
+
+        # Try to load RAG insights
+        rag_available = False
+        insights = []
+
+        try:
+            from src.rag.lightweight_rag import LightweightRAG
+            rag = LightweightRAG()
+            rag_available = True
+            rag_stats = rag.get_stats()
+        except ImportError:
+            try:
+                from src.rag.vector_db.chroma_client import TradingRAGDatabase
+                rag = TradingRAGDatabase()
+                rag_available = True
+                rag_stats = rag.get_stats()
+            except ImportError:
+                rag_stats = {}
+
+        # RAG System Status
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            doc_count = rag_stats.get("total_documents", rag_stats.get("document_count", 0))
+            st.metric("📚 Total Documents", f"{doc_count:,}")
+        with col2:
+            sources = rag_stats.get("sources", [])
+            st.metric("📰 Data Sources", len(sources) if isinstance(sources, list) else sources)
+        with col3:
+            status = "🟢 Active" if rag_available else "🟡 Fallback Mode"
+            st.metric("Status", status)
+
+        st.divider()
+
+        # Get current positions for context
+        account = get_account_summary()
+        current_tickers = []
+        if account and account.get("positions"):
+            current_tickers = [p["symbol"] for p in account["positions"]]
+
+        # Query RAG for insights on current holdings
+        if rag_available and current_tickers:
+            st.subheader("💡 Insights for Current Holdings")
+
+            for ticker in current_tickers[:5]:  # Limit to 5 tickers
+                try:
+                    # Try get_latest_insights if available (LightweightRAG)
+                    if hasattr(rag, 'get_latest_insights'):
+                        ticker_insights = rag.get_latest_insights(ticker=ticker, n=3)
+                    else:
+                        # Fallback to query
+                        ticker_insights = rag.query(f"{ticker} trading analysis", n_results=3)
+
+                    if ticker_insights:
+                        with st.expander(f"📊 {ticker} - {len(ticker_insights)} insights", expanded=False):
+                            for i, insight in enumerate(ticker_insights, 1):
+                                content = insight.get("content", insight.get("document", ""))[:300]
+                                source = insight.get("metadata", {}).get("source", insight.get("source", "unknown"))
+                                date = insight.get("metadata", {}).get("date", insight.get("date", ""))
+
+                                st.markdown(f"**{i}. [{source}]** {date}")
+                                st.info(content + "..." if len(content) >= 300 else content)
+                except Exception as e:
+                    st.warning(f"Could not fetch insights for {ticker}: {e}")
+
+        elif not current_tickers:
+            st.info("No current positions - insights will appear when you hold positions")
+
+        st.divider()
+
+        # Recent Market Insights (general)
+        st.subheader("📈 Recent Market Knowledge")
+
+        if rag_available:
+            try:
+                # Get general market insights
+                if hasattr(rag, 'get_latest_insights'):
+                    market_insights = rag.get_latest_insights(n=5)
+                else:
+                    market_insights = rag.query("market analysis trading strategy", n_results=5)
+
+                if market_insights:
+                    for insight in market_insights:
+                        content = insight.get("content", insight.get("document", ""))[:200]
+                        source = insight.get("metadata", {}).get("source", insight.get("source", "RAG"))
+                        ticker = insight.get("metadata", {}).get("ticker", "")
+
+                        ticker_badge = f"**[{ticker}]**" if ticker else ""
+                        st.markdown(f"• {ticker_badge} _{source}_: {content}...")
+                else:
+                    st.info("No recent insights available")
+            except Exception as e:
+                st.warning(f"Could not load market insights: {e}")
+        else:
+            st.warning("⚠️ RAG system not available. Install with: `pip install fastembed lancedb`")
+
+        st.divider()
+
+        # Lessons Learned Section
+        st.subheader("📖 Lessons Learned (Risk Prevention)")
+
+        try:
+            from src.rag.lessons_learned_rag import LessonsLearnedRAG
+            ll_rag = LessonsLearnedRAG()
+
+            # Get recent lessons
+            recent_lessons = ll_rag.get_recent_lessons(n=3)
+            if recent_lessons:
+                for lesson in recent_lessons:
+                    severity = lesson.get("severity", "medium")
+                    severity_color = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}.get(severity, "⚪")
+
+                    with st.expander(f"{severity_color} {lesson.get('title', 'Lesson')}", expanded=False):
+                        st.write(lesson.get("description", lesson.get("content", "")))
+                        if lesson.get("prevention"):
+                            st.success(f"**Prevention**: {lesson['prevention']}")
+            else:
+                st.info("No lessons learned recorded yet")
+        except ImportError:
+            # Try loading from files directly
+            lessons_dir = Path("rag_knowledge/lessons_learned")
+            if lessons_dir.exists():
+                lesson_files = sorted(lessons_dir.glob("ll_*.md"), reverse=True)[:3]
+                for lf in lesson_files:
+                    with st.expander(f"📄 {lf.stem}", expanded=False):
+                        content = lf.read_text()[:500]
+                        st.markdown(content + "..." if len(content) >= 500 else content)
+            else:
+                st.info("Lessons learned module not available")
+        except Exception as e:
+            st.warning(f"Could not load lessons: {e}")
+
+        # RAG Configuration
+        st.divider()
+        st.subheader("⚙️ RAG Configuration")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.code(f"""
+RAG Backend: {"LanceDB (Lightweight)" if rag_available else "Fallback Mode"}
+Embedding Model: BAAI/bge-small-en-v1.5
+Vector Dimensions: 384
+Storage: data/rag/lance_db/
+            """)
+        with col2:
+            if st.button("🔄 Refresh RAG Stats"):
+                st.rerun()
+            if st.button("📊 Run RAG Health Check"):
+                try:
+                    result = os.popen("python3 scripts/rag_health_check.py 2>&1").read()
+                    st.code(result[:1000])
+                except Exception as e:
+                    st.error(f"Health check failed: {e}")
 
 
 if __name__ == "__main__":
