@@ -6,12 +6,17 @@ on:
       - '.github/INSTANT_TRADE'
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   trade:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
 
       - run: pip install alpaca-py
 
@@ -47,8 +52,10 @@ jobs:
           print('DONE!')
           "
 
-      - run: |
-          git config user.name "bot"
-          git config user.email "bot@users.noreply.github.com"
-          git add data/*.json
-          git diff --staged --quiet || (git commit -m "trade [skip ci]" && git push)
+      - name: Commit and push trade data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "trade: instant executed [skip ci]"
+          file_pattern: "data/trades_*.json"
+          commit_user_name: "GitHub Actions Bot"
+          commit_user_email: "actions@github.com"
