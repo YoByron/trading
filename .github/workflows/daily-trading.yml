@@ -50,18 +50,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Install dependencies (lean)
         run: |
           sudo rm -rf /tmp/pip-* /tmp/pipcache ~/.cache/pip ~/.cache/torch || true
           df -h .
-          python3 -m pip install --upgrade pip
-          python3 -m pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-minimal.txt
+          export PATH="$HOME/.local/bin:$PATH"
+          # UV is 6-18x faster than pip and handles caching automatically
+          uv pip sync --no-cache requirements-minimal.txt
 
       - name: Install full deps for unit gates (optional)
         if: ${{ false }}  # enable only if additional tests need full stack
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
+          export PATH="$HOME/.local/bin:$PATH"
+          uv pip sync requirements.txt
 
       - name: Validate secrets
         id: validate_secrets
