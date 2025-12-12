@@ -1,0 +1,22 @@
+# Dockerfile for Dialogflow Webhook
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements
+COPY requirements-minimal.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir fastapi uvicorn chromadb sentence-transformers
+
+# Copy source code
+COPY src/ src/
+COPY rag_knowledge/ rag_knowledge/
+
+# Create data directory for ChromaDB
+RUN mkdir -p data/rag/chroma_db
+
+# Expose port
+EXPOSE 8080
+
+# Run webhook
+CMD ["python", "-m", "uvicorn", "src.agents.dialogflow_webhook:app", "--host", "0.0.0.0", "--port", "8080"]
