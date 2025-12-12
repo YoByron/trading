@@ -44,28 +44,53 @@ jobs:
           print(json.dumps([r],indent=2))
           "
       - name: Commit and push trade data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git status
+
+          # Show what we have
+          echo "=== Files created ==="
+          ls -la data/trades_*.json 2>/dev/null || echo "No trade files"
+
+          # Stage changes
           git add data/*.json
-          git diff --cached --stat
+
+          # Check if anything to commit
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
+
+          echo "=== Changes staged ==="
+          git diff --cached --stat
+
+          # Commit locally first
           git commit -m "trade: SPY executed $(date +%Y-%m-%d) [skip ci]"
-          echo "Pulling latest and rebasing..."
-          git pull --rebase origin main || true
-          echo "Pushing to main..."
+
+          # Now fetch and rebase
+          echo "=== Fetching latest ==="
+          git fetch origin main
+
+          echo "=== Rebasing onto main ==="
+          git rebase origin/main || {
+            echo "Rebase failed, aborting..."
+            git rebase --abort
+            exit 1
+          }
+
+          # Push with retry
+          echo "=== Pushing ==="
           for i in 1 2 3; do
-            if git push origin main; then
-              echo "Push succeeded!"
+            if git push origin HEAD:main; then
+              echo "✅ Push succeeded!"
               exit 0
             fi
-            echo "Push attempt $i failed, retrying..."
-            sleep 5
-            git pull --rebase origin main || true
+            echo "⚠️ Push attempt $i failed, fetching and rebasing..."
+            sleep 3
+            git fetch origin main
+            git rebase origin/main || git rebase --abort
           done
-          echo "Push failed after 3 attempts"
+          echo "❌ Push failed after 3 attempts"
           exit 1
