@@ -3,9 +3,13 @@ import json
 
 def calculate_pl():
     log_file = "data/audit_trail/hybrid_funnel_runs.jsonl"
-    today_str = "2025-12-09"
+    from datetime import datetime
 
-    total_pl = 0.0
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    # Optional: Override for testing
+    # today_str = "2025-12-09"
+
+    # total_pl = 0.0  # Unused
     trades_count = 0
     winners = 0
     losers = 0
@@ -26,7 +30,7 @@ def calculate_pl():
 
                         entry_price = payload.get("entry_price", 0)
                         exit_price = payload.get("exit_price", 0)
-                        pl_pct = payload.get("pl_pct", 0)
+                        # pl_pct = payload.get("pl_pct", 0) # Unused
                         reason = payload.get("reason", "unknown")
 
                         # Calculate pct change manually to verify
