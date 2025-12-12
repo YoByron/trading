@@ -28,11 +28,14 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from src.core.llm_schemas import EnhancedSentimentResponse
+
 # Prompt engineering for time series analysis
 from src.core.prompt_engineering import (
     MarketDataSchema,
     PromptEngineer,
 )
+from src.core.structured_output_client import StructuredLLMClient
 
 # Import effort configuration for Opus 4.5 optimization
 try:
@@ -41,6 +44,7 @@ try:
         EffortLevel,
         get_agent_sdk_config,
     )
+
     EFFORT_CONFIG_AVAILABLE = True
 except ImportError:
     EFFORT_CONFIG_AVAILABLE = False
@@ -505,6 +509,42 @@ class MultiLLMAnalyzer:
             time.sleep(self.rate_limit_delay)
         return responses
 
+    async def _query_structured_parallel(
+        self,
+        prompt: str,
+        response_model: Any,
+        system_prompt: str = "You are a helpful assistant.",
+        temperature: float = 0.0,
+    ) -> list[tuple[str, Any] | None]:
+        """
+        Query all models with structured output enforcement.
+        Returns a list of (model_name, pydantic_instance) tuples or None if failed.
+        """
+
+        async def query_structured(model: LLMModel, delay: float):
+            if delay > 0:
+                await asyncio.sleep(delay)
+
+            structured_client = StructuredLLMClient(client=self.client, model=model.value)
+            try:
+                result = await structured_client.generate_async(
+                    prompt=prompt,
+                    response_model=response_model,
+                    system_prompt=system_prompt,
+                    temperature=temperature,
+                )
+                return (model.value, result)
+            except Exception as e:
+                logger.warning(f"Structured query failed for {model.value}: {e}")
+                return None
+
+        # Stagger requests
+        tasks = [
+            query_structured(model, i * self.rate_limit_delay)
+            for i, model in enumerate(self.models)
+        ]
+        return await asyncio.gather(*tasks)
+
     def _parse_sentiment_score(self, content: str) -> float | None:
         """
         Parse sentiment score from LLM response.
@@ -820,35 +860,11 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
         news: list[dict[str, Any]],
         regime_state: Any | None = None,
         recent_returns: dict[str, float] | None = None,
-    ) -> SentimentAnalysis:
+    ) -> "SentimentAnalysis":
         """
-        Enhanced sentiment analysis with temporal context and structured data.
-
-        This method implements prompt engineering best practices from
-        MachineLearningMastery for time series LLM analysis:
-        1. Temporal context header (market session, regime, timing)
-        2. Structured JSON schema for market data
-        3. Confidence-aware responses
-
-        Args:
-            symbol: Trading symbol (e.g., "SPY")
-            market_data: Dictionary containing market data and indicators
-            news: List of news articles
-            regime_state: Optional RegimeState from regime_detection module
-            recent_returns: Optional dict with '1d', '5d', '20d' returns
-
-        Returns:
-            SentimentAnalysis with enhanced confidence and reasoning
-
-        Example:
-            >>> sentiment = await analyzer.get_ensemble_sentiment_enhanced(
-            ...     symbol="SPY",
-            ...     market_data={"close": 450.0, "rsi": 55, "macd": 0.25},
-            ...     news=[{"title": "Market rallies", "content": "..."}],
-            ...     recent_returns={"1d": 0.01, "5d": 0.02}
-            ... )
+        Enhanced sentiment analysis using Structured Outputs for reliability.
         """
-        # Build enhanced prompts using prompt engineering module
+        # Build enhanced prompts
         engineer = PromptEngineer()
         prompt, system_prompt = engineer.build_enhanced_sentiment_prompt(
             symbol=symbol,
@@ -858,48 +874,56 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
             recent_returns=recent_returns,
         )
 
+        # Structured Query
         if self.use_async:
-            responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
+            results = await self._query_structured_parallel(
+                prompt=prompt,
+                response_model=EnhancedSentimentResponse,
+                system_prompt=system_prompt,
+                temperature=0.3,
+            )
         else:
-            responses = self._query_all_llms_sync(prompt, system_prompt, temperature=0.3)
+            logger.warning("Synchronous structured query not supported yet, falling back to legacy")
+            # Fallback to legacy method which returns SentimentAnalysis compatible object
+            # Note: This might return a slightly different structure but acceptable for fallback
+            return await self.get_ensemble_sentiment_detailed(market_data, news)
 
-        # Calculate ensemble sentiment
-        ensemble_score, base_confidence, individual_scores = self._calculate_ensemble_sentiment(
-            responses
-        )
-
-        # Extract confidence and reasoning from responses
+        # Process Results
+        individual_scores = {}
         confidences = []
         reasoning_parts = []
         key_factors = []
         risks = []
+        valid_scores = []
 
-        for response in responses:
-            if response.success and response.content:
-                try:
-                    data = json.loads(response.content)
-                    if "confidence" in data:
-                        confidences.append(float(data["confidence"]))
-                    if "reasoning" in data:
-                        reasoning_parts.append(f"[{response.model}] {data['reasoning']}")
-                    if "key_factors" in data:
-                        key_factors.extend(data["key_factors"])
-                    if "risks" in data:
-                        risks.extend(data["risks"])
-                except Exception:  # noqa: BLE001
-                    pass
+        for item in results:
+            if item is None:
+                continue
 
-        # Use LLM-reported confidence if available, otherwise use calculated confidence
-        final_confidence = sum(confidences) / len(confidences) if confidences else base_confidence
+            model_name, data = item
+            # data is EnhancedSentimentResponse instance
 
-        reasoning = (
-            "\n\n".join(reasoning_parts) if reasoning_parts else "No detailed reasoning available"
-        )
+            individual_scores[model_name] = data.sentiment
+            valid_scores.append(data.sentiment)
+            confidences.append(data.confidence)
+            reasoning_parts.append(f"[{model_name}] {data.reasoning}")
+            key_factors.extend(data.key_factors)
+            risks.extend(data.risks)
 
-        logger.info(
-            f"Enhanced sentiment for {symbol}: {ensemble_score:.3f} "
-            f"(confidence: {final_confidence:.3f})"
-        )
+        if not valid_scores:
+            logger.warning(f"No valid structured responses for {symbol}")
+            return SentimentAnalysis(
+                score=0.0,
+                confidence=0.0,
+                reasoning="Analysis failed to produce valid structured output.",
+                individual_scores={},
+                metadata={"error": "No valid responses"},
+            )
+
+        ensemble_score = sum(valid_scores) / len(valid_scores)
+        final_confidence = sum(confidences) / len(confidences) if confidences else 0.5
+
+        reasoning = "\n\n".join(reasoning_parts)
 
         return SentimentAnalysis(
             score=ensemble_score,
@@ -911,9 +935,10 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
                 "market_data": market_data,
                 "news_count": len(news),
                 "timestamp": time.time(),
-                "key_factors": list(set(key_factors))[:5],  # Dedupe, top 5
-                "risks": list(set(risks))[:3],  # Dedupe, top 3
-                "enhanced": True,  # Flag for enhanced analysis
+                "key_factors": list(set(key_factors))[:5],
+                "risks": list(set(risks))[:3],
+                "enhanced": True,
+                "method": "structured_outputs",
             },
         )
 
@@ -1099,7 +1124,7 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
 
     async def analyze_ipo(self, company_data: dict[str, Any]) -> dict[str, Any]:
         """
-        Analyze an IPO opportunity and provide scoring.
+        Analyze an IPO opportunity and provide scoring using structured outputs.
 
         Args:
             company_data: Dictionary containing company information:
@@ -1127,6 +1152,8 @@ Provide objective, data-driven sentiment scores with detailed reasoning."""
             ... }
             >>> result = await analyzer.analyze_ipo(company_data)
         """
+        from src.core.llm_schemas import IPOAnalysisResponse
+
         company_summary = json.dumps(company_data, indent=2)
 
         prompt = f"""Analyze the following IPO opportunity and provide a comprehensive assessment.
@@ -1135,92 +1162,98 @@ Company Data:
 {company_summary}
 
 Provide a detailed IPO analysis including:
-1. Overall score (0-100)
+1. Overall score (0-100) - considering market conditions, fundamentals, valuation, and risks
 2. Investment recommendation (Strong Buy, Buy, Hold, Avoid)
 3. Risk level (Low, Medium, High)
-4. Key positive factors
-5. Concerns and risks
-6. Price target if applicable
+4. Key positive factors driving the score
+5. Concerns and potential red flags
+6. Price target if applicable (optional)
+7. Your confidence in this analysis
+8. Detailed reasoning explaining your recommendation
 
-Format your response as JSON:
-{{
-    "score": <0-100>,
-    "recommendation": "<recommendation>",
-    "risk_level": "<risk level>",
-    "key_factors": ["factor1", "factor2", ...],
-    "concerns": ["concern1", "concern2", ...],
-    "price_target": <number or null>,
-    "analysis": "<detailed analysis>"
-}}
-"""
+Be thorough and objective in your analysis."""
 
         system_prompt = """You are an expert IPO analyst with deep experience evaluating pre-IPO companies.
 Provide thorough, objective analysis considering market conditions, company fundamentals,
 valuation, competitive landscape, and risk factors."""
 
-        if self.use_async:
-            responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
-        else:
-            responses = self._query_all_llms_sync(prompt, system_prompt, temperature=0.3)
-
-        ensemble_score, confidence, individual_scores = self._calculate_ensemble_ipo_score(
-            responses
+        # Use structured outputs - guaranteed schema compliance
+        results = await self._query_structured_parallel(
+            prompt=prompt,
+            response_model=IPOAnalysisResponse,
+            system_prompt=system_prompt,
+            temperature=0.3,
         )
 
-        # Aggregate recommendations and factors
+        # Filter successful results
+        valid_results = [(model_name, result) for model_name, result in results if result is not None]
+
+        if not valid_results:
+            logger.error("All LLM queries failed for IPO analysis")
+            return {
+                "score": 50,
+                "recommendation": "Hold",
+                "risk_level": "High",
+                "key_factors": [],
+                "concerns": ["Analysis unavailable - all LLM queries failed"],
+                "confidence": 0.0,
+                "individual_scores": {},
+                "timestamp": time.time(),
+            }
+
+        # Aggregate results from structured responses
+        scores = [result.score for _, result in valid_results]
+        confidences = [result.confidence for _, result in valid_results]
         all_factors = []
         all_concerns = []
         all_recommendations = []
         all_risk_levels = []
         price_targets = []
+        individual_scores = {}
         individual_analyses = {}
 
-        for response in responses:
-            if response.success and response.content:
-                try:
-                    data = json.loads(response.content)
-                    individual_analyses[response.model] = data
+        for model_name, result in valid_results:
+            individual_scores[model_name] = result.score
+            individual_analyses[model_name] = result.model_dump()
 
-                    if "key_factors" in data:
-                        all_factors.extend(data["key_factors"])
-                    if "concerns" in data:
-                        all_concerns.extend(data["concerns"])
-                    if "recommendation" in data:
-                        all_recommendations.append(data["recommendation"])
-                    if "risk_level" in data:
-                        all_risk_levels.append(data["risk_level"])
-                    if "price_target" in data and data["price_target"]:
-                        price_targets.append(data["price_target"])
-                except Exception as e:
-                    logger.warning(f"Error parsing IPO analysis from {response.model}: {str(e)}")
+            all_factors.extend(result.key_factors)
+            all_concerns.extend(result.concerns)
+            all_recommendations.append(result.recommendation)
+            all_risk_levels.append(result.risk_level)
 
-        # Determine ensemble recommendation based on score
-        if ensemble_score >= 80:
-            recommendation = "Strong Buy"
-        elif ensemble_score >= 65:
-            recommendation = "Buy"
-        elif ensemble_score >= 50:
-            recommendation = "Hold"
-        else:
-            recommendation = "Avoid"
+            if result.price_target:
+                price_targets.append(result.price_target)
 
-        # Determine risk level
-        risk_counts: dict[str, int] = {}
-        for risk in all_risk_levels:
-            risk_counts[risk] = risk_counts.get(risk, 0) + 1
-        risk_level = max(risk_counts.items(), key=lambda x: x[1])[0] if risk_counts else "Medium"
+        # Calculate ensemble metrics
+        ensemble_score = int(sum(scores) / len(scores))
+        avg_confidence = sum(confidences) / len(confidences)
+
+        # Variance-based confidence adjustment
+        score_variance = sum((s - ensemble_score) ** 2 for s in scores) / len(scores)
+        confidence_penalty = max(0.0, min(0.3, score_variance / 100))
+        final_confidence = max(0.0, min(1.0, avg_confidence - confidence_penalty))
+
+        # Determine ensemble recommendation (most common)
+        from collections import Counter
+
+        recommendation_counts = Counter(all_recommendations)
+        ensemble_recommendation = recommendation_counts.most_common(1)[0][0]
+
+        # Determine risk level (most common)
+        risk_counts = Counter(all_risk_levels)
+        ensemble_risk = risk_counts.most_common(1)[0][0]
 
         # Average price target
         avg_price_target = sum(price_targets) / len(price_targets) if price_targets else None
 
         return {
             "score": ensemble_score,
-            "recommendation": recommendation,
-            "risk_level": risk_level,
+            "recommendation": ensemble_recommendation,
+            "risk_level": ensemble_risk,
             "key_factors": list(set(all_factors))[:10],  # Top 10 unique factors
             "concerns": list(set(all_concerns))[:10],  # Top 10 unique concerns
             "price_target": avg_price_target,
-            "confidence": confidence,
+            "confidence": final_confidence,
             "individual_scores": individual_scores,
             "individual_analyses": individual_analyses,
             "timestamp": time.time(),
@@ -1228,7 +1261,7 @@ valuation, competitive landscape, and risk factors."""
 
     async def analyze_stock(self, symbol: str, data: dict[str, Any]) -> dict[str, Any]:
         """
-        Analyze a stock and provide trading recommendations.
+        Analyze a stock and provide trading recommendations using structured outputs.
 
         Args:
             symbol: Stock ticker symbol
@@ -1249,92 +1282,117 @@ valuation, competitive landscape, and risk factors."""
             ... }
             >>> result = await analyzer.analyze_stock('AAPL', data)
         """
+        from src.core.llm_schemas import StockAnalysisResponse
+
         data_summary = json.dumps(data, indent=2)
+        current_price = data.get("price_data", {}).get("current", 100.0)  # Default for calculation
 
         prompt = f"""Analyze the following stock and provide trading recommendations.
 
 Symbol: {symbol}
+Current Price: ${current_price}
 
 Data:
 {data_summary}
 
 Provide a comprehensive stock analysis including:
-1. Sentiment score (-1.0 to 1.0)
-2. Recommendation (Strong Buy, Buy, Hold, Sell, Strong Sell)
-3. Target price
-4. Risk assessment
-5. Key insights
+1. Recommendation (Strong Buy, Buy, Hold, Sell, Strong Sell)
+2. Target price with upside/downside percentage
+3. Timeframe (Short-term, Medium-term, Long-term)
+4. Key factors supporting your recommendation
+5. Risks to your thesis
+6. Confidence in your analysis
+7. Detailed reasoning
 
-Format your response as JSON:
-{{
-    "sentiment": <-1.0 to 1.0>,
-    "recommendation": "<recommendation>",
-    "target_price": <number or null>,
-    "risk_assessment": "<assessment>",
-    "key_insights": ["insight1", "insight2", ...],
-    "analysis": "<detailed analysis>"
-}}
-"""
+Be thorough and consider technical indicators, fundamentals, and market sentiment."""
 
         system_prompt = """You are an expert stock analyst with expertise in technical analysis,
 fundamental analysis, and market sentiment. Provide objective, actionable recommendations."""
 
-        if self.use_async:
-            responses = await self._query_all_llms_async(prompt, system_prompt, temperature=0.3)
-        else:
-            responses = self._query_all_llms_sync(prompt, system_prompt, temperature=0.3)
-
-        ensemble_sentiment, confidence, individual_scores = self._calculate_ensemble_sentiment(
-            responses
+        # Use structured outputs - guaranteed schema compliance
+        results = await self._query_structured_parallel(
+            prompt=prompt,
+            response_model=StockAnalysisResponse,
+            system_prompt=system_prompt,
+            temperature=0.3,
         )
 
-        # Aggregate results
-        all_insights = []
-        all_recommendations = []
+        # Filter successful results
+        valid_results = [(model_name, result) for model_name, result in results if result is not None]
+
+        if not valid_results:
+            logger.error(f"All LLM queries failed for stock analysis: {symbol}")
+            return {
+                "symbol": symbol,
+                "recommendation": "Hold",
+                "target_price": current_price,
+                "risk_assessment": "High",
+                "key_insights": ["Analysis unavailable - all LLM queries failed"],
+                "confidence": 0.0,
+                "individual_scores": {},
+                "timestamp": time.time(),
+            }
+
+        # Aggregate results from structured responses
+        recommendations = []
         target_prices = []
+        confidences = []
+        all_factors = []
+        all_risks = []
+        individual_scores = {}
+        individual_analyses = {}
 
-        for response in responses:
-            if response.success and response.content:
-                try:
-                    data = json.loads(response.content)
-                    if "key_insights" in data:
-                        all_insights.extend(data["key_insights"])
-                    if "recommendation" in data:
-                        all_recommendations.append(data["recommendation"])
-                    if "target_price" in data and data["target_price"]:
-                        target_prices.append(data["target_price"])
-                except Exception as e:
-                    logger.warning(f"Error parsing stock analysis: {str(e)}")
+        for model_name, result in valid_results:
+            individual_scores[model_name] = result.recommendation
+            individual_analyses[model_name] = result.model_dump()
 
-        # Determine recommendation from sentiment
-        if ensemble_sentiment >= 0.6:
-            recommendation = "Strong Buy"
-        elif ensemble_sentiment >= 0.2:
-            recommendation = "Buy"
-        elif ensemble_sentiment >= -0.2:
-            recommendation = "Hold"
-        elif ensemble_sentiment >= -0.6:
-            recommendation = "Sell"
+            recommendations.append(result.recommendation)
+            target_prices.append(result.target_price)
+            confidences.append(result.confidence)
+            all_factors.extend(result.key_factors)
+            all_risks.extend(result.risks)
+
+        # Calculate ensemble metrics
+        avg_target_price = sum(target_prices) / len(target_prices)
+        avg_confidence = sum(confidences) / len(confidences)
+
+        # Variance-based confidence adjustment
+        target_variance = sum((p - avg_target_price) ** 2 for p in target_prices) / len(
+            target_prices
+        )
+        variance_coefficient = target_variance / (avg_target_price**2) if avg_target_price > 0 else 1
+        confidence_penalty = max(0.0, min(0.3, variance_coefficient))
+        final_confidence = max(0.0, min(1.0, avg_confidence - confidence_penalty))
+
+        # Determine ensemble recommendation (most common)
+        from collections import Counter
+
+        recommendation_counts = Counter(recommendations)
+        ensemble_recommendation = recommendation_counts.most_common(1)[0][0]
+
+        # Calculate upside percentage
+        upside_percentage = ((avg_target_price - current_price) / current_price) * 100
+
+        # Determine risk assessment based on recommendation spread
+        unique_recommendations = len(set(recommendations))
+        if unique_recommendations >= 4 or variance_coefficient > 0.1:
+            risk_assessment = "High"
+        elif unique_recommendations >= 2 or variance_coefficient > 0.05:
+            risk_assessment = "Medium"
         else:
-            recommendation = "Strong Sell"
-
-        avg_target = sum(target_prices) / len(target_prices) if target_prices else None
+            risk_assessment = "Low"
 
         return {
             "symbol": symbol,
-            "sentiment": ensemble_sentiment,
-            "recommendation": recommendation,
-            "target_price": avg_target,
-            "risk_assessment": (
-                "High"
-                if abs(ensemble_sentiment) > 0.7
-                else "Medium"
-                if abs(ensemble_sentiment) > 0.3
-                else "Low"
-            ),
-            "key_insights": list(set(all_insights))[:10],
-            "confidence": confidence,
+            "recommendation": ensemble_recommendation,
+            "target_price": round(avg_target_price, 2),
+            "upside_percentage": round(upside_percentage, 1),
+            "risk_assessment": risk_assessment,
+            "key_insights": list(set(all_factors))[:10],  # Top 10 unique factors
+            "risks": list(set(all_risks))[:10],  # Top 10 unique risks
+            "confidence": final_confidence,
             "individual_scores": individual_scores,
+            "individual_analyses": individual_analyses,
             "timestamp": time.time(),
         }
 
@@ -2017,28 +2075,27 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
             LLMResponse from single model
         """
         # Select model based on effort level
-        if EFFORT_CONFIG_AVAILABLE:
-            sdk_config = get_agent_sdk_config()
-            effort_enum = EffortLevel(effort_level) if effort_level in ["low", "medium", "high"] else EffortLevel.MEDIUM
-            effort_config = EffortConfig.for_level(effort_enum)
-            model = LLMModel.CLAUDE_SONNET_4  # Default to Sonnet
+        sdk_config = get_agent_sdk_config()
+        effort_enum = (
+            EffortLevel(effort_level)
+            if effort_level in ["low", "medium", "high"]
+            else EffortLevel.MEDIUM
+        )
+        effort_config = EffortConfig.for_level(effort_enum)
+        model = LLMModel.CLAUDE_SONNET_4  # Default to Sonnet
 
-            if effort_level == "low":
-                # Use fastest model for simple tasks
-                model = LLMModel.GEMINI_2_FLASH
-                max_tokens = 500
-                temperature = 0.3
-            elif effort_level == "high":
-                model = LLMModel.CLAUDE_SONNET_4
-                max_tokens = 4096
-                temperature = 0.7
-            else:
-                max_tokens = effort_config.max_tokens
-                temperature = effort_config.temperature
-        else:
+        if effort_level == "low":
+            # Use fastest model for simple tasks
+            model = LLMModel.GEMINI_2_FLASH
+            max_tokens = 500
+            temperature = 0.3
+        elif effort_level == "high":
             model = LLMModel.CLAUDE_SONNET_4
-            max_tokens = 2000
-            temperature = 0.5
+            max_tokens = 4096
+            temperature = 0.7
+        else:
+            max_tokens = effort_config.max_tokens
+            temperature = effort_config.temperature
 
         logger.info(f"Quick analysis using {model.value} (effort: {effort_level})")
 
@@ -2089,9 +2146,7 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
         confidence = self._extract_confidence(response.content)
 
         if confidence is not None and confidence < confidence_threshold:
-            logger.info(
-                f"Confidence {confidence:.2f} < {confidence_threshold}, escalating model"
-            )
+            logger.info(f"Confidence {confidence:.2f} < {confidence_threshold}, escalating model")
             # Escalate to higher effort
             next_effort = "medium" if initial_effort == "low" else "high"
             escalated = await self.quick_analysis(query, system_prompt, next_effort)
@@ -2107,6 +2162,7 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
                 return data.get("confidence")
 
             import re
+
             match = re.search(r"confidence[:\s]+(\d*\.?\d+)", content.lower())
             if match:
                 return float(match.group(1))
@@ -2179,10 +2235,9 @@ multiple expert opinions into a final, high-quality decision. Your role is to:
                     individual_responses[models_to_use[i].value] = resp.content
 
             # Simple consensus: combine insights
-            combined = "\n\n".join([
-                f"[{model}]: {content}"
-                for model, content in individual_responses.items()
-            ])
+            combined = "\n\n".join(
+                [f"[{model}]: {content}" for model, content in individual_responses.items()]
+            )
 
             return CouncilResponse(
                 final_answer=combined,
