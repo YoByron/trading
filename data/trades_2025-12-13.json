@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2025-12-13T18:59:38.046744+00:00",
+    "date": "2025-12-13",
+    "strategy": "CryptoForce",
+    "account_cash": 92818.29,
+    "symbol": "BTCUSD",
+    "action": "BUY",
+    "notional": 10.0,
+    "estimated_qty": 0.000111,
+    "price": 90125.5625,
+    "order_id": "15d80f39-7799-412c-86ac-dbdc26b47749",
+    "status": "OrderStatus.PENDING_NEW",
+    "momentum_score": -2.7684767187330244
+  }
+]
