@@ -793,7 +793,8 @@ def execute_precious_metals_trading() -> None:
 
         regime = signals[0].get("regime", "neutral") if signals else "neutral"
         logger.info(f"Current metals regime: {regime}")
-        logger.info(f"Allocation: {[(s['symbol'], f\"{s['strength']*100:.0f}%\") for s in signals]}")
+        allocation_str = [(s['symbol'], f"{s['strength']*100:.0f}%") for s in signals]
+        logger.info(f"Allocation: {allocation_str}")
 
         # Execute trades
         if trader:
