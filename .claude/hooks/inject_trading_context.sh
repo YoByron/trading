@@ -98,3 +98,11 @@ if [[ -n "$TRADE_WARNING" ]]; then
 fi
 
 exit 0
+
+# Budget awareness (BATS framework)
+BUDGET_FILE="$CLAUDE_PROJECT_DIR/data/budget_tracker.json"
+if [[ -f "$BUDGET_FILE" ]]; then
+    BUDGET_SPENT=$(jq -r '.spent_this_month // 0' "$BUDGET_FILE" 2>/dev/null || echo "0")
+    BUDGET_REMAINING=$(echo "100 - $BUDGET_SPENT" | bc -l 2>/dev/null || echo "100")
+    echo "Budget: \$${BUDGET_REMAINING%.*} remaining of \$100/mo"
+fi
