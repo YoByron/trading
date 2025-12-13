@@ -24,11 +24,18 @@ if [[ ! -f "$STATE_FILE" ]]; then
 fi
 
 # Get most recent data from performance_log.json (more reliable than system_state)
+# Fixed: Use jq .[-1] to get last array element instead of tail -1 which returns "]"
 if [[ -f "$PERF_LOG" ]]; then
-    PERF_DATE=$(tail -1 "$PERF_LOG" | jq -r '.date // ""' 2>/dev/null || echo "")
-    CURRENT_EQUITY=$(tail -1 "$PERF_LOG" | jq -r '.equity // "N/A"' 2>/dev/null || echo "N/A")
-    TOTAL_PL=$(tail -1 "$PERF_LOG" | jq -r '.pl // "N/A"' 2>/dev/null || echo "N/A")
-    TOTAL_PL_PCT=$(tail -1 "$PERF_LOG" | jq -r '.pl_pct // "N/A"' 2>/dev/null || echo "N/A")
+    PERF_DATE=$(jq -r '.[-1].date // ""' "$PERF_LOG" 2>/dev/null || echo "")
+    CURRENT_EQUITY=$(jq -r '.[-1].equity // "N/A"' "$PERF_LOG" 2>/dev/null || echo "N/A")
+    TOTAL_PL=$(jq -r '.[-1].pl // "N/A"' "$PERF_LOG" 2>/dev/null || echo "N/A")
+    TOTAL_PL_PCT_RAW=$(jq -r '.[-1].pl_pct // "N/A"' "$PERF_LOG" 2>/dev/null || echo "N/A")
+    # Convert decimal to percentage (0.01749 -> 1.75)
+    if [[ "$TOTAL_PL_PCT_RAW" != "N/A" ]]; then
+        TOTAL_PL_PCT=$(echo "$TOTAL_PL_PCT_RAW * 100" | bc -l 2>/dev/null | xargs printf "%.2f" 2>/dev/null || echo "$TOTAL_PL_PCT_RAW")
+    else
+        TOTAL_PL_PCT="N/A"
+    fi
 else
     PERF_DATE=""
     CURRENT_EQUITY=$(jq -r '.account.current_equity // "N/A"' "$STATE_FILE")
