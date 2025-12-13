@@ -68,6 +68,21 @@
     }
   },
   "lessons_learned": {
+    "lessons_learned_2025": {
+      "title": "Trading System Lessons Learned (Consolidated)",
+      "severity": "CRITICAL",
+      "file": "rag_knowledge/chunks/lessons_learned_2025.json",
+      "tags": ["infrastructure", "architecture", "strategy", "verification", "ml", "crypto"],
+      "chunk_count": 21,
+      "date": "2025-12-13",
+      "latest_additions": [
+        "ll_017: BATS Budget Framework",
+        "ll_018: Text Feature Engineering",
+        "ll_019: Gemini Deep Research",
+        "ll_020: Weekend Crypto Force Trade",
+        "ll_021: Buy-the-Dip Strategy"
+      ]
+    },
     "ll_009": {
       "title": "CI Syntax Failure",
       "severity": "CRITICAL",
