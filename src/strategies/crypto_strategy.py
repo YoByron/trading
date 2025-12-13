@@ -394,10 +394,13 @@ class CryptoStrategy:
                     logger.info(f"RAG insights not available: {rag_insights['reasoning']}")
 
             # Step 3: Get current price
+            logger.info(f"[DEBUG] Fetching price for {best_coin}...")
             current_price = self._get_current_price(best_coin)
             if current_price is None:
-                logger.error(f"Failed to get price for {best_coin}")
+                logger.error(f"[CRITICAL] Failed to get price for {best_coin} - trade aborted")
+                logger.error(f"[DEBUG] trader={self.trader is not None}, force_trade={force_trade}")
                 return None
+            logger.info(f"[DEBUG] Got price ${current_price:.2f} for {best_coin}")
 
             # Step 4: Calculate quantity
             quantity = self.daily_amount / current_price
@@ -476,8 +479,9 @@ class CryptoStrategy:
             self.total_invested += self.daily_amount
             self.trades_executed.append(order)
 
-            logger.info(f"Order executed successfully: {order}")
-            logger.info(f"Total invested to date: ${self.total_invested:.2f}")
+            logger.info(f"[SUCCESS] Order executed: {order}")
+            logger.info(f"[DEBUG] Total invested to date: ${self.total_invested:.2f}")
+            logger.info(f"[DEBUG] Returning order object (not None)")
 
             return order
 

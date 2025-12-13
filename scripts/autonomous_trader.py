@@ -382,7 +382,9 @@ def execute_crypto_trading() -> None:
         )
 
         # Execute crypto trading
+        logger.info("[DEBUG] Calling crypto_strategy.execute_daily()...")
         order = crypto_strategy.execute_daily()
+        logger.info(f"[DEBUG] execute_daily() returned: {order}")
 
         if order:
             logger.info(f"✅ Crypto trade executed: {order.symbol} for ${order.amount:.2f}")
