@@ -128,10 +128,10 @@ class CryptoStrategy:
     # - Monad: Future watch (Layer 1, not launched yet)
     DEFAULT_CRYPTO_UNIVERSE = ["BTCUSD", "ETHUSD", "SOLUSD"]
 
-    # RSI parameters (tighter for crypto volatility)
+    # RSI parameters (configurable via env for market conditions)
     RSI_PERIOD = 14
-    RSI_OVERSOLD = 40  # Tighter than stocks (30)
-    RSI_OVERBOUGHT = 60  # Tighter than stocks (70)
+    RSI_OVERSOLD = int(os.getenv("CRYPTO_RSI_OVERSOLD", "40"))  # Default: 40
+    RSI_OVERBOUGHT = int(os.getenv("CRYPTO_RSI_OVERBOUGHT", "75"))  # Relaxed from 60 to 75 for bull markets
 
     # MACD parameters
     MACD_FAST_PERIOD = 12
@@ -888,10 +888,11 @@ class CryptoStrategy:
                     )
                     continue
 
-                # HARD FILTER 3: Require volume confirmation
-                # Note: Weekend volume is typically lower, so threshold is 0.3 (30% of avg)
-                if volume_ratio < 0.3:
-                    logger.warning(f"{symbol} REJECTED - Low volume ({volume_ratio:.2f} < 0.3)")
+                # HARD FILTER 3: Require volume confirmation (relaxed for weekends)
+                # Weekend volume is typically 10-30% of weekday average
+                volume_threshold = float(os.getenv("CRYPTO_VOLUME_THRESHOLD", "0.1"))  # Relaxed from 0.3 to 0.1
+                if volume_ratio < volume_threshold:
+                    logger.warning(f"{symbol} REJECTED - Low volume ({volume_ratio:.2f} < {volume_threshold})")
                     continue
 
                 # Calculate composite score
