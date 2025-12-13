@@ -191,11 +191,16 @@ jobs:
 
       - name: Commit system state updates
         if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           echo "💾 Committing system_state.json updates..."
 
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+
+          # Configure git to use PAT for authentication
+          git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git"
 
           # Pull latest changes to avoid conflicts
           git pull --rebase origin main || {
@@ -204,7 +209,7 @@ jobs:
             # Keep our version (trading execution takes precedence)
             git checkout --ours data/system_state.json
             git add data/system_state.json
-            git rebase --continue
+            git rebase --continue || true
           }
 
           # Stage all data files (system_state.json and trades_*.json)
