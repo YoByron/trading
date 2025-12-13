@@ -181,3 +181,4 @@ yarl==1.22.0
 yfinance==0.2.58
 youtube-transcript-api==1.2.3
 zstandard==0.23.0
+google-genai>=0.3.0

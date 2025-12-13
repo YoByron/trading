@@ -1,0 +1,105 @@
+name: Pre-Trade Deep Research
+
+on:
+  schedule:
+    # Run 30 minutes before trading (9:05 AM ET weekdays, 9:30 AM ET weekends)
+    - cron: '5 14 * * 1-5'   # Weekday pre-market research
+    - cron: '30 14 * * 0,6'  # Weekend crypto research
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: 'Symbol to research (e.g., BTC, ETH, SPY)'
+        required: false
+        default: 'BTC'
+
+jobs:
+  deep-research:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PYTHONPATH: ${{ github.workspace }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install google-genai yfinance pandas
+      
+      - name: Run Pre-Trade Research
+        run: |
+          python3 << 'PYEOF'
+import os
+import json
+from datetime import datetime
+
+# Simple research without full dependency
+try:
+    from google import genai
+    
+    client = genai.Client()
+    
+    symbol = os.getenv('INPUT_SYMBOL', 'BTC')
+    
+    query = f"""
+    Analyze {symbol} for today's trading decision:
+    1. Current price action and trend
+    2. Key news in last 24 hours
+    3. Market sentiment (bullish/bearish/neutral)
+    4. Risk factors
+    5. Trading recommendation: BUY, SELL, or HOLD
+    
+    Be concise and actionable for a day trader.
+    """
+    
+    print(f"🔍 Researching {symbol}...")
+    
+    interaction = client.interactions.create(
+        input=query,
+        agent='deep-research-pro-preview-12-2025',
+        background=True
+    )
+    
+    import time
+    for _ in range(30):  # 5 min timeout
+        interaction = client.interactions.get(interaction.id)
+        if interaction.status == "completed":
+            print("=" * 60)
+            print(f"DEEP RESEARCH: {symbol}")
+            print("=" * 60)
+            print(interaction.outputs[-1].text)
+            
+            # Save to file
+            with open(f'data/research_{symbol}_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
+                json.dump({
+                    "symbol": symbol,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "research": interaction.outputs[-1].text
+                }, f, indent=2)
+            break
+        elif interaction.status == "failed":
+            print(f"❌ Research failed: {interaction.error}")
+            break
+        time.sleep(10)
+    
+except ImportError:
+    print("⚠️ google-genai not available")
+except Exception as e:
+    print(f"⚠️ Research error: {e}")
+    print("Continuing without deep research...")
+PYEOF
+      
+      - name: Commit Research Results
+        if: always()
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add data/research_*.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "chore: Add pre-trade research [skip ci]"
+          git push || true
