@@ -31,7 +31,7 @@ data/
 .claude/
 ├── rules/MANDATORY_RULES.md  # All critical rules (single source of truth)
 ├── commands/                 # Slash command procedures
-├── skills/                   # 18 specialized skills
+├── skills/                   # 21 specialized skills (auto-discovered)
 └── hooks/                    # Lifecycle automation
 
 docs/
@@ -80,20 +80,23 @@ Pick ONE feature with `"passes": false` and complete it before moving on.
 | Verify imports | `python3 -c "from src.orchestrator.main import TradingOrchestrator"` |
 | YouTube analysis | `.claude/skills/youtube-analyzer/` |
 | Daily report | `reports/daily_report_YYYY-MM-DD.txt` |
+| Budget tracking | `skill: budget_tracker` - BATS cost optimization |
+| News analysis | `skill: text_analyzer` - BoW/TF-IDF/FinBERT |
+| Pre-trade research | `skill: deep_research` - Gemini Deep Research |
 
 ---
 
 ## Trading Context
 
 **North Star**: Fibonacci compounding ($1/day → scale with profits)
-**Current**: $10/day paper trading to validate RL system
+**Current**: $25/day crypto (daily) + equities (weekdays)
 
 **R&D Goals**:
 - Month 1: Infrastructure + data collection (break-even OK)
 - Month 2: MACD + RSI + RL system (win rate >55%)
 - Month 3: Validate + optimize (win rate >60%, $3-5/day)
 
-**Integrations** (all enabled): LLM Council, DeepAgents, Multi-LLM, Intelligent Investor
+**Integrations**: LLM Council, DeepAgents, Multi-LLM, Intelligent Investor, Gemini Deep Research
 
 ---
 
@@ -124,9 +127,9 @@ For complex decisions, use: "Take extra time to reason through the tradeoffs"
 - **Rules**: `.claude/rules/MANDATORY_RULES.md` (all constraints)
 - **R&D Strategy**: `docs/r-and-d-phase.md`
 - **Verification**: `docs/verification-protocols.md`
-- **Lessons Learned**: `rag_knowledge/lessons_learned/`
-- **Skills**: `.claude/skills/` (18 specialized capabilities)
+- **Lessons Learned**: `rag_knowledge/lessons_learned/` (27 lessons)
+- **Skills**: `.claude/skills/` (21 specialized capabilities)
 
 ---
 
-**Last Optimized**: December 12, 2025 | **Lines**: ~150 (per Anthropic best practices)
+**Last Optimized**: December 13, 2025 | **Lines**: ~160 (per Anthropic best practices)
