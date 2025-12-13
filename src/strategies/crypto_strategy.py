@@ -203,7 +203,7 @@ class CryptoStrategy:
         """
         # Get daily amount from env var or use default
         if daily_amount is None:
-            daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "10.0"))
+            daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "25.0"))
 
         if daily_amount <= 0:
             raise ValueError(f"daily_amount must be positive, got {daily_amount}")
@@ -317,6 +317,7 @@ class CryptoStrategy:
         Execute the daily crypto trading routine.
 
         This is the main entry point that orchestrates:
+        0. Check BTC price movement and adjust position size (buy the dip!)
         1. Analyze all coins in universe
         2. Calculate momentum scores
         3. Select best coin
@@ -337,6 +338,44 @@ class CryptoStrategy:
         try:
             # Check for force-trade mode (bypass all filters for debugging)
             force_trade = os.getenv("CRYPTO_FORCE_TRADE", "false").lower() in ("true", "1", "yes")
+
+            # Step 0: BUY THE DIP - Check BTC price movement and adjust position size
+            btc_change = self._get_btc_24h_change()
+            original_amount = self.daily_amount
+
+            if btc_change <= -2.0:
+                # BTC is down >2%, buy more (scale up to 2x based on dip size)
+                # Larger dips = bigger position (max 2x at -10% or more)
+                multiplier = min(2.0, 1.0 + abs(btc_change) / 10)
+                self.daily_amount = original_amount * multiplier
+                logger.info("=" * 80)
+                logger.info(
+                    f"🎯 BTC DIP DETECTED ({btc_change:+.2f}%): "
+                    f"Increasing position from ${original_amount:.2f} to ${self.daily_amount:.2f} "
+                    f"({multiplier:.2f}x)"
+                )
+                logger.info("=" * 80)
+            elif btc_change >= 5.0:
+                # BTC is up >5%, reduce or skip to avoid buying at peak
+                if btc_change >= 10.0:
+                    logger.info("=" * 80)
+                    logger.info(
+                        f"⚠️  BTC PUMP ({btc_change:+.2f}%): "
+                        f"Skipping trade to avoid buying at peak"
+                    )
+                    logger.info("=" * 80)
+                    return None
+                else:
+                    # Reduce position by 50%
+                    self.daily_amount = original_amount * 0.5
+                    logger.info("=" * 80)
+                    logger.info(
+                        f"⚠️  BTC UP ({btc_change:+.2f}%): "
+                        f"Reducing position from ${original_amount:.2f} to ${self.daily_amount:.2f} (0.5x)"
+                    )
+                    logger.info("=" * 80)
+            else:
+                logger.info(f"BTC 24h change: {btc_change:+.2f}% - Using normal position size")
 
             # Step 1: Calculate scores for all coins
             scores = self._calculate_all_scores()
@@ -509,11 +548,18 @@ class CryptoStrategy:
             logger.info(f"[DEBUG] Total invested to date: ${self.total_invested:.2f}")
             logger.info(f"[DEBUG] Returning order object (not None)")
 
+            # Reset daily_amount to original for next execution
+            self.daily_amount = original_amount
+
             return order
 
         except Exception as e:
             logger.error(f"Error in daily execution: {str(e)}", exc_info=True)
             raise
+        finally:
+            # Always reset daily_amount even if exception occurs
+            if 'original_amount' in locals():
+                self.daily_amount = original_amount
 
     def get_rag_insights(self, symbol: str, metrics: dict) -> dict:
         """
@@ -887,6 +933,40 @@ class CryptoStrategy:
         return metrics
 
     # ==================== Private Helper Methods ====================
+
+    def _get_btc_24h_change(self) -> float:
+        """
+        Get BTC's 24-hour price change percentage for dip detection.
+
+        This enables "buy the dip" strategy:
+        - If BTC down >2%, increase position size
+        - If BTC up >5%, reduce position size or skip
+
+        Returns:
+            Percentage change in last 24 hours (e.g., -3.5 for -3.5% drop)
+        """
+        try:
+            hist = self._get_historical_data("BTCUSD")
+            if hist is None or len(hist) < 2:
+                logger.warning("Unable to fetch BTC data for dip detection - using 0% change")
+                return 0.0
+
+            # Get last 2 days of data (comparing close prices)
+            current_price = hist["Close"].iloc[-1]
+            yesterday_price = hist["Close"].iloc[-2]
+
+            change_pct = ((current_price - yesterday_price) / yesterday_price) * 100
+
+            logger.info(
+                f"BTC Price Movement: Yesterday=${yesterday_price:.2f}, "
+                f"Today=${current_price:.2f}, Change={change_pct:+.2f}%"
+            )
+
+            return change_pct
+
+        except Exception as e:
+            logger.error(f"Error calculating BTC 24h change: {e}")
+            return 0.0
 
     def _calculate_all_scores(self) -> list[CryptoScore]:
         """Calculate scores for all coins in universe."""

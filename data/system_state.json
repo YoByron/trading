@@ -233,7 +233,7 @@
     "tier5": {
       "name": "Crypto Daily Strategy (BTC, ETH, SOL)",
       "allocation": 0.05,
-      "daily_amount": 10.0,
+      "daily_amount": 25.0,
       "coins": [
         "BTC/USD",
         "ETH/USD",

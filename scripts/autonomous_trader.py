@@ -109,14 +109,14 @@ def _update_system_state_with_crypto_trade(trade_record: dict[str, Any], logger)
 
     strategies = state.setdefault("strategies", {})
     tier5_defaults = {
-        "name": "Crypto Weekend Strategy (BTC, ETH)",
+        "name": "Crypto Daily Strategy (BTC, ETH, SOL)",
         "allocation": 0.05,
-        "daily_amount": 0.5,
-        "coins": ["BTC/USD", "ETH/USD"],
+        "daily_amount": 25.0,
+        "coins": ["BTC/USD", "ETH/USD", "SOL/USD"],
         "trades_executed": 0,
         "total_invested": 0.0,
         "status": "active",
-        "execution_schedule": "Saturday & Sunday 10:00 AM ET",
+        "execution_schedule": "Daily (Mon-Sun) - Weekdays 9:35 AM ET, Weekends 10:00 AM ET",
         "last_execution": None,
         "next_execution": None,
     }
@@ -460,7 +460,7 @@ def execute_crypto_trading() -> None:
                 except Exception:
                     btc_price = 100000.0  # Fallback price
 
-                daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "10.00"))
+                daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "25.00"))
                 quantity = daily_amount / btc_price
 
                 simulated_trade = {

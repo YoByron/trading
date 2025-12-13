@@ -137,7 +137,7 @@ jobs:
           DAILY_INVESTMENT: ${{ secrets.DAILY_INVESTMENT || '10.0' }}
           PAPER_TRADING: 'true'
           ENABLE_CRYPTO_AGENT: 'true'
-          CRYPTO_DAILY_AMOUNT: ${{ secrets.CRYPTO_DAILY_AMOUNT || '10.00' }}
+          CRYPTO_DAILY_AMOUNT: ${{ secrets.CRYPTO_DAILY_AMOUNT || '25.00' }}
           # Relaxed filters for bull market / weekend trading
           CRYPTO_RSI_OVERBOUGHT: '80'  # Allow RSI up to 80 (default was 60)
           CRYPTO_VOLUME_THRESHOLD: '0.05'  # Allow very low weekend volume
