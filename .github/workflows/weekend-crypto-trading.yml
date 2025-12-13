@@ -191,6 +191,7 @@ jobs:
 
       - name: Commit system state updates
         if: steps.check_execution.outputs.skip != 'true' && steps.check_state_changes.outputs.state_changed == 'true'
+        continue-on-error: true  # Non-blocking - trading execution is the priority
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
