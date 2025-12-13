@@ -196,33 +196,58 @@ jobs:
         run: |
           echo "💾 Committing system_state.json updates..."
 
+          # Verify PAT is available
+          if [ -z "$GH_PAT" ]; then
+            echo "❌ ERROR: GH_PAT secret not available"
+            exit 1
+          fi
+
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
           # Configure git to use PAT for authentication
           git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git"
 
-          # Pull latest changes to avoid conflicts
-          git pull --rebase origin main || {
-            echo "⚠️  Merge conflict detected - resolving..."
-
-            # Keep our version (trading execution takes precedence)
-            git checkout --ours data/system_state.json
-            git add data/system_state.json
-            git rebase --continue || true
-          }
-
-          # Stage all data files (system_state.json and trades_*.json)
+          # Stage all data files first (before any pull/rebase operations)
           git add data/system_state.json
           git add data/trades_*.json 2>/dev/null || true
 
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "📋 No changes staged for commit"
+            exit 0
+          fi
+
           # Create commit with trading execution details
-          git commit -m "chore: Update system state after weekend crypto trading"
+          git commit -m "chore: Update system state after weekend crypto trading [skip ci]"
 
-          # Push changes
-          git push origin main
+          # Fetch and rebase before push
+          git fetch origin main
+          git rebase origin/main || {
+            echo "⚠️  Rebase conflict - resolving by keeping our changes..."
+            git checkout --theirs data/system_state.json
+            git checkout --theirs data/trades_*.json 2>/dev/null || true
+            git add data/
+            git rebase --continue || git rebase --abort
+          }
 
-          echo "✅ System state changes committed and pushed"
+          # Push changes with retry
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if git push origin main; then
+              echo "✅ System state changes committed and pushed"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️  Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+              sleep 2
+              git pull --rebase origin main || true
+            fi
+          done
+
+          echo "❌ Failed to push after $MAX_RETRIES attempts"
+          exit 1
 
       - name: Verify Crypto Trade Execution
         # Run smoke tests to verify trades executed correctly
