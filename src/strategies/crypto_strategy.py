@@ -309,18 +309,32 @@ class CryptoStrategy:
         logger.info(f"Daily allocation: ${self.daily_amount}")
 
         try:
+            # Check for force-trade mode (bypass all filters for debugging)
+            force_trade = os.getenv("CRYPTO_FORCE_TRADE", "false").lower() in ("true", "1", "yes")
+
             # Step 1: Calculate scores for all coins
             scores = self._calculate_all_scores()
 
             if not scores:
-                logger.warning("No valid crypto opportunities today")
-                return None
+                logger.warning("No valid crypto opportunities today (all failed filters)")
+                logger.info(f"RSI_OVERBOUGHT threshold: {self.RSI_OVERBOUGHT}")
+                logger.info(f"Force trade mode: {force_trade}")
 
-            # Step 2: Select best coin based on our algorithm
-            best_coin = self.select_crypto()
-            if not best_coin:
-                logger.warning("No crypto selected - all failed filters")
-                return None
+                if force_trade:
+                    logger.warning("FORCE_TRADE enabled - selecting BTC as fallback")
+                    best_coin = "BTCUSD"
+                else:
+                    return None
+            else:
+                # Step 2: Select best coin based on our algorithm
+                best_coin = self.select_crypto()
+                if not best_coin:
+                    logger.warning("No crypto selected - select_crypto() returned None")
+                    if force_trade:
+                        logger.warning("FORCE_TRADE enabled - using BTC as fallback")
+                        best_coin = "BTCUSD"
+                    else:
+                        return None
 
             logger.info(f"Selected crypto (algorithm): {best_coin}")
 
