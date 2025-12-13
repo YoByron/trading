@@ -26,13 +26,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Validate dependencies
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           echo "🔍 Checking for dependency conflicts..."
-          python -m pip install --dry-run -r requirements.txt || {
+          uv pip compile requirements.txt --dry-run || {
             echo "❌ Dependency conflicts detected!"
             echo ""
             echo "💡 To fix:"

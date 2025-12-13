@@ -32,6 +32,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Verify pinned versions exist on PyPI
         id: pin-check
         run: |
@@ -56,10 +59,11 @@ jobs:
           echo "### Dependency Health Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Run pip check with dry-run to find conflicts
+          # Run UV pip compile with dry-run to find conflicts
           echo "#### Conflict Analysis" >> $GITHUB_STEP_SUMMARY
+          export PATH="$HOME/.local/bin:$PATH"
 
-          pip install --dry-run -r requirements.txt 2>&1 | tee /tmp/pip_output.txt
+          uv pip compile requirements.txt --dry-run 2>&1 | tee /tmp/pip_output.txt
 
           if grep -qE "ERROR|conflicting|conflict|ResolutionImpossible" /tmp/pip_output.txt; then
             echo "❌ **DEPENDENCY CONFLICTS DETECTED**" >> $GITHUB_STEP_SUMMARY
@@ -77,7 +81,8 @@ jobs:
       - name: Check for security vulnerabilities
         if: always()
         run: |
-          pip install pip-audit
+          export PATH="$HOME/.local/bin:$PATH"
+          uv pip install pip-audit
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Security Audit" >> $GITHUB_STEP_SUMMARY
 
@@ -97,9 +102,10 @@ jobs:
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Package Freshness" >> $GITHUB_STEP_SUMMARY
+          export PATH="$HOME/.local/bin:$PATH"
 
           # Check specific critical packages
-          pip install pip-tools
+          uv pip install pip-tools
 
           # Check alpaca-trade-api deprecation status
           echo "" >> $GITHUB_STEP_SUMMARY

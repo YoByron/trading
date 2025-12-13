@@ -20,11 +20,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Install minimal deps
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-minimal.txt ]; then pip install -r requirements-minimal.txt; fi
-          pip install beautifulsoup4 lxml requests pyyaml
+          export PATH="$HOME/.local/bin:$PATH"
+          if [ -f requirements-minimal.txt ]; then uv pip sync requirements-minimal.txt; fi
+          uv pip install beautifulsoup4 lxml requests pyyaml
 
       - name: Run Bogleheads ingestion once
         env:
