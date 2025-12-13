@@ -138,6 +138,10 @@ jobs:
           PAPER_TRADING: 'true'
           ENABLE_CRYPTO_AGENT: 'true'
           CRYPTO_DAILY_AMOUNT: ${{ secrets.CRYPTO_DAILY_AMOUNT || '10.00' }}
+          # Relaxed filters for bull market / weekend trading
+          CRYPTO_RSI_OVERBOUGHT: '80'  # Allow RSI up to 80 (default was 60)
+          CRYPTO_VOLUME_THRESHOLD: '0.05'  # Allow very low weekend volume
+          CRYPTO_FORCE_TRADE: 'true'  # Force BTC trade if all filters fail
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           LANGCHAIN_ENABLE_MCP: ${{ secrets.LANGCHAIN_ENABLE_MCP || 'true' }}
           LANGCHAIN_MODEL: ${{ secrets.LANGCHAIN_MODEL || 'claude-3-5-sonnet-20241022' }}
