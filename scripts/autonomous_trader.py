@@ -441,7 +441,58 @@ def execute_crypto_trading() -> None:
             except Exception as e:
                 logger.error(f"Failed to persist trade to JSON: {e}")
         else:
-            logger.info("⚠️  No crypto trade executed (market conditions not favorable)")
+            logger.warning("⚠️  No crypto trade executed (order=None)")
+            logger.info("[DEBUG] Checking FORCE_TRADE fallback...")
+
+            # FORCE_TRADE fallback: Create a simulated BTC trade for tracking
+            force_trade = os.getenv("CRYPTO_FORCE_TRADE", "false").lower() in ("true", "1", "yes")
+            if force_trade:
+                logger.warning("FORCE_TRADE enabled - creating simulated BTC trade for tracking")
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                trades_file = Path(f"data/trades_{today_str}.json")
+
+                # Try to get BTC price for the simulation
+                try:
+                    import yfinance as yf
+                    ticker = yf.Ticker("BTC-USD")
+                    hist = ticker.history(period="1d")
+                    btc_price = float(hist["Close"].iloc[-1]) if not hist.empty else 100000.0
+                except Exception:
+                    btc_price = 100000.0  # Fallback price
+
+                daily_amount = float(os.getenv("CRYPTO_DAILY_AMOUNT", "10.00"))
+                quantity = daily_amount / btc_price
+
+                simulated_trade = {
+                    "symbol": "BTCUSD",
+                    "action": "BUY",
+                    "amount": daily_amount,
+                    "quantity": quantity,
+                    "price": btc_price,
+                    "timestamp": datetime.now().isoformat(),
+                    "status": "SIMULATED",
+                    "strategy": "CryptoStrategy",
+                    "reason": "FORCE_TRADE fallback - all filters failed",
+                    "mode": "SIMULATION",
+                }
+
+                # Load existing trades or init new list
+                daily_trades = []
+                if trades_file.exists():
+                    try:
+                        with open(trades_file) as f:
+                            daily_trades = json.load(f)
+                    except Exception:
+                        pass
+
+                daily_trades.append(simulated_trade)
+                with open(trades_file, "w") as f:
+                    json.dump(daily_trades, f, indent=4)
+
+                logger.info(f"💾 Simulated trade saved to {trades_file}")
+
+                # Also update system_state.json
+                _update_system_state_with_crypto_trade(simulated_trade, logger)
 
     except Exception as e:
         logger.error(f"❌ Crypto trading failed: {e}", exc_info=True)
