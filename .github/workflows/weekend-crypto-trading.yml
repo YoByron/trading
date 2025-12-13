@@ -207,30 +207,12 @@ jobs:
             git rebase --continue
           }
 
-          # Stage system_state.json
+          # Stage all data files (system_state.json and trades_*.json)
           git add data/system_state.json
+          git add data/trades_*.json 2>/dev/null || true
 
           # Create commit with trading execution details
-          git commit -m "$(cat <<'EOF'
-          chore: Update system state after weekend crypto trading
-
-          Weekend crypto trading execution completed and system state updated.
-
-          Execution details:
-          - Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          - Workflow: weekend-crypto-trading.yml
-          - Run ID: ${{ github.run_id }}
-
-          Changes:
-          - Updated account balances
-          - Recorded crypto trade execution results
-          - Updated performance metrics
-
-          🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-          Co-Authored-By: Claude <noreply@anthropic.com>
-          EOF
-          )"
+          git commit -m "chore: Update system state after weekend crypto trading"
 
           # Push changes
           git push origin main
