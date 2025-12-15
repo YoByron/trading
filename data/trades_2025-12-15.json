@@ -32,5 +32,38 @@
     "order_id": "b6d72c2b-9c5e-420b-bfcc-f257e873a011",
     "status": "OrderStatus.FILLED",
     "verified_fill": true
+  },
+  {
+    "timestamp": "2025-12-15T02:26:30.123871+00:00",
+    "date": "2025-12-15",
+    "strategy": "WorldClassCrypto",
+    "strategy_version": "4.0",
+    "account_value": 99910.29,
+    "trend_analysis": {
+      "BTC-USD": {
+        "price": 89885.8984375,
+        "ma50": 96566.9021875,
+        "above": false,
+        "pct": -6.918523426409363,
+        "chg7d": -0.8321965987430039
+      },
+      "ETH-USD": {
+        "price": 3140.56884765625,
+        "ma50": 3271.0102490234376,
+        "above": false,
+        "pct": -3.987801670940376,
+        "chg7d": 0.4918360250768487
+      },
+      "SOL-USD": {
+        "price": 132.61160278320312,
+        "ma50": 149.57728240966796,
+        "above": false,
+        "pct": -11.342417346504922,
+        "chg7d": -0.5001761973923702
+      }
+    },
+    "action": "SKIP",
+    "skip_reason": "All below 50-day MA - waiting for trend",
+    "status": "WAITING_FOR_TREND"
   }
 ]
