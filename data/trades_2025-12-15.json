@@ -65,5 +65,47 @@
     "action": "SKIP",
     "skip_reason": "All below 50-day MA - waiting for trend",
     "status": "WAITING_FOR_TREND"
+  },
+  {
+    "timestamp": "2025-12-15T14:52:14.370505+00:00",
+    "date": "2025-12-15",
+    "strategy": "WorldClassCrypto",
+    "strategy_version": "4.1",
+    "account_value": 100085.1,
+    "trend_analysis": {
+      "BTC-USD": {
+        "price": 88936.7265625,
+        "ma50": 96021.9734375,
+        "above_ma": false,
+        "rsi": 56.16885342698108,
+        "rsi_bullish": true,
+        "pct": -7.378776566815441,
+        "chg7d": -4.051046568265316,
+        "valid": false
+      },
+      "ETH-USD": {
+        "price": 3104.896728515625,
+        "ma50": 3248.348916015625,
+        "above_ma": false,
+        "rsi": 62.35012858914112,
+        "rsi_bullish": true,
+        "pct": -4.416156983405474,
+        "chg7d": -6.510411785034015,
+        "valid": false
+      },
+      "SOL-USD": {
+        "price": 132.92373657226562,
+        "ma50": 148.17257446289062,
+        "above_ma": false,
+        "rsi": 56.151725881677514,
+        "rsi_bullish": true,
+        "pct": -10.291268776222838,
+        "chg7d": -3.6097292177500027,
+        "valid": false
+      }
+    },
+    "action": "SKIP",
+    "skip_reason": "All below 50-day MA",
+    "status": "WAITING_FOR_SIGNAL"
   }
 ]
