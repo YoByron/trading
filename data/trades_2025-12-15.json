@@ -1,0 +1,36 @@
+[
+  {
+    "timestamp": "2025-12-15T01:03:37.506529+00:00",
+    "date": "2025-12-15",
+    "strategy": "WorldClassCrypto",
+    "strategy_version": "3.0",
+    "account_value": 99903.57,
+    "fear_greed_index": 16,
+    "fear_greed_class": "Extreme Fear",
+    "size_multiplier": 1.5,
+    "crypto_analysis": {
+      "BTC-USD": {
+        "price": 88528.703125,
+        "change_7d": -4.491240662616558
+      },
+      "ETH-USD": {
+        "price": 3075.10791015625,
+        "change_7d": -7.4073641172166695
+      },
+      "SOL-USD": {
+        "price": 130.26483154296875,
+        "change_7d": -5.537846665899495
+      }
+    },
+    "contrarian_buy": true,
+    "symbol": "BTCUSD",
+    "action": "BUY",
+    "notional": 15.0,
+    "price": 88528.703125,
+    "filled_price": 88598.87,
+    "filled_qty": 0.000165943,
+    "order_id": "b6d72c2b-9c5e-420b-bfcc-f257e873a011",
+    "status": "OrderStatus.FILLED",
+    "verified_fill": true
+  }
+]
