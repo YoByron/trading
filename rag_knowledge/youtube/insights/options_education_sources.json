@@ -1,9 +1,26 @@
 {
   "source": "Options Trading YouTube Educators - Curated Knowledge",
   "category": "youtube_options_education",
-  "extracted_date": "2025-12-10",
-  "note": "Network blocked YouTube access - content curated from known educational sources",
+  "extracted_date": "2025-12-17",
+  "note": "Updated to include Phil Town Rule #1 strategy",
   "channels": [
+    {
+      "channel_name": "Phil Town's Rule #1 Investing",
+      "topics_covered": ["value investing", "Rule #1 options", "margin of safety", "wonderful companies"],
+      "key_insights": [
+        "Rule #1: Don't lose money. Rule #2: Don't forget Rule #1",
+        "Only buy wonderful companies at 50% margin of safety (MOS)",
+        "4 Ms: Meaning, Moat, Management, Margin of Safety",
+        "Big Five numbers must ALL grow 10%+ over 1, 5, and 10 years",
+        "Sell cash-secured puts at MOS price to get paid while waiting",
+        "Sell covered calls near Sticker Price to get paid while exiting",
+        "Sticker Price = intrinsic value based on future earnings",
+        "MOS Price = Sticker Price × 50% (your maximum buy price)",
+        "Use options to enhance returns, not gamble",
+        "Think like an owner - you're buying the business, not a ticker"
+      ],
+      "priority": "CRITICAL - Core Strategy"
+    },
     {
       "channel_name": "tastytrade",
       "topics_covered": ["market measures", "options theory", "probability", "premium selling"],
@@ -72,6 +89,11 @@
     }
   ],
   "recommended_videos_topics": [
+    "Phil Town Rule #1 Investing explained",
+    "Phil Town options strategy for value investors",
+    "How to calculate Sticker Price and Margin of Safety",
+    "The 4 Ms of investing - Phil Town",
+    "Big Five numbers screening",
     "How to sell covered calls for monthly income",
     "Iron condor setup and management",
     "The wheel strategy explained",
