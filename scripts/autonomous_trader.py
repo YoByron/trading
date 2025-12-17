@@ -1020,6 +1020,30 @@ def main() -> None:
 
     _apply_dynamic_daily_budget(logger)
 
+    # CRITICAL: Enforce lessons learned BEFORE trading starts
+    # Closes positions that violate RAG lessons (e.g., crypto banned but still held)
+    logger.info("=" * 80)
+    logger.info("POSITION ENFORCER: Checking for violations of lessons learned")
+    logger.info("=" * 80)
+    try:
+        from src.core.alpaca_trader import AlpacaTrader
+        from src.safety.position_enforcer import enforce_positions
+        
+        trader = AlpacaTrader()
+        enforcement_result = enforce_positions(trader)
+        
+        if enforcement_result.violations_found > 0:
+            logger.warning(f"🚨 Found {enforcement_result.violations_found} positions violating lessons")
+            logger.warning(f"   Closed {enforcement_result.positions_closed} positions: {enforcement_result.closed_symbols}")
+            logger.warning(f"   Total value closed: ${enforcement_result.total_value_closed:.2f}")
+        else:
+            logger.info("✅ No violations found - all positions comply with lessons")
+    except Exception as e:
+        logger.error(f"Position enforcer failed (non-fatal): {e}")
+        # Continue trading - enforcer failure shouldn't block operations
+    
+    logger.info("=" * 80)
+
     # Set safe defaults
     is_weekend_day = is_weekend()
     is_holiday = is_market_holiday()
