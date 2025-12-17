@@ -450,8 +450,9 @@ if __name__ == "__main__":
     print("\n[3] TESTING LOW CONFIDENCE SIGNAL")
     print("-" * 40)
 
+    aapl = factory.create_equity_symbol("AAPL")
     weak_signal = factory.create_signal(
-        symbol=btc, action=TradeAction.BUY, confidence=0.45, source="test_strategy"
+        symbol=aapl, action=TradeAction.BUY, confidence=0.45, source="test_strategy"
     )
 
     result = verifier.verify(weak_signal)
