@@ -8,10 +8,10 @@
   },
   "challenge": {
     "start_date": "2025-10-29",
-    "current_day": 9,
+    "current_day": 50,
     "total_days": 90,
     "status": "active",
-    "phase": "R&D Phase - Month 1 (Days 1-30)"
+    "phase": "R&D Phase - Month 2 (Days 31-60)"
   },
   "account": {
     "starting_balance": 100000.0,

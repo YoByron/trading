@@ -429,8 +429,11 @@ def main():
         daily_pl_pct = 0
         total_pl = 0
 
-    # R&D Phase info
-    rd_day = 9  # Day 9 of 90
+    # R&D Phase info - calculate dynamically from start date
+    from datetime import date
+    rd_start = date(2025, 10, 29)
+    rd_day = (date.today() - rd_start).days + 1
+    rd_day = min(rd_day, 90)  # Cap at 90
     rd_pct = (rd_day / 90) * 100
 
     # ==========================================================================
