@@ -45,12 +45,13 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           PAPER_TRADING: 'true'
           GOOGLE_SHEETS_IPO_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_IPO_SPREADSHEET_ID }}
-          GOOGLE_SHEETS_IPO_RANGE: ${{ secrets.GOOGLE_SHEETS_IPO_RANGE || 'Target IPOs!A2:E100' }}
-          GOOGLE_SHEETS_CREDENTIALS_PATH: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS_PATH || 'data/google_sheets_credentials.json' }}
-          GOOGLE_SHEETS_TOKEN_PATH: ${{ secrets.GOOGLE_SHEETS_TOKEN_PATH || 'data/google_sheets_token.json' }}
+          # Defaults are applied inside the script if these are unset/empty.
+          GOOGLE_SHEETS_IPO_RANGE: ${{ secrets.GOOGLE_SHEETS_IPO_RANGE }}
+          GOOGLE_SHEETS_CREDENTIALS_PATH: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS_PATH }}
+          GOOGLE_SHEETS_TOKEN_PATH: ${{ secrets.GOOGLE_SHEETS_TOKEN_PATH }}
           # Slack is optional - IPO monitor works without it
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_IPO_CHANNEL: ${{ secrets.SLACK_IPO_CHANNEL || '#trading-alerts' }}
+          SLACK_IPO_CHANNEL: ${{ secrets.SLACK_IPO_CHANNEL }}
         run: |
           echo "🚀 Running IPO scraper..."
           python3 scripts/ipo_scraper.py
