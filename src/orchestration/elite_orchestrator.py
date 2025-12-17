@@ -20,8 +20,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from src.agent_framework import agent_blueprints
-from src.agent_framework.context_engine import (
+# REMOVED: from src.agent_framework import agent_blueprints
+# REMOVED: from src.agent_framework.context_engine import (
     ContextType,
     get_context_engine,
 )
@@ -144,7 +144,7 @@ class EliteOrchestrator:
         self.coevolution_engine = None
         if self.agent0_enabled:
             try:
-                from src.agent_framework.coevolution_engine import CoEvolutionEngine
+                # REMOVED: from src.agent_framework.coevolution_engine import CoEvolutionEngine
 
                 self.coevolution_engine = CoEvolutionEngine(
                     storage_dir=self.context_dir / "coevolution"
@@ -1180,7 +1180,7 @@ class EliteOrchestrator:
         if self.coevolution_engine:
             try:
                 logger.info("🔄 Running Agent0 co-evolution cycle...")
-                from src.agent_framework.context import RunContext, RunMode
+                # REMOVED: from src.agent_framework.context import RunContext, RunMode
 
                 evolution_context = RunContext(mode=RunMode.PAPER if self.paper else RunMode.LIVE)
                 agent0_result = self.coevolution_engine.evolve(evolution_context)
