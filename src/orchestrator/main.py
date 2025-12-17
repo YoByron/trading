@@ -144,6 +144,9 @@ class TradingOrchestrator:
         if not self.tickers:
             raise ValueError("At least one ticker symbol is required.")
 
+        # Persist execution mode; some gates/logging reference self.paper.
+        self.paper = paper
+
         import os as _os
 
         self.macro_agent = MacroeconomicAgent()
@@ -732,12 +735,19 @@ class TradingOrchestrator:
 
                     logger.info(f"Executing exit for {symbol}: {reason}")
 
-                    # Create sell request through trade gateway
-                    # Use abs() because short options have negative qty (e.g., -1.0)
-                    # but we need positive qty for the sell order
+                    # Create CLOSE request through trade gateway.
+                    #
+                    # IMPORTANT:
+                    # - Alpaca positions can include options with negative qty for short legs.
+                    # - Closing a SHORT position requires a BUY (buy-to-close semantics).
+                    # - Closing a LONG position requires a SELL.
+                    #
+                    # If we always use SELL here, a short option "close" can be interpreted as
+                    # sell-to-open, which requires new collateral/options buying power and fails.
+                    close_side = "buy" if position.quantity < 0 else "sell"
                     trade_request = TradeRequest(
                         symbol=symbol,
-                        side="sell",
+                        side=close_side,
                         quantity=abs(position.quantity),
                         source=f"position_manager.{reason}",
                     )
@@ -751,8 +761,17 @@ class TradingOrchestrator:
                         results["errors"].append(f"{symbol}: gateway rejection")
                         continue
 
-                    # Execute the sell order
+                    # Execute the close order
                     order = self.trade_gateway.execute(decision)
+                    if not order:
+                        logger.warning(
+                            "Exit execution returned no order for %s (%s). Not recording as closed.",
+                            symbol,
+                            reason,
+                        )
+                        results["errors"].append(f"{symbol}: execution returned no order")
+                        continue
+
                     results["exits_executed"] += 1
 
                     # Record the closed trade for win/loss tracking
