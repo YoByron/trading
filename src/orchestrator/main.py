@@ -12,21 +12,6 @@ import holidays
 from src.agents.macro_agent import MacroeconomicAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
-from src.orchestrator.gates import (
-    Gate0Psychology,
-    Gate1Momentum,
-    Gate15Debate,
-    Gate2RLFilter,
-    Gate3Sentiment,
-    Gate35Introspection,
-    Gate4Risk,
-    Gate5Execution,
-    GateResult,
-    GateStatus,
-    RAGPreTradeQuery,
-    TradeContext,
-    TradingGatePipeline,
-)
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.integrations.playwright_mcp import SentimentScraper, TradeVerifier
@@ -34,6 +19,18 @@ from src.langchain_agents.analyst import LangChainSentimentAgent
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
 from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
+from src.orchestrator.gates import (
+    Gate0Psychology,
+    Gate1Momentum,
+    Gate2RLFilter,
+    Gate3Sentiment,
+    Gate4Risk,
+    Gate5Execution,
+    Gate15Debate,
+    Gate35Introspection,
+    RAGPreTradeQuery,
+    TradingGatePipeline,
+)
 from src.orchestrator.smart_dca import SmartDCAAllocator
 from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.capital_efficiency import get_capital_calculator
@@ -78,6 +75,15 @@ try:
     LESSONS_RAG_AVAILABLE = True
 except ImportError:
     LESSONS_RAG_AVAILABLE = False
+
+# Hindsight Agentic Memory - 91% accuracy on LongMemEval (Dec 2025)
+# Auto-learns from trades, provides confidence-scored opinions
+try:
+    from src.rag.hindsight_adapter import HindsightAdapter, get_hindsight_adapter
+
+    HINDSIGHT_AVAILABLE = True
+except ImportError:
+    HINDSIGHT_AVAILABLE = False
 
 # Reflexion Loop - Self-improving through trade reflection (Dec 2025)
 # Based on Reflexion framework research
@@ -2065,7 +2071,6 @@ class TradingOrchestrator:
             ctx.current_price = price_data.get("price")
             ctx.hist = self.momentum_agent._fetch_history(ticker)
             if ctx.hist is not None and len(ctx.hist) >= 14:
-                import pandas as pd
                 atr = self.risk_manager._calculate_atr(ctx.hist, period=14)
                 ctx.atr_pct = (atr / ctx.current_price * 100) if ctx.current_price else None
         except Exception as e:
