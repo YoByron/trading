@@ -19,10 +19,8 @@ import pandas as pd
 from mcp.servers import alpaca as alpaca_tools
 from mcp.servers import openrouter as openrouter_tools
 
-from src.agent_framework.context_engine import (
-    ContextType,
-    get_context_engine,
-)
+# agent_framework deleted - using stubs to prevent import errors
+from src.agent_framework_stubs import ContextType, get_context_engine
 from src.agents.execution_agent import ExecutionAgent
 from src.agents.fallback_strategy import FallbackStrategy
 from src.agents.meta_agent import MetaAgent

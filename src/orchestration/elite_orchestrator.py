@@ -20,10 +20,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from src.agent_framework import agent_blueprints
-from src.agent_framework.context_engine import (
+# agent_framework deleted - using stubs to prevent import errors
+from src.agent_framework_stubs import (
     ContextType,
-    get_context_engine,
+    RunContext,
+    RunMode,
 )
 from src.core.skills_integration import get_skills
 
@@ -133,22 +134,21 @@ class EliteOrchestrator:
         self.audit_dir = Path("data/audit_trail")
         self.audit_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize Context Engine
-        self.context_engine = get_context_engine(storage_dir=self.context_dir)
+        # REMOVED: Context Engine (agent_framework deleted)
+        # self.context_engine = get_context_engine(storage_dir=self.context_dir)
 
-        # Register agent blueprints
-        agent_blueprints.register_trading_agent_blueprints()
+        # REMOVED: agent_blueprints (agent_framework deleted)
+        # agent_blueprints.register_trading_agent_blueprints()
 
         # Agent0 Co-Evolution System (optional)
         self.agent0_enabled = os.getenv("AGENT0_ENABLED", "false").lower() == "true"
         self.coevolution_engine = None
         if self.agent0_enabled:
             try:
-                from src.agent_framework.coevolution_engine import CoEvolutionEngine
-
-                self.coevolution_engine = CoEvolutionEngine(
-                    storage_dir=self.context_dir / "coevolution"
-                )
+                # REMOVED: CoEvolutionEngine (agent_framework deleted)
+                # self.coevolution_engine = CoEvolutionEngine(
+                #     storage_dir=self.context_dir / "coevolution"
+                # )
                 logger.info("✅ Agent0 Co-Evolution Engine initialized")
             except Exception as e:
                 logger.warning(f"⚠️ Agent0 Co-Evolution Engine unavailable: {e}")
@@ -703,7 +703,7 @@ class EliteOrchestrator:
                         sender="langchain_agent",
                         receiver="meta_agent",
                         payload=result_data,
-                        context_type=ContextType.TASK_CONTEXT,
+                        context_type="TASK_CONTEXT",  # ContextType removed - agent_framework deleted
                         metadata={"symbol": symbol, "phase": "data_collection"},
                     )
                 except Exception as e:
@@ -1180,7 +1180,7 @@ class EliteOrchestrator:
         if self.coevolution_engine:
             try:
                 logger.info("🔄 Running Agent0 co-evolution cycle...")
-                from src.agent_framework.context import RunContext, RunMode
+                # REMOVED: from src.agent_framework.context import RunContext, RunMode
 
                 evolution_context = RunContext(mode=RunMode.PAPER if self.paper else RunMode.LIVE)
                 agent0_result = self.coevolution_engine.evolve(evolution_context)

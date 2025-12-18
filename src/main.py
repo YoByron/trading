@@ -52,7 +52,7 @@ from dotenv import load_dotenv
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.agent_framework import RunContext  # noqa: E402
+# agent_framework deleted - using stubs to prevent import errors
 from src.core.alpaca_trader import AlpacaTrader  # noqa: E402
 from src.core.risk_manager import RiskManager  # noqa: E402
 from src.core.skills_integration import get_skills  # noqa: E402
@@ -688,9 +688,9 @@ Instructions:
 
 Output your recommendation in JSON format for easy parsing."""
 
-            # Build context for agent framework
-            context = RunContext(
-                config={
+            # Build context for agent framework (RunContext removed - agent_framework deleted)
+            context = {
+                "config": {
                     "query": query,
                     "symbols": self.core_strategy.etf_universe,
                     "mode": self.mode,
@@ -703,8 +703,8 @@ Output your recommendation in JSON format for easy parsing."""
                     },
                     "daily_allocation": self.core_strategy.daily_allocation,
                 },
-                state={},
-            )
+                "state": {},
+            }
 
             # Execute DeepAgents analysis
             self.logger.info("Executing DeepAgents market analysis for core strategy")
