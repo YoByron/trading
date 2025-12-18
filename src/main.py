@@ -688,9 +688,9 @@ Instructions:
 
 Output your recommendation in JSON format for easy parsing."""
 
-            # Build context for agent framework
-            context = RunContext(
-                config={
+            # Build context for agent framework (RunContext removed - agent_framework deleted)
+            context = {
+                "config": {
                     "query": query,
                     "symbols": self.core_strategy.etf_universe,
                     "mode": self.mode,
@@ -703,8 +703,8 @@ Output your recommendation in JSON format for easy parsing."""
                     },
                     "daily_allocation": self.core_strategy.daily_allocation,
                 },
-                state={},
-            )
+                "state": {},
+            }
 
             # Execute DeepAgents analysis
             self.logger.info("Executing DeepAgents market analysis for core strategy")
