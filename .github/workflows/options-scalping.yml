@@ -86,13 +86,26 @@ jobs:
 
           api_key = os.environ["ALPACA_API_KEY"]
           secret_key = os.environ["ALPACA_SECRET_KEY"]
+          alpaca_feed = os.getenv("ALPACA_DATA_FEED", "iex")
 
           print("🎯 0DTE Options Scalping")
           print(f"⏰ Time: {datetime.now(timezone.utc).isoformat()}")
+          print(f"📡 Alpaca data feed: {alpaca_feed}")
 
           # Initialize clients
           trading_client = TradingClient(api_key, secret_key, paper=True)
           data_client = StockHistoricalDataClient(api_key, secret_key)
+
+          # Ensure today's log file exists even if we place no trades or error early.
+          today = date.today()
+          log_file = f"data/trades_{today.strftime('%Y-%m-%d')}.json"
+          try:
+              with open(log_file, "r") as f:
+                  _ = json.load(f)
+          except Exception:
+              with open(log_file, "w") as f:
+                  json.dump([], f, indent=2)
+              print(f"📝 Initialized empty trade log: {log_file}")
 
           # Get account info
           account = trading_client.get_account()
@@ -110,7 +123,6 @@ jobs:
               current_vix = 20.0
 
           # Today's expiry for 0DTE
-          today = date.today()
           expiry_str = today.strftime("%y%m%d")  # Format: YYMMDD
 
           # Target symbols for 0DTE (SPY has daily options)
@@ -119,7 +131,7 @@ jobs:
           for symbol in symbols:
               try:
                   # Get current quote
-                  quote_request = StockLatestQuoteRequest(symbol_or_symbols=symbol)
+                  quote_request = StockLatestQuoteRequest(symbol_or_symbols=symbol, feed=alpaca_feed)
                   quote = data_client.get_stock_latest_quote(quote_request)
                   current_price = float(quote[symbol].ask_price + quote[symbol].bid_price) / 2
 
@@ -133,12 +145,31 @@ jobs:
                       timeframe=TimeFrame.Minute,
                       start=start,
                       end=end,
+                      feed=alpaca_feed,
                   )
                   bars = data_client.get_stock_bars(bars_request)
                   bar_list = list(bars[symbol])
 
                   if len(bar_list) < 10:
                       print(f"⚠️ Insufficient bars for {symbol}")
+                      # Persist a no-trade reason so the run is auditable.
+                      entry = {
+                          "symbol": symbol,
+                          "action": "NO_TRADE",
+                          "timestamp": datetime.now(timezone.utc).isoformat(),
+                          "type": "0DTE_SCALP",
+                          "executed": False,
+                          "alpaca_feed": alpaca_feed,
+                          "reason": f"INSUFFICIENT_BARS ({len(bar_list)})",
+                      }
+                      try:
+                          with open(log_file, "r") as f:
+                              trades = json.load(f)
+                      except Exception:
+                          trades = []
+                      trades.append(entry)
+                      with open(log_file, "w") as f:
+                          json.dump(trades, f, indent=2)
                       continue
 
                   closes = [float(b.close) for b in bar_list]
@@ -268,11 +299,53 @@ jobs:
                       print(f"📝 Trade logged to {log_file}")
                   else:
                       print(f"⏸️ No options signal - conditions not met")
+                      # Persist a no-trade reason so the run is auditable.
+                      entry = {
+                          "symbol": symbol,
+                          "action": "NO_TRADE",
+                          "timestamp": datetime.now(timezone.utc).isoformat(),
+                          "type": "0DTE_SCALP",
+                          "executed": False,
+                          "alpaca_feed": alpaca_feed,
+                          "reason": "NO_SIGNAL",
+                          "vix": current_vix,
+                          "price_change": price_change,
+                          "volume_ratio": volume_ratio,
+                          "underlying_price": current_price,
+                      }
+                      try:
+                          with open(log_file, "r") as f:
+                              trades = json.load(f)
+                      except Exception:
+                          trades = []
+                      trades.append(entry)
+                      with open(log_file, "w") as f:
+                          json.dump(trades, f, indent=2)
 
               except Exception as e:
                   print(f"❌ Error processing {symbol}: {e}")
                   import traceback
                   traceback.print_exc()
+                  # Persist error into today's log so failures are auditable.
+                  error_entry = {
+                      "symbol": symbol,
+                      "action": "ERROR",
+                      "timestamp": datetime.now(timezone.utc).isoformat(),
+                      "type": "WORKFLOW_ERROR",
+                      "workflow": "options-scalping",
+                      "executed": False,
+                      "alpaca_feed": alpaca_feed,
+                      "error": str(e),
+                  }
+                  try:
+                      with open(log_file, "r") as f:
+                          trades = json.load(f)
+                  except Exception:
+                      trades = []
+                  trades.append(error_entry)
+                  with open(log_file, "w") as f:
+                      json.dump(trades, f, indent=2)
+                  print(f"📝 Error logged to {log_file}")
 
           print(f"\n✅ Options scalp scan complete")
           EOF
