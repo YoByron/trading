@@ -309,28 +309,10 @@ class TradingOrchestrator:
             )
 
         # Gate 3.5: Introspective Awareness (Dec 2025 - Anthropic research)
+        # NOTE: Disabled - MultiLLMAnalyzer removed in favor of other analysis methods
         self.introspective_council: IntrospectiveCouncil | None = None
         self.uncertainty_tracker = None
-        enable_introspection = os.getenv("ENABLE_INTROSPECTION", "true").lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        if enable_introspection and INTROSPECTION_AVAILABLE:
-            try:
-                from src.core.multi_llm_analysis import MultiLLMAnalyzer
-
-                analyzer = MultiLLMAnalyzer()
-                self.introspective_council = IntrospectiveCouncil(
-                    multi_llm_analyzer=analyzer,
-                    enable_introspection=True,
-                    strict_mode=os.getenv("INTROSPECTION_STRICT_MODE", "false").lower()
-                    in {"1", "true"},
-                )
-                self.uncertainty_tracker = get_uncertainty_tracker()
-                logger.info("Gate 3.5: IntrospectiveCouncil initialized (Dec 2025 best practice)")
-            except Exception as e:
-                logger.warning(f"IntrospectiveCouncil init failed: {e}")
+        logger.info("Gate 3.5: IntrospectiveCouncil disabled (MultiLLMAnalyzer removed)")
 
         # Initialize LLM-friendly gate pipeline (Dec 2025 refactor)
         # Each gate is <150 lines, independently testable
