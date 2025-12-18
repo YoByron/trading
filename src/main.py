@@ -52,7 +52,7 @@ from dotenv import load_dotenv
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# REMOVED: from src.agent_framework import RunContext  # noqa: E402
+# agent_framework deleted - using stubs to prevent import errors
 from src.core.alpaca_trader import AlpacaTrader  # noqa: E402
 from src.core.risk_manager import RiskManager  # noqa: E402
 from src.core.skills_integration import get_skills  # noqa: E402

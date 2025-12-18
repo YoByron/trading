@@ -11,7 +11,8 @@ from uuid import uuid4
 
 import pandas as pd
 
-# REMOVED: from src.agent_framework import AgentResult, RunContext, TradingAgent
+# agent_framework deleted - using stubs to prevent import errors
+from src.agent_framework_stubs import AgentResult, RunContext, TradingAgent
 
 logger = logging.getLogger(__name__)
 

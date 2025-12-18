@@ -10,8 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# REMOVED: agent_framework deleted (dormant code)
-# from src.agent_framework.context_engine import ContextEngine, MemoryTimescale, get_context_engine
+# agent_framework deleted - using stubs to prevent import errors
+from src.agent_framework_stubs import ContextEngine, MemoryTimescale, get_context_engine
 
 
 @dataclass
