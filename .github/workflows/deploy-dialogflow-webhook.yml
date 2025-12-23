@@ -38,11 +38,13 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      - name: Prepare Dockerfile
+        run: cp Dockerfile.webhook Dockerfile
+
       - name: Deploy to Cloud Run (source-based)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --source . \
-            --dockerfile Dockerfile.webhook \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
