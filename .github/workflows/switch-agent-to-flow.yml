@@ -1,0 +1,54 @@
+name: Switch Agent to Flow Mode
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: igor-trading-2025-v2
+
+jobs:
+  switch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Switch Agent to Flow Mode
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          API_BASE="https://dialogflow.googleapis.com/v3"
+          AGENT="projects/igor-trading-2025-v2/locations/global/agents/98373354-4197-4cb1-a7a0-1966ea6d27a7"
+          FLOW="projects/igor-trading-2025-v2/locations/global/agents/98373354-4197-4cb1-a7a0-1966ea6d27a7/flows/00000000-0000-0000-0000-000000000000"
+
+          echo "Current agent config:"
+          curl -s -X GET "${API_BASE}/${AGENT}" \
+            -H "Authorization: Bearer $TOKEN" | jq '{startFlow, startPlaybook, displayName}'
+
+          echo ""
+          echo "Switching agent to Flow mode (deterministic)..."
+
+          # Update agent to use startFlow instead of startPlaybook
+          UPDATE=$(curl -s -X PATCH \
+            "${API_BASE}/${AGENT}?updateMask=startFlow" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"startFlow\": \"${FLOW}\"}")
+
+          echo "Response: $UPDATE"
+
+          if echo "$UPDATE" | jq -e '.error' > /dev/null 2>&1; then
+            echo "❌ Failed to switch to Flow mode"
+            echo "$UPDATE" | jq '.error'
+            exit 1
+          else
+            echo "✅ Agent switched to Flow mode!"
+            echo ""
+            echo "New config:"
+            curl -s -X GET "${API_BASE}/${AGENT}" \
+              -H "Authorization: Bearer $TOKEN" | jq '{startFlow, startPlaybook, displayName}'
+          fi
