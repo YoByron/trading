@@ -97,28 +97,22 @@ jobs:
               -H "Authorization: Bearer ${{ steps.token.outputs.token }}"
           fi
 
-      - name: Disable Generative AI Fallback
+      - name: Clear Embedded Knowledge and Update Agent
         if: steps.agents.outputs.trading_agent != ''
         run: |
           AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
           API_BASE="https://dialogflow.googleapis.com/v3"
 
-          echo "Disabling generative AI fallback on agent..."
+          echo "Clearing embedded knowledge from agent description..."
 
-          # Get current agent config
-          AGENT_CONFIG=$(curl -s -X GET \
-            "${API_BASE}/${AGENT_NAME}" \
-            -H "Authorization: Bearer ${{ steps.token.outputs.token }}")
-
-          echo "Current agent config retrieved"
-
-          # Update agent to disable generative fallback by clearing the genAppBuilder settings
-          # and setting enableStackdriverLogging to help with debugging
+          # Update the agent's description to remove embedded knowledge
+          # and instruct it to use the webhook for all queries
           UPDATE_AGENT=$(curl -s -X PATCH \
-            "${API_BASE}/${AGENT_NAME}?updateMask=advancedSettings" \
+            "${API_BASE}/${AGENT_NAME}?updateMask=description,advancedSettings" \
             -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json" \
             -d '{
+              "description": "Trading AI Assistant. All queries are handled by the RAG webhook which searches 66 lessons learned.",
               "advancedSettings": {
                 "loggingSettings": {
                   "enableStackdriverLogging": true,
@@ -129,13 +123,19 @@ jobs:
 
           echo "Agent update response: $UPDATE_AGENT"
 
-      - name: Configure Start Page with Webhook Route
+          if echo "$UPDATE_AGENT" | jq -e '.error' > /dev/null 2>&1; then
+            echo "⚠️ Agent update failed"
+            echo "$UPDATE_AGENT" | jq '.error'
+          else
+            echo "✅ Agent description cleared of embedded knowledge"
+          fi
+
+      - name: Configure Webhook Event Handler
         if: steps.agents.outputs.trading_agent != ''
         run: |
           AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
           API_BASE="https://dialogflow.googleapis.com/v3"
 
-          # Get the default start flow
           DEFAULT_FLOW="${AGENT_NAME}/flows/00000000-0000-0000-0000-000000000000"
           echo "Default flow: $DEFAULT_FLOW"
 
@@ -152,83 +152,68 @@ jobs:
             exit 1
           fi
 
-          # Get the START_PAGE
-          START_PAGE="${DEFAULT_FLOW}/pages/START_PAGE"
-
-          # Update START_PAGE with a transition route that ALWAYS triggers webhook
-          # Using condition "true" to match all user inputs
-          echo "Configuring Start Page to always call webhook..."
-
-          PAGE_UPDATE=$(curl -s -X PATCH \
-            "${API_BASE}/${START_PAGE}?updateMask=transitionRoutes" \
+          # Update flow event handlers for no-match
+          EVENT_UPDATE=$(curl -s -X PATCH \
+            "${API_BASE}/${DEFAULT_FLOW}?updateMask=eventHandlers" \
             -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json" \
             -d "{
-              \"transitionRoutes\": [
+              \"eventHandlers\": [
                 {
-                  \"condition\": \"true\",
+                  \"event\": \"sys.no-match-default\",
                   \"triggerFulfillment\": {
                     \"webhook\": \"${WEBHOOK_ID}\",
-                    \"tag\": \"rag-query\",
-                    \"messages\": []
+                    \"tag\": \"rag-query\"
                   }
                 }
               ]
             }")
 
-          echo "Start Page update response: $PAGE_UPDATE"
+          echo "Event handler update: $EVENT_UPDATE"
 
-          if echo "$PAGE_UPDATE" | jq -e '.error' > /dev/null 2>&1; then
-            echo "⚠️ Start Page update failed, trying flow-level routes..."
+      - name: Create Catch-All Intent
+        if: steps.agents.outputs.trading_agent != ''
+        run: |
+          AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
+          API_BASE="https://dialogflow.googleapis.com/v3"
 
-            # Fallback: Update flow with transition routes
-            FLOW_UPDATE=$(curl -s -X PATCH \
-              "${API_BASE}/${DEFAULT_FLOW}?updateMask=transitionRoutes,eventHandlers" \
-              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"transitionRoutes\": [
-                  {
-                    \"condition\": \"true\",
-                    \"triggerFulfillment\": {
-                      \"webhook\": \"${WEBHOOK_ID}\",
-                      \"tag\": \"rag-query\",
-                      \"messages\": []
-                    }
-                  }
-                ],
-                \"eventHandlers\": [
-                  {
-                    \"event\": \"sys.no-match-default\",
-                    \"triggerFulfillment\": {
-                      \"webhook\": \"${WEBHOOK_ID}\",
-                      \"tag\": \"rag-query\",
-                      \"messages\": []
-                    }
-                  },
-                  {
-                    \"event\": \"sys.no-input-default\",
-                    \"triggerFulfillment\": {
-                      \"messages\": [{
-                        \"text\": {
-                          \"text\": [\"Please ask about trading lessons or strategies.\"]
-                        }
-                      }]
-                    }
-                  }
-                ]
-              }")
+          echo "Creating high-priority catch-all intent..."
 
-            echo "Flow update response: $FLOW_UPDATE"
+          # Create an intent with many training phrases to catch most queries
+          INTENT=$(curl -s -X POST \
+            "${API_BASE}/${AGENT_NAME}/intents" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "displayName": "rag-catch-all",
+              "priority": 500000,
+              "trainingPhrases": [
+                {"parts": [{"text": "what did you learn"}], "repeatCount": 1},
+                {"parts": [{"text": "tell me about trading"}], "repeatCount": 1},
+                {"parts": [{"text": "lesson learned"}], "repeatCount": 1},
+                {"parts": [{"text": "what is the strategy"}], "repeatCount": 1},
+                {"parts": [{"text": "explain risk management"}], "repeatCount": 1},
+                {"parts": [{"text": "when did you learn this"}], "repeatCount": 1},
+                {"parts": [{"text": "what date"}], "repeatCount": 1},
+                {"parts": [{"text": "tell me more"}], "repeatCount": 1},
+                {"parts": [{"text": "what happened"}], "repeatCount": 1},
+                {"parts": [{"text": "why did"}], "repeatCount": 1},
+                {"parts": [{"text": "how do you"}], "repeatCount": 1},
+                {"parts": [{"text": "what are the rules"}], "repeatCount": 1}
+              ]
+            }')
 
-            if echo "$FLOW_UPDATE" | jq -e '.error' > /dev/null 2>&1; then
-              echo "⚠️ Flow update also failed"
-              echo "$FLOW_UPDATE" | jq '.error'
-            else
-              echo "✅ Flow configured with webhook routes"
-            fi
+          INTENT_NAME=$(echo "$INTENT" | jq -r '.name // empty')
+          if [ -n "$INTENT_NAME" ]; then
+            echo "✅ Created intent: $INTENT_NAME"
           else
-            echo "✅ Start Page configured to always call webhook"
+            echo "Intent may already exist, checking..."
+            # List intents to find existing one
+            INTENTS=$(curl -s -X GET \
+              "${API_BASE}/${AGENT_NAME}/intents" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}")
+            INTENT_NAME=$(echo "$INTENTS" | jq -r '.intents[] | select(.displayName == "rag-catch-all") | .name' | head -1)
+            echo "Found existing intent: $INTENT_NAME"
           fi
 
       - name: Summary
