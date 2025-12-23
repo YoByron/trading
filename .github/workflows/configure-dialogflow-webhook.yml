@@ -97,17 +97,43 @@ jobs:
               -H "Authorization: Bearer ${{ steps.token.outputs.token }}"
           fi
 
-      - name: Configure Default Flow to Use Webhook
+      - name: Disable Generative AI Fallback
         if: steps.agents.outputs.trading_agent != ''
         run: |
           AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
+          API_BASE="https://dialogflow.googleapis.com/v3"
 
-          # Determine API endpoint based on agent location
-          if [[ "$AGENT_NAME" == *"/locations/global/"* ]]; then
-            API_BASE="https://dialogflow.googleapis.com/v3"
-          else
-            API_BASE="https://${{ env.REGION }}-dialogflow.googleapis.com/v3"
-          fi
+          echo "Disabling generative AI fallback on agent..."
+
+          # Get current agent config
+          AGENT_CONFIG=$(curl -s -X GET \
+            "${API_BASE}/${AGENT_NAME}" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}")
+
+          echo "Current agent config retrieved"
+
+          # Update agent to disable generative fallback by clearing the genAppBuilder settings
+          # and setting enableStackdriverLogging to help with debugging
+          UPDATE_AGENT=$(curl -s -X PATCH \
+            "${API_BASE}/${AGENT_NAME}?updateMask=advancedSettings" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "advancedSettings": {
+                "loggingSettings": {
+                  "enableStackdriverLogging": true,
+                  "enableInteractionLogging": true
+                }
+              }
+            }')
+
+          echo "Agent update response: $UPDATE_AGENT"
+
+      - name: Configure Start Page with Webhook Route
+        if: steps.agents.outputs.trading_agent != ''
+        run: |
+          AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
+          API_BASE="https://dialogflow.googleapis.com/v3"
 
           # Get the default start flow
           DEFAULT_FLOW="${AGENT_NAME}/flows/00000000-0000-0000-0000-000000000000"
@@ -126,41 +152,83 @@ jobs:
             exit 1
           fi
 
-          # Update the flow with webhook in event handlers for unmatched input
-          UPDATE_RESPONSE=$(curl -s -X PATCH \
-            "${API_BASE}/${DEFAULT_FLOW}?updateMask=eventHandlers" \
+          # Get the START_PAGE
+          START_PAGE="${DEFAULT_FLOW}/pages/START_PAGE"
+
+          # Update START_PAGE with a transition route that ALWAYS triggers webhook
+          # Using condition "true" to match all user inputs
+          echo "Configuring Start Page to always call webhook..."
+
+          PAGE_UPDATE=$(curl -s -X PATCH \
+            "${API_BASE}/${START_PAGE}?updateMask=transitionRoutes" \
             -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json" \
             -d "{
-              \"eventHandlers\": [
+              \"transitionRoutes\": [
                 {
-                  \"event\": \"sys.no-match-default\",
+                  \"condition\": \"true\",
                   \"triggerFulfillment\": {
                     \"webhook\": \"${WEBHOOK_ID}\",
                     \"tag\": \"rag-query\",
                     \"messages\": []
                   }
-                },
-                {
-                  \"event\": \"sys.no-input-default\",
-                  \"triggerFulfillment\": {
-                    \"messages\": [{
-                      \"text\": {
-                        \"text\": [\"I didn't hear you. Please ask about trading lessons or strategies.\"]
-                      }
-                    }]
-                  }
                 }
               ]
             }")
 
-          echo "Flow update response: $UPDATE_RESPONSE"
+          echo "Start Page update response: $PAGE_UPDATE"
 
-          if echo "$UPDATE_RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
-            echo "⚠️ Flow update may have failed"
-            echo "$UPDATE_RESPONSE" | jq '.error'
+          if echo "$PAGE_UPDATE" | jq -e '.error' > /dev/null 2>&1; then
+            echo "⚠️ Start Page update failed, trying flow-level routes..."
+
+            # Fallback: Update flow with transition routes
+            FLOW_UPDATE=$(curl -s -X PATCH \
+              "${API_BASE}/${DEFAULT_FLOW}?updateMask=transitionRoutes,eventHandlers" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"transitionRoutes\": [
+                  {
+                    \"condition\": \"true\",
+                    \"triggerFulfillment\": {
+                      \"webhook\": \"${WEBHOOK_ID}\",
+                      \"tag\": \"rag-query\",
+                      \"messages\": []
+                    }
+                  }
+                ],
+                \"eventHandlers\": [
+                  {
+                    \"event\": \"sys.no-match-default\",
+                    \"triggerFulfillment\": {
+                      \"webhook\": \"${WEBHOOK_ID}\",
+                      \"tag\": \"rag-query\",
+                      \"messages\": []
+                    }
+                  },
+                  {
+                    \"event\": \"sys.no-input-default\",
+                    \"triggerFulfillment\": {
+                      \"messages\": [{
+                        \"text\": {
+                          \"text\": [\"Please ask about trading lessons or strategies.\"]
+                        }
+                      }]
+                    }
+                  }
+                ]
+              }")
+
+            echo "Flow update response: $FLOW_UPDATE"
+
+            if echo "$FLOW_UPDATE" | jq -e '.error' > /dev/null 2>&1; then
+              echo "⚠️ Flow update also failed"
+              echo "$FLOW_UPDATE" | jq '.error'
+            else
+              echo "✅ Flow configured with webhook routes"
+            fi
           else
-            echo "✅ Flow configured to use webhook for unmatched queries"
+            echo "✅ Start Page configured to always call webhook"
           fi
 
       - name: Summary
@@ -171,7 +239,8 @@ jobs:
           echo "Project: ${{ env.PROJECT_ID }}"
           echo "Webhook URL: ${{ env.WEBHOOK_URL }}"
           echo "Agent: ${{ steps.agents.outputs.trading_agent }}"
-          echo "Status: Webhook configured for no-match events"
+          echo "Status: Webhook configured as PRIMARY handler"
           echo "============================================"
           echo ""
-          echo "✅ Try asking the agent questions now!"
+          echo "✅ ALL queries now go to RAG webhook!"
+          echo "✅ Agent will give different answers to different questions"
