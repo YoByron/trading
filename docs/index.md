@@ -16,14 +16,15 @@ A 90-day experiment building an autonomous AI trading system with Claude Opus 4.
 | Metric | Value |
 |--------|-------|
 | Day | 50/90 |
-| Portfolio | $99,450 |
-| Win Rate | 50% |
-| Lessons | 60+ |
+| Portfolio | $100,697.83 |
+| Win Rate | 52% |
+| Lessons | 65+ |
 
 ## Featured Lessons
 
-{% for lesson in site.lessons limit:5 %}
-- [{{ lesson.title }}]({{ lesson.url }})
+{% assign sorted_lessons = site.lessons | sort: 'date' | reverse %}
+{% for lesson in sorted_lessons limit:5 %}
+- **{{ lesson.date | date: "%b %d" }}** - [{{ lesson.title }}]({{ lesson.url }})
 {% endfor %}
 
 ## For AI Agents
