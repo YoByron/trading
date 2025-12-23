@@ -100,17 +100,80 @@ jobs:
               -H "Authorization: Bearer ${{ steps.token.outputs.token }}"
           fi
 
+      - name: Configure Default Flow to Use Webhook
+        if: steps.agents.outputs.agent_name != ''
+        run: |
+          AGENT_NAME="${{ steps.agents.outputs.agent_name }}"
+
+          # Determine API endpoint based on agent location
+          if [[ "$AGENT_NAME" == *"/locations/global/"* ]]; then
+            API_BASE="https://dialogflow.googleapis.com/v3"
+          else
+            API_BASE="https://${{ env.REGION }}-dialogflow.googleapis.com/v3"
+          fi
+
+          # Get the default start flow
+          DEFAULT_FLOW="${AGENT_NAME}/flows/00000000-0000-0000-0000-000000000000"
+          echo "Default flow: $DEFAULT_FLOW"
+
+          # Get webhook ID
+          WEBHOOKS=$(curl -s -X GET \
+            "${API_BASE}/${AGENT_NAME}/webhooks" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}")
+
+          WEBHOOK_ID=$(echo "$WEBHOOKS" | jq -r '.webhooks[] | select(.displayName == "Trading RAG Webhook") | .name' | head -1)
+          echo "Webhook ID: $WEBHOOK_ID"
+
+          if [ -z "$WEBHOOK_ID" ]; then
+            echo "❌ Webhook not found"
+            exit 1
+          fi
+
+          # Update the flow with webhook in event handlers for unmatched input
+          UPDATE_RESPONSE=$(curl -s -X PATCH \
+            "${API_BASE}/${DEFAULT_FLOW}?updateMask=eventHandlers" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"eventHandlers\": [
+                {
+                  \"event\": \"sys.no-match-default\",
+                  \"triggerFulfillment\": {
+                    \"webhook\": \"${WEBHOOK_ID}\",
+                    \"messages\": []
+                  }
+                },
+                {
+                  \"event\": \"sys.no-input-default\",
+                  \"triggerFulfillment\": {
+                    \"messages\": [{
+                      \"text\": {
+                        \"text\": [\"I didn't hear you. Please ask about trading lessons or strategies.\"]
+                      }
+                    }]
+                  }
+                }
+              ]
+            }")
+
+          echo "Flow update response: $UPDATE_RESPONSE"
+
+          if echo "$UPDATE_RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
+            echo "⚠️ Flow update may have failed"
+            echo "$UPDATE_RESPONSE" | jq '.error'
+          else
+            echo "✅ Flow configured to use webhook for unmatched queries"
+          fi
+
       - name: Summary
         run: |
           echo "============================================"
-          echo "📋 DIALOGFLOW CONFIGURATION SUMMARY"
+          echo "📋 DIALOGFLOW CONFIGURATION COMPLETE"
           echo "============================================"
           echo "Project: ${{ env.PROJECT_ID }}"
-          echo "Region: ${{ env.REGION }}"
           echo "Webhook URL: ${{ env.WEBHOOK_URL }}"
           echo "Agent: ${{ steps.agents.outputs.agent_name }}"
+          echo "Status: Webhook configured for no-match events"
           echo "============================================"
           echo ""
-          echo "Next step: Configure a flow/page to use this webhook"
-          echo "Go to Dialogflow CX Console > Build > Default Start Flow"
-          echo "Add fulfillment with the 'Trading RAG Webhook'"
+          echo "✅ Try asking the agent questions now!"
