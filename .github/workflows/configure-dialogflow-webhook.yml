@@ -1,0 +1,108 @@
+name: Configure Dialogflow CX Webhook
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+env:
+  PROJECT_ID: igor-trading-2025-v2
+  REGION: us-central1
+  WEBHOOK_URL: https://trading-dialogflow-webhook-cqlewkvzdq-uc.a.run.app/webhook
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Get Access Token
+        id: token
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: List Dialogflow CX Agents
+        id: agents
+        run: |
+          echo "Listing agents in project ${{ env.PROJECT_ID }}..."
+          RESPONSE=$(curl -s -X GET \
+            "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/agents" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            -H "Content-Type: application/json")
+          echo "Response: $RESPONSE"
+
+          # Extract first agent name
+          AGENT_NAME=$(echo "$RESPONSE" | jq -r '.agents[0].name // empty')
+          if [ -z "$AGENT_NAME" ]; then
+            echo "No agents found, checking global location..."
+            RESPONSE=$(curl -s -X GET \
+              "https://dialogflow.googleapis.com/v3/projects/${{ env.PROJECT_ID }}/locations/global/agents" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+              -H "Content-Type: application/json")
+            echo "Global Response: $RESPONSE"
+            AGENT_NAME=$(echo "$RESPONSE" | jq -r '.agents[0].name // empty')
+          fi
+
+          echo "agent_name=$AGENT_NAME" >> $GITHUB_OUTPUT
+          echo "Found agent: $AGENT_NAME"
+
+      - name: Create Webhook in Dialogflow CX
+        if: steps.agents.outputs.agent_name != ''
+        run: |
+          AGENT_NAME="${{ steps.agents.outputs.agent_name }}"
+          echo "Creating webhook for agent: $AGENT_NAME"
+
+          # Create webhook
+          WEBHOOK_RESPONSE=$(curl -s -X POST \
+            "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/${AGENT_NAME}/webhooks" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "displayName": "Trading RAG Webhook",
+              "genericWebService": {
+                "uri": "${{ env.WEBHOOK_URL }}",
+                "requestHeaders": {},
+                "allowedCaCerts": []
+              },
+              "timeout": "30s"
+            }')
+
+          echo "Webhook creation response: $WEBHOOK_RESPONSE"
+
+          WEBHOOK_NAME=$(echo "$WEBHOOK_RESPONSE" | jq -r '.name // empty')
+          if [ -n "$WEBHOOK_NAME" ]; then
+            echo "✅ Webhook created: $WEBHOOK_NAME"
+            echo "WEBHOOK_NAME=$WEBHOOK_NAME" >> $GITHUB_ENV
+          else
+            echo "⚠️ Webhook may already exist or creation failed"
+            # List existing webhooks
+            curl -s -X GET \
+              "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/${AGENT_NAME}/webhooks" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}"
+          fi
+
+      - name: Summary
+        run: |
+          echo "============================================"
+          echo "📋 DIALOGFLOW CONFIGURATION SUMMARY"
+          echo "============================================"
+          echo "Project: ${{ env.PROJECT_ID }}"
+          echo "Region: ${{ env.REGION }}"
+          echo "Webhook URL: ${{ env.WEBHOOK_URL }}"
+          echo "Agent: ${{ steps.agents.outputs.agent_name }}"
+          echo "============================================"
+          echo ""
+          echo "Next step: Configure a flow/page to use this webhook"
+          echo "Go to Dialogflow CX Console > Build > Default Start Flow"
+          echo "Add fulfillment with the 'Trading RAG Webhook'"
