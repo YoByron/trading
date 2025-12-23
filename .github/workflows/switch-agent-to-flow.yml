@@ -1,4 +1,4 @@
-name: Switch Agent to Flow Mode
+name: Disable Generative Fallback
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ env:
   PROJECT_ID: igor-trading-2025-v2
 
 jobs:
-  switch:
+  disable:
     runs-on: ubuntu-latest
     steps:
       - name: Authenticate to Google Cloud
@@ -18,37 +18,50 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Switch Agent to Flow Mode
+      - name: Check and Disable Generative Features
         run: |
           TOKEN=$(gcloud auth print-access-token)
           API_BASE="https://dialogflow.googleapis.com/v3"
           AGENT="projects/igor-trading-2025-v2/locations/global/agents/98373354-4197-4cb1-a7a0-1966ea6d27a7"
-          FLOW="projects/igor-trading-2025-v2/locations/global/agents/98373354-4197-4cb1-a7a0-1966ea6d27a7/flows/00000000-0000-0000-0000-000000000000"
+          FLOW="${AGENT}/flows/00000000-0000-0000-0000-000000000000"
 
-          echo "Current agent config:"
+          echo "=== FULL AGENT CONFIG ==="
           curl -s -X GET "${API_BASE}/${AGENT}" \
-            -H "Authorization: Bearer $TOKEN" | jq '{startFlow, startPlaybook, displayName}'
+            -H "Authorization: Bearer $TOKEN" | jq '.'
 
           echo ""
-          echo "Switching agent to Flow mode (deterministic)..."
+          echo "=== FLOW CONFIG ==="
+          curl -s -X GET "${API_BASE}/${FLOW}" \
+            -H "Authorization: Bearer $TOKEN" | jq '.'
 
-          # Update agent to use startFlow instead of startPlaybook
-          UPDATE=$(curl -s -X PATCH \
-            "${API_BASE}/${AGENT}?updateMask=startFlow" \
+          echo ""
+          echo "=== DISABLING GENERATIVE SETTINGS ==="
+
+          # Disable generative fallback on agent
+          curl -s -X PATCH \
+            "${API_BASE}/${AGENT}?updateMask=genAppBuilderSettings" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"startFlow\": \"${FLOW}\"}")
+            -d '{
+              "genAppBuilderSettings": null
+            }'
 
-          echo "Response: $UPDATE"
+          # Clear any generators on the agent
+          echo ""
+          echo "=== LISTING GENERATORS ==="
+          GENERATORS=$(curl -s -X GET \
+            "${API_BASE}/${AGENT}/generators" \
+            -H "Authorization: Bearer $TOKEN")
+          echo "$GENERATORS"
 
-          if echo "$UPDATE" | jq -e '.error' > /dev/null 2>&1; then
-            echo "❌ Failed to switch to Flow mode"
-            echo "$UPDATE" | jq '.error'
-            exit 1
-          else
-            echo "✅ Agent switched to Flow mode!"
-            echo ""
-            echo "New config:"
-            curl -s -X GET "${API_BASE}/${AGENT}" \
-              -H "Authorization: Bearer $TOKEN" | jq '{startFlow, startPlaybook, displayName}'
-          fi
+          # Delete any generators found
+          echo "$GENERATORS" | jq -r '.generators[]?.name // empty' | while read gen; do
+            if [ -n "$gen" ]; then
+              echo "Deleting generator: $gen"
+              curl -s -X DELETE "${API_BASE}/${gen}" \
+                -H "Authorization: Bearer $TOKEN"
+            fi
+          done
+
+          echo ""
+          echo "=== DONE ==="
