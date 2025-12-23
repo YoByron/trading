@@ -140,6 +140,7 @@ jobs:
                   \"event\": \"sys.no-match-default\",
                   \"triggerFulfillment\": {
                     \"webhook\": \"${WEBHOOK_ID}\",
+                    \"tag\": \"rag-query\",
                     \"messages\": []
                   }
                 },
