@@ -36,31 +36,28 @@ jobs:
         id: agents
         run: |
           echo "Listing agents in project ${{ env.PROJECT_ID }}..."
+
+          # Check global location (where our agents are)
           RESPONSE=$(curl -s -X GET \
-            "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/agents" \
+            "https://dialogflow.googleapis.com/v3/projects/${{ env.PROJECT_ID }}/locations/global/agents" \
             -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json")
-          echo "Response: $RESPONSE"
 
-          # Extract first agent name
-          AGENT_NAME=$(echo "$RESPONSE" | jq -r '.agents[0].name // empty')
-          if [ -z "$AGENT_NAME" ]; then
-            echo "No agents found, checking global location..."
-            RESPONSE=$(curl -s -X GET \
-              "https://dialogflow.googleapis.com/v3/projects/${{ env.PROJECT_ID }}/locations/global/agents" \
-              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
-              -H "Content-Type: application/json")
-            echo "Global Response: $RESPONSE"
-            AGENT_NAME=$(echo "$RESPONSE" | jq -r '.agents[0].name // empty')
-          fi
+          # Get ALL agent names (we'll configure all of them)
+          ALL_AGENTS=$(echo "$RESPONSE" | jq -r '.agents[].name' | tr '\n' ',' | sed 's/,$//')
+          echo "Found agents: $ALL_AGENTS"
 
-          echo "agent_name=$AGENT_NAME" >> $GITHUB_OUTPUT
-          echo "Found agent: $AGENT_NAME"
+          # Also get agent named "TradingAgent" specifically (the one user is testing)
+          TRADING_AGENT=$(echo "$RESPONSE" | jq -r '.agents[] | select(.displayName == "TradingAgent") | .name')
+          echo "TradingAgent: $TRADING_AGENT"
+
+          echo "all_agents=$ALL_AGENTS" >> $GITHUB_OUTPUT
+          echo "trading_agent=$TRADING_AGENT" >> $GITHUB_OUTPUT
 
       - name: Create Webhook in Dialogflow CX
-        if: steps.agents.outputs.agent_name != ''
+        if: steps.agents.outputs.trading_agent != ''
         run: |
-          AGENT_NAME="${{ steps.agents.outputs.agent_name }}"
+          AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
           echo "Creating webhook for agent: $AGENT_NAME"
 
           # Determine API endpoint based on agent location
@@ -101,9 +98,9 @@ jobs:
           fi
 
       - name: Configure Default Flow to Use Webhook
-        if: steps.agents.outputs.agent_name != ''
+        if: steps.agents.outputs.trading_agent != ''
         run: |
-          AGENT_NAME="${{ steps.agents.outputs.agent_name }}"
+          AGENT_NAME="${{ steps.agents.outputs.trading_agent }}"
 
           # Determine API endpoint based on agent location
           if [[ "$AGENT_NAME" == *"/locations/global/"* ]]; then
@@ -173,7 +170,7 @@ jobs:
           echo "============================================"
           echo "Project: ${{ env.PROJECT_ID }}"
           echo "Webhook URL: ${{ env.WEBHOOK_URL }}"
-          echo "Agent: ${{ steps.agents.outputs.agent_name }}"
+          echo "Agent: ${{ steps.agents.outputs.trading_agent }}"
           echo "Status: Webhook configured for no-match events"
           echo "============================================"
           echo ""
