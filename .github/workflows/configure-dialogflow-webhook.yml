@@ -63,9 +63,17 @@ jobs:
           AGENT_NAME="${{ steps.agents.outputs.agent_name }}"
           echo "Creating webhook for agent: $AGENT_NAME"
 
+          # Determine API endpoint based on agent location
+          if [[ "$AGENT_NAME" == *"/locations/global/"* ]]; then
+            API_BASE="https://dialogflow.googleapis.com/v3"
+          else
+            API_BASE="https://${{ env.REGION }}-dialogflow.googleapis.com/v3"
+          fi
+          echo "Using API: $API_BASE"
+
           # Create webhook
           WEBHOOK_RESPONSE=$(curl -s -X POST \
-            "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/${AGENT_NAME}/webhooks" \
+            "${API_BASE}/${AGENT_NAME}/webhooks" \
             -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -88,7 +96,7 @@ jobs:
             echo "⚠️ Webhook may already exist or creation failed"
             # List existing webhooks
             curl -s -X GET \
-              "https://${{ env.REGION }}-dialogflow.googleapis.com/v3/${AGENT_NAME}/webhooks" \
+              "${API_BASE}/${AGENT_NAME}/webhooks" \
               -H "Authorization: Bearer ${{ steps.token.outputs.token }}"
           fi
 
