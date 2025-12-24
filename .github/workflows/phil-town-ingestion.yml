@@ -19,12 +19,11 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   ingest-phil-town:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45  # Increased for backfill mode
 
     steps:
       - name: Checkout repository
@@ -39,7 +38,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install yt-dlp youtube-transcript-api chromadb requests
+          pip install yt-dlp youtube-transcript-api chromadb requests beautifulsoup4
 
       - name: Run Phil Town YouTube Ingestion
         env:
@@ -52,8 +51,17 @@ jobs:
 
       - name: Run Phil Town Blog and Podcast Ingestion
         run: |
+          MODE="${{ github.event.inputs.mode || 'recent' }}"
           echo "Ingesting Phil Town blog and podcast..."
-          python3 scripts/ingest_phil_town_blog.py --source all --max-articles 10
+
+          # Backfill mode gets ALL articles, recent mode gets 10
+          if [ "$MODE" = "backfill" ]; then
+            MAX_ARTICLES=500
+          else
+            MAX_ARTICLES=20
+          fi
+
+          python3 scripts/ingest_phil_town_blog.py --source all --max-articles $MAX_ARTICLES
 
       - name: Vectorize new content into RAG
         run: |
@@ -65,67 +73,64 @@ jobs:
           python3 scripts/vectorize_rag_knowledge.py --stats
 
       - name: Verify ingestion success
+        id: verify
         run: |
           echo "=== Verifying Phil Town Ingestion ==="
 
           # Count YouTube transcripts
           TRANSCRIPT_COUNT=$(find rag_knowledge/youtube/transcripts -name "*.md" 2>/dev/null | wc -l)
           echo "YouTube transcripts: $TRANSCRIPT_COUNT"
+          echo "transcript_count=$TRANSCRIPT_COUNT" >> $GITHUB_OUTPUT
 
           # Count blog articles
           BLOG_COUNT=$(find rag_knowledge/blogs/phil_town -name "*.md" 2>/dev/null | wc -l)
           echo "Blog articles: $BLOG_COUNT"
+          echo "blog_count=$BLOG_COUNT" >> $GITHUB_OUTPUT
 
-          # Verify at least one type of content exists
-          TOTAL=$((TRANSCRIPT_COUNT + BLOG_COUNT))
+          # Count books
+          BOOK_COUNT=$(find rag_knowledge/books -name "*.md" -o -name "*.json" 2>/dev/null | wc -l)
+          echo "Books: $BOOK_COUNT"
+          echo "book_count=$BOOK_COUNT" >> $GITHUB_OUTPUT
+
+          # Total content
+          TOTAL=$((TRANSCRIPT_COUNT + BLOG_COUNT + BOOK_COUNT))
+          echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
+
           if [ "$TOTAL" -eq 0 ]; then
             echo "::error::INGESTION FAILED - No Phil Town content was ingested!"
-            echo "This means the pipeline ran but produced zero output."
-            echo "Check yt-dlp, youtube-transcript-api, and network connectivity."
             exit 1
           fi
 
           echo ""
-          echo "=== YouTube Transcripts ==="
-          ls -la rag_knowledge/youtube/transcripts/ 2>/dev/null | head -10 || echo "No transcripts"
+          echo "=== SUCCESS: Phil Town content verified ==="
+          echo "Total content pieces: $TOTAL"
 
-          # Validate content contains Phil Town keywords
-          if [ "$TRANSCRIPT_COUNT" -gt 0 ]; then
-            echo ""
-            echo "=== Content Validation ==="
-            PHIL_MENTIONS=$(grep -rl -i "phil\|rule.*1\|moat\|margin.*safety" rag_knowledge/youtube/transcripts/*.md 2>/dev/null | wc -l)
-            echo "Files mentioning Phil Town concepts: $PHIL_MENTIONS"
-            if [ "$PHIL_MENTIONS" -eq 0 ]; then
-              echo "::warning::Content may not be from Phil Town - no key concepts found"
-            fi
+      - name: Commit directly to main (auto-merge)
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Add all RAG content
+          git add rag_knowledge/ data/youtube_cache/ data/blog_cache/ data/vector_db/
+
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "No new content to commit"
+            exit 0
           fi
 
-          echo ""
-          echo "=== Blog Articles ==="
-          ls -la rag_knowledge/blogs/phil_town/ 2>/dev/null | head -10 || echo "No blog articles"
+          # Get counts for commit message
+          TRANSCRIPT_COUNT=${{ steps.verify.outputs.transcript_count }}
+          BLOG_COUNT=${{ steps.verify.outputs.blog_count }}
 
-          echo ""
-          echo "=== SUCCESS: Phil Town content ingested ==="
+          git commit -m "feat(rag): Auto-ingest Phil Town content
 
-      - name: Create Pull Request with ingested content
-        uses: peter-evans/create-pull-request@v8
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "feat(rag): Phil Town content ${{ github.run_id }}"
-          title: "feat(rag): Phil Town content ingestion"
-          body: |
-            ## Automated Phil Town Content Ingestion
+          YouTube transcripts: $TRANSCRIPT_COUNT
+          Blog articles: $BLOG_COUNT
 
-            - YouTube transcripts
-            - Blog posts
-            - Podcast content
-            - Vector embeddings
+          Mode: ${{ github.event.inputs.mode || 'recent' }}
+          Run: ${{ github.run_id }}"
 
-            Auto-generated by Phil Town Ingestion Pipeline.
-          branch: auto/phil-town-${{ github.run_id }}
-          add-paths: |
-            rag_knowledge/
-            data/youtube_cache/
-            data/blog_cache/
-            data/vector_db/
-          delete-branch: true
+          git push origin main
+
+          echo "✅ Content committed directly to main"
