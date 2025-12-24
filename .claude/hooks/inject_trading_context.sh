@@ -218,4 +218,10 @@ if [[ -f "$BUDGET_FILE" ]]; then
     echo "Budget: \$${BUDGET_REMAINING%.*} remaining of \$100/mo"
 fi
 
+# Session start reminder - Check deferred items
+DEFERRED_COUNT=$(grep -l "Month 3\|#deferred" "$CLAUDE_PROJECT_DIR/rag_knowledge/lessons_learned/"*.md 2>/dev/null | wc -l || echo "0")
+if [[ "$DEFERRED_COUNT" -gt 0 ]]; then
+    echo "📌 Deferred items: $DEFERRED_COUNT (see .claude/SESSION_START_CHECKLIST.md)"
+fi
+
 exit 0

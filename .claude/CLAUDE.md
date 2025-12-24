@@ -33,7 +33,8 @@ data/
 ├── rules/MANDATORY_RULES.md  # All critical rules (single source of truth)
 ├── commands/                 # Slash command procedures
 ├── skills/                   # 17 specialized skills (auto-discovered)
-└── hooks/                    # Lifecycle automation
+├── hooks/                    # Lifecycle automation
+└── SESSION_START_CHECKLIST.md # ⚠️ RUN THIS EVERY SESSION
 
 docs/
 ├── r-and-d-phase.md         # R&D strategy (Days 1-90)
