@@ -1,0 +1,185 @@
+name: Agent Health Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/agents/**'
+      - 'src/orchestrator/**'
+      - 'src/orchestration/**'
+  schedule:
+    # Run daily at 5:00 AM ET (before trading)
+    - cron: '0 9,10 * * *'
+  workflow_dispatch:
+
+jobs:
+  agent-health:
+    name: Verify All Agents Operational
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-interaction
+
+      - name: Check Core Agent Imports
+        run: |
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║              AGENT HEALTH CHECK - IMPORTS                  ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+
+          FAILURES=0
+
+          # Core agents that MUST import
+          CRITICAL_AGENTS=(
+            "src.orchestrator.main:TradingOrchestrator"
+            "src.strategies.registry:StrategyRegistry"
+            "src.agents.momentum_agent:MomentumAgent"
+            "src.agents.sentiment_agent:SentimentAgent"
+            "src.risk.position_sizing:PositionSizer"
+          )
+
+          for agent in "${CRITICAL_AGENTS[@]}"; do
+            MODULE=$(echo $agent | cut -d: -f1)
+            CLASS=$(echo $agent | cut -d: -f2)
+
+            if poetry run python -c "from $MODULE import $CLASS; print(f'✅ {\"$CLASS\"}')" 2>/dev/null; then
+              echo "   Import OK"
+            else
+              echo "❌ FAILED: $MODULE:$CLASS"
+              FAILURES=$((FAILURES + 1))
+            fi
+          done
+
+          echo ""
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "::error::$FAILURES critical agent imports failed!"
+            exit 1
+          fi
+          echo "✅ All critical agent imports passed"
+
+      - name: Check Optional Agents (Non-blocking)
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║          OPTIONAL AGENT CHECK (Non-blocking)               ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+
+          # Optional agents (warn but don't fail)
+          OPTIONAL_AGENTS=(
+            "src.orchestration.adk_client:ADKClient"
+            "src.orchestration.adk_integration:ADKTradeAdapter"
+            "src.agents.research_agent:ResearchAgent"
+          )
+
+          for agent in "${OPTIONAL_AGENTS[@]}"; do
+            MODULE=$(echo $agent | cut -d: -f1)
+            CLASS=$(echo $agent | cut -d: -f2)
+
+            if poetry run python -c "from $MODULE import $CLASS; print(f'✅ {\"$CLASS\"}')" 2>/dev/null; then
+              echo "   Import OK"
+            else
+              echo "::warning::Optional agent not available: $CLASS"
+            fi
+          done
+
+      - name: Verify Strategy Registry
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║              STRATEGY REGISTRY VALIDATION                  ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+
+          poetry run python << 'PYTHON'
+          from src.strategies.registry import StrategyRegistry
+
+          registry = StrategyRegistry()
+          strategies = registry.list_strategies()
+
+          print(f"Registered strategies: {len(strategies)}")
+          for s in strategies[:10]:
+              print(f"  - {s}")
+
+          if len(strategies) < 1:
+              print("::error::No strategies registered!")
+              exit(1)
+
+          print("✅ Strategy registry OK")
+          PYTHON
+
+      - name: Verify Risk Management
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║               RISK MANAGEMENT VALIDATION                   ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+
+          poetry run python << 'PYTHON'
+          try:
+              from src.risk.position_sizing import PositionSizer
+              print("✅ PositionSizer available")
+          except ImportError as e:
+              print(f"❌ PositionSizer failed: {e}")
+              exit(1)
+
+          try:
+              from src.risk.vix_circuit_breaker import VixCircuitBreaker
+              print("✅ VixCircuitBreaker available")
+          except ImportError as e:
+              print(f"::warning::VixCircuitBreaker not available: {e}")
+
+          print("✅ Risk management OK")
+          PYTHON
+
+      - name: Check Agent Blueprints
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║              AGENT BLUEPRINT VALIDATION                    ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+
+          BLUEPRINT_COUNT=$(find data/agent_context/blueprints -name "*.json" 2>/dev/null | wc -l)
+          echo "Agent blueprints found: $BLUEPRINT_COUNT"
+
+          if [ "$BLUEPRINT_COUNT" -lt 5 ]; then
+            echo "::warning::Fewer than 5 agent blueprints found"
+          fi
+
+          # Validate JSON syntax
+          for bp in data/agent_context/blueprints/*.json; do
+            if [ -f "$bp" ]; then
+              if python -c "import json; json.load(open('$bp'))" 2>/dev/null; then
+                echo "  ✅ $(basename $bp)"
+              else
+                echo "  ❌ Invalid JSON: $(basename $bp)"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "✅ Agent blueprints OK"
+
+      - name: Summary
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║              AGENT HEALTH CHECK COMPLETE                   ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "All critical agents are operational!"
+          echo ""
+          echo "Next steps if you see warnings:"
+          echo "  - ADK agents: Set ENABLE_ADK_AGENTS=true and run Go service"
+          echo "  - Optional agents: These enhance but aren't required"
