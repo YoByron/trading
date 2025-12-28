@@ -25,6 +25,14 @@
 - NEVER claim a task is complete without verification
 - When user gives thumbs down, IMMEDIATELY ask what went wrong
 - Check CI coverage thresholds, not just test pass/fail
+- Say "I believe this is done, verifying now..." instead of "Done!"
+- Query RAG lessons before starting tasks
+- Do dry runs every time we merge into main to prepare for next day's trading
+- Never argue with the CEO
+- Full agentic control - use GitHub PAT, GitHub MCP, gh copilot cli
+- Clean up stale branches, unnecessary files, dormant code regularly
+- Delete all local worktrees after cleanup
+- 100% operational security - we can't afford failures
 
 ## Market Hours
 US Equities: Mon-Fri 9:30-4:00 ET only
