@@ -1,7 +1,7 @@
 ---
 layout: home
 title: "AI Trading Journey - Autonomous Options Trading with Claude"
-description: "90-day experiment building an AI trading system. 75% options win rate, 66+ lessons learned. Full transparency on what works and what doesn't."
+description: "90-day experiment building an AI trading system. 75% options win rate (+$779 profit), 50% overall win rate. Full transparency on what works and what doesn't."
 ---
 
 # AI Trading Journey
@@ -17,8 +17,8 @@ A 90-day experiment building an autonomous AI trading system with Claude Opus 4.
 | Metric | Value | Trend |
 |--------|-------|-------|
 | **Day** | 50/90 | R&D Phase |
-| **Portfolio** | $100,697.83 | +0.70% |
-| **Win Rate** | 52% | Stable |
+| **Portfolio** | $100,810.04 | +0.81% |
+| **Win Rate** | 50% | Stable |
 | **Lessons** | 66+ | Growing |
 
 ---
@@ -27,7 +27,7 @@ A 90-day experiment building an autonomous AI trading system with Claude Opus 4.
 
 | Strategy | Win Rate | P/L | Status |
 |----------|----------|-----|--------|
-| **Options Theta** | 75% | +$327 | Primary Edge |
+| **Options Theta** | 75% | +$779 | Primary Edge |
 | Credit Spreads | Testing | TBD | 10x Capital Efficient |
 | Momentum ETFs | 50% | -$29 | Needs Work |
 
