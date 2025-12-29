@@ -37,29 +37,37 @@ logger = logging.getLogger(__name__)
 SYSTEM_STATE_FILE = PROJECT_ROOT / "data" / "system_state.json"
 
 
+class AlpacaSyncError(Exception):
+    """Raised when Alpaca sync fails - NEVER fall back to simulated data."""
+
+    pass
+
+
 def sync_from_alpaca() -> dict:
     """
     Sync account state from Alpaca.
 
     Returns:
-        Dict with account data or raises exception on failure.
+        Dict with REAL account data from Alpaca.
+
+    Raises:
+        AlpacaSyncError: If API keys missing or connection fails.
+                         NEVER returns simulated/fake data.
     """
     logger.info("🔄 Syncing from Alpaca...")
 
-    # Check for API keys
+    # Check for API keys - FAIL LOUDLY if missing
     api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID")
     api_secret = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
 
     if not api_key or not api_secret:
-        logger.warning("⚠️ No Alpaca API keys found - using simulated mode")
-        return {
-            "equity": 100000.0,
-            "cash": 100000.0,
-            "buying_power": 100000.0,
-            "positions": [],
-            "mode": "simulated",
-            "synced_at": datetime.now().isoformat(),
-        }
+        raise AlpacaSyncError(
+            "ALPACA API KEYS NOT FOUND!\n"
+            "  Required: ALPACA_API_KEY and ALPACA_SECRET_KEY\n"
+            "  Or: APCA_API_KEY_ID and APCA_API_SECRET_KEY\n"
+            "  Set these in your environment or .env file.\n"
+            "  REFUSING to use simulated data - that would be lying."
+        )
 
     try:
         from src.execution.alpaca_executor import AlpacaExecutor
@@ -87,7 +95,20 @@ def sync_from_alpaca() -> dict:
 def update_system_state(alpaca_data: dict) -> None:
     """
     Update system_state.json with fresh Alpaca data.
+
+    Raises:
+        AlpacaSyncError: If data is simulated/fake - we NEVER overwrite real data with lies.
     """
+    # CRITICAL: Reject simulated data - this would overwrite real data with garbage
+    mode = alpaca_data.get("mode", "unknown")
+    if mode == "simulated":
+        raise AlpacaSyncError(
+            f"REFUSING to update system_state.json with SIMULATED data!\n"
+            f"  Received mode='{mode}'\n"
+            f"  This would overwrite real portfolio data with lies.\n"
+            f"  Fix the Alpaca connection first."
+        )
+
     logger.info("📝 Updating system_state.json...")
 
     # Load existing state
