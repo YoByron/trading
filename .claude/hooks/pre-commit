@@ -1,6 +1,9 @@
 #!/bin/bash
 # Pre-commit hook for repository hygiene
 # Automatically organizes files and runs quality checks
+#
+# CRITICAL: Ensures 100% operational integrity
+# Updated: Dec 29, 2025 - Added hook validation
 
 echo "🧹 Running repository hygiene check..."
 
@@ -13,6 +16,19 @@ NC='\033[0m' # No Color
 # Get repository root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
+
+# ============================================================================
+# CRITICAL: Validate all hooks FIRST before any commit
+# This prevents broken hooks from causing operational failures
+# ============================================================================
+echo "🔍 Validating hooks for operational integrity..."
+if [ -f "scripts/validate_hooks.py" ]; then
+    if ! python3 scripts/validate_hooks.py; then
+        echo -e "${RED}❌ HOOK VALIDATION FAILED - commit blocked${NC}"
+        echo "Fix the hook issues above before committing."
+        exit 1
+    fi
+fi
 
 # Run comprehensive hygiene orchestrator (coordinates all checks in parallel)
 if [ -f ".claude/hooks/hygiene-orchestrator.sh" ]; then
