@@ -61,6 +61,13 @@ def sync_from_alpaca() -> dict:
     api_secret = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
 
     if not api_key or not api_secret:
+        # CRITICAL FIX Dec 29, 2025:
+        # Previously this returned fake $100k data and claimed "success"
+        # This CORRUPTED real portfolio data with fake defaults
+        # Now we FAIL LOUDLY so the user knows sync didn't work
+        logger.error("❌ SYNC FAILED: No Alpaca API keys found!")
+        logger.error("   Set ALPACA_API_KEY and ALPACA_SECRET_KEY in .env.local")
+        logger.error("   REFUSING to overwrite real data with fake defaults")
         raise AlpacaSyncError(
             "ALPACA API KEYS NOT FOUND!\n"
             "  Required: ALPACA_API_KEY and ALPACA_SECRET_KEY\n"
