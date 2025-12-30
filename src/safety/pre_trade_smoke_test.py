@@ -182,10 +182,7 @@ if __name__ == "__main__":
     # Allow running directly for testing
     import sys
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     result = run_smoke_tests()
 
