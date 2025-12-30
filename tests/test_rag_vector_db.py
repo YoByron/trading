@@ -81,8 +81,8 @@ class TestVectorDBData:
     """Verify vector database has data (if running in full environment)."""
 
     @pytest.mark.skipif(
-        not __import__("pathlib").Path("data/vector_db").exists(),
-        reason="Vector DB directory not present (CI environment)",
+        not __import__("pathlib").Path("data/vector_db/chroma.sqlite3").exists(),
+        reason="Vector DB not built (CI environment - run vectorize_rag_knowledge.py)",
     )
     def test_vector_db_has_data(self):
         """Production vector DB should have indexed documents."""

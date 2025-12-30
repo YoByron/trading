@@ -79,7 +79,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 side_effect=Exception("Connection refused"),
             ):
                 result = run_smoke_tests()
@@ -99,7 +99,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
@@ -127,7 +127,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
@@ -156,7 +156,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
@@ -183,7 +183,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
@@ -210,7 +210,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
@@ -238,7 +238,7 @@ class TestRunSmokeTests:
             clear=True,
         ):
             with patch(
-                "src.safety.pre_trade_smoke_test.TradingClient",
+                "alpaca.trading.client.TradingClient",
                 return_value=mock_client,
             ):
                 result = run_smoke_tests()
