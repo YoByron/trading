@@ -48,9 +48,7 @@ def check_syntax(hook_path: Path) -> bool:
             text=True,
         )
         if result.returncode != 0:
-            CRITICAL_FAILURES.append(
-                f"SYNTAX ERROR in {hook_path.name}: {result.stderr}"
-            )
+            CRITICAL_FAILURES.append(f"SYNTAX ERROR in {hook_path.name}: {result.stderr}")
             return False
     elif hook_path.suffix == ".py":
         result = subprocess.run(
@@ -59,9 +57,7 @@ def check_syntax(hook_path: Path) -> bool:
             text=True,
         )
         if result.returncode != 0:
-            CRITICAL_FAILURES.append(
-                f"SYNTAX ERROR in {hook_path.name}: {result.stderr}"
-            )
+            CRITICAL_FAILURES.append(f"SYNTAX ERROR in {hook_path.name}: {result.stderr}")
             return False
     return True
 
@@ -76,9 +72,7 @@ def check_for_lying_patterns(hook_path: Path) -> None:
         if "simulated" in content.lower() and "SUCCESS" in content:
             # Make sure simulated mode doesn't claim real success
             if "mode: simulated" not in content and "sync_mode" not in content:
-                WARNINGS.append(
-                    f"{hook_path.name}: May claim SUCCESS for simulated/fake data"
-                )
+                WARNINGS.append(f"{hook_path.name}: May claim SUCCESS for simulated/fake data")
 
     # Pattern 2: Returning 0 on error conditions
     if "exit 0" in content and ("error" in content.lower() or "fail" in content.lower()):
@@ -95,17 +89,16 @@ def check_for_lying_patterns(hook_path: Path) -> None:
     # Only flag if actually writing (echo > file or cat > file patterns)
     # Not just reading with jq or other commands
     import re
+
     write_patterns = [
-        r'>\s*.*system_state\.json',  # redirect to file
-        r'echo.*>\s*.*system_state',  # echo redirect
-        r'cat.*>\s*.*system_state',   # cat redirect
-        r'tee.*system_state',         # tee write
+        r">\s*.*system_state\.json",  # redirect to file
+        r"echo.*>\s*.*system_state",  # echo redirect
+        r"cat.*>\s*.*system_state",  # cat redirect
+        r"tee.*system_state",  # tee write
     ]
     for pattern in write_patterns:
         if re.search(pattern, content) and "backup" not in content.lower():
-            WARNINGS.append(
-                f"{hook_path.name}: May write to system_state.json without backup"
-            )
+            WARNINGS.append(f"{hook_path.name}: May write to system_state.json without backup")
             break
 
 
