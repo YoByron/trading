@@ -34,6 +34,9 @@
 - Clean up stale branches, unnecessary files, dormant code regularly
 - Delete all local worktrees after cleanup
 - 100% operational security - we can't afford failures
+- Inspect and work on all open PRs before session ends
+- Ensure CI is passing after every merge to main
+- Lying is NEVER allowed - verify everything before claiming success
 
 ## Market Hours
 US Equities: Mon-Fri 9:30-4:00 ET only
