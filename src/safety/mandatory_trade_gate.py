@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class TradeBlockedError(Exception):
     """Raised when a trade is blocked by the mandatory gate."""
 
-    def __init__(self, gate_result: "GateValidationResult"):
+    def __init__(self, gate_result: GateValidationResult):
         self.gate_result = gate_result
         super().__init__(f"Trade blocked: {gate_result.reason}")
 
@@ -138,9 +138,7 @@ def validate_trade_mandatory(
     return result
 
 
-def _query_rag_lessons(
-    symbol: str, side: str, strategy: str, amount: float
-) -> list[str]:
+def _query_rag_lessons(symbol: str, side: str, strategy: str, amount: float) -> list[str]:
     """Query RAG for relevant lessons using semantic search."""
     warnings = []
 
@@ -254,23 +252,17 @@ def _check_ml_anomalies(symbol: str, amount: float, side: str) -> list[str]:
     return anomalies
 
 
-def _check_failure_patterns(
-    symbol: str, amount: float, side: str, strategy: str
-) -> list[str]:
+def _check_failure_patterns(symbol: str, amount: float, side: str, strategy: str) -> list[str]:
     """Check against known failure patterns from lessons learned."""
     warnings = []
 
     # Pattern 1: Large orders (ll_001 - 200x deployment error)
     if amount > 500:
-        warnings.append(
-            f"Large order alert: ${amount:.2f} - verify not 200x error (ll_001)"
-        )
+        warnings.append(f"Large order alert: ${amount:.2f} - verify not 200x error (ll_001)")
 
     # Pattern 2: Options without proper sizing
     if "option" in strategy.lower() and amount > 1000:
-        warnings.append(
-            f"Options order ${amount:.2f} - ensure position sizing is correct"
-        )
+        warnings.append(f"Options order ${amount:.2f} - ensure position sizing is correct")
 
     # Pattern 3: Crypto symbols (ll_052 - We do NOT trade crypto)
     crypto_symbols = {"BTC", "ETH", "DOGE", "SOL", "XRP", "ADA", "AVAX", "MATIC"}
@@ -331,7 +323,7 @@ def create_blocking_anomaly_monitor(
                     anomaly = data["anomaly"]
                     if anomaly.get("type") == "rejection_spike":
                         active_blocks.append(
-                            f"{gate}: rejection spike ({anomaly.get('rejection_rate', 0)*100:.0f}%)"
+                            f"{gate}: rejection spike ({anomaly.get('rejection_rate', 0) * 100:.0f}%)"
                         )
 
             if active_blocks:
