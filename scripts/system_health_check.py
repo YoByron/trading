@@ -21,17 +21,18 @@ def check_vector_db():
 
     try:
         import chromadb
+
         results["details"].append(f"✓ chromadb installed: v{chromadb.__version__}")
 
         # Verify we can create a client
-        from chromadb.config import Settings
         from pathlib import Path
+
+        from chromadb.config import Settings
 
         vector_db_path = Path("data/vector_db")
         if vector_db_path.exists():
             client = chromadb.PersistentClient(
-                path=str(vector_db_path),
-                settings=Settings(anonymized_telemetry=False)
+                path=str(vector_db_path), settings=Settings(anonymized_telemetry=False)
             )
 
             # Check collection exists and has data
@@ -39,18 +40,26 @@ def check_vector_db():
             if collections:
                 col = client.get_collection(collections[0])
                 doc_count = col.count()
-                results["details"].append(f"✓ Vector DB has {doc_count} documents in '{collections[0]}'")
+                results["details"].append(
+                    f"✓ Vector DB has {doc_count} documents in '{collections[0]}'"
+                )
 
                 if doc_count == 0:
-                    results["details"].append("⚠️ Vector DB is EMPTY - run: python3 scripts/vectorize_rag_knowledge.py --rebuild")
+                    results["details"].append(
+                        "⚠️ Vector DB is EMPTY - run: python3 scripts/vectorize_rag_knowledge.py --rebuild"
+                    )
                     results["status"] = "BROKEN"
                     return results
             else:
-                results["details"].append("✗ No collections found - run vectorize_rag_knowledge.py --rebuild")
+                results["details"].append(
+                    "✗ No collections found - run vectorize_rag_knowledge.py --rebuild"
+                )
                 results["status"] = "BROKEN"
                 return results
         else:
-            results["details"].append("✗ data/vector_db/ not found - run vectorize_rag_knowledge.py --rebuild")
+            results["details"].append(
+                "✗ data/vector_db/ not found - run vectorize_rag_knowledge.py --rebuild"
+            )
             results["status"] = "BROKEN"
             return results
 
