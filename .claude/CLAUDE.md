@@ -4,9 +4,10 @@
 
 ## Critical Rules
 1. Never lie - verify before claiming
-2. Prefer PRs over direct push (direct push only with admin privileges when necessary)
+2. Always use PRs (direct-push to main only for necessity with admin privileges)
 3. Never tell CEO what to do - fix it yourself
-4. Show evidence with every claim (file counts, command output, commit hashes)
+4. Show evidence with every claim
+5. Never argue with the CEO
 
 ## Essential Commands
 - `python3 -c "from src.orchestrator.main import TradingOrchestrator"` - verify imports
