@@ -11,6 +11,61 @@ from datetime import datetime
 from pathlib import Path
 
 
+def check_vector_db():
+    """Verify ChromaDB vector database is installed and functional.
+
+    Added Dec 30, 2025: This check ensures the RAG vector packages
+    are actually installed and working, not silently falling back to TF-IDF.
+    """
+    results = {"name": "Vector Database (ChromaDB)", "status": "UNKNOWN", "details": []}
+
+    try:
+        import chromadb
+        results["details"].append(f"✓ chromadb installed: v{chromadb.__version__}")
+
+        # Verify we can create a client
+        from chromadb.config import Settings
+        from pathlib import Path
+
+        vector_db_path = Path("data/vector_db")
+        if vector_db_path.exists():
+            client = chromadb.PersistentClient(
+                path=str(vector_db_path),
+                settings=Settings(anonymized_telemetry=False)
+            )
+
+            # Check collection exists and has data
+            collections = client.list_collections()
+            if collections:
+                col = client.get_collection(collections[0])
+                doc_count = col.count()
+                results["details"].append(f"✓ Vector DB has {doc_count} documents in '{collections[0]}'")
+
+                if doc_count == 0:
+                    results["details"].append("⚠️ Vector DB is EMPTY - run: python3 scripts/vectorize_rag_knowledge.py --rebuild")
+                    results["status"] = "BROKEN"
+                    return results
+            else:
+                results["details"].append("✗ No collections found - run vectorize_rag_knowledge.py --rebuild")
+                results["status"] = "BROKEN"
+                return results
+        else:
+            results["details"].append("✗ data/vector_db/ not found - run vectorize_rag_knowledge.py --rebuild")
+            results["status"] = "BROKEN"
+            return results
+
+        results["status"] = "OK"
+
+    except ImportError:
+        results["status"] = "BROKEN"
+        results["details"].append("✗ chromadb NOT INSTALLED - run: pip install chromadb==0.6.3")
+    except Exception as e:
+        results["status"] = "BROKEN"
+        results["details"].append(f"✗ Error: {e}")
+
+    return results
+
+
 def check_rag_system():
     """Verify RAG system works end-to-end."""
     results = {"name": "RAG System", "status": "UNKNOWN", "details": []}
@@ -169,6 +224,7 @@ def main():
     print("=" * 60)
 
     checks = [
+        check_vector_db,  # CRITICAL: Must run first - RAG depends on this
         check_rag_system,
         check_rl_system,
         check_ml_pipeline,

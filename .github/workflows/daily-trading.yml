@@ -64,6 +64,12 @@ jobs:
           python3 -m pip install --no-build-isolation multitasking || python3 -m pip install multitasking==0.0.11
           python3 -m pip install --no-cache-dir -r requirements-minimal.txt
 
+      - name: Verify ChromaDB (RAG prerequisite)
+        run: |
+          echo "🔍 Verifying ChromaDB vector database..."
+          python3 -c "import chromadb; print(f'✅ ChromaDB v{chromadb.__version__} installed')"
+          # This check prevents silent RAG failures (LL-074)
+
       - name: Install full deps for unit gates (optional)
         if: ${{ false }}  # enable only if additional tests need full stack
         run: |
