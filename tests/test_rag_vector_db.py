@@ -136,6 +136,5 @@ class TestRAGNotFallingBack:
                 pass
             except ImportError:
                 pytest.fail(
-                    "RAG is using TF-IDF fallback! "
-                    "Install chromadb: pip install chromadb==0.6.3"
+                    "RAG is using TF-IDF fallback! Install chromadb: pip install chromadb==0.6.3"
                 )
