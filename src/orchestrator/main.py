@@ -205,11 +205,12 @@ class TradingOrchestrator:
             min_score=float(_os.getenv("MOMENTUM_MIN_SCORE", "0.0"))
         )
 
-        # Dec 10, 2025: SIMPLIFICATION MODE
-        # Backtest Sharpe was -7 to -72 with complex gates.
-        # These gates are now DISABLED BY DEFAULT per Carver/López de Prado:
-        # "Simple rules beat complex ones" / "Beware of backtest overfitting"
-        self.rl_filter_enabled = _os.getenv("RL_FILTER_ENABLED", "false").lower() in {
+        # Dec 30, 2025: RE-ENABLED ML INTEGRATION
+        # CEO mandate: "Put all powers into fixing ML integration"
+        # RLFilter was disabled during simplification but ML must be active for learning.
+        # Previous: disabled due to Sharpe -7 to -72 (backtest overfitting concern)
+        # Now: enabled to collect data and learn, with safety gates in place
+        self.rl_filter_enabled = _os.getenv("RL_FILTER_ENABLED", "true").lower() in {
             "1",
             "true",
             "yes",
