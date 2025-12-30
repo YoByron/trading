@@ -29,13 +29,13 @@ class AnomalyMonitor:
 
     # Default latency thresholds per gate (ms) - Capital One lesson
     DEFAULT_LATENCY_THRESHOLDS: dict[str, float] = {
-        "psychology": 50.0,       # Simple check, should be fast
-        "momentum": 500.0,        # Data fetch + indicators
-        "debate": 2000.0,         # LLM-based, can be slower
-        "rl_filter": 200.0,       # Model inference
-        "sentiment": 3000.0,      # LLM-based sentiment
+        "psychology": 50.0,  # Simple check, should be fast
+        "momentum": 500.0,  # Data fetch + indicators
+        "debate": 2000.0,  # LLM-based, can be slower
+        "rl_filter": 200.0,  # Model inference
+        "sentiment": 3000.0,  # LLM-based sentiment
         "introspection": 1000.0,  # LLM introspection
-        "risk": 100.0,            # Position sizing calculation
+        "risk": 100.0,  # Position sizing calculation
     }
 
     def __init__(
