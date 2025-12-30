@@ -3,6 +3,9 @@ sentiment_rag.db
 sentiment_rag.db-shm
 sentiment_rag.db-wal
 
+# ChromaDB vector database (regenerated with vectorize_rag_knowledge.py --rebuild)
+chroma_db/
+
 # Large RAG source files (download on demand)
 berkshire_letters/raw/*.pdf
 bogleheads/raw/
