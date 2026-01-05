@@ -26,10 +26,11 @@ PERF_FILE = DATA_DIR / "performance_log.json"
 
 def get_account_summary(client=None):
     """Get current account performance from Alpaca API"""
+    paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
+
     if client is None:
         api_key = os.getenv("ALPACA_API_KEY")
         secret_key = os.getenv("ALPACA_SECRET_KEY")
-        paper_trading = os.getenv("PAPER_TRADING", "true").lower() == "true"
 
         if not api_key or not secret_key:
             print("ERROR: Missing ALPACA_API_KEY or ALPACA_SECRET_KEY in .env")
@@ -38,7 +39,18 @@ def get_account_summary(client=None):
         client = trading_client.TradingClient(api_key, secret_key, paper=paper_trading)
 
     account = client.get_account()
-    starting_balance = 100000.0  # From challenge_start.json
+
+    # CRITICAL: Use correct starting balance based on account type
+    # Live account: $20 starting (Jan 3, 2026)
+    # Paper account: $100,000 starting
+    if paper_trading:
+        starting_balance = 100000.0
+        account_type = "PAPER"
+    else:
+        starting_balance = 20.0  # Live account fresh start Jan 3, 2026
+        account_type = "LIVE"
+
+    print(f"📊 Account Type: {account_type} (starting balance: ${starting_balance:,.2f})")
 
     return {
         "equity": float(account.equity),
@@ -46,6 +58,8 @@ def get_account_summary(client=None):
         "buying_power": float(account.buying_power),
         "pl": float(account.equity) - starting_balance,
         "pl_pct": ((float(account.equity) - starting_balance) / starting_balance) * 100,
+        "account_type": account_type,
+        "starting_balance": starting_balance,
     }
 
 
