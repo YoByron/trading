@@ -10,18 +10,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
 # Inline stubs for deleted agent_framework (context engine never implemented)
 class MemoryTimescale:
     INTRADAY = "intraday"
 
+
 class _Memory:
     memory_id: str = "stub"
 
+
 class ContextEngine:
     def prune_memories(self, **kwargs) -> list[str]:
-        return []
+        """Stub: Context engine was never implemented. Returns empty list."""
+        pruned = []  # Intentional stub - context engine not implemented
+        return pruned
+
     def store_memory(self, **kwargs) -> _Memory:
         return _Memory()
+
 
 def get_context_engine() -> ContextEngine:
     return ContextEngine()
