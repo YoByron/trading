@@ -17,10 +17,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import lancedb
-from fastembed import TextEmbedding
-
 logger = logging.getLogger(__name__)
+
+# LanceDB/fastembed import with fallback for CI environments
+try:
+    import lancedb
+    from fastembed import TextEmbedding
+
+    LANCEDB_AVAILABLE = True
+except ImportError:
+    LANCEDB_AVAILABLE = False
+    lancedb = None
+    TextEmbedding = None
+    logger.warning("LanceDB not available - feedback store will use fallback")
 
 
 class LanceDBFeedbackStore:
@@ -50,6 +59,14 @@ class LanceDBFeedbackStore:
         """
         self.db_path = Path(db_path)
         self.table_name = table_name
+        self.available = LANCEDB_AVAILABLE
+
+        if not LANCEDB_AVAILABLE:
+            logger.warning("LanceDB not installed - feedback store disabled")
+            self.db = None
+            self.embedder = None
+            self.table = None
+            return
 
         # Initialize LanceDB connection
         self.db = lancedb.connect(str(self.db_path))

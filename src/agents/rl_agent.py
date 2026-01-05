@@ -542,8 +542,9 @@ class RLFilter:
         """
         # Store in LanceDB for RLHF
         try:
-            from src.learning.rlhf_storage import store_trade_trajectory
             from datetime import datetime, timezone
+
+            from src.learning.rlhf_storage import store_trade_trajectory
 
             episode_id = f"{symbol}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
             store_trade_trajectory(
