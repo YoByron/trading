@@ -524,7 +524,10 @@ def generate_world_class_dashboard() -> str:
             # Determine account type - check trade record for account or mode field
             # Default to PAPER since automated trading uses paper credentials
             account_type = trade.get("account", trade.get("mode", "paper")).lower()
-            account_label = "📝 Paper" if account_type == "paper" else "🔴 Live"
+            if account_type == "live":
+                account_label = "🔴 **LIVE**"
+            else:
+                account_label = "📝 Paper"
 
             recent_trades_rows.append(
                 f"| {trade_date} | **{symbol}** | {side} | {qty_display} | {price_display} | {status_icon} {status} | {account_label} |"
@@ -537,9 +540,9 @@ def generate_world_class_dashboard() -> str:
             + "\n".join(recent_trades_rows)
             + """
 
-> **📝 Paper** = R&D simulation trades | **🔴 Live** = Real brokerage trades
+> **📝 Paper** = R&D simulation (fake money) | **🔴 LIVE** = Real brokerage (real money)
 >
-> *Live account is in accumulation phase ($30/$200 target) - no live trades until sufficient capital*"""
+> ⚠️ **IMPORTANT**: Live account is in accumulation phase ($30/$200 target) - no live trades until sufficient capital. All trades shown above are **paper/simulation** trades for R&D purposes."""
         )
     else:
         recent_trades_section = "*No trades in the last 14 days*"
@@ -610,6 +613,8 @@ def generate_world_class_dashboard() -> str:
 **Progress Bar**: `{north_star_bar}` ({display_progress_pct:.2f}%)
 
 **Assessment**: {"✅ **ON TRACK**" if basic_metrics["total_pl"] > 0 and basic_metrics["win_rate"] >= 55 else "⚠️ **R&D PHASE** - Learning, not earning yet"}
+
+> ℹ️ **Note**: ⚠️ warning icons indicate metrics that haven't reached targets yet. This is **expected** during R&D phase while building capital. ✅ indicates target met.
 
 ---
 
