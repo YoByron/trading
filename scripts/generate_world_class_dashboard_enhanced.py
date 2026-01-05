@@ -36,37 +36,40 @@ DATA_DIR = Path("data")
 
 def calculate_basic_metrics():
     """Calculate basic metrics for dashboard header."""
-    challenge_file = DATA_DIR / "challenge_start.json"
-    if challenge_file.exists():
-        challenge_data = load_json_file(challenge_file)
-        start_date = datetime.fromisoformat(challenge_data["start_date"]).date()
-        today = date.today()
-        days_elapsed = (today - start_date).days + 1
-        starting_balance = challenge_data.get("starting_balance", 100000.0)
-    else:
-        system_state = load_json_file(DATA_DIR / "system_state.json")
-        challenge = system_state.get("challenge", {})
-        start_date_str = challenge.get("start_date", "2025-10-29")
-        try:
-            start_date = datetime.fromisoformat(start_date_str).date()
-            today = date.today()
-            days_elapsed = max((today - start_date).days + 1, 1)
-        except Exception:
-            days_elapsed = max(system_state.get("challenge", {}).get("current_day", 1), 1)
-        starting_balance = 100000.0
-
     system_state = load_json_file(DATA_DIR / "system_state.json")
-    account = system_state.get("account", {})
-    current_equity = account.get("current_equity", starting_balance)
-    total_pl = account.get("total_pl", 0.0)
-    total_pl_pct = account.get("total_pl_pct", 0.0)
 
+    # Challenge info
+    challenge = system_state.get("challenge", {})
+    start_date_str = challenge.get("start_date", "2025-10-29")
+    try:
+        start_date = datetime.fromisoformat(start_date_str).date()
+        today = date.today()
+        days_elapsed = max((today - start_date).days + 1, 1)
+    except Exception:
+        days_elapsed = max(challenge.get("current_day", 1), 1)
+
+    # ========== LIVE ACCOUNT (Brokerage - Real Money) ==========
+    live_account = system_state.get("account", {})
+    live_equity = live_account.get("current_equity", 20.0)
+    live_starting = live_account.get("starting_balance", 20.0)
+    live_pl = live_account.get("total_pl", 0.0)
+    live_pl_pct = live_account.get("total_pl_pct", 0.0)
+
+    # ========== PAPER ACCOUNT (R&D - Simulation) ==========
+    paper_account = system_state.get("paper_account", {})
+    paper_equity = paper_account.get("current_equity", 100000.0)
+    paper_starting = paper_account.get("starting_balance", 100000.0)
+    paper_pl = paper_account.get("total_pl", 0.0)
+    paper_pl_pct = paper_account.get("total_pl_pct", 0.0)
+    paper_win_rate = paper_account.get("win_rate", 0.0)
+
+    # Performance log (may contain paper or live data based on workflow)
     perf_log = load_json_file(DATA_DIR / "performance_log.json")
-    if isinstance(perf_log, list) and perf_log:
-        latest_perf = perf_log[-1]
-        current_equity = latest_perf.get("equity", current_equity)
-        total_pl = latest_perf.get("pl", total_pl)
-        total_pl_pct = latest_perf.get("pl_pct", total_pl_pct)  # Already in percentage form
+    # Use live account as primary display
+    current_equity = live_equity
+    total_pl = live_pl
+    total_pl_pct = live_pl_pct
+    starting_balance = live_starting
 
     trading_days = len(perf_log) if isinstance(perf_log, list) and perf_log else days_elapsed
     trading_days = max(trading_days, 1)
@@ -144,6 +147,16 @@ def calculate_basic_metrics():
         "today_pl": today_pl,
         "today_pl_pct": today_pl_pct,
         "today_perf_available": today_perf is not None,
+        # BOTH ACCOUNTS for transparency
+        "live_equity": live_equity,
+        "live_starting": live_starting,
+        "live_pl": live_pl,
+        "live_pl_pct": live_pl_pct,
+        "paper_equity": paper_equity,
+        "paper_starting": paper_starting,
+        "paper_pl": paper_pl,
+        "paper_pl_pct": paper_pl_pct,
+        "paper_win_rate": paper_win_rate,
     }
 
 
@@ -507,6 +520,17 @@ def generate_world_class_dashboard() -> str:
 **Last Updated**: {now.strftime("%Y-%m-%d %I:%M %p ET")}
 **Auto-Updated**: Daily via GitHub Actions
 **Dashboard Version**: Enhanced World-Class (v2.0)
+
+---
+
+## 💰 Account Summary
+
+| Account | Equity | Starting | P/L | P/L % |
+|---------|--------|----------|-----|-------|
+| **🔴 LIVE (Brokerage)** | ${basic_metrics.get("live_equity", 20):,.2f} | ${basic_metrics.get("live_starting", 20):,.2f} | ${basic_metrics.get("live_pl", 0):+,.2f} | {basic_metrics.get("live_pl_pct", 0):+.2f}% |
+| **📝 PAPER (R&D)** | ${basic_metrics.get("paper_equity", 100000):,.2f} | ${basic_metrics.get("paper_starting", 100000):,.2f} | ${basic_metrics.get("paper_pl", 0):+,.2f} | {basic_metrics.get("paper_pl_pct", 0):+.2f}% |
+
+> ⚠️ **LIVE account** = Real money. **PAPER account** = R&D simulation for testing strategies.
 
 ---
 
