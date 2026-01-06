@@ -103,6 +103,12 @@ This is non-negotiable. Every trading decision must:
 - Local JSON backup is currently the only working recording system
 - CI (GitHub Actions) can write to Vertex AI RAG with proper credentials
 
+### Sandbox Environment (CRITICAL)
+- This is a sandboxed web environment - packages do NOT persist between sessions
+- **NEVER tell user to install packages locally** - it won't help
+- Instead: Add dependencies to `requirements.txt` for CI/GitHub Actions
+- Code must handle missing dependencies gracefully with try/except
+
 ### Self-Healing System (Jan 6, 2026)
 - System must be completely self-healing - no manual intervention required
 - If a component fails, auto-retry with exponential backoff
