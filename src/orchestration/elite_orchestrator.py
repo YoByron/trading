@@ -35,44 +35,9 @@ class RunMode:
 
 
 from src.core.skills_integration import get_skills
+from src.orchestration.shared_types import AgentType, PlanningPhase, TradePlan
 
 logger = logging.getLogger(__name__)
-
-
-class PlanningPhase(Enum):
-    """Planning phases for agentic flows"""
-
-    INITIALIZE = "initialize"
-    DATA_COLLECTION = "data_collection"
-    ANALYSIS = "analysis"
-    RISK_ASSESSMENT = "risk_assessment"
-    EXECUTION = "execution"
-    AUDIT = "audit"
-
-
-class AgentType(Enum):
-    """Agent types in the system"""
-
-    CLAUDE_SKILLS = "claude_skills"
-    LANGCHAIN = "langchain"
-    GEMINI = "gemini"
-    GO_ADK = "go_adk"
-    MCP = "mcp"
-    ML_MODEL = "ml_model"
-
-
-@dataclass
-class TradePlan:
-    """Planning-first trade plan"""
-
-    plan_id: str
-    timestamp: str
-    symbols: list[str]
-    phases: dict[str, dict[str, Any]] = field(default_factory=dict)
-    decisions: list[dict[str, Any]] = field(default_factory=list)
-    context: dict[str, Any] = field(default_factory=dict)
-    status: str = "planning"
-    git_commit: str | None = None
 
 
 @dataclass

@@ -21,52 +21,11 @@ from typing import Any
 
 from src.core.skills_integration import get_skills
 from src.orchestration.context_engine import get_context_engine
+from src.orchestration.shared_types import AgentType, PlanningPhase, TradePlan
 
 # Optional market regime detector
 # DISABLED: src.ml.market_regime_detector module does not exist
-# try:
-#     from src.ml.market_regime_detector import MarketRegimeDetector
-# except ImportError:
 MarketRegimeDetector = None  # type: ignore
-
-# Import types from elite_orchestrator (avoid circular import)
-try:
-    from src.orchestration.elite_orchestrator import (
-        AgentType,
-        PlanningPhase,
-        TradePlan,
-    )
-except ImportError:
-    # Fallback if elite_orchestrator not available
-    from dataclasses import dataclass, field
-    from enum import Enum
-    from typing import Any
-
-    class PlanningPhase(Enum):
-        INITIALIZE = "initialize"
-        DATA_COLLECTION = "data_collection"
-        ANALYSIS = "analysis"
-        RISK_ASSESSMENT = "risk_assessment"
-        EXECUTION = "execution"
-        AUDIT = "audit"
-
-    class AgentType(Enum):
-        CLAUDE_SKILLS = "claude_skills"
-        LANGCHAIN = "langchain"
-        GEMINI = "gemini"
-        GO_ADK = "go_adk"
-        MCP = "mcp"
-        ML_MODEL = "ml_model"
-
-    @dataclass
-    class TradePlan:
-        plan_id: str
-        timestamp: str
-        symbols: list[str]
-        phases: dict[str, dict[str, Any]] = field(default_factory=dict)
-        decisions: list[dict[str, Any]] = field(default_factory=list)
-        context: dict[str, Any] = field(default_factory=dict)
-        status: str = "planning"
 
 
 logger = logging.getLogger(__name__)

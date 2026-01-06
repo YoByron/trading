@@ -167,13 +167,11 @@ class TestRAGOperational:
             hasattr(agent, "rag") or hasattr(agent, "query_rag") or hasattr(agent, "check_lessons")
         )
 
-        # For now, we'll skip if not integrated, but log a warning
-        if not has_rag:
-            pytest.skip(
-                "MomentumAgent doesn't have RAG integration yet. "
-                "TODO: Add lesson checking to MomentumAgent.analyze() method. "
-                "This should query RAG before returning signals to block known bad patterns."
-            )
+        # MomentumAgent NOW HAS RAG integration - test should pass
+        assert has_rag, (
+            "MomentumAgent should have RAG integration. "
+            "Check for 'rag', 'query_rag', or 'check_lessons' attributes/methods."
+        )
 
         print("✅ MomentumAgent has RAG integration")
 

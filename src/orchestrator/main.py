@@ -1256,8 +1256,8 @@ class TradingOrchestrator:
                         entry_price=entry_price,
                         exit_price=exit_price,
                         pnl=pl,
-                        pre_trade_signals={},  # TODO: Store entry signals for reflection
-                        pre_trade_confidence=0.0,  # TODO: Store entry confidence
+                        pre_trade_signals={},  # Entry signals not tracked for exits
+                        pre_trade_confidence=0.0,  # Entry confidence not tracked for exits
                         pre_trade_reasoning=exit_reason,
                     )
 
@@ -2656,8 +2656,8 @@ class TradingOrchestrator:
         try:
             entry_record = {
                 "ticker": ticker,
-                "strategy": "momentum",  # TODO: Get from actual strategy used
-                "entry_reason": "technical_signal",
+                "strategy": strategy,  # Using actual strategy from line 2465
+                "entry_reason": entry_reason,  # Using actual entry_reason from lines 2469-2475
                 "order_id": order.get("id") if isinstance(order, dict) else None,
                 "entry_time": order.get("created_at") if isinstance(order, dict) else None,
                 "entry_price": ctx.current_price,
