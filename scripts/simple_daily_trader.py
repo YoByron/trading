@@ -38,7 +38,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration - SIMPLE, NO COMPLEXITY
+# Configuration - SCALED UP Jan 6 2026 to hit $100/day North Star
 CONFIG = {
     "symbol": "SPY",
     "strategy": "cash_secured_put",
@@ -46,9 +46,10 @@ CONFIG = {
     "target_dte": 30,  # 30 days to expiration
     "max_dte": 45,
     "min_dte": 21,
-    "position_size_pct": 0.05,  # 5% of portfolio per trade
+    "position_size_pct": 0.10,  # 10% of portfolio per trade (doubled from 5%)
     "take_profit_pct": 0.50,  # Close at 50% profit
     "max_positions": 10,  # Max 10 open positions - FIXED: was blocking trades
+    "north_star_daily_target": 100.0,  # $100/day profit target
 }
 
 
