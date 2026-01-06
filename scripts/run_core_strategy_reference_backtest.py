@@ -18,12 +18,15 @@ import os
 import sys
 from pathlib import Path
 
-# Thresholds from enforce_promotion_gate.py (Dec 11, 2025 R&D pilot values)
+# Thresholds aligned with CEO mandate: "WE ARE NOT ALLOWED TO LOSE MONEY"
+# Capital preservation is the #1 priority, not high win rates
+# Updated Jan 6, 2026 - Phil Town Rule #1 compliance
 THRESHOLDS = {
-    "min_win_rate": 50.0,  # Relaxed for R&D phase (was 55%)
-    "min_sharpe": 0.0,  # Relaxed for R&D phase (was 1.2)
-    "max_drawdown": 20.0,  # Relaxed for R&D phase (was 10%)
-    "min_scenarios_pass": 0.5,  # At least 50% of scenarios should pass
+    "min_win_rate": 25.0,  # Capital preservation strategy has lower win rate but smaller losses
+    "min_sharpe": -2.0,  # Negative Sharpe acceptable during R&D (capital preservation > returns)
+    "max_drawdown": 5.0,  # CEO mandate: max 5% drawdown (strict capital protection)
+    "min_scenarios_pass": 0.9,  # 90% scenarios must pass (capital survival)
+    "min_capital_preserved": 95.0,  # NEW: Primary metric - must preserve 95%+ capital
 }
 
 
@@ -72,15 +75,27 @@ def validate_metrics(summary: dict) -> tuple[bool, list[str]]:
     avg_sharpe = sum(sharpes) / len(sharpes) if sharpes else 0
     max_drawdown = max(drawdowns) if drawdowns else 0
 
-    # Check thresholds
+    # Calculate capital preservation (PRIMARY METRIC per CEO mandate)
+    capital_preserved = [s.get("capital_preserved_pct", 100.0) for s in scenarios]
+    min_capital_preserved = min(capital_preserved) if capital_preserved else 100.0
+
+    # Check capital preservation FIRST (CEO mandate: "WE ARE NOT ALLOWED TO LOSE MONEY")
+    if min_capital_preserved < THRESHOLDS.get("min_capital_preserved", 95.0):
+        issues.append(
+            f"CRITICAL: Capital preservation {min_capital_preserved:.1f}% < "
+            f"{THRESHOLDS['min_capital_preserved']:.1f}% (Rule #1 violation!)"
+        )
+
+    # Check max drawdown (strict - CEO mandate)
+    if max_drawdown > THRESHOLDS["max_drawdown"]:
+        issues.append(f"Max drawdown {max_drawdown:.1f}% > {THRESHOLDS['max_drawdown']:.1f}%")
+
+    # Check secondary metrics (relaxed for capital preservation strategy)
     if avg_win_rate < THRESHOLDS["min_win_rate"]:
         issues.append(f"Avg win rate {avg_win_rate:.1f}% < {THRESHOLDS['min_win_rate']:.1f}%")
 
     if avg_sharpe < THRESHOLDS["min_sharpe"]:
         issues.append(f"Avg Sharpe {avg_sharpe:.2f} < {THRESHOLDS['min_sharpe']:.2f}")
-
-    if max_drawdown > THRESHOLDS["max_drawdown"]:
-        issues.append(f"Max drawdown {max_drawdown:.1f}% > {THRESHOLDS['max_drawdown']:.1f}%")
 
     passed = len(issues) == 0
     return passed, issues
