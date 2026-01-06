@@ -106,13 +106,9 @@ class EvidenceGapTracker:
         self.evidence.append(evidence)
         logger.debug(f"Added evidence for '{requirement}' from {source}")
 
-    def add_gap(
-        self, question: str, importance: str = "MEDIUM", suggested_query: str = ""
-    ) -> None:
+    def add_gap(self, question: str, importance: str = "MEDIUM", suggested_query: str = "") -> None:
         """Add a knowledge gap to the tracker."""
-        gap = Gap(
-            question=question, importance=importance, suggested_query=suggested_query
-        )
+        gap = Gap(question=question, importance=importance, suggested_query=suggested_query)
         self.gaps.append(gap)
         logger.debug(f"Added gap: {question} (importance: {importance})")
 
@@ -144,9 +140,7 @@ class EvidenceGapTracker:
             return 0.0
 
         # Average confidence of evidence
-        avg_evidence_confidence = sum(e.confidence for e in self.evidence) / len(
-            self.evidence
-        )
+        avg_evidence_confidence = sum(e.confidence for e in self.evidence) / len(self.evidence)
 
         # Penalty for gaps
         gap_penalty = 0.0
@@ -509,9 +503,7 @@ class MemR3Router:
                     )
                     reflection["gaps_identified"].append(gap_text)
 
-        logger.info(
-            f"Reflection complete: {len(reflection['gaps_identified'])} gaps identified"
-        )
+        logger.info(f"Reflection complete: {len(reflection['gaps_identified'])} gaps identified")
         return reflection
 
     def get_decision_history(self) -> list[RouterDecision]:
@@ -577,11 +569,11 @@ if __name__ == "__main__":
             print(f"  Gaps identified: {len(reflection['gaps_identified'])}")
 
         elif decision.action == RouterAction.ANSWER:
-            print(f"  Ready to answer!")
+            print("  Ready to answer!")
             break
 
         print()
 
-    print(f"\n=== Decision History ===")
+    print("\n=== Decision History ===")
     print(f"Total decisions: {len(router.get_decision_history())}")
     print(f"Final confidence: {router.tracker.get_confidence_score():.2f}")

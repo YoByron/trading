@@ -10,7 +10,6 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.safety.pre_trade_smoke_test import SmokeTestResult, run_smoke_tests
 
 
@@ -18,6 +17,7 @@ def _alpaca_available():
     """Check if alpaca module is available."""
     try:
         import alpaca.trading.client  # noqa: F401
+
         return True
     except ImportError:
         return False

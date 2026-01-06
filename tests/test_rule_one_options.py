@@ -6,9 +6,8 @@ Tests the Phil Town Rule #1 investment strategy including:
 - Error handling behavior
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 from dataclasses import dataclass
+from unittest.mock import patch
 
 
 @dataclass
@@ -27,9 +26,7 @@ class TestAnalyzeStock:
 
     @patch("src.strategies.rule_one_options.RuleOneOptionsStrategy.__init__")
     @patch("src.strategies.rule_one_options.RuleOneOptionsStrategy.calculate_sticker_price")
-    def test_analyze_stock_returns_none_when_calculation_fails(
-        self, mock_calc, mock_init
-    ):
+    def test_analyze_stock_returns_none_when_calculation_fails(self, mock_calc, mock_init):
         """analyze_stock should return None when sticker price calculation fails."""
         mock_init.return_value = None
         mock_calc.return_value = None
@@ -116,9 +113,7 @@ class TestAnalyzeStock:
 
     @patch("src.strategies.rule_one_options.RuleOneOptionsStrategy.__init__")
     @patch("src.strategies.rule_one_options.RuleOneOptionsStrategy.calculate_sticker_price")
-    def test_analyze_stock_hold_between_sticker_and_120_percent(
-        self, mock_calc, mock_init
-    ):
+    def test_analyze_stock_hold_between_sticker_and_120_percent(self, mock_calc, mock_init):
         """Price between sticker and 120% should return HOLD recommendation."""
         mock_init.return_value = None
         mock_calc.return_value = MockStickerResult(
@@ -246,7 +241,7 @@ class TestRuleOneTraderErrorHandling:
 
         # This is the critical check - the method must exist
         assert hasattr(RuleOneOptionsStrategy, "analyze_stock")
-        assert callable(getattr(RuleOneOptionsStrategy, "analyze_stock"))
+        assert callable(RuleOneOptionsStrategy.analyze_stock)
 
 
 class TestRLHFTrajectoryStorage:
@@ -257,7 +252,7 @@ class TestRLHFTrajectoryStorage:
         from src.execution.alpaca_executor import AlpacaExecutor
 
         assert hasattr(AlpacaExecutor, "_store_rlhf_trajectory")
-        assert callable(getattr(AlpacaExecutor, "_store_rlhf_trajectory"))
+        assert callable(AlpacaExecutor._store_rlhf_trajectory)
 
     def test_rlhf_storage_function_exists(self):
         """store_trade_trajectory should be importable."""

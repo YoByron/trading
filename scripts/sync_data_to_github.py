@@ -17,11 +17,10 @@ import json
 import os
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Optional
-import urllib.request
-import urllib.error
-
 
 GITHUB_API = "https://api.github.com"
 REPO_OWNER = "IgorGanapolsky"
@@ -40,10 +39,7 @@ def get_github_token() -> str:
 
 
 def api_request(
-    method: str,
-    endpoint: str,
-    token: str,
-    data: Optional[dict] = None
+    method: str, endpoint: str, token: str, data: Optional[dict] = None
 ) -> tuple[int, dict]:
     """Make a GitHub API request with retry logic."""
     url = f"{GITHUB_API}{endpoint}"
@@ -216,19 +212,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Sync data files to GitHub using API (bypasses git conflicts)"
     )
+    parser.add_argument("--file", "-f", help="Path to specific file to sync")
     parser.add_argument(
-        "--file", "-f",
-        help="Path to specific file to sync"
+        "--all-data", "-a", action="store_true", help="Sync all JSON files in data directory"
     )
-    parser.add_argument(
-        "--all-data", "-a",
-        action="store_true",
-        help="Sync all JSON files in data directory"
-    )
-    parser.add_argument(
-        "--message", "-m",
-        help="Custom commit message"
-    )
+    parser.add_argument("--message", "-m", help="Custom commit message")
 
     args = parser.parse_args()
 
@@ -241,7 +229,7 @@ def main():
     print("GitHub API Data Sync")
     print("=" * 60)
     print(f"Repository: {REPO_OWNER}/{REPO_NAME}")
-    print(f"Branch: main")
+    print("Branch: main")
     print(f"Max retries: {MAX_RETRIES}")
     print("=" * 60)
     print()

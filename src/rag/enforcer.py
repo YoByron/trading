@@ -76,7 +76,7 @@ class RAGEnforcer:
             try:
                 with open(ENFORCEMENT_LOG) as f:
                     return json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass
         return {
             "created": datetime.now(timezone.utc).isoformat(),
@@ -251,9 +251,7 @@ class RAGEnforcer:
 
         # Log warning if advice was ignored and outcome was failure
         if not followed_advice and outcome == "failure":
-            logger.warning(
-                f"⚠️ IGNORED RAG ADVICE led to FAILURE: {action_type} - {notes}"
-            )
+            logger.warning(f"⚠️ IGNORED RAG ADVICE led to FAILURE: {action_type} - {notes}")
 
     def get_stats(self) -> dict[str, Any]:
         """Get enforcement statistics."""

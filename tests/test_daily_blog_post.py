@@ -6,13 +6,10 @@ Coverage for:
 - update_index_day_number() - index.md day number update
 """
 
-import json
 import tempfile
 from datetime import date
 from pathlib import Path
-from unittest.mock import patch, mock_open
-
-import pytest
+from unittest.mock import patch
 
 
 class TestCalculateDayNumber:
@@ -55,20 +52,16 @@ class TestUpdateIndexDayNumber:
 
     def test_update_index_day_number_changes_content(self):
         """Test that index.md day number is updated."""
-        from scripts.generate_daily_blog_post import update_index_day_number, DOCS_DIR
+        from scripts.generate_daily_blog_post import update_index_day_number
 
         # Create a temporary index.md
         with tempfile.TemporaryDirectory() as tmpdir:
             index_path = Path(tmpdir) / "index.md"
             index_path.write_text("## Live Status (Day 69/90)\nSome content")
 
-            with patch.object(
-                Path, "parent", new_callable=lambda: Path(tmpdir)
-            ):
+            with patch.object(Path, "parent", new_callable=lambda: Path(tmpdir)):
                 # Mock DOCS_DIR to point to temp directory
-                with patch(
-                    "scripts.generate_daily_blog_post.DOCS_DIR", Path(tmpdir)
-                ):
+                with patch("scripts.generate_daily_blog_post.DOCS_DIR", Path(tmpdir)):
                     update_index_day_number(70)
 
                     content = index_path.read_text()
@@ -84,9 +77,7 @@ class TestUpdateIndexDayNumber:
             original_content = "## Live Status (Day 70/90)\nSome content"
             index_path.write_text(original_content)
 
-            with patch(
-                "scripts.generate_daily_blog_post.DOCS_DIR", Path(tmpdir)
-            ):
+            with patch("scripts.generate_daily_blog_post.DOCS_DIR", Path(tmpdir)):
                 update_index_day_number(70)
 
                 # Content should be unchanged

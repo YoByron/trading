@@ -21,11 +21,11 @@ Key Features:
 import json
 import logging
 import shutil
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Union
+from typing import Any, Optional
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -50,21 +50,23 @@ class MemoryEntry:
     timestamp: str
     title: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
     severity: Optional[str] = None  # CRITICAL, HIGH, MEDIUM, LOW
     verified: bool = False
     session_id: Optional[str] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         # Convert enum to string
-        data["category"] = self.category.value if isinstance(self.category, MemoryCategory) else self.category
+        data["category"] = (
+            self.category.value if isinstance(self.category, MemoryCategory) else self.category
+        )
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MemoryEntry":
+    def from_dict(cls, data: dict[str, Any]) -> "MemoryEntry":
         """Create MemoryEntry from dictionary."""
         # Convert category string back to enum
         if "category" in data and isinstance(data["category"], str):
@@ -82,15 +84,15 @@ class SessionState:
     memories_created: int = 0
     memories_updated: int = 0
     status: str = "active"  # active, completed, error
-    context: Dict[str, Any] = field(default_factory=dict)
-    learnings: List[str] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
+    learnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SessionState":
+    def from_dict(cls, data: dict[str, Any]) -> "SessionState":
         """Create SessionState from dictionary."""
         return cls(**data)
 
@@ -156,7 +158,7 @@ class MemoryStore:
 
         if sessions_file.exists():
             try:
-                with open(sessions_file, "r") as f:
+                with open(sessions_file) as f:
                     sessions_data = json.load(f)
                 self.previous_sessions = [
                     SessionState.from_dict(s) for s in sessions_data.get("sessions", [])
@@ -169,8 +171,7 @@ class MemoryStore:
 
         # Create new session
         self.current_session = SessionState(
-            session_id=self.session_id,
-            start_time=self.session_start
+            session_id=self.session_id, start_time=self.session_start
         )
 
     def _backup_file(self, file_path: Path):
@@ -188,7 +189,9 @@ class MemoryStore:
         shutil.copy2(file_path, backup_path)
         logger.debug(f"Created backup: {backup_path}")
 
-    def _get_memory_path(self, memory_id: str, category: Optional[MemoryCategory] = None) -> Optional[Path]:
+    def _get_memory_path(
+        self, memory_id: str, category: Optional[MemoryCategory] = None
+    ) -> Optional[Path]:
         """Get path to memory file."""
         if category:
             # Direct lookup
@@ -209,9 +212,9 @@ class MemoryStore:
         title: str,
         content: str,
         severity: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        verified: bool = False
+        tags: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        verified: bool = False,
     ) -> str:
         """
         Create a new memory entry.
@@ -229,7 +232,9 @@ class MemoryStore:
             Memory ID
         """
         # Generate unique ID
-        memory_id = f"{category.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid4())[:8]}"
+        memory_id = (
+            f"{category.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid4())[:8]}"
+        )
 
         # Create memory entry
         entry = MemoryEntry(
@@ -242,7 +247,7 @@ class MemoryStore:
             tags=tags or [],
             metadata=metadata or {},
             verified=verified,
-            session_id=self.session_id
+            session_id=self.session_id,
         )
 
         # Save to file
@@ -256,7 +261,9 @@ class MemoryStore:
         logger.info(f"✅ Created memory: {memory_id} ({category.value})")
         return memory_id
 
-    def read(self, memory_id: str, category: Optional[MemoryCategory] = None) -> Optional[MemoryEntry]:
+    def read(
+        self, memory_id: str, category: Optional[MemoryCategory] = None
+    ) -> Optional[MemoryEntry]:
         """
         Read a memory entry.
 
@@ -274,7 +281,7 @@ class MemoryStore:
             return None
 
         try:
-            with open(memory_path, "r") as f:
+            with open(memory_path) as f:
                 data = json.load(f)
             return MemoryEntry.from_dict(data)
         except Exception as e:
@@ -287,10 +294,10 @@ class MemoryStore:
         title: Optional[str] = None,
         content: Optional[str] = None,
         severity: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         verified: Optional[bool] = None,
-        category: Optional[MemoryCategory] = None
+        category: Optional[MemoryCategory] = None,
     ) -> bool:
         """
         Update an existing memory entry.
@@ -375,12 +382,12 @@ class MemoryStore:
     def search(
         self,
         category: Optional[MemoryCategory] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         severity: Optional[str] = None,
         verified: Optional[bool] = None,
         session_id: Optional[str] = None,
-        limit: Optional[int] = None
-    ) -> List[MemoryEntry]:
+        limit: Optional[int] = None,
+    ) -> list[MemoryEntry]:
         """
         Search memories by criteria.
 
@@ -410,7 +417,7 @@ class MemoryStore:
 
             for memory_file in cat_dir.glob("*.json"):
                 try:
-                    with open(memory_file, "r") as f:
+                    with open(memory_file) as f:
                         data = json.load(f)
                     entry = MemoryEntry.from_dict(data)
 
@@ -438,7 +445,9 @@ class MemoryStore:
 
         return results
 
-    def get_recent(self, category: Optional[MemoryCategory] = None, limit: int = 10) -> List[MemoryEntry]:
+    def get_recent(
+        self, category: Optional[MemoryCategory] = None, limit: int = 10
+    ) -> list[MemoryEntry]:
         """
         Get most recent memories.
 
@@ -451,7 +460,7 @@ class MemoryStore:
         """
         return self.search(category=category, limit=limit)
 
-    def get_critical(self, category: Optional[MemoryCategory] = None) -> List[MemoryEntry]:
+    def get_critical(self, category: Optional[MemoryCategory] = None) -> list[MemoryEntry]:
         """
         Get all CRITICAL severity memories.
 
@@ -463,7 +472,7 @@ class MemoryStore:
         """
         return self.search(category=category, severity="CRITICAL")
 
-    def get_unverified(self, category: Optional[MemoryCategory] = None) -> List[MemoryEntry]:
+    def get_unverified(self, category: Optional[MemoryCategory] = None) -> list[MemoryEntry]:
         """
         Get all unverified memories.
 
@@ -487,7 +496,9 @@ class MemoryStore:
         """
         return len(self.search(category=category))
 
-    def save_session(self, learnings: Optional[List[str]] = None, context: Optional[Dict[str, Any]] = None):
+    def save_session(
+        self, learnings: Optional[list[str]] = None, context: Optional[dict[str, Any]] = None
+    ):
         """
         Save current session state for handoff.
 
@@ -514,10 +525,10 @@ class MemoryStore:
             json.dump(
                 {
                     "sessions": [s.to_dict() for s in all_sessions],
-                    "last_updated": datetime.now().isoformat()
+                    "last_updated": datetime.now().isoformat(),
                 },
                 f,
-                indent=2
+                indent=2,
             )
 
         logger.info(f"✅ Saved session state: {self.session_id}")
@@ -535,7 +546,7 @@ class MemoryStore:
         # Return most recent session
         return self.previous_sessions[-1]
 
-    def get_session_summary(self) -> Dict[str, Any]:
+    def get_session_summary(self) -> dict[str, Any]:
         """
         Get summary of current session.
 
@@ -549,10 +560,11 @@ class MemoryStore:
             "memories_updated": self.current_session.memories_updated,
             "duration_minutes": (
                 datetime.now() - datetime.fromisoformat(self.session_start)
-            ).total_seconds() / 60,
+            ).total_seconds()
+            / 60,
             "total_memories": self.count(),
             "critical_memories": len(self.get_critical()),
-            "unverified_memories": len(self.get_unverified())
+            "unverified_memories": len(self.get_unverified()),
         }
 
     def export_category(self, category: MemoryCategory, output_file: str):
@@ -569,7 +581,7 @@ class MemoryStore:
             "category": category.value,
             "exported_at": datetime.now().isoformat(),
             "count": len(memories),
-            "memories": [m.to_dict() for m in memories]
+            "memories": [m.to_dict() for m in memories],
         }
 
         output_path = Path(output_file)
@@ -590,7 +602,7 @@ class MemoryStore:
         Returns:
             Number of memories imported
         """
-        with open(import_file, "r") as f:
+        with open(import_file) as f:
             import_data = json.load(f)
 
         count = 0
@@ -639,7 +651,7 @@ if __name__ == "__main__":
         content="Claimed deployment successful without testing. Must verify end-to-end.",
         severity="CRITICAL",
         tags=["verification", "deployment"],
-        verified=True
+        verified=True,
     )
 
     trade_id = store.create(
@@ -648,7 +660,7 @@ if __name__ == "__main__":
         content="Lost $200 on iron condor due to VIX spike. Should use wider strikes in high IV.",
         severity="HIGH",
         tags=["options", "risk_management"],
-        metadata={"pnl": -200, "symbol": "SPY", "strategy": "iron_condor"}
+        metadata={"pnl": -200, "symbol": "SPY", "strategy": "iron_condor"},
     )
 
     claim_id = store.create(
@@ -657,7 +669,7 @@ if __name__ == "__main__":
         content="Claimed all tests passed. Need to verify coverage thresholds, not just pass/fail.",
         severity="MEDIUM",
         tags=["testing", "verification"],
-        verified=False
+        verified=False,
     )
 
     # Search and display
@@ -689,9 +701,9 @@ if __name__ == "__main__":
         learnings=[
             "Always verify claims before making them",
             "Track verification status of all claims",
-            "Use memory persistence for learning across sessions"
+            "Use memory persistence for learning across sessions",
         ],
-        context={"next_steps": ["Review unverified claims", "Add more critical lessons"]}
+        context={"next_steps": ["Review unverified claims", "Add more critical lessons"]},
     )
 
     print("\n✅ Demo complete!")

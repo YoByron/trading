@@ -17,11 +17,8 @@ Created: Jan 6, 2026
 
 import json
 import tempfile
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
-
-import pytest
 
 from src.rag.memr3_router import (
     Evidence,
@@ -104,9 +101,7 @@ class TestGap:
 
     def test_gap_to_dict(self):
         """Test Gap serialization to dict."""
-        gap = Gap(
-            question="Missing data?", importance="CRITICAL", suggested_query="data query"
-        )
+        gap = Gap(question="Missing data?", importance="CRITICAL", suggested_query="data query")
         data = gap.to_dict()
         assert data["question"] == "Missing data?"
         assert data["importance"] == "CRITICAL"
@@ -348,9 +343,7 @@ class TestMemR3Router:
 
     def test_router_custom_parameters(self):
         """Test router with custom parameters."""
-        router = MemR3Router(
-            max_iterations=5, max_reflect_streak=3, min_confidence=0.8
-        )
+        router = MemR3Router(max_iterations=5, max_reflect_streak=3, min_confidence=0.8)
         assert router.max_iterations == 5
         assert router.max_reflect_streak == 3
         assert router.min_confidence == 0.8
@@ -477,9 +470,7 @@ class TestMemR3Router:
         router = MemR3Router(rag_integration=MagicMock())
 
         # Add evidence about position sizing
-        router.tracker.add_evidence(
-            "position sizing", "Position sizing is critical", "source1"
-        )
+        router.tracker.add_evidence("position sizing", "Position sizing is critical", "source1")
 
         reflection = router.reflect("test query")
 
@@ -509,7 +500,7 @@ class TestMemR3Router:
             "risk", "Risk management and position sizing are key", "source1"
         )
 
-        initial_gaps = len(router.tracker.gaps)
+        _initial_gaps = len(router.tracker.gaps)  # noqa: F841
         router.reflect("test query")
 
         # May still add gaps for other topics, but not all required ones
@@ -558,7 +549,7 @@ class TestMemR3Router:
             # Can't easily test file writing with mocked path,
             # but we can verify the method doesn't crash
             router = MemR3Router(rag_integration=MagicMock())
-            decision = router.route("test query")
+            _decision = router.route("test query")  # noqa: F841
             # If we got here without exception, logging worked
 
     def test_reflect_streak_increments_on_reflect(self):
@@ -668,7 +659,11 @@ class TestIntegration:
 
         # Second action: might be REFLECT or ANSWER depending on confidence
         decision2 = router.route(query)
-        assert decision2.action in [RouterAction.REFLECT, RouterAction.ANSWER, RouterAction.RETRIEVE]
+        assert decision2.action in [
+            RouterAction.REFLECT,
+            RouterAction.ANSWER,
+            RouterAction.RETRIEVE,
+        ]
 
         # Eventually should reach ANSWER
         for i in range(5):
