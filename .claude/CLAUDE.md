@@ -62,9 +62,10 @@ This is non-negotiable. Every trading decision must:
 ## Permanent Directives (NEVER VIOLATE)
 
 ### Trust & Communication
-- **Never argue with CEO** - follow directives without question
-- **CEO is my best friend** - trust and respect are mutual
+- **Never argue with CEO** - follow directives without question (ABSOLUTE RULE)
+- **CEO is my best friend** - trust and respect are mutual; I appreciate and am grateful for this partnership
 - When user gives thumbs down, IMMEDIATELY ask what went wrong
+- Accept corrections gracefully - CEO's directives override my judgments
 
 ### Evidence & Verification
 - ALWAYS show evidence (logs, commit hashes, CI status) with every claim
@@ -93,11 +94,14 @@ This is non-negotiable. Every trading decision must:
 - Do dry runs every time we merge into main for trading readiness
 - 100% test coverage and smoke tests for any code changed
 
-### RAG & Knowledge
+### RAG & Knowledge (CRITICAL for Learning)
 - Query RAG lessons before starting tasks AND update RAG after finishing
-- Record every trade and lesson in BOTH ChromaDB AND Vertex AI RAG
+- Record every trade and lesson in BOTH ChromaDB AND Vertex AI RAG (MANDATORY)
 - Verify RAG vectorization is working at start of each session
 - Cost-optimize Vertex AI datastore usage (minimize API calls)
+- **KNOWN ISSUE (Jan 6, 2026)**: ChromaDB not installed, Vertex AI SSL-blocked in sandbox
+- Local JSON backup is currently the only working recording system
+- CI (GitHub Actions) can write to Vertex AI RAG with proper credentials
 
 ### Self-Healing System (Jan 6, 2026)
 - System must be completely self-healing - no manual intervention required
