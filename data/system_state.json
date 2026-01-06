@@ -2,11 +2,11 @@
   "meta": {
     "version": "1.0",
     "created": "2025-10-29T09:35:00",
-    "last_updated": "2026-01-06T16:38:45",
+    "last_updated": "2026-01-06T22:00:30.027064",
     "last_audit": "2026-01-06T16:38:45",
     "audit_notes": "Updated after trades synced - Jan 6 2026 paper trades executed",
-    "last_sync": "2026-01-06T16:38:45",
-    "sync_mode": "manual_fix"
+    "last_sync": "2026-01-06T22:00:30.027073",
+    "sync_mode": "skipped_no_keys"
   },
   "challenge": {
     "start_date": "2025-10-29",
@@ -33,11 +33,36 @@
       "current_target": 5.0,
       "target_explanation": "Target scales with capital: $5/day at $200, $100/day at $2000",
       "capital_tiers": [
-        {"capital": 200, "daily_target": 5, "strategy": "Single CSP on SPY", "return_pct": 2.5},
-        {"capital": 500, "daily_target": 15, "strategy": "2 CSPs or 1 Iron Condor", "return_pct": 3.0},
-        {"capital": 1000, "daily_target": 30, "strategy": "Wheel strategy on SPY", "return_pct": 3.0},
-        {"capital": 2000, "daily_target": 60, "strategy": "Multiple wheels + 0DTE", "return_pct": 3.0},
-        {"capital": 5000, "daily_target": 100, "strategy": "Full Phil Town portfolio", "return_pct": 2.0}
+        {
+          "capital": 200,
+          "daily_target": 5,
+          "strategy": "Single CSP on SPY",
+          "return_pct": 2.5
+        },
+        {
+          "capital": 500,
+          "daily_target": 15,
+          "strategy": "2 CSPs or 1 Iron Condor",
+          "return_pct": 3.0
+        },
+        {
+          "capital": 1000,
+          "daily_target": 30,
+          "strategy": "Wheel strategy on SPY",
+          "return_pct": 3.0
+        },
+        {
+          "capital": 2000,
+          "daily_target": 60,
+          "strategy": "Multiple wheels + 0DTE",
+          "return_pct": 3.0
+        },
+        {
+          "capital": 5000,
+          "daily_target": 100,
+          "strategy": "Full Phil Town portfolio",
+          "return_pct": 2.0
+        }
       ],
       "rule_1_reminder": "Don't lose money - 50% daily returns are IMPOSSIBLE without extreme risk"
     },
@@ -54,11 +79,36 @@
         "daily_return_target": 0.02,
         "reinvest_profits": true,
         "milestones": [
-          {"capital": 200, "target_date": "2026-01-29", "daily_target": 5, "day": 23},
-          {"capital": 500, "target_date": "2026-02-24", "daily_target": 15, "day": 49},
-          {"capital": 1000, "target_date": "2026-03-24", "daily_target": 30, "day": 77},
-          {"capital": 2000, "target_date": "2026-04-29", "daily_target": 60, "day": 113},
-          {"capital": 5000, "target_date": "2026-06-24", "daily_target": 100, "day": 169}
+          {
+            "capital": 200,
+            "target_date": "2026-01-29",
+            "daily_target": 5,
+            "day": 23
+          },
+          {
+            "capital": 500,
+            "target_date": "2026-02-24",
+            "daily_target": 15,
+            "day": 49
+          },
+          {
+            "capital": 1000,
+            "target_date": "2026-03-24",
+            "daily_target": 30,
+            "day": 77
+          },
+          {
+            "capital": 2000,
+            "target_date": "2026-04-29",
+            "daily_target": 60,
+            "day": 113
+          },
+          {
+            "capital": 5000,
+            "target_date": "2026-06-24",
+            "daily_target": 100,
+            "day": 169
+          }
         ],
         "compounding_power": {
           "without_compounding": 2637.14,
@@ -74,10 +124,10 @@
     "type": "paper",
     "purpose": "Test Phil Town Rule #1 strategies before live deployment",
     "starting_balance": 100000.0,
-    "current_equity": 101167.20,
+    "current_equity": 101167.2,
     "cash": 86629.93,
     "positions_value": 14537.27,
-    "total_pl": 1167.20,
+    "total_pl": 1167.2,
     "total_pl_pct": 1.17,
     "buying_power": 6277.72,
     "positions_count": 5,
@@ -92,7 +142,13 @@
       "enabled": true,
       "purpose": "Validate Phil Town Rule #1 approach before live trading",
       "primary_strategy": "Cash Secured Puts on 4Ms stocks",
-      "four_ms_watchlist": ["AAPL", "MSFT", "GOOGL", "AMZN", "BRK.B"],
+      "four_ms_watchlist": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "BRK.B"
+      ],
       "rules": {
         "rule_1": "Don't lose money - use stop losses",
         "entry": "Only sell CSPs when stock is at MOS (Margin of Safety) price",
