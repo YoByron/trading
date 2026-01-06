@@ -62,7 +62,7 @@ class TestKellyFraction:
         # CSP: 80% win rate, 0.25:1 payoff (win $25 or lose $100)
         # f* = (0.8 * 0.25 - 0.2) / 0.25 = 0
         result = kelly_fraction(0.8, 0.25)
-        assert result == 0.0  # Negative edge despite high win rate!
+        assert result == pytest.approx(0.0, abs=1e-10)  # Negative edge despite high win rate!
 
     def test_favorable_options_scenario(self):
         """Test favorable options scenario."""
