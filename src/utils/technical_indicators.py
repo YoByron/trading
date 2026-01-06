@@ -258,7 +258,7 @@ def calculate_technical_score(
         return (0.0, indicators)
 
     # Calculate composite score (price weighted by technical strength)
-    technical_score = (
+    technical_score = to_float(
         current_price * (1 + macd_histogram / 10) * (1 + (70 - rsi_val) / 100) * volume_ratio
     )
 

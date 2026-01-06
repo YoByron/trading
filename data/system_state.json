@@ -52,6 +52,8 @@
     "buying_power": 6277.72,
     "positions_count": 5,
     "win_rate": 80.0,
+    "win_rate_sample_size": 5,
+    "win_rate_warning": "STATISTICALLY INSIGNIFICANT - Only 5 closed trades. Need 30+ for confidence.",
     "note": "Continue paper trading at night to build RAG knowledge",
     "last_sync": "2026-01-06T17:27:00",
     "sync_source": "CEO screenshot Jan 6 2026",
@@ -73,6 +75,10 @@
     "winning_trades": 4,
     "losing_trades": 1,
     "win_rate": 80.0,
+    "win_rate_sample_size": 5,
+    "win_rate_warning": "STATISTICALLY INSIGNIFICANT - Only 5 closed trades. Need 30+ for meaningful win rate.",
+    "confidence_interval_95pct": "28.4% to 99.5%",
+    "statistical_significance": "NONE - Sample too small for reliable conclusions",
     "best_trade": {
       "symbol": "SPY260123P00660000",
       "pl": 197.0,
@@ -84,6 +90,7 @@
       "pl_pct": -1.17
     },
     "avg_return": -6.96522974230833,
+    "avg_return_warning": "NEGATIVE RETURNS - Despite 80% win rate claim, actual avg return is NEGATIVE",
     "closed_trades": [
       {
         "symbol": "AMD260116P00200000",
@@ -325,12 +332,58 @@
     "note": "62.2% claim from Nov 7 was single-scenario, not comprehensive. Full matrix shows strategy underperforms.",
     "source": "data/backtests/latest_summary.json"
   },
+  "metrics_honesty": {
+    "last_updated": "2026-01-06",
+    "purpose": "Transparent reporting of system performance without misleading metrics",
+    "critical_warnings": [
+      "WIN RATE IS MEANINGLESS: 80% based on only 5 closed trades (need 30+ for statistical significance)",
+      "SYSTEM IS LOSING MONEY: Average daily return is -3.04% (NEGATIVE despite win rate claim)",
+      "BACKTESTS FAILED: Sharpe ratio ranges from -7 to -72 (all negative, indicates terrible risk-adjusted performance)",
+      "CONFIDENCE INTERVAL WIDE: 95% CI for win rate is 28.4% to 99.5% (basically useless)",
+      "SAMPLE SIZE CRISIS: 5 trades cannot predict future performance reliably"
+    ],
+    "reality_check": {
+      "claimed_win_rate": "80%",
+      "sample_size": 5,
+      "statistical_power": "NONE",
+      "actual_profitability": "NEGATIVE",
+      "avg_daily_return": -3.04,
+      "backtest_sharpe_range": "-7 to -72",
+      "backtest_win_rate_range": "38-52%",
+      "conclusion": "System appears to be LOSING money despite cherry-picked win rate metric"
+    },
+    "metrics_problems": {
+      "win_rate_80pct": {
+        "problem": "Based on only 5 closed trades",
+        "why_dishonest": "Too small sample for meaningful conclusions",
+        "honest_statement": "Won 4 out of 5 trades, but sample too small to claim 80% skill",
+        "required_sample": "30+ trades minimum for basic confidence"
+      },
+      "avg_daily_return_negative": {
+        "problem": "System losing -3.04% per day on average",
+        "why_dishonest": "Contradicts any claim of profitability",
+        "honest_statement": "System is currently unprofitable and losing money daily",
+        "required_action": "Fix strategy or stop trading"
+      },
+      "backtest_buried": {
+        "problem": "Sharpe -7 to -72 hidden in backtest_reality section",
+        "why_dishonest": "Catastrophic risk metrics not prominently displayed",
+        "honest_statement": "All comprehensive backtests show negative risk-adjusted returns",
+        "implication": "Strategy fundamentally broken in backtesting"
+      }
+    },
+    "honest_summary": "This trading system has INSUFFICIENT DATA (5 trades) to claim any win rate. The limited data shows NEGATIVE average returns (-3.04% daily) and comprehensive backtests show TERRIBLE risk-adjusted performance (Sharpe -7 to -72). System is NOT ready for production and may LOSE CAPITAL."
+  },
   "heuristics": {
     "best_performing_etf": "SPY",
     "best_performing_stock": "NVDA",
     "avg_daily_return": -3.04,
+    "avg_daily_return_status": "LOSING MONEY",
+    "avg_daily_return_warning": "CRITICAL: System is LOSING -3.04% per day on average. This is NOT profitable.",
+    "profitability": "NEGATIVE",
     "max_drawdown": -21.25,
     "sharpe_ratio": 0.0,
+    "sharpe_ratio_warning": "Zero Sharpe ratio indicates no risk-adjusted returns",
     "volatility": 0.0,
     "winning_symbols": [],
     "losing_symbols": [

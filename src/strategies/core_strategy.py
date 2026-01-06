@@ -94,10 +94,10 @@ class CoreStrategy(BaseStrategy):
     RSI_OVERSOLD = 30
     RSI_OVERBOUGHT = 70
 
-    # Risk parameters
+    # Risk parameters - FIXED Jan 6 2026: Increased R:R for positive expectancy
     MAX_POSITION_SIZE = 0.02  # 2% of portfolio
     STOP_LOSS_PCT = 0.02  # 2% stop loss
-    TAKE_PROFIT_PCT = 0.04  # 4% take profit (2:1 R:R)
+    TAKE_PROFIT_PCT = 0.06  # 6% take profit (3:1 R:R) - was 4%, caused negative expectancy
 
     def __init__(
         self,
@@ -197,9 +197,21 @@ class CoreStrategy(BaseStrategy):
         slow_ema = ema(prices, self.MACD_SLOW)
         macd_line = fast_ema - slow_ema
 
-        # For signal line, we'd need historical MACD values
-        # Simplified: use current MACD as approximation
-        signal_line = macd_line * 0.9  # Simplified
+        # FIXED Jan 6 2026: Proper signal line calculation using EMA of MACD values
+        # Calculate historical MACD values for signal line
+        macd_history = []
+        for i in range(self.MACD_SLOW, len(prices) + 1):
+            hist_prices = prices[:i]
+            hist_fast = ema(hist_prices, self.MACD_FAST)
+            hist_slow = ema(hist_prices, self.MACD_SLOW)
+            macd_history.append(hist_fast - hist_slow)
+
+        # Signal line is 9-period EMA of MACD values
+        if len(macd_history) >= self.MACD_SIGNAL:
+            signal_line = ema(macd_history, self.MACD_SIGNAL)
+        else:
+            signal_line = macd_line * 0.9  # Fallback if not enough data
+
         histogram = macd_line - signal_line
 
         return macd_line, signal_line, histogram
