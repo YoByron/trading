@@ -54,7 +54,6 @@ def _get_trading_client():
     return TradingClient
 
 
-
 # Paths
 DATA_DIR = Path("data")
 PERFORMANCE_LOG_FILE = DATA_DIR / "performance_log.json"
