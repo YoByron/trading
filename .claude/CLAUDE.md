@@ -237,3 +237,15 @@ RIGHT: "Deployment succeeded, please test Dialogflow and confirm it works"
 - Query RAG lessons BEFORE starting tasks
 - Update RAG AFTER finishing tasks
 - Use CI workflows to sync to Vertex AI (sandbox cannot connect directly)
+
+### Bidirectional RAG Learning (Jan 7, 2026)
+- **READ**: Query Vertex AI RAG BEFORE trading (`pretrade-rag-query` job in daily-trading.yml)
+- **WRITE**: Sync trades to Vertex AI AFTER trading (`sync_trades_to_rag.py`)
+- This implements true bidirectional learning - not just one-way backup
+- Based on 2026 best practices: Gemini 2.0 Flash, hybrid search, query-first pattern
+- See: `rag_knowledge/lessons_learned/ll_109_bidirectional_rag_learning_jan07.md`
+
+### PR Completion Protocol
+- When done merging all PRs, confirm with: **"done merging PRs"**
+- Never claim PR work is complete without this explicit confirmation
+- This applies to all PR-related tasks requested by CEO
