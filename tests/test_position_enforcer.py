@@ -8,10 +8,10 @@ Purpose: 100% test coverage for position_enforcer.py
 from unittest.mock import MagicMock
 
 from src.safety.position_enforcer import (
-    EnforcementResult,
-    enforce_positions,
-    _check_symbol_banned,
     BANNED_SYMBOLS,
+    EnforcementResult,
+    _check_symbol_banned,
+    enforce_positions,
 )
 
 
@@ -34,7 +34,7 @@ class TestEnforcementResult:
             violations=[{"symbol": "BTCUSD"}],
             positions_checked=5,
             positions_closed=1,
-            error="test error"
+            error="test error",
         )
         assert result.violations_found == 2
         assert len(result.violations) == 1

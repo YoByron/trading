@@ -53,7 +53,7 @@ def main(dry_run: bool = False, trail_pct: float | None = None):
     """Set trailing stop-loss orders on all open positions."""
     try:
         from alpaca.trading.client import TradingClient
-        from alpaca.trading.enums import OrderSide, TimeInForce, OrderType
+        from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import TrailingStopOrderRequest
     except ImportError:
         logger.error("alpaca-py not installed. Add to requirements.txt for CI.")
@@ -129,13 +129,13 @@ def main(dry_run: bool = False, trail_pct: float | None = None):
         # For long positions, we SELL to close
         if side == "short":
             order_side = OrderSide.BUY
-            logger.info(f"    Action: BUY TO CLOSE (short position)")
+            logger.info("    Action: BUY TO CLOSE (short position)")
         else:
             order_side = OrderSide.SELL
-            logger.info(f"    Action: SELL TO CLOSE (long position)")
+            logger.info("    Action: SELL TO CLOSE (long position)")
 
         if dry_run:
-            logger.info(f"    Status: WOULD SET trailing stop (dry run)")
+            logger.info("    Status: WOULD SET trailing stop (dry run)")
             stops_set += 1
             total_protected_value += market_value
             continue
@@ -158,7 +158,9 @@ def main(dry_run: bool = False, trail_pct: float | None = None):
         except Exception as e:
             error_msg = str(e)
             if "fractional" in error_msg.lower():
-                logger.warning(f"    Status: SKIPPED - Fractional shares don't support trailing stops")
+                logger.warning(
+                    "    Status: SKIPPED - Fractional shares don't support trailing stops"
+                )
                 stops_skipped += 1
             elif "option" in error_msg.lower() or "cannot" in error_msg.lower():
                 logger.warning(f"    Status: SKIPPED - {error_msg}")
@@ -208,15 +210,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Set trailing stop-loss orders on all open positions"
     )
+    parser.add_argument("--dry-run", action="store_true", help="Preview without executing orders")
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview without executing orders"
-    )
-    parser.add_argument(
-        "--trail-pct",
-        type=float,
-        help="Override trailing stop percentage (e.g., 0.10 for 10%%)"
+        "--trail-pct", type=float, help="Override trailing stop percentage (e.g., 0.10 for 10%%)"
     )
     args = parser.parse_args()
 
