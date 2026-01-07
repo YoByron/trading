@@ -123,7 +123,7 @@ This is non-negotiable. Every trading decision must:
     https://api.github.com/repos/IgorGanapolsky/trading/actions/workflows/claude-agent-utility.yml/dispatches \
     -d '{"ref":"main","inputs":{"task":"run-tests"}}'
   ```
-- Available tasks: run-tests, run-lint, verify-rag, sync-trades-to-rag, system-health-check, dry-run-trading, custom-command
+- Available tasks: run-tests, run-lint, verify-rag, sync-trades-to-rag, system-health-check, dry-run-trading, set-trailing-stops, manage-positions, custom-command
 - Helper script: `python3 scripts/trigger_ci_task.py --task <task>`
 
 ### Self-Healing System (Jan 6, 2026)
