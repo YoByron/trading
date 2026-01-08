@@ -17,7 +17,7 @@ import pytest
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.risk.options_risk_monitor import OptionsPosition, OptionsRiskMonitor
+from src.risk.options_risk_monitor import OptionsPosition, OptionsRiskMonitor  # noqa: E402
 
 
 # =============================================================================
@@ -458,7 +458,10 @@ class TestCapitalProtection:
         assert OptionsRiskMonitor.CREDIT_SPREAD_STOP_MULTIPLIER <= 2.5
 
         # Iron condors should have tighter stop
-        assert OptionsRiskMonitor.IRON_CONDOR_STOP_MULTIPLIER < OptionsRiskMonitor.CREDIT_SPREAD_STOP_MULTIPLIER
+        assert (
+            OptionsRiskMonitor.IRON_CONDOR_STOP_MULTIPLIER
+            < OptionsRiskMonitor.CREDIT_SPREAD_STOP_MULTIPLIER
+        )
 
         # Long options: 50% max loss
         assert OptionsRiskMonitor.LONG_OPTION_STOP_PCT == 0.50

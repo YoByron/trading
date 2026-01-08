@@ -12,14 +12,14 @@ Created: 2026-01-08
 import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.risk.vix_circuit_breaker import (
+from src.risk.vix_circuit_breaker import (  # noqa: E402
     AlertLevel,
     CircuitBreakerEvent,
     DeRiskAction,
@@ -224,7 +224,9 @@ class TestVIXCircuitBreaker:
     def test_reduction_targets_defined(self, circuit_breaker):
         """Verify reduction targets are defined for all alert levels."""
         for level in AlertLevel:
-            assert level in circuit_breaker.REDUCTION_TARGETS, f"Missing reduction target for {level}"
+            assert level in circuit_breaker.REDUCTION_TARGETS, (
+                f"Missing reduction target for {level}"
+            )
             target = circuit_breaker.REDUCTION_TARGETS[level]
             assert 0.0 <= target <= 1.0, f"Invalid reduction target for {level}: {target}"
 

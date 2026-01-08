@@ -7,9 +7,9 @@ Updated: Jan 7, 2026 - Removed ChromaDB tests (CEO directive), replaced with Les
 This test MUST run in CI to catch RAG search failures early.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 
 class TestLessonsSearchInstallation:
@@ -57,7 +57,7 @@ class TestLessonsSearchFunctionality:
         results = search.search("error", severity_filter="CRITICAL")
         # All results should be CRITICAL if filtering works
         for lesson, score in results:
-            if hasattr(lesson, 'severity'):
+            if hasattr(lesson, "severity"):
                 assert lesson.severity == "CRITICAL"
 
     def test_get_critical_lessons(self):

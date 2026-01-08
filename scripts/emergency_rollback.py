@@ -15,21 +15,16 @@ Safety features:
 """
 
 import argparse
+import json
 import subprocess
 import sys
-import json
 from datetime import datetime
 from pathlib import Path
 
 
 def run_git(cmd: list[str], check: bool = True) -> str:
     """Run git command and return output."""
-    result = subprocess.run(
-        ["git"] + cmd,
-        capture_output=True,
-        text=True,
-        check=check
-    )
+    result = subprocess.run(["git"] + cmd, capture_output=True, text=True, check=check)
     return result.stdout.strip()
 
 
@@ -50,7 +45,7 @@ def get_last_merge() -> dict:
             "short_sha": sha[:7],
             "message": message,
             "author": author,
-            "date": date
+            "date": date,
         }
     except subprocess.CalledProcessError as e:
         return {"error": str(e)}
@@ -92,12 +87,14 @@ def log_rollback(merge_info: dict, backup_branch: str) -> None:
     except json.JSONDecodeError:
         logs = []
 
-    logs.append({
-        "timestamp": datetime.now().isoformat(),
-        "reverted_merge": merge_info,
-        "backup_branch": backup_branch,
-        "current_head": run_git(["rev-parse", "HEAD"])
-    })
+    logs.append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "reverted_merge": merge_info,
+            "backup_branch": backup_branch,
+            "current_head": run_git(["rev-parse", "HEAD"]),
+        }
+    )
 
     log_file.write_text(json.dumps(logs, indent=2))
     print(f"\n📝 Rollback logged to {log_file}")
@@ -132,12 +129,12 @@ def main():
         print(f"  Author:  {merge_info['author']}")
         print(f"  Date:    {merge_info['date']}")
 
-        target_sha = get_commit_before_merge(merge_info['sha'])
+        target_sha = get_commit_before_merge(merge_info["sha"])
         show_changes_since(target_sha)
 
         print("\n" + "═" * 60)
         print("To revert this merge, run:")
-        print(f"  python3 scripts/emergency_rollback.py --revert")
+        print("  python3 scripts/emergency_rollback.py --revert")
         print("═" * 60)
 
     elif args.revert:
@@ -146,7 +143,7 @@ def main():
             print(f"❌ {merge_info['error']}")
             sys.exit(1)
 
-        target_sha = get_commit_before_merge(merge_info['sha'])
+        target_sha = get_commit_before_merge(merge_info["sha"])
 
         print("═" * 60)
         print("🚨 EMERGENCY ROLLBACK")
@@ -161,7 +158,7 @@ def main():
         # Revert using git revert (creates new commit, safer than reset)
         print("\n🔄 Reverting merge commit...")
         try:
-            run_git(["revert", "-m", "1", merge_info['sha'], "--no-edit"])
+            run_git(["revert", "-m", "1", merge_info["sha"], "--no-edit"])
             print("✅ Merge reverted successfully")
 
             # Log the rollback

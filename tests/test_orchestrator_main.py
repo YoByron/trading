@@ -5,9 +5,9 @@ Critical module: 3,260 lines - controls entire trading workflow.
 Added Jan 7, 2026 to address test coverage gap.
 """
 
+from datetime import date
+
 import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime, date
 
 
 class TestTradingOrchestratorImports:
@@ -17,6 +17,7 @@ class TestTradingOrchestratorImports:
         """Verify TradingOrchestrator class can be imported."""
         try:
             from src.orchestrator.main import TradingOrchestrator
+
             assert TradingOrchestrator is not None
         except ImportError as e:
             # Expected in sandbox without all dependencies
@@ -28,11 +29,8 @@ class TestTradingOrchestratorImports:
             from src.orchestrator.gates import (
                 Gate0Psychology,
                 Gate1Momentum,
-                Gate2RLFilter,
-                Gate3Sentiment,
-                Gate4Risk,
-                Gate5Execution,
             )
+
             assert Gate0Psychology is not None
             assert Gate1Momentum is not None
         except ImportError as e:
@@ -46,6 +44,7 @@ class TestTradingGatePipeline:
         """Verify TradingGatePipeline can be imported."""
         try:
             from src.orchestrator.gates import TradingGatePipeline
+
             assert TradingGatePipeline is not None
         except ImportError as e:
             pytest.skip(f"Import skipped: {e}")
@@ -80,10 +79,10 @@ class TestOrchestratorConfiguration:
 
     def test_risk_parameters(self):
         """Test risk parameters are within safe bounds."""
-        from src.utils.constants import (
-            MAX_POSITION_PCT,
+        from src.utils.constants import (  # noqa: I001
             MAX_DAILY_LOSS_PCT,
             MAX_DRAWDOWN_PCT,
+            MAX_POSITION_PCT,
         )
 
         # Risk limits should be conservative
