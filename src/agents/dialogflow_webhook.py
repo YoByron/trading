@@ -345,15 +345,19 @@ def assess_trading_readiness(
         live_equity = state.get("account", {}).get("current_equity", 0)
 
         if is_paper:
-            # Paper trading mode - only evaluate paper equity (full 20 points)
-            if paper_equity > 100000:
+            # Paper trading mode - realistic thresholds for $5K paper account (CEO reset Jan 7, 2026)
+            # $5K is our 6-month milestone target, not $100K
+            if paper_equity >= 5000:
                 checks.append(f"Paper equity healthy: ${paper_equity:,.2f}")
                 score += 20
-            elif paper_equity > 95000:
-                warnings.append(f"Paper equity warning: ${paper_equity:,.2f}")
+            elif paper_equity >= 2000:
+                warnings.append(f"Paper equity moderate: ${paper_equity:,.2f}")
                 score += 10
+            elif paper_equity > 0:
+                warnings.append(f"Paper equity low: ${paper_equity:,.2f} (building track record)")
+                score += 5
             else:
-                blockers.append(f"Paper equity critical: ${paper_equity:,.2f}")
+                blockers.append(f"Paper equity zero: ${paper_equity:,.2f}")
             # Note about live capital (informational, not blocking for paper)
             if live_equity < 200:
                 target = 500  # First CSP target
@@ -396,18 +400,28 @@ def assess_trading_readiness(
     except Exception:
         warnings.append("Could not verify backtest status")
 
-    # 5. WIN RATE CHECK
+    # 5. WIN RATE CHECK (handles fresh starts with 0 trades)
     max_score += 20
     if state:
         win_rate = state.get("paper_account", {}).get("win_rate", 0)
-        if win_rate >= 60:
-            checks.append(f"Win rate strong: {win_rate:.0f}%")
+        sample_size = state.get("paper_account", {}).get("win_rate_sample_size", 0)
+
+        # Fresh start (0 trades) - not a blocker, just needs trades
+        if sample_size == 0:
+            warnings.append("No trades yet - building track record (not a blocker)")
+            score += 10  # Give partial credit for fresh starts
+        elif win_rate >= 60:
+            checks.append(f"Win rate strong: {win_rate:.0f}% ({sample_size} trades)")
             score += 20
         elif win_rate >= 50:
-            warnings.append(f"Win rate marginal: {win_rate:.0f}%")
+            warnings.append(f"Win rate marginal: {win_rate:.0f}% ({sample_size} trades)")
             score += 10
         else:
-            blockers.append(f"Win rate poor: {win_rate:.0f}%")
+            # Only block if we have enough trades to be meaningful
+            if sample_size >= 10:
+                blockers.append(f"Win rate poor: {win_rate:.0f}% ({sample_size} trades)")
+            else:
+                warnings.append(f"Win rate {win_rate:.0f}% (only {sample_size} trades - need more data)")
 
     # 6. TRADING AUTOMATION CHECK (Critical - added Jan 6, 2026)
     max_score += 20
