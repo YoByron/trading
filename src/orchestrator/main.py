@@ -2969,13 +2969,16 @@ class TradingOrchestrator:
 
         logger.info("Gate 6: Theta automation ENABLED - executing options strategy")
 
+        # FIXED Jan 9, 2026: Renamed counters to be HONEST
+        # This function LOGS signals; actual EXECUTION happens in rule_one_trader.py
         results: dict[str, Any] = {
             "put_signals": 0,
             "call_signals": 0,
-            "puts_executed": 0,
-            "calls_executed": 0,
-            "total_premium": 0.0,
+            "puts_logged": 0,      # HONEST: we log, not execute here
+            "calls_logged": 0,     # HONEST: we log, not execute here
+            "est_total_premium": 0.0,  # HONEST: estimated, not realized
             "errors": [],
+            "note": "Signals logged here; execution in rule_one_trader.py",
         }
 
         try:
@@ -2993,7 +2996,12 @@ class TradingOrchestrator:
                 len(call_signals),
             )
 
-            # Always log signals even if execution fails
+            # FIX Jan 9, 2026: This function now DELEGATES to rule_one_trader.py
+            # which runs later in the workflow and has actual order execution.
+            # Here we only log signals for visibility - actual trades happen in scripts.
+            #
+            # NOTE: "puts_logged" not "puts_executed" - be honest about what we do!
+
             for signal in put_signals[:3]:
                 logger.info(
                     "Gate 6 PUT SIGNAL: %s - Strike $%.2f, Premium $%.2f, "
@@ -3019,8 +3027,10 @@ class TradingOrchestrator:
                         "rationale": signal.rationale,
                     },
                 )
-                results["puts_executed"] += 1
-                results["total_premium"] += signal.total_premium
+                # FIXED: Use accurate counter - we're LOGGING not EXECUTING here
+                # Actual execution happens in rule_one_trader.py script
+                results["puts_logged"] = results.get("puts_logged", 0) + 1
+                results["est_total_premium"] = results.get("est_total_premium", 0) + signal.total_premium
 
             for signal in call_signals[:3]:
                 logger.info(
@@ -3045,14 +3055,15 @@ class TradingOrchestrator:
                         "contracts": signal.contracts,
                     },
                 )
-                results["calls_executed"] += 1
-                results["total_premium"] += signal.total_premium
+                # FIXED: Use accurate counter - we're LOGGING not EXECUTING here
+                results["calls_logged"] = results.get("calls_logged", 0) + 1
+                results["est_total_premium"] = results.get("est_total_premium", 0) + signal.total_premium
 
             logger.info(
-                "Gate 6 Summary: %d puts, %d calls logged. Est. Premium: $%.2f",
-                results["puts_executed"],
-                results["calls_executed"],
-                results["total_premium"],
+                "Gate 6 Summary: %d puts, %d calls LOGGED (execution in rule_one_trader.py). Est. Premium: $%.2f",
+                results.get("puts_logged", 0),
+                results.get("calls_logged", 0),
+                results.get("est_total_premium", 0),
             )
 
             self.telemetry.record(

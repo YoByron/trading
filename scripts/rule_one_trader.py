@@ -307,11 +307,24 @@ def run_rule_one_strategy():
 
                 analyses.append(analysis)
 
-                # EXECUTE TRADE if recommendation is STRONG BUY
-                recommendation = analysis.get("recommendation", "")
-                if "STRONG BUY" in recommendation and "Below MOS" in recommendation:
-                    logger.info(f"  🎯 ACTIONABLE: {symbol} is below MOS - Selling CSP")
+                # PHIL TOWN STRATEGY - CORRECTED Jan 9, 2026
+                # The WHOLE POINT is to sell puts ABOVE MOS to "get paid to wait"
+                # Previous bug: Only traded when stock already below MOS (defeats purpose!)
+                #
+                # Correct logic:
+                # - Stock BELOW MOS → Buy directly (it's on sale!)
+                # - Stock ABOVE MOS but BELOW Sticker → SELL PUT at MOS (getting paid to wait)
+                # - Stock ABOVE Sticker → Don't trade (overvalued)
 
+                recommendation = analysis.get("recommendation", "")
+                current_price = analysis.get("current_price", 0)
+                mos_price = analysis.get("mos_price", 0)
+                sticker_price = analysis.get("sticker_price", 0)
+
+                if "STRONG BUY" in recommendation and "Below MOS" in recommendation:
+                    # Stock is already below MOS - consider buying shares directly
+                    logger.info(f"  🎯 STEAL: {symbol} is below MOS - consider buying shares!")
+                    # For now, still sell puts as it's safer with small capital
                     trade = execute_phil_town_csp(client, symbol, analysis)
                     if trade:
                         trades_executed.append(trade)
@@ -320,10 +333,20 @@ def run_rule_one_strategy():
                         logger.warning(f"  ⚠️ Trade execution failed for {symbol}")
 
                 elif "BUY" in recommendation:
-                    logger.info(f"  📊 {symbol} is below Sticker but above MOS - watching")
+                    # FIX: This is WHERE we should be trading!
+                    # Stock is above MOS but below Sticker = "getting paid to wait"
+                    logger.info(f"  🎯 ACTIONABLE: {symbol} above MOS, below Sticker - Selling CSP to wait!")
+                    logger.info(f"     Current: ${current_price:.2f} | MOS: ${mos_price:.2f} | Sticker: ${sticker_price:.2f}")
 
-                elif "SELL" in recommendation:
-                    logger.info(f"  📈 {symbol} overvalued - consider covered calls if holding")
+                    trade = execute_phil_town_csp(client, symbol, analysis)
+                    if trade:
+                        trades_executed.append(trade)
+                        logger.info(f"  ✅ Trade executed for {symbol}")
+                    else:
+                        logger.warning(f"  ⚠️ Trade execution failed for {symbol}")
+
+                elif "SELL" in recommendation or "HOLD" in recommendation:
+                    logger.info(f"  📈 {symbol} near/above fair value - skip CSP, consider covered calls if holding")
 
             except Exception as e:
                 logger.warning(f"  Failed to process {symbol}: {e}")
