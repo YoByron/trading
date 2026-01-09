@@ -156,6 +156,113 @@ def fix_index_md(docs_path: Path, current_day: int) -> list[str]:
     return fixes
 
 
+def check_stale_data(state_path: Path, max_staleness_hours: float = 4.0) -> tuple[bool, list[str]]:
+    """
+    Check if critical data files are stale.
+
+    Returns (is_stale, warnings)
+    """
+    warnings = []
+    is_stale = False
+    now = datetime.now()
+
+    # Check system_state.json staleness
+    state = load_json(state_path)
+    last_updated = state.get("meta", {}).get("last_updated")
+
+    if last_updated:
+        try:
+            # Handle ISO format with optional timezone
+            if last_updated.endswith("Z"):
+                last_updated = last_updated[:-1]
+            updated_dt = datetime.fromisoformat(last_updated)
+            hours_old = (now - updated_dt).total_seconds() / 3600
+
+            if hours_old > max_staleness_hours:
+                is_stale = True
+                warnings.append(
+                    f"system_state.json is {hours_old:.1f} hours old (max: {max_staleness_hours}h)"
+                )
+            else:
+                print(
+                    f"   ✅ State freshness OK: {hours_old:.1f} hours old (max: {max_staleness_hours}h)"
+                )
+        except Exception as e:
+            warnings.append(f"Could not parse last_updated timestamp: {e}")
+    else:
+        warnings.append("system_state.json has no last_updated timestamp")
+        is_stale = True
+
+    # Check performance_log.json staleness
+    perf_path = state_path.parent / "performance_log.json"
+    if perf_path.exists():
+        try:
+            with open(perf_path) as f:
+                perf_data = json.load(f)
+
+            # Handle both formats: raw list or wrapped in object
+            if isinstance(perf_data, list):
+                entries = perf_data
+            else:
+                entries = perf_data.get("entries", [])
+
+            if entries:
+                latest_entry = max(entries, key=lambda x: x.get("date", ""))
+                latest_date_str = latest_entry.get("date", "")
+
+                if latest_date_str:
+                    # Check if we have an entry for today (or yesterday if before market open)
+                    # If market is open today and we don't have today's entry, that's OK
+                    # But if latest entry is more than 2 days old, warn
+                    try:
+                        latest_date = datetime.fromisoformat(latest_date_str).date()
+                        days_old = (date.today() - latest_date).days
+
+                        if days_old > 2:
+                            warnings.append(
+                                f"performance_log.json last entry is {days_old} days old"
+                            )
+                    except Exception:
+                        pass
+        except Exception as e:
+            warnings.append(f"Could not check performance_log.json: {e}")
+
+    return is_stale, warnings
+
+
+def notify_stale_data(warnings: list[str]) -> None:
+    """Notify CEO about stale data if notification is configured."""
+    try:
+        # Import notification script
+        import importlib.util
+
+        notify_path = Path(__file__).parent / "notify_ceo.py"
+        if notify_path.exists():
+            spec = importlib.util.spec_from_file_location("notify_ceo", notify_path)
+            notify_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(notify_module)
+
+            message = f"""⚠️ **STALE DATA DETECTED**
+
+The trading system has detected stale data files that may affect trading decisions.
+
+**Issues found:**
+{"".join(f"• {w}" + chr(10) for w in warnings)}
+
+**Action required:**
+1. Check if trading workflow is running
+2. Verify API connectivity
+3. Check for recent merge conflicts
+
+**Impact:** Trading decisions may be based on outdated information."""
+
+            notify_module.notify_ceo(message, alert_type="warning")
+        else:
+            print("   ⚠️  notify_ceo.py not found - cannot send notification")
+    except Exception as e:
+        print(f"   ⚠️  Could not send stale data notification: {e}")
+
+
 def main():
     """Main self-healing routine."""
     print("=" * 60)
@@ -168,6 +275,15 @@ def main():
     docs_path = repo_root / "docs"
 
     all_fixes = []
+    stale_warnings = []
+
+    # Check for stale data FIRST
+    print("\n[0] Checking data freshness...")
+    is_stale, warnings = check_stale_data(state_path, max_staleness_hours=4.0)
+    if warnings:
+        for w in warnings:
+            print(f"   ⚠️  {w}")
+        stale_warnings.extend(warnings)
 
     # Fix system_state.json
     print("\n[1] Checking system_state.json...")
@@ -193,10 +309,22 @@ def main():
         print(f"SELF-HEALING COMPLETE: Applied {len(all_fixes)} fixes")
         for fix in all_fixes:
             print(f"  - {fix}")
-        return 1  # Return 1 to indicate changes were made (useful for CI)
-    else:
-        print("SELF-HEALING COMPLETE: All data is current")
+
+    if stale_warnings:
+        print(f"\n⚠️  STALE DATA WARNINGS: {len(stale_warnings)} issues")
+        for warning in stale_warnings:
+            print(f"  - {warning}")
+
+        # Notify CEO if data is critically stale
+        if is_stale:
+            print("\n🔔 Notifying CEO about stale data...")
+            notify_stale_data(stale_warnings)
+
+    if not all_fixes and not stale_warnings:
+        print("SELF-HEALING COMPLETE: All data is current and fresh")
         return 0
+
+    return 1 if all_fixes else 0  # Return 1 to indicate changes were made (useful for CI)
 
 
 if __name__ == "__main__":

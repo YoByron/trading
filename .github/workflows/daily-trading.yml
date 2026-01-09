@@ -613,9 +613,31 @@ jobs:
             echo "⚠️  Trading already executed today. Skipping run."
           fi
 
+      - name: Credential health check (pre-flight)
+        id: credential_check
+        if: steps.check_execution.outputs.skip != 'true'
+        timeout-minutes: 2
+        env:
+          ALPACA_API_KEY: ${{ github.event.inputs.trading_mode == 'live' && secrets.ALPACA_BROKERAGE_TRADING_API_KEY || secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ github.event.inputs.trading_mode == 'live' && secrets.ALPACA_BROKERAGE_TRADING_API_SECRET || secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || secrets.FINHUB_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo "🔑 Running credential health check..."
+          if python3 scripts/credential_health_check.py --notify-on-failure; then
+            echo "✅ All credentials valid"
+            echo "credentials_valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ CREDENTIAL CHECK FAILED"
+            echo "credentials_valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
       - name: Pre-market health check
         id: health_check
-        if: steps.check_execution.outputs.skip != 'true'
+        if: steps.check_execution.outputs.skip != 'true' && steps.credential_check.outputs.credentials_valid == 'true'
         timeout-minutes: 5  # Increased from 1 to allow efficient API checks
         env:
           ALPACA_API_KEY: ${{ github.event.inputs.trading_mode == 'live' && secrets.ALPACA_BROKERAGE_TRADING_API_KEY || secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
@@ -1641,3 +1663,26 @@ jobs:
             logs/*.log
             logs/adk_service.log
           retention-days: 7
+
+      # ========================================================================
+      # CEO NOTIFICATION ON FAILURE (Self-Healing Jan 2026)
+      # Alert CEO immediately when workflow fails - don't wait for discovery
+      # ========================================================================
+      - name: Notify CEO on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          CEO_EMAIL: ${{ secrets.CEO_EMAIL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚨 Workflow failed - notifying CEO..."
+
+          # Build failure message (avoiding YAML multiline issues)
+          FAILURE_MESSAGE="DAILY TRADING WORKFLOW FAILED - Workflow: daily-trading, Run: ${{ github.run_id }}, Time: $(date -u +'%Y-%m-%d %H:%M:%S UTC'). Possible causes: API credentials invalid/expired, network issues, code regression. Action: Check logs at https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}. Impact: Trading did NOT execute today."
+
+          python3 scripts/notify_ceo.py --type critical --message "$FAILURE_MESSAGE" || {
+            echo "::warning::CEO notification script failed - check webhook configuration"
+          }
