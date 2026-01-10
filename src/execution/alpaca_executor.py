@@ -5,9 +5,7 @@ Dec 3, 2025 Enhancement:
 - ATR-based stop-loss calculation wired to order placement
 - Automatic stop-loss on every new position
 
-Dec 16, 2025 Enhancement:
-- Added LangSmith tracing for all trade executions
-- Every order is traced for observability
+Jan 9, 2026: Observability via Vertex AI RAG + Local JSON (LangSmith removed)
 """
 
 from __future__ import annotations
@@ -23,8 +21,7 @@ from src.core.alpaca_trader import AlpacaTrader
 
 logger = logging.getLogger(__name__)
 
-# LangSmith removed Jan 9, 2026 - using Vertex AI RAG instead
-LANGSMITH_AVAILABLE = False
+# Observability: Vertex AI RAG + Local JSON (LangSmith removed Jan 9, 2026)
 
 # Default stop-loss configuration
 DEFAULT_STOP_LOSS_PCT = 0.05  # 5% default if ATR unavailable
@@ -68,7 +65,7 @@ class AlpacaExecutor:
             self.broker = None
 
     def _record_trade_for_tracking(self, order: dict[str, Any], strategy: str) -> None:
-        """Record trade to LangSmith, ChromaDB RAG, RLHF storage, and local JSON."""
+        """Record trade to Vertex AI RAG, RLHF storage, and local JSON."""
         # Use unified trade sync (Jan 2026 - fixes operational gap)
         try:
             from src.observability.trade_sync import sync_trade
@@ -95,19 +92,16 @@ class AlpacaExecutor:
 
             logger.info(
                 f"Trade sync: {symbol} {side} | "
-                f"LangSmith={results['langsmith']}, ChromaDB={results['chromadb']}, JSON={results['local_json']}"
+                f"RAG={results.get('rag', False)}, JSON={results.get('local_json', False)}"
             )
 
             # Store to RLHF trajectory storage for ML learning (Jan 6 2026 fix)
             self._store_rlhf_trajectory(order, strategy, price)
 
         except ImportError:
-            logger.warning("trade_sync not available - falling back to LangSmith only")
-            self._trace_trade_execution(order, strategy)
+            logger.warning("trade_sync not available - trade not recorded")
         except Exception as e:
             logger.warning(f"Failed to sync trade: {e}")
-            # Fallback to LangSmith-only tracing
-            self._trace_trade_execution(order, strategy)
 
     def _store_rlhf_trajectory(self, order: dict[str, Any], strategy: str, price: float) -> None:
         """Store trade as RLHF trajectory for ML learning."""
@@ -154,49 +148,6 @@ class AlpacaExecutor:
             logger.warning(f"RLHF storage not available: {e}")
         except Exception as e:
             logger.warning(f"Failed to store RLHF trajectory: {e}")
-
-    def _trace_trade_execution(self, order: dict[str, Any], strategy: str) -> None:
-        """Trace trade execution to LangSmith for observability."""
-        if not LANGSMITH_AVAILABLE:
-            return
-
-        try:
-            tracer = get_tracer()
-            symbol = order.get("symbol", "UNKNOWN")
-            side = order.get("side", "UNKNOWN")
-
-            with tracer.trace(
-                name=f"trade_execution_{symbol}_{side}",
-                trace_type=TraceType.TRADE,
-                symbol=symbol,
-                side=side,
-                strategy=strategy,
-            ) as span:
-                span.inputs = {
-                    "symbol": symbol,
-                    "side": side,
-                    "qty": order.get("qty") or order.get("filled_qty"),
-                    "notional": order.get("notional"),
-                    "strategy": strategy,
-                }
-
-                span.add_output("order_id", order.get("id"))
-                span.add_output("filled_qty", order.get("filled_qty"))
-                span.add_output("filled_price", order.get("filled_avg_price"))
-                span.add_output("status", order.get("status"))
-                span.add_output("commission", order.get("commission", 0))
-
-                span.add_metadata(
-                    {
-                        "broker": order.get("broker", "alpaca"),
-                        "mode": order.get("mode", "paper"),
-                        "slippage_impact": order.get("slippage_impact", 0),
-                    }
-                )
-
-            logger.debug(f"📊 Trade execution traced to LangSmith: {symbol} {side}")
-        except Exception as e:
-            logger.warning(f"Failed to trace trade to LangSmith: {e}")
 
     def sync_portfolio_state(self) -> None:
         """

@@ -123,8 +123,7 @@ if INTROSPECTION_AVAILABLE:
         importlib.util.find_spec("src.core.uncertainty_tracker") is not None
     )
 
-# LangSmith removed Jan 9, 2026 - using Vertex AI RAG instead
-LANGSMITH_AVAILABLE = False
+# Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
 
 # Go ADK Multi-Agent Trading Orchestrator (Dec 2025)
 # Provides Gemini-powered research/signal/risk/execution agents
@@ -501,25 +500,6 @@ class TradingOrchestrator:
         active_tickers = session_profile["tickers"]
         self.session_profile = session_profile
         self.smart_dca.reset_session(active_tickers)
-
-        # Trace entire trading session to LangSmith
-        session_span = None
-        if LANGSMITH_AVAILABLE:
-            try:
-                tracer = get_tracer()
-                session_span = tracer.trace(
-                    name=f"trading_session_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}",
-                    trace_type=TraceType.ANALYSIS,
-                    symbol="SESSION",
-                )
-                session_span.__enter__()
-                session_span.inputs = {
-                    "tickers": active_tickers,
-                    "num_tickers": len(active_tickers),
-                    "session_time": datetime.now(timezone.utc).isoformat(),
-                }
-            except Exception as e:
-                logger.debug(f"Session tracing init failed: {e}")
 
         # Gate 0: Mental Toughness Coach - Start session and check readiness
         coaching_intervention = None
