@@ -27,8 +27,9 @@ from pathlib import Path
 # Try to import Alpaca - graceful fallback if not available
 try:
     from alpaca.trading.client import TradingClient
-    from alpaca.trading.requests import GetOrdersRequest
     from alpaca.trading.enums import OrderSide, QueryOrderStatus
+    from alpaca.trading.requests import GetOrdersRequest
+
     ALPACA_AVAILABLE = True
 except ImportError:
     ALPACA_AVAILABLE = False
@@ -38,17 +39,12 @@ def check_trade_file(date_str: str) -> dict:
     """Check if trade file exists and has content."""
     trade_file = Path(f"data/trades_{date_str}.json")
 
-    result = {
-        "file_exists": False,
-        "trade_count": 0,
-        "trades": [],
-        "error": None
-    }
+    result = {"file_exists": False, "trade_count": 0, "trades": [], "error": None}
 
     if trade_file.exists():
         result["file_exists"] = True
         try:
-            with open(trade_file, 'r') as f:
+            with open(trade_file) as f:
                 trades = json.load(f)
             result["trade_count"] = len(trades) if isinstance(trades, list) else 1
             result["trades"] = trades if isinstance(trades, list) else [trades]
@@ -60,12 +56,7 @@ def check_trade_file(date_str: str) -> dict:
 
 def check_alpaca_orders(date_str: str) -> dict:
     """Check Alpaca for orders placed today."""
-    result = {
-        "alpaca_available": ALPACA_AVAILABLE,
-        "orders_found": 0,
-        "orders": [],
-        "error": None
-    }
+    result = {"alpaca_available": ALPACA_AVAILABLE, "orders_found": 0, "orders": [], "error": None}
 
     if not ALPACA_AVAILABLE:
         result["error"] = "Alpaca SDK not installed"
@@ -86,9 +77,7 @@ def check_alpaca_orders(date_str: str) -> dict:
         # Get today's orders
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
         request = GetOrdersRequest(
-            status=QueryOrderStatus.ALL,
-            after=target_date,
-            until=target_date + timedelta(days=1)
+            status=QueryOrderStatus.ALL, after=target_date, until=target_date + timedelta(days=1)
         )
 
         orders = client.get_orders(filter=request)
@@ -100,7 +89,7 @@ def check_alpaca_orders(date_str: str) -> dict:
                 "side": str(o.side),
                 "qty": str(o.qty),
                 "status": str(o.status),
-                "created_at": str(o.created_at)
+                "created_at": str(o.created_at),
             }
             for o in orders
         ]
@@ -117,7 +106,7 @@ def check_system_state() -> dict:
         "last_trade_date": None,
         "options_orders_today": 0,
         "phil_town_enabled": False,
-        "error": None
+        "error": None,
     }
 
     state_file = Path("data/system_state.json")
@@ -126,13 +115,15 @@ def check_system_state() -> dict:
         return result
 
     try:
-        with open(state_file, 'r') as f:
+        with open(state_file) as f:
             state = json.load(f)
 
         result["state_exists"] = True
         result["last_trade_date"] = state.get("performance", {}).get("last_trade_date")
         result["options_orders_today"] = state.get("options", {}).get("orders_submitted_today", 0)
-        result["phil_town_enabled"] = state.get("paper_account", {}).get("phil_town_strategy", {}).get("enabled", False)
+        result["phil_town_enabled"] = (
+            state.get("paper_account", {}).get("phil_town_strategy", {}).get("enabled", False)
+        )
 
     except Exception as e:
         result["error"] = str(e)
@@ -226,7 +217,9 @@ def verify_execution(date_str: str = None, alert_on_failure: bool = False) -> bo
 def main():
     parser = argparse.ArgumentParser(description="Verify trade execution")
     parser.add_argument("--date", type=str, help="Date to check (YYYY-MM-DD)")
-    parser.add_argument("--alert-on-failure", action="store_true", help="Send alert if verification fails")
+    parser.add_argument(
+        "--alert-on-failure", action="store_true", help="Send alert if verification fails"
+    )
     args = parser.parse_args()
 
     success = verify_execution(args.date, args.alert_on_failure)
