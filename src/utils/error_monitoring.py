@@ -285,14 +285,7 @@ def send_slack_alert(
                         "text": f"*{key}:* {value}",
                     }
                 )
-            # Add trace context to fields
-            if trace_context and trace_context.get("trace_id") != "-":
-                fields.append(
-                    {
-                        "type": "mrkdwn",
-                        "text": f"*trace_id:* `{trace_context['trace_id']}`",
-                    }
-                )
+            # Trace context removed (LangSmith cleanup Jan 2026)
             if fields:
                 attachment["blocks"].append(
                     {

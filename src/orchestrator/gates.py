@@ -53,6 +53,17 @@ except ImportError:
 # Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
 
 
+def _trace_gate(gate_name: str, ticker: str, metadata: dict, result: Any) -> None:
+    """
+    Trace gate execution for observability.
+
+    Note: LangSmith tracing removed Jan 2026. This is now a no-op stub
+    that can be connected to Vertex AI RAG or local logging if needed.
+    """
+    # Logging only - no external tracing
+    logger.debug(f"Gate {gate_name} for {ticker}: {result.status if hasattr(result, 'status') else 'ok'}")
+
+
 def _timed_gate_execution(gate_func, *args, **kwargs) -> GateResult:
     """
     Execute a gate function with timing measurement.
