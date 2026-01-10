@@ -794,7 +794,573 @@
       "hash": "987db7bf5d8b88c3a8561bdd7154ffd4",
       "chunks": 21,
       "vectorized_at": "2026-01-06T22:12:04.711085"
+    },
+    "rag_knowledge/lessons_learned/ll_125_trust_audit_comprehensive_jan09.md": {
+      "hash": "7babf6b4ac75133a381e05cf4ec0f859",
+      "metadata": {
+        "source": "ll_125_trust_audit_comprehensive_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1",
+          "sticker price"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_125_trust_audit_comprehensive_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.480637",
+      "size": 2921
+    },
+    "rag_knowledge/lessons_learned/ll_122_trust_audit_ceo_questions_jan09.md": {
+      "hash": "e68969d9736c7e2f8200506dfea99812",
+      "metadata": {
+        "source": "ll_122_trust_audit_ceo_questions_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "sticker price"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_122_trust_audit_ceo_questions_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.481084",
+      "size": 4979
+    },
+    "rag_knowledge/lessons_learned/ll_106_phil_town_rule1_violation_jan07.md": {
+      "hash": "4f7c319f25ef6fe7848b3c4cef85a255",
+      "metadata": {
+        "source": "ll_106_phil_town_rule1_violation_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_106_phil_town_rule1_violation_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.481360",
+      "size": 2366
+    },
+    "rag_knowledge/lessons_learned/ll_126_alpaca_credentials_invalid_jan09.md": {
+      "hash": "3240441596b96c13baaa54aed3ec0231",
+      "metadata": {
+        "source": "ll_126_alpaca_credentials_invalid_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_126_alpaca_credentials_invalid_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.481545",
+      "size": 1466
+    },
+    "rag_knowledge/lessons_learned/ll_124_github_secrets_are_configured_jan09.md": {
+      "hash": "660d0f1d34ccb5f197e0936d900145a4",
+      "metadata": {
+        "source": "ll_124_github_secrets_are_configured_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_124_github_secrets_are_configured_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.481853",
+      "size": 1427
+    },
+    "rag_knowledge/lessons_learned/ll_121_investment_strategy_audit_jan09.md": {
+      "hash": "a07c7d269a82c53101562f2c59670840",
+      "metadata": {
+        "source": "ll_121_investment_strategy_audit_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_121_investment_strategy_audit_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.482170",
+      "size": 4620
+    },
+    "rag_knowledge/lessons_learned/ll_105_rag_sync_gap_jan07.md": {
+      "hash": "a5cfb583da3532f840685bd28ad58434",
+      "metadata": {
+        "source": "ll_105_rag_sync_gap_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_105_rag_sync_gap_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.482375",
+      "size": 1629
+    },
+    "rag_knowledge/lessons_learned/ll_119_paper_trading_api_key_mismatch_jan08.md": {
+      "hash": "33ba44886ac84d54410a3c9d24b937c5",
+      "metadata": {
+        "source": "ll_119_paper_trading_api_key_mismatch_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_119_paper_trading_api_key_mismatch_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.482577",
+      "size": 2431
+    },
+    "rag_knowledge/lessons_learned/ll_093_rlhf_storage_broken_jan06.md": {
+      "hash": "3d2cbec8115bb9283b19457c8acdbbf9",
+      "metadata": {
+        "source": "ll_093_rlhf_storage_broken_jan06",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_093_rlhf_storage_broken_jan06.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.482885",
+      "size": 1576
+    },
+    "rag_knowledge/lessons_learned/ll_117_trust_audit_jan08.md": {
+      "hash": "08503aeacd8868c4554ba53b6ebc5789",
+      "metadata": {
+        "source": "ll_117_trust_audit_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_117_trust_audit_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.483044",
+      "size": 1738
+    },
+    "rag_knowledge/lessons_learned/ll_115_pal_adversarial_validation_jan07.md": {
+      "hash": "3f2df770259cde1c5538e64c667a538c",
+      "metadata": {
+        "source": "ll_115_pal_adversarial_validation_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_115_pal_adversarial_validation_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.483245",
+      "size": 2781
+    },
+    "rag_knowledge/lessons_learned/ll_117_chromadb_removal_trading_gap_jan08.md": {
+      "hash": "ecc01ca51860c9634cb68c63d7d39b9e",
+      "metadata": {
+        "source": "ll_117_chromadb_removal_trading_gap_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_117_chromadb_removal_trading_gap_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.483598",
+      "size": 3098
+    },
+    "rag_knowledge/lessons_learned/ll_123_trust_rebuild_audit_jan09.md": {
+      "hash": "91d2d5f61e74ef3d55f2f306d6c1557e",
+      "metadata": {
+        "source": "ll_123_trust_rebuild_audit_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_123_trust_rebuild_audit_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.483811",
+      "size": 3159
+    },
+    "rag_knowledge/lessons_learned/ll_124_phil_town_csp_not_executing_jan09.md": {
+      "hash": "d99c27a54ad9ac472e4d53ff6f6d472d",
+      "metadata": {
+        "source": "ll_124_phil_town_csp_not_executing_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "margin of safety",
+          "payback time"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_124_phil_town_csp_not_executing_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.484103",
+      "size": 3338
+    },
+    "rag_knowledge/lessons_learned/ll_110_trailing_stops_gap_jan07.md": {
+      "hash": "5530f73355a8a9487c85febb79d6ffe4",
+      "metadata": {
+        "source": "ll_110_trailing_stops_gap_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1",
+          "meaning"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_110_trailing_stops_gap_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.484360",
+      "size": 2365
+    },
+    "rag_knowledge/lessons_learned/ll_116_observability_lasagna_trace_logging_jan08.md": {
+      "hash": "5bfec997a65105308688868cdee556ae",
+      "metadata": {
+        "source": "ll_116_observability_lasagna_trace_logging_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_116_observability_lasagna_trace_logging_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.484634",
+      "size": 3646
+    },
+    "rag_knowledge/lessons_learned/ll_119_false_pr_merge_claims_jan09.md": {
+      "hash": "cb4ff200b81ccafd7813ada4a9e1e8c9",
+      "metadata": {
+        "source": "ll_119_false_pr_merge_claims_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_119_false_pr_merge_claims_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.484884",
+      "size": 4187
+    },
+    "rag_knowledge/lessons_learned/ll_095_pretrade_pattern_validation_jan07.md": {
+      "hash": "33e678ce2cfb961d475de9b538204461",
+      "metadata": {
+        "source": "ll_095_pretrade_pattern_validation_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_095_pretrade_pattern_validation_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.485187",
+      "size": 2258
+    },
+    "rag_knowledge/lessons_learned/ll_107_honest_report_jan07.md": {
+      "hash": "563bd2b47c77a80517876f275e56fdd6",
+      "metadata": {
+        "source": "ll_107_honest_report_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "margin of safety",
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_107_honest_report_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.485478",
+      "size": 3823
+    },
+    "rag_knowledge/lessons_learned/ll_095_trading_execution_failure_jan07.md": {
+      "hash": "74fd5849472651aa8d6ca79ef549efeb",
+      "metadata": {
+        "source": "ll_095_trading_execution_failure_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_095_trading_execution_failure_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.485682",
+      "size": 2266
+    },
+    "rag_knowledge/lessons_learned/ll_112_phase1_cleanup_chromadb_removed_jan07.md": {
+      "hash": "fa30847bff383a20678de888eb3e46c2",
+      "metadata": {
+        "source": "ll_112_phase1_cleanup_chromadb_removed_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_112_phase1_cleanup_chromadb_removed_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.486191",
+      "size": 1737
+    },
+    "rag_knowledge/lessons_learned/ll_122_fix_paper_trading_losses_jan09.md": {
+      "hash": "bd75324ca9438edbaa590466916b2bd8",
+      "metadata": {
+        "source": "ll_122_fix_paper_trading_losses_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_122_fix_paper_trading_losses_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.486393",
+      "size": 3372
+    },
+    "rag_knowledge/lessons_learned/ll_120_api_access_verification_jan09.md": {
+      "hash": "126f213bec376915bc86d761955b08ae",
+      "metadata": {
+        "source": "ll_120_api_access_verification_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_120_api_access_verification_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.486636",
+      "size": 2162
+    },
+    "rag_knowledge/lessons_learned/ll_127_langsmith_removal_dead_code_jan09.md": {
+      "hash": "e4e7f1f8372a9ea2a838c0c2575cde99",
+      "metadata": {
+        "source": "ll_127_langsmith_removal_dead_code_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_127_langsmith_removal_dead_code_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.487302",
+      "size": 2093
+    },
+    "rag_knowledge/lessons_learned/ll_118_data_integrity_lying_jan08.md": {
+      "hash": "231c2ce6a404b90c9309f496707d1358",
+      "metadata": {
+        "source": "ll_118_data_integrity_lying_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "meaning"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_118_data_integrity_lying_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.487473",
+      "size": 2461
+    },
+    "rag_knowledge/lessons_learned/ll_126_critical_position_review_jan09.md": {
+      "hash": "6d852105a230b1ada27c93f881dc4ec7",
+      "metadata": {
+        "source": "ll_126_critical_position_review_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_126_critical_position_review_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.487663",
+      "size": 1805
+    },
+    "rag_knowledge/lessons_learned/ll_093_no_github_pat_ci_blocked_jan07.md": {
+      "hash": "2f16de04405ddfac05ab1a775a07ba3c",
+      "metadata": {
+        "source": "ll_093_no_github_pat_ci_blocked_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_093_no_github_pat_ci_blocked_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.487843",
+      "size": 1925
+    },
+    "rag_knowledge/lessons_learned/ll_124_secret_exposure_incident_jan09.md": {
+      "hash": "79c8ecbe3fa39767299cd855301d4d1b",
+      "metadata": {
+        "source": "ll_124_secret_exposure_incident_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_124_secret_exposure_incident_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.488866",
+      "size": 2358
+    },
+    "rag_knowledge/lessons_learned/ll_120_paper_trading_broken_trust_crisis_jan09.md": {
+      "hash": "f8e7854d65573a17a22eff53c5fd1912",
+      "metadata": {
+        "source": "ll_120_paper_trading_broken_trust_crisis_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_120_paper_trading_broken_trust_crisis_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.489040",
+      "size": 2527
+    },
+    "rag_knowledge/lessons_learned/ll_093_google_cav_not_useful_jan07.md": {
+      "hash": "3031e2a72c422ab788fa53b7bd2330d9",
+      "metadata": {
+        "source": "ll_093_google_cav_not_useful_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_093_google_cav_not_useful_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.489289",
+      "size": 1979
+    },
+    "rag_knowledge/lessons_learned/ll_108_strategy_verification_jan07.md": {
+      "hash": "71ef9b2d693dbdc071ed0f6cdca74be8",
+      "metadata": {
+        "source": "ll_108_strategy_verification_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_108_strategy_verification_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.489594",
+      "size": 2063
+    },
+    "rag_knowledge/lessons_learned/ll_112_premarket_position_protection_jan07.md": {
+      "hash": "eebaa64e8480cc5882a544edb4bbe555",
+      "metadata": {
+        "source": "ll_112_premarket_position_protection_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_112_premarket_position_protection_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.489847",
+      "size": 1614
+    },
+    "rag_knowledge/lessons_learned/ll_094_north_star_reality_check_jan07.md": {
+      "hash": "95cc135d560d949b3c7978f75161f333",
+      "metadata": {
+        "source": "ll_094_north_star_reality_check_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "margin of safety",
+          "moat",
+          "rule #1",
+          "meaning"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_094_north_star_reality_check_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.490034",
+      "size": 1934
+    },
+    "rag_knowledge/lessons_learned/ll_109_bidirectional_rag_learning_jan07.md": {
+      "hash": "995c3925c42c041ee78119b2759b8853",
+      "metadata": {
+        "source": "ll_109_bidirectional_rag_learning_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_109_bidirectional_rag_learning_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.490291",
+      "size": 4253
+    },
+    "rag_knowledge/lessons_learned/ll_111_paper_capital_must_match_real_jan07.md": {
+      "hash": "5af975860347712607cb93696d4efa41",
+      "metadata": {
+        "source": "ll_111_paper_capital_must_match_real_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_111_paper_capital_must_match_real_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.490659",
+      "size": 2495
+    },
+    "rag_knowledge/lessons_learned/ll_125_stale_position_data_jan09.md": {
+      "hash": "93094497e35ccd779e71ae38772860ba",
+      "metadata": {
+        "source": "ll_125_stale_position_data_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_125_stale_position_data_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.490885",
+      "size": 1463
+    },
+    "rag_knowledge/lessons_learned/ll_127_trust_audit_comprehensive_jan09.md": {
+      "hash": "53710d37834cb4a8856ba7fe6495980f",
+      "metadata": {
+        "source": "ll_127_trust_audit_comprehensive_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1",
+          "meaning"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_127_trust_audit_comprehensive_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.491211",
+      "size": 3587
+    },
+    "rag_knowledge/lessons_learned/ll_120_capital_aware_watchlist_jan09.md": {
+      "hash": "8f6ddb1dd45c9bede6de5a666ac8dbe9",
+      "metadata": {
+        "source": "ll_120_capital_aware_watchlist_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_120_capital_aware_watchlist_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.491452",
+      "size": 2369
+    },
+    "rag_knowledge/lessons_learned/ll_112_self_healing_data_integrity_jan08.md": {
+      "hash": "c37819a0db50dbff140718b651312cd8",
+      "metadata": {
+        "source": "ll_112_self_healing_data_integrity_jan08",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_112_self_healing_data_integrity_jan08.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.491664",
+      "size": 2702
+    },
+    "rag_knowledge/lessons_learned/ll_125_critical_fixes_jan09.md": {
+      "hash": "214625295a56c5f31538038dd09f3d37",
+      "metadata": {
+        "source": "ll_125_critical_fixes_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "rule #1"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_125_critical_fixes_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.491849",
+      "size": 3476
+    },
+    "rag_knowledge/lessons_learned/ll_093_automation_metadata_stale_jan07.md": {
+      "hash": "72dad9a69245ab0dc8c47c65de1691a4",
+      "metadata": {
+        "source": "ll_093_automation_metadata_stale_jan07",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": false,
+        "file_path": "rag_knowledge/lessons_learned/ll_093_automation_metadata_stale_jan07.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.492079",
+      "size": 2164
+    },
+    "rag_knowledge/lessons_learned/ll_120_paper_trading_broken_4_days_jan09.md": {
+      "hash": "a094b3862623a825954e89f489916970",
+      "metadata": {
+        "source": "ll_120_paper_trading_broken_4_days_jan09",
+        "content_type": "lesson_learned",
+        "concepts": [],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_120_paper_trading_broken_4_days_jan09.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.492469",
+      "size": 7068
+    },
+    "rag_knowledge/lessons_learned/ll_093_comprehensive_strategy_review_jan06.md": {
+      "hash": "0722c092c68e729dcd0a4d6d89cd6d81",
+      "metadata": {
+        "source": "ll_093_comprehensive_strategy_review_jan06",
+        "content_type": "lesson_learned",
+        "concepts": [
+          "margin of safety",
+          "rule #1",
+          "sticker price"
+        ],
+        "is_options_related": true,
+        "file_path": "rag_knowledge/lessons_learned/ll_093_comprehensive_strategy_review_jan06.md"
+      },
+      "indexed_at": "2026-01-10T13:22:03.492869",
+      "size": 2060
     }
   },
-  "last_updated": "2026-01-06T22:12:04.711855"
+  "last_updated": "2026-01-10T13:22:03.494022"
 }
