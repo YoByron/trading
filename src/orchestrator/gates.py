@@ -61,7 +61,9 @@ def _trace_gate(gate_name: str, ticker: str, metadata: dict, result: Any) -> Non
     that can be connected to Vertex AI RAG or local logging if needed.
     """
     # Logging only - no external tracing
-    logger.debug(f"Gate {gate_name} for {ticker}: {result.status if hasattr(result, 'status') else 'ok'}")
+    logger.debug(
+        f"Gate {gate_name} for {ticker}: {result.status if hasattr(result, 'status') else 'ok'}"
+    )
 
 
 def _timed_gate_execution(gate_func, *args, **kwargs) -> GateResult:
