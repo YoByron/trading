@@ -68,9 +68,12 @@ else:
 
     def rate_limit(limit_string: str):
         """No-op decorator when slowapi is not available."""
+
         def decorator(func):
             return func
+
         return decorator
+
 
 # Initialize RAG system for lessons
 rag = LessonsLearnedRAG()
