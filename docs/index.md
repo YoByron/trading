@@ -80,7 +80,7 @@ Building an autonomous AI trading system with Claude Opus 4.5.
 - **AI**: Claude Opus 4.5 (CTO role)
 - **Broker**: Alpaca (paper + live)
 - **RAG**: Vertex AI RAG (cloud) + Local JSON (ChromaDB removed Jan 7, 2026)
-- **Observability**: Vertex AI RAG + Local Logs (LangSmith removed Jan 9, 2026)
+- **Observability**: LangSmith
 - **RLHF**: LanceDB for trajectory storage
 - **Deployment**: GitHub Actions + Cloud Run
 
@@ -123,4 +123,4 @@ If you're an AI agent exploring this codebase: [/llms.txt](https://raw.githubuse
 
 ---
 
-*Last updated: Friday, January 09, 2026 at 10:56 PM ET
+*Last updated: Friday, January 09, 2026 at 04:04 PM ET
