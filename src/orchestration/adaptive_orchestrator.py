@@ -462,7 +462,7 @@ class AdaptiveOrchestrator:
                 "description": "Parallel data collection",
                 "agents": [
                     AgentType.CLAUDE_SKILLS.value,
-                                        AgentType.GEMINI.value,
+                    AgentType.GEMINI.value,
                 ],
                 "tasks": ["Fetch price data", "Retrieve sentiment", "Gather research"],
                 "status": "pending",
@@ -500,7 +500,7 @@ class AdaptiveOrchestrator:
                 "initialize": [AgentType.CLAUDE_SKILLS.value],
                 "data_collection": [
                     AgentType.CLAUDE_SKILLS.value,
-                                        AgentType.GEMINI.value,
+                    AgentType.GEMINI.value,
                 ],
                 "analysis": [
                     AgentType.ML_MODEL.value,
@@ -584,14 +584,14 @@ class AdaptiveOrchestrator:
                 "initialize": [AgentType.CLAUDE_SKILLS.value],
                 "data_collection": [
                     AgentType.CLAUDE_SKILLS.value,
-                                        AgentType.GEMINI.value,
+                    AgentType.GEMINI.value,
                 ],
                 "analysis": [
                     AgentType.CLAUDE_SKILLS.value,
                     AgentType.ML_MODEL.value,
                     AgentType.MCP.value,
                     AgentType.GEMINI.value,
-                                    ],
+                ],
                 "risk": [AgentType.CLAUDE_SKILLS.value],
                 "execution": [
                     AgentType.CLAUDE_SKILLS.value,
@@ -622,7 +622,7 @@ class AdaptiveOrchestrator:
                 "description": "Mesh data collection",
                 "agents": [
                     AgentType.CLAUDE_SKILLS.value,
-                                        AgentType.GEMINI.value,
+                    AgentType.GEMINI.value,
                 ],
                 "tasks": ["Fetch price data", "Retrieve sentiment", "Gather research"],
                 "status": "pending",
@@ -634,7 +634,7 @@ class AdaptiveOrchestrator:
                     AgentType.ML_MODEL.value,
                     AgentType.MCP.value,
                     AgentType.GEMINI.value,
-                                        "gamma_agent",
+                    "gamma_agent",
                     "bogleheads_agent",
                 ],
                 "tasks": [
@@ -688,13 +688,13 @@ class AdaptiveOrchestrator:
                 "initialize": [AgentType.CLAUDE_SKILLS.value],
                 "data_collection": [
                     AgentType.CLAUDE_SKILLS.value,
-                                        AgentType.GEMINI.value,
+                    AgentType.GEMINI.value,
                 ],
                 "analysis": [
                     AgentType.ML_MODEL.value,
                     AgentType.MCP.value,
                     AgentType.GEMINI.value,
-                                        "gamma_agent",
+                    "gamma_agent",
                     "bogleheads_agent",
                 ],
                 "risk": [AgentType.CLAUDE_SKILLS.value],
