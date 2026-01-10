@@ -50,29 +50,7 @@ except ImportError:
     CHECKPOINTING_AVAILABLE = False
     logger.warning("Checkpointing not available - pipeline will not be resumable")
 
-# LangSmith removed Jan 9, 2026 - using Vertex AI RAG instead
-LANGSMITH_AVAILABLE = False
-
-
-def _trace_gate(gate_name: str, ticker: str, inputs: dict, result: GateResult) -> None:
-    """Trace a gate decision to LangSmith for observability."""
-    if not LANGSMITH_AVAILABLE:
-        return
-    try:
-        tracer = get_tracer()
-        with tracer.trace(
-            name=f"gate_{gate_name}_{ticker}",
-            trace_type=TraceType.DECISION,
-            symbol=ticker,
-        ) as span:
-            span.inputs = inputs
-            span.add_output("status", result.status.value)
-            span.add_output("reason", result.reason)
-            span.add_output("confidence", result.confidence)
-            if result.metadata:
-                span.add_output("metadata", result.metadata)
-    except Exception as e:
-        logger.warning("Gate tracing failed for %s/%s: %s", gate_name, ticker, e)
+# Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
 
 
 def _timed_gate_execution(gate_func, *args, **kwargs) -> GateResult:

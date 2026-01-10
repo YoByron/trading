@@ -250,17 +250,6 @@ def send_slack_alert(
 
         import requests
 
-        # Get trace context for linking logs to traces (observability lasagna)
-        trace_url = None
-        trace_context = None
-        try:
-            from src.utils.logging_config import get_langsmith_trace_url, get_trace_context
-
-            trace_context = get_trace_context()
-            trace_url = get_langsmith_trace_url()
-        except ImportError:
-            pass
-
         # Build Slack message with blocks
         emoji_map = {
             "error": ":rotating_light:",
@@ -285,18 +274,6 @@ def send_slack_alert(
                 },
             ],
         }
-
-        # Add trace link if available (the critical "arrow" in observability lasagna)
-        if trace_url:
-            attachment["blocks"].append(
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f":mag: <{trace_url}|View Trace in LangSmith>",
-                    },
-                }
-            )
 
         # Add context if provided
         if context:

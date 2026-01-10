@@ -1,6 +1,6 @@
 """
 Central logging configuration.
-Simplified Jan 9, 2026 - removed LangSmith dependency.
+Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
 """
 
 import logging
@@ -53,13 +53,3 @@ def setup_logging(level: str | None = None) -> logging.Logger:
     logger.addHandler(error_handler)
 
     return logger
-
-
-def get_trace_context() -> dict[str, str]:
-    """Stub for compatibility - returns empty context."""
-    return {"trace_id": "-", "span_id": "-", "full_trace_id": None}
-
-
-def get_langsmith_trace_url(trace_id: str | None = None) -> str | None:
-    """Stub for compatibility - returns None (LangSmith removed)."""
-    return None

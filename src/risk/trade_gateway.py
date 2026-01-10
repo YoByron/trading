@@ -36,8 +36,7 @@ from src.risk.capital_efficiency import get_capital_calculator
 
 logger = logging.getLogger(__name__)
 
-# LangSmith removed Jan 9, 2026 - using Vertex AI RAG instead
-LANGSMITH_AVAILABLE = False
+# Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
 
 
 class RejectionReason(Enum):
@@ -534,29 +533,6 @@ class TradeGateway:
                 f"🚫 REJECTED: {request.side.upper()} {request.symbol} - "
                 f"{[r.value for r in rejection_reasons]}"
             )
-
-        # Trace gateway decision to LangSmith
-        if LANGSMITH_AVAILABLE:
-            try:
-                tracer = get_tracer()
-                with tracer.trace(
-                    name=f"trade_gateway_{request.symbol}_{request.side}",
-                    trace_type=TraceType.RISK,
-                    symbol=request.symbol,
-                ) as span:
-                    span.inputs = {
-                        "symbol": request.symbol,
-                        "side": request.side,
-                        "notional": request.notional,
-                        "quantity": request.quantity,
-                        "strategy": request.strategy_type,
-                    }
-                    span.add_output("approved", approved)
-                    span.add_output("risk_score", risk_score)
-                    span.add_output("rejections", [r.value for r in rejection_reasons])
-                    span.add_output("warnings", warnings)
-            except Exception as e:
-                logger.debug(f"Gateway tracing failed: {e}")
 
         return decision
 

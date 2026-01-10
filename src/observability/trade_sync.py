@@ -5,7 +5,7 @@ This module ensures EVERY trade is recorded to:
 1. Vertex AI RAG - for Dialogflow queries and cloud backup
 2. Local JSON files - for backup
 
-Simplified: Jan 9, 2026 - Removed LangSmith (not essential for trading).
+Observability: Vertex AI RAG + Local JSON (Jan 9, 2026)
 """
 
 import json
