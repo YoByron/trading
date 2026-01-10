@@ -118,7 +118,9 @@ class BacktestResult:
         """Convert to dictionary for JSON serialization."""
         # Calculate cost-adjusted returns
         total_execution_cost = self.total_slippage_cost + self.total_fee_cost
-        cost_pct_of_capital = (total_execution_cost / 100000) * 100 if total_execution_cost > 0 else 0
+        cost_pct_of_capital = (
+            (total_execution_cost / 100000) * 100 if total_execution_cost > 0 else 0
+        )
 
         return {
             "scenario": self.scenario,
@@ -147,15 +149,25 @@ class BacktestResult:
                 "slippage_cost": round(self.total_slippage_cost, 4),
                 "total_execution_cost": round(total_execution_cost, 4),
                 "cost_pct_of_capital": round(cost_pct_of_capital, 4),
-                "cost_adjusted_total_return_pct": round(self.total_return_pct - cost_pct_of_capital, 4),
-                "cost_adjusted_annualized_return_pct": round(self.annualized_return_pct - cost_pct_of_capital * (252 / max(self.trading_days, 1)), 4),
+                "cost_adjusted_total_return_pct": round(
+                    self.total_return_pct - cost_pct_of_capital, 4
+                ),
+                "cost_adjusted_annualized_return_pct": round(
+                    self.annualized_return_pct
+                    - cost_pct_of_capital * (252 / max(self.trading_days, 1)),
+                    4,
+                ),
                 "assumptions": {
                     "fee_rate": FEE_RATE,
                     "slippage_model_enabled": self.slippage_model_enabled,
                 },
             },
             "cost_adjusted_return_pct": round(self.total_return_pct - cost_pct_of_capital, 4),
-            "cost_adjusted_annualized_return_pct": round(self.annualized_return_pct - cost_pct_of_capital * (252 / max(self.trading_days, 1)), 4),
+            "cost_adjusted_annualized_return_pct": round(
+                self.annualized_return_pct
+                - cost_pct_of_capital * (252 / max(self.trading_days, 1)),
+                4,
+            ),
             "hybrid_gates": False,
             "survival_gate": self.survival_gate,
             "capital_preserved_pct": round(self.capital_preserved_pct, 2),
@@ -392,7 +404,9 @@ def run_backtest(scenario: dict[str, Any], defaults: dict[str, Any]) -> Backtest
                         symbol=symbol,
                     )
                     executed_price = slip_result.executed_price
-                    entry_slippage = abs(slip_result.slippage_amount) * (daily_allocation / current_price)
+                    entry_slippage = abs(slip_result.slippage_amount) * (
+                        daily_allocation / current_price
+                    )
 
                 # Calculate fee cost
                 fee_cost = daily_allocation * FEE_RATE
@@ -521,9 +535,7 @@ def run_backtest(scenario: dict[str, Any], defaults: dict[str, Any]) -> Backtest
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0.0
 
     # CRITICAL: Calculate average return per trade (ll_118 fix)
-    avg_return_pct = (
-        sum(t.pnl_pct for t in trades) / total_trades if total_trades > 0 else 0.0
-    )
+    avg_return_pct = sum(t.pnl_pct for t in trades) / total_trades if total_trades > 0 else 0.0
 
     total_return = (capital - initial_capital) / initial_capital * 100
     annualized_return = total_return * (252 / trading_days) if trading_days > 0 else 0
@@ -588,7 +600,9 @@ def run_backtest(scenario: dict[str, Any], defaults: dict[str, Any]) -> Backtest
     )
 
     # Log results with context (ll_118 fix: always show avg_return with win_rate)
-    logger.info(f"Results: {total_trades} trades, {win_rate:.1f}% win rate (avg return: {avg_return_pct:.2f}%)")
+    logger.info(
+        f"Results: {total_trades} trades, {win_rate:.1f}% win rate (avg return: {avg_return_pct:.2f}%)"
+    )
     logger.info(f"Return: {total_return:.2f}%, Sharpe: {sharpe:.2f}")
     logger.info(f"Execution costs: slippage=${total_slippage_cost:.2f}, fees=${total_fee_cost:.2f}")
     logger.info(f"Max Drawdown: {max_drawdown:.2f}%, Status: {status.upper()}")
@@ -710,7 +724,9 @@ def main() -> int:
         print("\nAggregate Metrics:")
         print(f"  Total trades: {total_trades}")
         # ll_118 fix: Always show avg_return with win_rate
-        print(f"  Avg win rate: {avg_win_rate:.1f}% (avg return per trade: {avg_return_per_trade:.2f}%)")
+        print(
+            f"  Avg win rate: {avg_win_rate:.1f}% (avg return per trade: {avg_return_per_trade:.2f}%)"
+        )
         print(f"  Avg total return: {avg_total_return:.2f}%")
         print(f"  Total execution costs: slippage=${total_slippage:.2f}, fees=${total_fees:.2f}")
 
