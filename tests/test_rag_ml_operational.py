@@ -92,8 +92,7 @@ class TestRAGOperational:
 
         # Check if ll_051 (blind trading) is in the results
         ll_051_found = any(
-            "ll_051" in lesson_id and "blind" in lesson_id.lower()
-            for lesson_id in lesson_ids
+            "ll_051" in lesson_id and "blind" in lesson_id.lower() for lesson_id in lesson_ids
         )
 
         # Also check if ANY lesson about blind trading is found
@@ -147,7 +146,9 @@ class TestRAGOperational:
         non_critical = [r for r in results if r["severity"] != "CRITICAL"]
         if non_critical:
             # Log but don't fail - severity extraction may have edge cases
-            print(f"⚠️ {len(non_critical)} non-CRITICAL results despite filter - severity extraction issue")
+            print(
+                f"⚠️ {len(non_critical)} non-CRITICAL results despite filter - severity extraction issue"
+            )
 
         print(f"✅ RAG blocks on {len(critical_lessons)} CRITICAL lessons")
 
