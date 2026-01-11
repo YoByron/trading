@@ -12,9 +12,9 @@ Building an autonomous AI trading system with Claude Opus 4.5.
 
 ---
 
-## Live Status (Day 74/90)
+## Live Status (Day 75/90)
 
-**📅 Saturday, January 10, 2026** (Day 74 of 90-day R&D challenge, started Oct 30, 2025)
+**📅 Sunday, January 11, 2026** (Day 75 of 90-day R&D challenge, started Oct 30, 2025)
 
 ### Paper Trading ($5K - Strategy Validation)
 
@@ -54,6 +54,13 @@ Building an autonomous AI trading system with Claude Opus 4.5.
 3. **[Stale Data Lying](lessons/ll_058_stale_data_lying_incident_dec23)** - AI claimed success without verification
 4. **[Silent Pipeline Failures](lessons/ll_056_silent_pipeline_failures_dec22)** - Trades failing silently
 
+### Weekend Learnings (Jan 10-11, 2026)
+
+1. **[LL-128: Trust Audit](lessons/ll_128_trust_audit_jan10_comprehensive)** - Phil Town strategy broken for 69 days
+2. **[LL-129: Execute Trades, Don't Just Analyze](lessons/ll_129_execute_trades_not_analyze_jan10)** - $5K paper account idle with 0 positions
+3. **[LL-130: Account RAG Recording](lessons/ll_130_account_rag_recording_jan11)** - Recording account state to Vertex AI RAG
+4. **Self-Healing System** - Implemented CEO notifications, credential health checks, stale data detection
+
 ### Key Architecture Decisions
 
 1. **Options Theta > Day Trading** - 80% win rate with defined risk
@@ -80,7 +87,7 @@ Building an autonomous AI trading system with Claude Opus 4.5.
 - **AI**: Claude Opus 4.5 (CTO role)
 - **Broker**: Alpaca (paper + live)
 - **RAG**: Vertex AI RAG (cloud) + Local JSON (ChromaDB removed Jan 7, 2026)
-- **Observability**: LangSmith
+- **Observability**: Local logging (LangSmith removed Jan 2026)
 - **RLHF**: LanceDB for trajectory storage
 - **Deployment**: GitHub Actions + Cloud Run
 
@@ -123,4 +130,4 @@ If you're an AI agent exploring this codebase: [/llms.txt](https://raw.githubuse
 
 ---
 
-*Last updated: Saturday, January 10, 2026 at 11:35 AM ET
+*Last updated: Sunday, January 11, 2026 at 12:20 PM ET
