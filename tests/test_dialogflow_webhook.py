@@ -1037,7 +1037,7 @@ class TestDialogflowWebhookSmokeTests:
 class TestTradeQueryWordBoundary:
     """
     Regression tests for word boundary matching in is_trade_query().
-    
+
     Bug (Jan 11, 2026): "lessons learned" was detected as trade query
     because "learned" contains "earn" as substring.
     """
@@ -1045,7 +1045,7 @@ class TestTradeQueryWordBoundary:
     def test_lessons_learned_not_trade_query(self):
         """lessons learned should NOT be a trade query."""
         from src.agents.dialogflow_webhook import is_trade_query
-        
+
         assert is_trade_query("What lessons did we learn?") is False
         assert is_trade_query("Tell me about lessons learned") is False
         assert is_trade_query("What was the last lesson you learned?") is False
@@ -1053,17 +1053,17 @@ class TestTradeQueryWordBoundary:
     def test_actual_earn_is_trade_query(self):
         """Actual 'earn' word should be a trade query."""
         from src.agents.dialogflow_webhook import is_trade_query
-        
+
         assert is_trade_query("What did I earn today?") is True
         assert is_trade_query("How much did we earn?") is True
 
     def test_other_false_positives_prevented(self):
         """Other potential false positives should be prevented."""
         from src.agents.dialogflow_webhook import is_trade_query
-        
+
         # "made" in "automated" - should NOT match
         assert is_trade_query("How is the automated system?") is False
         # "loss" in "lossless" - should NOT match
         assert is_trade_query("Is the data lossless?") is False
-        # "gain" in "again" - should NOT match  
+        # "gain" in "again" - should NOT match
         assert is_trade_query("Try again") is False
