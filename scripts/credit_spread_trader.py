@@ -216,7 +216,6 @@ def execute_credit_spread(client, spread: dict) -> Optional[dict]:
     This sells the higher strike put and buys the lower strike put.
     """
     try:
-
         # In production, this would:
         # 1. Get current bid/ask for both legs
         # 2. Calculate net credit
