@@ -33,7 +33,6 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -42,7 +41,7 @@ logger = logging.getLogger(__name__)
 # Documents to delete (Dec 2025 old incidents)
 DELETE_PATTERNS = [
     r"dec\d+.*2025",  # dec11_2025, dec23_2025, etc
-    r"ll_0[0-6]\d",   # ll_001 through ll_069 (December lessons)
+    r"ll_0[0-6]\d",  # ll_001 through ll_069 (December lessons)
     r"november.*2025",
     r"oct.*2025",
 ]
@@ -52,8 +51,8 @@ KEEP_PATTERNS = [
     r"jan.*2026",
     r"trading_rules",
     r"2026",
-    r"ll_[789]\d",    # ll_070+ (January 2026 lessons)
-    r"ll_1[0-3]\d",   # ll_100-139 (January 2026)
+    r"ll_[789]\d",  # ll_070+ (January 2026 lessons)
+    r"ll_1[0-3]\d",  # ll_100-139 (January 2026)
 ]
 
 
@@ -100,11 +99,13 @@ def list_corpus_files(corpus_name: str) -> list[dict]:
         file_list = []
 
         for f in files:
-            file_list.append({
-                "name": f.name,
-                "display_name": getattr(f, "display_name", "unknown"),
-                "state": getattr(f, "state", "unknown"),
-            })
+            file_list.append(
+                {
+                    "name": f.name,
+                    "display_name": getattr(f, "display_name", "unknown"),
+                    "state": getattr(f, "state", "unknown"),
+                }
+            )
 
         logger.info(f"Found {len(file_list)} files in corpus")
         return file_list
