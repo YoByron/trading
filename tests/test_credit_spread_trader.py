@@ -2,7 +2,6 @@
 """Tests for credit spread trader - 2026 best practices implementation."""
 
 import pytest
-from unittest.mock import MagicMock, patch
 
 # Import will fail if dependencies not installed - that's OK for CI
 try:
@@ -11,6 +10,7 @@ try:
         calculate_spread_collateral,
         validate_spread,
     )
+
     IMPORTS_AVAILABLE = True
 except ImportError:
     IMPORTS_AVAILABLE = False
@@ -54,7 +54,9 @@ class TestCreditSpreadConfig:
         """Verify watchlist includes stocks accessible to small accounts."""
         low_price_stocks = ["F", "SOFI", "T", "AAL"]
         for stock in low_price_stocks:
-            assert stock in CONFIG["watchlist"], f"{stock} should be in watchlist for small accounts"
+            assert stock in CONFIG["watchlist"], (
+                f"{stock} should be in watchlist for small accounts"
+            )
 
 
 @pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Dependencies not available")
@@ -103,7 +105,6 @@ class TestStrategyRules:
 
     def test_33_percent_rule_documented(self):
         """33% rule should be documented in code."""
-        import inspect
         from pathlib import Path
 
         script_path = Path(__file__).parent.parent / "scripts" / "credit_spread_trader.py"
@@ -127,7 +128,9 @@ class TestStrategyRules:
         script_path = Path(__file__).parent.parent / "scripts" / "credit_spread_trader.py"
         if script_path.exists():
             content = script_path.read_text()
-            assert "100%" in content or "stop_loss" in content, "Stop loss rule should be documented"
+            assert "100%" in content or "stop_loss" in content, (
+                "Stop loss rule should be documented"
+            )
 
 
 if __name__ == "__main__":

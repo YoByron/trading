@@ -31,9 +31,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # 2026 Best Practices Configuration
@@ -76,9 +74,7 @@ def get_trading_client():
         from alpaca.trading.client import TradingClient
 
         # Try paper trading 5K account first
-        api_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY") or os.getenv(
-            "ALPACA_API_KEY"
-        )
+        api_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY") or os.getenv("ALPACA_API_KEY")
         secret_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_SECRET") or os.getenv(
             "ALPACA_SECRET_KEY"
         )
@@ -118,9 +114,7 @@ def calculate_spread_collateral(spread_width: float) -> float:
     return spread_width * 100
 
 
-def find_put_credit_spread(
-    symbol: str, current_price: float, client
-) -> Optional[dict]:
+def find_put_credit_spread(symbol: str, current_price: float, client) -> Optional[dict]:
     """Find optimal put credit spread for a symbol.
 
     Returns a spread that meets the 33% rule and delta requirements.
@@ -140,9 +134,9 @@ def find_put_credit_spread(
         request = GetOptionContractsRequest(
             underlying_symbols=[symbol],
             expiration_date_gte=datetime.now().strftime("%Y-%m-%d"),
-            expiration_date_lte=(
-                datetime.now() + timedelta(days=CONFIG["max_dte"])
-            ).strftime("%Y-%m-%d"),
+            expiration_date_lte=(datetime.now() + timedelta(days=CONFIG["max_dte"])).strftime(
+                "%Y-%m-%d"
+            ),
             strike_price_lte=str(sell_strike + 2),
             strike_price_gte=str(buy_strike - 2),
             type="put",
@@ -174,9 +168,7 @@ def find_put_credit_spread(
                     "sell_contract": puts_by_strike[sell_strike],
                     "buy_contract": puts_by_strike[buy_strike],
                     "expiration": puts_by_strike[sell_strike].expiration_date,
-                    "collateral": calculate_spread_collateral(
-                        sell_strike - buy_strike
-                    ),
+                    "collateral": calculate_spread_collateral(sell_strike - buy_strike),
                 }
 
         return None
@@ -224,17 +216,15 @@ def execute_credit_spread(client, spread: dict) -> Optional[dict]:
     This sells the higher strike put and buys the lower strike put.
     """
     try:
-        from alpaca.trading.enums import OrderSide, OrderType, TimeInForce
-        from alpaca.trading.requests import (
-            LimitOrderRequest,
-        )
 
         # In production, this would:
         # 1. Get current bid/ask for both legs
         # 2. Calculate net credit
         # 3. Submit multi-leg order
 
-        logger.info(f"Would execute spread: SELL {spread['sell_strike']} PUT, BUY {spread['buy_strike']} PUT")
+        logger.info(
+            f"Would execute spread: SELL {spread['sell_strike']} PUT, BUY {spread['buy_strike']} PUT"
+        )
         logger.info(f"Collateral required: ${spread['collateral']:.2f}")
         logger.info(f"Expiration: {spread['expiration']}")
 
@@ -265,9 +255,7 @@ def get_current_price(symbol: str, client) -> Optional[float]:
         from alpaca.data.requests import StockLatestQuoteRequest
 
         # Use data client for quotes
-        api_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY") or os.getenv(
-            "ALPACA_API_KEY"
-        )
+        api_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY") or os.getenv("ALPACA_API_KEY")
         secret_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_SECRET") or os.getenv(
             "ALPACA_SECRET_KEY"
         )
