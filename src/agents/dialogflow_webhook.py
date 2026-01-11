@@ -262,10 +262,7 @@ def is_trade_query(query: str) -> bool:
     ]
     query_lower = query.lower()
     # Use word boundary matching to avoid "learned" matching "earn"
-    return any(
-        re.search(rf"\b{re.escape(keyword)}\b", query_lower)
-        for keyword in trade_keywords
-    )
+    return any(re.search(rf"\b{re.escape(keyword)}\b", query_lower) for keyword in trade_keywords)
 
 
 def assess_trading_readiness(
