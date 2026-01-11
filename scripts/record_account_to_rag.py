@@ -60,7 +60,9 @@ def fetch_account_data(client) -> dict:
             "last_equity": float(account.last_equity),
             "daytrade_count": account.daytrade_count,
             "pattern_day_trader": account.pattern_day_trader,
-            "status": account.status.value if hasattr(account.status, 'value') else str(account.status),
+            "status": account.status.value
+            if hasattr(account.status, "value")
+            else str(account.status),
         }
     except Exception as e:
         print(f"ERROR fetching account: {e}")
@@ -172,22 +174,24 @@ def append_to_performance_log(brokerage_data: dict, paper_data: dict):
         "pl_pct": 0,
         "account_type": "live",
         "paper_equity": paper_data["equity"] if paper_data else 0,
-        "note": f"Auto-recorded by record_account_to_rag.py",
+        "note": "Auto-recorded by record_account_to_rag.py",
     }
 
     # Calculate P/L from previous entry
     if log and len(log) > 0:
-        prev = log[-1] if existing_idx is None else log[existing_idx - 1] if existing_idx > 0 else None
+        prev = (
+            log[-1] if existing_idx is None else log[existing_idx - 1] if existing_idx > 0 else None
+        )
         if prev and prev.get("equity", 0) > 0:
             entry["pl"] = entry["equity"] - prev["equity"]
             entry["pl_pct"] = (entry["pl"] / prev["equity"]) * 100
 
     if existing_idx is not None:
         log[existing_idx] = entry
-        print(f"✅ Updated today's performance_log entry")
+        print("✅ Updated today's performance_log entry")
     else:
         log.append(entry)
-        print(f"✅ Appended new entry to performance_log.json")
+        print("✅ Appended new entry to performance_log.json")
 
     with open(log_file, "w") as f:
         json.dump(log, f, indent=2)
