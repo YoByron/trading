@@ -339,9 +339,7 @@ class Test2026BestPractices:
         from src.rag.vertex_rag import VertexRAG
 
         source = inspect.getsource(VertexRAG._get_or_create_corpus)
-        assert "EmbeddingModelConfig" in source, (
-            "Corpus creation should use EmbeddingModelConfig"
-        )
+        assert "EmbeddingModelConfig" in source, "Corpus creation should use EmbeddingModelConfig"
         assert "EMBEDDING_MODEL" in source, (
             "Corpus creation should reference EMBEDDING_MODEL constant"
         )

@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import holidays
 from src.agents.macro_agent import MacroeconomicAgent
 from src.agents.momentum_agent import MomentumAgent
 from src.agents.rl_agent import RLFilter
 from src.analyst.bias_store import BiasProvider, BiasSnapshot, BiasStore
-from src.data.iv_data_provider import IVDataProvider
 from src.execution.alpaca_executor import AlpacaExecutor
 from src.integrations.playwright_mcp import SentimentScraper, TradeVerifier
 from src.learning.trade_memory import TradeMemory
@@ -21,8 +19,6 @@ from src.learning.trade_memory import TradeMemory
 from src.orchestrator.anomaly_monitor import AnomalyMonitor
 from src.orchestrator.budget import BudgetController
 from src.orchestrator.failure_isolation import FailureIsolationManager
-from src.orchestrator.options_coordinator import OptionsStrategyCoordinator
-from src.orchestrator.session_manager import SessionManager, is_us_market_day
 from src.orchestrator.gates import (
     Gate0Psychology,
     Gate1Momentum,
@@ -38,12 +34,14 @@ from src.orchestrator.gates import (
     TradeMemoryQuery,
     TradingGatePipeline,
 )
+from src.orchestrator.options_coordinator import OptionsStrategyCoordinator
 from src.orchestrator.parallel_processor import (
     ParallelProcessingResult,
     ParallelTickerProcessor,
     TickerOutcome,
     create_thread_safe_wrapper,
 )
+from src.orchestrator.session_manager import SessionManager
 from src.orchestrator.smart_dca import SmartDCAAllocator
 from src.orchestrator.telemetry import OrchestratorTelemetry
 from src.risk.capital_efficiency import get_capital_calculator
