@@ -334,7 +334,10 @@ class TestDialogflowWebhookEdgeCases:
             assert response.status_code == 200
             data = response.json()
             # Security fix (Jan 10, 2026): Error message no longer exposes exception details
-            assert "error occurred" in data["fulfillmentResponse"]["messages"][0]["text"]["text"][0].lower()
+            assert (
+                "error occurred"
+                in data["fulfillmentResponse"]["messages"][0]["text"]["text"][0].lower()
+            )
 
 
 class TestTradeQueryDetection:
