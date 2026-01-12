@@ -7,6 +7,7 @@ from enum import Enum
 
 class AlertLevel(Enum):
     """VIX alert levels."""
+
     NORMAL = "normal"
     ELEVATED = "elevated"
     HIGH = "high"
@@ -18,6 +19,7 @@ class AlertLevel(Enum):
 @dataclass
 class VIXStatus:
     """VIX status data."""
+
     current_level: float = 15.0
     alert_level: AlertLevel = AlertLevel.NORMAL
     message: str = "Stub VIX status"

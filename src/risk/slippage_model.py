@@ -6,6 +6,7 @@ from enum import Enum
 
 class SlippageModelType(Enum):
     """Slippage model types."""
+
     FIXED = "fixed"
     PERCENTAGE = "percentage"
     VOLUME_BASED = "volume_based"

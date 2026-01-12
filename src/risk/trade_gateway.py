@@ -8,6 +8,7 @@ from typing import Any
 
 class RejectionReason(Enum):
     """Trade rejection reasons."""
+
     NONE = "none"
     INSUFFICIENT_FUNDS = "insufficient_funds"
     POSITION_LIMIT = "position_limit"
@@ -18,6 +19,7 @@ class RejectionReason(Enum):
 @dataclass
 class TradeRequest:
     """Trade request data."""
+
     symbol: str = ""
     side: str = "buy"
     qty: float = 0.0

@@ -1,13 +1,14 @@
 # Position manager stub - original deleted in cleanup PR #1445
 # Minimal implementation to prevent import errors
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
 @dataclass
 class ExitConditions:
     """Exit conditions for positions."""
+
     stop_loss_pct: float = 0.25
     take_profit_pct: float = 0.50
     trailing_stop_pct: float = 0.0

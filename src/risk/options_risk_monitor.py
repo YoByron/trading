@@ -8,6 +8,7 @@ from typing import Any
 @dataclass
 class OptionsPosition:
     """Options position data."""
+
     symbol: str = ""
     underlying: str = ""
     strike: float = 0.0
