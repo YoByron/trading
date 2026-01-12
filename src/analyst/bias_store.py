@@ -1,7 +1,6 @@
 """Stub file - BiasStore (original deleted in cleanup)."""
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
