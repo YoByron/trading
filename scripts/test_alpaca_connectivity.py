@@ -38,16 +38,16 @@ def test_connectivity(paper: bool = True) -> dict:
         api_key = os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY") or os.environ.get(
             "ALPACA_API_KEY"
         )
-        api_secret = os.environ.get(
-            "ALPACA_PAPER_TRADING_5K_API_SECRET"
-        ) or os.environ.get("ALPACA_SECRET_KEY")
+        api_secret = os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET") or os.environ.get(
+            "ALPACA_SECRET_KEY"
+        )
     else:
         api_key = os.environ.get("ALPACA_BROKERAGE_TRADING_API_KEY") or os.environ.get(
             "ALPACA_API_KEY"
         )
-        api_secret = os.environ.get(
-            "ALPACA_BROKERAGE_TRADING_API_SECRET"
-        ) or os.environ.get("ALPACA_SECRET_KEY")
+        api_secret = os.environ.get("ALPACA_BROKERAGE_TRADING_API_SECRET") or os.environ.get(
+            "ALPACA_SECRET_KEY"
+        )
 
     if not api_key or not api_secret:
         result["error"] = "API keys not found in environment"
