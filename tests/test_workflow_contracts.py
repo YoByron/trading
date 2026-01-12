@@ -13,6 +13,7 @@ try:
     import yaml
 except ImportError:
     import pytest
+
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 

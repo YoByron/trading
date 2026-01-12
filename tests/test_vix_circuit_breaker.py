@@ -25,6 +25,7 @@ try:
         VIXCircuitBreaker,
         VIXStatus,
     )
+
     # Optional classes that may not exist in all versions
     try:
         from src.risk.vix_circuit_breaker import CircuitBreakerEvent, DeRiskAction

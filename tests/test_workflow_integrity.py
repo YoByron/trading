@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
+
 try:
     import yaml
 except ImportError:

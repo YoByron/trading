@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+
 np = pytest.importorskip("numpy", reason="numpy required for safety gate tests")
 
 # Add project root to path

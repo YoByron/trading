@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Full implementation will restore these tests
 pytest.skip(
     "options_risk_monitor is a stub module - full tests require implementation",
-    allow_module_level=True
+    allow_module_level=True,
 )
 
 

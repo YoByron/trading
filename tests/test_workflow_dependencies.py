@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 
 import pytest
+
 try:
     import yaml
 except ImportError:
