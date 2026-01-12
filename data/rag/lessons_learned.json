@@ -1674,5 +1674,23 @@
     "severity": "critical",
     "financial_impact": 0,
     "symbol": "SOFI"
+  },
+  {
+    "id": "lesson_20260112_221752_session",
+    "timestamp": "2026-01-12T22:17:52.614267",
+    "category": "operational",
+    "title": "Full PR Merge and Branch Cleanup - January 12, 2026",
+    "description": "Successfully merged workflow updates to main using GitHub PAT. Deleted 3 stale branches. Updated CLAUDE.md with 3 new permanent directives (clean up, agentic control, parallel execution).",
+    "root_cause": "Previous session lacked PAT access, now resolved",
+    "prevention": "Always request PAT from CEO at session start if needed for merges",
+    "tags": [
+      "merge",
+      "cleanup",
+      "operational",
+      "success"
+    ],
+    "severity": "low",
+    "financial_impact": 0.0,
+    "symbol": null
   }
 ]

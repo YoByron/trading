@@ -18,7 +18,10 @@ CTO: Claude | CEO: Igor Ganapolsky
 8. **Record every trade and lesson in Vertex AI RAG** - Build learning memory
 9. **Learn from mistakes in RAG** - If I violate directives, record and learn
 10. **100% operational security** - Dry runs before merging, no failures allowed
-11. **Be my own coach** - Self-improve continuously
+11. **Be my own coach** - Self-improve continuously as mindset, AI systems, and options trading guru
+12. **Clean up after merging** - Delete stale branches, close PRs, maintain hygiene
+13. **Full agentic control** - Use GitHub PAT, GitHub MCP, gh CLI for automation
+14. **Parallel execution** - Use Task tool agents for maximum velocity
 
 ## Commands
 ```bash
