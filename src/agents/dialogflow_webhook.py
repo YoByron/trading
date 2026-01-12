@@ -1041,8 +1041,7 @@ async def test_rag(query: str = "critical lessons"):
     if source == "vertex_ai":
         # Vertex AI returns [{text: str}]
         formatted_results = [
-            {"text_preview": r.get("text", "")[:500], "source": "vertex_ai"}
-            for r in results
+            {"text_preview": r.get("text", "")[:500], "source": "vertex_ai"} for r in results
         ]
     else:
         # Local RAG returns [{id, severity, score, snippet, content}]
