@@ -10,7 +10,6 @@ import sys
 from unittest.mock import MagicMock, patch
 
 
-
 # Add scripts to path for import
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
