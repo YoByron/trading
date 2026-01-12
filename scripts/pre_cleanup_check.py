@@ -44,9 +44,16 @@ def find_imports(module_path: str) -> dict:
     try:
         # Direct imports: from src.risk.kelly import ...
         result = subprocess.run(
-            ["grep", "-r", f"from {import_pattern}", "--include=*.py",
-             "--exclude=pre_cleanup_check.py", "."],
-            capture_output=True, text=True
+            [
+                "grep",
+                "-r",
+                f"from {import_pattern}",
+                "--include=*.py",
+                "--exclude=pre_cleanup_check.py",
+                ".",
+            ],
+            capture_output=True,
+            text=True,
         )
         for line in result.stdout.strip().split("\n"):
             if line:
@@ -61,8 +68,15 @@ def find_imports(module_path: str) -> dict:
         # Import from parent: from src.risk import kelly
         if module_name:
             result = subprocess.run(
-                ["grep", "-r", f"from {parent_pattern} import.*{module_name}", "--include=*.py", "."],
-                capture_output=True, text=True
+                [
+                    "grep",
+                    "-r",
+                    f"from {parent_pattern} import.*{module_name}",
+                    "--include=*.py",
+                    ".",
+                ],
+                capture_output=True,
+                text=True,
             )
             for line in result.stdout.strip().split("\n"):
                 if line and line not in results["imports"]:
@@ -76,8 +90,17 @@ def find_imports(module_path: str) -> dict:
 
         # Check config files
         result = subprocess.run(
-            ["grep", "-r", import_pattern, "--include=*.json", "--include=*.yaml", "--include=*.yml", "."],
-            capture_output=True, text=True
+            [
+                "grep",
+                "-r",
+                import_pattern,
+                "--include=*.json",
+                "--include=*.yaml",
+                "--include=*.yml",
+                ".",
+            ],
+            capture_output=True,
+            text=True,
         )
         for line in result.stdout.strip().split("\n"):
             if line:
