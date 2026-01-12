@@ -1,7 +1,9 @@
 ---
-layout: post
+layout: lesson
 title: "Lesson Learned #079: Tomorrow Hallucination Incident (Jan 5, 2026)"
 date: 2026-01-05
+severity: HIGH
+category: AI Reliability
 ---
 
 # Lesson Learned #079: Tomorrow Hallucination Incident (Jan 5, 2026)
