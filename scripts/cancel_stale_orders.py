@@ -71,7 +71,7 @@ def main() -> int:
         logger.info(f"  Age: {age_hours:.1f} hours")
 
         if created_at < stale_threshold:
-            logger.warning(f"  ⚠️ STALE ORDER - Cancelling...")
+            logger.warning("  ⚠️ STALE ORDER - Cancelling...")
             try:
                 client.cancel_order_by_id(order.id)
                 cancelled_count += 1
@@ -85,7 +85,7 @@ def main() -> int:
                     except ValueError:
                         pass
 
-                logger.info(f"  ✅ CANCELLED")
+                logger.info("  ✅ CANCELLED")
             except Exception as e:
                 logger.error(f"  ❌ Failed to cancel: {e}")
         else:
