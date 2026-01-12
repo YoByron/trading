@@ -3,6 +3,7 @@
 Detect placeholder features in the codebase.
 Placeholder to satisfy pre-commit hook.
 """
+
 import sys
 
 
