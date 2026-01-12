@@ -8,8 +8,8 @@ Restored: January 12, 2026 (was stub since PR #1445)
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, date
-from typing import Any, Optional
+from datetime import date, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

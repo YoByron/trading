@@ -5,8 +5,6 @@ Created: January 12, 2026
 Purpose: Verify VIX circuit breaker and risk manager work correctly.
 """
 
-import pytest
-from datetime import datetime
 
 from src.risk.vix_circuit_breaker import VIXCircuitBreaker, AlertLevel, VIXStatus
 from src.risk.risk_manager import RiskManager, RiskCheck
