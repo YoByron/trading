@@ -7,6 +7,7 @@ from typing import Any
 @dataclass
 class SentimentResult:
     """Stub sentiment result."""
+
     weighted_score: float = 0.0
     total_mentions: int = 0
     bullish_count: int = 0
