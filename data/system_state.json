@@ -49,6 +49,13 @@
           ]
         },
         {
+          "capital": 200,
+          "daily_target": 0,
+          "strategy": "Accumulation only - CSPs need $500+",
+          "return_pct": 0,
+          "note": "Focus on depositing to reach $500 for first CSP"
+        },
+        {
           "capital": 500,
           "daily_target": 2.5,
           "strategy": "CREDIT SPREADS + First CSP on F/SOFI ($5 strike)",
