@@ -119,7 +119,9 @@ class TradeGateway:
     MAX_SYMBOL_ALLOCATION_PCT = 0.25  # 25% max per symbol (was 15%)
     MAX_CORRELATION_THRESHOLD = 0.80  # 80% correlation threshold
     MAX_TRADES_PER_HOUR = 5  # Frequency limit
-    MIN_TRADE_BATCH = 10.0  # $10 minimum for paper trading - FIXED Jan 12, 2026 (was $50, blocked all trades)
+    MIN_TRADE_BATCH = (
+        10.0  # $10 minimum for paper trading - FIXED Jan 12, 2026 (was $50, blocked all trades)
+    )
     MIN_TRADE_BATCH_LIVE = 50.0  # $50 for live trading - fee protection
     MAX_DAILY_LOSS_PCT = 0.03  # 3% max daily loss
     MAX_DRAWDOWN_PCT = 0.10  # 10% max drawdown
@@ -314,9 +316,7 @@ class TradeGateway:
                 self.accumulated_cash += trade_value
                 self._save_state()
                 rejection_reasons.append(RejectionReason.MINIMUM_BATCH_NOT_MET)
-                logger.info(
-                    f"⏳ Accumulating: ${self.accumulated_cash:.2f} / ${min_batch}"
-                )
+                logger.info(f"⏳ Accumulating: ${self.accumulated_cash:.2f} / ${min_batch}")
             else:
                 # Use accumulated cash
                 logger.info(
