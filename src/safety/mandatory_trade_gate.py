@@ -3,4 +3,5 @@
 
 class TradeBlockedError(Exception):
     """Stub for TradeBlockedError exception."""
+
     pass
