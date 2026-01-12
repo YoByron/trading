@@ -145,7 +145,9 @@ class TestDeRiskAction:
 # =============================================================================
 
 
-@pytest.mark.skipif(CircuitBreakerEvent is None, reason="CircuitBreakerEvent not available in current version")
+@pytest.mark.skipif(
+    CircuitBreakerEvent is None, reason="CircuitBreakerEvent not available in current version"
+)
 class TestCircuitBreakerEvent:
     """Test CircuitBreakerEvent dataclass."""
 

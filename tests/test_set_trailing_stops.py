@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 # Check if alpaca is available
 try:
     import alpaca.trading.client  # noqa: F401
+
     ALPACA_AVAILABLE = True
 except ImportError:
     ALPACA_AVAILABLE = False

@@ -14,6 +14,7 @@ import pytest
 # Check if numpy is available (needed for RuleOneOptionsStrategy)
 try:
     import numpy  # noqa: F401
+
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False
