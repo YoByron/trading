@@ -181,10 +181,10 @@ def should_open_position(client, config: dict) -> bool:
     # Previous bug: Hardcoded SPY at $600 = $57,000 collateral required
     # With SOFI at ~$14 and $10 strike = $1,000 collateral (fits $5K account)
     symbol_prices = {
-        "SOFI": 14,   # ~$14/share, $10 strike = $1,000 collateral
-        "F": 10,      # ~$10/share, $8 strike = $800 collateral
-        "PLTR": 80,   # ~$80/share, $70 strike = $7,000 collateral
-        "SPY": 600,   # ~$600/share, $570 strike = $57,000 collateral
+        "SOFI": 14,  # ~$14/share, $10 strike = $1,000 collateral
+        "F": 10,  # ~$10/share, $8 strike = $800 collateral
+        "PLTR": 80,  # ~$80/share, $70 strike = $7,000 collateral
+        "SPY": 600,  # ~$600/share, $570 strike = $57,000 collateral
     }
     symbol = config.get("symbol", "SOFI")
     price_estimate = symbol_prices.get(symbol, 20)  # Default to $20 if unknown
