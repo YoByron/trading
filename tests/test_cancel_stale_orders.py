@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Tests for cancel_stale_orders.py - CEO directive Jan 12, 2026."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta, timezone
 
@@ -13,10 +12,11 @@ class TestCancelStaleOrders:
         """Verify CEO fix: stale threshold is 4 hours, not 24."""
         # Import the module to check the constant
         import sys
+
         sys.path.insert(0, ".")
 
         # Read the file directly to verify the constant
-        with open("scripts/cancel_stale_orders.py", "r") as f:
+        with open("scripts/cancel_stale_orders.py") as f:
             content = f.read()
 
         assert "MAX_ORDER_AGE_HOURS = 4" in content, (
@@ -48,11 +48,10 @@ class TestCancelStaleOrders:
         is_stale = fresh_order_time < threshold
         assert not is_stale, "1-hour-old order should NOT be cancelled"
 
-    @patch.dict("os.environ", {
-        "ALPACA_API_KEY": "test_key",
-        "ALPACA_SECRET_KEY": "test_secret",
-        "PAPER_TRADING": "true"
-    })
+    @patch.dict(
+        "os.environ",
+        {"ALPACA_API_KEY": "test_key", "ALPACA_SECRET_KEY": "test_secret", "PAPER_TRADING": "true"},
+    )
     def test_returns_zero_on_no_orders(self):
         """Test script returns 0 when no orders exist."""
         with patch("scripts.cancel_stale_orders.TradingClient") as mock_client:
@@ -62,6 +61,7 @@ class TestCancelStaleOrders:
 
             # Import and run main
             from scripts.cancel_stale_orders import main
+
             result = main()
 
             assert result == 0, "Should return 0 when no orders"
@@ -85,9 +85,7 @@ class TestBuyingPowerMath:
         # If we add another $24 Put pending order
         sofi_24_collateral = 24 * 100
         remaining_after_order = remaining - sofi_24_collateral
-        assert remaining_after_order == 100, (
-            "After 2 positions, only $100 buying power remains"
-        )
+        assert remaining_after_order == 100, "After 2 positions, only $100 buying power remains"
 
     def test_max_positions_for_5k_account(self):
         """Test maximum positions with $5K capital."""
