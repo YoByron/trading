@@ -21,7 +21,7 @@ import json
 import logging
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -164,8 +164,7 @@ class TokenUsageMonitor:
 
         # Log the usage
         logger.debug(
-            f"Token usage: {agent_name} | in={input_tokens:,} out={output_tokens:,} | "
-            f"model={model}"
+            f"Token usage: {agent_name} | in={input_tokens:,} out={output_tokens:,} | model={model}"
         )
 
         return alerts
@@ -207,9 +206,7 @@ class TokenUsageMonitor:
             "daily": {
                 "total_tokens": daily_stats.total_tokens,
                 "call_count": daily_stats.call_count,
-                "threshold_pct": round(
-                    100 * daily_stats.total_tokens / self.DAILY_THRESHOLD, 1
-                ),
+                "threshold_pct": round(100 * daily_stats.total_tokens / self.DAILY_THRESHOLD, 1),
             },
             "thresholds": {
                 "single_call": self.SINGLE_CALL_THRESHOLD,
@@ -247,9 +244,7 @@ class TokenUsageMonitor:
         relevant_entries = [e for e in self._entries if e.timestamp >= since]
         return self._calculate_stats_from_entries(relevant_entries)
 
-    def _calculate_stats_from_entries(
-        self, entries: list[TokenUsageEntry]
-    ) -> UsageStats:
+    def _calculate_stats_from_entries(self, entries: list[TokenUsageEntry]) -> UsageStats:
         """Calculate stats from a list of entries."""
         if not entries:
             return UsageStats()
@@ -288,11 +283,7 @@ class TokenUsageMonitor:
 
     def _get_session_total_unsafe(self) -> int:
         """Get session total tokens (must hold lock)."""
-        return sum(
-            e.total_tokens
-            for e in self._entries
-            if e.timestamp >= self._session_start
-        )
+        return sum(e.total_tokens for e in self._entries if e.timestamp >= self._session_start)
 
     def _get_recent_alerts_unsafe(self) -> list[str]:
         """Get recent alerts (must hold lock)."""
@@ -320,9 +311,7 @@ class TokenUsageMonitor:
             total = sum(stats.tokens_by_agent.values())
             if max_agent > 0.7 * total:
                 heavy_agent = max(stats.tokens_by_agent, key=stats.tokens_by_agent.get)
-                recommendations.append(
-                    f"Agent '{heavy_agent}' uses >70% of tokens - investigate"
-                )
+                recommendations.append(f"Agent '{heavy_agent}' uses >70% of tokens - investigate")
 
         if not recommendations:
             recommendations.append("Token usage looks healthy - no optimizations needed")

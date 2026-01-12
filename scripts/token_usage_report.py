@@ -26,9 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description="View LLM token usage metrics")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--save", action="store_true", help="Save detailed report")
-    parser.add_argument(
-        "--agent", type=str, help="Filter by agent name", default=None
-    )
+    parser.add_argument("--agent", type=str, help="Filter by agent name", default=None)
     args = parser.parse_args()
 
     monitor = get_token_monitor()
@@ -82,16 +80,14 @@ def main():
 
     if session["tokens_by_agent"]:
         print("\n   By Agent:")
-        for agent, tokens in sorted(
-            session["tokens_by_agent"].items(), key=lambda x: -x[1]
-        ):
+        for agent, tokens in sorted(session["tokens_by_agent"].items(), key=lambda x: -x[1]):
             print(f"     {agent}: {tokens:,}")
 
-    print(f"\n📆 Daily Usage")
+    print("\n📆 Daily Usage")
     print(f"   Total Tokens:    {daily['total_tokens']:,}")
     print(f"   % of Threshold:  {daily['threshold_pct']}%")
 
-    print(f"\n⚠️  Thresholds")
+    print("\n⚠️  Thresholds")
     print(f"   Single Call:  {thresholds['single_call']:,}")
     print(f"   Session:      {thresholds['session']:,}")
     print(f"   Daily:        {thresholds['daily']:,}")
