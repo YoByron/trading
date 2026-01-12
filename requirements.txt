@@ -162,7 +162,7 @@ typing-inspection==0.4.2
 tzdata==2025.2
 update-checker==0.18.0
 uritemplate==4.2.0
-urllib3==2.6.0
+urllib3==2.6.3
 uvicorn==0.34.0
 uuid-utils==0.12.0
 vadersentiment==3.3.2
