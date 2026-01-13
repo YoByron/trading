@@ -44,7 +44,9 @@ def get_alpaca_client():
 
     # Per CLAUDE.md: Use ALPACA_PAPER_TRADING_5K_API_KEY first
     api_key = os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY") or os.environ.get("ALPACA_API_KEY")
-    api_secret = os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET") or os.environ.get("ALPACA_SECRET_KEY")
+    api_secret = os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET") or os.environ.get(
+        "ALPACA_SECRET_KEY"
+    )
 
     if not api_key or not api_secret:
         logger.error("Alpaca credentials not found in environment")
@@ -67,7 +69,9 @@ def get_open_positions(client) -> list[dict]:
                 "symbol": p.symbol,
                 "qty": float(p.qty),
                 "side": "long" if float(p.qty) > 0 else "short",
-                "asset_class": p.asset_class.value if hasattr(p.asset_class, 'value') else str(p.asset_class),
+                "asset_class": p.asset_class.value
+                if hasattr(p.asset_class, "value")
+                else str(p.asset_class),
                 "unrealized_pl": float(p.unrealized_pl) if p.unrealized_pl else 0,
                 "current_price": float(p.current_price) if p.current_price else 0,
             }
@@ -81,8 +85,8 @@ def get_open_positions(client) -> list[dict]:
 def get_open_orders(client) -> list[dict]:
     """Get all open orders (including stop-loss orders)."""
     try:
-        from alpaca.trading.requests import GetOrdersRequest
         from alpaca.trading.enums import QueryOrderStatus
+        from alpaca.trading.requests import GetOrdersRequest
 
         request = GetOrdersRequest(status=QueryOrderStatus.OPEN)
         orders = client.get_orders(filter=request)
@@ -90,8 +94,8 @@ def get_open_orders(client) -> list[dict]:
             {
                 "id": str(o.id),
                 "symbol": o.symbol,
-                "side": o.side.value if hasattr(o.side, 'value') else str(o.side),
-                "type": o.type.value if hasattr(o.type, 'value') else str(o.type),
+                "side": o.side.value if hasattr(o.side, "value") else str(o.side),
+                "type": o.type.value if hasattr(o.type, "value") else str(o.type),
                 "stop_price": float(o.stop_price) if o.stop_price else None,
                 "qty": float(o.qty) if o.qty else None,
             }
@@ -111,7 +115,7 @@ def identify_short_options(positions: list[dict]) -> list[dict]:
             # Check if it's an option (symbol contains expiry date format)
             symbol = pos["symbol"]
             # Options have format like SOFI260206P00024000
-            if len(symbol) > 10 and any(c in symbol for c in ['P', 'C']):
+            if len(symbol) > 10 and any(c in symbol for c in ["P", "C"]):
                 short_options.append(pos)
     return short_options
 
@@ -148,10 +152,12 @@ def verify_all_stops(positions: list[dict], orders: list[dict]) -> dict:
     for pos in short_options:
         stop_order = check_stop_exists(pos["symbol"], orders)
         if stop_order:
-            verified_stops.append({
-                "position": pos,
-                "stop_order": stop_order,
-            })
+            verified_stops.append(
+                {
+                    "position": pos,
+                    "stop_order": stop_order,
+                }
+            )
         else:
             missing_stops.append(pos)
 
@@ -264,7 +270,9 @@ def main():
             print("WARNING: SHORT OPTIONS WITHOUT STOP-LOSS PROTECTION")
             print("!" * 60)
             for pos in result["missing_stops"]:
-                print(f"  - {pos['symbol']}: {pos['qty']} contracts, P/L: ${pos['unrealized_pl']:.2f}")
+                print(
+                    f"  - {pos['symbol']}: {pos['qty']} contracts, P/L: ${pos['unrealized_pl']:.2f}"
+                )
             print("\nPHIL TOWN RULE #1: DON'T LOSE MONEY")
             print("Set stop-losses before opening new positions!")
             print("!" * 60)

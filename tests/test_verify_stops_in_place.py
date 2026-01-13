@@ -9,7 +9,6 @@ Date: January 13, 2026
 """
 
 import json
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -84,7 +83,12 @@ class TestIdentifyShortOptions:
 
         positions = [
             {"symbol": "SOFI", "qty": 24.0, "side": "long", "asset_class": "stock"},
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option"},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+            },
             {"symbol": "SOFI260206P00020000", "qty": 2.0, "side": "long", "asset_class": "option"},
         ]
         result = identify_short_options(positions)
@@ -190,10 +194,24 @@ class TestVerifyAllStops:
         from scripts.verify_stops_in_place import verify_all_stops
 
         positions = [
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -7.0,
+                "current_price": 0.67,
+            },
         ]
         orders = [
-            {"id": "stop-1", "symbol": "SOFI260206P00024000", "side": "buy", "type": "stop", "stop_price": 1.50, "qty": 2.0},
+            {
+                "id": "stop-1",
+                "symbol": "SOFI260206P00024000",
+                "side": "buy",
+                "type": "stop",
+                "stop_price": 1.50,
+                "qty": 2.0,
+            },
         ]
 
         result = verify_all_stops(positions, orders)
@@ -206,7 +224,14 @@ class TestVerifyAllStops:
         from scripts.verify_stops_in_place import verify_all_stops
 
         positions = [
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -7.0,
+                "current_price": 0.67,
+            },
         ]
         orders = []  # No stop orders
 
@@ -220,11 +245,32 @@ class TestVerifyAllStops:
         from scripts.verify_stops_in_place import verify_all_stops
 
         positions = [
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
-            {"symbol": "F260117P00010000", "qty": -5.0, "side": "short", "asset_class": "option", "unrealized_pl": -10.0, "current_price": 0.30},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -7.0,
+                "current_price": 0.67,
+            },
+            {
+                "symbol": "F260117P00010000",
+                "qty": -5.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -10.0,
+                "current_price": 0.30,
+            },
         ]
         orders = [
-            {"id": "stop-1", "symbol": "SOFI260206P00024000", "side": "buy", "type": "stop", "stop_price": 1.50, "qty": 2.0},
+            {
+                "id": "stop-1",
+                "symbol": "SOFI260206P00024000",
+                "side": "buy",
+                "type": "stop",
+                "stop_price": 1.50,
+                "qty": 2.0,
+            },
             # No stop for F position
         ]
 
@@ -239,7 +285,14 @@ class TestVerifyAllStops:
         from scripts.verify_stops_in_place import verify_all_stops
 
         positions = [
-            {"symbol": "SOFI", "qty": 24.0, "side": "long", "asset_class": "stock", "unrealized_pl": 16.87, "current_price": 27.09},
+            {
+                "symbol": "SOFI",
+                "qty": 24.0,
+                "side": "long",
+                "asset_class": "stock",
+                "unrealized_pl": 16.87,
+                "current_price": 27.09,
+            },
         ]
         orders = []
 
@@ -284,6 +337,7 @@ class TestMainFunction:
         mock_client.return_value = None
 
         from scripts.verify_stops_in_place import main
+
         exit_code = main()
         assert exit_code == 0  # Should not fail in sandbox
 
@@ -292,17 +346,34 @@ class TestMainFunction:
     @patch("scripts.verify_stops_in_place.get_open_orders")
     @patch("scripts.verify_stops_in_place.save_verification_result")
     @patch("scripts.verify_stops_in_place.update_system_state")
-    def test_main_all_stops_ok(self, mock_state, mock_save, mock_orders, mock_positions, mock_client):
+    def test_main_all_stops_ok(
+        self, mock_state, mock_save, mock_orders, mock_positions, mock_client
+    ):
         """When all stops present, should return 0."""
         mock_client.return_value = MagicMock()
         mock_positions.return_value = [
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -7.0,
+                "current_price": 0.67,
+            },
         ]
         mock_orders.return_value = [
-            {"id": "stop-1", "symbol": "SOFI260206P00024000", "side": "buy", "type": "stop", "stop_price": 1.50, "qty": 2.0},
+            {
+                "id": "stop-1",
+                "symbol": "SOFI260206P00024000",
+                "side": "buy",
+                "type": "stop",
+                "stop_price": 1.50,
+                "qty": 2.0,
+            },
         ]
 
         from scripts.verify_stops_in_place import main
+
         exit_code = main()
         assert exit_code == 0
 
@@ -311,15 +382,25 @@ class TestMainFunction:
     @patch("scripts.verify_stops_in_place.get_open_orders")
     @patch("scripts.verify_stops_in_place.save_verification_result")
     @patch("scripts.verify_stops_in_place.update_system_state")
-    def test_main_missing_stops_blocks(self, mock_state, mock_save, mock_orders, mock_positions, mock_client):
+    def test_main_missing_stops_blocks(
+        self, mock_state, mock_save, mock_orders, mock_positions, mock_client
+    ):
         """When stops missing, should return 1 to block trading."""
         mock_client.return_value = MagicMock()
         mock_positions.return_value = [
-            {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
+            {
+                "symbol": "SOFI260206P00024000",
+                "qty": -2.0,
+                "side": "short",
+                "asset_class": "option",
+                "unrealized_pl": -7.0,
+                "current_price": 0.67,
+            },
         ]
         mock_orders.return_value = []  # No stop orders
 
         from scripts.verify_stops_in_place import main
+
         exit_code = main()
         assert exit_code == 1  # Should block
 
@@ -330,12 +411,13 @@ class TestPhilTownRule1Compliance:
     def test_rule_1_in_docstring(self):
         """Script should document Rule #1 compliance."""
         from scripts import verify_stops_in_place
+
         assert "Phil Town Rule #1" in verify_stops_in_place.__doc__
         assert "Don't Lose Money" in verify_stops_in_place.__doc__
 
     def test_blocking_behavior_default(self):
         """Default behavior should BLOCK when stops missing."""
-        from scripts.verify_stops_in_place import main
+
         # This is tested in test_main_missing_stops_blocks
         pass
 
@@ -346,7 +428,7 @@ class TestPhilTownRule1Compliance:
 
         test_args = ["verify_stops_in_place.py", "--warn-only"]
 
-        with patch.object(sys, 'argv', test_args):
+        with patch.object(sys, "argv", test_args):
             with patch("scripts.verify_stops_in_place.get_alpaca_client") as mock_client:
                 with patch("scripts.verify_stops_in_place.get_open_positions") as mock_pos:
                     with patch("scripts.verify_stops_in_place.get_open_orders") as mock_ord:
@@ -354,11 +436,19 @@ class TestPhilTownRule1Compliance:
                             with patch("scripts.verify_stops_in_place.update_system_state"):
                                 mock_client.return_value = MagicMock()
                                 mock_pos.return_value = [
-                                    {"symbol": "SOFI260206P00024000", "qty": -2.0, "side": "short", "asset_class": "option", "unrealized_pl": -7.0, "current_price": 0.67},
+                                    {
+                                        "symbol": "SOFI260206P00024000",
+                                        "qty": -2.0,
+                                        "side": "short",
+                                        "asset_class": "option",
+                                        "unrealized_pl": -7.0,
+                                        "current_price": 0.67,
+                                    },
                                 ]
                                 mock_ord.return_value = []
 
                                 from scripts.verify_stops_in_place import main
+
                                 exit_code = main()
                                 # With --warn-only, should not block
                                 assert exit_code == 0
