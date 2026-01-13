@@ -1,59 +1,40 @@
-"""Stub file - BiasStore (original deleted in cleanup)."""
+"""Bias Store stub - returns neutral bias."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Optional
 
 
 @dataclass
 class BiasSnapshot:
-    """Stub for BiasSnapshot - returns neutral values."""
-
-    sentiment: str = "neutral"
-    confidence: float = 0.0
-    score: float = 0.0
-    reason: str = "stub - no real sentiment analysis"
-    direction: str = "neutral"
-    conviction: float = 0.0
-    symbol: str = ""
-    created_at: datetime = field(default_factory=datetime.now)
-    expires_at: datetime = field(default_factory=datetime.now)
-    model: str = "stub"
-    sources: list = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Return dict representation."""
-        return {
-            "sentiment": self.sentiment,
-            "confidence": self.confidence,
-            "score": self.score,
-            "reason": self.reason,
-        }
-
-
-class BiasProvider:
-    """Stub for BiasProvider - not used in Phil Town strategy."""
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def get_bias(self, *args, **kwargs) -> BiasSnapshot:
-        return BiasSnapshot()
+    """Snapshot of market bias."""
+    timestamp: datetime = field(default_factory=datetime.now)
+    bias: str = "neutral"
+    confidence: float = 0.5
+    source: str = "stub"
 
 
 class BiasStore:
-    """Stub for BiasStore - not used in Phil Town strategy."""
+    """Stub BiasStore for backward compatibility."""
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, bias_dir: str = "data/bias"):
+        self.bias_dir = bias_dir
 
-    def store(self, *args, **kwargs):
-        pass
-
-    def persist(self, *args, **kwargs):
-        """Stub for persist - does nothing."""
-        pass
-
-    def retrieve(self, *args, **kwargs) -> BiasSnapshot:
+    def get_latest(self) -> Optional[BiasSnapshot]:
         return BiasSnapshot()
+
+    def store(self, snapshot: BiasSnapshot) -> None:
+        pass
+
+
+class BiasProvider:
+    """Stub BiasProvider for backward compatibility."""
+
+    def __init__(self, store: BiasStore = None, **kwargs):
+        self.store = store or BiasStore()
+
+    def get_bias(self, symbol: str = None) -> BiasSnapshot:
+        return BiasSnapshot()
+
+    def get_sentiment(self, symbol: str = None) -> dict:
+        return {"sentiment": "neutral", "confidence": 0.5}

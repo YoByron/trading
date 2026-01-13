@@ -1,29 +1,20 @@
-"""Stub file - TradeMemory (original deleted in cleanup)."""
-
-from typing import Any
+"""Trade Memory stub - returns empty history."""
 
 
 class TradeMemory:
-    """Stub for TradeMemory - not used in Phil Town strategy."""
+    """Stub TradeMemory for backward compatibility."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, db_path: str = "data/trade_memory.db"):
+        self.db_path = db_path
+
+    def query(self, pattern: str = None, symbol: str = None) -> dict:
+        """Return empty result."""
+        return {"found": False, "trades": [], "win_rate": 0.0}
+
+    def record(self, trade: dict) -> None:
+        """No-op record."""
         pass
 
-    def store(self, *args, **kwargs):
-        pass
-
-    def retrieve(self, *args, **kwargs) -> list[Any]:
-        return []
-
-    def get_recent(self, *args, **kwargs) -> list[Any]:
-        return []
-
-    def query_similar(
-        self, strategy: str = "", entry_reason: str = "", *args, **kwargs
-    ) -> dict[str, Any]:
-        """Stub for query_similar - returns no matches."""
-        return {"found": False, "win_rate": 0.5, "sample_size": 0, "avg_pnl": 0.0}
-
-    def add_trade(self, *args, **kwargs):
-        """Stub for add_trade - does nothing."""
-        pass
+    def get_pattern_stats(self, pattern: str) -> dict:
+        """Return empty stats."""
+        return {"pattern": pattern, "count": 0, "win_rate": 0.0}

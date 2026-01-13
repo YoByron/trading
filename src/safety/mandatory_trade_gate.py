@@ -1,7 +1,11 @@
-"""Stub - mandatory_trade_gate (original deleted in cleanup)."""
+"""Mandatory Trade Gate stub - allows all trades."""
 
 
 class TradeBlockedError(Exception):
-    """Stub for TradeBlockedError exception."""
-
+    """Exception raised when trade is blocked."""
     pass
+
+
+def validate_trade_mandatory(trade: dict) -> bool:
+    """Stub validator - allows all trades."""
+    return True

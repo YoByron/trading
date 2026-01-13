@@ -1,18 +1,16 @@
-"""Stub file - RLFilter (original deleted in cleanup)."""
+"""RL Filter stub - returns neutral decisions."""
 
 
 class RLFilter:
-    """Stub for RLFilter - not used in Phil Town strategy."""
+    """Stub RLFilter for backward compatibility."""
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self):
+        self.enabled = False
 
-    def filter(self, *args, **kwargs):
-        return True  # Pass through
+    def filter(self, signal: dict) -> dict:
+        """Pass through signal unchanged."""
+        return {"action": signal.get("action", "hold"), "confidence": 0.5}
 
-    def get_score(self, *args, **kwargs):
-        return 1.0
-
-    def predict(self, *args, **kwargs):
-        """Predict action - stub returns buy with high confidence."""
-        return {"action": "buy", "confidence": 0.75}
+    def get_action(self, state: dict) -> tuple:
+        """Return neutral action."""
+        return ("hold", 0.5)

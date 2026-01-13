@@ -1,13 +1,13 @@
-"""Stub - microstructure_features (original deleted in cleanup)."""
-
-from typing import Any
+"""Microstructure Features stub - returns empty features."""
 
 
 class MicrostructureFeatureExtractor:
-    """Stub for MicrostructureFeatureExtractor."""
+    """Stub feature extractor for backward compatibility."""
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def extract(self, data: dict = None) -> dict:
+        """Return empty features."""
+        return {}
 
-    def extract(self, *args, **kwargs) -> dict[str, Any]:
+    def get_features(self, symbol: str = None) -> dict:
+        """Return empty features."""
         return {}
