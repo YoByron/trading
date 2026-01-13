@@ -17,7 +17,6 @@ Runs in CI via daily-trading.yml and claude-agent-utility.yml
 """
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
