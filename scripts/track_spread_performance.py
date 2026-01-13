@@ -32,13 +32,19 @@ def load_data() -> dict:
     return {
         "meta": {"created": datetime.now().strftime("%Y-%m-%d")},
         "summary": {
-            "total_trades": 0, "wins": 0, "losses": 0,
-            "win_rate_pct": 0, "total_premium_collected": 0,
-            "total_pnl": 0, "avg_win": 0, "avg_loss": 0,
-            "profit_factor": 0, "start_date": datetime.now().strftime("%Y-%m-%d"),
-            "days_tracked": 0
+            "total_trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0,
+            "total_premium_collected": 0,
+            "total_pnl": 0,
+            "avg_win": 0,
+            "avg_loss": 0,
+            "profit_factor": 0,
+            "start_date": datetime.now().strftime("%Y-%m-%d"),
+            "days_tracked": 0,
         },
-        "trades": []
+        "trades": [],
     }
 
 
@@ -69,7 +75,9 @@ def recalculate_summary(data: dict) -> None:
     data["summary"]["total_pnl"] = sum(t["pnl"] for t in trades)
     data["summary"]["avg_win"] = round(total_wins_pnl / len(wins), 2) if wins else 0
     data["summary"]["avg_loss"] = round(total_losses_pnl / len(losses), 2) if losses else 0
-    data["summary"]["profit_factor"] = round(total_wins_pnl / total_losses_pnl, 2) if total_losses_pnl > 0 else float('inf')
+    data["summary"]["profit_factor"] = (
+        round(total_wins_pnl / total_losses_pnl, 2) if total_losses_pnl > 0 else float("inf")
+    )
 
     # Calculate days tracked
     start = datetime.strptime(data["summary"]["start_date"], "%Y-%m-%d")
@@ -86,7 +94,7 @@ def add_trade(symbol: str, premium: float, pnl: float, is_win: bool) -> None:
         "premium": premium,
         "pnl": pnl,
         "is_win": is_win,
-        "trade_num": len(data["trades"]) + 1
+        "trade_num": len(data["trades"]) + 1,
     }
 
     data["trades"].append(trade)
@@ -94,7 +102,9 @@ def add_trade(symbol: str, premium: float, pnl: float, is_win: bool) -> None:
     save_data(data)
 
     print(f"{'WIN' if is_win else 'LOSS'}: {symbol} | Premium: ${premium} | P/L: ${pnl}")
-    print(f"Running: {data['summary']['wins']}W-{data['summary']['losses']}L ({data['summary']['win_rate_pct']}%)")
+    print(
+        f"Running: {data['summary']['wins']}W-{data['summary']['losses']}L ({data['summary']['win_rate_pct']}%)"
+    )
 
 
 def show_summary() -> None:
