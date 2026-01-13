@@ -319,7 +319,9 @@ def execute_cash_secured_put(client, option: dict, config: dict) -> Optional[dic
                     if pos.symbol == put_contract:
                         pos_qty = float(pos.qty)
                         if pos_qty < 0:  # Already short this contract
-                            logger.error(f"🚫 BLOCKED: Already SHORT {put_contract} (qty={pos_qty})")
+                            logger.error(
+                                f"🚫 BLOCKED: Already SHORT {put_contract} (qty={pos_qty})"
+                            )
                             logger.error("   Cannot SELL more - would increase risk exposure!")
                             logger.error("   Rule #1: Don't lose money by doubling down on losers")
                             return None

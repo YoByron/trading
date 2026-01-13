@@ -84,22 +84,26 @@ def cancel_dangerous_orders(client, dry_run: bool = False) -> list:
                     try:
                         client.cancel_order_by_id(order.id)
                         logger.info(f"✅ CANCELLED dangerous order: {order.id}")
-                        cancelled.append({
-                            "order_id": str(order.id),
-                            "symbol": symbol,
-                            "side": side,
-                            "qty": str(order.qty),
-                            "reason": "Would increase short exposure",
-                        })
+                        cancelled.append(
+                            {
+                                "order_id": str(order.id),
+                                "symbol": symbol,
+                                "side": side,
+                                "qty": str(order.qty),
+                                "reason": "Would increase short exposure",
+                            }
+                        )
                     except Exception as e:
                         logger.error(f"Failed to cancel order {order.id}: {e}")
                 else:
                     logger.info(f"[DRY RUN] Would cancel order: {order.id}")
-                    cancelled.append({
-                        "order_id": str(order.id),
-                        "symbol": symbol,
-                        "action": "WOULD_CANCEL",
-                    })
+                    cancelled.append(
+                        {
+                            "order_id": str(order.id),
+                            "symbol": symbol,
+                            "action": "WOULD_CANCEL",
+                        }
+                    )
 
         return cancelled
 
@@ -134,8 +138,12 @@ def place_protective_orders(client, dry_run: bool = False, max_loss_pct: float =
 
             # Get current market value and cost basis
             market_value = abs(float(pos.market_value))
-            cost_basis = abs(float(pos.cost_basis)) if hasattr(pos, 'cost_basis') else market_value
-            current_price = float(pos.current_price) if hasattr(pos, 'current_price') else market_value / abs(qty) / 100
+            cost_basis = abs(float(pos.cost_basis)) if hasattr(pos, "cost_basis") else market_value
+            current_price = (
+                float(pos.current_price)
+                if hasattr(pos, "current_price")
+                else market_value / abs(qty) / 100
+            )
 
             # For short options: we sold at some price, now we need to buy back
             # Entry price per share (premium received)
@@ -174,25 +182,31 @@ def place_protective_orders(client, dry_run: bool = False, max_loss_pct: float =
                         limit_price=max_close_price,
                     )
                     order = client.submit_order(order_request)
-                    logger.info(f"   ✅ PROTECTIVE ORDER PLACED: BUY {abs(qty)} @ ${max_close_price}")
+                    logger.info(
+                        f"   ✅ PROTECTIVE ORDER PLACED: BUY {abs(qty)} @ ${max_close_price}"
+                    )
                     logger.info(f"      Order ID: {order.id}")
-                    protected.append({
-                        "order_id": str(order.id),
-                        "symbol": symbol,
-                        "side": "buy",
-                        "qty": abs(qty),
-                        "limit_price": max_close_price,
-                        "purpose": "BUY_TO_CLOSE protection",
-                    })
+                    protected.append(
+                        {
+                            "order_id": str(order.id),
+                            "symbol": symbol,
+                            "side": "buy",
+                            "qty": abs(qty),
+                            "limit_price": max_close_price,
+                            "purpose": "BUY_TO_CLOSE protection",
+                        }
+                    )
                 except Exception as e:
                     logger.error(f"   ❌ Failed to place protective order: {e}")
             else:
                 logger.info(f"   [DRY RUN] Would place BUY order @ ${max_close_price}")
-                protected.append({
-                    "symbol": symbol,
-                    "action": "WOULD_PLACE_BUY",
-                    "limit_price": max_close_price,
-                })
+                protected.append(
+                    {
+                        "symbol": symbol,
+                        "action": "WOULD_PLACE_BUY",
+                        "limit_price": max_close_price,
+                    }
+                )
 
         return protected
 
@@ -203,8 +217,15 @@ def place_protective_orders(client, dry_run: bool = False, max_loss_pct: float =
 
 def main():
     parser = argparse.ArgumentParser(description="Cancel dangerous orders and protect positions")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without executing")
-    parser.add_argument("--max-loss", type=float, default=0.50, help="Max loss percentage for protection (default: 0.50 = 50%%)")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be done without executing"
+    )
+    parser.add_argument(
+        "--max-loss",
+        type=float,
+        default=0.50,
+        help="Max loss percentage for protection (default: 0.50 = 50%%)",
+    )
     args = parser.parse_args()
 
     logger.info("=" * 60)
