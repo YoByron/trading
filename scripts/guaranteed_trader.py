@@ -222,7 +222,9 @@ def run():
 
     # Check we have enough cash
     if account["cash"] < daily_investment:
-        logger.warning(f"Insufficient cash (${account['cash']:.2f}) for ${daily_investment} investment")
+        logger.warning(
+            f"Insufficient cash (${account['cash']:.2f}) for ${daily_investment} investment"
+        )
         # Try smaller amount
         daily_investment = min(50.0, account["cash"] * 0.9)
         if daily_investment < 10:
@@ -233,7 +235,9 @@ def run():
     price = get_stock_price(symbol)
     if price > 0:
         shares_estimate = daily_investment / price
-        logger.info(f"{symbol} price: ${price:.2f} (est. {shares_estimate:.2f} shares for ${daily_investment})")
+        logger.info(
+            f"{symbol} price: ${price:.2f} (est. {shares_estimate:.2f} shares for ${daily_investment})"
+        )
 
     # EXECUTE THE TRADE - NO GATES
     logger.info(f"EXECUTING: Buy ${daily_investment:.2f} of {symbol}")
