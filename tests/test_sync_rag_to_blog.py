@@ -4,7 +4,6 @@ import tempfile
 from pathlib import Path
 
 
-
 def test_parse_lesson_file():
     """Test parsing a lesson file."""
     from scripts.sync_rag_to_blog import parse_lesson_file
