@@ -1,7 +1,6 @@
 """Tests for mandatory_trade_gate.py - Critical trade validation."""
 
 
-
 class TestGateResult:
     """Test GateResult dataclass."""
 
