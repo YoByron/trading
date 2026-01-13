@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 
 from src.utils.telemetry_summary import load_events, summarize_events
 
