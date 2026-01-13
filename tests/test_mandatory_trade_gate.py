@@ -1,6 +1,5 @@
 """Tests for mandatory_trade_gate.py - Critical trade validation."""
 
-import pytest
 
 
 class TestGateResult:
