@@ -156,6 +156,7 @@ def main(dry_run: bool = False, trail_pct: float | None = None):
                     logger.info(f"    Stop-Loss Price: ${stop_price:.2f} (50% trailing)")
 
                 from alpaca.trading.requests import LimitOrderRequest
+
                 order_request = LimitOrderRequest(
                     symbol=symbol,
                     qty=qty,
