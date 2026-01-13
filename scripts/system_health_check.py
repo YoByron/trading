@@ -206,7 +206,9 @@ def check_blog_deployment():
         if not lessons_dir.exists():
             # Lessons are now in Vertex AI RAG, not docs/_lessons
             rag_lessons = list(Path("rag_knowledge/lessons_learned").glob("*.md"))
-            results["details"].append(f"⚠️ docs/_lessons/ not synced (lessons in RAG: {len(rag_lessons)})")
+            results["details"].append(
+                f"⚠️ docs/_lessons/ not synced (lessons in RAG: {len(rag_lessons)})"
+            )
             results["status"] = "OK"
             return results
 
