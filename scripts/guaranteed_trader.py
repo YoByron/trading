@@ -268,8 +268,8 @@ def set_stop_losses(client):
     This protects short put positions with buy-to-close stop orders.
     """
     try:
-        from alpaca.trading.requests import StopLimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
+        from alpaca.trading.requests import StopLimitOrderRequest
 
         positions = client.get_all_positions()
         stops_set = []
@@ -277,7 +277,7 @@ def set_stop_losses(client):
         for p in positions:
             # Check if it's a short put (negative qty, symbol contains 'P')
             qty = float(p.qty)
-            if qty < 0 and 'P' in p.symbol and len(p.symbol) > 10:
+            if qty < 0 and "P" in p.symbol and len(p.symbol) > 10:
                 logger.info(f"Found short put: {p.symbol}, qty={qty}")
 
                 current_price = float(p.current_price)
@@ -294,15 +294,13 @@ def set_stop_losses(client):
                         side=OrderSide.BUY,
                         stop_price=stop_price,
                         limit_price=limit_price,
-                        time_in_force=TimeInForce.GTC
+                        time_in_force=TimeInForce.GTC,
                     )
                     order = client.submit_order(order_request)
                     logger.info(f"  ✅ Stop-loss order placed: {order.id}")
-                    stops_set.append({
-                        "symbol": p.symbol,
-                        "stop_price": stop_price,
-                        "order_id": str(order.id)
-                    })
+                    stops_set.append(
+                        {"symbol": p.symbol, "stop_price": stop_price, "order_id": str(order.id)}
+                    )
                 except Exception as e:
                     logger.warning(f"  ⚠️ Could not set stop: {e}")
 

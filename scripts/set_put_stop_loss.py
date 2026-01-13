@@ -10,6 +10,7 @@ import os
 import sys
 from datetime import datetime
 
+
 def main():
     print("=" * 60)
     print("🛡️ SETTING STOP-LOSS ON SOFI PUT")
@@ -19,11 +20,11 @@ def main():
 
     try:
         from alpaca.trading.client import TradingClient
-        from alpaca.trading.requests import StopLimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
+        from alpaca.trading.requests import StopLimitOrderRequest
 
-        api_key = os.environ.get('ALPACA_API_KEY')
-        secret_key = os.environ.get('ALPACA_SECRET_KEY')
+        api_key = os.environ.get("ALPACA_API_KEY")
+        secret_key = os.environ.get("ALPACA_SECRET_KEY")
 
         if not api_key or not secret_key:
             print("❌ Missing Alpaca credentials")
@@ -35,7 +36,7 @@ def main():
         positions = client.get_all_positions()
         put_position = None
         for p in positions:
-            if 'SOFI' in p.symbol and 'P' in p.symbol:
+            if "SOFI" in p.symbol and "P" in p.symbol:
                 put_position = p
                 print(f"✅ Found put position: {p.symbol}")
                 print(f"   Qty: {p.qty}")
@@ -61,7 +62,7 @@ def main():
             side=OrderSide.BUY,  # Buy to close short position
             stop_price=1.50,
             limit_price=1.55,
-            time_in_force=TimeInForce.GTC
+            time_in_force=TimeInForce.GTC,
         )
 
         order = client.submit_order(order_request)
@@ -82,6 +83,7 @@ def main():
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
