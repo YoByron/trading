@@ -260,8 +260,8 @@ def check_ci_status() -> dict:
         - running_workflows: List of running workflow names
         - error: Error message if API call failed
     """
-    import urllib.request
     import json
+    import urllib.request
 
     result = {
         "is_passing": True,
@@ -275,7 +275,7 @@ def check_ci_status() -> dict:
         url = "https://api.github.com/repos/IgorGanapolsky/trading/actions/runs?branch=main&per_page=10"
         req = urllib.request.Request(
             url,
-            headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "TradingBot/1.0"}
+            headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "TradingBot/1.0"},
         )
         ssl_context = ssl.create_default_context()
 
@@ -301,7 +301,9 @@ def check_ci_status() -> dict:
                 result["is_passing"] = False
                 result["failed_workflows"].append(workflow_name)
 
-        logger.info(f"CI check: passing={result['is_passing']}, failed={result['failed_workflows']}")
+        logger.info(
+            f"CI check: passing={result['is_passing']}, failed={result['failed_workflows']}"
+        )
 
     except Exception as e:
         logger.warning(f"CI status check failed: {e}")
