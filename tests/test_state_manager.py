@@ -5,7 +5,6 @@ Ensures state management works correctly for trade recording and win rate tracki
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -135,7 +134,7 @@ class TestStateManagerIntegration:
         """Default state file path should be valid."""
         from scripts.state_manager import SYSTEM_STATE_PATH
 
-        assert SYSTEM_STATE_PATH == Path("data/system_state.json")
+        assert Path("data/system_state.json") == SYSTEM_STATE_PATH
 
     def test_handles_corrupted_json(self, tmp_path: Path) -> None:
         """StateManager should handle corrupted JSON gracefully."""

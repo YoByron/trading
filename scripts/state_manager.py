@@ -58,7 +58,7 @@ class StateManager:
             if self.state_file.exists():
                 with open(self.state_file, encoding="utf-8") as f:
                     return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning(f"Failed to load state from {self.state_file}: {e}")
 
         return {
@@ -83,7 +83,7 @@ class StateManager:
 
             logger.info(f"State saved to {self.state_file}")
             return True
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to save state: {e}")
             return False
 
@@ -136,8 +136,7 @@ class StateManager:
         self.state["performance"]["closed_trades"].append(trade)
 
         logger.info(
-            f"Recorded trade: {symbol} {'WIN' if is_winner else 'LOSS'} "
-            f"(${pl:.2f}, {pl_pct:.2f}%)"
+            f"Recorded trade: {symbol} {'WIN' if is_winner else 'LOSS'} (${pl:.2f}, {pl_pct:.2f}%)"
         )
 
         return trade
