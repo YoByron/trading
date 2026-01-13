@@ -8,6 +8,7 @@ from typing import Optional
 @dataclass
 class BiasSnapshot:
     """Snapshot of market bias."""
+
     timestamp: datetime = field(default_factory=datetime.now)
     bias: str = "neutral"
     confidence: float = 0.5
