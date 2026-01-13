@@ -10,6 +10,7 @@ import pytest
 # Check for pydantic dependency (required by mcp client)
 try:
     import pydantic  # noqa: F401
+
     HAS_PYDANTIC = True
 except ImportError:
     HAS_PYDANTIC = False

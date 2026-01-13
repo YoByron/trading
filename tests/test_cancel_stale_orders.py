@@ -9,6 +9,7 @@ import pytest
 # Check for alpaca dependency
 try:
     from alpaca.trading.client import TradingClient  # noqa: F401
+
     HAS_ALPACA = True
 except ImportError:
     HAS_ALPACA = False
