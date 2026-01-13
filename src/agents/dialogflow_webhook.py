@@ -644,7 +644,9 @@ def assess_trading_readiness(
                             from src.rag.lessons_learned_rag import LessonsLearnedRAG
 
                             rag = LessonsLearnedRAG()
-                            recent_issues = rag.search("trading failed blocked automation bug", top_k=2)
+                            recent_issues = rag.search(
+                                "trading failed blocked automation bug", top_k=2
+                            )
                             if recent_issues:
                                 diagnosis.append("**Recent Issues Found:**")
                                 for lesson, score_val in recent_issues[:2]:
