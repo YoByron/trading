@@ -3,11 +3,11 @@
 Auto-generate blog posts from daily activity.
 Runs automatically via SessionStart hook or manually.
 """
-import subprocess
-import json
-from datetime import datetime, date
-from pathlib import Path
+
 import re
+import subprocess
+from datetime import date
+from pathlib import Path
 
 
 def get_todays_commits() -> list[dict]:
@@ -15,12 +15,13 @@ def get_todays_commits() -> list[dict]:
     today = date.today().isoformat()
     result = subprocess.run(
         ["git", "log", "--oneline", f"--since={today} 00:00:00", f"--until={today} 23:59:59"],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     commits = []
-    for line in result.stdout.strip().split('\n'):
+    for line in result.stdout.strip().split("\n"):
         if line:
-            parts = line.split(' ', 1)
+            parts = line.split(" ", 1)
             if len(parts) == 2:
                 commits.append({"hash": parts[0], "message": parts[1]})
     return commits
@@ -35,7 +36,7 @@ def categorize_commits(commits: list[dict]) -> dict:
         "feature": [],
         "fix": [],
         "cleanup": [],
-        "other": []
+        "other": [],
     }
 
     for c in commits:
@@ -108,7 +109,8 @@ Today, our AI trading system violated this rule. Here's what happened and how we
         for c in commits:
             content += f"- `{c['hash']}`: {c['message']}\n"
 
-        content += '''
+        content += (
+            """
 ## The Fix
 
 We implemented automatic protections:
@@ -126,8 +128,11 @@ This is now in our RAG memory. The AI cannot make this mistake again.
 
 ---
 
-*Day ''' + str(day_num) + ''' of 90. Protecting capital first.*
-'''
+*Day """
+            + str(day_num)
+            + """ of 90. Protecting capital first.*
+"""
+        )
         return slug, content
 
     elif topic == "emergency":
@@ -152,7 +157,7 @@ Today required emergency intervention. Here's how our system responded.
         for c in commits:
             content += f"- {c['message']}\n"
 
-        content += f'''
+        content += f"""
 ## Recovery Actions
 
 The system automatically:
@@ -163,7 +168,7 @@ The system automatically:
 ---
 
 *Day {day_num} of 90. Building resilient systems.*
-'''
+"""
         return slug, content
 
     return None, None
@@ -201,12 +206,11 @@ def main():
             topic_keywords = {
                 "rule_violation": ["rule #1", "rule-1", "violation"],
                 "emergency": ["emergency"],
-                "risk_management": ["risk"]
+                "risk_management": ["risk"],
             }
 
             already_posted = any(
-                any(kw in title for kw in topic_keywords[topic])
-                for title in existing
+                any(kw in title for kw in topic_keywords[topic]) for title in existing
             )
 
             if already_posted:
