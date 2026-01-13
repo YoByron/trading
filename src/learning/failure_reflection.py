@@ -74,7 +74,9 @@ def generate_failure_reflection(
     elif failure_type == "ORDER_FAILED":
         title = f"Order execution failed: {symbol or 'unknown'}"
         root_cause = f"Broker rejected order. Error: {error_message}"
-        prevention = "Verify account has sufficient funds. Check symbol is tradeable. Confirm market hours."
+        prevention = (
+            "Verify account has sufficient funds. Check symbol is tradeable. Confirm market hours."
+        )
 
     elif failure_type == "PATTERN_BLOCKED":
         win_rate = context.get("win_rate", 0)
@@ -143,9 +145,13 @@ def save_reflection_to_rag(reflection: dict[str, Any]) -> Optional[str]:
 
         # Check if similar lesson exists (avoid duplicates)
         # Allow max 3 auto-lessons per failure type per day
-        existing = list(LESSONS_DIR.glob(f"auto_{reflection['failure_type'].lower()}_{date_str}*.md"))
+        existing = list(
+            LESSONS_DIR.glob(f"auto_{reflection['failure_type'].lower()}_{date_str}*.md")
+        )
         if len(existing) >= 3:
-            logger.info(f"[REFLEXION] Max auto-lessons reached for {reflection['failure_type']} today, skipping save")
+            logger.info(
+                f"[REFLEXION] Max auto-lessons reached for {reflection['failure_type']} today, skipping save"
+            )
             return None
 
         # Add sequence number if exists
@@ -157,26 +163,26 @@ def save_reflection_to_rag(reflection: dict[str, Any]) -> Optional[str]:
                     break
 
         # Format as markdown lesson (matches LessonsSearch format)
-        content = f"""# {reflection['title']}
+        content = f"""# {reflection["title"]}
 
-**ID**: {reflection['id']}
-**Date**: {datetime.now().strftime('%Y-%m-%d')}
-**Severity**: {reflection['severity']}
+**ID**: {reflection["id"]}
+**Date**: {datetime.now().strftime("%Y-%m-%d")}
+**Severity**: {reflection["severity"]}
 **Type**: Auto-generated (Reflexion pattern)
 
 ## Problem
-{reflection['root_cause']}
+{reflection["root_cause"]}
 
 ## Context
-- Symbol: {reflection.get('symbol', 'N/A')}
-- Strategy: {reflection.get('strategy', 'N/A')}
-- Error: {reflection.get('error_message', 'N/A')}
+- Symbol: {reflection.get("symbol", "N/A")}
+- Strategy: {reflection.get("strategy", "N/A")}
+- Error: {reflection.get("error_message", "N/A")}
 
 ## Prevention
-{reflection['prevention']}
+{reflection["prevention"]}
 
 ## Tags
-failure, {reflection['failure_type'].lower()}, auto-generated, reflexion
+failure, {reflection["failure_type"].lower()}, auto-generated, reflexion
 """
 
         with open(filepath, "w") as f:

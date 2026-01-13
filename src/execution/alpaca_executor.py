@@ -196,6 +196,7 @@ class AlpacaExecutor:
                 # Auto-reflect on sync failure (Reflexion pattern)
                 try:
                     from src.learning.failure_reflection import reflect_on_failure
+
                     reflect_on_failure("SYNC_FAILED", error_message=str(e))
                 except Exception as refl_err:
                     logger.debug(f"Reflection failed: {refl_err}")
@@ -351,11 +352,15 @@ class AlpacaExecutor:
                 # Auto-reflect on blocked trade (Reflexion pattern)
                 try:
                     from src.learning.failure_reflection import reflect_trade_blocked
+
                     reflect_trade_blocked(
                         symbol=symbol,
                         reason=gate_result.reason,
                         strategy=strategy,
-                        context={"rag_warnings": gate_result.rag_warnings, "ml_anomalies": gate_result.ml_anomalies}
+                        context={
+                            "rag_warnings": gate_result.rag_warnings,
+                            "ml_anomalies": gate_result.ml_anomalies,
+                        },
                     )
                 except Exception as refl_err:
                     logger.debug(f"Reflection failed: {refl_err}")
@@ -399,6 +404,7 @@ class AlpacaExecutor:
                     # Auto-reflect on pattern block (Reflexion pattern)
                     try:
                         from src.learning.failure_reflection import reflect_pattern_blocked
+
                         reflect_pattern_blocked(strategy, win_rate, sample_size)
                     except Exception as refl_err:
                         logger.debug(f"Reflection failed: {refl_err}")
@@ -531,6 +537,7 @@ class AlpacaExecutor:
                     # Auto-reflect on order execution failure (Reflexion pattern)
                     try:
                         from src.learning.failure_reflection import reflect_order_failed
+
                         reflect_order_failed(symbol, str(inner_e), strategy)
                     except Exception as refl_err:
                         logger.debug(f"Reflection failed: {refl_err}")
@@ -539,6 +546,7 @@ class AlpacaExecutor:
             # Auto-reflect on broker failure (Reflexion pattern)
             try:
                 from src.learning.failure_reflection import reflect_order_failed
+
                 reflect_order_failed(symbol, str(e), strategy)
             except Exception as refl_err:
                 logger.debug(f"Reflection failed: {refl_err}")
@@ -709,6 +717,7 @@ class AlpacaExecutor:
             # Auto-reflect on CRITICAL stop-loss failure (Reflexion pattern)
             try:
                 from src.learning.failure_reflection import reflect_stop_loss_failed
+
                 reflect_stop_loss_failed(symbol, str(e))
             except Exception as refl_err:
                 logger.debug(f"Reflection failed: {refl_err}")
