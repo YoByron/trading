@@ -1881,5 +1881,24 @@
     "financial_impact": -24.19,
     "symbol": "SOFI",
     "resolution": "Trade data synced. Lesson recorded. Must rebuild trust through verified actions."
+  },
+  {
+    "id": "lesson_20260113_155000_0",
+    "timestamp": "2026-01-13T15:50:55.196307",
+    "category": "rule_1_violation",
+    "title": "CRITICAL: System Added to Losing Position Without Stop-Loss (Jan 13, 2026)",
+    "description": "System increased SOFI put position from -1 to -2 contracts while already losing money. Put P/L went from -$2 to -$7. Total daily loss: -$17.94. This VIOLATES Phil Town Rule #1: Don't lose money.",
+    "root_cause": "guaranteed_trader.py lacks position sizing limits. No check for existing unrealized losses before adding new positions. No stop-loss was in place.",
+    "prevention": "1. NEVER add to losing positions. 2. Set stop-loss BEFORE entering any short option position. 3. Add position check to guaranteed_trader.py: if unrealized_pl < 0, do NOT add. 4. Max 1 CSP contract until profitable.",
+    "tags": [
+      "critical",
+      "rule_1",
+      "position_sizing",
+      "stop_loss",
+      "phil_town"
+    ],
+    "severity": "critical",
+    "financial_impact": -17.94,
+    "symbol": "SOFI"
   }
 ]
