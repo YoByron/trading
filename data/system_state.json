@@ -1,62 +1,45 @@
 {
-  "last_updated": "2026-01-13T15:30:00.000000",
+  "last_updated": "2026-01-13T15:50:39.155470",
   "portfolio": {
-    "equity": 4975.81,
-    "cash": 4955.91
-  },
-  "total_trades": 5,
-  "win_rate": 0,
-  "day_of_90": 74,
-  "next_trade": "Jan 14, 9:35 AM ET",
-  "strategy": "CSP on F/SOFI at $5 strike when capital >= $500",
-  "capital_needed": 500,
-  "daily_deposit": 10,
-  "days_to_first_trade": 0,
-  "account": {
-    "current_equity": 60.0,
-    "starting_balance": 20.0,
-    "cash": 60.0,
-    "total_pl_pct": 0.0,
-    "positions_count": 0
+    "equity": 4969.94,
+    "cash": 4534.94
   },
   "paper_account": {
-    "cash": 4955.91,
-    "equity": 4975.81,
-    "buying_power": 0.0,
-    "total_pl": -24.19,
-    "total_pl_pct": -0.48,
-    "positions_count": 2
-  },
-  "trades": {
-    "last_trade_date": "2026-01-13",
-    "count": 5,
-    "last_trade_symbol": "SOFI",
-    "today_trades": 5
+    "equity": 4969.94,
+    "cash": 4534.94,
+    "buying_power": 68.88,
+    "total_pl": -30.06,
+    "total_pl_pct": -0.6,
+    "positions_count": 2,
+    "daily_change": -17.94
   },
   "positions": [
     {
       "symbol": "SOFI",
-      "qty": 3.778911564,
-      "price": 26.44,
-      "value": 99.90,
-      "pnl": -0.09
+      "qty": 22.745561475,
+      "price": 26.34,
+      "value": 599.0,
+      "pnl": -0.94,
+      "type": "stock"
     },
     {
       "symbol": "SOFI260206P00024000",
-      "qty": -1,
+      "qty": -2,
+      "price": 0.82,
+      "value": -164.0,
+      "pnl": -7.0,
       "type": "short_put",
-      "strike": 24.00,
-      "expiration": "2026-02-06",
-      "price": 0.80,
-      "value": -80.00,
-      "pnl": -2.00
+      "strike": 24.0,
+      "expiration": "2026-02-06"
     }
   ],
-  "meta": {
-    "last_updated": "2026-01-13T15:30:00.000000",
-    "updated_by": "claude_session_sync",
-    "last_sync": "2026-01-13T15:30:00.000000",
-    "sync_source": "alpaca_paper_trading",
-    "notes": "First trades executed after 74 days"
+  "trades": {
+    "last_trade_date": "2026-01-13",
+    "today_trades": "multiple",
+    "last_trade_symbol": "SOFI"
+  },
+  "risk": {
+    "VIOLATION": "System added to losing positions without stop-loss",
+    "action_required": "Set stop-loss on puts immediately"
   }
 }
