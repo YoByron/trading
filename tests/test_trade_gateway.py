@@ -45,7 +45,11 @@ def mock_system_state(tmp_path):
     with patch("src.risk.trade_gateway.Path") as mock_path:
         mock_path.return_value.parent.parent.parent.__truediv__.return_value.__truediv__.return_value = state_file
         # Also handle direct path construction
-        mock_path.__call__ = lambda *args: tmp_path / "system_state.json" if "system_state" in str(args) else MagicMock()
+        mock_path.__call__ = (
+            lambda *args: tmp_path / "system_state.json"
+            if "system_state" in str(args)
+            else MagicMock()
+        )
         yield state_file
 
 
