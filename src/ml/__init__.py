@@ -5,6 +5,7 @@ Provides GENAI_AVAILABLE flag for health checks.
 
 try:
     import google.generativeai
+
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
