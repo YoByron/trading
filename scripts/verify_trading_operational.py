@@ -12,7 +12,7 @@ Author: Claude CTO
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 # Add src to path
@@ -43,7 +43,9 @@ def check_alpaca_connectivity():
         print(f"   Equity: ${float(account.equity):,.2f}")
         print(f"   Cash: ${float(account.cash):,.2f}")
         print(f"   Buying Power: ${float(account.buying_power):,.2f}")
-        print(f"   Options Buying Power: ${float(getattr(account, 'options_buying_power', 0) or 0):,.2f}")
+        print(
+            f"   Options Buying Power: ${float(getattr(account, 'options_buying_power', 0) or 0):,.2f}"
+        )
 
         positions = client.get_all_positions()
         print(f"   Open Positions: {len(positions)}")
