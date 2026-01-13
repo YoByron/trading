@@ -207,7 +207,7 @@ def run():
                 f"{symbol} Position: {position['qty']:.2f} shares, "
                 f"${position['value']:,.2f}, P/L: ${position['pnl']:,.2f}"
             )
-            total_unrealized_pnl += position['pnl']
+            total_unrealized_pnl += position["pnl"]
         else:
             logger.info(f"No {symbol} position")
 
@@ -223,7 +223,7 @@ def run():
             "success": False,
             "reason": "rule_1_protection",
             "unrealized_pnl": total_unrealized_pnl,
-            "message": "Phil Town Rule #1: Don't lose money. Not adding to losing positions."
+            "message": "Phil Town Rule #1: Don't lose money. Not adding to losing positions.",
         }
 
     # SIMPLE STRATEGY: Buy $100 of SOFI (primary target)
