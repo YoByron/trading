@@ -158,6 +158,7 @@ def should_open_position(client, config: dict) -> bool:
     # Options market: 9:30 AM - 4:00 PM ET, Mon-Fri
     try:
         from zoneinfo import ZoneInfo
+
         et_tz = ZoneInfo("America/New_York")
         now_et = datetime.now(et_tz)
     except ImportError:
@@ -165,6 +166,7 @@ def should_open_position(client, config: dict) -> bool:
         now_et = datetime.utcnow()
         # Adjust for ET (UTC-5 in winter, UTC-4 in summer)
         from datetime import timedelta
+
         now_et = now_et - timedelta(hours=5)
 
     weekday = now_et.weekday()
@@ -180,7 +182,9 @@ def should_open_position(client, config: dict) -> bool:
 
     if current_time_mins < market_open:
         mins_to_open = market_open - current_time_mins
-        logger.info(f"Market CLOSED: Pre-market ({now_et.strftime('%I:%M %p')} ET). Opens in {mins_to_open} mins")
+        logger.info(
+            f"Market CLOSED: Pre-market ({now_et.strftime('%I:%M %p')} ET). Opens in {mins_to_open} mins"
+        )
         return False
 
     if current_time_mins >= market_close:
