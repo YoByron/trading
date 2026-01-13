@@ -9,6 +9,7 @@ import pytest
 # Check if alpaca-py is installed for integration tests
 try:
     from alpaca.trading.client import TradingClient  # noqa: F401
+
     HAS_ALPACA = True
 except (ImportError, ModuleNotFoundError):
     HAS_ALPACA = False
