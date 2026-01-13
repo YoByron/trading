@@ -1,5 +1,22 @@
 [
   {
+    "id": "404-links-baseurl-2026-01-12",
+    "title": "GitHub Pages 404.html links need relative_url filter",
+    "category": "ci-failure",
+    "severity": "MEDIUM",
+    "description": "404.md had hardcoded /lessons/ link without /trading baseurl prefix. Jekyll needs {{ url | relative_url }} filter for all internal links when deployed to github.io/trading/",
+    "root_cause": "Links in 404.md did not use Jekyll relative_url filter",
+    "fix": "Use relative_url filter: {{ \"/\" | relative_url }} and remove dead /lessons/ link",
+    "prevention": "Always use relative_url filter in Jekyll pages, run validate_github_pages_links.py locally",
+    "created": "2026-01-12",
+    "tags": [
+      "github-pages",
+      "jekyll",
+      "ci",
+      "404"
+    ]
+  },
+  {
     "id": "lesson_20251217_185308_0",
     "timestamp": "2025-12-17T18:53:08.354791",
     "category": "size_error",
@@ -1695,23 +1712,6 @@
     "symbol": null
   },
   {
-    "id": "404-links-baseurl-2026-01-12",
-    "title": "GitHub Pages 404.html links need relative_url filter",
-    "category": "ci-failure",
-    "severity": "MEDIUM",
-    "description": "404.md had hardcoded /lessons/ link without /trading baseurl prefix. Jekyll needs {{ url | relative_url }} filter for all internal links when deployed to github.io/trading/",
-    "root_cause": "Links in 404.md did not use Jekyll relative_url filter",
-    "fix": "Use relative_url filter: {{ \"/\" | relative_url }} and remove dead /lessons/ link",
-    "prevention": "Always use relative_url filter in Jekyll pages, run validate_github_pages_links.py locally",
-    "created": "2026-01-12",
-    "tags": [
-      "github-pages",
-      "jekyll",
-      "ci",
-      "404"
-    ]
-  },
-  {
     "id": "lesson_20260113_013259_cleanup",
     "timestamp": "2026-01-13T01:32:59.039135",
     "category": "cleanup",
@@ -1921,5 +1921,51 @@
     "financial_impact": 0.0,
     "symbol": null,
     "embedding": []
+  },
+  {
+    "id": "lesson_20260113_193400_north_star_review",
+    "date": "2026-01-13",
+    "timestamp": "2026-01-13T19:38:21.434326",
+    "category": "strategic_review",
+    "title": "North Star Review - System Working, Strategy Failing (Jan 13, 2026)",
+    "description": "CEO asked: Will we reach North Star $100/day? Analysis revealed: Infrastructure works (webhook accurate, RAG has 19 lessons). Strategy FAILS (total P/L -$12.71, added to losing positions, stop-losses exist but not verified running).",
+    "root_cause": "1. Stop-loss code exists but not verified running 2. Position sizing not enforced 3. RAG not queried before trades 4. No pre-trade stop-loss verification",
+    "prevention": "1. ADD pre-trade verification that stop-losses exist 2. Block new trades if existing positions have no stops 3. Query RAG advice before every trade 4. Track stop-loss order IDs in system_state.json",
+    "tags": [
+      "north_star",
+      "strategy",
+      "stop_loss",
+      "verification",
+      "rule_1"
+    ],
+    "severity": "critical",
+    "financial_impact": -12.71,
+    "symbol": "SYSTEM",
+    "action_items": [
+      "Create verify_stops_in_place.py script",
+      "Add to pre-trade checks in daily-trading.yml",
+      "Block trading if stops missing",
+      "Record stop order IDs after setting"
+    ]
+  },
+  {
+    "id": "lesson_20260113_194100_stale_data_trust",
+    "date": "2026-01-13",
+    "timestamp": "2026-01-13T19:41:42.844069",
+    "category": "trust_violation",
+    "title": "CTO Reported Stale Data as Current Fact (Jan 13, 2026 - 2nd violation)",
+    "description": "CTO read system_state.json showing -$12.71 P/L and reported it as current. Alpaca dashboard showed actual P/L was +$19.62. CEO had to correct CTO with screenshot. This is SECOND trust violation today.",
+    "root_cause": "Alpaca API returned 403 from sandbox. Instead of acknowledging uncertainty, CTO reported stale local data as truth.",
+    "prevention": "1. When API unavailable, SAY SO explicitly 2. Never report local cache as current fact 3. Say \"I cannot verify live data\" when blocked 4. Ask CEO to check dashboard when uncertain",
+    "tags": [
+      "critical",
+      "trust",
+      "verification",
+      "stale_data",
+      "honesty"
+    ],
+    "severity": "critical",
+    "financial_impact": 0,
+    "symbol": "SYSTEM"
   }
 ]
