@@ -30,7 +30,8 @@ except ImportError:
 
 # Skip all tests in this module if pydantic is not available
 pytestmark = pytest.mark.skipif(
-    not PYDANTIC_AVAILABLE, reason="pydantic not available - required for options_executor dependencies"
+    not PYDANTIC_AVAILABLE,
+    reason="pydantic not available - required for options_executor dependencies",
 )
 
 

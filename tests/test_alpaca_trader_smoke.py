@@ -31,7 +31,8 @@ except ImportError:
 # Skip all tests in this module if pydantic is not available
 # The alpaca_trader module requires pydantic via src.core.config
 pytestmark = pytest.mark.skipif(
-    not PYDANTIC_AVAILABLE, reason="pydantic not available - required for alpaca_trader dependencies"
+    not PYDANTIC_AVAILABLE,
+    reason="pydantic not available - required for alpaca_trader dependencies",
 )
 
 
