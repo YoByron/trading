@@ -196,8 +196,10 @@ def run():
     logger.info(f"Cash: ${account['cash']:,.2f}")
     logger.info(f"Buying Power: ${account['buying_power']:,.2f}")
 
-    # Check existing positions
+    # Check existing positions and RULE #1: Don't lose money
     trades_executed = []
+    total_unrealized_pnl = 0.0
+
     for symbol in TARGET_SYMBOLS:
         position = get_position(client, symbol)
         if position:
@@ -205,8 +207,24 @@ def run():
                 f"{symbol} Position: {position['qty']:.2f} shares, "
                 f"${position['value']:,.2f}, P/L: ${position['pnl']:,.2f}"
             )
+            total_unrealized_pnl += position['pnl']
         else:
             logger.info(f"No {symbol} position")
+
+    # RULE #1 CHECK: NEVER add to losing positions
+    if total_unrealized_pnl < -5.0:  # Allow small fluctuations
+        logger.warning("=" * 60)
+        logger.warning("⚠️ RULE #1 VIOLATION PREVENTED!")
+        logger.warning(f"   Unrealized P/L: ${total_unrealized_pnl:.2f}")
+        logger.warning("   REFUSING to add to losing positions.")
+        logger.warning("   Wait for positions to recover before adding.")
+        logger.warning("=" * 60)
+        return {
+            "success": False,
+            "reason": "rule_1_protection",
+            "unrealized_pnl": total_unrealized_pnl,
+            "message": "Phil Town Rule #1: Don't lose money. Not adding to losing positions."
+        }
 
     # SIMPLE STRATEGY: Buy $100 of SOFI (primary target)
     # $100/day * 5 days = $500 = 1 CSP contract collateral
