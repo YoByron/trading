@@ -51,15 +51,14 @@ _daily_loss_tracker: dict[str, float] = {"total": 0.0, "date": ""}
 def _reset_daily_tracker_if_needed():
     """Reset daily loss tracker at start of new day."""
     from datetime import date
+
     today = str(date.today())
     if _daily_loss_tracker["date"] != today:
         _daily_loss_tracker["total"] = 0.0
         _daily_loss_tracker["date"] = today
 
 
-def _check_position_size(
-    symbol: str, amount: float, equity: float
-) -> tuple[bool, str]:
+def _check_position_size(symbol: str, amount: float, equity: float) -> tuple[bool, str]:
     """Check if position size is within limits."""
     if equity <= 0:
         return False, "Cannot calculate position size with zero equity"
@@ -244,9 +243,7 @@ def validate_trade_mandatory(
     # =========================================================================
     # ALL CHECKS PASSED
     # =========================================================================
-    logger.info(
-        f"✅ Mandatory gate APPROVED: {side} ${amount:.2f} {symbol} ({strategy})"
-    )
+    logger.info(f"✅ Mandatory gate APPROVED: {side} ${amount:.2f} {symbol} ({strategy})")
 
     return GateResult(
         approved=True,
