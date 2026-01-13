@@ -965,9 +965,7 @@ async def webhook(
             elif is_analytical_query(user_query):
                 # FIX Jan 13, 2026: Analytical questions (WHY, explain, etc.)
                 # should go to RAG for semantic understanding, not portfolio status
-                logger.info(
-                    f"Detected ANALYTICAL trade query: {user_query} - routing to RAG"
-                )
+                logger.info(f"Detected ANALYTICAL trade query: {user_query} - routing to RAG")
                 results, source = query_rag_hybrid(user_query, top_k=5)
 
                 # Get portfolio context to include in response
