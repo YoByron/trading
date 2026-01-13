@@ -10,16 +10,13 @@ Validates that the RuleOneValidator correctly:
 
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 from src.validators.rule_one_validator import (
     RuleOneValidator,
     RuleOneValidationResult,
     BigFiveResult,
     StickerPriceResult,
-    RULE_ONE_UNIVERSE,
     BIG_FIVE_MIN_GROWTH,
-    BIG_FIVE_MIN_ROIC,
 )
 
 

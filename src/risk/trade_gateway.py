@@ -58,7 +58,9 @@ class RejectionReason(Enum):
     ILLIQUID_OPTION = "Option is illiquid (bid-ask spread > 5%)"
     RAG_LESSON_CRITICAL = "CRITICAL lesson learned blocks this trade"
     PORTFOLIO_NEGATIVE_PL = "Portfolio P/L is negative - Rule #1: Don't lose money"
-    RULE_ONE_VIOLATION = "Phil Town Rule #1 validation failed - not a wonderful company at attractive price"
+    RULE_ONE_VIOLATION = (
+        "Phil Town Rule #1 validation failed - not a wonderful company at attractive price"
+    )
 
 
 @dataclass

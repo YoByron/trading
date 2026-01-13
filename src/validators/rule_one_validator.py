@@ -248,9 +248,7 @@ class RuleOneValidator:
         result.sticker_price = self._check_sticker_price(symbol, current_price)
         if not result.sticker_price.passes:
             if self.strict_mode:
-                result.rejection_reasons.append(
-                    f"Above MOS price: {result.sticker_price.reason}"
-                )
+                result.rejection_reasons.append(f"Above MOS price: {result.sticker_price.reason}")
                 logger.warning(f"Rule #1 REJECTED: {symbol} above MOS")
             else:
                 result.warnings.append(f"Price caution: {result.sticker_price.reason}")
@@ -260,13 +258,9 @@ class RuleOneValidator:
         if len(result.rejection_reasons) == 0:
             result.approved = True
             result.confidence = self._calculate_confidence(result)
-            logger.info(
-                f"Rule #1 APPROVED: {symbol} (confidence: {result.confidence:.0%})"
-            )
+            logger.info(f"Rule #1 APPROVED: {symbol} (confidence: {result.confidence:.0%})")
         else:
-            logger.warning(
-                f"Rule #1 REJECTED: {symbol} - {', '.join(result.rejection_reasons)}"
-            )
+            logger.warning(f"Rule #1 REJECTED: {symbol} - {', '.join(result.rejection_reasons)}")
 
         return result
 
@@ -327,8 +321,12 @@ class RuleOneValidator:
                 roic=info.get("returnOnCapital") or info.get("returnOnEquity"),
                 sales_growth=info.get("revenueGrowth"),
                 eps_growth=info.get("earningsGrowth"),
-                equity_growth=info.get("earningsGrowth", 0) * 0.8 if info.get("earningsGrowth") else None,
-                fcf_growth=info.get("earningsGrowth", 0) * 0.9 if info.get("earningsGrowth") else None,
+                equity_growth=info.get("earningsGrowth", 0) * 0.8
+                if info.get("earningsGrowth")
+                else None,
+                fcf_growth=info.get("earningsGrowth", 0) * 0.9
+                if info.get("earningsGrowth")
+                else None,
             )
         except Exception as e:
             logger.warning(f"Failed to fetch Big Five for {underlying}: {e}")
@@ -379,7 +377,7 @@ class RuleOneValidator:
             future_eps = eps * ((1 + growth) ** 10)
             future_pe = min(growth * 100 * 2, 40)  # Cap PE at 40
             future_price = future_eps * future_pe
-            sticker_price = future_price / (1.15 ** 10)  # 15% MARR
+            sticker_price = future_price / (1.15**10)  # 15% MARR
             mos_price = sticker_price * MARGIN_OF_SAFETY
 
             return StickerPriceResult(
@@ -450,8 +448,6 @@ class RuleOneValidator:
 
         # Collateral check
         if max_collateral > 500:
-            result.warnings.append(
-                f"Collateral ${max_collateral} exceeds $500 per-spread limit"
-            )
+            result.warnings.append(f"Collateral ${max_collateral} exceeds $500 per-spread limit")
 
         return result
