@@ -116,9 +116,7 @@ def get_iv_percentile(symbol: str, lookback_days: int = 252) -> dict:
         # Determine recommendation per RAG knowledge
         if iv_percentile >= 50:
             recommendation = "SELL_PREMIUM"
-            logger.info(
-                f"IV Percentile: {iv_percentile:.1f}% - FAVORABLE for selling premium"
-            )
+            logger.info(f"IV Percentile: {iv_percentile:.1f}% - FAVORABLE for selling premium")
         elif iv_percentile >= 30:
             recommendation = "NEUTRAL"
             logger.info(f"IV Percentile: {iv_percentile:.1f}% - NEUTRAL conditions")
@@ -267,7 +265,10 @@ def analyze_options_conditions(symbol: str) -> dict:
     iv_ok = iv_result["recommendation"] in ("SELL_PREMIUM", "NEUTRAL")
     trend_ok = trend_result["recommendation"] in ("PROCEED", "CAUTION_BUT_PROCEED")
 
-    if iv_result["recommendation"] == "SELL_PREMIUM" and trend_result["recommendation"] == "PROCEED":
+    if (
+        iv_result["recommendation"] == "SELL_PREMIUM"
+        and trend_result["recommendation"] == "PROCEED"
+    ):
         overall = "STRONG_SELL_PREMIUM"
         safe_to_sell = True
     elif iv_ok and trend_ok:

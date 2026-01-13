@@ -103,9 +103,7 @@ class TestRunSmokeTestsSuccess:
         mock_client.get_all_positions.return_value = []
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -145,9 +143,7 @@ class TestRunSmokeTestsSuccess:
         mock_client.get_all_positions.return_value = [mock_position1, mock_position2]
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -213,13 +209,9 @@ class TestRunSmokeTestsConnectionFailure:
         mock_client_module = setup_alpaca_mock()
 
         # Make TradingClient raise an exception
-        mock_client_module.TradingClient = MagicMock(
-            side_effect=Exception("Connection refused")
-        )
+        mock_client_module.TradingClient = MagicMock(side_effect=Exception("Connection refused"))
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -236,13 +228,9 @@ class TestRunSmokeTestsConnectionFailure:
         """Smoke tests fail gracefully on timeout."""
         mock_client_module = setup_alpaca_mock()
 
-        mock_client_module.TradingClient = MagicMock(
-            side_effect=Exception("Request timeout")
-        )
+        mock_client_module.TradingClient = MagicMock(side_effect=Exception("Request timeout"))
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -266,9 +254,7 @@ class TestRunSmokeTestsAccountFailure:
         mock_client.get_account.side_effect = Exception("Account access denied")
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -296,9 +282,7 @@ class TestRunSmokeTestsAccountFailure:
         mock_client.get_account.return_value = mock_account
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -330,9 +314,7 @@ class TestRunSmokeTestsPositionsFailure:
         mock_client.get_all_positions.side_effect = Exception("Position API error")
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -365,9 +347,7 @@ class TestRunSmokeTestsBuyingPower:
         mock_client.get_all_positions.return_value = []
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -398,9 +378,7 @@ class TestRunSmokeTestsBuyingPower:
         mock_client.get_all_positions.return_value = []
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -428,9 +406,7 @@ class TestRunSmokeTestsBuyingPower:
         mock_client.get_all_positions.return_value = []
         mock_client_module.TradingClient = MagicMock(return_value=mock_client)
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -499,9 +475,7 @@ class TestPaperTradingMode:
         mock_trading_client = MagicMock(return_value=mock_client)
         mock_client_module.TradingClient = mock_trading_client
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "true"}):
@@ -509,9 +483,7 @@ class TestPaperTradingMode:
 
                 run_smoke_tests()
 
-        mock_trading_client.assert_called_once_with(
-            "test_api_key", "test_secret_key", paper=True
-        )
+        mock_trading_client.assert_called_once_with("test_api_key", "test_secret_key", paper=True)
 
     def test_paper_mode_false(self):
         """TradingClient should be called with paper=False when PAPER_TRADING=false."""
@@ -530,9 +502,7 @@ class TestPaperTradingMode:
         mock_trading_client = MagicMock(return_value=mock_client)
         mock_client_module.TradingClient = mock_trading_client
 
-        with patch(
-            "src.utils.alpaca_client.get_alpaca_credentials"
-        ) as mock_get_creds:
+        with patch("src.utils.alpaca_client.get_alpaca_credentials") as mock_get_creds:
             mock_get_creds.return_value = ("test_api_key", "test_secret_key")
 
             with patch.dict(os.environ, {"PAPER_TRADING": "false"}):
@@ -540,9 +510,7 @@ class TestPaperTradingMode:
 
                 run_smoke_tests()
 
-        mock_trading_client.assert_called_once_with(
-            "test_api_key", "test_secret_key", paper=False
-        )
+        mock_trading_client.assert_called_once_with("test_api_key", "test_secret_key", paper=False)
 
 
 class TestBackwardsCompatibility:
