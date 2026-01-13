@@ -1729,5 +1729,23 @@
       "ci",
       "404"
     ]
+  },
+  {
+    "id": "lesson_20260113_013259_cleanup",
+    "timestamp": "2026-01-13T01:32:59.039135",
+    "category": "cleanup",
+    "title": "Removed 1396 Lines of Dead Test Code - January 13, 2026",
+    "description": "Deleted 3 test files importing non-existent modules: test_rlhf_storage.py (873 lines), test_lancedb_feedback.py (278 lines), test_gemini_failover.py (239 lines). Fixed incorrect skip on test_telemetry_summary.py.",
+    "root_cause": "Tests were written for modules that were later deleted without cleaning up corresponding tests",
+    "prevention": "When deleting a module, always search for and delete corresponding test files",
+    "tags": [
+      "cleanup",
+      "dead_code",
+      "tests",
+      "ci"
+    ],
+    "severity": "medium",
+    "financial_impact": 0.0,
+    "symbol": null
   }
 ]
