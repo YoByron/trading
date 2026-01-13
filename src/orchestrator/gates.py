@@ -36,14 +36,18 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 # Pipeline checkpointing for fault tolerance (Dec 2025)
-# Tech debt cleanup Jan 13, 2026: Removed unused imports (CHECKPOINT_GATES, PipelineCheckpointer, should_checkpoint)
 try:
-    from src.orchestrator.checkpoint import get_checkpointer
+    from src.orchestrator.checkpoint import get_checkpointer, should_checkpoint
 
     CHECKPOINTING_AVAILABLE = True
     logger.info("Pipeline checkpointing enabled")
 except ImportError:
     CHECKPOINTING_AVAILABLE = False
+
+    def should_checkpoint(gate_index: float) -> bool:
+        """Fallback when checkpointing not available."""
+        return False
+
     logger.warning("Checkpointing not available - pipeline will not be resumable")
 
 # Observability: Vertex AI RAG + Local logs (Jan 9, 2026)
