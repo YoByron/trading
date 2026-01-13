@@ -74,7 +74,16 @@ def generate_historical_post(date_str: str, commits: list[str], day_num: int) ->
 
     # Build content
     commits_md = ""
-    for category in ["Features", "Trading", "Bug Fixes", "Testing", "CI/CD", "Improvements", "Documentation", "Other"]:
+    for category in [
+        "Features",
+        "Trading",
+        "Bug Fixes",
+        "Testing",
+        "CI/CD",
+        "Improvements",
+        "Documentation",
+        "Other",
+    ]:
         if category in by_category:
             commits_md += f"\n### {category}\n\n"
             for commit in by_category[category][:10]:  # Limit per category
@@ -168,13 +177,13 @@ def backfill():
             # Create placeholder for days with no commits
             post_content = f"""---
 layout: post
-title: "Day {day_num}: No Activity - {current.strftime('%B %d, %Y')}"
+title: "Day {day_num}: No Activity - {current.strftime("%B %d, %Y")}"
 date: {date_str}
 day_number: {day_num}
 commits_count: 0
 ---
 
-# Day {day_num}/90 - {current.strftime('%A, %B %d, %Y')}
+# Day {day_num}/90 - {current.strftime("%A, %B %d, %Y")}
 
 No git commits recorded for this day.
 

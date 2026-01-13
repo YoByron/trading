@@ -24,7 +24,7 @@ def parse_lesson_file(filepath: Path) -> dict | None:
         lesson_id = filepath.stem
 
         # Try to extract date from filename (e.g., ll_131_..._jan12.md)
-        date_match = re.search(r'jan(\d+)', lesson_id, re.IGNORECASE)
+        date_match = re.search(r"jan(\d+)", lesson_id, re.IGNORECASE)
         if date_match:
             day = int(date_match.group(1))
             year = 2026
@@ -34,7 +34,7 @@ def parse_lesson_file(filepath: Path) -> dict | None:
             date_str = datetime.now().strftime("%Y-%m-%d")
 
         # Extract title from content
-        title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+        title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
         title = title_match.group(1) if title_match else lesson_id
 
         # Extract severity
@@ -47,7 +47,7 @@ def parse_lesson_file(filepath: Path) -> dict | None:
             severity = "MEDIUM"
 
         # Extract category
-        category_match = re.search(r'category[:\s*]+([^\n]+)', content, re.IGNORECASE)
+        category_match = re.search(r"category[:\s*]+([^\n]+)", content, re.IGNORECASE)
         category = category_match.group(1).strip() if category_match else "general"
 
         return {
@@ -155,7 +155,9 @@ def sync_lessons_to_blog():
                 lessons_by_date[date_str] = []
             lessons_by_date[date_str].append(lesson)
 
-    print(f"Found {sum(len(v) for v in lessons_by_date.values())} lessons across {len(lessons_by_date)} days")
+    print(
+        f"Found {sum(len(v) for v in lessons_by_date.values())} lessons across {len(lessons_by_date)} days"
+    )
 
     # Generate blog posts for each day
     created = 0
