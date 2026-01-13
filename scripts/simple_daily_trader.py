@@ -138,10 +138,10 @@ def find_put_option(symbol: str, target_delta: float, target_dte: int) -> Option
     # CRITICAL FIX Jan 13, 2026: Use symbol-specific prices, not hardcoded SPY!
     # This bug was causing strike calculations to be wildly wrong for SOFI
     symbol_prices = {
-        "SOFI": 14,   # ~$14/share
-        "F": 10,      # ~$10/share
-        "PLTR": 80,   # ~$80/share
-        "SPY": 600,   # ~$600/share
+        "SOFI": 14,  # ~$14/share
+        "F": 10,  # ~$10/share
+        "PLTR": 80,  # ~$80/share
+        "SPY": 600,  # ~$600/share
     }
     estimated_price = symbol_prices.get(symbol, 20)  # Default to $20 if unknown
 
