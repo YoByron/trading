@@ -166,8 +166,16 @@ class TradeGateway:
     # LL-190: SOFI CSP was opened during blackout - caused 48% portfolio risk
     # LL-191: SOFI position still open despite strategy saying "AVOID until Feb 1"
     EARNINGS_BLACKOUTS = {
-        "SOFI": {"start": "2025-12-30", "end": "2026-02-01", "earnings": "2026-01-30"},  # 30 days before
-        "F": {"start": "2026-01-10", "end": "2026-02-11", "earnings": "2026-02-10"},  # 30 days before
+        "SOFI": {
+            "start": "2025-12-30",
+            "end": "2026-02-01",
+            "earnings": "2026-01-30",
+        },  # 30 days before
+        "F": {
+            "start": "2026-01-10",
+            "end": "2026-02-11",
+            "earnings": "2026-02-10",
+        },  # 30 days before
         # Add more tickers as needed
     }
 

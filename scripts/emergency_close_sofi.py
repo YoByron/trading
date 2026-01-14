@@ -26,8 +26,8 @@ def get_paper_trading_client():
     """Get Alpaca paper trading client."""
     try:
         from alpaca.trading.client import TradingClient
-        from alpaca.trading.requests import MarketOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
+        from alpaca.trading.requests import MarketOrderRequest
 
         api_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY")
         secret_key = os.getenv("ALPACA_PAPER_TRADING_5K_API_SECRET")
@@ -57,13 +57,15 @@ def close_all_sofi_positions(dry_run: bool = True):
             symbol = pos.symbol
             # Check if position is SOFI stock or SOFI option
             if symbol == "SOFI" or symbol.startswith("SOFI"):
-                sofi_positions.append({
-                    "symbol": symbol,
-                    "qty": float(pos.qty),
-                    "market_value": float(pos.market_value),
-                    "unrealized_pl": float(pos.unrealized_pl),
-                    "side": "long" if float(pos.qty) > 0 else "short",
-                })
+                sofi_positions.append(
+                    {
+                        "symbol": symbol,
+                        "qty": float(pos.qty),
+                        "market_value": float(pos.market_value),
+                        "unrealized_pl": float(pos.unrealized_pl),
+                        "side": "long" if float(pos.qty) > 0 else "short",
+                    }
+                )
 
         if not sofi_positions:
             logger.info("No SOFI positions found")
@@ -79,7 +81,6 @@ def close_all_sofi_positions(dry_run: bool = True):
             return True
 
         # Execute closes
-        from alpaca.trading.requests import ClosePositionRequest
 
         for pos in sofi_positions:
             symbol = pos["symbol"]
@@ -96,8 +97,8 @@ def close_all_sofi_positions(dry_run: bool = True):
 
                 # Try alternative: market order to close
                 try:
-                    from alpaca.trading.requests import MarketOrderRequest
                     from alpaca.trading.enums import OrderSide, TimeInForce
+                    from alpaca.trading.requests import MarketOrderRequest
 
                     # For short positions, we need to BUY to close
                     # For long positions, we need to SELL to close
@@ -129,7 +130,7 @@ def main():
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Preview positions without closing (default: execute close)"
+        help="Preview positions without closing (default: execute close)",
     )
     args = parser.parse_args()
 
