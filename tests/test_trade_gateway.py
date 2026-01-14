@@ -312,9 +312,7 @@ class TestEarningsPositionMonitor:
         """Test that SOFI option position triggers earnings alert."""
         gateway = TradeGateway(executor=None, paper=True)
         gateway.executor = MockExecutor(
-            positions=[
-                {"symbol": "SOFI260206P00024000", "qty": -2, "unrealized_pl": 23.00}
-            ]
+            positions=[{"symbol": "SOFI260206P00024000", "qty": -2, "unrealized_pl": 23.00}]
         )
 
         alerts = gateway.check_positions_for_earnings()
@@ -329,15 +327,11 @@ class TestEarningsPositionMonitor:
         """Test that profitable position in blackout gets close recommendation."""
         gateway = TradeGateway(executor=None, paper=True)
         # Simulate position already in blackout with profit
-        action = gateway._get_earnings_action(
-            days_to_blackout=0, unrealized_pl=100, symbol="SOFI"
-        )
+        action = gateway._get_earnings_action(days_to_blackout=0, unrealized_pl=100, symbol="SOFI")
         assert "CLOSE_AT_PROFIT" in action
 
     def test_action_recommends_monitor_on_loss(self):
         """Test that losing position in blackout gets monitor recommendation."""
         gateway = TradeGateway(executor=None, paper=True)
-        action = gateway._get_earnings_action(
-            days_to_blackout=0, unrealized_pl=-50, symbol="SOFI"
-        )
+        action = gateway._get_earnings_action(days_to_blackout=0, unrealized_pl=-50, symbol="SOFI")
         assert "MONITOR_CLOSELY" in action

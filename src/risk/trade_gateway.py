@@ -1186,9 +1186,7 @@ class TradeGateway:
 
         return alerts
 
-    def _get_earnings_action(
-        self, days_to_blackout: int, unrealized_pl: float, symbol: str
-    ) -> str:
+    def _get_earnings_action(self, days_to_blackout: int, unrealized_pl: float, symbol: str) -> str:
         """Determine recommended action for position approaching earnings."""
         is_option = len(symbol) > 10  # Options have longer symbols
 
