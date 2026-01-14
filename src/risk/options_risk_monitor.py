@@ -35,7 +35,9 @@ class OptionsRiskMonitor:
         self.max_loss_percent = max_loss_percent
         self.positions: dict = {}
 
-    def add_position(self, position: OptionsPosition | dict, position_data: dict | None = None) -> None:
+    def add_position(
+        self, position: OptionsPosition | dict, position_data: dict | None = None
+    ) -> None:
         """Track an options position.
 
         Args:
