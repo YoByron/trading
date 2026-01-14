@@ -13,7 +13,6 @@ This script can be run:
 
 import sys
 from datetime import datetime
-from pathlib import Path
 
 # Core directives from CLAUDE.md
 DIRECTIVES = {
