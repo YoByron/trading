@@ -1,6 +1,5 @@
 """Microstructure Features - Extract market microstructure signals."""
 
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,10 +1,10 @@
 """Trade Memory - Stores and retrieves trade patterns for learning."""
 
+import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
-import json
 from pathlib import Path
+from typing import Optional
 
 
 @dataclass

@@ -1,6 +1,5 @@
 """Debate Agents - Multi-agent debate system for trading decisions."""
 
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)

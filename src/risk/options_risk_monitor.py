@@ -1,6 +1,5 @@
 """Options Risk Monitor - Monitors options positions for risk."""
 
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
