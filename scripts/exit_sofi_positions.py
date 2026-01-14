@@ -65,16 +65,18 @@ def get_sofi_positions(client):
 
         for pos in all_positions:
             if pos.symbol.startswith("SOFI"):
-                sofi_positions.append({
-                    "symbol": pos.symbol,
-                    "qty": float(pos.qty),
-                    "avg_entry_price": float(pos.avg_entry_price),
-                    "current_price": float(pos.current_price),
-                    "market_value": float(pos.market_value),
-                    "unrealized_pl": float(pos.unrealized_pl),
-                    "unrealized_plpc": float(pos.unrealized_plpc),
-                    "is_option": len(pos.symbol) > 10,  # Options have longer symbols
-                })
+                sofi_positions.append(
+                    {
+                        "symbol": pos.symbol,
+                        "qty": float(pos.qty),
+                        "avg_entry_price": float(pos.avg_entry_price),
+                        "current_price": float(pos.current_price),
+                        "market_value": float(pos.market_value),
+                        "unrealized_pl": float(pos.unrealized_pl),
+                        "unrealized_plpc": float(pos.unrealized_plpc),
+                        "is_option": len(pos.symbol) > 10,  # Options have longer symbols
+                    }
+                )
 
         return sofi_positions
     except Exception as e:
@@ -110,11 +112,13 @@ def close_position(client, position, dry_run=False):
     logger.info(f"  Entry Price: ${position['avg_entry_price']:.2f}")
     logger.info(f"  Current Price: ${position['current_price']:.2f}")
     logger.info(f"  Market Value: ${position['market_value']:.2f}")
-    logger.info(f"  Unrealized P/L: ${position['unrealized_pl']:.2f} ({position['unrealized_plpc']*100:.2f}%)")
+    logger.info(
+        f"  Unrealized P/L: ${position['unrealized_pl']:.2f} ({position['unrealized_plpc'] * 100:.2f}%)"
+    )
     logger.info(f"  Action: {action} {qty} {'contracts' if position['is_option'] else 'shares'}")
 
     if dry_run:
-        logger.info(f"  Status: WOULD EXECUTE (dry run)")
+        logger.info("  Status: WOULD EXECUTE (dry run)")
         return True
 
     try:
@@ -151,7 +155,9 @@ def main(dry_run=False):
 
     if not api_key or not secret_key:
         logger.error("Alpaca credentials not found")
-        logger.error("Required: ALPACA_PAPER_TRADING_5K_API_KEY and ALPACA_PAPER_TRADING_5K_API_SECRET")
+        logger.error(
+            "Required: ALPACA_PAPER_TRADING_5K_API_KEY and ALPACA_PAPER_TRADING_5K_API_SECRET"
+        )
         sys.exit(1)
 
     # Always use paper trading for this script
@@ -161,7 +167,7 @@ def main(dry_run=False):
     logger.info("EXIT SOFI POSITIONS - EARNINGS BLACKOUT PROTECTION")
     logger.info(f"Mode: {'DRY RUN' if dry_run else 'LIVE EXECUTION'}")
     logger.info(f"Time: {datetime.now().isoformat()}")
-    logger.info(f"Reason: SOFI earnings blackout starts Jan 23 (earnings Jan 30)")
+    logger.info("Reason: SOFI earnings blackout starts Jan 23 (earnings Jan 30)")
     logger.info("=" * 80)
 
     # Get all SOFI positions
@@ -231,7 +237,11 @@ def main(dry_run=False):
 
     # Save execution log
     if not dry_run:
-        log_file = Path(__file__).parent.parent / "data" / f"sofi_exit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        log_file = (
+            Path(__file__).parent.parent
+            / "data"
+            / f"sofi_exit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         log_file.parent.mkdir(exist_ok=True)
 
         log_data = {
@@ -258,13 +268,9 @@ def main(dry_run=False):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Exit all SOFI positions before earnings blackout"
-    )
+    parser = argparse.ArgumentParser(description="Exit all SOFI positions before earnings blackout")
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview actions without executing trades"
+        "--dry-run", action="store_true", help="Preview actions without executing trades"
     )
     args = parser.parse_args()
 
