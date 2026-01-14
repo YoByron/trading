@@ -49,7 +49,9 @@ def mock_trade_gate():
     from src.safety.mandatory_trade_gate import GateResult
 
     mock_result = GateResult(approved=True, reason="Test mock - approved")
-    with patch("src.safety.mandatory_trade_gate.validate_trade_mandatory", return_value=mock_result):
+    with patch(
+        "src.safety.mandatory_trade_gate.validate_trade_mandatory", return_value=mock_result
+    ):
         yield
 
 
