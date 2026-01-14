@@ -5,7 +5,6 @@ Per CLAUDE.md: 100% test coverage on all changed/added code.
 """
 
 import json
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -127,11 +126,7 @@ class TestAddTrade:
         """Adding a trade should create entry in ledger."""
         # Create temp trades file
         trades_file = tmp_path / "trades.json"
-        trades_file.write_text(json.dumps({
-            "metadata": {},
-            "stats": {},
-            "trades": []
-        }))
+        trades_file.write_text(json.dumps({"metadata": {}, "stats": {}, "trades": []}))
 
         with patch("scripts.calculate_win_rate.TRADES_FILE", trades_file):
             from scripts.calculate_win_rate import add_trade, load_trades
@@ -158,19 +153,25 @@ class TestCloseTrade:
     def test_close_trade_calculates_pnl(self, tmp_path):
         """Closing a trade should calculate P/L correctly."""
         trades_file = tmp_path / "trades.json"
-        trades_file.write_text(json.dumps({
-            "metadata": {},
-            "stats": {},
-            "trades": [{
-                "id": "TEST_001",
-                "symbol": "AAPL",
-                "type": "stock",
-                "side": "buy",
-                "qty": 10,
-                "entry_price": 150.0,
-                "status": "open",
-            }]
-        }))
+        trades_file.write_text(
+            json.dumps(
+                {
+                    "metadata": {},
+                    "stats": {},
+                    "trades": [
+                        {
+                            "id": "TEST_001",
+                            "symbol": "AAPL",
+                            "type": "stock",
+                            "side": "buy",
+                            "qty": 10,
+                            "entry_price": 150.0,
+                            "status": "open",
+                        }
+                    ],
+                }
+            )
+        )
 
         with patch("scripts.calculate_win_rate.TRADES_FILE", trades_file):
             from scripts.calculate_win_rate import close_trade, load_trades

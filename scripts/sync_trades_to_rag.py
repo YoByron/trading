@@ -193,7 +193,9 @@ def sync_to_master_ledger(trades: list[dict]) -> bool:
             else:
                 # Standard equity trade
                 symbol = trade.get("symbol", "UNKNOWN")
-                timestamp = trade.get("timestamp") or trade.get("time") or datetime.now().isoformat()
+                timestamp = (
+                    trade.get("timestamp") or trade.get("time") or datetime.now().isoformat()
+                )
                 date_str = timestamp[:10]
                 trade_id = f"{symbol}_STOCK_{date_str.replace('-', '')}"
 
