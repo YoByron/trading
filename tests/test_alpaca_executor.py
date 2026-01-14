@@ -44,9 +44,7 @@ def mock_trade_gate():
 
     Tests should not be blocked by the $0 equity safety check (ll_051).
     """
-    with patch(
-        "src.execution.alpaca_executor.validate_trade_mandatory", return_value=None
-    ):
+    with patch("src.execution.alpaca_executor.validate_trade_mandatory", return_value=None):
         yield
 
 
