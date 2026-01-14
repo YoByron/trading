@@ -293,7 +293,10 @@ def check_earnings_blackout(symbol: str) -> tuple[bool, str]:
         earnings = blackout["earnings"]
 
         if start <= today <= end:
-            return True, f"{underlying} in earnings blackout {start} to {end} (earnings: {earnings})"
+            return (
+                True,
+                f"{underlying} in earnings blackout {start} to {end} (earnings: {earnings})",
+            )
 
     return False, ""
 
@@ -315,7 +318,7 @@ def execute_bull_put_spread(
         return {
             "status": "BLOCKED_EARNINGS",
             "reason": blackout_reason,
-            "action": "Wait until blackout ends or choose SPY/IWM (no individual earnings)"
+            "action": "Wait until blackout ends or choose SPY/IWM (no individual earnings)",
         }
 
     # Query RAG for lessons before trading
