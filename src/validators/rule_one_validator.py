@@ -30,7 +30,12 @@ RULE_ONE_UNIVERSE = {
     # PRIMARY: Index ETFs for credit spreads (Jan 14, 2026 - per CLAUDE.md)
     # These are EXEMPT from Big Five analysis as they're not individual companies
     "SPY": {"name": "S&P 500 ETF", "moat": "etf", "capital_tier": "any", "skip_big_five": True},
-    "IWM": {"name": "Russell 2000 ETF", "moat": "etf", "capital_tier": "any", "skip_big_five": True},
+    "IWM": {
+        "name": "Russell 2000 ETF",
+        "moat": "etf",
+        "capital_tier": "any",
+        "skip_big_five": True,
+    },
     # Secondary credit spread targets (low share price, liquid options)
     "F": {"name": "Ford", "moat": "brand", "capital_tier": "small"},
     "SOFI": {"name": "SoFi Technologies", "moat": "switching", "capital_tier": "small"},
