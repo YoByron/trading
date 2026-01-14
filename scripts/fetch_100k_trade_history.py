@@ -19,8 +19,8 @@ def main():
     """Fetch and analyze $100K account trade history."""
     try:
         from alpaca.trading.client import TradingClient
-        from alpaca.trading.requests import GetOrdersRequest
         from alpaca.trading.enums import QueryOrderStatus
+        from alpaca.trading.requests import GetOrdersRequest
     except ImportError:
         print("ERROR: alpaca-py not installed")
         return
@@ -49,11 +49,7 @@ def main():
 
     print(f"\nFetching orders since {start_date.date()}...")
 
-    request = GetOrdersRequest(
-        status=QueryOrderStatus.CLOSED,
-        after=start_date,
-        limit=500
-    )
+    request = GetOrdersRequest(status=QueryOrderStatus.CLOSED, after=start_date, limit=500)
 
     orders = client.get_orders(filter=request)
     filled_orders = [o for o in orders if str(o.status) == "filled"]
@@ -127,7 +123,9 @@ def main():
             options_by_underlying[underlying] = []
         options_by_underlying[underlying].append(trade)
 
-    for underlying, trades in sorted(options_by_underlying.items(), key=lambda x: len(x[1]), reverse=True):
+    for underlying, trades in sorted(
+        options_by_underlying.items(), key=lambda x: len(x[1]), reverse=True
+    ):
         sells = [t for t in trades if "sell" in t["side"].lower()]
         buys = [t for t in trades if "buy" in t["side"].lower()]
         sell_premium = sum(t["notional"] for t in sells)
@@ -163,7 +161,7 @@ def main():
     # Create lesson learned
     lesson_content = f"""# Lesson Learned: $100K Paper Account Trade Analysis
 
-## Date: {datetime.now().strftime('%Y-%m-%d')}
+## Date: {datetime.now().strftime("%Y-%m-%d")}
 ## Severity: HIGH
 
 ## Summary
@@ -173,13 +171,15 @@ Analysis of {len(filled_orders)} filled orders from the $100K paper trading acco
 
 ### Options Trading
 - Total options trades: {len(options_trades)}
-- Underlyings traded: {', '.join(options_by_underlying.keys())}
+- Underlyings traded: {", ".join(options_by_underlying.keys())}
 
 ### What Worked
 """
 
     # Add top performers
-    for underlying, trades in sorted(options_by_underlying.items(), key=lambda x: len(x[1]), reverse=True)[:3]:
+    for underlying, trades in sorted(
+        options_by_underlying.items(), key=lambda x: len(x[1]), reverse=True
+    )[:3]:
         sells = [t for t in trades if "sell" in t["side"].lower()]
         buys = [t for t in trades if "buy" in t["side"].lower()]
         sell_premium = sum(t["notional"] for t in sells)
