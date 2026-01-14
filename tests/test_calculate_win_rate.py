@@ -5,7 +5,6 @@ Per CLAUDE.md: 100% test coverage on all changed/added code.
 """
 
 import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
