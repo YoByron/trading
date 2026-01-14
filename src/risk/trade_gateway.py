@@ -452,7 +452,7 @@ class TradeGateway:
             metadata["recovery_trade_allowed"] = {
                 "total_pl": total_pl,
                 "daily_pnl": self.daily_pnl,
-                "reason": "Daily loss within limit - recovery trading permitted"
+                "reason": "Daily loss within limit - recovery trading permitted",
             }
 
         # ============================================================
