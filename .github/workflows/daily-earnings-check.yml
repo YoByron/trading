@@ -1,0 +1,34 @@
+name: Daily Earnings Position Check
+
+# CRITICAL: Prevents LL-191 from recurring
+# Checks existing positions against earnings blackouts
+
+on:
+  schedule:
+    - cron: '0 14 * * 1-5'  # 9 AM ET weekdays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-earnings:
+    name: Check Positions for Earnings Risk
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install alpaca-py
+
+      - name: Run Earnings Check
+        env:
+          ALPACA_PAPER_TRADING_5K_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
+          ALPACA_PAPER_TRADING_5K_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+        run: python scripts/check_earnings_positions.py
