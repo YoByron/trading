@@ -55,7 +55,7 @@ def main():
                         skip = True
                         reason = f"Trading already executed today ({total_trades_today} trades at {last_dt.isoformat()})"
                     elif last_dt.date() == today and total_trades_today == 0:
-                        reason = f"Date sync'd today but no trades executed yet - proceeding"
+                        reason = "Date sync'd today but no trades executed yet - proceeding"
                     else:
                         reason = f"Last trade was {last_dt.date()}, proceeding with today's trade"
                 except ValueError as e:
