@@ -11,7 +11,7 @@ Lesson: LL-196 - Rule #1 violations cost real money.
 
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 # Allowed tickers (research-validated, no earnings risk)
