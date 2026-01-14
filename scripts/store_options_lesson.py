@@ -7,6 +7,7 @@ https://youtu.be/Y53nIHUVUFA
 """
 
 import sys
+
 sys.path.insert(0, "/home/user/trading")
 
 from src.rag.vertex_rag import get_vertex_rag
@@ -55,6 +56,7 @@ Our credit spread strategy SELLS options (we are the "seller" who is obligated).
 3. Use 30+ DTE expiries to benefit from theta decay (as noted in CLAUDE.md)
 """
 
+
 def main():
     rag = get_vertex_rag()
 
@@ -71,15 +73,16 @@ def main():
         title=LESSON_TITLE,
         content=LESSON_CONTENT,
         severity="LOW",  # Foundational knowledge, not a mistake
-        category="options_education"
+        category="options_education",
     )
 
     if success:
         print(f"✅ Lesson '{LESSON_ID}' stored in Vertex AI RAG")
     else:
-        print(f"❌ Failed to store lesson")
+        print("❌ Failed to store lesson")
 
     return success
+
 
 if __name__ == "__main__":
     main()
