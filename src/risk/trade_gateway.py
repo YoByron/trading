@@ -292,7 +292,10 @@ class TradeGateway:
             earnings = blackout["earnings"]
 
             if start <= today <= end:
-                return True, f"{underlying} in earnings blackout {start} to {end} (earnings: {earnings})"
+                return (
+                    True,
+                    f"{underlying} in earnings blackout {start} to {end} (earnings: {earnings})",
+                )
 
         return False, ""
 
@@ -317,7 +320,10 @@ class TradeGateway:
             # For stocks, check notional vs equity
             trade_value = request.notional or 0
             if trade_value > account_equity * self.MAX_POSITION_RISK_PCT:
-                return True, f"Trade value ${trade_value:.0f} exceeds {self.MAX_POSITION_RISK_PCT*100:.0f}% of equity"
+                return (
+                    True,
+                    f"Trade value ${trade_value:.0f} exceeds {self.MAX_POSITION_RISK_PCT * 100:.0f}% of equity",
+                )
             return False, ""
 
         # For options, estimate max loss based on strategy
@@ -340,7 +346,10 @@ class TradeGateway:
         max_risk_pct = max_loss / account_equity if account_equity > 0 else 1.0
 
         if max_risk_pct > self.MAX_POSITION_RISK_PCT:
-            return True, f"Max loss ${max_loss:.0f} ({max_risk_pct*100:.1f}%) exceeds {self.MAX_POSITION_RISK_PCT*100:.0f}% limit"
+            return (
+                True,
+                f"Max loss ${max_loss:.0f} ({max_risk_pct * 100:.1f}%) exceeds {self.MAX_POSITION_RISK_PCT * 100:.0f}% limit",
+            )
 
         return False, ""
 
@@ -424,7 +433,7 @@ class TradeGateway:
             risk_score += 0.5
             metadata["position_size_risk"] = {
                 "reason": risk_reason,
-                "max_allowed": f"{self.MAX_POSITION_RISK_PCT*100:.0f}% of ${account_equity:.0f} = ${account_equity * self.MAX_POSITION_RISK_PCT:.0f}",
+                "max_allowed": f"{self.MAX_POSITION_RISK_PCT * 100:.0f}% of ${account_equity:.0f} = ${account_equity * self.MAX_POSITION_RISK_PCT:.0f}",
             }
 
         # ============================================================

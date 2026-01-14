@@ -11,7 +11,6 @@ Date: January 13, 2026
 
 import json
 import logging
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -50,7 +49,7 @@ def execute_pending_trades() -> dict:
 
             # Check if already processed
             if pending.get("status") == "EXECUTED":
-                logger.info(f"  Already executed, skipping")
+                logger.info("  Already executed, skipping")
                 results["skipped"].append(str(file_path))
                 continue
 
@@ -72,31 +71,27 @@ def execute_pending_trades() -> dict:
                             qty=quantity,
                             side=action.lower(),
                             order_type="limit",
-                            limit_price=limit_price
+                            limit_price=limit_price,
                         )
                     else:
                         order = trader.submit_option_order(
-                            symbol=symbol,
-                            qty=quantity,
-                            side=action.lower(),
-                            order_type="market"
+                            symbol=symbol, qty=quantity, side=action.lower(), order_type="market"
                         )
 
-                    results["executed"].append({
-                        "symbol": symbol,
-                        "action": action,
-                        "quantity": quantity,
-                        "order_id": str(order.id) if order else None,
-                        "status": "submitted"
-                    })
+                    results["executed"].append(
+                        {
+                            "symbol": symbol,
+                            "action": action,
+                            "quantity": quantity,
+                            "order_id": str(order.id) if order else None,
+                            "status": "submitted",
+                        }
+                    )
                     logger.info(f"    Order submitted: {order.id if order else 'N/A'}")
 
                 except Exception as e:
                     logger.error(f"    Failed: {e}")
-                    results["failed"].append({
-                        "symbol": symbol,
-                        "error": str(e)
-                    })
+                    results["failed"].append({"symbol": symbol, "error": str(e)})
 
             # Mark file as processed
             pending["status"] = "EXECUTED"
