@@ -33,8 +33,7 @@ class TradeMemory:
         if self.memory_path.exists():
             try:
                 with open(self.memory_path) as f:
-                    data = json.load(f)
-                    # Parse patterns if needed
+                    _ = json.load(f)  # noqa: F841 - stub implementation
             except Exception:
                 pass
 
