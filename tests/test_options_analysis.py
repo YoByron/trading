@@ -8,7 +8,6 @@ Tests the Matt Giannino checklist validation functions added Jan 2026:
 - get_atr
 """
 
-
 from src.utils.options_analysis import (
     MAX_BID_ASK_SPREAD_PCT,
     MAX_THETA_DECAY_PCT,
