@@ -1,76 +1,31 @@
 {
-  "last_updated": "2026-01-15T17:57:00.000000",
-  "portfolio": {
-    "equity": 4960.26,
-    "cash": 4555.13
-  },
-  "paper_account": {
-    "equity": 4965.21,
-    "cash": 4555.13,
-    "buying_power": 9210.34,
-    "total_pl": -34.789999999999964,
-    "total_pl_pct": -0.6957999999999993,
-    "positions_count": 4,
-    "daily_change": 6.029999999999745,
-    "current_equity": 4965.21
-  },
-  "positions": [
-    {
-      "symbol": "SPY",
-      "qty": 0.144198737,
-      "price": 694.68,
-      "value": 100.171979,
-      "pnl": 0.181979,
-      "type": "stock"
-    },
-    {
-      "symbol": "SPY260220P00565000",
-      "qty": 1.0,
-      "price": 0.46,
-      "value": 46.0,
-      "pnl": -1.0,
-      "type": "option"
-    },
-    {
-      "symbol": "SPY260220P00570000",
-      "qty": -1.0,
-      "price": 0.51,
-      "value": -51.0,
-      "pnl": -1.0,
-      "type": "option"
-    },
-    {
-      "symbol": "SPY260220P00660000",
-      "qty": 1.0,
-      "price": 3.04,
-      "value": 304.0,
-      "pnl": -3.0,
-      "type": "option"
-    }
-  ],
-  "trades": {
-    "last_trade_date": "2026-01-15",
-    "today_trades": "synced",
-    "total_trades_today": 4,
-    "last_trade_symbol": "SPY",
-    "note": "4 trades executed - SPY shares + credit spread positions"
-  },
-  "risk": {
-    "status": "RECOVERING",
-    "total_pl": -39.74,
-    "unrealized_pl": -3.82,
-    "daily_gain": 2.08
+  "meta": {
+    "last_updated": "2026-01-15T13:36:09.369896-05:00",
+    "source": "alpaca_api_direct",
+    "automation_fix_date": "2026-01-15"
   },
   "account": {
-    "current_equity": 4960.26,
-    "total_pl": -39.74,
-    "total_pl_pct": -0.79,
-    "positions_count": 4
+    "equity": 0,
+    "cash": 0,
+    "total_pl": 0,
+    "total_pl_pct": 0,
+    "positions_count": 0
   },
-  "meta": {
-    "last_updated": "2026-01-15T18:01:13.166879+00:00",
-    "last_sync": "2026-01-15T18:01:13.166887+00:00",
-    "sync_mode": "alpaca_api",
-    "note": "Updated after confirming 4 trades executed via Dialogflow"
+  "paper_account": {
+    "equity": 4946.59,
+    "cash": 4260.12,
+    "total_pl": -53.409999999999854,
+    "total_pl_pct": -1.0681999999999972,
+    "positions_count": 6,
+    "win_rate": 0,
+    "win_rate_sample_size": 0,
+    "daily_change": -12.590000000000146
+  },
+  "trades": {
+    "last_trade_date": "2026-01-06",
+    "today_trades": 0
+  },
+  "challenge": {
+    "current_day": 76
   }
 }
