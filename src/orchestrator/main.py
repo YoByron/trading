@@ -322,6 +322,12 @@ class TradingOrchestrator:
             except Exception as e:
                 logger.warning(f"Go ADK adapter init failed (will use Python-only pipeline): {e}")
 
+        # Gate 0: Mental Toughness Coach (CEO FIX Jan 15, 2026)
+        # Mental coach feature not yet implemented - set to None to skip Gate0Psychology checks
+        # Gate0Psychology.evaluate() gracefully handles None mental_coach
+        self.mental_coach = None
+        logger.info("Gate 0: Mental coach disabled (feature not implemented)")
+
         # Initialize LLM-friendly gate pipeline (Dec 2025 refactor)
         # Each gate is <150 lines, independently testable
         self._init_gate_pipeline()
