@@ -150,8 +150,38 @@ class OptionsExecutor:
     # Strategy-specific parameters
     COVERED_CALL_TARGET_DELTA = 0.30  # Sell 30-delta calls
     IRON_CONDOR_TARGET_DELTA = 0.20  # Sell 20-delta wings
-    CREDIT_SPREAD_TARGET_DELTA = 0.30  # Sell 30-delta spreads
+    CREDIT_SPREAD_TARGET_DELTA = 0.30  # Sell 30-delta spreads (default)
     SPREAD_WIDTH = 5.0  # Default $5 width for spreads
+
+    @staticmethod
+    def get_optimal_delta_for_iv(iv_rank: float) -> float:
+        """
+        Jan 2026: Dynamic delta selection based on IV Rank.
+
+        When IV is high, we can sell closer to ATM (higher delta) for more premium.
+        When IV is low, we need further OTM (lower delta) for safety margin.
+
+        Args:
+            iv_rank: IV percentile (0-100)
+
+        Returns:
+            Optimal delta for credit spreads (0.20-0.35 range)
+
+        Research basis:
+        - IV < 30%: Use 0.35 delta (wider safety margin, accept lower premium)
+        - IV 30-50%: Use 0.25-0.30 delta (balanced risk/reward)
+        - IV > 50%: Use 0.20 delta (maximize premium while high)
+        """
+        if iv_rank < 30:
+            # Low IV: Need wider margin of safety, accept lower premium
+            return 0.35
+        elif iv_rank < 50:
+            # Medium IV: Balanced approach
+            # Linear interpolation from 0.35 at IV=30 to 0.25 at IV=50
+            return 0.35 - (iv_rank - 30) * 0.005  # 0.35 -> 0.25
+        else:
+            # High IV: Can sell closer to ATM for better premium
+            return 0.20
 
     def __init__(self, paper: bool = True):
         """

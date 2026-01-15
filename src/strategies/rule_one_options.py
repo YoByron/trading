@@ -30,6 +30,9 @@ import numpy as np
 # Use wrapper for graceful yfinance fallback (CI compatibility)
 from src.utils import yfinance_wrapper as yf
 
+# Jan 2026: RSI filter for entry confirmation
+from src.utils.technical_indicators import calculate_rsi
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -656,6 +659,24 @@ class RuleOneOptionsStrategy:
 
                 if contract.days_to_expiry <= 0:
                     continue
+
+                # ============================================================
+                # JAN 2026: RSI ENTRY FILTER - Avoid selling puts into weakness
+                # ============================================================
+                # For bullish credit spreads/CSPs: RSI > 40 confirms uptrend
+                # RSI < 40 = oversold/weak, risky for bullish positions
+                try:
+                    ticker_data = yf.download(symbol, period="1mo", interval="1d", progress=False)
+                    if ticker_data is not None and len(ticker_data) >= 14:
+                        rsi_value = calculate_rsi(ticker_data["Close"])
+                        if rsi_value < 40:
+                            logger.debug(
+                                f"{symbol}: RSI {rsi_value:.1f} < 40 - skipping (wait for strength)"
+                            )
+                            continue
+                        logger.debug(f"{symbol}: RSI {rsi_value:.1f} OK for bullish entry")
+                except Exception as rsi_err:
+                    logger.debug(f"{symbol}: RSI check failed ({rsi_err}), proceeding anyway")
 
                 annualized_return = (contract.mid / target_strike) * (365 / contract.days_to_expiry)
                 if annualized_return < self.MIN_ANNUALIZED_RETURN:

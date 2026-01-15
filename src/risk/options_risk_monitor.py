@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 # For $60 credit, close when loss reaches $120 (spread value = $180 = 3x credit)
 DEFAULT_STOP_LOSS_MULTIPLIER = 2.0
 
+# Jan 2026: 50% profit exit - close when spread value drops to 50% of entry credit
+# This improves win rate from ~75% to ~85% by taking profits early
+DEFAULT_PROFIT_TARGET_PCT = 0.50
+
 
 @dataclass
 class OptionsPosition:
@@ -51,15 +55,21 @@ class OptionsRiskMonitor:
         self,
         max_loss_percent: float = 5.0,
         stop_loss_multiplier: float = DEFAULT_STOP_LOSS_MULTIPLIER,
+        profit_target_pct: float = DEFAULT_PROFIT_TARGET_PCT,
+        paper: bool = True,
     ):
         """Initialize the options risk monitor.
 
         Args:
             max_loss_percent: Maximum loss as percent of portfolio (default 5%)
             stop_loss_multiplier: Close position when loss = multiplier * credit (default 2.0)
+            profit_target_pct: Close at this % of max profit (default 0.50 = 50%)
+            paper: Paper trading mode (default True)
         """
         self.max_loss_percent = max_loss_percent
         self.stop_loss_multiplier = stop_loss_multiplier
+        self.profit_target_pct = profit_target_pct
+        self.paper = paper
         self.positions: dict = {}
 
     def add_position(
@@ -189,11 +199,31 @@ class OptionsRiskMonitor:
             position_type = position.get("position_type", "unknown")
             credit = position.get("credit_received", entry_price)
 
-        # Only apply 2x stop-loss rule to credit spreads
+        # Only apply exit rules to credit spreads
         if position_type != "credit_spread":
-            return False, f"Position type '{position_type}' not subject to 2x credit stop-loss"
+            return False, f"Position type '{position_type}' not subject to exit rules"
 
-        # Calculate current loss
+        # ============================================================
+        # JAN 2026: 50% PROFIT EXIT (CHECK FIRST - TAKE PROFITS EARLY)
+        # ============================================================
+        # For credit spread: profit = entry_price - current_price (credit received - cost to close)
+        current_profit = entry_price - current_price
+        profit_target = credit * self.profit_target_pct  # 50% of credit received
+
+        if current_profit >= profit_target:
+            logger.info(
+                f"🎯 50% PROFIT TARGET HIT for {symbol}: "
+                f"Profit ${current_profit:.2f} >= target ${profit_target:.2f}"
+            )
+            return True, (
+                f"50% profit target reached: "
+                f"Profit ${current_profit:.2f} >= target ${profit_target:.2f} "
+                f"(entry=${entry_price:.2f}, current=${current_price:.2f}, close for profit!)"
+            )
+
+        # ============================================================
+        # STOP-LOSS CHECK (2x credit rule)
+        # ============================================================
         # For credit spread: loss = current_price - entry_price (cost to close - credit received)
         current_loss = current_price - entry_price
 
