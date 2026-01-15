@@ -169,7 +169,9 @@ def save_trades_to_json(trades: list[dict], date_str: str) -> bool:
         with open(trades_file, "w") as f:
             json.dump(existing_trades, f, indent=2)
 
-        logger.info(f"Saved {new_count} new trades to {trades_file} (total: {len(existing_trades)})")
+        logger.info(
+            f"Saved {new_count} new trades to {trades_file} (total: {len(existing_trades)})"
+        )
         return True
 
     except Exception as e:
@@ -266,7 +268,7 @@ def main() -> int:
         logger.info(f"✅ SYNC COMPLETE: {len(trades)} trades from Alpaca")
         logger.info(f"   Date: {date_str}")
         logger.info(f"   Trades file: data/trades_{date_str}.json")
-        logger.info(f"   System state: updated")
+        logger.info("   System state: updated")
     else:
         logger.warning("⚠️ SYNC PARTIAL - check logs")
     logger.info("=" * 60)
