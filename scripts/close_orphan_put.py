@@ -47,7 +47,7 @@ def close_orphan_put():
     current_price = float(orphan_position.current_price)
     unrealized_pl = float(orphan_position.unrealized_pl)
 
-    print(f"📊 Found orphan position:")
+    print("📊 Found orphan position:")
     print(f"   Symbol: {orphan_symbol}")
     print(f"   Qty: {qty}")
     print(f"   Current Price: ${current_price:.2f}")
@@ -55,21 +55,21 @@ def close_orphan_put():
     print()
 
     # Close the position by selling
-    from alpaca.trading.requests import MarketOrderRequest
     from alpaca.trading.enums import OrderSide, TimeInForce
+    from alpaca.trading.requests import MarketOrderRequest
 
     order_request = MarketOrderRequest(
         symbol=orphan_symbol,
         qty=qty,
         side=OrderSide.SELL,
-        time_in_force=TimeInForce.GTC  # Good til canceled - will execute at next market open
+        time_in_force=TimeInForce.GTC,  # Good til canceled - will execute at next market open
     )
 
     print(f"🔄 Submitting SELL order for {qty} {orphan_symbol}...")
 
     try:
         order = client.submit_order(order_request)
-        print(f"✅ Order submitted successfully!")
+        print("✅ Order submitted successfully!")
         print(f"   Order ID: {order.id}")
         print(f"   Status: {order.status}")
         print(f"   Expected profit: ~${unrealized_pl:.2f}")
