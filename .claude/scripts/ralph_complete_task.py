@@ -44,7 +44,9 @@ def complete_task(task_id: str, summary: str) -> bool:
         return False
 
     # Update metadata
-    prd["metadata"]["tasks_completed_this_session"] = prd["metadata"].get("tasks_completed_this_session", 0) + 1
+    prd["metadata"]["tasks_completed_this_session"] = (
+        prd["metadata"].get("tasks_completed_this_session", 0) + 1
+    )
     prd["metadata"]["last_task_completed"] = task_id
     prd["metadata"]["last_iteration_at"] = datetime.now().isoformat()
     prd["last_updated"] = datetime.now().strftime("%Y-%m-%d")

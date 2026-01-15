@@ -82,8 +82,8 @@ class TradingScreenshotCapture:
                 # Launch browser in headless mode
                 browser = await p.chromium.launch(headless=True)
                 context = await browser.new_context(
-                    viewport={'width': 1920, 'height': 1080},
-                    user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
                 )
                 page = await context.new_page()
 
@@ -98,7 +98,7 @@ class TradingScreenshotCapture:
                 # 3. OR use API-based portfolio visualization
 
                 # For now, capture the portfolio summary from API instead
-                print(f"⚠️  Direct dashboard login requires OAuth - using API-based capture instead")
+                print("⚠️  Direct dashboard login requires OAuth - using API-based capture instead")
 
                 # Alternative: Capture public progress dashboard or use Alpaca API visualization
                 await browser.close()
@@ -113,8 +113,8 @@ class TradingScreenshotCapture:
     async def _capture_api_dashboard(self, account_type: str) -> Path | None:
         """Generate and capture API-based dashboard visualization."""
         import json
-        import urllib.request
         import ssl
+        import urllib.request
 
         try:
             # Query Alpaca API
@@ -149,12 +149,14 @@ class TradingScreenshotCapture:
             # Screenshot the HTML
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
+                page = await browser.new_page(viewport={"width": 1920, "height": 1080})
                 await page.goto(f"file://{temp_html.absolute()}")
 
                 # Save screenshot
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                screenshot_path = self.output_dir / "alpaca" / f"{account_type}_dashboard_{timestamp}.png"
+                screenshot_path = (
+                    self.output_dir / "alpaca" / f"{account_type}_dashboard_{timestamp}.png"
+                )
                 await page.screenshot(path=str(screenshot_path), full_page=True)
 
                 await browser.close()
@@ -181,7 +183,7 @@ class TradingScreenshotCapture:
         # Calculate total P/L from initial capital
         initial_capital = 5000 if account_type == "paper" else 100
         total_pl = equity - initial_capital
-        total_pl_pct = (total_pl / initial_capital * 100)
+        total_pl_pct = total_pl / initial_capital * 100
 
         positions_html = ""
         for pos in positions:
@@ -298,7 +300,7 @@ class TradingScreenshotCapture:
                 <div class="metric-label">Portfolio Value</div>
                 <div class="metric-value">${equity:,.2f}</div>
                 <div class="metric-change" style="color: {change_color};">
-                    {'+' if daily_change >= 0 else ''}{daily_change:.2f} ({daily_pct:+.2f}%) today
+                    {"+" if daily_change >= 0 else ""}{daily_change:.2f} ({daily_pct:+.2f}%) today
                 </div>
             </div>
 
@@ -351,7 +353,7 @@ class TradingScreenshotCapture:
         try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
+                page = await browser.new_page(viewport={"width": 1920, "height": 1080})
 
                 # Navigate to GitHub Pages dashboard
                 url = "https://igorganapolsky.github.io/trading/"
@@ -362,7 +364,9 @@ class TradingScreenshotCapture:
 
                 # Save screenshot
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                screenshot_path = self.output_dir / "dashboard" / f"progress_dashboard_{timestamp}.png"
+                screenshot_path = (
+                    self.output_dir / "dashboard" / f"progress_dashboard_{timestamp}.png"
+                )
                 await page.screenshot(path=str(screenshot_path), full_page=True)
 
                 await browser.close()
@@ -379,10 +383,10 @@ class TradingScreenshotCapture:
         results = {}
 
         # Capture Alpaca dashboards
-        results['alpaca_paper'] = await self.capture_alpaca_dashboard("paper")
+        results["alpaca_paper"] = await self.capture_alpaca_dashboard("paper")
 
         # Capture progress dashboard
-        results['progress'] = await self.capture_progress_dashboard()
+        results["progress"] = await self.capture_progress_dashboard()
 
         return results
 
@@ -400,7 +404,7 @@ class TradingScreenshotCapture:
         try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
+                page = await browser.new_page(viewport={"width": 1920, "height": 1080})
 
                 # Generate summary HTML
                 html = self._generate_summary_html(valid_screenshots)
@@ -430,7 +434,7 @@ class TradingScreenshotCapture:
         """Generate HTML for daily summary."""
         images_html = ""
         for name, path in screenshots.items():
-            title = name.replace('_', ' ').title()
+            title = name.replace("_", " ").title()
             images_html += f"""
             <div class="screenshot">
                 <h2>{title}</h2>
@@ -493,12 +497,12 @@ async def main():
         "--dashboard",
         choices=["alpaca", "progress", "all"],
         default="all",
-        help="Which dashboard to capture (default: all)"
+        help="Which dashboard to capture (default: all)",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="Output directory for screenshots (default: data/screenshots)"
+        help="Output directory for screenshots (default: data/screenshots)",
     )
     args = parser.parse_args()
 
@@ -510,25 +514,25 @@ async def main():
     screenshots = {}
 
     if args.dashboard == "alpaca" or args.dashboard == "all":
-        screenshots['alpaca_paper'] = await capturer.capture_alpaca_dashboard("paper")
+        screenshots["alpaca_paper"] = await capturer.capture_alpaca_dashboard("paper")
 
     if args.dashboard == "progress" or args.dashboard == "all":
-        screenshots['progress'] = await capturer.capture_progress_dashboard()
+        screenshots["progress"] = await capturer.capture_progress_dashboard()
 
     # Create daily summary if capturing all
     if args.dashboard == "all":
         await capturer.create_daily_summary(screenshots)
 
     # Print summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📸 Screenshot Capture Summary")
-    print("="*60)
+    print("=" * 60)
     for name, path in screenshots.items():
         if path:
             print(f"✅ {name}: {path}")
         else:
             print(f"❌ {name}: Failed")
-    print("="*60)
+    print("=" * 60)
 
     # Cowork integration instructions
     print("\n💡 To use with Anthropic Cowork:")
