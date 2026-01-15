@@ -211,10 +211,9 @@ def close_trade(trade_id: str, exit_price: float, exit_date: str = None) -> bool
             trade["outcome"] = outcome
 
             # Recalculate stats
-            paper_phase_start = (
-                data.get("stats", {}).get("paper_phase_start")
-                or data.get("metadata", {}).get("paper_phase_start")
-            )
+            paper_phase_start = data.get("stats", {}).get("paper_phase_start") or data.get(
+                "metadata", {}
+            ).get("paper_phase_start")
             stats = calculate_stats(trades, paper_phase_start)
             update_trades_file(data, stats)
 
@@ -281,10 +280,9 @@ def add_trade(
             trade[key] = value
 
     trades.append(trade)
-    paper_phase_start = (
-        data.get("stats", {}).get("paper_phase_start")
-        or data.get("metadata", {}).get("paper_phase_start")
-    )
+    paper_phase_start = data.get("stats", {}).get("paper_phase_start") or data.get(
+        "metadata", {}
+    ).get("paper_phase_start")
     stats = calculate_stats(trades, paper_phase_start)
     update_trades_file(data, stats)
 
@@ -303,10 +301,9 @@ def main():
     data = load_trades()
     trades = data.get("trades", [])
     # Get paper phase start from existing stats or metadata
-    paper_phase_start = (
-        data.get("stats", {}).get("paper_phase_start")
-        or data.get("metadata", {}).get("paper_phase_start")
-    )
+    paper_phase_start = data.get("stats", {}).get("paper_phase_start") or data.get(
+        "metadata", {}
+    ).get("paper_phase_start")
     stats = calculate_stats(trades, paper_phase_start)
 
     display_stats(stats)
