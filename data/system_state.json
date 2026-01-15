@@ -1,33 +1,33 @@
 {
-  "last_updated": "2026-01-15T20:07:42.174099",
+  "last_updated": "2026-01-15T15:12:36.359247",
   "portfolio": {
-    "equity": 4982.15,
+    "equity": 4983.12,
     "cash": 4260.12
   },
   "paper_account": {
-    "equity": 4982.15,
+    "equity": 4983.12,
     "cash": 4260.12,
-    "buying_power": 8919.27,
-    "total_pl": -17.850000000000364,
-    "total_pl_pct": -0.36,
+    "buying_power": 8919.24,
+    "total_pl": -16.88,
+    "total_pl_pct": -0.34,
     "positions_count": 6,
-    "daily_change": 22.969999999999345
+    "daily_change": 23.94
   },
   "positions": [
     {
       "symbol": "SPY",
       "qty": 0.576037269,
-      "price": 692.72,
-      "value": 399.032537,
-      "pnl": -0.927462,
+      "price": 692.675,
+      "value": 399.006615,
+      "pnl": -0.953384,
       "type": "stock"
     },
     {
       "symbol": "SPY260220P00565000",
       "qty": 1.0,
-      "price": 0.49,
-      "value": 49.0,
-      "pnl": 2.0,
+      "price": 0.5,
+      "value": 50.0,
+      "pnl": 3.0,
       "type": "option"
     },
     {
@@ -49,17 +49,17 @@
     {
       "symbol": "SPY260220P00600000",
       "qty": -1.0,
-      "price": 0.84,
-      "value": -84.0,
-      "pnl": -6.0,
+      "price": 0.85,
+      "value": -85.0,
+      "pnl": -7.0,
       "type": "option"
     },
     {
       "symbol": "SPY260220P00660000",
       "qty": 1.0,
-      "price": 3.35,
-      "value": 335.0,
-      "pnl": 28.0,
+      "price": 3.36,
+      "value": 336.0,
+      "pnl": 29.0,
       "type": "option"
     }
   ],
@@ -70,14 +70,14 @@
     "last_trade_symbol": "SPY"
   },
   "risk": {
-    "status": "WARNING - NEGATIVE P/L",
-    "total_pl": -17.850000000000364,
-    "unrealized_pl": 23.072538
+    "status": "RECOVERING",
+    "total_pl": -16.88,
+    "unrealized_pl": 24.05
   },
   "account": {
-    "current_equity": 4982.15,
-    "total_pl": -17.850000000000364,
-    "total_pl_pct": -0.36,
+    "current_equity": 4983.12,
+    "total_pl": -16.88,
+    "total_pl_pct": -0.34,
     "positions_count": 6
   }
 }
