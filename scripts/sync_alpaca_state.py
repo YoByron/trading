@@ -158,11 +158,20 @@ def update_system_state(alpaca_data: dict | None) -> None:
             state["paper_account"]["cash"] = alpaca_data.get("cash", 0)
             state["paper_account"]["buying_power"] = alpaca_data.get("buying_power", 0)
             state["paper_account"]["positions_count"] = alpaca_data.get("positions_count", 0)
-            state["paper_account"]["starting_balance"] = state["paper_account"].get("starting_balance", 5000.0)
-            state["paper_account"]["total_pl"] = current - state["paper_account"]["starting_balance"]
+            state["paper_account"]["starting_balance"] = state["paper_account"].get(
+                "starting_balance", 5000.0
+            )
+            state["paper_account"]["total_pl"] = (
+                current - state["paper_account"]["starting_balance"]
+            )
             state["paper_account"]["total_pl_pct"] = (
-                ((current - state["paper_account"]["starting_balance"]) / state["paper_account"]["starting_balance"]) * 100
-                if state["paper_account"]["starting_balance"] > 0 else 0
+                (
+                    (current - state["paper_account"]["starting_balance"])
+                    / state["paper_account"]["starting_balance"]
+                )
+                * 100
+                if state["paper_account"]["starting_balance"] > 0
+                else 0
             )
 
         # CRITICAL: Store actual positions in performance.open_positions
