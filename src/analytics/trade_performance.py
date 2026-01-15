@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Performance thresholds from CLAUDE.md math validation
 WIN_RATE_BREAKEVEN = 0.88  # 88% needed for 7:1 risk/reward
-WIN_RATE_TARGET = 0.80     # 80% target with early exits
+WIN_RATE_TARGET = 0.80  # 80% target with early exits
 PROFIT_FACTOR_TARGET = 1.5
 MIN_TRADES_FOR_SIGNIFICANCE = 30  # Per LL-207
 
@@ -136,7 +136,9 @@ class TradePerformanceTracker:
         """
         # Generate trade ID if not provided
         if "trade_id" not in trade_data:
-            trade_data["trade_id"] = f"{trade_data['symbol']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            trade_data["trade_id"] = (
+                f"{trade_data['symbol']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
 
         # Extract underlying from option symbol if needed
         if "underlying" not in trade_data:
@@ -150,11 +152,7 @@ class TradePerformanceTracker:
         return trade
 
     def close_trade(
-        self,
-        trade_id: str,
-        exit_date: str,
-        exit_cost: float,
-        exit_reason: str = "manual"
+        self, trade_id: str, exit_date: str, exit_cost: float, exit_reason: str = "manual"
     ) -> TradeRecord | None:
         """
         Close an open trade and calculate P/L.
@@ -237,9 +235,8 @@ class TradePerformanceTracker:
 
         # Expectancy = (win_rate * avg_win) - (loss_rate * avg_loss)
         if closed_trades:
-            metrics.expectancy = (
-                (metrics.win_rate * metrics.avg_winner) -
-                ((1 - metrics.win_rate) * metrics.avg_loser)
+            metrics.expectancy = (metrics.win_rate * metrics.avg_winner) - (
+                (1 - metrics.win_rate) * metrics.avg_loser
             )
 
         # Validation checks
@@ -265,8 +262,14 @@ class TradePerformanceTracker:
         metrics = self.calculate_metrics()
 
         status = "PROFITABLE" if metrics.is_profitable else "NOT PROFITABLE"
-        win_rate_status = "OK" if metrics.meets_target_win_rate else f"BELOW {WIN_RATE_TARGET:.0%} TARGET"
-        sample_status = "ADEQUATE" if metrics.sample_size_adequate else f"NEED {MIN_TRADES_FOR_SIGNIFICANCE} TRADES"
+        win_rate_status = (
+            "OK" if metrics.meets_target_win_rate else f"BELOW {WIN_RATE_TARGET:.0%} TARGET"
+        )
+        sample_status = (
+            "ADEQUATE"
+            if metrics.sample_size_adequate
+            else f"NEED {MIN_TRADES_FOR_SIGNIFICANCE} TRADES"
+        )
 
         return f"""
 ═══════════════════════════════════════════════════════════
