@@ -72,7 +72,7 @@ def check_workflow_tickers() -> list[str]:
     ticker_patterns = [
         r'TICKERS="([^"]+)"',  # TICKERS="SPY IWM"
         r"--symbol\s+(\w+)",  # --symbol SPY
-        r'for\s+TICKER\s+in\s+([A-Z\s]+)',  # for TICKER in SPY IWM
+        r"for\s+TICKER\s+in\s+([A-Z\s]+)",  # for TICKER in SPY IWM
     ]
 
     for workflow in workflow_dir.glob("*.yml"):
