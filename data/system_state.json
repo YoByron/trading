@@ -99,5 +99,13 @@
   "meta": {
     "last_updated": "2026-01-16T17:19:30.455278+00:00",
     "trade_sync": "alpaca_api"
+  },
+  "trailing_stops": {
+    "last_set": "2026-01-16T12:34:35.593178",
+    "stops_active": 1,
+    "positions_skipped": 0,
+    "value_protected": 500.0,
+    "default_trail_pct": 0.1,
+    "options_trail_pct": 0.2
   }
 }
