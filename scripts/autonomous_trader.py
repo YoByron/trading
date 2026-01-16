@@ -179,11 +179,8 @@ def is_market_holiday() -> bool:
             next_open_date = today_utc  # Assume not holiday if we can't parse
 
         # If next open is today, it's not a holiday - just waiting for 9:30 AM
-        if next_open_date == today_utc:
-            return False
-
-        # Next open is in the future (tomorrow+), so today is a holiday
-        return True
+        # If next open is in the future (tomorrow+), today is a holiday
+        return next_open_date != today_utc
     except Exception as e:
         logger = setup_logging()
         logger.warning(f"Could not check market holiday status: {e}. Assuming not a holiday.")
