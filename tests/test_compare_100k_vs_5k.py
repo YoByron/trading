@@ -12,7 +12,6 @@ from unittest.mock import patch
 # Skip if dependencies not available
 try:
     from scripts.compare_100k_vs_5k import (
-        load_archived_trades,
         analyze_100k_patterns,
         load_current_state,
     )
