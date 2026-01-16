@@ -2325,5 +2325,57 @@
       "optionsamurai.com",
       "alpaca.markets/learn"
     ]
+  },
+  {
+    "id": "lesson_20260116_174500_learning_from_100k",
+    "timestamp": "2026-01-16T17:45:00.000000",
+    "title": "LL-228: How to Learn Better from the $100K Paper Account (Jan 16, 2026)",
+    "category": "strategic_learning",
+    "severity": "high",
+    "description": "Comprehensive analysis of what the $100K paper account did right and what we did wrong when switching to $5K. The $100K account used SPY/AMD premium selling, iron condors with 1.5:1 reward/risk, and simplified to SPY focus. We broke all these patterns: picked SOFI, used naked puts, 96% position sizing, traded through earnings. This lesson documents the learning gap and establishes processes to prevent future knowledge loss.",
+    "what_worked_100k": [
+      "SPY/AMD put selling (Dec 10: $5.90 AMD, $6.38 SPY premiums)",
+      "Iron condors with defined risk (Dec 19: 1.5:1 reward/risk)",
+      "Simplified to SPY focus (Dec 30 consolidation)",
+      "+$16,661 single day gain on concentrated SPY (Jan 7)"
+    ],
+    "what_we_broke_5k": [
+      "Picked SOFI instead of proven SPY/AMD",
+      "Used naked puts instead of spreads",
+      "96% position sizing (catastrophic risk)",
+      "Traded through earnings (never done on $100K)"
+    ],
+    "prevention": "1. Enforce SPY/IWM whitelist - no new tickers without CEO approval. 2. Spreads only - no naked options. 3. Max 10% position size. 4. Mandatory trade journaling within 24 hours. 5. Weekly strategy review vs $100K patterns.",
+    "data_sources_to_query": [
+      "Alpaca trade history (90 days)",
+      "Git history (commit messages)",
+      "data/archive/ trade files",
+      "System state snapshots"
+    ],
+    "key_metrics": {
+      "win_rate_target": ">55%",
+      "avg_win_loss_ratio": ">1.5",
+      "max_position_size": "<10%",
+      "ticker_whitelist": [
+        "SPY",
+        "IWM"
+      ],
+      "dte_range": "30-45 days",
+      "strategy_type": "spreads_only"
+    },
+    "tags": [
+      "learning",
+      "100k_lessons",
+      "strategy_comparison",
+      "knowledge_capture",
+      "phil_town",
+      "critical"
+    ],
+    "action_items": [
+      "Run analyze-100k-history workflow to extract more data",
+      "Compare closed position P&L from $100K vs $5K",
+      "Create strategy drift alert workflow",
+      "Backtest $5K strategy against $100K data"
+    ]
   }
 ]
