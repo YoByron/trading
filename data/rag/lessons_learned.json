@@ -2461,5 +2461,34 @@
       "Consider AMD as proven secondary underlying",
       "Fix analyze-100k-history workflow commit step (needs GH_PAT)"
     ]
+  },
+  {
+    "id": "lesson_20260116_181500_sync_improvement",
+    "timestamp": "2026-01-16T18:15:00.000000",
+    "title": "LL-230: Self-Healing Sync Improvements (Jan 16, 2026)",
+    "category": "system_improvement",
+    "severity": "medium",
+    "description": "CEO asked 'Why do we get out of sync? Is our system self-healing?' Analysis revealed: (1) Sync ran every 30 minutes, causing up to 29-minute data staleness, (2) The today_trades field was set to string 'synced' instead of actual count. Fixed by: increasing sync frequency to 5 minutes during market hours, and fixing the today_trades bug to return actual filled order count.",
+    "root_cause": "30-minute cron interval was too infrequent. No real-time push mechanism from Alpaca (would require server for webhooks).",
+    "prevention": "1. Monitor sync workflow success rate. 2. Add staleness alert if system_state.json > 10 minutes old. 3. Consider Alpaca webhooks when we have server infrastructure.",
+    "changes_made": [
+      "sync-alpaca-status.yml: cron changed from */30 to */5",
+      "Fixed today_trades to return int instead of 'synced' string",
+      "Added sync_frequency_minutes to meta for tracking"
+    ],
+    "self_healing_assessment": {
+      "data_sync": "YES - runs automatically every 5 min",
+      "pr_creation": "YES - creates and merges PRs",
+      "stale_detection": "NO - needs alert workflow",
+      "realtime_sync": "NO - requires server for webhooks",
+      "failure_recovery": "PARTIAL - retries but no escalation"
+    },
+    "tags": [
+      "sync",
+      "self_healing",
+      "infrastructure",
+      "alpaca",
+      "system_improvement"
+    ]
   }
 ]
