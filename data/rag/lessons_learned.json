@@ -2098,5 +2098,53 @@
       "data-sync",
       "display-bug"
     ]
+  },
+  {
+    "id": "lesson_20260116_174500_meta_learning_patterns",
+    "timestamp": "2026-01-16T17:45:00.000000",
+    "title": "Meta-Learning: Patterns from 28 RAG Lessons (Jan 16, 2026)",
+    "category": "strategic_review",
+    "severity": "informational",
+    "description": "Analyzed 28 RAG lessons to extract meta-patterns. Key findings: (1) Critical bugs are the most common issue (3 lessons), often involving hardcoded values or wrong data sources. (2) Trust violations occurred twice - making claims without verification. (3) $1553.99 total financial impact recorded. (4) Top recurring themes: verification before claiming, single source of truth (Alpaca API -> system_state.json), Phil Town Rule #1 compliance, stop-loss enforcement. (5) 10 critical severity lessons indicate system has high-stakes failure modes that need continuous monitoring.",
+    "patterns_identified": [
+      "Hardcoded values cause silent failures (SPY price, data keys)",
+      "continue-on-error flags mask critical issues - 27 occurrences in daily-trading.yml",
+      "Data format changes break consumers - always update ALL consumers",
+      "Trust violations happen when reporting cached data as current",
+      "74 days of zero trades resulted from complexity, not code bugs",
+      "Auto-format workflow helps but CI can fail on timing race conditions"
+    ],
+    "successful_patterns": [
+      "SPY bull put spreads are profitable and aligned with $100K success",
+      "Pre-trade stop-loss verification (verify_stops_in_place.py) enforces Rule #1",
+      "system_state.json as single source of truth eliminates data sync issues",
+      "GitHub Actions workflows enable automated verification and alerts"
+    ],
+    "recommendations": [
+      "Continue SPY spread strategy - proven profitable",
+      "Never add to losing positions",
+      "Query RAG lessons before every trade decision",
+      "Verify all claims against Alpaca API before reporting",
+      "Run monthly audits for stale branches, orphan issues, dead code"
+    ],
+    "tags": [
+      "meta-learning",
+      "patterns",
+      "strategic_review",
+      "rag_analysis",
+      "continuous_improvement"
+    ],
+    "metrics": {
+      "total_lessons": 28,
+      "critical_severity": 10,
+      "financial_impact_recorded": 1553.99,
+      "top_categories": [
+        "critical_bug",
+        "bug_fix",
+        "cleanup",
+        "trust_violation",
+        "strategic_review"
+      ]
+    }
   }
 ]
