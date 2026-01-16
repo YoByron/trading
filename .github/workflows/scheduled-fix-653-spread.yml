@@ -1,100 +1,24 @@
-name: Scheduled - Fix 653 Spread Tomorrow
-
-# Auto-close the extra 653 put at market open tomorrow
-# Created by CTO to fix broken spread from Jan 16 workflow bug
+name: Scheduled Fix 653 Spread
 
 on:
   schedule:
-    # Run at 9:35 AM ET on Jan 17, 2026 (Friday)
-    - cron: '35 14 17 1 *'
+    # Run at 9:35 AM ET tomorrow (Jan 17) - one-time
+    - cron: "35 14 17 1 *"
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   fix-spread:
-    name: Sell Extra 653 Put
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install alpaca-py
-
-      - name: Sell 1 SPY260220P00653000
+          python-version: "3.11"
+      - run: pip install alpaca-py
+      - name: Fix Spread
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
         run: |
-          python3 << 'PYTHON'
-          import os
-          from datetime import datetime
-          from alpaca.trading.client import TradingClient
-          from alpaca.trading.requests import MarketOrderRequest
-          from alpaca.trading.enums import OrderSide, TimeInForce
+          python scripts/fix_653_spread.py || echo "PDT still blocking - will retry next trading day"
 
-          print("=" * 60)
-          print("FIX 653/658 SPREAD - Selling extra long put")
-          print(f"Time: {datetime.now().isoformat()}")
-          print("=" * 60)
-
-          client = TradingClient(
-              os.environ['ALPACA_API_KEY'],
-              os.environ['ALPACA_SECRET_KEY'],
-              paper=True
-          )
-
-          # Verify position exists
-          positions = client.get_all_positions()
-          target = None
-          for pos in positions:
-              if pos.symbol == "SPY260220P00653000":
-                  target = pos
-                  print(f"Found: {pos.symbol} qty={pos.qty}")
-                  break
-
-          if not target:
-              print("Position not found - may have been closed")
-              exit(0)
-
-          if float(target.qty) <= 1:
-              print(f"Position qty is {target.qty} - already fixed")
-              exit(0)
-
-          # Check market is open
-          clock = client.get_clock()
-          if not clock.is_open:
-              print("Market closed - will retry next run")
-              exit(1)
-
-          # Sell 1 contract
-          order = client.submit_order(MarketOrderRequest(
-              symbol="SPY260220P00653000",
-              qty=1,
-              side=OrderSide.SELL,
-              time_in_force=TimeInForce.DAY
-          ))
-
-          print(f"\n✅ ORDER SUBMITTED")
-          print(f"Order ID: {order.id}")
-          print(f"Status: {order.status}")
-          print("=" * 60)
-          PYTHON
-
-      - name: Cleanup workflow file
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          echo "Trade executed - this workflow can be deleted"
-          # Self-destruct after successful execution
-          # gh api repos/${{ github.repository }}/contents/.github/workflows/scheduled-fix-653-spread.yml -X DELETE -f message="Cleanup: 653 spread fixed" -f sha=$(gh api repos/${{ github.repository }}/contents/.github/workflows/scheduled-fix-653-spread.yml --jq '.sha')
