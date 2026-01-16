@@ -48,7 +48,7 @@ class VertexRAG:
         self._client = None
         self._corpus = None
         self._project_id = self._get_project_id()
-        self._location = os.getenv("VERTEX_AI_LOCATION", "us-central1")
+        self._location = os.getenv("VERTEX_AI_LOCATION", "europe-west4")
         self._initialized = False
 
         if not self._project_id:
