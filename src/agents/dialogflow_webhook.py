@@ -110,7 +110,9 @@ if VERTEX_RAG_AVAILABLE:
         if vertex_rag.is_initialized:
             logger.info("✅ Vertex AI RAG initialized (primary - semantic search)")
         else:
-            vertex_rag_init_error = "Vertex AI RAG not initialized - check GCP credentials/permissions"
+            vertex_rag_init_error = (
+                "Vertex AI RAG not initialized - check GCP credentials/permissions"
+            )
             logger.warning(vertex_rag_init_error)
             vertex_rag = None
     except ImportError as e:
@@ -1531,7 +1533,7 @@ async def health():
 async def diagnostics():
     """Detailed diagnostic information for debugging Vertex AI RAG issues."""
     import os
-    
+
     return {
         "vertex_ai": {
             "enabled": vertex_rag is not None,
@@ -1541,8 +1543,10 @@ async def diagnostics():
                 "GOOGLE_CLOUD_PROJECT": os.getenv("GOOGLE_CLOUD_PROJECT", "NOT SET"),
                 "VERTEX_AI_LOCATION": os.getenv("VERTEX_AI_LOCATION", "NOT SET"),
                 "GCP_PROJECT_ID": os.getenv("GCP_PROJECT_ID", "NOT SET"),
-                "GOOGLE_APPLICATION_CREDENTIALS": "SET" if os.getenv("GOOGLE_APPLICATION_CREDENTIALS") else "NOT SET",
-            }
+                "GOOGLE_APPLICATION_CREDENTIALS": "SET"
+                if os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+                else "NOT SET",
+            },
         },
         "local_rag": {
             "lessons_loaded": len(local_rag.lessons) if local_rag else 0,
@@ -1551,7 +1555,7 @@ async def diagnostics():
         "system": {
             "python_path": os.getenv("PYTHONPATH", "NOT SET"),
             "working_dir": os.getcwd(),
-        }
+        },
     }
 
 
