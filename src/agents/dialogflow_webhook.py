@@ -1152,6 +1152,7 @@ def format_lessons_response(lessons: list, query: str) -> str:
 def query_trades(query: str, limit: int = 10) -> list[dict]:
     """Query trade history from local JSON files OR GitHub API."""
     import json
+
     import requests
 
     trades = []
@@ -1198,6 +1199,7 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
                 resp = requests.get(github_url, timeout=10)
                 if resp.status_code == 200:
                     import base64
+
                     content = base64.b64decode(resp.json()["content"]).decode("utf-8")
                     state = json.loads(content)
                     trade_history = state.get("trade_history", [])
@@ -1228,7 +1230,6 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
     except Exception as e:
         logger.error(f"Trade query failed: {e}")
         return []
-
 
 
 def format_trades_response(trades: list, query: str) -> str:
