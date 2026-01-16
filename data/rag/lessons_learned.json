@@ -2081,5 +2081,22 @@
       "alpaca"
     ],
     "commit": "3e69ad0e"
+  },
+  {
+    "id": "LL-230",
+    "title": "Dashboard LIVE Account Todays P/L Showing Zero",
+    "category": "data-management",
+    "severity": "medium",
+    "description": "Progress Dashboard showed $0.00 for LIVE Account Todays P/L while PAPER showed correct +$20.83",
+    "root_cause": "system_state.json account section (LIVE) missing daily_change field that exists in paper_account section",
+    "fix": "When LIVE and PAPER share same Alpaca account (same equity), mirror paper_account.daily_change to LIVE Todays P/L in generate_world_class_dashboard_enhanced.py",
+    "prevention": "Compare system_state.json sections when debugging dashboard discrepancies. Account sections may have different field names for same data.",
+    "created": "2026-01-16T12:36:31.538242",
+    "tags": [
+      "dashboard",
+      "system_state",
+      "data-sync",
+      "display-bug"
+    ]
   }
 ]
