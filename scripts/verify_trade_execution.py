@@ -35,7 +35,7 @@ except ImportError:
 
 def check_system_state_trades(date_str: str) -> dict:
     """Check system_state.json for trade evidence - PRIMARY CHECK.
-    
+
     This is the source of truth, synced from Alpaca API.
     """
     result = {
@@ -58,30 +58,30 @@ def check_system_state_trades(date_str: str) -> dict:
             state = json.load(f)
 
         result["state_exists"] = True
-        
+
         # Check trades section (source of truth)
         trades = state.get("trades", {})
-        result["trades_today"] = trades.get("today_trades", 0) or trades.get("total_trades_today", 0)
+        result["trades_today"] = trades.get("today_trades", 0) or trades.get(
+            "total_trades_today", 0
+        )
         result["last_trade_date"] = trades.get("last_trade_date")
-        
+
         # Check paper account for additional context
         paper = state.get("paper_account", {})
         result["daily_change"] = paper.get("daily_change", 0.0)
         result["positions_count"] = paper.get("positions_count", 0)
-        
+
         # Verification logic:
         # - If last_trade_date matches today, trades executed
         # - If positions_count > 0 and daily_change != 0, activity happened
         # - If trades_today > 0, trades definitely executed
-        
-        if result["last_trade_date"] == date_str:
-            result["passed"] = True
-        elif result["trades_today"] > 0:
+
+        if result["last_trade_date"] == date_str or result["trades_today"] > 0:
             result["passed"] = True
         elif result["positions_count"] > 0:
             # Has positions, so trading is active (may just be no NEW trades today)
             result["passed"] = True
-            
+
     except Exception as e:
         result["error"] = str(e)
 
@@ -98,6 +98,7 @@ def check_alpaca_orders(date_str: str) -> dict:
 
     try:
         from src.utils.alpaca_client import get_alpaca_credentials
+
         api_key, api_secret = get_alpaca_credentials()
     except ImportError:
         api_key = os.getenv("ALPACA_API_KEY")
@@ -139,7 +140,7 @@ def check_alpaca_orders(date_str: str) -> dict:
 
 def verify_execution(date_str: str = None, alert_on_failure: bool = False) -> bool:
     """Main verification function.
-    
+
     Uses system_state.json as primary source of truth (synced from Alpaca).
     Falls back to direct Alpaca API check if system_state unavailable.
     """
@@ -157,27 +158,27 @@ def verify_execution(date_str: str = None, alert_on_failure: bool = False) -> bo
     # PRIMARY CHECK: system_state.json (source of truth)
     print("📊 Check 1: System State (Primary - Alpaca Synced)")
     state_result = check_system_state_trades(date_str)
-    
+
     if state_result["error"]:
         print(f"   ⚠️  {state_result['error']}")
     else:
-        print(f"   State file exists: ✅")
+        print("   State file exists: ✅")
         print(f"   Trades today: {state_result['trades_today']}")
         print(f"   Last trade date: {state_result['last_trade_date'] or 'N/A'}")
         print(f"   Daily change: ${state_result['daily_change']:.2f}")
         print(f"   Positions: {state_result['positions_count']}")
-        
+
         if state_result["passed"]:
-            print(f"   ✅ PASSED - Trading activity confirmed")
+            print("   ✅ PASSED - Trading activity confirmed")
             verification_passed = True
         else:
-            print(f"   ⚠️  No trades detected in system_state")
+            print("   ⚠️  No trades detected in system_state")
     print()
 
     # SECONDARY CHECK: Direct Alpaca API query
     print("📡 Check 2: Alpaca API (Secondary Verification)")
     alpaca_result = check_alpaca_orders(date_str)
-    
+
     if alpaca_result["error"]:
         print(f"   ⚠️  {alpaca_result['error']}")
     elif alpaca_result["orders_found"] > 0:
