@@ -8,120 +8,43 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
-      - name: Install dependencies
-        run: pip install alpaca-py requests
-          
-      - name: Sync Trades from Alpaca
+      - run: pip install alpaca-py
+      - name: Sync
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
         run: |
           python3 << 'EOF'
-          import json
-          import os
+          import json, os
           from datetime import datetime, timedelta
           from pathlib import Path
           from alpaca.trading.client import TradingClient
           from alpaca.trading.requests import GetOrdersRequest
           from alpaca.trading.enums import QueryOrderStatus
           
-          client = TradingClient(
-              os.environ['ALPACA_API_KEY'],
-              os.environ['ALPACA_SECRET_KEY'],
-              paper=True
-          )
-          
-          clock = client.get_clock()
-          print(f"Market open: {clock.is_open}")
-          
+          client = TradingClient(os.environ['ALPACA_API_KEY'], os.environ['ALPACA_SECRET_KEY'], paper=True)
           account = client.get_account()
-          print(f"Account equity: ${account.equity}")
           
-          # Fetch recent filled orders with error handling
-          try:
-              request = GetOrdersRequest(
-                  status=QueryOrderStatus.CLOSED,
-                  after=datetime.now() - timedelta(days=30),
-                  limit=100
-              )
-              orders = client.get_orders(filter=request)
-          except Exception as e:
-              print(f"Warning: Could not fetch orders: {e}")
-              orders = []
+          orders = client.get_orders(filter=GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=100))
+          trades = [{"id": str(o.id), "symbol": o.symbol, "side": str(o.side), "qty": str(o.filled_qty), "price": str(o.filled_avg_price), "filled_at": str(o.filled_at)} for o in orders if o.filled_at]
           
-          trades = []
-          for order in orders:
-              try:
-                  if order.filled_at:
-                      trades.append({
-                          "id": str(order.id),
-                          "symbol": order.symbol,
-                          "side": order.side.value if order.side else "unknown",
-                          "qty": float(order.filled_qty) if order.filled_qty else 0,
-                          "filled_avg_price": float(order.filled_avg_price) if order.filled_avg_price else 0,
-                          "filled_at": order.filled_at.isoformat(),
-                          "status": order.status.value if order.status else "unknown"
-                      })
-              except Exception as e:
-                  print(f"Warning: Skipping order {order.id}: {e}")
+          positions = client.get_all_positions()
+          pos_list = [{"symbol": p.symbol, "qty": str(p.qty), "market_value": str(p.market_value), "unrealized_pl": str(p.unrealized_pl)} for p in positions]
           
-          # Fetch positions
-          try:
-              positions = client.get_all_positions()
-          except Exception as e:
-              print(f"Warning: Could not fetch positions: {e}")
-              positions = []
-              
-          pos_list = []
-          for pos in positions:
-              try:
-                  pos_list.append({
-                      "symbol": pos.symbol,
-                      "qty": float(pos.qty),
-                      "market_value": float(pos.market_value),
-                      "unrealized_pl": float(pos.unrealized_pl),
-                      "current_price": float(pos.current_price)
-                  })
-              except Exception as e:
-                  print(f"Warning: Skipping position: {e}")
-          
-          state = {
-              "last_updated": datetime.now().isoformat() + "Z",
-              "portfolio": {
-                  "equity": float(account.equity),
-                  "cash": float(account.cash),
-                  "buying_power": float(account.buying_power)
-              },
-              "paper_account": {
-                  "positions_count": len(pos_list),
-                  "positions": pos_list
-              },
-              "trade_history": trades,
-              "trades_loaded": len(trades),
-              "automation_active": True,
-              "last_trade_date": trades[0]["filled_at"][:10] if trades else None
-          }
+          state = {"last_updated": datetime.now().isoformat()+"Z", "portfolio": {"equity": str(account.equity), "cash": str(account.cash)}, "paper_account": {"positions_count": len(pos_list), "positions": pos_list}, "trade_history": trades, "trades_loaded": len(trades)}
           
           Path("data").mkdir(exist_ok=True)
-          with open("data/system_state.json", "w") as f:
-              json.dump(state, f, indent=2)
-          
-          print(f"✅ Synced: equity=${account.equity}, trades={len(trades)}, positions={len(pos_list)}")
+          with open("data/system_state.json", "w") as f: json.dump(state, f, indent=2)
+          print(f"✅ equity=${account.equity}, trades={len(trades)}, positions={len(pos_list)}")
           EOF
-          
-      - name: Commit and Push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+      - run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
           git add data/system_state.json
-          git diff --staged --quiet || git commit -m "🔄 Auto-sync system state [skip ci]"
+          git diff --staged --quiet || git commit -m "🔄 sync [skip ci]"
           git push
