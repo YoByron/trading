@@ -15,7 +15,8 @@ Version History:
 - v3.4.0 Jan 14, 2026: Fix stale P/L data - use GitHub API instead of raw URL (bypass CDN cache)
 - v3.5.0 Jan 15, 2026: Query Alpaca API DIRECTLY for real-time P/L (fixes stale data issue)
 - v3.5.1 Jan 16, 2026: Force redeployment to ensure Alpaca credentials are loaded
-- v3.5.2 Jan 16, 2026: Fix Vertex AI RAG - requires roles/aiplatform.user on service account
+- v3.5.2 Jan 16, 2026: Fix Vertex AI RAG
+- v3.7.0 Jan 16, 2026: Fix trades_loaded=0 - check system_state.json for trade_history - requires roles/aiplatform.user on service account
 
 Architecture (v3.0.0):
 - Primary: Vertex AI RAG (cloud semantic search with text-embedding-004)
@@ -72,7 +73,7 @@ WEBHOOK_AUTH_TOKEN = os.environ.get("DIALOGFLOW_WEBHOOK_TOKEN", "")
 app = FastAPI(
     title="Trading AI RAG Webhook",
     description="Dialogflow CX webhook for lessons AND trade history queries",
-    version="3.5.0",  # Query Alpaca API DIRECTLY for real-time P/L
+    version="3.7.0",  # Query Alpaca API DIRECTLY for real-time P/L
 )
 
 # Initialize rate limiter if available
@@ -1149,14 +1150,14 @@ def format_lessons_response(lessons: list, query: str) -> str:
 
 
 def query_trades(query: str, limit: int = 10) -> list[dict]:
-    """Query trade history from local JSON files."""
+    """Query trade history from local JSON files OR system_state.json."""
     import json
 
     trades = []
     data_dir = project_root / "data"
 
     try:
-        # Get trades from recent JSON files
+        # First try trades_*.json files
         for trades_file in sorted(data_dir.glob("trades_*.json"), reverse=True):
             if len(trades) >= limit:
                 break
@@ -1164,7 +1165,6 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
             with open(trades_file) as f:
                 file_trades = json.load(f)
                 for trade in file_trades:
-                    # Build document string like ChromaDB did
                     pnl = trade.get("pnl") or 0
                     outcome = "profitable" if pnl > 0 else ("loss" if pnl < 0 else "breakeven")
                     document = (
@@ -1190,11 +1190,39 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
                     if len(trades) >= limit:
                         break
 
+        # FIX Jan 16 2026: If no trades_*.json, check system_state.json trade_history
+        if not trades:
+            state_file = data_dir / "system_state.json"
+            if state_file.exists():
+                with open(state_file) as f:
+                    state = json.load(f)
+                    trade_history = state.get("trade_history", [])
+                    for trade in trade_history[:limit]:
+                        document = (
+                            f"Trade: {trade.get('side', '').upper()} {trade.get('qty', 0)} "
+                            f"{trade.get('symbol', '')} at ${trade.get('price', 0):.2f}. "
+                            f"Filled: {trade.get('filled_at', '')[:10] if trade.get('filled_at') else 'N/A'}"
+                        )
+                        trades.append(
+                            {
+                                "document": document,
+                                "metadata": {
+                                    "symbol": trade.get("symbol", "UNKNOWN"),
+                                    "side": str(trade.get("side", "")),
+                                    "qty": trade.get("qty", 0),
+                                    "price": trade.get("price", 0),
+                                    "filled_at": trade.get("filled_at", ""),
+                                },
+                            }
+                        )
+                    logger.info(f"Loaded {len(trades)} trades from system_state.json")
+
         return trades[:limit]
 
     except Exception as e:
         logger.error(f"Trade query failed: {e}")
         return []
+
 
 
 def format_trades_response(trades: list, query: str) -> str:
@@ -1574,7 +1602,7 @@ async def root():
     trade_count = len(query_trades("all", limit=1000))
     return {
         "service": "Trading AI RAG Webhook",
-        "version": "3.6.0",  # Added diagnostics endpoint for Vertex AI debugging
+        "version": "3.7.0",  # Added diagnostics endpoint for Vertex AI debugging
         "vertex_ai_rag_enabled": vertex_rag is not None,
         "vertex_ai_init_error": vertex_rag_init_error,
         "local_lessons_loaded": len(local_rag.lessons),
