@@ -2027,5 +2027,38 @@
     "files_modified": [
       ".github/workflows/daily-trading.yml"
     ]
+  },
+  {
+    "id": "lesson_20260116_172100_hygiene_and_strategy_alignment",
+    "timestamp": "2026-01-16T17:21:00.000000",
+    "title": "Repository Hygiene & Strategy Alignment Review (Jan 16, 2026)",
+    "category": "operational_review",
+    "severity": "informational",
+    "description": "Full repository hygiene audit completed. Found and merged PR #2009 (dashboard live P/L fix). Closed false-positive issue #2008 (trade execution alert was wrong - trades DID execute). Key insight: Current strategy IS aligned with profitable $100K approach (SPY bull put spreads). Today's P/L: +$20.83 with 3 spreads + 1 orphan put showing profit.",
+    "root_cause": "Verify-trade-execution workflow checks for deprecated file format (trades_2026-MM-DD.json) instead of system_state.json which is the actual source of truth.",
+    "prevention": "1. Update verify-trade-execution.yml to check system_state.json > trades.today_trades. 2. Run regular hygiene audits to close false-positive issues. 3. Maintain single source of truth (Alpaca API -> system_state.json).",
+    "financial_impact": 20.83,
+    "current_state": {
+      "equity": 4980.01,
+      "daily_pnl": 20.83,
+      "total_pnl": -19.99,
+      "positions": 8,
+      "strategy": "SPY bull put spreads (aligned with profitable $100K approach)"
+    },
+    "actions_completed": [
+      "Merged PR #2009: fix(dashboard): Show Today's P/L for LIVE account",
+      "Closed issue #2008 as false positive with detailed explanation",
+      "Deleted merged branch fix/dashboard-live-todays-pl",
+      "Full branch cleanup - only main remains"
+    ],
+    "tags": [
+      "hygiene",
+      "repository_cleanup",
+      "false_positive",
+      "strategy_alignment",
+      "spy_spreads",
+      "operational"
+    ],
+    "recommendation": "Continue with SPY bull put spreads strategy. Consider fixing verify-trade-execution.yml to prevent future false alerts."
   }
 ]
