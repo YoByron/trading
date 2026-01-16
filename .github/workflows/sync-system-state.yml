@@ -40,47 +40,60 @@ jobs:
               paper=True
           )
           
-          # Check if market is open today
           clock = client.get_clock()
           print(f"Market open: {clock.is_open}")
           
-          # Fetch account
           account = client.get_account()
+          print(f"Account equity: ${account.equity}")
           
-          # Fetch recent filled orders
-          request = GetOrdersRequest(
-              status=QueryOrderStatus.CLOSED,
-              after=datetime.now() - timedelta(days=30),
-              limit=100
-          )
-          orders = client.get_orders(filter=request)
+          # Fetch recent filled orders with error handling
+          try:
+              request = GetOrdersRequest(
+                  status=QueryOrderStatus.CLOSED,
+                  after=datetime.now() - timedelta(days=30),
+                  limit=100
+              )
+              orders = client.get_orders(filter=request)
+          except Exception as e:
+              print(f"Warning: Could not fetch orders: {e}")
+              orders = []
           
           trades = []
           for order in orders:
-              if order.filled_at:
-                  trades.append({
-                      "id": str(order.id),
-                      "symbol": order.symbol,
-                      "side": order.side.value,
-                      "qty": float(order.filled_qty) if order.filled_qty else 0,
-                      "filled_avg_price": float(order.filled_avg_price) if order.filled_avg_price else 0,
-                      "filled_at": order.filled_at.isoformat(),
-                      "status": order.status.value
-                  })
+              try:
+                  if order.filled_at:
+                      trades.append({
+                          "id": str(order.id),
+                          "symbol": order.symbol,
+                          "side": order.side.value if order.side else "unknown",
+                          "qty": float(order.filled_qty) if order.filled_qty else 0,
+                          "filled_avg_price": float(order.filled_avg_price) if order.filled_avg_price else 0,
+                          "filled_at": order.filled_at.isoformat(),
+                          "status": order.status.value if order.status else "unknown"
+                      })
+              except Exception as e:
+                  print(f"Warning: Skipping order {order.id}: {e}")
           
           # Fetch positions
-          positions = client.get_all_positions()
+          try:
+              positions = client.get_all_positions()
+          except Exception as e:
+              print(f"Warning: Could not fetch positions: {e}")
+              positions = []
+              
           pos_list = []
           for pos in positions:
-              pos_list.append({
-                  "symbol": pos.symbol,
-                  "qty": float(pos.qty),
-                  "market_value": float(pos.market_value),
-                  "unrealized_pl": float(pos.unrealized_pl),
-                  "current_price": float(pos.current_price)
-              })
+              try:
+                  pos_list.append({
+                      "symbol": pos.symbol,
+                      "qty": float(pos.qty),
+                      "market_value": float(pos.market_value),
+                      "unrealized_pl": float(pos.unrealized_pl),
+                      "current_price": float(pos.current_price)
+                  })
+              except Exception as e:
+                  print(f"Warning: Skipping position: {e}")
           
-          # Build state
           state = {
               "last_updated": datetime.now().isoformat() + "Z",
               "portfolio": {
