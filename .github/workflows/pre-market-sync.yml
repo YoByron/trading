@@ -6,6 +6,9 @@ on:
     - cron: '25 14 * * 1-5'
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write  # Required to push commits
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -60,3 +63,4 @@ jobs:
           git add data/system_state.json data/heartbeat.json
           git diff --staged --quiet || git commit -m "chore: Pre-market data sync [skip ci]"
           git push
+
