@@ -35,6 +35,7 @@ on:
           - verify-alpaca-account
           - verify-brokerage-account
           - verify-all-accounts
+          - query-dialogflow
           - execute-paper-trade
           - custom-command
         default: 'run-tests'
@@ -403,6 +404,136 @@ jobs:
           print(f'  Live:  \${live_daily:,.2f}')
           "
 
+      - name: Task - Query Dialogflow
+        if: github.event.inputs.task == 'query-dialogflow'
+        env:
+          PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
+          PAPER_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+          LIVE_API_KEY: ${{ secrets.ALPACA_BROKERAGE_TRADING_API_KEY }}
+          LIVE_SECRET_KEY: ${{ secrets.ALPACA_BROKERAGE_TRADING_API_SECRET }}
+          GCP_PROJECT_ID: igor-trading-2025-v2
+        run: |
+          echo "=================================================="
+          echo "🤖 QUERYING DIALOGFLOW & CROSS-VERIFYING ALPACA"
+          echo "=================================================="
+          pip install alpaca-py google-cloud-dialogflow-cx
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          from alpaca.trading.client import TradingClient
+
+          # ========== STEP 1: Get Alpaca Data (Source of Truth) ==========
+          print("=" * 50)
+          print("📊 STEP 1: ALPACA DATA (Source of Truth)")
+          print("=" * 50)
+
+          paper_client = TradingClient(
+              os.environ['PAPER_API_KEY'],
+              os.environ['PAPER_SECRET_KEY'],
+              paper=True
+          )
+          live_client = TradingClient(
+              os.environ['LIVE_API_KEY'],
+              os.environ['LIVE_SECRET_KEY'],
+              paper=False
+          )
+
+          paper_acct = paper_client.get_account()
+          live_acct = live_client.get_account()
+
+          alpaca_paper_equity = float(paper_acct.equity)
+          alpaca_paper_daily = float(paper_acct.equity) - float(paper_acct.last_equity)
+          alpaca_live_equity = float(live_acct.equity)
+          alpaca_live_daily = float(live_acct.equity) - float(live_acct.last_equity)
+
+          print(f"Paper Equity: ${alpaca_paper_equity:,.2f}")
+          print(f"Paper Today P/L: ${alpaca_paper_daily:,.2f}")
+          print(f"Live Equity: ${alpaca_live_equity:,.2f}")
+          print(f"Live Today P/L: ${alpaca_live_daily:,.2f}")
+
+          # ========== STEP 2: Query Dialogflow ==========
+          print()
+          print("=" * 50)
+          print("🤖 STEP 2: DIALOGFLOW RESPONSE")
+          print("=" * 50)
+
+          try:
+              from google.cloud import dialogflowcx_v3 as dialogflow
+              from google.protobuf.json_format import MessageToDict
+
+              project_id = os.environ.get('GCP_PROJECT_ID', 'igor-trading-2025-v2')
+              location = 'global'
+              agent_id = None  # Will be discovered
+
+              # Discover agent
+              agents_client = dialogflow.AgentsClient()
+              parent = f"projects/{project_id}/locations/{location}"
+
+              try:
+                  agents = list(agents_client.list_agents(parent=parent))
+                  for agent in agents:
+                      if 'Trading' in agent.display_name:
+                          agent_id = agent.name.split('/')[-1]
+                          print(f"Found agent: {agent.display_name} ({agent_id})")
+                          break
+              except Exception as e:
+                  print(f"Could not list agents: {e}")
+
+              if agent_id:
+                  # Query the agent
+                  session_client = dialogflow.SessionsClient()
+                  session_path = f"projects/{project_id}/locations/{location}/agents/{agent_id}/sessions/claude-verify"
+
+                  text_input = dialogflow.TextInput(text="How much money did we make today?")
+                  query_input = dialogflow.QueryInput(text=text_input, language_code="en")
+
+                  response = session_client.detect_intent(
+                      request={"session": session_path, "query_input": query_input}
+                  )
+
+                  dialogflow_response = response.query_result.response_messages[0].text.text[0] if response.query_result.response_messages else "No response"
+                  print(f"Dialogflow says: {dialogflow_response}")
+
+                  # ========== STEP 3: Cross-Verification ==========
+                  print()
+                  print("=" * 50)
+                  print("✅ STEP 3: CROSS-VERIFICATION")
+                  print("=" * 50)
+
+                  # Try to extract numbers from Dialogflow response
+                  import re
+                  df_numbers = re.findall(r'\$?[\d,]+\.?\d*', dialogflow_response)
+                  print(f"Numbers in Dialogflow response: {df_numbers}")
+
+                  total_alpaca = alpaca_paper_daily + alpaca_live_daily
+                  print(f"Alpaca Combined P/L: ${total_alpaca:,.2f}")
+
+                  if any(str(round(total_alpaca, 2)).replace('.', '') in n.replace(',', '').replace('$', '').replace('.', '') for n in df_numbers):
+                      print("✅ MATCH: Dialogflow data matches Alpaca!")
+                  else:
+                      print("⚠️  MISMATCH: Dialogflow may have stale data")
+                      print(f"   Alpaca says: ${total_alpaca:,.2f}")
+                      print(f"   Dialogflow extracted: {df_numbers}")
+              else:
+                  print("⚠️  No TradingAgent found in Dialogflow")
+
+          except ImportError:
+              print("⚠️  google-cloud-dialogflow-cx not available")
+              print("   Skipping Dialogflow verification")
+          except Exception as e:
+              print(f"⚠️  Dialogflow query failed: {e}")
+              print("   Alpaca data is still the source of truth")
+
+          # ========== SUMMARY ==========
+          print()
+          print("=" * 50)
+          print("📊 FINAL SUMMARY (Alpaca = Source of Truth)")
+          print("=" * 50)
+          print(f"Paper Today P/L: ${alpaca_paper_daily:,.2f}")
+          print(f"Live Today P/L: ${alpaca_live_daily:,.2f}")
+          print(f"Combined Today P/L: ${alpaca_paper_daily + alpaca_live_daily:,.2f}")
+          PYTHON_SCRIPT
+
       - name: Task - Execute Paper Trade
         if: github.event.inputs.task == 'execute-paper-trade' || github.event_name == 'push'
         env:
@@ -484,4 +615,5 @@ jobs:
           echo "- **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Task completed. Check logs above for details." >> $GITHUB_STEP_SUMMARY
+
 
