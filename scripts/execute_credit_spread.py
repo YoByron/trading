@@ -541,6 +541,7 @@ def execute_bull_put_spread(
         # Verify BOTH legs exist in Alpaca to catch any orphan positions
         logger.info("\n🔍 STEP 4: Post-execution position validation...")
         import time
+
         time.sleep(2)  # Brief delay for order processing
 
         validation_status = "pending"
