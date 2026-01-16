@@ -1224,7 +1224,6 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
         return []
 
 
-
 def format_trades_response(trades: list, query: str) -> str:
     """Format trade history into a response."""
     if not trades:
