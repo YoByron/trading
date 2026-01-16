@@ -1,14 +1,9 @@
-# .github/workflows/sync-system-state.yml
-# FIX: trades_loaded = 0 and calendar awareness failures
-# Add this workflow to your repo
-
 name: Sync System State
 
 on:
   schedule:
-    # Run every hour during market hours (9 AM - 4 PM ET, Mon-Fri)
-    - cron: '0 14-21 * * 1-5'  # UTC = ET + 5
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 14-21 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -23,34 +18,7 @@ jobs:
           python-version: '3.11'
           
       - name: Install dependencies
-        run: |
-          pip install alpaca-py requests
-          
-      - name: Validate Trading Day
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
-        run: |
-          python3 << 'EOF'
-          import os
-          from datetime import datetime
-          from alpaca.trading.client import TradingClient
-          
-          client = TradingClient(
-              os.environ['ALPACA_API_KEY'],
-              os.environ['ALPACA_SECRET_KEY'],
-              paper=True
-          )
-          
-          today = datetime.now().strftime("%Y-%m-%d")
-          calendar = client.get_calendar(start=today, end=today)
-          
-          if not calendar:
-              print(f"⚠️ {today} is NOT a trading day - skipping sync")
-              exit(0)  # Exit gracefully, not an error
-              
-          print(f"✅ {today} is a valid trading day")
-          EOF
+        run: pip install alpaca-py requests
           
       - name: Sync Trades from Alpaca
         env:
@@ -66,12 +34,15 @@ jobs:
           from alpaca.trading.requests import GetOrdersRequest
           from alpaca.trading.enums import QueryOrderStatus
           
-          # Get client
           client = TradingClient(
               os.environ['ALPACA_API_KEY'],
               os.environ['ALPACA_SECRET_KEY'],
               paper=True
           )
+          
+          # Check if market is open today
+          clock = client.get_clock()
+          print(f"Market open: {clock.is_open}")
           
           # Fetch account
           account = client.get_account()
@@ -127,7 +98,6 @@ jobs:
               "last_trade_date": trades[0]["filled_at"][:10] if trades else None
           }
           
-          # Write state
           Path("data").mkdir(exist_ok=True)
           with open("data/system_state.json", "w") as f:
               json.dump(state, f, indent=2)
