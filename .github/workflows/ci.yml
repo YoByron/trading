@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# Prevent duplicate CI runs on same branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint & Format
