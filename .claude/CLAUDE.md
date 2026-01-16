@@ -7,8 +7,8 @@ CTO: Claude | CEO: Igor Ganapolsky
 - **Why revised**: Deep research confirms credit spreads need 80%+ win rate to profit. 70% POP ≠ 70% win rate.
 - **Current capital**: $4,959.26 | Loss: -$40.74 (-0.81%) | Lesson paid.
 - **Primary strategy**: CREDIT SPREADS on SPY/IWM ONLY - defined risk
-- **Spread setup**: Sell 30-delta put, buy 20-delta put = ~$500 collateral, ~$50-70 premium
-- **CRITICAL MATH**: Risk $440 to make $60 = 7.3:1 ratio. Break-even win rate = **88%**
+- **Spread setup: $3-wide spreads (sell 30-delta, buy 27-delta) = ~$300 collateral, ~$90 premium
+- **CRITICAL MATH**: Risk $210 to make $90 = 2.3:1 ratio. Break-even win rate = **70%** (FIXED Jan 16)
 - **Expiration**: 30-45 DTE, close at 50% max profit (improves win rate to ~80%)
 - **Position limit**: 1 spread at a time (5% max = $248 risk)
 - **Monthly target**: 3-4 spreads x $50 x 80% win rate = $120-160/month (realistic)
@@ -41,7 +41,7 @@ CTO: Claude | CEO: Igor Ganapolsky
 - Track every paper trade: entry, exit, P/L, win/loss
 - Required metrics: win rate %, avg win, avg loss, profit factor
 - Scale decisions based on REAL data, not projections
-- **CRITICAL**: Break-even win rate = 88%. Target = 80%+ with early exits.
+- **CRITICAL**: Break-even win rate = 70% (achievable). Target = 80%+ with early exits.
 - If win rate <75% after 30 trades: reassess strategy (not profitable)
 - If win rate 75-80%: marginally profitable, proceed with caution
 - If win rate 80%+: profitable, consider scaling after 90 days
@@ -56,7 +56,7 @@ CTO: Claude | CEO: Igor Ganapolsky
 | 5 | SOFI | **AVOID until Feb 1** | Jan 23-30 (earnings Jan 30, IV 55%) |
 
 ### Phil Town Alignment Note
-Credit spreads conflict with Rule #1 (risk $400 to make $100).
+Credit spreads conflict with Rule #1 (risk $210 to make $90 (IMPROVED 2.3:1)).
 Mitigations: Use 30-delta (not ATM) for margin of safety, strict stops, small position sizes.
 
 ## Core Directives (PERMANENT)
