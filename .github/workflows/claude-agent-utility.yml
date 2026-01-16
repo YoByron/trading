@@ -412,15 +412,24 @@ jobs:
           LIVE_API_KEY: ${{ secrets.ALPACA_BROKERAGE_TRADING_API_KEY }}
           LIVE_SECRET_KEY: ${{ secrets.ALPACA_BROKERAGE_TRADING_API_SECRET }}
           GCP_PROJECT_ID: igor-trading-2025-v2
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo "=================================================="
           echo "🤖 QUERYING DIALOGFLOW & CROSS-VERIFYING ALPACA"
           echo "=================================================="
+          
+          # Set up GCP credentials
+          echo "$GCP_SA_KEY" > /tmp/gcp-sa-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa-key.json
+          
           pip install alpaca-py google-cloud-dialogflow-cx
           python3 << 'PYTHON_SCRIPT'
           import os
           import json
           from alpaca.trading.client import TradingClient
+
+          # Set credentials path for Python
+          os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/tmp/gcp-sa-key.json'
 
           # ========== STEP 1: Get Alpaca Data (Source of Truth) ==========
           print("=" * 50)
@@ -615,6 +624,7 @@ jobs:
           echo "- **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Task completed. Check logs above for details." >> $GITHUB_STEP_SUMMARY
+
 
 
 
