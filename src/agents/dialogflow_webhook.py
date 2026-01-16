@@ -15,6 +15,7 @@ Version History:
 - v3.4.0 Jan 14, 2026: Fix stale P/L data - use GitHub API instead of raw URL (bypass CDN cache)
 - v3.5.0 Jan 15, 2026: Query Alpaca API DIRECTLY for real-time P/L (fixes stale data issue)
 - v3.5.1 Jan 16, 2026: Force redeployment to ensure Alpaca credentials are loaded
+- v3.5.2 Jan 16, 2026: Fix Vertex AI RAG - requires roles/aiplatform.user on service account
 
 Architecture (v3.0.0):
 - Primary: Vertex AI RAG (cloud semantic search with text-embedding-004)
