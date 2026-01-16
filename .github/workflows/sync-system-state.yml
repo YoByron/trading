@@ -5,6 +5,9 @@ on:
     - cron: '0 14-21 * * 1-5'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -21,7 +24,7 @@ jobs:
         run: |
           python3 << 'EOF'
           import json, os
-          from datetime import datetime, timedelta
+          from datetime import datetime
           from pathlib import Path
           from alpaca.trading.client import TradingClient
           from alpaca.trading.requests import GetOrdersRequest
