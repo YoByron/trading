@@ -260,25 +260,28 @@ jobs:
           try:
               # Sell the short put (collect premium)
               print(f"Selling {quantity} x {short_symbol}...")
-              short_order = trading_client.submit_order(
+              from alpaca.trading.requests import MarketOrderRequest
+              short_order_request = MarketOrderRequest(
                   symbol=short_symbol,
                   qty=quantity,
                   side=OrderSide.SELL,
                   type=OrderType.MARKET,
                   time_in_force=TimeInForce.DAY
               )
+              short_order = trading_client.submit_order(short_order_request)
               print(f"✅ Short put order submitted: {short_order.id}")
               print(f"   Status: {short_order.status}")
 
               # Buy the long put (protection)
               print(f"Buying {quantity} x {long_symbol}...")
-              long_order = trading_client.submit_order(
+              long_order_request = MarketOrderRequest(
                   symbol=long_symbol,
                   qty=quantity,
                   side=OrderSide.BUY,
                   type=OrderType.MARKET,
                   time_in_force=TimeInForce.DAY
               )
+              long_order = trading_client.submit_order(long_order_request)
               print(f"✅ Long put order submitted: {long_order.id}")
               print(f"   Status: {long_order.status}")
 
@@ -303,3 +306,4 @@ jobs:
         if: success()
         run: |
           echo "Credit spread executed at $(date)"
+
