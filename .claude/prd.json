@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "description": "Ralph Wiggum technique - Structured task backlog for autonomous CTO mode",
-  "last_updated": "2026-01-15",
+  "last_updated": "2026-01-16",
   "tasks": [
     {
       "id": "T001",
@@ -18,7 +18,7 @@
       "category": "code_quality",
       "title": "Run linter and fix issues",
       "description": "Run ruff check, fix any lint errors or warnings",
-      "passes": false,
+      "passes": true,
       "priority": 2,
       "command": "ruff check src/",
       "acceptance_criteria": "ruff check returns 0 issues"
@@ -28,7 +28,7 @@
       "category": "ci",
       "title": "Verify CI passes on main",
       "description": "Check GitHub Actions, ensure all workflows pass",
-      "passes": false,
+      "passes": true,
       "priority": 3,
       "command": "gh run list --limit 5",
       "acceptance_criteria": "Latest workflow run shows success"
@@ -38,7 +38,7 @@
       "category": "hygiene",
       "title": "Clean up stale branches",
       "description": "Delete merged branches older than 7 days",
-      "passes": false,
+      "passes": true,
       "priority": 4,
       "command": "git branch -r --merged | grep -v main",
       "acceptance_criteria": "No stale merged branches remain"
@@ -48,7 +48,7 @@
       "category": "trading",
       "title": "Review portfolio performance",
       "description": "Check current P/L, win rate metrics, and position status",
-      "passes": false,
+      "passes": true,
       "priority": 5,
       "command": "cat data/system_state.json",
       "acceptance_criteria": "Performance metrics reviewed and logged"
