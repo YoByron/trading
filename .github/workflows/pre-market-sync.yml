@@ -62,5 +62,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/system_state.json data/heartbeat.json
           git diff --staged --quiet || git commit -m "chore: Pre-market data sync [skip ci]"
+          git pull --rebase origin main || true
           git push
+
 
