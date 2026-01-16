@@ -5,10 +5,9 @@ Tests for compare_100k_vs_5k.py
 Verifies the $100K vs $5K strategy comparison logic.
 """
 
-import json
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Skip if dependencies not available
 try:
@@ -17,6 +16,7 @@ try:
         analyze_100k_patterns,
         load_current_state,
     )
+
     HAS_SCRIPT = True
 except ImportError:
     HAS_SCRIPT = False
@@ -33,9 +33,9 @@ class TestCompare100kVs5k:
             {"symbol": "AMD260116P00200000", "action": "SELL", "strategy": "premium_selling"},
             {"symbol": "SPY", "action": "BUY", "strategy": "accumulation"},
         ]
-        
+
         patterns = analyze_100k_patterns(trades)
-        
+
         # Should identify SPY and AMD as underlyings
         assert "SPY" in patterns["underlyings"]
         assert "AMD" in patterns["underlyings"]
@@ -45,14 +45,14 @@ class TestCompare100kVs5k:
     def test_analyze_100k_patterns_empty(self):
         """Test pattern analysis with no trades."""
         patterns = analyze_100k_patterns([])
-        
+
         assert patterns["underlyings"] == {}
         assert patterns["options_trades"] == []
         assert patterns["stock_trades"] == []
 
     def test_load_current_state_missing_file(self):
         """Test graceful handling of missing system state."""
-        with patch.object(Path, 'exists', return_value=False):
+        with patch.object(Path, "exists", return_value=False):
             state = load_current_state()
             assert state == {}
 
@@ -63,13 +63,13 @@ class TestCompare100kVs5k:
             "underlyings": {"SPY": 10, "AMD": 5},
             "strategies": {"premium_selling": 8, "iron_condor": 3},
         }
-        
+
         # Current $5K state with SPY spreads
         current_positions = [
             {"symbol": "SPY260220P00565000", "qty": 1},
             {"symbol": "SPY260220P00570000", "qty": -1},
         ]
-        
+
         # Extract underlyings from current positions
         current_underlyings = set()
         for p in current_positions:
@@ -79,7 +79,7 @@ class TestCompare100kVs5k:
                     if c.isdigit():
                         current_underlyings.add(symbol[:i])
                         break
-        
+
         # Check alignment - SPY should be in both
         aligned = "SPY" in patterns_100k["underlyings"] and "SPY" in current_underlyings
         assert aligned, "Current strategy should be aligned with $100K"
@@ -94,7 +94,7 @@ class TestEdgeCases:
             {"symbol": "123INVALID", "action": "SELL"},
             {"symbol": "", "action": "BUY"},
         ]
-        
+
         # Should not crash
         if HAS_SCRIPT:
             patterns = analyze_100k_patterns(trades)
@@ -106,7 +106,7 @@ class TestEdgeCases:
             {"symbol": "SPY"},  # Missing action, strategy
             {},  # Empty trade
         ]
-        
+
         if HAS_SCRIPT:
             patterns = analyze_100k_patterns(trades)
             assert isinstance(patterns, dict)
