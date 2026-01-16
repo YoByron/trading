@@ -2263,5 +2263,67 @@
       "3e69ad0e: fix(verify): Use system_state.json",
       "Deleted 3 SOFI workflows"
     ]
+  },
+  {
+    "id": "lesson_20260116_183000_credit_spread_best_practices_2025",
+    "timestamp": "2026-01-16T18:30:00.000000",
+    "title": "Credit Spread Best Practices (Deep Research Jan 2026)",
+    "category": "strategy_research",
+    "severity": "informational",
+    "description": "Deep research on 2025-2026 credit spread best practices from multiple professional trading sources. Key findings validated current strategy approach.",
+    "key_findings": [
+      {
+        "practice": "Position Sizing",
+        "rule": "Never risk more than 1-5% of account per trade",
+        "source": "advancedautotrades.com",
+        "status": "IMPLEMENTED - using 5% max"
+      },
+      {
+        "practice": "Stop-Loss",
+        "rule": "Use 2x credit received as stop-loss trigger",
+        "source": "datadrivenoptions.com",
+        "status": "IMPLEMENTED - verify_stops_in_place.py"
+      },
+      {
+        "practice": "Risk/Reward",
+        "rule": "50/50 is 'way too aggressive' - need margin for drawdowns",
+        "source": "datadrivenoptions.com",
+        "status": "VALIDATED - spreads have defined risk"
+      },
+      {
+        "practice": "Delta Selection",
+        "rule": "30 delta or lower for put spreads",
+        "source": "Multiple sources",
+        "status": "IMPLEMENTED - SPY 30-delta spreads"
+      },
+      {
+        "practice": "Time Decay",
+        "rule": "30-45 DTE optimal for theta decay",
+        "source": "thetradinganalyst.com",
+        "status": "IMPLEMENTED - using 30-day spreads"
+      },
+      {
+        "practice": "Market Conditions",
+        "rule": "Credit spreads work best in neutral/slightly bullish markets",
+        "source": "optionsamurai.com",
+        "status": "ALIGNED - bull put spreads for current market"
+      }
+    ],
+    "validation": "Current SPY bull put spread strategy ALIGNS with professional 2025-2026 best practices",
+    "tags": [
+      "research",
+      "credit_spreads",
+      "best_practices",
+      "strategy_validation",
+      "2025",
+      "2026"
+    ],
+    "sources": [
+      "advancedautotrades.com",
+      "datadrivenoptions.com",
+      "thetradinganalyst.com",
+      "optionsamurai.com",
+      "alpaca.markets/learn"
+    ]
   }
 ]
