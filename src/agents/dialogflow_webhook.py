@@ -73,7 +73,7 @@ WEBHOOK_AUTH_TOKEN = os.environ.get("DIALOGFLOW_WEBHOOK_TOKEN", "")
 app = FastAPI(
     title="Trading AI RAG Webhook",
     description="Dialogflow CX webhook for lessons AND trade history queries",
-    version="3.7.0",  # Query Alpaca API DIRECTLY for real-time P/L
+    version="3.8.0",  # Query Alpaca API DIRECTLY for real-time P/L
 )
 
 # Initialize rate limiter if available
@@ -1150,8 +1150,9 @@ def format_lessons_response(lessons: list, query: str) -> str:
 
 
 def query_trades(query: str, limit: int = 10) -> list[dict]:
-    """Query trade history from local JSON files OR system_state.json."""
+    """Query trade history from local JSON files OR GitHub API."""
     import json
+    import requests
 
     trades = []
     data_dir = project_root / "data"
@@ -1190,18 +1191,21 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
                     if len(trades) >= limit:
                         break
 
-        # FIX Jan 16 2026: If no trades_*.json, check system_state.json trade_history
+        # FIX Jan 16 2026: If no local trades, fetch from GitHub API
         if not trades:
-            state_file = data_dir / "system_state.json"
-            if state_file.exists():
-                with open(state_file) as f:
-                    state = json.load(f)
+            try:
+                github_url = "https://api.github.com/repos/IgorGanapolsky/trading/contents/data/system_state.json"
+                resp = requests.get(github_url, timeout=10)
+                if resp.status_code == 200:
+                    import base64
+                    content = base64.b64decode(resp.json()["content"]).decode("utf-8")
+                    state = json.loads(content)
                     trade_history = state.get("trade_history", [])
                     for trade in trade_history[:limit]:
                         document = (
-                            f"Trade: {trade.get('side', '').upper()} {trade.get('qty', 0)} "
-                            f"{trade.get('symbol', '')} at ${trade.get('price', 0):.2f}. "
-                            f"Filled: {trade.get('filled_at', '')[:10] if trade.get('filled_at') else 'N/A'}"
+                            f"Trade: {str(trade.get('side', '')).upper()} {trade.get('qty', 0)} "
+                            f"{trade.get('symbol', '')} at ${float(trade.get('price', 0)):.2f}. "
+                            f"Filled: {str(trade.get('filled_at', ''))[:10] if trade.get('filled_at') else 'N/A'}"
                         )
                         trades.append(
                             {
@@ -1215,13 +1219,16 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
                                 },
                             }
                         )
-                    logger.info(f"Loaded {len(trades)} trades from system_state.json")
+                    logger.info(f"Loaded {len(trades)} trades from GitHub API")
+            except Exception as e:
+                logger.warning(f"GitHub API trade fetch failed: {e}")
 
         return trades[:limit]
 
     except Exception as e:
         logger.error(f"Trade query failed: {e}")
         return []
+
 
 
 def format_trades_response(trades: list, query: str) -> str:
@@ -1601,7 +1608,7 @@ async def root():
     trade_count = len(query_trades("all", limit=1000))
     return {
         "service": "Trading AI RAG Webhook",
-        "version": "3.7.0",  # Added diagnostics endpoint for Vertex AI debugging
+        "version": "3.8.0",  # Added diagnostics endpoint for Vertex AI debugging
         "vertex_ai_rag_enabled": vertex_rag is not None,
         "vertex_ai_init_error": vertex_rag_init_error,
         "local_lessons_loaded": len(local_rag.lessons),
