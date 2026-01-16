@@ -164,14 +164,15 @@ def is_market_holiday() -> bool:
         # If next_open is today, we're just waiting for market open (not a holiday)
         # If next_open is tomorrow or later, today is a holiday
         from datetime import timezone as tz
+
         now_utc = datetime.now(tz.utc)
         today_utc = now_utc.date()
 
         # Handle both timezone-aware and naive datetimes from Alpaca
         next_open = clock.next_open
-        if hasattr(next_open, 'date'):
+        if hasattr(next_open, "date"):
             next_open_date = next_open.date()
-        elif hasattr(next_open, 'astimezone'):
+        elif hasattr(next_open, "astimezone"):
             next_open_date = next_open.astimezone(tz.utc).date()
         else:
             # Fallback: assume it's a date-like string
