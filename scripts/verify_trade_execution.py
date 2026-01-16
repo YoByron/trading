@@ -90,7 +90,12 @@ def check_system_state_trades(date_str: str) -> dict:
 
 def check_alpaca_orders(date_str: str) -> dict:
     """Check Alpaca for orders placed today - SECONDARY CHECK."""
-    result = {"alpaca_available": ALPACA_AVAILABLE, "orders_found": 0, "orders": [], "error": None}
+    result = {
+        "alpaca_available": ALPACA_AVAILABLE,
+        "orders_found": 0,
+        "orders": [],
+        "error": None,
+    }
 
     if not ALPACA_AVAILABLE:
         result["error"] = "Alpaca SDK not installed"
@@ -116,7 +121,9 @@ def check_alpaca_orders(date_str: str) -> dict:
         # Get today's orders
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
         request = GetOrdersRequest(
-            status=QueryOrderStatus.ALL, after=target_date, until=target_date + timedelta(days=1)
+            status=QueryOrderStatus.ALL,
+            after=target_date,
+            until=target_date + timedelta(days=1),
         )
 
         orders = client.get_orders(filter=request)
@@ -184,7 +191,9 @@ def verify_execution(date_str: str = None, alert_on_failure: bool = False) -> bo
     elif alpaca_result["orders_found"] > 0:
         print(f"   ✅ Orders found in Alpaca: {alpaca_result['orders_found']}")
         for order in alpaca_result["orders"][:5]:  # Show first 5
-            print(f"      - {order['symbol']} {order['side']} {order['qty']} ({order['status']})")
+            print(
+                f"      - {order['symbol']} {order['side']} {order['qty']} ({order['status']})"
+            )
         verification_passed = True
     else:
         print("   ℹ️  No new orders found in Alpaca for today")
@@ -224,7 +233,9 @@ def main():
     parser = argparse.ArgumentParser(description="Verify trade execution")
     parser.add_argument("--date", type=str, help="Date to check (YYYY-MM-DD)")
     parser.add_argument(
-        "--alert-on-failure", action="store_true", help="Send alert if verification fails"
+        "--alert-on-failure",
+        action="store_true",
+        help="Send alert if verification fails",
     )
     args = parser.parse_args()
 
