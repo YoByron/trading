@@ -802,6 +802,21 @@ def main():
 
     results = ingest_videos(videos, skip_processed=(args.mode in ["new", "recent"]))
 
+    # FALLBACK FIX (Jan 16, 2026): If all videos failed (likely API/transcript issues),
+    # also process curated videos which have guaranteed embedded transcripts
+    if results["success"] == 0 and results["failed"] > 0:
+        logger.warning("=" * 60)
+        logger.warning("⚠️ All API/yt-dlp videos failed - falling back to curated videos")
+        logger.warning("=" * 60)
+        curated = get_videos_curated()
+        curated_results = ingest_videos(curated, skip_processed=False)  # Force process all
+        # Merge results
+        results["success"] += curated_results["success"]
+        results["failed"] += curated_results["failed"]
+        results["skipped"] += curated_results["skipped"]
+        results["videos"].extend(curated_results.get("videos", []))
+        logger.info(f"Curated fallback: {curated_results['success']} successes")
+
     logger.info("=" * 60)
     logger.info("INGESTION COMPLETE")
     logger.info(f"Success: {results['success']}")
