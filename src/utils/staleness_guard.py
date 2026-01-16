@@ -253,9 +253,7 @@ def validate_system_state(state_path: Path = SYSTEM_STATE_PATH) -> DataIntegrity
         initial_equity = 5000.0
         drift_pct = abs(equity - initial_equity) / initial_equity * 100
         if drift_pct > 20:  # More than 20% change from initial
-            warnings.append(
-                f"Large equity drift: {drift_pct:.1f}% from initial ${initial_equity}"
-            )
+            warnings.append(f"Large equity drift: {drift_pct:.1f}% from initial ${initial_equity}")
 
         return DataIntegrityResult(
             is_valid=len(errors) == 0,
