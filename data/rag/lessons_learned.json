@@ -2060,5 +2060,26 @@
       "operational"
     ],
     "recommendation": "Continue with SPY bull put spreads strategy. Consider fixing verify-trade-execution.yml to prevent future false alerts."
+  },
+  {
+    "id": "lesson_20260116_173000_verify_script_fix",
+    "timestamp": "2026-01-16T17:30:00.000000",
+    "title": "Fixed verify_trade_execution.py False Positive Alerts (Jan 16, 2026)",
+    "category": "bug_fix",
+    "severity": "medium",
+    "description": "The verify_trade_execution.py script was generating false positive alerts because it checked for deprecated file format (trades_YYYY-MM-DD.json) that no longer exists. Fixed to use system_state.json as the primary source of truth, which is synced directly from Alpaca API. Now has two-tier verification: (1) system_state.json trades section, (2) direct Alpaca API query as fallback.",
+    "root_cause": "Script checked for deprecated trades_YYYY-MM-DD.json file format. Trades are now synced directly to system_state.json from Alpaca API, not individual dated files.",
+    "prevention": "1. When changing data formats, update ALL consumers. 2. Use single source of truth (system_state.json). 3. Add integration tests that verify end-to-end trade verification.",
+    "files_modified": [
+      "scripts/verify_trade_execution.py"
+    ],
+    "tags": [
+      "bug_fix",
+      "verification",
+      "false_positive",
+      "source_of_truth",
+      "alpaca"
+    ],
+    "commit": "3e69ad0e"
   }
 ]
