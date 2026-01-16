@@ -1,33 +1,26 @@
-name: Close Short Put Position
+name: Close Put Position
 
-# CEO DIRECTIVE: "We are not allowed to lose money!!!!!"
-# CLOSE the losing put position IMMEDIATELY
+# Fixes Bug #2033:
+# 1. Use EXACT symbol matching (not partial)
+# 2. Detect position side and use correct order side
+# 3. Add PDT pre-check
 
 on:
   workflow_dispatch:
     inputs:
       symbol:
-        description: "Option symbol to close (EXACT match required)"
+        description: "EXACT option symbol to close (e.g., SPY260220P00653000)"
         required: true
-        default: "SPY260220P00653000"
       quantity:
         description: "Contracts to close"
         required: true
         default: "1"
-      action:
-        description: "Order action (BUY to close short, SELL to close long)"
-        required: true
-        default: "SELL"
-        type: choice
-        options:
-          - "BUY"
-          - "SELL"
 
 permissions:
   contents: write
 
 jobs:
-  close-put:
+  close-position:
     name: Close Option Position
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -42,111 +35,109 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install alpaca-py
+        run: pip install alpaca-py
 
       - name: Close Position
         id: close
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+          TARGET_SYMBOL: ${{ inputs.symbol }}
+          TARGET_QTY: ${{ inputs.quantity }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
-          from datetime import datetime
+          from datetime import datetime, date
           from alpaca.trading.client import TradingClient
           from alpaca.trading.requests import MarketOrderRequest
           from alpaca.trading.enums import OrderSide, TimeInForce
 
-          api_key = os.environ['ALPACA_API_KEY']
-          secret_key = os.environ['ALPACA_SECRET_KEY']
-          symbol = "${{ github.event.inputs.symbol }}"
-          qty = int("${{ github.event.inputs.quantity }}")
-          action = "${{ github.event.inputs.action }}"
+          target_symbol = os.environ['TARGET_SYMBOL'].strip()
+          target_qty = int(os.environ['TARGET_QTY'])
 
-          print("=" * 60)
-          print("RULE #1 PROTECTION: CLOSING OPTION POSITION")
-          print("=" * 60)
-          print(f"   Symbol: {symbol}")
-          print(f"   Quantity: {qty}")
-          print(f"   Action: {action}")
-          print(f"   Timestamp: {datetime.now().isoformat()}")
-          print("=" * 60)
+          print(f"=== CLOSE POSITION ===")
+          print(f"Target symbol: {target_symbol}")
+          print(f"Target quantity: {target_qty}")
 
-          client = TradingClient(api_key, secret_key, paper=True)
+          client = TradingClient(
+              os.environ['ALPACA_API_KEY'],
+              os.environ['ALPACA_SECRET_KEY'],
+              paper=True
+          )
 
-          # Get account status
-          account = client.get_account()
-          print(f"\n   Account Equity: ${float(account.equity):,.2f}")
-          print(f"   Buying Power: ${float(account.buying_power):,.2f}")
-
-          # Get current positions - EXACT MATCH ONLY
+          # Get all positions
           positions = client.get_all_positions()
+          print(f"Total positions: {len(positions)}")
+
+          # FIX #1: EXACT symbol matching (not partial)
           target_position = None
-          print(f"\n   Current Positions:")
           for pos in positions:
-              print(f"   - {pos.symbol} qty={pos.qty}")
-              # FIX: Use EXACT match, not substring
-              if pos.symbol == symbol:
+              if pos.symbol == target_symbol:  # EXACT match only
                   target_position = pos
-                  print(f"\n   ✅ TARGET FOUND: {pos.symbol}")
-                  print(f"      Qty: {pos.qty}")
-                  print(f"      Current Price: ${float(pos.current_price):.2f}")
-                  print(f"      Unrealized P/L: ${float(pos.unrealized_pl):.2f}")
+                  break
 
           if not target_position:
-              print(f"\n   ❌ ERROR: No position with EXACT symbol '{symbol}'")
-              print("   Available option positions:")
+              print(f"::error::Position {target_symbol} NOT FOUND")
+              print("Available positions:")
               for pos in positions:
-                  if len(pos.symbol) > 10:  # Options have long symbols
-                      print(f"      {pos.symbol}")
+                  print(f"  - {pos.symbol} (qty: {pos.qty})")
               exit(1)
 
-          # Check market
-          clock = client.get_clock()
-          print(f"\n   Market Open: {clock.is_open}")
+          print(f"Found position: {target_position.symbol}")
+          print(f"  Quantity: {target_position.qty}")
+          print(f"  Side: {target_position.side}")
+          print(f"  Unrealized P/L: ${target_position.unrealized_pl}")
 
-          if not clock.is_open:
-              print("   ❌ ERROR: Market is closed")
-              exit(1)
-
-          # Submit order with user-specified action
-          print(f"\n   Submitting {action} order for {qty} contracts...")
+          # FIX #2: Detect position side and use correct order side
+          current_qty = float(target_position.qty)
           
-          order_side = OrderSide.BUY if action == "BUY" else OrderSide.SELL
+          if current_qty > 0:
+              # LONG position -> SELL to close
+              order_side = OrderSide.SELL
+              print(f"Position is LONG ({current_qty}) -> Using SELL to close")
+          else:
+              # SHORT position -> BUY to close
+              order_side = OrderSide.BUY
+              current_qty = abs(current_qty)
+              print(f"Position is SHORT ({current_qty}) -> Using BUY to close")
+
+          # Validate quantity
+          if target_qty > current_qty:
+              print(f"::warning::Requested {target_qty} but only {current_qty} available")
+              target_qty = int(current_qty)
+
+          # FIX #3: PDT check (informational)
+          account = client.get_account()
+          if float(account.equity) < 25000:
+              # Check if position was opened today
+              print(f"::warning::Account under $25K - PDT rules may apply")
+              print("If position was opened today, this close will count as a day trade")
+
+          # Submit close order
+          print(f"Submitting {order_side.value} order for {target_qty} {target_symbol}")
           
           order_request = MarketOrderRequest(
-              symbol=symbol,
-              qty=qty,
+              symbol=target_symbol,
+              qty=target_qty,
               side=order_side,
               time_in_force=TimeInForce.DAY
           )
 
           try:
               order = client.submit_order(order_request)
-              print(f"\n   ✅ ORDER SUBMITTED!")
-              print(f"   Order ID: {order.id}")
+              print(f"✅ Order submitted: {order.id}")
               print(f"   Status: {order.status}")
-              print("=" * 60)
               
               with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                   f.write(f"order_id={order.id}\n")
                   f.write(f"status={order.status}\n")
           except Exception as e:
-              print(f"\n   ❌ ERROR: {e}")
+              print(f"::error::Order failed: {e}")
               exit(1)
           PYTHON_SCRIPT
 
-      - name: Summary
-        if: always()
+      - name: Update system state
+        if: success()
         run: |
-          echo ""
-          echo "=========================================="
-          echo "CLOSE POSITION SUMMARY"
-          echo "=========================================="
-          echo "Symbol: ${{ github.event.inputs.symbol }}"
-          echo "Quantity: ${{ github.event.inputs.quantity }}"
-          echo "Action: ${{ github.event.inputs.action }}"
-          echo "Order ID: ${{ steps.close.outputs.order_id }}"
-          echo "Status: ${{ steps.close.outputs.status }}"
-          echo "=========================================="
+          echo "Position close order submitted successfully"
+          echo "Run sync-alpaca-status.yml to update system state"
