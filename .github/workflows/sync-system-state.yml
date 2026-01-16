@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   sync:
@@ -45,9 +46,20 @@ jobs:
           with open("data/system_state.json", "w") as f: json.dump(state, f, indent=2)
           print(f"✅ equity=${account.equity}, trades={len(trades)}, positions={len(pos_list)}")
           EOF
-      - run: |
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          BRANCH="auto/sync-state-$(date +%Y%m%d-%H%M%S)"
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
+          git checkout -b "$BRANCH"
           git add data/system_state.json
-          git diff --staged --quiet || git commit -m "🔄 sync [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "🔄 sync system state"
+          git push origin "$BRANCH"
+          gh pr create --title "🔄 Auto-sync system state" --body "Automated sync from Alpaca" --base main --head "$BRANCH"
+          gh pr merge "$BRANCH" --auto --squash
