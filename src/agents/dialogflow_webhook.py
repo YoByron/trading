@@ -1190,6 +1190,7 @@ def query_trades(query: str, limit: int = 10) -> list[dict]:
                 resp = requests.get(github_url, timeout=10)
                 if resp.status_code == 200:
                     import base64
+
                     content = base64.b64decode(resp.json()["content"]).decode("utf-8")
                     state = json.loads(content)
                     logger.info("Loaded system_state.json from GitHub API")
@@ -1766,4 +1767,3 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)  # noqa: S104 - Required for Cloud Run
-
