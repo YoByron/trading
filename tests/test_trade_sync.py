@@ -112,10 +112,14 @@ class TestSyncToSystemState:
             module.SYSTEM_STATE_FILE = state_file
 
             # Create initial system_state.json with existing trade
-            state_file.write_text(json.dumps({
-                "trade_history": [{"id": "existing", "symbol": "EXISTING"}],
-                "trades_loaded": 1
-            }))
+            state_file.write_text(
+                json.dumps(
+                    {
+                        "trade_history": [{"id": "existing", "symbol": "EXISTING"}],
+                        "trades_loaded": 1,
+                    }
+                )
+            )
 
             sync = TradeSync()
 
@@ -340,13 +344,15 @@ class TestGetTradeHistory:
 
             # Create system_state.json with trade_history
             state_file.write_text(
-                json.dumps({
-                    "trade_history": [
-                        {"symbol": "SPY", "side": "buy", "qty": "10", "price": "450.0"},
-                        {"symbol": "AAPL", "side": "sell", "qty": "5", "price": "180.0"},
-                    ],
-                    "trades_loaded": 2
-                })
+                json.dumps(
+                    {
+                        "trade_history": [
+                            {"symbol": "SPY", "side": "buy", "qty": "10", "price": "450.0"},
+                            {"symbol": "AAPL", "side": "sell", "qty": "5", "price": "180.0"},
+                        ],
+                        "trades_loaded": 2,
+                    }
+                )
             )
 
             sync = TradeSync()
@@ -373,14 +379,16 @@ class TestGetTradeHistory:
 
             # Create system_state.json with trade_history
             state_file.write_text(
-                json.dumps({
-                    "trade_history": [
-                        {"symbol": "SPY", "side": "buy"},
-                        {"symbol": "AAPL", "side": "sell"},
-                        {"symbol": "SPY", "side": "sell"},
-                    ],
-                    "trades_loaded": 3
-                })
+                json.dumps(
+                    {
+                        "trade_history": [
+                            {"symbol": "SPY", "side": "buy"},
+                            {"symbol": "AAPL", "side": "sell"},
+                            {"symbol": "SPY", "side": "sell"},
+                        ],
+                        "trades_loaded": 3,
+                    }
+                )
             )
 
             sync = TradeSync()
