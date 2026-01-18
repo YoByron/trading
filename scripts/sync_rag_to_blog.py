@@ -96,19 +96,21 @@ def extract_key_insight(lesson: dict) -> str:
     content = lesson["content"]
 
     # Try to find "What Happened" or similar sections
-    what_happened = re.search(r"(?:What Happened|Problem|Issue|Bug)[:\s]*\n+([^\n#]+)", content, re.IGNORECASE)
+    what_happened = re.search(
+        r"(?:What Happened|Problem|Issue|Bug)[:\s]*\n+([^\n#]+)", content, re.IGNORECASE
+    )
     if what_happened:
         return what_happened.group(1).strip()[:200]
 
     # Try to find the first meaningful paragraph after the title
-    paragraphs = re.split(r'\n\n+', content)
+    paragraphs = re.split(r"\n\n+", content)
     for p in paragraphs[1:4]:  # Skip title, check next 3 paragraphs
         clean = p.strip()
         if len(clean) > 50 and not clean.startswith("#") and not clean.startswith("**"):
             return clean[:200]
 
     # Fallback to first 200 chars without markdown
-    clean = re.sub(r'[#*`\[\]]', '', content)
+    clean = re.sub(r"[#*`\[\]]", "", content)
     return clean[:200].strip()
 
 
@@ -117,7 +119,9 @@ def get_lesson_takeaway(lesson: dict) -> str:
     content = lesson["content"]
 
     # Look for fix/solution/action sections
-    fix_match = re.search(r"(?:Fix|Solution|Action|Resolution|Takeaway)[:\s]*\n+([^\n#]+)", content, re.IGNORECASE)
+    fix_match = re.search(
+        r"(?:Fix|Solution|Action|Resolution|Takeaway)[:\s]*\n+([^\n#]+)", content, re.IGNORECASE
+    )
     if fix_match:
         return fix_match.group(1).strip()[:150]
 
@@ -144,15 +148,15 @@ def get_human_readable_title(lesson: dict) -> str:
         title = raw_title
 
     # Remove LL- prefix and number patterns
-    title = re.sub(r'^LL-?\d+[:\s]*', '', title)
-    title = re.sub(r'^\d+[:\s]*', '', title)
+    title = re.sub(r"^LL-?\d+[:\s]*", "", title)
+    title = re.sub(r"^\d+[:\s]*", "", title)
 
     # Clean up underscores and technical formatting
     title = title.replace("_", " ")
 
     # Remove date suffixes like "jan16" or "(Jan 16, 2026)"
-    title = re.sub(r'\s*[-_]?\s*jan\d+\s*$', '', title, flags=re.IGNORECASE)
-    title = re.sub(r'\s*\([^)]*\d{4}\)\s*$', '', title)
+    title = re.sub(r"\s*[-_]?\s*jan\d+\s*$", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"\s*\([^)]*\d{4}\)\s*$", "", title)
 
     # Capitalize properly if all lowercase
     if title == title.lower():
@@ -205,7 +209,9 @@ def generate_daily_summary_post(date_str: str, lessons: list[dict]) -> str:
     high_lessons = [l for l in lessons if l["severity"] == "HIGH"]
     if high_lessons:
         lessons_md += "\n## Important Discoveries\n\n"
-        lessons_md += "*Not emergencies, but insights that will shape how we trade going forward.*\n\n"
+        lessons_md += (
+            "*Not emergencies, but insights that will shape how we trade going forward.*\n\n"
+        )
         for lesson in high_lessons[:3]:  # Limit to top 3
             title = get_human_readable_title(lesson)
             insight = extract_key_insight(lesson)
@@ -417,5 +423,6 @@ def sync_lessons_to_blog(publish_devto: bool = True):
 
 if __name__ == "__main__":
     import sys
+
     publish_devto = "--no-devto" not in sys.argv
     sync_lessons_to_blog(publish_devto=publish_devto)
