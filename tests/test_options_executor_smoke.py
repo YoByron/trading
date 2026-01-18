@@ -274,7 +274,6 @@ class TestOptionsExecutorValidation:
         # Create a valid strategy with expiration 45 DTE from today
         # This ensures it's always within the 30-60 DTE range regardless of test date
         expiration_date = date.today() + timedelta(days=45)
-
         leg = OptionLeg(
             symbol=f"SPY{expiration_date.strftime('%y%m%d')}C00600000",
             strike=600.0,
