@@ -285,5 +285,6 @@ def sync_lessons_to_blog(publish_devto: bool = True):
 
 if __name__ == "__main__":
     import sys
+
     publish_devto = "--no-devto" not in sys.argv
     sync_lessons_to_blog(publish_devto=publish_devto)
