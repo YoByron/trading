@@ -135,8 +135,10 @@ jobs:
             fi
           fi
 
-      - name: Commit and push
+      - name: Commit and create PR
         if: steps.market_check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           git config --local user.email "action@github.com"
@@ -158,10 +160,21 @@ jobs:
 
           # Get today's date for commit message
           TODAY=$(date +%Y-%m-%d)
+          BRANCH_NAME="auto/blog-post-${TODAY}"
 
+          # Create branch and commit
+          git checkout -b "$BRANCH_NAME"
           git commit -m "feat(blog): Daily revenue report for $TODAY"
-          git push
-          echo "✅ Changes pushed to main"
+          git push -u origin "$BRANCH_NAME"
+
+          # Create and auto-merge PR
+          PR_URL=$(gh pr create --title "feat(blog): Daily revenue report for $TODAY" --body "Auto-generated daily blog post" --head "$BRANCH_NAME" --base main)
+          echo "Created PR: $PR_URL"
+
+          # Try to auto-merge (will fail if not enabled, that's ok)
+          gh pr merge "$BRANCH_NAME" --auto --squash || echo "Auto-merge not enabled, PR created for manual review"
+
+          echo "✅ PR created for blog post"
 
       - name: Summary
         if: steps.market_check.outputs.skip != 'true'
