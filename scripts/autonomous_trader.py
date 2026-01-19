@@ -120,9 +120,7 @@ def _parse_tickers() -> list[str]:
     # FIXED Jan 19 2026: Per CLAUDE.md, SPY/IWM ONLY until strategy proven
     # Previous expanded list caused SOFI blackout violation
     # Other tickers can be re-enabled AFTER 90-day paper trading validation
-    default_tickers = (
-        "SPY,IWM"  # CLAUDE.md: SPY/IWM ONLY - No individual stocks until proven
-    )
+    default_tickers = "SPY,IWM"  # CLAUDE.md: SPY/IWM ONLY - No individual stocks until proven
     raw = os.getenv("TARGET_TICKERS", default_tickers)
     return [ticker.strip().upper() for ticker in raw.split(",") if ticker.strip()]
 
