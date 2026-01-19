@@ -177,10 +177,15 @@ jobs:
           print("::warning::Trade execution not yet implemented - placeholder only")
           TRADE_EOF
 
-      # ===== NEW: FAILURE NOTIFICATION =====
+      # ===== FAILURE NOTIFICATION =====
       - name: Notify on Failure
         if: failure()
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "::error::Credit spread execution FAILED"
-          echo "Check logs for details"
-          # TODO: Add Slack/email notification here
+          pip install -q requests || true
+          python3 scripts/notify_ceo.py --type critical --message "CREDIT SPREAD EXECUTION FAILED - Workflow: execute-credit-spread, Run: ${{ github.run_id }}. Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
