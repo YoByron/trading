@@ -191,7 +191,7 @@ def generate_daily_summary_post(date_str: str, lessons: list[dict]) -> str:
     lessons_md = ""
 
     # Critical lessons first - these are the headlines
-    critical_lessons = [item for item in lessons if item["severity"] == "CRITICAL"]
+    critical_lessons = [lesson for lesson in lessons if lesson["severity"] == "CRITICAL"]
     if critical_lessons:
         lessons_md += "\n## The Hard Lessons\n\n"
         lessons_md += "*These are the moments that test us. Critical issues that demanded immediate attention.*\n\n"
@@ -206,7 +206,7 @@ def generate_daily_summary_post(date_str: str, lessons: list[dict]) -> str:
                 lessons_md += f"**Key takeaway:** {takeaway}\n\n"
 
     # High priority lessons - important but not fires
-    high_lessons = [item for item in lessons if item["severity"] == "HIGH"]
+    high_lessons = [lesson for lesson in lessons if lesson["severity"] == "HIGH"]
     if high_lessons:
         lessons_md += "\n## Important Discoveries\n\n"
         lessons_md += (
@@ -220,7 +220,7 @@ def generate_daily_summary_post(date_str: str, lessons: list[dict]) -> str:
             lessons_md += f"{insight}\n\n"
 
     # Quick wins and improvements
-    other_lessons = [item for item in lessons if item["severity"] in ["MEDIUM", "LOW"]]
+    other_lessons = [lesson for lesson in lessons if lesson["severity"] in ["MEDIUM", "LOW"]]
     if other_lessons:
         lessons_md += "\n## Quick Wins & Refinements\n\n"
         for lesson in other_lessons[:4]:  # Limit to top 4
