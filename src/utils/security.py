@@ -866,12 +866,8 @@ class MCPSecurityValidator:
 
     def __init__(self):
         """Initialize MCP security validator."""
-        self._url_allow_patterns = [
-            re.compile(p, re.IGNORECASE) for p in self.ALLOWED_URL_PATTERNS
-        ]
-        self._url_block_patterns = [
-            re.compile(p, re.IGNORECASE) for p in self.BLOCKED_URL_PATTERNS
-        ]
+        self._url_allow_patterns = [re.compile(p, re.IGNORECASE) for p in self.ALLOWED_URL_PATTERNS]
+        self._url_block_patterns = [re.compile(p, re.IGNORECASE) for p in self.BLOCKED_URL_PATTERNS]
 
     def validate_tool_access(
         self, server_id: str, tool_name: str, params: dict[str, Any] | None = None
@@ -889,9 +885,9 @@ class MCPSecurityValidator:
         """
         risk_level = self.SERVER_RISK_LEVELS.get(server_id, "medium")
         audit_entry = {
-            "timestamp": __import__("datetime").datetime.now(
-                __import__("datetime").timezone.utc
-            ).isoformat(),
+            "timestamp": __import__("datetime")
+            .datetime.now(__import__("datetime").timezone.utc)
+            .isoformat(),
             "server": server_id,
             "tool": tool_name,
             "risk_level": risk_level,
@@ -901,9 +897,7 @@ class MCPSecurityValidator:
         # Check if server is known
         allowed_tools = self.ALLOWED_TOOLS.get(server_id)
         if allowed_tools is None:
-            logger.warning(
-                "🛡️ MCP: Unknown server '%s' - blocking by default", server_id
-            )
+            logger.warning("🛡️ MCP: Unknown server '%s' - blocking by default", server_id)
             return MCPSecurityResult(
                 is_allowed=False,
                 server_id=server_id,
@@ -980,9 +974,7 @@ class MCPSecurityValidator:
         # Default: block unknown URLs for security
         return {"allowed": False, "reason": "URL not in whitelist"}
 
-    def validate_mcp_response(
-        self, server_id: str, tool_name: str, response: Any
-    ) -> bool:
+    def validate_mcp_response(self, server_id: str, tool_name: str, response: Any) -> bool:
         """
         Validate MCP tool response for anomalies.
 
