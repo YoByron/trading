@@ -13,7 +13,6 @@ No trade bypasses this gate. It enforces:
 """
 
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -118,6 +117,7 @@ class TradeBlockedError(Exception):
 # Per CLAUDE.md and LL-244 adversarial audit: These limits are NON-NEGOTIABLE
 try:
     from src.constants.trading_thresholds import PositionSizing
+
     MAX_POSITION_PCT = PositionSizing.MAX_POSITION_PCT  # 5% max per CLAUDE.md
     MAX_DAILY_LOSS_PCT = PositionSizing.MAX_DAILY_LOSS_PCT  # 2% max daily loss
 except ImportError:
