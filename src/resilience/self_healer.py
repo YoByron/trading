@@ -26,13 +26,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
 
 class HealthStatus(Enum):
     """Health check status."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -42,6 +43,7 @@ class HealthStatus(Enum):
 @dataclass
 class HealthCheck:
     """Result of a health check."""
+
     name: str
     status: HealthStatus
     message: str
@@ -261,22 +263,22 @@ class SelfHealer:
                 return HealthCheck(
                     name="data_freshness",
                     status=HealthStatus.UNHEALTHY,
-                    message=f"Data is {age.total_seconds()/3600:.1f} hours old",
-                    details={"age_hours": age.total_seconds()/3600, "can_heal": True},
+                    message=f"Data is {age.total_seconds() / 3600:.1f} hours old",
+                    details={"age_hours": age.total_seconds() / 3600, "can_heal": True},
                 )
             elif age > timedelta(hours=4):
                 return HealthCheck(
                     name="data_freshness",
                     status=HealthStatus.DEGRADED,
-                    message=f"Data is {age.total_seconds()/3600:.1f} hours old",
-                    details={"age_hours": age.total_seconds()/3600},
+                    message=f"Data is {age.total_seconds() / 3600:.1f} hours old",
+                    details={"age_hours": age.total_seconds() / 3600},
                 )
 
             return HealthCheck(
                 name="data_freshness",
                 status=HealthStatus.HEALTHY,
-                message=f"Data is {age.total_seconds()/60:.0f} minutes old",
-                details={"age_minutes": age.total_seconds()/60},
+                message=f"Data is {age.total_seconds() / 60:.0f} minutes old",
+                details={"age_minutes": age.total_seconds() / 60},
             )
 
         except Exception as e:

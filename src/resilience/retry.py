@@ -6,12 +6,12 @@ Provides reliable retry mechanisms for transient failures.
 Created: Jan 19, 2026 (LL-249)
 """
 
-import time
-import random
 import logging
+import random
+import time
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, TypeVar, Any, Tuple, Type
+from typing import Any, Callable, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -21,19 +21,20 @@ T = TypeVar("T")
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior."""
+
     max_attempts: int = 4
-    base_delay: float = 2.0      # Initial delay in seconds
-    max_delay: float = 60.0      # Maximum delay
+    base_delay: float = 2.0  # Initial delay in seconds
+    max_delay: float = 60.0  # Maximum delay
     exponential_base: float = 2.0
-    jitter: bool = True          # Add randomness to prevent thundering herd
-    retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,)
+    jitter: bool = True  # Add randomness to prevent thundering herd
+    retryable_exceptions: tuple[type[Exception], ...] = (Exception,)
 
 
 def retry_with_backoff(
     config: RetryConfig | None = None,
     max_attempts: int = 4,
     base_delay: float = 2.0,
-    retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,),
+    retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Decorator for retrying functions with exponential backoff.
@@ -77,12 +78,12 @@ def retry_with_backoff(
                     # Calculate delay with exponential backoff
                     delay = min(
                         config.base_delay * (config.exponential_base ** (attempt - 1)),
-                        config.max_delay
+                        config.max_delay,
                     )
 
                     # Add jitter (±25%)
                     if config.jitter:
-                        delay *= (0.75 + random.random() * 0.5)
+                        delay *= 0.75 + random.random() * 0.5
 
                     logger.warning(
                         f"[{func.__name__}] Attempt {attempt}/{config.max_attempts} failed: {e}. "
@@ -96,6 +97,7 @@ def retry_with_backoff(
             raise RuntimeError(f"Unexpected state in retry for {func.__name__}")
 
         return wrapper
+
     return decorator
 
 
@@ -150,11 +152,8 @@ class RetryableOperation:
             )
             raise error
 
-        delay = min(
-            self.base_delay * (2 ** (self._attempt - 1)),
-            self.max_delay
-        )
-        delay *= (0.75 + random.random() * 0.5)  # Jitter
+        delay = min(self.base_delay * (2 ** (self._attempt - 1)), self.max_delay)
+        delay *= 0.75 + random.random() * 0.5  # Jitter
 
         logger.warning(
             f"[{self.operation_name}] Attempt {self._attempt}/{self.max_attempts} failed: {error}. "

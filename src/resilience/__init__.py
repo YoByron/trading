@@ -11,8 +11,8 @@ Created: Jan 19, 2026 (LL-249: Resilience and Self-Healing)
 """
 
 from src.resilience.circuit_breaker import CircuitBreaker, CircuitState
-from src.resilience.retry import retry_with_backoff, RetryConfig
-from src.resilience.self_healer import SelfHealer, HealthCheck, HealthStatus
+from src.resilience.retry import RetryConfig, retry_with_backoff
+from src.resilience.self_healer import HealthCheck, HealthStatus, SelfHealer
 
 __all__ = [
     "CircuitBreaker",

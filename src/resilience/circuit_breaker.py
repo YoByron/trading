@@ -15,13 +15,13 @@ States:
 Created: Jan 19, 2026 (LL-249)
 """
 
-import time
+import logging
 import threading
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, TypeVar, Any
 from functools import wraps
-import logging
+from typing import Any, Callable, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,9 @@ T = TypeVar("T")
 
 class CircuitState(Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"      # Normal - requests pass through
-    OPEN = "open"          # Failing - requests blocked
+
+    CLOSED = "closed"  # Normal - requests pass through
+    OPEN = "open"  # Failing - requests blocked
     HALF_OPEN = "half_open"  # Testing recovery
 
 
@@ -51,10 +52,11 @@ class CircuitBreaker:
         with breaker:
             result = risky_operation()
     """
+
     name: str
-    failure_threshold: int = 5      # Failures before opening circuit
+    failure_threshold: int = 5  # Failures before opening circuit
     recovery_timeout: float = 60.0  # Seconds before trying half-open
-    success_threshold: int = 2      # Successes in half-open to close
+    success_threshold: int = 2  # Successes in half-open to close
 
     # Internal state
     _state: CircuitState = field(default=CircuitState.CLOSED, init=False)
@@ -100,7 +102,9 @@ class CircuitBreaker:
                 self._state = CircuitState.OPEN
             elif self._state == CircuitState.CLOSED:
                 if self._failure_count >= self.failure_threshold:
-                    logger.warning(f"[{self.name}] Circuit OPEN - threshold reached ({self._failure_count} failures)")
+                    logger.warning(
+                        f"[{self.name}] Circuit OPEN - threshold reached ({self._failure_count} failures)"
+                    )
                     self._state = CircuitState.OPEN
 
     def allow_request(self) -> bool:
@@ -112,6 +116,7 @@ class CircuitBreaker:
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
         """Decorator to wrap function with circuit breaker."""
+
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             if not self.allow_request():
@@ -133,9 +138,7 @@ class CircuitBreaker:
     def __enter__(self) -> "CircuitBreaker":
         """Context manager entry."""
         if not self.allow_request():
-            raise CircuitBreakerOpenError(
-                f"Circuit breaker [{self.name}] is OPEN"
-            )
+            raise CircuitBreakerOpenError(f"Circuit breaker [{self.name}] is OPEN")
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
@@ -169,6 +172,7 @@ class CircuitBreaker:
 
 class CircuitBreakerOpenError(Exception):
     """Raised when circuit breaker is open and blocking requests."""
+
     pass
 
 
