@@ -4,15 +4,12 @@ Risk Manager - Real Implementation
 Core risk management for Phil Town Rule #1: Don't lose money.
 
 Restored: January 12, 2026 (was stub since PR #1445)
-Fixed: January 19, 2026 - Use centralized thresholds (5% not 20%)
 """
 
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
-
-from src.constants.trading_thresholds import SIZING
 
 logger = logging.getLogger(__name__)
 
@@ -36,17 +33,16 @@ class RiskManager:
     Risk manager for Phil Town options trading.
 
     Enforces:
-    - Position size limits (max 5% of portfolio per position - CLAUDE.md)
+    - Position size limits (max 5% of portfolio per position)
     - Daily loss limits (max 2% daily drawdown)
     - Concentration limits (no more than 20% in single sector)
     - Cash reserve requirements (keep 20% cash minimum)
     """
 
-    # Use centralized thresholds from trading_thresholds.py
-    # CRITICAL FIX: Was 20%, now 5% per CLAUDE.md mandate
-    DEFAULT_MAX_POSITION_PCT = SIZING.MAX_POSITION_PCT  # 5% per CLAUDE.md
-    DEFAULT_MAX_DAILY_LOSS_PCT = SIZING.MAX_DAILY_LOSS_PCT  # 2% max daily loss
-    DEFAULT_MIN_CASH_RESERVE_PCT = SIZING.MIN_CASH_RESERVE_PCT  # 20% cash
+    # Default risk parameters (CLAUDE.md mandates 5% max - Phil Town Rule #1)
+    DEFAULT_MAX_POSITION_PCT = 0.05  # 5% max per position per CLAUDE.md
+    DEFAULT_MAX_DAILY_LOSS_PCT = 0.02  # 2% max daily loss
+    DEFAULT_MIN_CASH_RESERVE_PCT = 0.20  # Keep 20% cash
     DEFAULT_MAX_SECTOR_CONCENTRATION = 0.40  # 40% max in one sector
 
     def __init__(

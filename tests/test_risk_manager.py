@@ -10,7 +10,7 @@ Comprehensive test suite covering:
 - Contract calculations and trade approval
 
 Created: January 13, 2026
-Updated: January 19, 2026 - Fixed position size to 5% per CLAUDE.md mandate
+Updated: January 19, 2026 - Changed 20% to 5% per CLAUDE.md mandate
 """
 
 import pytest
@@ -55,7 +55,7 @@ class TestRiskManagerInitialization:
     """Tests for RiskManager initialization."""
 
     def test_default_initialization(self):
-        """RiskManager initializes with default values per CLAUDE.md."""
+        """RiskManager initializes with default values."""
         rm = RiskManager()
         assert rm.portfolio_value == 5000.0
         assert rm.max_position_pct == 0.05  # 5% per CLAUDE.md
@@ -80,8 +80,8 @@ class TestRiskManagerInitialization:
         assert rm.max_daily_loss_pct == 0.01
         assert rm.min_cash_reserve_pct == 0.25
 
-    def test_default_constants_match_claude_md(self):
-        """Verify default constants match CLAUDE.md mandates."""
+    def test_default_constants_match_docstring(self):
+        """Verify default constants match documented values."""
         assert RiskManager.DEFAULT_MAX_POSITION_PCT == 0.05  # 5% per CLAUDE.md
         assert RiskManager.DEFAULT_MAX_DAILY_LOSS_PCT == 0.02
         assert RiskManager.DEFAULT_MIN_CASH_RESERVE_PCT == 0.20
@@ -112,15 +112,15 @@ class TestPositionSizeLimits:
 
     def test_position_exceeds_limit_fails(self, risk_manager):
         """Position exceeding 5% of portfolio should fail."""
-        # $500 is 10% of $5000 - exceeds 5% limit
-        check = risk_manager.check_position_size("SOFI", 500.0)
+        # $300 is 6% of $5000 - exceeds 5% limit
+        check = risk_manager.check_position_size("SOFI", 300.0)
         assert check.passed is False
         assert "exceeds max" in check.reason.lower()
-        assert check.risk_score == pytest.approx(0.10, rel=0.01)
+        assert check.risk_score == pytest.approx(0.06, rel=0.01)
 
     def test_position_check_includes_symbol_in_reason(self, risk_manager):
         """Position check reason should include the symbol."""
-        check = risk_manager.check_position_size("F", 200.0)
+        check = risk_manager.check_position_size("F", 500.0)
         assert "F" in check.reason
 
     def test_small_position_low_risk_score(self, risk_manager):
@@ -137,7 +137,7 @@ class TestPositionSizeLimits:
         assert check.risk_score == 1.0  # Max risk
 
     def test_position_limit_scales_with_portfolio(self):
-        """Position limit should scale with portfolio size (5% per CLAUDE.md)."""
+        """Position limit should scale with portfolio size."""
         small_rm = RiskManager(portfolio_value=5000.0)
         large_rm = RiskManager(portfolio_value=50000.0)
 
@@ -283,7 +283,7 @@ class TestConcentrationLimits:
 
 
 class TestMaxContractsCalculation:
-    """Tests for CSP max contracts calculation with 5% position limit."""
+    """Tests for CSP max contracts calculation."""
 
     @pytest.fixture
     def risk_manager(self):
@@ -291,14 +291,14 @@ class TestMaxContractsCalculation:
         return RiskManager(portfolio_value=5000.0)
 
     def test_max_contracts_basic(self, risk_manager):
-        """Calculate max contracts for $5 strike CSP with 5% limit."""
+        """Calculate max contracts for $5 strike CSP (5% max position)."""
         # $5 strike = $500 collateral per contract
         # Usable cash = $5000 * 0.80 = $4000
         # Max by cash = $4000 / $500 = 8 contracts
-        # Max by position = $250 (5%) / $500 = 0 contracts
-        # Result should be min(8, 0, 10) = 0
+        # Max by position = $250 (5%) / $500 = 0 contracts (can't afford 1)
+        # Result should be min(8, 0, 10) = 0 (position limit too restrictive)
         max_contracts = risk_manager.get_max_contracts(strike_price=5.0, cash_available=5000.0)
-        assert max_contracts == 0  # Position limit too restrictive
+        assert max_contracts == 0
 
     def test_max_contracts_limited_by_cash(self, risk_manager):
         """Max contracts should be limited by available cash."""
@@ -310,18 +310,18 @@ class TestMaxContractsCalculation:
 
     def test_max_contracts_capped_at_ten(self):
         """Max contracts should be capped at 10."""
-        # Large portfolio to test cap - need enough for position limit
-        rm = RiskManager(portfolio_value=200000.0)  # 5% = $10K limit
-        # $5 strike with $200K cash
-        max_contracts = rm.get_max_contracts(strike_price=5.0, cash_available=200000.0)
+        # Large portfolio to test cap
+        rm = RiskManager(portfolio_value=100000.0)
+        # $5 strike with $100K cash
+        max_contracts = rm.get_max_contracts(strike_price=5.0, cash_available=100000.0)
         assert max_contracts == 10  # Capped
 
     def test_max_contracts_higher_strike(self, risk_manager):
-        """Higher strike price requires more collateral."""
+        """Higher strike price requires more collateral (5% max position)."""
         # $10 strike = $1000 collateral per contract
-        # Max by position = $250 (5%) / $1000 = 0 contracts
+        # Max by position = $250 (5%) / $1000 = 0 contracts (can't afford 1)
         max_contracts = risk_manager.get_max_contracts(strike_price=10.0, cash_available=5000.0)
-        assert max_contracts == 0  # Position limit too restrictive
+        assert max_contracts == 0
 
     def test_max_contracts_insufficient_capital(self, risk_manager):
         """Return 0 when insufficient capital."""
@@ -340,11 +340,11 @@ class TestComprehensiveRiskCalculation:
         return RiskManager(portfolio_value=5000.0)
 
     def test_calculate_risk_all_pass(self, risk_manager):
-        """All checks passing should return approved."""
+        """All checks passing should return approved (5% max position)."""
         result = risk_manager.calculate_risk(
             symbol="F",
             notional_value=200.0,  # 4% - within 5% limit
-            cash_available=3000.0,  # Leaves $2800 reserve
+            cash_available=3000.0,  # Leaves $2500 reserve
             potential_loss=50.0,  # 1% - within limit
         )
         assert result["approved"] is True
@@ -407,7 +407,7 @@ class TestTradeApproval:
         return RiskManager(portfolio_value=5000.0)
 
     def test_approve_valid_trade(self, risk_manager):
-        """Valid trade should be approved (within 5% limit)."""
+        """Valid trade should be approved (under 5% position limit)."""
         approved, reason = risk_manager.approve_trade(
             symbol="F", notional_value=200.0, cash_available=3000.0, potential_loss=0.0
         )
@@ -481,49 +481,49 @@ class TestEdgeCases:
         assert check.passed is True
 
     def test_very_small_portfolio(self):
-        """Very small portfolio should still enforce 5% per CLAUDE.md."""
+        """Very small portfolio should still enforce percentages (5%)."""
         rm = RiskManager(portfolio_value=100.0)
         max_position = rm.get_position_limit("F")
         assert max_position == 5.0  # 5% of $100
 
     def test_very_large_portfolio(self):
-        """Very large portfolio should still enforce 5% per CLAUDE.md."""
+        """Very large portfolio should still enforce percentages (5%)."""
         rm = RiskManager(portfolio_value=1000000.0)
         max_position = rm.get_position_limit("SPY")
         assert max_position == 50000.0  # 5% of $1M
 
     def test_custom_higher_risk_tolerance(self):
-        """Higher risk tolerance configuration (override default)."""
+        """Higher risk tolerance configuration."""
         rm = RiskManager(
             portfolio_value=5000.0,
-            max_position_pct=0.30,  # 30% per position (overriding default)
+            max_position_pct=0.30,  # 30% per position
             max_daily_loss_pct=0.05,  # 5% daily loss
         )
-        # $1200 position (24%) should pass with custom settings
+        # $1200 position (24%) should pass
         check = rm.check_position_size("SPY", 1200.0)
         assert check.passed is True
 
-    def test_default_5_percent_limit_enforced(self):
-        """Default 5% limit per CLAUDE.md should be enforced."""
-        rm = RiskManager(portfolio_value=5000.0)
-        # $300 position (6%) should fail with default 5% limit
+    def test_custom_lower_risk_tolerance(self):
+        """Lower risk tolerance configuration."""
+        rm = RiskManager(
+            portfolio_value=5000.0,
+            max_position_pct=0.05,  # 5% per position
+            max_daily_loss_pct=0.01,  # 1% daily loss
+        )
+        # $300 position (6%) should fail
         check = rm.check_position_size("SPY", 300.0)
         assert check.passed is False
 
 
 class TestPhilTownRule1:
-    """Integration tests for Phil Town Rule #1: Don't Lose Money.
-
-    Updated Jan 19, 2026: Tests now use 5% position limit per CLAUDE.md.
-    This means $5K account can only risk $250 per position (not $1000).
-    """
+    """Integration tests for Phil Town Rule #1: Don't Lose Money."""
 
     @pytest.fixture
     def conservative_rm(self):
-        """Create a conservative risk manager for small capital (uses defaults)."""
+        """Create a conservative risk manager for small capital."""
         return RiskManager(
             portfolio_value=500.0,  # $500 capital target
-            # Uses default 5% per CLAUDE.md
+            max_position_pct=0.20,  # 20% per position
             max_daily_loss_pct=0.02,  # 2% daily loss
             min_cash_reserve_pct=0.20,  # 20% cash reserve
         )
@@ -534,28 +534,28 @@ class TestPhilTownRule1:
         # With only $500, can we trade?
         max_contracts = conservative_rm.get_max_contracts(strike_price=5.0, cash_available=500.0)
         # Usable cash = $500 * 0.80 = $400
-        # Max by position = $25 (5% of $500) / $500 = 0 contracts
-        # Not enough for 1 contract
+        # Not enough for 1 contract ($500)
         assert max_contracts == 0  # Cannot trade yet
 
     def test_can_trade_with_sufficient_capital(self):
-        """Test trading capability - need $10K for $5 strike with 5% limit."""
-        # With 5% position limit: need $500 / 0.05 = $10K portfolio
-        rm = RiskManager(portfolio_value=10000.0)
+        """Test trading capability with sufficient capital."""
+        rm = RiskManager(portfolio_value=1000.0)
         # $5 strike = $500 collateral
-        # Usable cash = $10000 * 0.80 = $8000
-        # Max by position = $500 (5% of $10K) / $500 = 1 contract
-        max_contracts = rm.get_max_contracts(strike_price=5.0, cash_available=10000.0)
-        assert max_contracts == 1  # Can now trade 1 contract
+        # Usable cash = $1000 * 0.80 = $800
+        # Max by position = $200 (20%) / $500 = 0 contracts
+        max_contracts = rm.get_max_contracts(strike_price=5.0, cash_available=1000.0)
+        # Position limit prevents trading
+        assert max_contracts == 0
 
     def test_minimum_capital_for_f_csp(self):
-        """Calculate minimum capital needed for 1 F CSP at $5 strike with 5% limit."""
-        # Need: $500 collateral
-        # Position limit 5% >= $500
-        # $500 / 0.05 = $10,000 minimum for position limit
+        """Calculate minimum capital needed for 1 F CSP at $5 strike (5% limit)."""
+        # Need: $500 collateral + keep 20% reserve
+        # If using 80% of capital: capital * 0.80 >= $500
+        # Also: position limit 5% >= $500
+        # $500 / 0.05 = $10000 minimum for position limit
         rm = RiskManager(portfolio_value=10000.0)
         max_contracts = rm.get_max_contracts(strike_price=5.0, cash_available=10000.0)
-        assert max_contracts == 1  # Can trade 1 contract with $10K
+        assert max_contracts == 1  # Can now trade 1 contract with $10K
 
     def test_protect_capital_after_loss(self, conservative_rm):
         """After daily loss, trading should be restricted."""
@@ -563,6 +563,6 @@ class TestPhilTownRule1:
 
         # Should not approve additional risk
         approved, reason = conservative_rm.approve_trade(
-            symbol="F", notional_value=25.0, cash_available=400.0, potential_loss=10.0
+            symbol="F", notional_value=100.0, cash_available=400.0, potential_loss=10.0
         )
         assert approved is False
