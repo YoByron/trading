@@ -117,6 +117,7 @@ MIN_TRADE_AMOUNT = float(os.getenv("MIN_TRADE_AMOUNT", "1.0"))  # $1 minimum tra
 # SECURITY FIX (Jan 19, 2026): Added thread lock to prevent race condition
 # where concurrent trades could bypass daily loss limit
 import threading
+
 _daily_loss_lock = threading.Lock()
 _daily_loss_tracker: dict[str, float] = {"total": 0.0, "date": ""}
 

@@ -302,6 +302,7 @@ class AlpacaExecutor:
         # Previous bug: Import failure would bypass all validation
         try:
             from src.safety.mandatory_trade_gate import TradeBlockedError, validate_trade_mandatory
+
             gate_available = True
         except ImportError as import_err:
             logger.error(f"🚨 CRITICAL: Mandatory trade gate import failed: {import_err}")
@@ -529,7 +530,15 @@ class AlpacaExecutor:
 
             # Convert OrderResult back to dict for compatibility
             # Validate required attributes exist
-            required_attrs = ["order_id", "symbol", "side", "quantity", "status", "broker", "timestamp"]
+            required_attrs = [
+                "order_id",
+                "symbol",
+                "side",
+                "quantity",
+                "status",
+                "broker",
+                "timestamp",
+            ]
             for attr in required_attrs:
                 if not hasattr(order_result, attr):
                     raise ValueError(f"Broker response missing required attribute: {attr}")
@@ -540,7 +549,9 @@ class AlpacaExecutor:
                 "side": order_result.side,
                 "qty": order_result.quantity,
                 "status": order_result.status,
-                "filled_avg_price": getattr(order_result, "filled_price", None),  # May be None for pending
+                "filled_avg_price": getattr(
+                    order_result, "filled_price", None
+                ),  # May be None for pending
                 "broker": order_result.broker.value,
                 "submitted_at": order_result.timestamp,
             }
