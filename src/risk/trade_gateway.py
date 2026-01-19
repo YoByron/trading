@@ -145,6 +145,7 @@ class TradeGateway:
     # FIXED Jan 19, 2026: Import from central constants for consistency
     try:
         from src.core.trading_constants import MAX_DAILY_LOSS_PCT as _CENTRAL_DAILY_LOSS
+
         MAX_DAILY_LOSS_PCT = _CENTRAL_DAILY_LOSS
     except ImportError:
         MAX_DAILY_LOSS_PCT = 0.05  # 5% fallback per trading_constants.py
