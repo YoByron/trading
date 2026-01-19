@@ -178,6 +178,7 @@ class TradeGateway:
     # ============================================================
     try:
         from src.core.trading_constants import ALLOWED_TICKERS as _CENTRAL_TICKERS
+
         ALLOWED_TICKERS = _CENTRAL_TICKERS
     except ImportError:
         ALLOWED_TICKERS = {"SPY", "IWM"}  # Fallback
