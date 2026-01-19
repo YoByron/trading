@@ -86,7 +86,9 @@ class FearGreedIndex:
                     self.last_classification = fng_data["value_classification"]
                     self.last_update = datetime.now()
 
-                    logger.info(f"Fear & Greed Index: {self.last_value} ({self.last_classification})")
+                    logger.info(
+                        f"Fear & Greed Index: {self.last_value} ({self.last_classification})"
+                    )
 
                     return {
                         "value": self.last_value,
@@ -102,14 +104,18 @@ class FearGreedIndex:
             except requests.RequestException as e:
                 last_error = e
                 if attempt < MAX_RETRIES - 1:
-                    logger.warning(f"Fear & Greed API attempt {attempt + 1}/{MAX_RETRIES} failed: {e}, retrying in {delay:.1f}s")
+                    logger.warning(
+                        f"Fear & Greed API attempt {attempt + 1}/{MAX_RETRIES} failed: {e}, retrying in {delay:.1f}s"
+                    )
                     time.sleep(delay)
                     delay *= BACKOFF_MULTIPLIER
             except Exception as e:
                 logger.error(f"Error processing Fear & Greed data: {e}")
                 return {"success": False, "error": str(e)}
 
-        logger.error(f"Failed to fetch Fear & Greed Index after {MAX_RETRIES} attempts: {last_error}")
+        logger.error(
+            f"Failed to fetch Fear & Greed Index after {MAX_RETRIES} attempts: {last_error}"
+        )
         return {"success": False, "error": str(last_error)}
 
     def get_trading_signal(self) -> dict[str, Any]:
@@ -223,14 +229,18 @@ class FearGreedIndex:
             except requests.RequestException as e:
                 last_error = e
                 if attempt < MAX_RETRIES - 1:
-                    logger.warning(f"Historical Fear & Greed API attempt {attempt + 1}/{MAX_RETRIES} failed: {e}, retrying in {delay:.1f}s")
+                    logger.warning(
+                        f"Historical Fear & Greed API attempt {attempt + 1}/{MAX_RETRIES} failed: {e}, retrying in {delay:.1f}s"
+                    )
                     time.sleep(delay)
                     delay *= BACKOFF_MULTIPLIER
             except Exception as e:
                 logger.error(f"Failed to fetch historical Fear & Greed data: {e}")
                 return []
 
-        logger.error(f"Failed to fetch historical Fear & Greed data after {MAX_RETRIES} attempts: {last_error}")
+        logger.error(
+            f"Failed to fetch historical Fear & Greed data after {MAX_RETRIES} attempts: {last_error}"
+        )
         return []
 
     def calculate_trend(self, days: int = 7) -> dict[str, Any]:
