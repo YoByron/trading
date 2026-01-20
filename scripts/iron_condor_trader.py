@@ -344,9 +344,9 @@ class IronCondorStrategy:
                                 time_in_force=TimeInForce.GTC,  # Options require GTC
                             )
                             order = client.submit_order(order_req)
-                            order_ids.append({
-                                "leg": leg_name, "order_id": str(order.id), "price": limit_price
-                            })
+                            order_ids.append(
+                                {"leg": leg_name, "order_id": str(order.id), "price": limit_price}
+                            )
                             logger.info(f"   ✅ {leg_name}: {order.id} @ ${limit_price:.2f}")
                         except Exception as leg_error:
                             logger.warning(f"   ⚠️ {leg_name} order failed: {leg_error}")
