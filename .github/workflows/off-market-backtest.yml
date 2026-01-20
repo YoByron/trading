@@ -1,0 +1,230 @@
+name: Off-Market Backtesting
+
+# Run during off-market hours to accelerate learning
+# without impacting live trading operations
+
+on:
+  schedule:
+    # Weekday evenings (6 PM ET = 11 PM UTC)
+    - cron: '0 23 * * 1-5'
+    # Saturday morning (8 AM ET = 1 PM UTC)  
+    - cron: '0 13 * * 6'
+    # Sunday morning (8 AM ET = 1 PM UTC)
+    - cron: '0 13 * * 0'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days to backtest'
+        required: false
+        default: '30'
+        type: string
+      parameter_sweep:
+        description: 'Run parameter optimization'
+        required: false
+        default: false
+        type: boolean
+      max_combinations:
+        description: 'Max parameter combinations (if sweep)'
+        required: false
+        default: '25'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+  GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+  PAPER_TRADING: 'true'
+
+jobs:
+  # === PRE-CHECK: Verify market is closed ===
+  verify-market-closed:
+    runs-on: ubuntu-latest
+    outputs:
+      market_closed: ${{ steps.check.outputs.closed }}
+    steps:
+      - name: Check market hours
+        id: check
+        run: |
+          # Get current time in ET
+          current_hour=$(TZ="America/New_York" date +%H)
+          current_day=$(TZ="America/New_York" date +%u)  # 1=Monday, 7=Sunday
+          
+          # Market hours: Mon-Fri, 9:30 AM - 4:00 PM ET
+          # We're safe if: weekend, or before 9 AM, or after 5 PM
+          
+          if [ "$current_day" -gt 5 ]; then
+            echo "Weekend - market closed"
+            echo "closed=true" >> $GITHUB_OUTPUT
+          elif [ "$current_hour" -lt 9 ] || [ "$current_hour" -ge 17 ]; then
+            echo "Outside market hours - safe to backtest"
+            echo "closed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Market may be open - skipping backtest"
+            echo "closed=false" >> $GITHUB_OUTPUT
+          fi
+
+  # === MAIN BACKTEST ===
+  run-backtest:
+    needs: verify-market-closed
+    if: needs.verify-market-closed.outputs.market_closed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 hours max
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install alpaca-py pandas numpy scipy matplotlib
+          pip install google-cloud-aiplatform  # For RAG ingestion
+          
+      - name: Create backtest directory structure
+        run: |
+          mkdir -p scripts/backtest
+          mkdir -p data/backtests/parameter_sweeps
+          mkdir -p data/rag_staging
+          
+      - name: Determine backtest parameters
+        id: params
+        run: |
+          # Use input or default
+          DAYS="${{ github.event.inputs.days || '30' }}"
+          SWEEP="${{ github.event.inputs.parameter_sweep || 'false' }}"
+          MAX_COMBOS="${{ github.event.inputs.max_combinations || '25' }}"
+          
+          # Weekends get longer backtests
+          DAY_OF_WEEK=$(date +%u)
+          if [ "$DAY_OF_WEEK" -gt 5 ] && [ "$DAYS" = "30" ]; then
+            DAYS="60"
+            echo "Weekend detected - extending backtest to $DAYS days"
+          fi
+          
+          echo "days=$DAYS" >> $GITHUB_OUTPUT
+          echo "sweep=$SWEEP" >> $GITHUB_OUTPUT
+          echo "max_combos=$MAX_COMBOS" >> $GITHUB_OUTPUT
+          
+      - name: Run standard backtest
+        if: steps.params.outputs.sweep != 'true'
+        run: |
+          echo "🚀 Running ${{ steps.params.outputs.days }}-day backtest..."
+          python scripts/backtest/bull_put_spread_backtester.py \
+            --days ${{ steps.params.outputs.days }} \
+            --output data/backtests
+            
+      - name: Run parameter sweep
+        if: steps.params.outputs.sweep == 'true'
+        run: |
+          echo "🚀 Running parameter sweep (${{ steps.params.outputs.max_combos }} combinations)..."
+          python scripts/backtest/parameter_sweep.py \
+            --days ${{ steps.params.outputs.days }} \
+            --max-combos ${{ steps.params.outputs.max_combos }} \
+            --output data/backtests/parameter_sweeps
+            
+      - name: Ingest lessons to RAG
+        if: success()
+        continue-on-error: true
+        run: |
+          echo "📚 Processing lessons for RAG ingestion..."
+          python scripts/backtest/ingest_backtest_to_rag.py \
+            --lessons-dir data/backtests \
+            --output data/rag_staging
+            
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-results-${{ github.run_id }}
+          path: |
+            data/backtests/*.json
+            data/backtests/*.csv
+            data/backtests/parameter_sweeps/*.json
+            data/backtests/parameter_sweeps/*.csv
+            data/rag_staging/*.md
+          retention-days: 30
+          
+      - name: Commit results to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add new results
+          git add data/backtests/ data/rag_staging/ || true
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No new results to commit"
+          else
+            TIMESTAMP=$(date +%Y-%m-%d)
+            git commit -m "chore(backtest): Add results from $TIMESTAMP
+
+            - Backtest period: ${{ steps.params.outputs.days }} days
+            - Parameter sweep: ${{ steps.params.outputs.sweep }}
+            - Run ID: ${{ github.run_id }}"
+            
+            git push
+            echo "✅ Results committed to repository"
+          fi
+
+  # === UPDATE LATEST SUMMARY ===
+  update-summary:
+    needs: run-backtest
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Get latest main after backtest commit
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Update latest_summary.json
+        run: |
+          # Find the most recent summary file
+          LATEST_SUMMARY=$(ls -t data/backtests/backtest_summary_*.json 2>/dev/null | head -1)
+          
+          if [ -n "$LATEST_SUMMARY" ]; then
+            cp "$LATEST_SUMMARY" data/backtests/latest_summary.json
+            echo "✅ Updated latest_summary.json from $LATEST_SUMMARY"
+          else
+            echo "⚠️ No summary file found"
+          fi
+          
+      - name: Commit updated summary
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add data/backtests/latest_summary.json || true
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(backtest): Update latest_summary.json"
+            git push
+          fi
+
+  # === NOTIFY ON FAILURE ===
+  notify-failure:
+    needs: [run-backtest]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create failure notification
+        run: |
+          echo "❌ Off-market backtest failed!"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
