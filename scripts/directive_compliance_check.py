@@ -33,7 +33,7 @@ TRADING_RULES = {
     "position_size_pct": 0.05,  # 5% max per trade
     "position_size_desc": "Max 5% of account per trade ($248)",
     "spread_only": True,
-    "allowed_tickers": ["SPY", "IWM"],
+    "allowed_tickers": ["SPY"],
     "min_dte": 30,
     "max_dte": 45,
     "stop_loss_required": True,
