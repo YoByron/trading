@@ -70,7 +70,7 @@ class PreTradeChecklist:
         """Run all checklist items. Returns (passed, failures).
 
         Validates a proposed trade against all CLAUDE.md checklist items:
-        1. Ticker must be SPY or IWM
+        1. Ticker must be SPY
         2. Max loss must be <= 5% of account
         3. Must be a spread (not naked)
         4. Must not be in earnings blackout period
@@ -132,7 +132,7 @@ class PreTradeChecklist:
         - Next 1 char: C or P for call/put
         - Last 8 digits: strike price * 1000
 
-        For standard symbols like SPY/IWM (3 chars), the underlying is the first 3.
+        For standard symbols like SPY (3 chars), the underlying is the first 3.
 
         Args:
             symbol: The option symbol (e.g., SPY260221P00555000) or underlying.
@@ -143,7 +143,7 @@ class PreTradeChecklist:
         symbol = symbol.upper().strip()
 
         if len(symbol) > 10:  # Options symbol like SPY260221P00555000
-            # For SPY/IWM (3 char tickers), underlying is first 3 chars
+            # For SPY (3 char tickers), underlying is first 3 chars
             if symbol[:3] in self.ALLOWED_TICKERS:
                 return symbol[:3]
             # For 4+ char tickers, extract until we hit a digit
