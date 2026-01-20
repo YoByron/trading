@@ -14,7 +14,6 @@ Reason: Exit SOFI position per CLAUDE.md directive - SPY ONLY strategy
 """
 
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -24,10 +23,7 @@ sys.path.insert(0, str(project_root))
 
 from src.utils.alpaca_client import get_alpaca_credentials
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Target position to close
@@ -131,7 +127,7 @@ def close_short_put(dry_run: bool = False):
     order_qty = abs(qty)
 
     print(f"Action: BUY {int(order_qty)} contract(s) to close short position")
-    print(f"Order Type: MARKET")
+    print("Order Type: MARKET")
     print(f"Expected Loss: ~${abs(unrealized_pl):.2f}")
     print()
 
@@ -189,13 +185,9 @@ def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Close SOFI short put position (BUY to close)"
-    )
+    parser = argparse.ArgumentParser(description="Close SOFI short put position (BUY to close)")
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview the order without executing"
+        "--dry-run", action="store_true", help="Preview the order without executing"
     )
     args = parser.parse_args()
 
