@@ -135,9 +135,7 @@ class TradingOrchestrator:
         self.paper = paper
 
         self.macro_agent = MacroeconomicAgent()
-        self.momentum_agent = MomentumAgent(
-            min_score=float(os.getenv("MOMENTUM_MIN_SCORE", "0.0"))
-        )
+        self.momentum_agent = MomentumAgent(min_score=float(os.getenv("MOMENTUM_MIN_SCORE", "0.0")))
 
         # Jan 10, 2026: DISABLED RL FILTER (CEO directive - reduce complexity)
         # Evidence: 1,601 lines of RL code, 0 trades using it
