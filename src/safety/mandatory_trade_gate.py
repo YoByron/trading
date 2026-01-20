@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # ============================================================
 # TICKER WHITELIST - CRITICAL ENFORCEMENT (Jan 15, 2026)
-# Per CLAUDE.md: "CREDIT SPREADS on SPY/IWM ONLY"
+# Per CLAUDE.md: "CREDIT SPREADS on SPY ONLY"
 # This prevents trades like SOFI that violated strategy
 # UPDATED Jan 19: Import from central config (single source of truth)
 # ============================================================
@@ -253,7 +253,7 @@ def validate_trade_mandatory(
 
     # =========================================================================
     # CHECK 0: TICKER WHITELIST (Jan 15, 2026 - per CLAUDE.md)
-    # Per CLAUDE.md: "CREDIT SPREADS on SPY/IWM ONLY"
+    # Per CLAUDE.md: "CREDIT SPREADS on SPY ONLY"
     # This is the FIRST check - reject non-allowed tickers immediately
     # =========================================================================
     ticker_valid, ticker_error = validate_ticker(symbol)
