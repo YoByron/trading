@@ -34,9 +34,10 @@ permissions:
   pull-requests: write
 
 env:
-  ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-  GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+  # Use the existing 5K paper trading account secrets
+  ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+  GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
   PAPER_TRADING: 'true'
 
 jobs:
@@ -95,6 +96,15 @@ jobs:
           mkdir -p scripts/backtest
           mkdir -p data/backtests/parameter_sweeps
           mkdir -p data/rag_staging
+          
+      - name: Verify Alpaca credentials
+        run: |
+          if [ -z "$ALPACA_API_KEY" ] || [ -z "$ALPACA_SECRET_KEY" ]; then
+            echo "❌ Alpaca credentials not configured!"
+            echo "Please ensure ALPACA_PAPER_TRADING_5K_API_KEY and ALPACA_PAPER_TRADING_5K_API_SECRET are set in repository secrets."
+            exit 1
+          fi
+          echo "✅ Alpaca credentials verified"
           
       - name: Determine backtest parameters
         id: params
