@@ -288,13 +288,13 @@ def check_ticker_whitelist(symbol: str) -> tuple[bool, str]:
 
     Added Jan 15, 2026 (LL-209): The $5K account switched to SOFI because
     we incorrectly believed SPY was "too expensive". SPY credit spreads only
-    need $500 collateral (not $58K). This check prevents any non-SPY/IWM trades
+    need $500 collateral (not $58K). This check prevents any non-SPY trades
     even if this script is run directly, bypassing the workflow.
     """
     # Extract underlying from options symbol if needed
     underlying = symbol.upper()
     if len(symbol) > 10:  # OCC options symbol
-        # For SPY/IWM (3 char tickers), underlying is first 3 chars
+        # For SPY (3 char tickers), underlying is first 3 chars
         if symbol[:3].upper() in ALLOWED_TICKERS:
             underlying = symbol[:3].upper()
         else:
@@ -308,7 +308,7 @@ def check_ticker_whitelist(symbol: str) -> tuple[bool, str]:
     if underlying not in ALLOWED_TICKERS:
         return (
             True,
-            f"{underlying} not in whitelist. Per CLAUDE.md: SPY/IWM ONLY until strategy proven.",
+            f"{underlying} not in whitelist. Per CLAUDE.md: SPY ONLY until strategy proven.",
         )
 
     return False, ""
@@ -386,7 +386,7 @@ def execute_bull_put_spread(
         return {
             "status": "BLOCKED_TICKER",
             "reason": whitelist_reason,
-            "action": "Use SPY or IWM only. Credit spreads on SPY only need $500 collateral.",
+            "action": "Use SPY only. Credit spreads on SPY only need $500 collateral.",
         }
 
     # CHECK 1: Earnings blackout (LL-205 fix - Jan 14, 2026)
@@ -397,7 +397,7 @@ def execute_bull_put_spread(
         return {
             "status": "BLOCKED_EARNINGS",
             "reason": blackout_reason,
-            "action": "Wait until blackout ends or choose SPY/IWM (no individual earnings)",
+            "action": "Wait until blackout ends or choose SPY (no individual earnings)",
         }
 
     # Query RAG for lessons before trading
