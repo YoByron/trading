@@ -5,10 +5,10 @@ GUARANTEED TRADER - CREDIT SPREAD ACCUMULATOR
 CRITICAL UPDATE Jan 15, 2026 (Deep Research Revision):
 - 100K account succeeded with SPY focus (+$16,661)
 - 5K account failed with SOFI (individual stock risk)
-- STRATEGY: SPY/IWM CREDIT SPREADS only per CLAUDE.md
+- STRATEGY: SPY CREDIT SPREADS only per CLAUDE.md
 
 THE PROBLEM: This script was buying SOFI shares when CLAUDE.md
-says "CREDIT SPREADS on SPY/IWM ONLY".
+says "CREDIT SPREADS on SPY ONLY".
 
 THE SOLUTION: Buy SPY shares (most liquid ETF) or accumulate cash
 for credit spread collateral (~$500 per spread).
