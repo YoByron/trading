@@ -23,12 +23,12 @@ def get_approved_tickers_from_claude_md() -> set[str]:
 
     content = claude_md.read_text()
 
-    # Look for "SPY/IWM ONLY" pattern
-    approved = {"SPY", "IWM"}  # Default from strategy
+    # Look for "SPY ONLY" pattern
+    approved = {"SPY"}  # Default from strategy
 
     # Check if there's a ticker hierarchy table
-    if "CREDIT SPREADS on SPY/IWM ONLY" in content:
-        approved = {"SPY", "IWM"}
+    if "CREDIT SPREADS on SPY ONLY" in content:
+        approved = {"SPY"}
 
     return approved
 
