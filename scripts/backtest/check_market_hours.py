@@ -43,7 +43,7 @@ MARKET_HOLIDAYS = {
 def is_market_closed() -> bool:
     """
     Check if US stock market is currently closed.
-    
+
     Returns True if:
     - Weekend (Saturday/Sunday)
     - Market holiday
@@ -51,40 +51,42 @@ def is_market_closed() -> bool:
     """
     ny_tz = ZoneInfo("America/New_York")
     now = datetime.now(ny_tz)
-    
+
     # Check weekend
     if now.weekday() >= 5:  # Saturday = 5, Sunday = 6
         print(f"✅ Weekend: {now.strftime('%A')}")
         return True
-    
+
     # Check holidays
     date_str = now.strftime("%Y-%m-%d")
     if date_str in MARKET_HOLIDAYS:
         print(f"✅ Market holiday: {date_str}")
         return True
-    
+
     # Check time (market hours: 9:30 AM - 4:00 PM ET)
     market_open = time(9, 30)
     market_close = time(16, 0)
     current_time = now.time()
-    
+
     if current_time < market_open:
         print(f"✅ Pre-market: {now.strftime('%H:%M')} ET (market opens at 9:30 AM)")
         return True
-    
+
     if current_time >= market_close:
         print(f"✅ After-hours: {now.strftime('%H:%M')} ET (market closed at 4:00 PM)")
         return True
-    
+
     # Market is open
     print(f"⚠️ Market is OPEN: {now.strftime('%H:%M')} ET")
     return False
 
 
 def main():
-    print(f"🕐 Checking market hours...")
-    print(f"   Current time: {datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    
+    print("🕐 Checking market hours...")
+    print(
+        f"   Current time: {datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %H:%M:%S %Z')}"
+    )
+
     if is_market_closed():
         print("\n✅ Market is CLOSED - safe to run backtests")
         # Set GitHub Actions output

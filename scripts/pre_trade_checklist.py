@@ -123,9 +123,15 @@ def check_spread_limit(state: dict) -> tuple[bool, str]:
     if current_spreads < MAX_OPEN_SPREADS:
         return True, f"✅ Open spreads: {current_spreads}/{MAX_OPEN_SPREADS} (can open new spread)"
     elif current_spreads == MAX_OPEN_SPREADS:
-        return False, f"❌ Position limit reached: {current_spreads}/{MAX_OPEN_SPREADS} spreads open. Close existing before opening new."
+        return (
+            False,
+            f"❌ Position limit reached: {current_spreads}/{MAX_OPEN_SPREADS} spreads open. Close existing before opening new.",
+        )
     else:
-        return False, f"❌ OVER LIMIT: {current_spreads} spreads open (max {MAX_OPEN_SPREADS}). Must close {current_spreads - MAX_OPEN_SPREADS} spreads!"
+        return (
+            False,
+            f"❌ OVER LIMIT: {current_spreads} spreads open (max {MAX_OPEN_SPREADS}). Must close {current_spreads - MAX_OPEN_SPREADS} spreads!",
+        )
 
 
 def run_full_checklist(
