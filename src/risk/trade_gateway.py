@@ -526,7 +526,7 @@ class TradeGateway:
         # ============================================================
         # CHECK 0.1: PRE-TRADE CHECKLIST (Jan 15, 2026)
         # Enforces MANDATORY Pre-Trade Checklist from CLAUDE.md:
-        # 1. Is ticker SPY or IWM?
+        # 1. Is ticker SPY?
         # 2. Is position size <=5% of account?
         # 3. Is it a SPREAD (not naked)?
         # 4. Earnings blackout check
@@ -593,7 +593,7 @@ class TradeGateway:
 
         # ============================================================
         # CHECK 0.3: TICKER WHITELIST (Jan 14, 2026 - LL-192)
-        # CLAUDE.md: "CREDIT SPREADS on SPY/IWM ONLY"
+        # CLAUDE.md: "CREDIT SPREADS on SPY ONLY"
         # This would have prevented the $40.74 SOFI loss
         # ============================================================
         if self.TICKER_WHITELIST_ENABLED:
