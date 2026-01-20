@@ -17,9 +17,7 @@ from datetime import datetime
 def main():
     """Close excess positions to restore compliance."""
     # Check for required environment variables
-    api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get(
-        "ALPACA_PAPER_TRADING_5K_API_KEY"
-    )
+    api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
     api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
         "ALPACA_PAPER_TRADING_5K_API_SECRET"
     )
@@ -68,7 +66,9 @@ def main():
 
     print(f"\nSPY Put Positions: {len(puts)}")
     for strike, pos in sorted(puts.items()):
-        print(f"  ${strike:.0f}: {pos['side']} {abs(pos['qty']):.0f} | P/L: ${pos['unrealized_pl']:+.2f}")
+        print(
+            f"  ${strike:.0f}: {pos['side']} {abs(pos['qty']):.0f} | P/L: ${pos['unrealized_pl']:+.2f}"
+        )
 
     # Find spreads (short + long pair with adjacent strikes)
     spreads = []
