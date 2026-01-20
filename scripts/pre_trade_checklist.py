@@ -44,8 +44,8 @@ def check_ticker_allowed(ticker: str) -> tuple[bool, str]:
     """Check if ticker is in allowed list."""
     ticker = ticker.upper()
     if ticker in ALLOWED_TICKERS:
-        return True, f"✅ {ticker} is allowed (SPY/IWM only phase)"
-    return False, f"❌ {ticker} NOT ALLOWED. Only SPY/IWM until win rate proven."
+        return True, f"✅ {ticker} is allowed (SPY only phase)"
+    return False, f"❌ {ticker} NOT ALLOWED. Only SPY until win rate proven."
 
 
 def check_earnings_blackout(ticker: str) -> tuple[bool, str]:
