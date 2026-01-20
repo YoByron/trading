@@ -5,7 +5,7 @@ Simple Daily Trader - SPY CREDIT SPREADS ONLY
 CRITICAL UPDATE Jan 15, 2026 (Deep Research Revision):
 - 100K account succeeded with SPY focus (+$16,661)
 - 5K account failed with SOFI (individual stock risk)
-- Strategy: CREDIT SPREADS on SPY/IWM only per CLAUDE.md
+- Strategy: CREDIT SPREADS on SPY only per CLAUDE.md
 
 Why Credit Spreads (not naked puts):
 - Defined risk: Max loss = spread width - premium (~$440)
@@ -13,7 +13,7 @@ Why Credit Spreads (not naked puts):
 - 30-delta short, 20-delta long = ~$60-70 premium
 - Close at 50% profit to boost win rate to ~80%
 
-THIS SCRIPT WILL TRADE. No excuses. SPY/IWM only.
+THIS SCRIPT WILL TRADE. No excuses. SPY only.
 """
 
 import json
