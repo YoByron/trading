@@ -236,7 +236,7 @@ class RuleOneValidator:
             return result
 
         # CHECK 1.5: ETF bypass (Jan 14, 2026 - per CLAUDE.md)
-        # SPY/IWM are index ETFs - they don't require Big Five or Sticker Price analysis
+        # SPY are index ETFs - they don't require Big Five or Sticker Price analysis
         underlying = self._extract_underlying(symbol)
         universe_info = RULE_ONE_UNIVERSE.get(underlying, {})
         if universe_info.get("skip_big_five", False):
@@ -450,19 +450,19 @@ class RuleOneValidator:
         Additional checks per CLAUDE.md:
         - Spread width enforcement ($5 default)
         - Max collateral per spread ($500)
-        - Primary targets: SPY, IWM ONLY (Jan 2026 update)
+        - Primary targets: SPY ONLY (Jan 2026 update)
         """
         result = self.validate(symbol)
 
         # Credit spread specific checks
         underlying = self._extract_underlying(symbol)
-        # LL-236: Updated Jan 19, 2026 - SPY/IWM ONLY per CLAUDE.md
+        # LL-236: Updated Jan 19, 2026 - SPY ONLY per CLAUDE.md
         # Individual stocks (F, SOFI, T) are BLACKLISTED until strategy proven
-        primary_targets = {"SPY", "IWM"}
+        primary_targets = {"SPY"}
 
         if underlying not in primary_targets:
             result.warnings.append(
-                f"{underlying} is not a primary credit spread target (SPY, IWM only per CLAUDE.md)"
+                f"{underlying} is not a primary credit spread target (SPY only per CLAUDE.md)"
             )
 
         # Collateral check
