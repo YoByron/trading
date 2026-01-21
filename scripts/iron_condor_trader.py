@@ -392,7 +392,7 @@ class IronCondorStrategy:
                     # CRITICAL: Iron condor requires exactly 4 legs
                     if len(order_ids) == 4:
                         status = "LIVE_SUBMITTED"
-                        logger.info(f"✅ IRON CONDOR COMPLETE: All 4 legs submitted")
+                        logger.info("✅ IRON CONDOR COMPLETE: All 4 legs submitted")
                     elif len(order_ids) > 0:
                         # PARTIAL FILL - This is dangerous! Alert and mark as failed
                         status = "LIVE_PARTIAL_FAILED"
@@ -402,10 +402,14 @@ class IronCondorStrategy:
                             for leg in ["long_put", "short_put", "short_call", "long_call"]
                             if leg not in filled_legs
                         ]
-                        logger.error(f"🚨 INCOMPLETE IRON CONDOR: Only {len(order_ids)}/4 legs filled!")
+                        logger.error(
+                            f"🚨 INCOMPLETE IRON CONDOR: Only {len(order_ids)}/4 legs filled!"
+                        )
                         logger.error(f"   Filled: {filled_legs}")
                         logger.error(f"   Missing: {missing_legs}")
-                        logger.error("   ACTION REQUIRED: Close partial position to avoid directional risk")
+                        logger.error(
+                            "   ACTION REQUIRED: Close partial position to avoid directional risk"
+                        )
                     else:
                         status = "LIVE_FAILED"
                         logger.warning("❌ No orders could be submitted")
