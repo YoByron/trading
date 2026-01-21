@@ -17,7 +17,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -128,7 +127,9 @@ class TestRAGGrounding:
         strategy_terms = ["spy", "iron condor", "delta", "option", "spread"]
         found_terms = sum(1 for term in strategy_terms if term in response_text)
 
-        assert found_terms >= 2, f"Response lacks grounding in strategy docs. Found terms: {found_terms}"
+        assert found_terms >= 2, (
+            f"Response lacks grounding in strategy docs. Found terms: {found_terms}"
+        )
 
 
 class TestRAGContextLeakage:
