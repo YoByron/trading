@@ -60,19 +60,21 @@ class TestIronCondorValidation:
             # bull put spreads are a valid standalone strategy.
             if puts and not calls:
                 import warnings
+
                 warnings.warn(
                     f"POSITION NOTE: Have {len(puts)} PUT positions but NO CALL positions. "
                     "This is a bull put spread (directional), not an iron condor. "
                     "Acceptable if intentional. See LL-268, LL-278.",
-                    UserWarning
+                    UserWarning,
                 )
             if calls and not puts:
                 import warnings
+
                 warnings.warn(
                     f"POSITION NOTE: Have {len(calls)} CALL positions but NO PUT positions. "
                     "This is a bear call spread (directional), not an iron condor. "
                     "Acceptable if intentional. See LL-268, LL-278.",
-                    UserWarning
+                    UserWarning,
                 )
 
     def test_iron_condor_trader_validates_4_legs(self):
