@@ -79,34 +79,42 @@ def main(dry_run: bool = False):
 
         if is_stock:
             # ALL stocks are non-compliant (iron condors only use options)
-            to_liquidate.append({
-                "symbol": symbol,
-                "qty": qty,
-                "value": market_value,
-                "reason": "STOCK (iron condors use options only)",
-            })
+            to_liquidate.append(
+                {
+                    "symbol": symbol,
+                    "qty": qty,
+                    "value": market_value,
+                    "reason": "STOCK (iron condors use options only)",
+                }
+            )
         elif is_spy_option:
             # SPY options are compliant
-            to_keep.append({
-                "symbol": symbol,
-                "qty": qty,
-                "value": market_value,
-                "reason": "SPY OPTION (compliant)",
-            })
+            to_keep.append(
+                {
+                    "symbol": symbol,
+                    "qty": qty,
+                    "value": market_value,
+                    "reason": "SPY OPTION (compliant)",
+                }
+            )
         else:
             # Non-SPY options are non-compliant
-            to_liquidate.append({
-                "symbol": symbol,
-                "qty": qty,
-                "value": market_value,
-                "reason": "NON-SPY OPTION (SPY only mandate)",
-            })
+            to_liquidate.append(
+                {
+                    "symbol": symbol,
+                    "qty": qty,
+                    "value": market_value,
+                    "reason": "NON-SPY OPTION (SPY only mandate)",
+                }
+            )
 
     # Report
     logger.info("POSITIONS TO KEEP (COMPLIANT):")
     if to_keep:
         for pos in to_keep:
-            logger.info(f"  ✅ {pos['symbol']}: {pos['qty']} (${pos['value']:.2f}) - {pos['reason']}")
+            logger.info(
+                f"  ✅ {pos['symbol']}: {pos['qty']} (${pos['value']:.2f}) - {pos['reason']}"
+            )
     else:
         logger.info("  (none)")
 
@@ -114,7 +122,9 @@ def main(dry_run: bool = False):
     logger.info("POSITIONS TO LIQUIDATE (NON-COMPLIANT):")
     if to_liquidate:
         for pos in to_liquidate:
-            logger.info(f"  ❌ {pos['symbol']}: {pos['qty']} (${pos['value']:.2f}) - {pos['reason']}")
+            logger.info(
+                f"  ❌ {pos['symbol']}: {pos['qty']} (${pos['value']:.2f}) - {pos['reason']}"
+            )
     else:
         logger.info("  (none - all positions compliant)")
         return 0
