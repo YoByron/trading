@@ -18,6 +18,7 @@ try:
         calculate_var_cvar,
         generate_risk_report,
     )
+
     NUMPY_AVAILABLE = True
 except ImportError:
     np = None
