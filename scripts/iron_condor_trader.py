@@ -327,9 +327,7 @@ class IronCondorStrategy:
                     # LL-280 FIX: Count TOTAL CONTRACTS, not unique symbols
                     # Before: position_count = len(spy_option_positions) = 4 (unique symbols)
                     # After: position_count = sum of abs(qty) = 17 (total contracts)
-                    total_contracts = sum(
-                        abs(int(float(p.qty))) for p in spy_option_positions
-                    )
+                    total_contracts = sum(abs(int(float(p.qty))) for p in spy_option_positions)
                     unique_symbols = len(spy_option_positions)
 
                     logger.info(
@@ -354,8 +352,7 @@ class IronCondorStrategy:
                             "status": "SKIPPED_POSITION_LIMIT",
                             "reason": f"Have {total_contracts} contracts (max: {max_contracts})",
                             "existing_positions": [
-                                {"symbol": p.symbol, "qty": p.qty}
-                                for p in spy_option_positions
+                                {"symbol": p.symbol, "qty": p.qty} for p in spy_option_positions
                             ],
                         }
             except Exception as pos_err:
