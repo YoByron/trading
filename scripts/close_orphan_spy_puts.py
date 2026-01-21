@@ -42,7 +42,9 @@ def close_orphan_spy_puts():
     orphan_position = None
 
     for pos in spy_puts:
-        print(f"  - {pos.symbol}: qty={pos.qty}, price=${float(pos.current_price):.2f}, P/L=${float(pos.unrealized_pl):.2f}")
+        print(
+            f"  - {pos.symbol}: qty={pos.qty}, price=${float(pos.current_price):.2f}, P/L=${float(pos.unrealized_pl):.2f}"
+        )
         if pos.symbol == orphan_symbol and float(pos.qty) > 0:
             orphan_position = pos
 
@@ -54,7 +56,7 @@ def close_orphan_spy_puts():
     current_price = float(orphan_position.current_price)
     unrealized_pl = float(orphan_position.unrealized_pl)
 
-    print(f"\n📊 Found ORPHAN position to close:")
+    print("\n📊 Found ORPHAN position to close:")
     print(f"   Symbol: {orphan_symbol}")
     print(f"   Qty: {qty} LONG")
     print(f"   Current Price: ${current_price:.2f}")
