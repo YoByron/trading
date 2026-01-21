@@ -46,10 +46,20 @@ class TestIronCondorValidation:
             return
 
         # Count puts and calls (only option symbols, not stock)
-        puts = [p for p in positions if isinstance(p, dict) and
-                len(p.get("symbol", "")) > 10 and "P" in p.get("symbol", "")[9:]]
-        calls = [p for p in positions if isinstance(p, dict) and
-                 len(p.get("symbol", "")) > 10 and "C" in p.get("symbol", "")[9:]]
+        puts = [
+            p
+            for p in positions
+            if isinstance(p, dict)
+            and len(p.get("symbol", "")) > 10
+            and "P" in p.get("symbol", "")[9:]
+        ]
+        calls = [
+            p
+            for p in positions
+            if isinstance(p, dict)
+            and len(p.get("symbol", "")) > 10
+            and "C" in p.get("symbol", "")[9:]
+        ]
 
         # If we have OPTIONS positions at all, validate balance
         if puts or calls:
@@ -77,10 +87,11 @@ class TestIronCondorValidation:
             # Log warning if no calls but valid put spread (not iron condor, but acceptable)
             if puts and not calls and valid_put_spread:
                 import warnings
+
                 warnings.warn(
                     f"Position check: {len(puts)} PUT spread positions, 0 CALL positions. "
                     "This is a valid PUT SPREAD but NOT an iron condor per CLAUDE.md strategy.",
-                    UserWarning
+                    UserWarning,
                 )
 
     def test_iron_condor_trader_validates_4_legs(self):
