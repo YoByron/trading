@@ -15,7 +15,6 @@ These metrics help validate that capital preservation is maintained.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -228,9 +227,7 @@ def calculate_max_drawdown(equity_curve: np.ndarray) -> tuple[float, int]:
     return max_dd, duration
 
 
-def calculate_var_cvar(
-    returns: np.ndarray, confidence: float = 0.95
-) -> tuple[float, float]:
+def calculate_var_cvar(returns: np.ndarray, confidence: float = 0.95) -> tuple[float, float]:
     """
     Calculate Value at Risk (VaR) and Conditional VaR (Expected Shortfall).
 
@@ -393,9 +390,9 @@ def generate_risk_report(metrics: RiskMetrics, strategy_name: str = "Iron Condor
     compliant, violations = metrics.is_phil_town_compliant()
 
     report = f"""
-{'=' * 60}
+{"=" * 60}
 RISK METRICS REPORT: {strategy_name}
-{'=' * 60}
+{"=" * 60}
 
 RETURN METRICS
   Total Return:        ${metrics.total_return:,.2f}
@@ -430,7 +427,7 @@ CONSISTENCY
   Kurtosis:            {metrics.kurtosis:.3f}
 
 PHIL TOWN RULE #1 COMPLIANCE
-  Status:              {'COMPLIANT' if compliant else 'VIOLATIONS FOUND'}
+  Status:              {"COMPLIANT" if compliant else "VIOLATIONS FOUND"}
 """
     if violations:
         report += "  Violations:\n"

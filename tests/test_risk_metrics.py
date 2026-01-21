@@ -7,10 +7,8 @@ edge cases properly (zero variance, empty data, etc.).
 """
 
 import numpy as np
-import pytest
 
 from src.backtest.risk_metrics import (
-    RiskMetrics,
     calculate_max_drawdown,
     calculate_risk_metrics,
     calculate_sharpe_ratio,
