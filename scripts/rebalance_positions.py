@@ -45,9 +45,7 @@ def analyze_positions(client) -> dict:
     positions = client.get_all_positions()
 
     # Filter SPY options only
-    spy_options = [
-        p for p in positions if p.symbol.startswith("SPY") and len(p.symbol) > 5
-    ]
+    spy_options = [p for p in positions if p.symbol.startswith("SPY") and len(p.symbol) > 5]
 
     analysis = {
         "total_contracts": 0,
@@ -110,9 +108,7 @@ def generate_cleanup_orders(analysis: dict) -> list:
             side = OrderSide.BUY
             action = "Buy to reduce short"
 
-        orders.append(
-            {"symbol": symbol, "qty": excess, "side": side, "action": action}
-        )
+        orders.append({"symbol": symbol, "qty": excess, "side": side, "action": action})
 
     return orders
 
@@ -208,9 +204,7 @@ def main():
     for pos in analysis["positions"]:
         pl = pos["unrealized_pl"]
         total_pl += pl
-        logger.info(
-            f"  {pos['symbol']}: {pos['qty']} ({pos['side']} {pos['type']}) P/L: ${pl:.2f}"
-        )
+        logger.info(f"  {pos['symbol']}: {pos['qty']} ({pos['side']} {pos['type']}) P/L: ${pl:.2f}")
     logger.info(f"  Total Unrealized P/L: ${total_pl:.2f}")
     logger.info("")
 
@@ -237,9 +231,7 @@ def main():
             qty = abs(pos["qty"])
             side = OrderSide.SELL if pos["qty"] > 0 else OrderSide.BUY
             action = "Sell to close long" if pos["qty"] > 0 else "Buy to close short"
-            orders.append(
-                {"symbol": pos["symbol"], "qty": qty, "side": side, "action": action}
-            )
+            orders.append({"symbol": pos["symbol"], "qty": qty, "side": side, "action": action})
     else:
         orders = generate_cleanup_orders(analysis)
 
