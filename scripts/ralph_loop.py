@@ -25,6 +25,7 @@ from pathlib import Path
 # Try to import anthropic, handle gracefully if not available
 try:
     import anthropic
+
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
@@ -39,13 +40,7 @@ def log(message: str, level: str = "INFO"):
 def run_command(cmd: str, timeout: int = 300) -> tuple[int, str, str]:
     """Run a shell command and return exit code, stdout, stderr."""
     try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout
-        )
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return -1, "", "Command timed out"
@@ -121,7 +116,7 @@ def call_claude_api(prompt: str, system_prompt: str) -> str | None:
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
             system=system_prompt,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         return message.content[0].text
@@ -146,17 +141,11 @@ def parse_code_changes(response: str) -> list[dict]:
     for line in lines:
         if line.startswith("```file:"):
             if current_file and current_content:
-                changes.append({
-                    "file": current_file,
-                    "content": "\n".join(current_content)
-                })
+                changes.append({"file": current_file, "content": "\n".join(current_content)})
             current_file = line[8:].strip()
             current_content = []
         elif line == "```" and current_file:
-            changes.append({
-                "file": current_file,
-                "content": "\n".join(current_content)
-            })
+            changes.append({"file": current_file, "content": "\n".join(current_content)})
             current_file = None
             current_content = []
         elif current_file:
@@ -208,10 +197,7 @@ def commit_changes(iteration: int, task: str) -> bool:
 
 
 def ralph_loop(
-    task: str = "fix_tests",
-    target: str = "",
-    max_iterations: int = 10,
-    auto_commit: bool = True
+    task: str = "fix_tests", target: str = "", max_iterations: int = 10, auto_commit: bool = True
 ) -> dict:
     """
     Main Ralph loop - iterative AI coding until success.
@@ -234,7 +220,7 @@ def ralph_loop(
         "changes_made": 0,
         "final_test_status": False,
         "final_lint_status": False,
-        "history": []
+        "history": [],
     }
 
     # System prompt for Claude
@@ -269,12 +255,14 @@ If tests are passing and no issues found, respond with:
         if tests_pass and lint_pass:
             log("All tests and lint passing!")
             results["success"] = True
-            results["history"].append({
-                "iteration": iteration,
-                "status": "complete",
-                "tests_pass": True,
-                "lint_pass": True
-            })
+            results["history"].append(
+                {
+                    "iteration": iteration,
+                    "status": "complete",
+                    "tests_pass": True,
+                    "lint_pass": True,
+                }
+            )
             break
 
         # Build prompt based on task and failures
@@ -299,13 +287,13 @@ LINT OUTPUT:
 Provide fixes for the lint errors. Output ONLY the files that need changes."""
 
         elif task == "improve_code":
-            prompt = f"""Improve code quality in {target or 'src/'}.
+            prompt = f"""Improve code quality in {target or "src/"}.
 
-Current test status: {'PASSING' if tests_pass else 'FAILING'}
-Current lint status: {'PASSING' if lint_pass else 'FAILING'}
+Current test status: {"PASSING" if tests_pass else "FAILING"}
+Current lint status: {"PASSING" if lint_pass else "FAILING"}
 
-{f'TEST FAILURES: {get_failing_test_details(test_output)}' if not tests_pass else ''}
-{f'LINT ERRORS: {lint_output[:2000]}' if not lint_pass else ''}
+{f"TEST FAILURES: {get_failing_test_details(test_output)}" if not tests_pass else ""}
+{f"LINT ERRORS: {lint_output[:2000]}" if not lint_pass else ""}
 
 Make improvements while ensuring tests continue to pass."""
 
@@ -313,11 +301,11 @@ Make improvements while ensuring tests continue to pass."""
             # Default: fix whatever is broken
             prompt = f"""Fix issues in this Python project.
 
-TEST STATUS: {'PASSING' if tests_pass else 'FAILING'}
-LINT STATUS: {'PASSING' if lint_pass else 'FAILING'}
+TEST STATUS: {"PASSING" if tests_pass else "FAILING"}
+LINT STATUS: {"PASSING" if lint_pass else "FAILING"}
 
-{f'TEST OUTPUT: {get_failing_test_details(test_output)}' if not tests_pass else ''}
-{f'LINT OUTPUT: {lint_output[:2000]}' if not lint_pass else ''}
+{f"TEST OUTPUT: {get_failing_test_details(test_output)}" if not tests_pass else ""}
+{f"LINT OUTPUT: {lint_output[:2000]}" if not lint_pass else ""}
 
 Fix the issues. Output ONLY files that need changes."""
 
@@ -327,12 +315,14 @@ Fix the issues. Output ONLY files that need changes."""
 
         if not response:
             log("No response from Claude API", "ERROR")
-            results["history"].append({
-                "iteration": iteration,
-                "status": "api_error",
-                "tests_pass": tests_pass,
-                "lint_pass": lint_pass
-            })
+            results["history"].append(
+                {
+                    "iteration": iteration,
+                    "status": "api_error",
+                    "tests_pass": tests_pass,
+                    "lint_pass": lint_pass,
+                }
+            )
             continue
 
         # Check for completion signal
@@ -353,35 +343,39 @@ Fix the issues. Output ONLY files that need changes."""
         else:
             log("No code changes parsed from response")
 
-        results["history"].append({
-            "iteration": iteration,
-            "status": "changes_applied" if changes else "no_changes",
-            "tests_pass": tests_pass,
-            "lint_pass": lint_pass,
-            "files_changed": len(changes)
-        })
+        results["history"].append(
+            {
+                "iteration": iteration,
+                "status": "changes_applied" if changes else "no_changes",
+                "tests_pass": tests_pass,
+                "lint_pass": lint_pass,
+                "files_changed": len(changes),
+            }
+        )
 
     # Final status
     if results["success"]:
         log(f"Ralph Loop COMPLETE after {results['iterations']} iterations")
     else:
-        log(f"Ralph Loop reached max iterations without full success", "WARN")
+        log("Ralph Loop reached max iterations without full success", "WARN")
 
     return results
 
 
 def main():
     parser = argparse.ArgumentParser(description="Ralph Loop - Iterative AI Coding")
-    parser.add_argument("--task", default="fix_tests",
-                       choices=["fix_tests", "fix_lint", "improve_code", "auto"],
-                       help="Type of task to perform")
+    parser.add_argument(
+        "--task",
+        default="fix_tests",
+        choices=["fix_tests", "fix_lint", "improve_code", "auto"],
+        help="Type of task to perform",
+    )
     parser.add_argument("--target", default="", help="Specific file/directory to focus on")
-    parser.add_argument("--max-iterations", type=int, default=10,
-                       help="Maximum iterations (default: 10)")
-    parser.add_argument("--no-commit", action="store_true",
-                       help="Don't auto-commit changes")
-    parser.add_argument("--dry-run", action="store_true",
-                       help="Run tests/lint only, don't call AI")
+    parser.add_argument(
+        "--max-iterations", type=int, default=10, help="Maximum iterations (default: 10)"
+    )
+    parser.add_argument("--no-commit", action="store_true", help="Don't auto-commit changes")
+    parser.add_argument("--dry-run", action="store_true", help="Run tests/lint only, don't call AI")
 
     args = parser.parse_args()
 
@@ -405,7 +399,7 @@ def main():
         task=args.task,
         target=args.target,
         max_iterations=args.max_iterations,
-        auto_commit=not args.no_commit
+        auto_commit=not args.no_commit,
     )
 
     # Output results as JSON for CI parsing
