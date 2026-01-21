@@ -202,14 +202,16 @@ def run_monte_carlo(
     )
 
 
-def generate_monte_carlo_report(results: MonteCarloResults, strategy_name: str = "Iron Condor") -> str:
+def generate_monte_carlo_report(
+    results: MonteCarloResults, strategy_name: str = "Iron Condor"
+) -> str:
     """Generate a human-readable Monte Carlo report."""
     profitable, reason = results.is_statistically_profitable()
 
     report = f"""
-{'=' * 70}
+{"=" * 70}
 MONTE CARLO SIMULATION REPORT: {strategy_name}
-{'=' * 70}
+{"=" * 70}
 
 SIMULATION PARAMETERS
   Simulations Run:      {results.n_simulations:,}
@@ -238,10 +240,10 @@ SHARPE RATIO DISTRIBUTION
   95th Percentile:        {results.sharpe_ci_95:.3f}
 
 STATISTICAL VALIDATION
-  Status:  {'PASS' if profitable else 'FAIL'}
+  Status:  {"PASS" if profitable else "FAIL"}
   Reason:  {reason}
 
-{'=' * 70}
+{"=" * 70}
 """
     return report
 

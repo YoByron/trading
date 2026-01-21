@@ -12,7 +12,6 @@ import pytest
 np = pytest.importorskip("numpy")
 
 from src.backtest.monte_carlo import (
-    MonteCarloResults,
     generate_monte_carlo_report,
     run_monte_carlo,
     stress_test_strategy,

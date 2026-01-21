@@ -704,7 +704,9 @@ def main():
             # Stress test if requested
             if args.stress_test:
                 print("\n💥 Running stress tests...")
-                stress_results = stress_test_strategy(pnls, n_simulations=min(1000, args.monte_carlo))
+                stress_results = stress_test_strategy(
+                    pnls, n_simulations=min(1000, args.monte_carlo)
+                )
                 print("\nStress Test Results:")
                 for scenario, data in stress_results.items():
                     status = "✅" if data["passes_validation"] else "❌"
