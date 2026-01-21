@@ -2,14 +2,10 @@
 
 CTO: Claude | CEO: Igor Ganapolsky
 
-## NORTH STAR (PERMANENT - Updated Jan 21, 2026)
-# **$100/DAY AFTER-TAX PROFIT**
-This is the ultimate goal. Everything we do serves this mission.
-
-## Strategy (Updated Jan 19, 2026 - IRON CONDORS REPLACE TASTYTRADE)
-- **North Star**: **$100/day AFTER-TAX** = ~$140/day pre-tax = ~$3,000/month after-tax
+## Strategy (Updated Jan 21, 2026 - IRON CONDORS REPLACE TASTYTRADE)
+- **North Star**: $100/day after-tax profit - CEO MANDATE (PERMANENT)
 - **Why revised**: TastyTrade credit spread 11-year backtest showed LOSSES (-7% to -93%). Iron condors from $100K account showed 86% win rate with 1.5:1 reward/risk.
-- **Current capital**: ~$5,000 | Building toward $100K+ for North Star
+- **Current capital**: $4,986.39 | Lesson paid from SOFI disaster.
 - **Primary strategy**: IRON CONDORS on SPY ONLY - defined risk on BOTH sides
 - **Iron condor setup**:
   - Sell 15-20 delta put spread (bull put)
@@ -17,26 +13,25 @@ This is the ultimate goal. Everything we do serves this mission.
   - $5-wide wings, 30-45 DTE
   - Collect premium from BOTH sides
 - **CRITICAL MATH**: 15-delta = 86% win rate (LL-220). Risk/reward ~1.5:1 (BETTER than credit spreads)
-- **Expiration**: 30-45 DTE, close at 50% max profit OR 21 DTE (whichever first)
-- **Position limit**: 1 iron condor at a time (5% max risk)
+- **Expiration**: 30-45 DTE, close at 50% max profit OR 7 DTE (whichever first) - LL-268 research
+- **Position limit**: 1 iron condor at a time (5% max = $248 risk)
+- **Monthly target**: 2-3 iron condors x $75 avg x 86% win rate = $130-190/month (realistic)
 - **Stop-loss**: Close if one side reaches 200% of credit - MANDATORY
 - **Adjustment**: If tested, roll untested side closer for additional credit
-- **Assignment risk**: Close positions at 21 DTE to avoid gamma risk
+- **Assignment risk**: Close positions at 7 DTE to avoid gamma risk (changed from 21 DTE per LL-268)
 - **Risk management**: NEVER more than 5% on single trade. NO NAKED OPTIONS.
 - **Paper phase**: 90 days to validate 80%+ win rate before scaling
 - **Why iron condors beat credit spreads**: Collect premium from BOTH sides, better win rate, profit in range-bound markets
 
-## Path to $100/Day After-Tax (Updated Jan 21, 2026)
-| Phase | Capital | Monthly Pre-Tax | Monthly After-Tax | Daily After-Tax | Timeline |
-|-------|---------|-----------------|-------------------|-----------------|----------|
-| Now | $5,000 | $150-200 | ~$105-140 | **$3-5/day** | Immediate |
-| +6mo | $15,000 | $450-600 | ~$315-420 | $10-14/day | With deposits |
-| +12mo | $30,000 | $900-1,200 | ~$630-840 | $21-28/day | Compounding |
-| +24mo | $60,000 | $1,800-2,400 | ~$1,260-1,680 | $42-56/day | Scaling |
-| +36mo | $100,000 | $3,000-4,000 | ~$2,100-2,800 | $70-93/day | Near goal |
-| **GOAL** | **$120,000+** | **$4,200+** | **$3,000+** | **$100/day** | ~3-4 years |
-
-**Tax assumption**: ~30% effective rate on short-term capital gains
+## Recovery Path (Math-Validated Jan 15, 2026)
+| Phase | Capital | Monthly Income | Daily Equivalent | Timeline |
+|-------|---------|----------------|------------------|----------|
+| Now | $4,959 | $150-200 | **$5-10/day** | Immediate |
+| +6mo | $9,500 | $285-380 | $14-19/day | With deposits |
+| +12mo | $16,000 | $480-640 | $24-32/day | Compounding |
+| +24mo | $33,000 | $990-1,320 | $50-66/day | On track |
+| +30mo | $45,000 | $1,350-1,800 | **$68-90/day** | Near goal |
+| Goal | $50,000+ | $2,000+ | **$100/day** | ~2.5-3 years |
 
 ## MANDATORY Pre-Trade Checklist
 1. [ ] Is ticker SPY? (SPY ONLY - best liquidity, tightest spreads)
@@ -45,7 +40,7 @@ This is the ultimate goal. Everything we do serves this mission.
 4. [ ] Are short strikes at 15-20 delta?
 5. [ ] 30-45 DTE expiration?
 6. [ ] Stop-loss at 200% of credit defined?
-7. [ ] Exit plan at 50% profit or 21 DTE?
+7. [ ] Exit plan at 50% profit or 7 DTE? (LL-268: 7 DTE for 80%+ win rate)
 
 ## Win Rate Tracking (Data-Driven)
 - Track every paper trade: entry, exit, P/L, win/loss
