@@ -497,7 +497,9 @@ def main():
     parser = argparse.ArgumentParser(description="Iron Condor Trader")
     parser.add_argument("--live", action="store_true", help="Execute LIVE trades on Alpaca")
     parser.add_argument("--dry-run", action="store_true", help="Dry run (simulate only)")
-    parser.add_argument("--symbol", type=str, default="SPY", help="Underlying symbol (default: SPY)")
+    parser.add_argument(
+        "--symbol", type=str, default="SPY", help="Underlying symbol (default: SPY)"
+    )
     args = parser.parse_args()
 
     # Default to LIVE mode as of Dec 29, 2025 to hit $100/day target
