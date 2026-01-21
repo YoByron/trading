@@ -281,8 +281,10 @@ class IronCondorStrategy:
                     # FIX Jan 21, 2026: Exclude SPY shares - only count options
                     # Options have format like SPY260220P00565000, shares are just "SPY"
                     spy_option_positions = [
-                        p for p in positions
-                        if p.symbol.startswith("SPY") and len(p.symbol) > 5  # Options have longer symbols
+                        p
+                        for p in positions
+                        if p.symbol.startswith("SPY")
+                        and len(p.symbol) > 5  # Options have longer symbols
                     ]
                     position_count = len(spy_option_positions)
 
