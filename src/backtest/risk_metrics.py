@@ -541,19 +541,13 @@ def benchmark_comparison(
     Returns:
         Dictionary with comparison metrics
     """
-    strategy_sharpe = calculate_sharpe_ratio(
-        strategy_returns, risk_free_rate, periods_per_year
-    )
-    benchmark_sharpe = calculate_sharpe_ratio(
-        benchmark_returns, risk_free_rate, periods_per_year
-    )
+    strategy_sharpe = calculate_sharpe_ratio(strategy_returns, risk_free_rate, periods_per_year)
+    benchmark_sharpe = calculate_sharpe_ratio(benchmark_returns, risk_free_rate, periods_per_year)
 
     # Information ratio = (strategy return - benchmark return) / tracking error
     excess_returns = strategy_returns - benchmark_returns
     tracking_error = np.std(excess_returns, ddof=1) if len(excess_returns) > 1 else 0.0
-    info_ratio = (
-        np.mean(excess_returns) / tracking_error if tracking_error > 0 else 0.0
-    )
+    info_ratio = np.mean(excess_returns) / tracking_error if tracking_error > 0 else 0.0
 
     return {
         "strategy_sharpe": round(strategy_sharpe, 3),
@@ -562,9 +556,7 @@ def benchmark_comparison(
         "outperforms_benchmark": strategy_sharpe > benchmark_sharpe,
         "information_ratio": round(info_ratio, 3),
         "tracking_error": round(tracking_error, 2),
-        "alpha": round(
-            float(np.sum(strategy_returns) - np.sum(benchmark_returns)), 2
-        ),
+        "alpha": round(float(np.sum(strategy_returns) - np.sum(benchmark_returns)), 2),
     }
 
 
@@ -582,21 +574,15 @@ def validate_backtest_realism(metrics: RiskMetrics) -> tuple[bool, list[str]]:
 
     # Sharpe > 2.5 is suspicious for options strategies
     if metrics.sharpe_ratio > 2.5:
-        warnings.append(
-            f"Sharpe ratio {metrics.sharpe_ratio:.2f} > 2.5 may indicate overfitting"
-        )
+        warnings.append(f"Sharpe ratio {metrics.sharpe_ratio:.2f} > 2.5 may indicate overfitting")
 
     # Win rate > 90% is suspicious
     if metrics.win_rate > 0.90:
-        warnings.append(
-            f"Win rate {metrics.win_rate:.1%} > 90% may be unrealistic"
-        )
+        warnings.append(f"Win rate {metrics.win_rate:.1%} > 90% may be unrealistic")
 
     # Sortino >> Sharpe suggests tail risk underestimation
     if metrics.sortino_ratio > metrics.sharpe_ratio * 2:
-        warnings.append(
-            "Sortino/Sharpe ratio suggests possible tail risk underestimation"
-        )
+        warnings.append("Sortino/Sharpe ratio suggests possible tail risk underestimation")
 
     # Zero or near-zero std_dev indicates degenerate results
     if metrics.std_dev < 1.0 and metrics.total_return != 0:
