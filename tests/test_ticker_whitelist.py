@@ -82,7 +82,7 @@ class TestWhitelistConfiguration:
     """Test whitelist is correctly configured."""
 
     def test_only_spy_in_whitelist(self):
-        assert ALLOWED_UNDERLYING == frozenset({"SPY"})
+        assert frozenset({"SPY"}) == ALLOWED_UNDERLYING
 
     def test_whitelist_is_immutable(self):
         # frozenset cannot be modified

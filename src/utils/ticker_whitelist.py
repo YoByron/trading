@@ -13,7 +13,6 @@ Reason: SOFI position violated SPY-only rule, blocked trading for 2 days
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ ALLOWED_UNDERLYING = frozenset({"SPY"})
 
 class TickerWhitelistViolation(Exception):
     """Raised when attempting to trade non-whitelisted ticker."""
+
     pass
 
 
@@ -106,9 +106,10 @@ def enforce_spy_only(func):
         def execute_trade(symbol, ...):
             ...
     """
+
     def wrapper(*args, **kwargs):
         # Try to find symbol in args or kwargs
-        symbol = kwargs.get('symbol') or (args[0] if args else None)
+        symbol = kwargs.get("symbol") or (args[0] if args else None)
 
         if symbol:
             validate_ticker(symbol, raise_on_violation=True)
