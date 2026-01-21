@@ -27,7 +27,9 @@ def get_all_positions():
         from alpaca.trading.client import TradingClient
 
         api_key = os.getenv("ALPACA_API_KEY") or os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY")
-        secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("ALPACA_PAPER_TRADING_5K_API_SECRET")
+        secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv(
+            "ALPACA_PAPER_TRADING_5K_API_SECRET"
+        )
 
         if not api_key or not secret_key:
             print("⚠️ No Alpaca credentials - skipping assertion")
@@ -78,25 +80,31 @@ def main():
         unrealized_pl = float(pos.unrealized_pl)
 
         if is_spy_position(symbol):
-            spy_positions.append({
-                "symbol": symbol,
-                "qty": qty,
-                "market_value": market_value,
-                "unrealized_pl": unrealized_pl,
-            })
+            spy_positions.append(
+                {
+                    "symbol": symbol,
+                    "qty": qty,
+                    "market_value": market_value,
+                    "unrealized_pl": unrealized_pl,
+                }
+            )
         else:
-            non_spy_positions.append({
-                "symbol": symbol,
-                "qty": qty,
-                "market_value": market_value,
-                "unrealized_pl": unrealized_pl,
-            })
+            non_spy_positions.append(
+                {
+                    "symbol": symbol,
+                    "qty": qty,
+                    "market_value": market_value,
+                    "unrealized_pl": unrealized_pl,
+                }
+            )
 
     # Report SPY positions
     if spy_positions:
         print(f"✅ SPY Positions ({len(spy_positions)}):")
         for pos in spy_positions:
-            print(f"   {pos['symbol']}: {pos['qty']} @ ${pos['market_value']:.2f} (P/L: ${pos['unrealized_pl']:.2f})")
+            print(
+                f"   {pos['symbol']}: {pos['qty']} @ ${pos['market_value']:.2f} (P/L: ${pos['unrealized_pl']:.2f})"
+            )
 
     # Check for violations
     if non_spy_positions:
@@ -110,8 +118,10 @@ def main():
         print(f"❌ Non-SPY Positions ({len(non_spy_positions)}):")
         total_blocked = 0
         for pos in non_spy_positions:
-            print(f"   {pos['symbol']}: {pos['qty']} @ ${pos['market_value']:.2f} (P/L: ${pos['unrealized_pl']:.2f})")
-            total_blocked += abs(pos['market_value'])
+            print(
+                f"   {pos['symbol']}: {pos['qty']} @ ${pos['market_value']:.2f} (P/L: ${pos['unrealized_pl']:.2f})"
+            )
+            total_blocked += abs(pos["market_value"])
         print()
         print(f"💰 These positions are blocking ~${total_blocked:.2f} in buying power")
         print()
