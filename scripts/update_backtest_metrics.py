@@ -51,7 +51,9 @@ def calculate_metrics_from_trades(trades: list, initial_capital: float = 5000.0)
     negative_returns = [r for r in returns if r < 0]
     if negative_returns and len(negative_returns) > 1:
         mean_neg = sum(negative_returns) / len(negative_returns)
-        down_variance = sum((r - mean_neg) ** 2 for r in negative_returns) / (len(negative_returns) - 1)
+        down_variance = sum((r - mean_neg) ** 2 for r in negative_returns) / (
+            len(negative_returns) - 1
+        )
         downside_dev = math.sqrt(down_variance)
     else:
         downside_dev = 0.0
@@ -98,7 +100,9 @@ def calculate_metrics_from_trades(trades: list, initial_capital: float = 5000.0)
     losses = [p for p in pnls if p < 0]
     gross_profit = sum(wins) if wins else 0
     gross_loss = abs(sum(losses)) if losses else 0
-    profit_factor = gross_profit / gross_loss if gross_loss > 0 else (10.0 if gross_profit > 0 else 0.0)
+    profit_factor = (
+        gross_profit / gross_loss if gross_loss > 0 else (10.0 if gross_profit > 0 else 0.0)
+    )
 
     return {
         "sharpe_ratio": round(sharpe, 4),
@@ -151,25 +155,29 @@ def main():
 
     # Update with new metrics
     pnls = [t.get("pnl", 0) for t in trades]
-    latest.update({
-        "total_trades": len(trades),
-        "total_pnl": sum(pnls),
-        "win_rate": summary.get("win_rate_pct", 0) / 100,
-        "avg_trade": sum(pnls) / len(pnls) if pnls else 0,
-        "max_win": max(pnls) if pnls else 0,
-        "max_loss": min(pnls) if pnls else 0,
-        "std_dev": metrics["volatility"] / math.sqrt(TRADING_DAYS_PER_YEAR) if metrics["volatility"] > 0 else 0,
-        "sharpe_ratio": metrics["sharpe_ratio"],
-        "sortino_ratio": metrics["sortino_ratio"],
-        "max_drawdown": metrics["max_drawdown"],
-        "profit_factor": metrics["profit_factor"],
-        "calmar_ratio": metrics["calmar_ratio"],
-        "volatility": metrics["volatility"],
-        "data_source": "spread_performance.json (real trades)",
-        "start_date": summary.get("start_date", "2026-01-13"),
-        "end_date": datetime.now().strftime("%Y-%m-%d"),
-        "timestamp": datetime.now().isoformat(),
-    })
+    latest.update(
+        {
+            "total_trades": len(trades),
+            "total_pnl": sum(pnls),
+            "win_rate": summary.get("win_rate_pct", 0) / 100,
+            "avg_trade": sum(pnls) / len(pnls) if pnls else 0,
+            "max_win": max(pnls) if pnls else 0,
+            "max_loss": min(pnls) if pnls else 0,
+            "std_dev": metrics["volatility"] / math.sqrt(TRADING_DAYS_PER_YEAR)
+            if metrics["volatility"] > 0
+            else 0,
+            "sharpe_ratio": metrics["sharpe_ratio"],
+            "sortino_ratio": metrics["sortino_ratio"],
+            "max_drawdown": metrics["max_drawdown"],
+            "profit_factor": metrics["profit_factor"],
+            "calmar_ratio": metrics["calmar_ratio"],
+            "volatility": metrics["volatility"],
+            "data_source": "spread_performance.json (real trades)",
+            "start_date": summary.get("start_date", "2026-01-13"),
+            "end_date": datetime.now().strftime("%Y-%m-%d"),
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
     # Save updated summary
     BACKTEST_DIR.mkdir(parents=True, exist_ok=True)

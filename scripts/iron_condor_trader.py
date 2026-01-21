@@ -217,7 +217,9 @@ class IronCondorStrategy:
 
             # Check VIX is in optimal range (15-25 per LL-269)
             if current_vix < RiskThresholds.VIX_OPTIMAL_MIN:
-                reason = f"VIX {current_vix:.2f} < {RiskThresholds.VIX_OPTIMAL_MIN} (premiums too thin)"
+                reason = (
+                    f"VIX {current_vix:.2f} < {RiskThresholds.VIX_OPTIMAL_MIN} (premiums too thin)"
+                )
                 logger.warning(f"BLOCKED: {reason}")
                 return False, reason
 
