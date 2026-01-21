@@ -206,7 +206,7 @@ The **Sharpe Ratio** measures risk-adjusted return: how much excess return we ge
 |--------|-------|
 | **Total Trades** | {total_trades} |
 | **Win Rate** | {win_rate * 100:.1f}% |
-| **Strategy** | {metrics.get('strategy', 'Iron Condors on SPY')} |
+| **Strategy** | {metrics.get("strategy", "Iron Condors on SPY")} |
 
 ### Our Backtesting Methodology
 

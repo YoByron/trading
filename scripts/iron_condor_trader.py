@@ -455,9 +455,7 @@ class IronCondorStrategy:
                                     )
                                     return round(price, 2)
                                 else:
-                                    logger.warning(
-                                        f"  {symbol}: Invalid quotes b=${bid} a=${ask}"
-                                    )
+                                    logger.warning(f"  {symbol}: Invalid quotes b=${bid} a=${ask}")
                         except Exception as price_err:
                             logger.warning(f"   Could not get price for {symbol}: {price_err}")
 
