@@ -300,7 +300,9 @@ class IronCondorStrategy:
 
                         # Log position details for debugging
                         for p in spy_option_positions:
-                            logger.warning(f"   - {p.symbol}: {p.qty} contracts @ ${float(p.avg_entry_price):.2f}")
+                            logger.warning(
+                                f"   - {p.symbol}: {p.qty} contracts @ ${float(p.avg_entry_price):.2f}"
+                            )
 
                         logger.warning("=" * 60)
 

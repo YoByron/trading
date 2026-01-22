@@ -53,7 +53,7 @@ def main():
         print(f"\n{target_symbol} not found - may already be closed")
         return
 
-    print(f"\nTarget Position Found:")
+    print("\nTarget Position Found:")
     print(f"  Symbol: {target_pos.symbol}")
     print(f"  Qty: {target_pos.qty}")
     print(f"  Unrealized P/L: ${float(target_pos.unrealized_pl):+.2f}")
@@ -66,7 +66,7 @@ def main():
         # This is the key difference - using close_position() directly
         # instead of submitting a sell order
         result = client.close_position(target_symbol)
-        print(f"\n  SUCCESS!")
+        print("\n  SUCCESS!")
         print(f"  Order ID: {result.id if hasattr(result, 'id') else result}")
         print(f"  Status: {result.status if hasattr(result, 'status') else 'submitted'}")
     except Exception as e:
@@ -76,9 +76,10 @@ def main():
         print("\nTrying partial close (6 contracts)...")
         try:
             from alpaca.trading.requests import ClosePositionRequest
+
             close_request = ClosePositionRequest(qty="6")
             result = client.close_position(target_symbol, close_position_request=close_request)
-            print(f"  SUCCESS!")
+            print("  SUCCESS!")
             print(f"  Order ID: {result.id if hasattr(result, 'id') else result}")
         except Exception as e2:
             print(f"  FAILED: {type(e2).__name__}: {e2}")
@@ -88,7 +89,7 @@ def main():
             try:
                 close_request = ClosePositionRequest(qty="1")
                 result = client.close_position(target_symbol, close_position_request=close_request)
-                print(f"  SUCCESS!")
+                print("  SUCCESS!")
                 print(f"  Order ID: {result.id if hasattr(result, 'id') else result}")
             except Exception as e3:
                 print(f"  FAILED: {type(e3).__name__}: {e3}")
