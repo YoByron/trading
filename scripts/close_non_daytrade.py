@@ -15,8 +15,8 @@ if not api_key or not api_secret:
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
-from alpaca.trading.requests import ClosePositionRequest, GetOrdersRequest, MarketOrderRequest
+from alpaca.trading.enums import QueryOrderStatus
+from alpaca.trading.requests import ClosePositionRequest, GetOrdersRequest
 
 print("=" * 60)
 print(f"PDT BYPASS - CLOSE NON-DAYTRADE ONLY - {datetime.now()}")
@@ -125,7 +125,7 @@ except Exception as e:
     print(f"❌ Method 1 failed: {e}")
 
     # METHOD 2: Close ALL (full position)
-    print(f"\nMethod 2: close_position (full position)...")
+    print("\nMethod 2: close_position (full position)...")
     try:
         result = client.close_position(target)
         print("✅ Full position close succeeded!")
@@ -135,7 +135,7 @@ except Exception as e:
         print(f"❌ Method 2 failed: {e2}")
 
         # METHOD 3: Try closing just 1 contract at a time
-        print(f"\nMethod 3: close_position (1 contract)...")
+        print("\nMethod 3: close_position (1 contract)...")
         try:
             close_request = ClosePositionRequest(qty="1")
             result = client.close_position(target, close_options=close_request)
