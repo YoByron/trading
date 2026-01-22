@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Close positions opened BEFORE today to bypass PDT."""
+
 import os
 import sys
 from datetime import datetime, timezone
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
-from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
+from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 print("=" * 60)
 print(f"CLOSE NON-DAYTRADE POSITIONS - {datetime.now()}")
@@ -38,7 +41,7 @@ buys_today = 0
 buys_before = 0
 
 for order in orders:
-    if order.symbol == target and order.side.name == 'BUY' and order.filled_at:
+    if order.symbol == target and order.side.name == "BUY" and order.filled_at:
         if order.filled_at.date() == today:
             buys_today += int(float(order.filled_qty or 0))
         else:
@@ -62,7 +65,9 @@ if safe <= 0:
 print(f"Closing {safe} contracts...")
 try:
     order = client.submit_order(
-        MarketOrderRequest(symbol=target, qty=safe, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
+        MarketOrderRequest(
+            symbol=target, qty=safe, side=OrderSide.SELL, time_in_force=TimeInForce.DAY
+        )
     )
     print(f"✅ Order: {order.id} - {order.status}")
 except Exception as e:
