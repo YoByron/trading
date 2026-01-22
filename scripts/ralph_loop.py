@@ -313,7 +313,9 @@ def ralph_loop(
     Returns:
         dict with success status and iteration details
     """
-    log(f"Starting Ralph Loop: task={task}, max_iterations={max_iterations}, budget=${max_cost_usd}")
+    log(
+        f"Starting Ralph Loop: task={task}, max_iterations={max_iterations}, budget=${max_cost_usd}"
+    )
 
     # Initialize struggle detector to prevent infinite loops
     struggle_detector = StruggleDetector(
@@ -527,7 +529,10 @@ def main():
     )
     parser.add_argument("--no-commit", action="store_true", help="Don't auto-commit changes")
     parser.add_argument(
-        "--max-cost", type=float, default=5.0, help="Maximum API cost budget in USD (default: $5.00)"
+        "--max-cost",
+        type=float,
+        default=5.0,
+        help="Maximum API cost budget in USD (default: $5.00)",
     )
     parser.add_argument("--dry-run", action="store_true", help="Run tests/lint only, don't call AI")
 
