@@ -10,17 +10,21 @@ Setting to "entry" should allow closing trades without PDT blocking.
 """
 
 import os
-import requests
 import sys
 from datetime import datetime
+
+import requests
+
 
 def main():
     print("=" * 60)
     print(f"PDT BYPASS CLOSE ATTEMPT - {datetime.now()}")
     print("=" * 60)
 
-    api_key = os.environ.get('ALPACA_API_KEY') or os.environ.get('ALPACA_PAPER_TRADING_5K_API_KEY')
-    api_secret = os.environ.get('ALPACA_SECRET_KEY') or os.environ.get('ALPACA_PAPER_TRADING_5K_API_SECRET')
+    api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
+    api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+        "ALPACA_PAPER_TRADING_5K_API_SECRET"
+    )
 
     if not api_key or not api_secret:
         print("ERROR: No Alpaca credentials")
@@ -44,9 +48,7 @@ def main():
     # Step 2: Set pdt_check to "entry" (only block opening trades, not closing)
     print("\n2️⃣ Setting pdt_check to 'entry' (allow closing trades)...")
     resp = requests.patch(
-        f"{base_url}/v2/account/configurations",
-        headers=headers,
-        json={"pdt_check": "entry"}
+        f"{base_url}/v2/account/configurations", headers=headers, json={"pdt_check": "entry"}
     )
     if resp.status_code == 200:
         print(f"   ✅ Config updated: {resp.json()}")
@@ -61,7 +63,7 @@ def main():
         sys.exit(1)
 
     positions = resp.json()
-    option_positions = [p for p in positions if len(p['symbol']) > 10]
+    option_positions = [p for p in positions if len(p["symbol"]) > 10]
 
     print(f"   Found {len(option_positions)} option positions:")
     for p in option_positions:
@@ -75,20 +77,17 @@ def main():
     print("\n4️⃣ Attempting to close ALL option positions...")
 
     for pos in option_positions:
-        symbol = pos['symbol']
-        qty = abs(int(float(pos['qty'])))
-        side = "sell" if float(pos['qty']) > 0 else "buy"
+        symbol = pos["symbol"]
+        qty = abs(int(float(pos["qty"])))
+        side = "sell" if float(pos["qty"]) > 0 else "buy"
 
         print(f"\n   Closing {symbol} ({qty} contracts)...")
 
         # Method A: DELETE position endpoint
         print(f"      Method A: DELETE /positions/{symbol}...")
-        resp = requests.delete(
-            f"{base_url}/v2/positions/{symbol}",
-            headers=headers
-        )
+        resp = requests.delete(f"{base_url}/v2/positions/{symbol}", headers=headers)
         if resp.status_code in [200, 204]:
-            print(f"      ✅ CLOSED via DELETE!")
+            print("      ✅ CLOSED via DELETE!")
             continue
         else:
             print(f"      ❌ DELETE failed: {resp.status_code} - {resp.text[:100]}")
@@ -100,13 +99,9 @@ def main():
             "qty": str(qty),
             "side": side,
             "type": "market",
-            "time_in_force": "day"
+            "time_in_force": "day",
         }
-        resp = requests.post(
-            f"{base_url}/v2/orders",
-            headers=headers,
-            json=order_data
-        )
+        resp = requests.post(f"{base_url}/v2/orders", headers=headers, json=order_data)
         if resp.status_code in [200, 201]:
             print(f"      ✅ Order submitted: {resp.json().get('id', 'unknown')}")
             continue
@@ -114,14 +109,12 @@ def main():
             print(f"      ❌ Order failed: {resp.status_code} - {resp.text[:100]}")
 
         # Method C: close_position with percentage
-        print(f"      Method C: Close position request...")
+        print("      Method C: Close position request...")
         resp = requests.delete(
-            f"{base_url}/v2/positions/{symbol}",
-            headers=headers,
-            params={"qty": str(qty)}
+            f"{base_url}/v2/positions/{symbol}", headers=headers, params={"qty": str(qty)}
         )
         if resp.status_code in [200, 204]:
-            print(f"      ✅ CLOSED via close_position!")
+            print("      ✅ CLOSED via close_position!")
             continue
         else:
             print(f"      ❌ close_position failed: {resp.status_code} - {resp.text[:100]}")
@@ -129,7 +122,7 @@ def main():
     # Step 5: Verify
     print("\n5️⃣ Verifying remaining positions...")
     resp = requests.get(f"{base_url}/v2/positions", headers=headers)
-    remaining = [p for p in resp.json() if len(p['symbol']) > 10]
+    remaining = [p for p in resp.json() if len(p["symbol"]) > 10]
 
     if remaining:
         print(f"\n⚠️ {len(remaining)} positions still open:")
@@ -141,9 +134,7 @@ def main():
     # Step 6: Reset pdt_check to "both" for safety
     print("\n6️⃣ Resetting pdt_check to 'both' for safety...")
     requests.patch(
-        f"{base_url}/v2/account/configurations",
-        headers=headers,
-        json={"pdt_check": "both"}
+        f"{base_url}/v2/account/configurations", headers=headers, json={"pdt_check": "both"}
     )
 
     print("\n" + "=" * 60)
