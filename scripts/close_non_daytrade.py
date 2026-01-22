@@ -70,18 +70,23 @@ try:
                     buys_today += qty
                 else:
                     buys_before += qty
-    print(f"  (from local trade history)")
+    print("  (from local trade history)")
 except Exception as e:
     print(f"  Local history failed: {e}, trying API with date range...")
     # Fallback: Query API with explicit date range (30 days back)
     try:
         from datetime import timedelta
+
         start_date = today - timedelta(days=30)
-        orders = client.get_orders(filter=GetOrdersRequest(
-            status=QueryOrderStatus.ALL,
-            limit=500,
-            after=datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-        ))
+        orders = client.get_orders(
+            filter=GetOrdersRequest(
+                status=QueryOrderStatus.ALL,
+                limit=500,
+                after=datetime.combine(start_date, datetime.min.time()).replace(
+                    tzinfo=timezone.utc
+                ),
+            )
+        )
         for order in orders:
             if order.symbol == target and order.side.name == "BUY" and order.filled_at:
                 filled_qty = int(float(order.filled_qty or 0))
