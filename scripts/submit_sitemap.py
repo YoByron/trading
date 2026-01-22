@@ -10,9 +10,9 @@ Usage:
 """
 
 import argparse
+import sys
 import urllib.parse
 import urllib.request
-import sys
 from datetime import datetime
 
 # Site configuration
@@ -46,7 +46,9 @@ def ping_search_engine(name: str, url: str, dry_run: bool = False) -> bool:
     try:
         request = urllib.request.Request(
             url,
-            headers={"User-Agent": "AI-Trading-Bot/1.0 (+https://github.com/IgorGanapolsky/trading)"}
+            headers={
+                "User-Agent": "AI-Trading-Bot/1.0 (+https://github.com/IgorGanapolsky/trading)"
+            },
         )
         response = urllib.request.urlopen(request, timeout=30)
         status = response.getcode()
