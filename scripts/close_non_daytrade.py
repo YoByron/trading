@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Close positions using Alpaca's close_position API."""
+
 import os
 import sys
 from datetime import datetime
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
@@ -41,20 +44,20 @@ if not target_pos:
     sys.exit(0)
 
 # Use close_position API - this properly closes the position
-print(f"\nClosing position via close_position API...")
+print("\nClosing position via close_position API...")
 try:
     result = client.close_position(target)
-    print(f"✅ Position closed!")
+    print("✅ Position closed!")
     print(f"   Order ID: {result.id if hasattr(result, 'id') else result}")
 except Exception as e:
     error_msg = str(e)
     print(f"❌ Failed: {error_msg}")
-    
+
     # If PDT error, try closing fewer contracts
     if "day trading" in error_msg.lower():
         print("\nPDT detected - cannot close today")
         sys.exit(1)
-    
+
     sys.exit(1)
 
 print("\n" + "=" * 60)
