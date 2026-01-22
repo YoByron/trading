@@ -587,9 +587,8 @@ class TradeGateway:
         # 3. Block when option positions > 4 (max 1 iron condor)
         # This CANNOT be bypassed - prevents position accumulation disasters
         # ============================================================
-        is_position_opening = (
-            request.side.lower() == "buy"
-            or (request.is_option and request.side.lower() == "sell")
+        is_position_opening = request.side.lower() == "buy" or (
+            request.is_option and request.side.lower() == "sell"
         )
 
         if is_position_opening:
@@ -603,7 +602,10 @@ class TradeGateway:
                     request=request,
                     rejection_reasons=[RejectionReason.CIRCUIT_BREAKER_DAILY_LOSS],
                     risk_score=1.0,
-                    metadata={"circuit_breaker": "TRADING_HALTED file exists", "reason": halt_reason},
+                    metadata={
+                        "circuit_breaker": "TRADING_HALTED file exists",
+                        "reason": halt_reason,
+                    },
                 )
 
             # Check 2: Total unrealized loss > 25% of equity
@@ -616,7 +618,7 @@ class TradeGateway:
             if loss_pct > 0.25:
                 logger.error(
                     f"🚨 CIRCUIT BREAKER: Unrealized loss ${abs(total_unrealized_loss):.2f} "
-                    f"({loss_pct*100:.1f}%) exceeds 25% of equity. NO NEW POSITIONS."
+                    f"({loss_pct * 100:.1f}%) exceeds 25% of equity. NO NEW POSITIONS."
                 )
                 return GatewayDecision(
                     approved=False,
