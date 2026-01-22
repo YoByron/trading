@@ -9,7 +9,6 @@ import time
 from unittest.mock import patch
 
 
-
 class TestTradeLock:
     """Test suite for trade lock mechanism."""
 
