@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 16:35:19
+date: 2026-01-22 16:45:11
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -12,10 +12,23 @@ Our AI system, Ralph (named after the [Ralph Wiggum iterative coding technique](
 continuously monitors, discovers, and fixes issues in our trading system. Here's what it found today.
 
 
-### Discovery #1: LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+### Discovery #1: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
+
+**🔧 The Fix:**
+1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
+
+**📈 Impact:**
+System stability improved
+
+---
+
+### Discovery #2: LL-280: Position Limit - Count Contracts Not Symbols
+
+**🔍 What Ralph Found:**
+- `scripts/iron_condor_trader.py` lines 303-365 (approximate) 1. **Always count contracts**: Never count just unique symbols 2. **Fail closed**: If safety check fails, block the action 3. **Log details**: Show exact positions when limit reached 4. **Single source of trade placement**: Reduce scripts that can place trades - LL-279: Partial Iron Condor Auto-Close - LL-278: Position Imbalance Crisis
 
 **🔧 The Fix:**
 Automated fix applied by Ralph
@@ -25,29 +38,16 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-272: PDT Protection Blocks SOFI Position Close
+### Discovery #3: LL-282: Use close_position() API for Closing Orphan Positions
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
 
 **🔧 The Fix:**
-**Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
+1. Replace `submit_order(MarketOrderRequest(...))` with `close_position(symbol)`: ```python order_request = MarketOrderRequest( symbol=option_symbol, qty=qty, side=close_side, time_in_force=TimeInForce.GTC  # NOT supported for options! ) order = client.submit_order(order_request)
 
 **📈 Impact:**
-System stability improved
-
----
-
-### Discovery #3: LL-271: RAG Without Vectors - Article Evaluation
-
-**🔍 What Ralph Found:**
-Identified during automated scanning
-
-**🔧 The Fix:**
-2. Calculate actual corpus size (110 lessons = trivial) 3. Don't add vector DBs until corpus exceeds 100K+ documents 4. Keyword search + recency boost handles most use cases `architecture`, `rag`, `evaluation`, `redundant`
-
-**📈 Impact:**
-System stability improved
+``` 2. Use `TimeInForce.DAY` for any options orders (GTC not supported) 3. Add scheduled triggers to close workflows for auto-healing during market hours - `.github/workflows/emergency-close-options.yml` - Now uses close_position() - `scripts/close_orphan_put.py` - Now uses close_position() - `scrip
 
 ---
 
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `093fe46c` | fix(emergency): PDT bypass - close non-daytrade positions wo |
+| `5e7daf8e` | fix(urgent): Crisis PDT workaround - scheduled close workflo |
+| `cdc12846` | docs(ralph): Auto-publish discovery blog post |
 | `16b5e29d` | fix(emergency): Add force close workflow (#2645) |
 | `f35fc1da` | fix(emergency): Add force close script with multiple approac |
-| `fcb1ee7e` | fix(emergency): CRISIS - Force close bleeding position (#264 |
-| `171d19c3` | docs(ralph): Auto-publish discovery blog post |
-| `4c7ac980` | Merge main with close_position() fix for orphan position (#2 |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 16:35:19*
+*Generated automatically by Ralph Mode on 2026-01-22 16:45:11*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
