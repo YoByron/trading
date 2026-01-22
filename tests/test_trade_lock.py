@@ -4,13 +4,10 @@ Created: Jan 22, 2026 (LL-281)
 """
 
 import os
-import tempfile
 import threading
 import time
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 
 
 class TestTradeLock:
@@ -243,8 +240,18 @@ class TestAutoCloseBleedingPositions:
         from src.safety.auto_close_bleeding import get_pdt_safe_close_qty
 
         trade_history = [
-            {"symbol": "SPY260220P00658000", "side": "BUY", "filled_qty": 2, "filled_at": "2026-01-21T10:00:00Z"},
-            {"symbol": "SPY260220P00658000", "side": "BUY", "filled_qty": 3, "filled_at": "2026-01-20T10:00:00Z"},
+            {
+                "symbol": "SPY260220P00658000",
+                "side": "BUY",
+                "filled_qty": 2,
+                "filled_at": "2026-01-21T10:00:00Z",
+            },
+            {
+                "symbol": "SPY260220P00658000",
+                "side": "BUY",
+                "filled_qty": 3,
+                "filled_at": "2026-01-20T10:00:00Z",
+            },
         ]
 
         # All buys were before today, so all 8 contracts are safe to close

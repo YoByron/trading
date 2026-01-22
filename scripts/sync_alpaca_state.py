@@ -121,6 +121,7 @@ def sync_from_alpaca() -> dict:
     # ========== SYNC LIVE (BROKERAGE) ACCOUNT ==========
     # LL-281: Dashboard was showing PAPER data for LIVE account because we never fetched LIVE
     import os
+
     live_api_key = os.environ.get("ALPACA_BROKERAGE_TRADING_API_KEY")
     live_api_secret = os.environ.get("ALPACA_BROKERAGE_TRADING_API_SECRET")
 
@@ -189,9 +190,7 @@ def update_system_state(alpaca_data: dict | None) -> None:
             # CRITICAL: Reject simulated data
             mode = paper_data.get("mode", "unknown")
             if mode == "simulated":
-                raise AlpacaSyncError(
-                    f"REFUSING to update with SIMULATED data! mode='{mode}'"
-                )
+                raise AlpacaSyncError(f"REFUSING to update with SIMULATED data! mode='{mode}'")
 
             # Update account section (primary account = PAPER for R&D)
             state.setdefault("account", {})
@@ -205,7 +204,9 @@ def update_system_state(alpaca_data: dict | None) -> None:
             paper_current = paper_data.get("equity", 0)
             state["account"]["total_pl"] = paper_current - paper_starting
             state["account"]["total_pl_pct"] = (
-                ((paper_current - paper_starting) / paper_starting) * 100 if paper_starting > 0 else 0
+                ((paper_current - paper_starting) / paper_starting) * 100
+                if paper_starting > 0
+                else 0
             )
 
             # Update paper_account section
@@ -218,7 +219,9 @@ def update_system_state(alpaca_data: dict | None) -> None:
             state["paper_account"]["starting_balance"] = paper_starting
             state["paper_account"]["total_pl"] = paper_current - paper_starting
             state["paper_account"]["total_pl_pct"] = (
-                ((paper_current - paper_starting) / paper_starting) * 100 if paper_starting > 0 else 0
+                ((paper_current - paper_starting) / paper_starting) * 100
+                if paper_starting > 0
+                else 0
             )
 
             # Update meta
