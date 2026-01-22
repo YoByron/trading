@@ -66,6 +66,7 @@ class TestIronCondorValidation:
                     "This is a bull put spread (directional), not an iron condor. "
                     "Acceptable if intentional. See LL-268, LL-278.",
                     UserWarning,
+                    stacklevel=2,
                 )
             if calls and not puts:
                 import warnings
@@ -75,6 +76,7 @@ class TestIronCondorValidation:
                     "This is a bear call spread (directional), not an iron condor. "
                     "Acceptable if intentional. See LL-268, LL-278.",
                     UserWarning,
+                    stacklevel=2,
                 )
 
     def test_iron_condor_trader_validates_4_legs(self):
@@ -139,8 +141,8 @@ class TestPositionSpreadIntegrity:
         if not put_positions:
             return
 
-        # Check net quantity
-        total_qty = sum(put_positions.values())
+        # Check net quantity (used for spread balance verification)
+        _total_qty = sum(put_positions.values())  # noqa: F841
 
         # For a spread: long qty + short qty should roughly balance
         # (long = positive, short = negative in most systems)
@@ -161,6 +163,7 @@ class TestPositionSpreadIntegrity:
                     "This may indicate an incomplete spread or emergency state. "
                     "See LL-268, LL-281.",
                     UserWarning,
+                    stacklevel=2,
                 )
 
 
