@@ -15,8 +15,8 @@ if not api_key or not api_secret:
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
-from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
+from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 print("=" * 60)
 print(f"PDT BYPASS - CLOSE NON-DAYTRADE ONLY - {datetime.now()}")
@@ -55,7 +55,7 @@ try:
     buys_today = 0
     buys_before = 0
     for order in orders:
-        if order.symbol == target and order.side.name == 'BUY' and order.filled_at:
+        if order.symbol == target and order.side.name == "BUY" and order.filled_at:
             filled_qty = int(float(order.filled_qty or 0))
             if order.filled_at.date() == today:
                 buys_today += filled_qty
@@ -96,8 +96,8 @@ except Exception as e:
     print(f"\nTrying close_position({safe_qty})...")
     try:
         result = client.close_position(target, qty=str(safe_qty))
-        print(f"✅ close_position succeeded!")
-        if hasattr(result, 'id'):
+        print("✅ close_position succeeded!")
+        if hasattr(result, "id"):
             print(f"   Order ID: {result.id}")
     except Exception as e2:
         print(f"❌ close_position failed: {e2}")
