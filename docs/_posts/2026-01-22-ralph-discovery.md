@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 17:05:31
+date: 2026-01-22 17:07:18
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -38,13 +38,13 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-268: Iron Condor Execution Failure - Call Legs Missing
+### Discovery #3: LL-272: Strategy Violation Crisis - Multiple Rogue Workflows
 
 **🔍 What Ralph Found:**
-2. **Add real market data** - Replace hardcoded SPY price with API call 3. **Use market prices for limits** - Get actual bid/ask before submitting 4. **Add call spread execution** - Ensure both PUT and CALL spreads execute `close_excess_spreads.py` scheduled for Jan 20, 9:35 AM ET to close 2 of 3 spreads and comply with 1-position limit. 1. ✅ **CI test added**: `tests/test_iron_condor_validation.py` validates BOTH put AND call spreads 2. ✅ **Execution verification added**: `iron_condor_trader.py
+Identified during automated scanning
 
 **🔧 The Fix:**
-The $5K paper account has ZERO call spreads despite CLAUDE.md mandating iron condors. All 6 positions are PUT options only, meaning we're running bull put spreads (directionally bullish) instead of iron condors (neutral). Current positions (from system_state.json): ``` SPY260220P00565000: +1 (long put)  -> 565/570 put spread SPY260220P00570000: -1 (short put) -> SPY260220P00595000: +1 (long put)  -> 595/600 put spread SPY260220P00600000: -1 (short put) -> SPY260220P00653000: +2 (long put)  -> 65
+On Jan 21, 2026, the trading system LOST $70.13 due to executing trades that VIOLATE CLAUDE.md strategy mandate. The system bought SPY SHARES and SOFI OPTIONS when it should ONLY execute iron condors on SPY. From Alpaca dashboard (Jan 21, 2026): - Portfolio: $5,028.84 (-1.38%) - Daily Change: **-$70.13 LOSS** From system_state.json trade_history (Jan 21, 2026): ``` 16:17:51 - SPY Market BUY 0.146092795 @ $684.428  <- WRONG (shares, not options) 16:17:19 - SPY Market BUY 0.146103469 @ $684.378  <
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `ea64ee12` | docs(ralph): Auto-publish discovery blog post |
 | `69593772` | fix(emergency): Add PDT reset workflow with multiple close m |
 | `5707bf85` | fix(critical): Stop position accumulation - disable trading  |
 | `fdb0595c` | feat(emergency): Add direct close endpoint + Jan 2026 resear |
 | `9c7005c9` | feat(emergency): Add direct close endpoint + Jan 2026 resear |
-| `98ab0073` | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 17:05:31*
+*Generated automatically by Ralph Mode on 2026-01-22 17:07:18*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
