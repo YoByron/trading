@@ -5,12 +5,15 @@ Close positions that were NOT opened today - bypass PDT.
 PDT only applies to same-day round trips. If we close positions
 opened yesterday, it's not a day trade.
 """
+
 import os
 import sys
 from datetime import datetime, timezone
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
@@ -32,7 +35,7 @@ print(f"\nAccount Equity: ${float(account.equity):,.2f}")
 print(f"Day Trade Count: {account.daytrade_count}")
 
 # Get orders to check when positions were opened
-orders = list(client.get_orders(status='all', limit=100))
+orders = list(client.get_orders(status="all", limit=100))
 print(f"Recent Orders: {len(orders)}")
 
 # Find when SPY260220P00658000 was bought
@@ -43,7 +46,7 @@ buys_today = 0
 buys_yesterday = 0
 
 for order in orders:
-    if order.symbol == target and order.side.name == 'BUY' and order.filled_at:
+    if order.symbol == target and order.side.name == "BUY" and order.filled_at:
         order_date = order.filled_at.date()
         if order_date == today:
             buys_today += int(float(order.filled_qty or 0))
@@ -78,7 +81,7 @@ try:
     print(f"  Status: {order.status}")
 except Exception as e:
     print(f"  ❌ Failed: {e}")
-    
+
     # Try smaller qty
     print(f"\n  Trying {safe_to_close - 1} contracts...")
     try:

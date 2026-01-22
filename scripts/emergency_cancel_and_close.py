@@ -2,19 +2,22 @@
 """
 EMERGENCY: Cancel all orders then force close bleeding position.
 """
+
 import os
 import sys
 import time
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
+from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
 from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 print("=" * 60)
@@ -25,7 +28,7 @@ client = TradingClient(api_key, api_secret, paper=True)
 
 # Step 1: Get account status
 account = client.get_account()
-print(f"\nAccount Status:")
+print("\nAccount Status:")
 print(f"  Equity: ${float(account.equity):,.2f}")
 print(f"  Cash: ${float(account.cash):,.2f}")
 print(f"  Buying Power: ${float(account.buying_power):,.2f}")
@@ -45,7 +48,7 @@ if orders:
         print(f"  Canceling {order.symbol}: {order.id}")
         try:
             client.cancel_order_by_id(order.id)
-            print(f"    ✅ Cancelled")
+            print("    ✅ Cancelled")
         except Exception as e:
             print(f"    ❌ Failed: {e}")
 
@@ -75,7 +78,7 @@ if not target_pos:
 
 qty = int(float(target_pos.qty))
 current_price = float(target_pos.current_price)
-print(f"\nTarget Position:")
+print("\nTarget Position:")
 print(f"  Symbol: {target}")
 print(f"  Qty: {qty} LONG")
 print(f"  Current Price: ${current_price:.2f}")
@@ -85,8 +88,8 @@ print(f"  P/L: ${float(target_pos.unrealized_pl):+.2f}")
 print(f"\nAttempt 1: close_position() for all {qty} contracts...")
 try:
     result = client.close_position(target)
-    print(f"  ✅ SUCCESS!")
-    if hasattr(result, 'id'):
+    print("  ✅ SUCCESS!")
+    if hasattr(result, "id"):
         print(f"  Order ID: {result.id}")
         print(f"  Status: {result.status}")
     sys.exit(0)
@@ -98,13 +101,10 @@ print(f"\nAttempt 2: Market SELL order for all {qty} contracts...")
 try:
     order = client.submit_order(
         MarketOrderRequest(
-            symbol=target,
-            qty=qty,
-            side=OrderSide.SELL,
-            time_in_force=TimeInForce.DAY
+            symbol=target, qty=qty, side=OrderSide.SELL, time_in_force=TimeInForce.DAY
         )
     )
-    print(f"  ✅ Order submitted!")
+    print("  ✅ Order submitted!")
     print(f"  Order ID: {order.id}")
     print(f"  Status: {order.status}")
     sys.exit(0)
@@ -112,11 +112,11 @@ except Exception as e:
     print(f"  ❌ Failed: {e}")
 
 # Try closing just 1 contract
-print(f"\nAttempt 3: close_position() for just 1 contract...")
+print("\nAttempt 3: close_position() for just 1 contract...")
 try:
     result = client.close_position(target, qty="1")
-    print(f"  ✅ Closed 1 contract!")
-    if hasattr(result, 'id'):
+    print("  ✅ Closed 1 contract!")
+    if hasattr(result, "id"):
         print(f"  Order ID: {result.id}")
 except Exception as e:
     print(f"  ❌ Failed: {e}")
