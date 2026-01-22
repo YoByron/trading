@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 18:04:55
+date: 2026-01-22 18:06:35
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -25,26 +25,26 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-272: Strategy Violation Crisis - Multiple Rogue Workflows
+### Discovery #2: LL-272: PDT Protection Blocks SOFI Position Close
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
 
 **🔧 The Fix:**
-On Jan 21, 2026, the trading system LOST $70.13 due to executing trades that VIOLATE CLAUDE.md strategy mandate. The system bought SPY SHARES and SOFI OPTIONS when it should ONLY execute iron condors on SPY. From Alpaca dashboard (Jan 21, 2026): - Portfolio: $5,028.84 (-1.38%) - Daily Change: **-$70.13 LOSS** From system_state.json trade_history (Jan 21, 2026): ``` 16:17:51 - SPY Market BUY 0.146092795 @ $684.428  <- WRONG (shares, not options) 16:17:19 - SPY Market BUY 0.146103469 @ $684.378  <
+**Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #3: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
+### Discovery #3: LL-271: RAG Without Vectors - Article Evaluation
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
 
 **🔧 The Fix:**
-1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
+2. Calculate actual corpus size (110 lessons = trivial) 3. Don't add vector DBs until corpus exceeds 100K+ documents 4. Keyword search + recency boost handles most use cases `architecture`, `rag`, `evaluation`, `redundant`
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `cf4cee11` | docs(ralph): Auto-publish discovery blog post |
 | `ef15a297` | docs(ralph): Auto-publish discovery blog post |
 | `ff7e6888` | docs(ralph): Auto-publish discovery blog post |
 | `62fe1a03` | fix(lint): Remove unused variable qty in trade_gateway.py (# |
 | `5fb6b882` | docs(ralph): Auto-publish discovery blog post |
-| `debf80f6` | feat(emergency): Add workflow to close profitable SHORT posi |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 18:04:55*
+*Generated automatically by Ralph Mode on 2026-01-22 18:06:35*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
