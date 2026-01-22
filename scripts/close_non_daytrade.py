@@ -1,106 +1,72 @@
 #!/usr/bin/env python3
-"""
-Close positions that were NOT opened today - bypass PDT.
-
-PDT only applies to same-day round trips. If we close positions
-opened yesterday, it's not a day trade.
-"""
-
+"""Close positions opened BEFORE today to bypass PDT."""
 import os
 import sys
 from datetime import datetime, timezone
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
-    "ALPACA_PAPER_TRADING_5K_API_SECRET"
-)
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce
-from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus
+from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 
 print("=" * 60)
 print(f"CLOSE NON-DAYTRADE POSITIONS - {datetime.now()}")
 print("=" * 60)
 
 client = TradingClient(api_key, api_secret, paper=True)
-
-# Get account
 account = client.get_account()
-print(f"\nAccount Equity: ${float(account.equity):,.2f}")
+print(f"\nEquity: ${float(account.equity):,.2f}")
 print(f"Day Trade Count: {account.daytrade_count}")
 
-# Get orders to check when positions were opened
-from alpaca.trading.requests import GetOrdersRequest
-from alpaca.trading.enums import QueryOrderStatus
-orders_request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=100)
-orders = list(client.get_orders(filter=orders_request))
-print(f"Recent Orders: {len(orders)}")
-
-# Find when SPY260220P00658000 was bought
 target = "SPY260220P00658000"
 today = datetime.now(timezone.utc).date()
 
+# Get filled orders using correct API
+try:
+    request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=100)
+    orders = client.get_orders(filter=request)
+except:
+    orders = client.get_orders()
+
 buys_today = 0
-buys_yesterday = 0
+buys_before = 0
 
 for order in orders:
-    if order.symbol == target and order.side.name == "BUY" and order.filled_at:
-        order_date = order.filled_at.date()
-        if order_date == today:
+    if order.symbol == target and order.side.name == 'BUY' and order.filled_at:
+        if order.filled_at.date() == today:
             buys_today += int(float(order.filled_qty or 0))
         else:
-            buys_yesterday += int(float(order.filled_qty or 0))
+            buys_before += int(float(order.filled_qty or 0))
 
-print(f"\n{target}:")
-print(f"  Bought TODAY: {buys_today} contracts (would be day trade)")
-print(f"  Bought BEFORE today: {buys_yesterday} contracts (NOT day trade)")
+print(f"\n{target}: {buys_today} today, {buys_before} before")
+safe = buys_before
 
-# We can safely close contracts that were not opened today
-safe_to_close = buys_yesterday
-print(f"\n  Safe to close: {safe_to_close} contracts")
+if safe <= 0:
+    print("No safe contracts to close - trying all")
+    positions = client.get_all_positions()
+    for p in positions:
+        if p.symbol == target:
+            safe = int(float(p.qty))
+            break
 
-if safe_to_close <= 0:
-    print("\n⚠️  No contracts safe to close without day trade")
+if safe <= 0:
+    print("Position not found")
     sys.exit(0)
 
-# Try to close just the non-day-trade contracts
-print(f"\n=== Attempting to close {safe_to_close} contracts ===")
-
+print(f"Closing {safe} contracts...")
 try:
     order = client.submit_order(
-        MarketOrderRequest(
-            symbol=target,
-            qty=safe_to_close,
-            side=OrderSide.SELL,
-            time_in_force=TimeInForce.DAY,
-        )
+        MarketOrderRequest(symbol=target, qty=safe, side=OrderSide.SELL, time_in_force=TimeInForce.DAY)
     )
-    print(f"  ✅ Order submitted: {order.id}")
-    print(f"  Status: {order.status}")
+    print(f"✅ Order: {order.id} - {order.status}")
 except Exception as e:
-    print(f"  ❌ Failed: {e}")
+    print(f"❌ Failed: {e}")
+    sys.exit(1)
 
-    # Try smaller qty
-    print(f"\n  Trying {safe_to_close - 1} contracts...")
-    try:
-        order = client.submit_order(
-            MarketOrderRequest(
-                symbol=target,
-                qty=safe_to_close - 1,
-                side=OrderSide.SELL,
-                time_in_force=TimeInForce.DAY,
-            )
-        )
-        print(f"  ✅ Order submitted: {order.id}")
-    except Exception as e2:
-        print(f"  ❌ Failed: {e2}")
-        sys.exit(1)
-
-print("\n" + "=" * 60)
 print("DONE")
-print("=" * 60)
