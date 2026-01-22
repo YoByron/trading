@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 21:46:53
+date: 2026-01-22 22:08:54
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -25,26 +25,26 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-272: PDT Protection Blocks SOFI Position Close
+### Discovery #2: LL-282: Crisis Mode Failure Analysis - Jan 22, 2026
 
 **🔍 What Ralph Found:**
-Identified during automated scanning
+- CEO lost trust in the system The trade gateway checked individual trade risk (5% max) but NOT cumulative exposure. - Trade 1: $248 risk (5% of $4,986) - APPROVED - Trade 2: $248 risk (5% of $4,986) - APPROVED - Trade 3: $248 risk (5% of $4,986) - APPROVED - ...continued until 8 contracts ($1,984 risk = 40% exposure)
 
 **🔧 The Fix:**
-**Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
+1. **Circuit Breaker in Trade Gateway** (trade_gateway.py:578-630) - Hard stop before any position-opening trade - Checks TRADING_HALTED flag file - Blocks when unrealized loss > 25% of equity - Blocks when option positions > 4 2. **TRADING_HALTED Flag** (data/TRADING_HALTED) - Manual halt mechanism - Must be explicitly removed to resume trading 3. **Scheduled Position Close** (.github/workflows/scheduled-position-close.yml) - Runs Jan 23, 9:45 AM ET - Attempts close_position() then market order
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #3: LL-268: Iron Condor Execution Failure - Call Legs Missing
+### Discovery #3: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
 
 **🔍 What Ralph Found:**
-2. **Add real market data** - Replace hardcoded SPY price with API call 3. **Use market prices for limits** - Get actual bid/ask before submitting 4. **Add call spread execution** - Ensure both PUT and CALL spreads execute `close_excess_spreads.py` scheduled for Jan 20, 9:35 AM ET to close 2 of 3 spreads and comply with 1-position limit. 1. ✅ **CI test added**: `tests/test_iron_condor_validation.py` validates BOTH put AND call spreads 2. ✅ **Execution verification added**: `iron_condor_trader.py
+Identified during automated scanning
 
 **🔧 The Fix:**
-The $5K paper account has ZERO call spreads despite CLAUDE.md mandating iron condors. All 6 positions are PUT options only, meaning we're running bull put spreads (directionally bullish) instead of iron condors (neutral). Current positions (from system_state.json): ``` SPY260220P00565000: +1 (long put)  -> 565/570 put spread SPY260220P00570000: -1 (short put) -> SPY260220P00595000: +1 (long put)  -> 595/600 put spread SPY260220P00600000: -1 (short put) -> SPY260220P00653000: +2 (long put)  -> 65
+1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `b9fe71c9` | fix(safety): Add trade_lock to iron_condor_trader per LL-290 |
+| `20bdff10` | docs(ralph): Auto-publish discovery blog post |
 | `23ebaf5b` | docs(ralph): Auto-publish discovery blog post |
 | `3a0ac819` | docs(ralph): Auto-publish discovery blog post |
 | `2c85bb1d` | fix(safety): LL-281 Crisis Prevention - Race Conditions, Aut |
-| `eff7b4b1` | docs(ralph): Auto-publish discovery blog post |
-| `86c09aca` | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 21:46:53*
+*Generated automatically by Ralph Mode on 2026-01-22 22:08:54*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
