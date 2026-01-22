@@ -474,6 +474,7 @@ class TradeGateway:
         existing_risk = 0.0
         for pos in positions:
             symbol = pos.get("symbol", "")
+            _qty = abs(float(pos.get("qty", 0)))  # noqa: F841
             unrealized_pl = float(pos.get("unrealized_pl", 0))
 
             # Only count option positions for risk
