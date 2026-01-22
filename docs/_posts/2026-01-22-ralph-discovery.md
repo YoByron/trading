@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 15:34:12
+date: 2026-01-22 16:15:58
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -25,23 +25,23 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-262: Data Sync Infrastructure Improvements
+### Discovery #2: LL-280: Cumulative Position Risk Bypass - Individual Trades Accumulating Past Limits
 
 **🔍 What Ralph Found:**
-- Max staleness during market hours: 15 min (was 30 min) - Data integrity check: Passes on every health check - Sync health visibility: Full history available
+Identified during automated scanning
 
 **🔧 The Fix:**
-- Peak hours (10am-3pm ET): Every 15 minutes - Market open/close: Every 30 minutes - Added manual trigger option with force_sync parameter Added to `src/utils/staleness_guard.py`:
+Automated fix applied by Ralph
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #3: LL-266: OptiMind Evaluation - Not Relevant to Our System
+### Discovery #3: LL-280: Position Limit - Count Contracts Not Symbols
 
 **🔍 What Ralph Found:**
-- Manufacturing resource allocation Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
+- `scripts/iron_condor_trader.py` lines 303-365 (approximate) 1. **Always count contracts**: Never count just unique symbols 2. **Fail closed**: If safety check fails, block the action 3. **Log details**: Show exact positions when limit reached 4. **Single source of trade placement**: Reduce scripts that can place trades - LL-279: Partial Iron Condor Auto-Close - LL-278: Position Imbalance Crisis
 
 **🔧 The Fix:**
 Automated fix applied by Ralph
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `dc79a1d7` | fix(emergency): Add script to close excess long puts |
+| `058c6c47` | docs(ralph): Auto-publish discovery blog post |
 | `c5b328e3` | docs(ralph): Auto-publish discovery blog post |
 | `1bbbd7a2` | fix(risk): Add cumulative position risk and iron condor limi |
 | `65d5acfe` | fix(critical): Add pre-trade validator after LL-282 Crisis ( |
-| `0476a549` | fix(critical): Emergency close workflow detects long/short p |
-| `ef4cab47` | fix(dashboard): Correct P/L showing wrong numbers (#2609) |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 15:34:12*
+*Generated automatically by Ralph Mode on 2026-01-22 16:15:58*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
