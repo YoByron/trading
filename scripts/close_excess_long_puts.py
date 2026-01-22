@@ -97,8 +97,8 @@ def main():
     # Execute close - SELL to close LONG positions
     print(f"\nSubmitting SELL order for {excess_qty} contracts...")
     print(f"  Symbol: {target_symbol}")
-    print(f"  Side: SELL (to close long)")
-    print(f"  Time in Force: DAY")
+    print("  Side: SELL (to close long)")
+    print("  Time in Force: DAY")
 
     try:
         order = client.submit_order(
@@ -117,6 +117,7 @@ def main():
     except Exception as e:
         print(f"  ❌ FAILED: {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

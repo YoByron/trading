@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Force close the bleeding position using different order types."""
+
 import os
 import sys
 from datetime import datetime
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce, OrderType
-from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
+from alpaca.trading.requests import LimitOrderRequest
 
 print("=" * 60)
 print(f"FORCE CLOSE ATTEMPT - {datetime.now()}")
@@ -72,7 +75,7 @@ try:
             qty=close_qty,
             side=OrderSide.SELL,
             time_in_force=TimeInForce.DAY,
-            limit_price=round(current_price * 0.95, 2)  # Slightly below market
+            limit_price=round(current_price * 0.95, 2),  # Slightly below market
         )
     )
     print(f"  ✅ Limit order submitted: {order.id}")
