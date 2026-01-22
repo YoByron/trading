@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
-"""Close positions opened BEFORE today to bypass PDT."""
-
+"""Close positions using Alpaca's close_position API."""
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
-    "ALPACA_PAPER_TRADING_5K_API_SECRET"
-)
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
     sys.exit(1)
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
-from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 print("=" * 60)
-print(f"CLOSE NON-DAYTRADE POSITIONS - {datetime.now()}")
+print(f"CLOSE POSITION VIA API - {datetime.now()}")
 print("=" * 60)
 
 client = TradingClient(api_key, api_secret, paper=True)
@@ -28,50 +23,40 @@ print(f"\nEquity: ${float(account.equity):,.2f}")
 print(f"Day Trade Count: {account.daytrade_count}")
 
 target = "SPY260220P00658000"
-today = datetime.now(timezone.utc).date()
 
-# Get filled orders using correct API
-try:
-    request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=100)
-    orders = client.get_orders(filter=request)
-except:
-    orders = client.get_orders()
+# Get current position
+positions = client.get_all_positions()
+target_pos = None
+for p in positions:
+    if p.symbol == target:
+        target_pos = p
+        print(f"\nFound: {target}")
+        print(f"  Qty: {p.qty}")
+        print(f"  Current Price: ${float(p.current_price):.2f}")
+        print(f"  P/L: ${float(p.unrealized_pl):+,.2f}")
+        break
 
-buys_today = 0
-buys_before = 0
-
-for order in orders:
-    if order.symbol == target and order.side.name == "BUY" and order.filled_at:
-        if order.filled_at.date() == today:
-            buys_today += int(float(order.filled_qty or 0))
-        else:
-            buys_before += int(float(order.filled_qty or 0))
-
-print(f"\n{target}: {buys_today} today, {buys_before} before")
-safe = buys_before
-
-if safe <= 0:
-    print("No safe contracts to close - trying all")
-    positions = client.get_all_positions()
-    for p in positions:
-        if p.symbol == target:
-            safe = int(float(p.qty))
-            break
-
-if safe <= 0:
-    print("Position not found")
+if not target_pos:
+    print(f"\n{target} not found - may already be closed")
     sys.exit(0)
 
-print(f"Closing {safe} contracts...")
+# Use close_position API - this properly closes the position
+print(f"\nClosing position via close_position API...")
 try:
-    order = client.submit_order(
-        MarketOrderRequest(
-            symbol=target, qty=safe, side=OrderSide.SELL, time_in_force=TimeInForce.DAY
-        )
-    )
-    print(f"✅ Order: {order.id} - {order.status}")
+    result = client.close_position(target)
+    print(f"✅ Position closed!")
+    print(f"   Order ID: {result.id if hasattr(result, 'id') else result}")
 except Exception as e:
-    print(f"❌ Failed: {e}")
+    error_msg = str(e)
+    print(f"❌ Failed: {error_msg}")
+    
+    # If PDT error, try closing fewer contracts
+    if "day trading" in error_msg.lower():
+        print("\nPDT detected - cannot close today")
+        sys.exit(1)
+    
     sys.exit(1)
 
+print("\n" + "=" * 60)
 print("DONE")
+print("=" * 60)
