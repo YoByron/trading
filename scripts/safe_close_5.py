@@ -64,13 +64,13 @@ if not found:
     sys.exit(0)
 
 if qty == 0:
-    print(f"\n✅ Position qty is 0 - already closed!")
+    print("\n✅ Position qty is 0 - already closed!")
     sys.exit(0)
 
 # PDT check
-print(f"\n📊 PDT Status:")
+print("\n📊 PDT Status:")
 print(f"   Day trades (5 days): {account.daytrade_count}")
-print(f"   Max allowed: 3")
+print("   Max allowed: 3")
 remaining = 3 - int(account.daytrade_count)
 print(f"   Remaining before PDT: {remaining}")
 
@@ -91,10 +91,10 @@ print(f"\n🔧 Attempting to close {CLOSE_QTY} contracts...")
 print(f"\n[1] Trying close_position(qty={CLOSE_QTY})...")
 try:
     result = client.close_position(TARGET, qty=str(CLOSE_QTY))
-    print(f"✅ SUCCESS!")
-    if hasattr(result, 'id'):
+    print("✅ SUCCESS!")
+    if hasattr(result, "id"):
         print(f"   Order ID: {result.id}")
-    if hasattr(result, 'status'):
+    if hasattr(result, "status"):
         print(f"   Status: {result.status}")
     sys.exit(0)
 except Exception as e:
@@ -108,12 +108,14 @@ except Exception as e:
 # Method 2: Market order SELL
 print(f"\n[2] Trying market order SELL {CLOSE_QTY}...")
 try:
-    order = client.submit_order(MarketOrderRequest(
-        symbol=TARGET,
-        qty=CLOSE_QTY,
-        side=OrderSide.SELL,
-        time_in_force=TimeInForce.DAY,
-    ))
+    order = client.submit_order(
+        MarketOrderRequest(
+            symbol=TARGET,
+            qty=CLOSE_QTY,
+            side=OrderSide.SELL,
+            time_in_force=TimeInForce.DAY,
+        )
+    )
     print(f"✅ Order submitted: {order.id}")
     print(f"   Status: {order.status}")
     sys.exit(0)
@@ -124,14 +126,16 @@ except Exception as e:
         print("   REASON: PDT protection blocked this order")
 
 # Method 3: Even smaller qty
-print(f"\n[3] Trying with qty=3...")
+print("\n[3] Trying with qty=3...")
 try:
-    order = client.submit_order(MarketOrderRequest(
-        symbol=TARGET,
-        qty=3,
-        side=OrderSide.SELL,
-        time_in_force=TimeInForce.DAY,
-    ))
+    order = client.submit_order(
+        MarketOrderRequest(
+            symbol=TARGET,
+            qty=3,
+            side=OrderSide.SELL,
+            time_in_force=TimeInForce.DAY,
+        )
+    )
     print(f"✅ Order submitted: {order.id}")
     print(f"   Status: {order.status}")
     sys.exit(0)
@@ -139,14 +143,16 @@ except Exception as e:
     print(f"❌ Failed: {e}")
 
 # Method 4: Just 1 contract
-print(f"\n[4] Trying with qty=1...")
+print("\n[4] Trying with qty=1...")
 try:
-    order = client.submit_order(MarketOrderRequest(
-        symbol=TARGET,
-        qty=1,
-        side=OrderSide.SELL,
-        time_in_force=TimeInForce.DAY,
-    ))
+    order = client.submit_order(
+        MarketOrderRequest(
+            symbol=TARGET,
+            qty=1,
+            side=OrderSide.SELL,
+            time_in_force=TimeInForce.DAY,
+        )
+    )
     print(f"✅ Order submitted: {order.id}")
     print(f"   Status: {order.status}")
     sys.exit(0)
