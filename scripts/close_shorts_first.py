@@ -91,11 +91,13 @@ for symbol, qty, pnl in longs:
         print(f"  ❌ FAILED: {e}")
 
         # Try partial close
-        print(f"  Trying partial close (1 contract)...")
+        print("  Trying partial close (1 contract)...")
         try:
             close_req = ClosePositionRequest(qty="1")
             result = client.close_position(symbol, close_options=close_req)
-            print(f"  ✅ Closed 1 contract! Order ID: {result.id if hasattr(result, 'id') else result}")
+            print(
+                f"  ✅ Closed 1 contract! Order ID: {result.id if hasattr(result, 'id') else result}"
+            )
         except Exception as e2:
             print(f"  ❌ Partial also failed: {e2}")
 
