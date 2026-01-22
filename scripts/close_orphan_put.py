@@ -100,10 +100,11 @@ def close_orphan_put():
             return False
 
     except Exception as e:
-        print(f"\n❌ CLOSE FAILED!")
+        print("\n❌ CLOSE FAILED!")
         print(f"   Error Type: {type(e).__name__}")
         print(f"   Error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
