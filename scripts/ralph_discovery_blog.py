@@ -10,7 +10,6 @@ makes significant discoveries or fixes. Posts go to:
 The goal: Share real engineering insights that developers actually want to read.
 """
 
-import json
 import os
 import re
 import sys
@@ -164,16 +163,16 @@ continuously monitors, discovers, and fixes issues in our trading system. Here's
     # Add discoveries
     for i, discovery in enumerate(discoveries, 1):
         content += f"""
-### Discovery #{i}: {discovery['title']}
+### Discovery #{i}: {discovery["title"]}
 
 **🔍 What Ralph Found:**
-{discovery['problem']}
+{discovery["problem"]}
 
 **🔧 The Fix:**
-{discovery['solution']}
+{discovery["solution"]}
 
 **📈 Impact:**
-{discovery['impact']}
+{discovery["impact"]}
 
 ---
 """
@@ -280,7 +279,9 @@ def should_publish() -> bool:
     commits = get_recent_ralph_commits()
 
     # Need at least 1 lesson or 3 significant commits
-    significant_commits = [c for c in commits if "fix" in c["message"].lower() or "feat" in c["message"].lower()]
+    significant_commits = [
+        c for c in commits if "fix" in c["message"].lower() or "feat" in c["message"].lower()
+    ]
 
     return len(lessons) >= 1 or len(significant_commits) >= 3
 
