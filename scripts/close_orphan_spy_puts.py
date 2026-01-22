@@ -91,6 +91,7 @@ def close_orphan_spy_puts():
     except Exception as e:
         print(f"❌ Order failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
