@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 16:54:44
+date: 2026-01-22 17:05:31
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -25,26 +25,26 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
+### Discovery #2: LL-272: PDT Protection Blocks SOFI Position Close
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
 
 **🔧 The Fix:**
-1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
+**Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #3: LL-278: Position Imbalance Crisis - Orphan Long Puts
+### Discovery #3: LL-268: Iron Condor Execution Failure - Call Legs Missing
 
 **🔍 What Ralph Found:**
-The orphan longs are decaying and losing money without corresponding short premium to offset. 1. Trade execution submitted 6 long puts but only 4 short puts filled 2. OR partial fills weren't detected and corrected 3. Position monitoring didn't catch the imbalance 1. Close the 2 excess long puts (SPY260220P00658000) 2. Verify all other positions are balanced 3. Add position balance validation to daily workflow 1. **Pre-trade validation**: Verify both legs have equal quantities 2. **Post-trade va
+2. **Add real market data** - Replace hardcoded SPY price with API call 3. **Use market prices for limits** - Get actual bid/ask before submitting 4. **Add call spread execution** - Ensure both PUT and CALL spreads execute `close_excess_spreads.py` scheduled for Jan 20, 9:35 AM ET to close 2 of 3 spreads and comply with 1-position limit. 1. ✅ **CI test added**: `tests/test_iron_condor_validation.py` validates BOTH put AND call spreads 2. ✅ **Execution verification added**: `iron_condor_trader.py
 
 **🔧 The Fix:**
-Automated fix applied by Ralph
+The $5K paper account has ZERO call spreads despite CLAUDE.md mandating iron condors. All 6 positions are PUT options only, meaning we're running bull put spreads (directionally bullish) instead of iron condors (neutral). Current positions (from system_state.json): ``` SPY260220P00565000: +1 (long put)  -> 565/570 put spread SPY260220P00570000: -1 (short put) -> SPY260220P00595000: +1 (long put)  -> 595/600 put spread SPY260220P00600000: -1 (short put) -> SPY260220P00653000: +2 (long put)  -> 65
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
-| `fdcb409b` | docs(ralph): Auto-publish discovery blog post |
-| `eb5a879a` | docs(ralph): Auto-publish discovery blog post |
-| `a3e02a5e` | docs(ralph): Auto-publish discovery blog post |
-| `80313ef3` | docs(ralph): Auto-publish discovery blog post |
-| `f1f2cf08` | docs(ralph): Auto-publish discovery blog post |
+| `69593772` | fix(emergency): Add PDT reset workflow with multiple close m |
+| `5707bf85` | fix(critical): Stop position accumulation - disable trading  |
+| `fdb0595c` | feat(emergency): Add direct close endpoint + Jan 2026 resear |
+| `9c7005c9` | feat(emergency): Add direct close endpoint + Jan 2026 resear |
+| `98ab0073` | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 16:54:44*
+*Generated automatically by Ralph Mode on 2026-01-22 17:05:31*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
