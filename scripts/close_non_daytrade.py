@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Last resort - close via limit order at 0.01."""
+
 import os
 import sys
 from datetime import datetime
 
 api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_KEY")
-api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_PAPER_TRADING_5K_API_SECRET")
+api_secret = os.environ.get("ALPACA_SECRET_KEY") or os.environ.get(
+    "ALPACA_PAPER_TRADING_5K_API_SECRET"
+)
 
 if not api_key or not api_secret:
     print("ERROR: Missing Alpaca API credentials")
@@ -55,16 +58,16 @@ try:
             qty=qty,
             side=OrderSide.SELL,
             time_in_force=TimeInForce.DAY,
-            limit_price=limit_price
+            limit_price=limit_price,
         )
     )
     print(f"✅ Order submitted: {order.id}")
     print(f"   Status: {order.status}")
 except Exception as e:
     print(f"❌ Limit order failed: {e}")
-    
+
     # Try even lower price
-    print(f"\nTrying limit sell at $0.01...")
+    print("\nTrying limit sell at $0.01...")
     try:
         order = client.submit_order(
             LimitOrderRequest(
@@ -72,15 +75,15 @@ except Exception as e:
                 qty=qty,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.DAY,
-                limit_price=0.01
+                limit_price=0.01,
             )
         )
         print(f"✅ Order submitted: {order.id}")
     except Exception as e2:
         print(f"❌ Failed: {e2}")
-        
+
         # Final attempt - close 1 contract only
-        print(f"\nTrying to close just 1 contract...")
+        print("\nTrying to close just 1 contract...")
         try:
             order = client.submit_order(
                 LimitOrderRequest(
@@ -88,7 +91,7 @@ except Exception as e:
                     qty=1,
                     side=OrderSide.SELL,
                     time_in_force=TimeInForce.DAY,
-                    limit_price=0.01
+                    limit_price=0.01,
                 )
             )
             print(f"✅ Closed 1 contract: {order.id}")
