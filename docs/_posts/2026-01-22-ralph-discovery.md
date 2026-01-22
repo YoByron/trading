@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 16:21:10
+date: 2026-01-22 16:35:19
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -12,20 +12,7 @@ Our AI system, Ralph (named after the [Ralph Wiggum iterative coding technique](
 continuously monitors, discovers, and fixes issues in our trading system. Here's what it found today.
 
 
-### Discovery #1: LL-266: OptiMind Evaluation - Not Relevant to Our System
-
-**🔍 What Ralph Found:**
-- Manufacturing resource allocation Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
-
-**🔧 The Fix:**
-Automated fix applied by Ralph
-
-**📈 Impact:**
-System stability improved
-
----
-
-### Discovery #2: LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+### Discovery #1: LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
@@ -38,7 +25,7 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-272: PDT Protection Blocks SOFI Position Close
+### Discovery #2: LL-272: PDT Protection Blocks SOFI Position Close
 
 **🔍 What Ralph Found:**
 Identified during automated scanning
@@ -51,15 +38,28 @@ System stability improved
 
 ---
 
+### Discovery #3: LL-271: RAG Without Vectors - Article Evaluation
+
+**🔍 What Ralph Found:**
+Identified during automated scanning
+
+**🔧 The Fix:**
+2. Calculate actual corpus size (110 lessons = trivial) 3. Don't add vector DBs until corpus exceeds 100K+ documents 4. Keyword search + recency boost handles most use cases `architecture`, `rag`, `evaluation`, `redundant`
+
+**📈 Impact:**
+System stability improved
+
+---
+
 ## 📝 Commits This Session
 
 | SHA | Message |
 |-----|---------|
+| `16b5e29d` | fix(emergency): Add force close workflow (#2645) |
+| `f35fc1da` | fix(emergency): Add force close script with multiple approac |
+| `fcb1ee7e` | fix(emergency): CRISIS - Force close bleeding position (#264 |
+| `171d19c3` | docs(ralph): Auto-publish discovery blog post |
 | `4c7ac980` | Merge main with close_position() fix for orphan position (#2 |
-| `97df26de` | docs(ralph): Auto-publish discovery blog post |
-| `bcb2e3ca` | docs(ralph): Auto-publish discovery blog post |
-| `dc79a1d7` | fix(emergency): Add script to close excess long puts |
-| `058c6c47` | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 16:21:10*
+*Generated automatically by Ralph Mode on 2026-01-22 16:35:19*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
