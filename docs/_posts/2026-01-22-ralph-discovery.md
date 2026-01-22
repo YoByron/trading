@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-22 16:15:58
+date: 2026-01-22 16:16:42
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -12,23 +12,23 @@ Our AI system, Ralph (named after the [Ralph Wiggum iterative coding technique](
 continuously monitors, discovers, and fixes issues in our trading system. Here's what it found today.
 
 
-### Discovery #1: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
+### Discovery #1: LL-262: Data Sync Infrastructure Improvements
 
 **🔍 What Ralph Found:**
-Identified during automated scanning
+- Max staleness during market hours: 15 min (was 30 min) - Data integrity check: Passes on every health check - Sync health visibility: Full history available
 
 **🔧 The Fix:**
-1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
+- Peak hours (10am-3pm ET): Every 15 minutes - Market open/close: Every 30 minutes - Added manual trigger option with force_sync parameter Added to `src/utils/staleness_guard.py`:
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #2: LL-280: Cumulative Position Risk Bypass - Individual Trades Accumulating Past Limits
+### Discovery #2: LL-258: 5% Position Limit Must Be Enforced BEFORE Trade Execution
 
 **🔍 What Ralph Found:**
-Identified during automated scanning
+- Account equity: $5,000 - 5% limit = $250 max per position - Workflow could place a $300 spread (6% = VIOLATION) - Only blocked if TOTAL exposure exceeded 15% Compliance check was incomplete: ```python if risk_pct > MAX_EXPOSURE_PCT:  # 15% total exit(1) ```
 
 **🔧 The Fix:**
 Automated fix applied by Ralph
@@ -38,10 +38,10 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-280: Position Limit - Count Contracts Not Symbols
+### Discovery #3: LL-266: OptiMind Evaluation - Not Relevant to Our System
 
 **🔍 What Ralph Found:**
-- `scripts/iron_condor_trader.py` lines 303-365 (approximate) 1. **Always count contracts**: Never count just unique symbols 2. **Fail closed**: If safety check fails, block the action 3. **Log details**: Show exact positions when limit reached 4. **Single source of trade placement**: Reduce scripts that can place trades - LL-279: Partial Iron Condor Auto-Close - LL-278: Position Imbalance Crisis
+- Manufacturing resource allocation Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
 
 **🔧 The Fix:**
 Automated fix applied by Ralph
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `bcb2e3ca` | docs(ralph): Auto-publish discovery blog post |
 | `dc79a1d7` | fix(emergency): Add script to close excess long puts |
 | `058c6c47` | docs(ralph): Auto-publish discovery blog post |
 | `c5b328e3` | docs(ralph): Auto-publish discovery blog post |
 | `1bbbd7a2` | fix(risk): Add cumulative position risk and iron condor limi |
-| `65d5acfe` | fix(critical): Add pre-trade validator after LL-282 Crisis ( |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-22 16:15:58*
+*Generated automatically by Ralph Mode on 2026-01-22 16:16:42*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
