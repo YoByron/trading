@@ -731,7 +731,10 @@ def main():
                 logger.warning(f"Trades today: {len(today_trades)} (max: {MAX_TRADES_PER_DAY})")
                 logger.warning("Reason: Prevent churning and bid/ask spread losses")
                 logger.warning("=" * 60)
-                return {"success": False, "reason": f"Daily limit reached: {len(today_trades)}/{MAX_TRADES_PER_DAY}"}
+                return {
+                    "success": False,
+                    "reason": f"Daily limit reached: {len(today_trades)}/{MAX_TRADES_PER_DAY}",
+                }
         except Exception as e:
             logger.warning(f"Could not check daily trades: {e}")
 
