@@ -52,12 +52,12 @@ class VIXMeanReversionSignal:
 
     # Configuration
     VIX_SPIKE_THRESHOLD = 20.0  # VIX above this = "elevated"
-    VIX_OPTIMAL_MIN = 15.0      # VIX below this = premiums too thin
-    VIX_OPTIMAL_MAX = 25.0      # VIX above this = too risky
-    VIX_EXTREME = 30.0          # VIX above this = AVOID
-    MA_PERIOD = 3               # 3-day moving average
-    STD_LOOKBACK = 30           # 30-day std dev lookback
-    STD_MULTIPLIER = 2.0        # 2 standard deviations for threshold
+    VIX_OPTIMAL_MIN = 15.0  # VIX below this = premiums too thin
+    VIX_OPTIMAL_MAX = 25.0  # VIX above this = too risky
+    VIX_EXTREME = 30.0  # VIX above this = AVOID
+    MA_PERIOD = 3  # 3-day moving average
+    STD_LOOKBACK = 30  # 30-day std dev lookback
+    STD_MULTIPLIER = 2.0  # 2 standard deviations for threshold
 
     def __init__(self):
         """Initialize the signal generator."""
@@ -105,28 +105,30 @@ class VIXMeanReversionSignal:
                 recent_high=0.0,
                 threshold=0.0,
                 reason="Could not fetch VIX data",
-                confidence=0.0
+                confidence=0.0,
             )
 
         # Current VIX
         current_vix = float(vix_data[-1])
 
         # 3-day moving average (smooths noise)
-        vix_3day_ma = float(np.mean(vix_data[-self.MA_PERIOD:]))
+        vix_3day_ma = float(np.mean(vix_data[-self.MA_PERIOD :]))
 
         # Recent high (last 10 days)
         recent_high = float(np.max(vix_data[-10:]))
 
         # 30-day standard deviation of daily changes
-        daily_changes = np.diff(vix_data[-self.STD_LOOKBACK-1:])
+        daily_changes = np.diff(vix_data[-self.STD_LOOKBACK - 1 :])
         vix_std = float(np.std(daily_changes))
         threshold = self.STD_MULTIPLIER * vix_std
 
         # Calculate drop from recent high
         drop_from_high = recent_high - vix_3day_ma
 
-        logger.info(f"VIX Analysis: current={current_vix:.2f}, 3d_ma={vix_3day_ma:.2f}, "
-                   f"recent_high={recent_high:.2f}, threshold={threshold:.2f}")
+        logger.info(
+            f"VIX Analysis: current={current_vix:.2f}, 3d_ma={vix_3day_ma:.2f}, "
+            f"recent_high={recent_high:.2f}, threshold={threshold:.2f}"
+        )
 
         # Signal logic
         signal, reason, confidence = self._evaluate_signal(
@@ -140,7 +142,7 @@ class VIXMeanReversionSignal:
             recent_high=recent_high,
             threshold=threshold,
             reason=reason,
-            confidence=confidence
+            confidence=confidence,
         )
 
     def _evaluate_signal(
@@ -149,7 +151,7 @@ class VIXMeanReversionSignal:
         vix_3day_ma: float,
         recent_high: float,
         drop_from_high: float,
-        threshold: float
+        threshold: float,
     ) -> tuple[str, str, float]:
         """
         Evaluate entry signal based on VIX conditions.
@@ -162,7 +164,7 @@ class VIXMeanReversionSignal:
             return (
                 "AVOID",
                 f"VIX {current_vix:.1f} > {self.VIX_EXTREME} (extreme volatility)",
-                0.0
+                0.0,
             )
 
         # AVOID: VIX too low (premiums thin)
@@ -170,7 +172,7 @@ class VIXMeanReversionSignal:
             return (
                 "AVOID",
                 f"VIX {current_vix:.1f} < {self.VIX_OPTIMAL_MIN} (premiums too thin)",
-                0.0
+                0.0,
             )
 
         # OPTIMAL_ENTRY: VIX dropped from spike (the sweet spot!)
@@ -181,7 +183,7 @@ class VIXMeanReversionSignal:
                 "OPTIMAL_ENTRY",
                 f"VIX dropped from {recent_high:.1f} to {vix_3day_ma:.1f} "
                 f"(drop={drop_from_high:.1f} > threshold={threshold:.1f})",
-                0.8 + (confidence * 0.2)
+                0.8 + (confidence * 0.2),
             )
 
         # GOOD_ENTRY: VIX in optimal range but no clear spike/drop pattern
@@ -189,23 +191,15 @@ class VIXMeanReversionSignal:
             return (
                 "GOOD_ENTRY",
                 f"VIX {current_vix:.1f} in optimal range ({self.VIX_OPTIMAL_MIN}-{self.VIX_OPTIMAL_MAX})",
-                0.6
+                0.6,
             )
 
         # NEUTRAL: VIX elevated but not dropping (wait for better entry)
         if current_vix > self.VIX_OPTIMAL_MAX:
-            return (
-                "NEUTRAL",
-                f"VIX {current_vix:.1f} elevated - wait for mean reversion",
-                0.3
-            )
+            return ("NEUTRAL", f"VIX {current_vix:.1f} elevated - wait for mean reversion", 0.3)
 
         # Default: NEUTRAL
-        return (
-            "NEUTRAL",
-            f"VIX {current_vix:.1f} - no clear signal",
-            0.5
-        )
+        return ("NEUTRAL", f"VIX {current_vix:.1f} - no clear signal", 0.5)
 
     def should_enter_trade(self) -> tuple[bool, str]:
         """
