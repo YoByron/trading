@@ -4,9 +4,10 @@ name: Close Shorts First Strategy
 
 on:
   workflow_dispatch:
-  schedule:
-    # Run every 3 minutes during market hours - CRISIS MODE
-    - cron: '*/3 14-21 * * 1-5'
+  # DISABLED Jan 23, 2026 - EMERGENCY FIX
+  # This was destroying iron condor positions by closing short legs!
+  # schedule:
+  #   - cron: '*/3 14-21 * * 1-5'
   push:
     paths:
       - '.github/workflows/close-shorts-first.yml'
