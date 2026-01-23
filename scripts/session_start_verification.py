@@ -251,9 +251,11 @@ def main():
         print(f"  Last Updated: {cache_data['timestamp']}")
 
         # Check staleness per LL-273
-        is_stale, age_hours = check_data_staleness(cache_data['timestamp'])
+        is_stale, age_hours = check_data_staleness(cache_data["timestamp"])
         if is_stale:
-            print(f"  ⚠️  DATA STALE: {age_hours:.1f} hours old (threshold: {STALENESS_THRESHOLD_HOURS}h)")
+            print(
+                f"  ⚠️  DATA STALE: {age_hours:.1f} hours old (threshold: {STALENESS_THRESHOLD_HOURS}h)"
+            )
             print("  ⚠️  Run: gh workflow run sync-system-state.yml")
         else:
             print(f"  ✅ Data fresh: {age_hours:.1f} hours old")
