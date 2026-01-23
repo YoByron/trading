@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-23 12:53:10
+date: 2026-01-23 14:18:57
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -38,13 +38,13 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-282: Crisis Mode Failure Analysis - Jan 22, 2026
+### Discovery #3: LL-268: Iron Condor Execution Failure - Call Legs Missing
 
 **🔍 What Ralph Found:**
-- CEO lost trust in the system The trade gateway checked individual trade risk (5% max) but NOT cumulative exposure. - Trade 1: $248 risk (5% of $4,986) - APPROVED - Trade 2: $248 risk (5% of $4,986) - APPROVED - Trade 3: $248 risk (5% of $4,986) - APPROVED - ...continued until 8 contracts ($1,984 risk = 40% exposure)
+2. **Add real market data** - Replace hardcoded SPY price with API call 3. **Use market prices for limits** - Get actual bid/ask before submitting 4. **Add call spread execution** - Ensure both PUT and CALL spreads execute `close_excess_spreads.py` scheduled for Jan 20, 9:35 AM ET to close 2 of 3 spreads and comply with 1-position limit. 1. ✅ **CI test added**: `tests/test_iron_condor_validation.py` validates BOTH put AND call spreads 2. ✅ **Execution verification added**: `iron_condor_trader.py
 
 **🔧 The Fix:**
-1. **Circuit Breaker in Trade Gateway** (trade_gateway.py:578-630) - Hard stop before any position-opening trade - Checks TRADING_HALTED flag file - Blocks when unrealized loss > 25% of equity - Blocks when option positions > 4 2. **TRADING_HALTED Flag** (data/TRADING_HALTED) - Manual halt mechanism - Must be explicitly removed to resume trading 3. **Scheduled Position Close** (.github/workflows/scheduled-position-close.yml) - Runs Jan 23, 9:45 AM ET - Attempts close_position() then market order
+The $5K paper account has ZERO call spreads despite CLAUDE.md mandating iron condors. All 6 positions are PUT options only, meaning we're running bull put spreads (directionally bullish) instead of iron condors (neutral). Current positions (from system_state.json): ``` SPY260220P00565000: +1 (long put)  -> 565/570 put spread SPY260220P00570000: -1 (short put) -> SPY260220P00595000: +1 (long put)  -> 595/600 put spread SPY260220P00600000: -1 (short put) -> SPY260220P00653000: +2 (long put)  -> 65
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `8780775f` | feat(rag): Add LL-296 - Alpaca crisis root cause analysis (# |
+| `561914f7` | chore(ralph): Update PRD metadata for iteration 158 (#2742) |
+| `87aa2d80` | chore(ralph): Update PRD metadata for iteration 154 (#2738) |
+| `1d917bc9` | docs(ralph): Auto-publish discovery blog post |
 | `c9b0efce` | docs(ralph): Auto-publish discovery blog post |
-| `af6fc8fb` | chore(ralph): CI iteration ✅ |
-| `47164ab6` | docs(ralph): Auto-publish discovery blog post |
-| `84972539` | docs(ralph): Auto-publish discovery blog post |
-| `91a44c76` | chore(ralph): CI iteration ✅ |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-23 12:53:10*
+*Generated automatically by Ralph Mode on 2026-01-23 14:18:57*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
