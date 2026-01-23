@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-
 class TestTrainFromFeedback:
     """Test the feedback training script."""
 
