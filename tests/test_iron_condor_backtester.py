@@ -66,7 +66,9 @@ class TestOptionsMath:
         """Test call option pricing."""
         from scripts.backtest.iron_condor_backtester import black_scholes_price
 
-        price = black_scholes_price(S=590, K=590, T=30 / 365, r=0.05, sigma=0.18, option_type="call")
+        price = black_scholes_price(
+            S=590, K=590, T=30 / 365, r=0.05, sigma=0.18, option_type="call"
+        )
         assert price > 0
         assert price < 20
 
@@ -139,14 +141,16 @@ class TestIronCondorBacktester:
     def mock_bars(self):
         """Create mock price data."""
         dates = pd.date_range("2025-12-01", "2026-01-22", freq="B")  # Business days
-        return pd.DataFrame({
-            "timestamp": dates,
-            "open": np.random.uniform(585, 595, len(dates)),
-            "high": np.random.uniform(590, 600, len(dates)),
-            "low": np.random.uniform(580, 590, len(dates)),
-            "close": np.random.uniform(585, 595, len(dates)),
-            "volume": np.random.randint(50000000, 100000000, len(dates)),
-        })
+        return pd.DataFrame(
+            {
+                "timestamp": dates,
+                "open": np.random.uniform(585, 595, len(dates)),
+                "high": np.random.uniform(590, 600, len(dates)),
+                "low": np.random.uniform(580, 590, len(dates)),
+                "close": np.random.uniform(585, 595, len(dates)),
+                "volume": np.random.randint(50000000, 100000000, len(dates)),
+            }
+        )
 
     def test_estimate_iv(self, mock_bars):
         """Test IV estimation from historical data."""
@@ -198,28 +202,58 @@ class TestIronCondorBacktester:
 
             results = [
                 IronCondorResult(
-                    status="profit_target", pnl=150, entry_date=date(2026, 1, 1),
-                    exit_date=date(2026, 1, 8), dte_at_entry=30, dte_at_exit=7,
-                    short_put_strike=575, long_put_strike=570, short_call_strike=605,
-                    long_call_strike=610, credit_received=200, underlying_at_entry=590,
-                    underlying_at_exit=592, put_side_pnl=100, call_side_pnl=50,
-                    exit_reason="profit_target"
+                    status="profit_target",
+                    pnl=150,
+                    entry_date=date(2026, 1, 1),
+                    exit_date=date(2026, 1, 8),
+                    dte_at_entry=30,
+                    dte_at_exit=7,
+                    short_put_strike=575,
+                    long_put_strike=570,
+                    short_call_strike=605,
+                    long_call_strike=610,
+                    credit_received=200,
+                    underlying_at_entry=590,
+                    underlying_at_exit=592,
+                    put_side_pnl=100,
+                    call_side_pnl=50,
+                    exit_reason="profit_target",
                 ),
                 IronCondorResult(
-                    status="profit_target", pnl=100, entry_date=date(2026, 1, 8),
-                    exit_date=date(2026, 1, 15), dte_at_entry=30, dte_at_exit=7,
-                    short_put_strike=575, long_put_strike=570, short_call_strike=605,
-                    long_call_strike=610, credit_received=200, underlying_at_entry=590,
-                    underlying_at_exit=588, put_side_pnl=50, call_side_pnl=50,
-                    exit_reason="profit_target"
+                    status="profit_target",
+                    pnl=100,
+                    entry_date=date(2026, 1, 8),
+                    exit_date=date(2026, 1, 15),
+                    dte_at_entry=30,
+                    dte_at_exit=7,
+                    short_put_strike=575,
+                    long_put_strike=570,
+                    short_call_strike=605,
+                    long_call_strike=610,
+                    credit_received=200,
+                    underlying_at_entry=590,
+                    underlying_at_exit=588,
+                    put_side_pnl=50,
+                    call_side_pnl=50,
+                    exit_reason="profit_target",
                 ),
                 IronCondorResult(
-                    status="stop_loss", pnl=-300, entry_date=date(2026, 1, 15),
-                    exit_date=date(2026, 1, 18), dte_at_entry=30, dte_at_exit=12,
-                    short_put_strike=575, long_put_strike=570, short_call_strike=605,
-                    long_call_strike=610, credit_received=200, underlying_at_entry=590,
-                    underlying_at_exit=570, put_side_pnl=-300, call_side_pnl=0,
-                    exit_reason="stop_loss"
+                    status="stop_loss",
+                    pnl=-300,
+                    entry_date=date(2026, 1, 15),
+                    exit_date=date(2026, 1, 18),
+                    dte_at_entry=30,
+                    dte_at_exit=12,
+                    short_put_strike=575,
+                    long_put_strike=570,
+                    short_call_strike=605,
+                    long_call_strike=610,
+                    credit_received=200,
+                    underlying_at_entry=590,
+                    underlying_at_exit=570,
+                    put_side_pnl=-300,
+                    call_side_pnl=0,
+                    exit_reason="stop_loss",
                 ),
             ]
 
@@ -262,12 +296,22 @@ class TestGenerateRAGLessons:
 
             results = [
                 IronCondorResult(
-                    status="profit_target", pnl=150, entry_date=date(2026, 1, 1),
-                    exit_date=date(2026, 1, 8), dte_at_entry=30, dte_at_exit=7,
-                    short_put_strike=575, long_put_strike=570, short_call_strike=605,
-                    long_call_strike=610, credit_received=200, underlying_at_entry=590,
-                    underlying_at_exit=592, put_side_pnl=100, call_side_pnl=50,
-                    exit_reason="profit_target"
+                    status="profit_target",
+                    pnl=150,
+                    entry_date=date(2026, 1, 1),
+                    exit_date=date(2026, 1, 8),
+                    dte_at_entry=30,
+                    dte_at_exit=7,
+                    short_put_strike=575,
+                    long_put_strike=570,
+                    short_call_strike=605,
+                    long_call_strike=610,
+                    credit_received=200,
+                    underlying_at_entry=590,
+                    underlying_at_exit=592,
+                    put_side_pnl=100,
+                    call_side_pnl=50,
+                    exit_reason="profit_target",
                 ),
             ]
 

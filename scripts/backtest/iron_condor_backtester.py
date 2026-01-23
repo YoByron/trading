@@ -175,15 +175,13 @@ class IronCondorBacktester:
         self.ny_tz = ZoneInfo("America/New_York")
 
         # Initialize Alpaca clients
-        self.trade_client = TradingClient(
-            api_key=alpaca_key, secret_key=alpaca_secret, paper=True
-        )
-        self.stock_client = StockHistoricalDataClient(
-            api_key=alpaca_key, secret_key=alpaca_secret
-        )
+        self.trade_client = TradingClient(api_key=alpaca_key, secret_key=alpaca_secret, paper=True)
+        self.stock_client = StockHistoricalDataClient(api_key=alpaca_key, secret_key=alpaca_secret)
 
         print(f"✅ Iron Condor Backtester initialized for {self.config.underlying_symbol}")
-        print(f"   Short delta: {self.config.short_delta} (POP: ~{(1-self.config.short_delta)*100:.0f}%)")
+        print(
+            f"   Short delta: {self.config.short_delta} (POP: ~{(1 - self.config.short_delta) * 100:.0f}%)"
+        )
         print(f"   Wing width: ${self.config.wing_width}")
         print(f"   DTE range: {self.config.dte_min}-{self.config.dte_max} days")
 
@@ -291,7 +289,9 @@ class IronCondorBacktester:
         future_bars = bars_slice[bars_slice["timestamp"].dt.date > entry_date]
 
         for _, bar in future_bars.iterrows():
-            current_date = bar["timestamp"].date() if hasattr(bar["timestamp"], "date") else bar["timestamp"]
+            current_date = (
+                bar["timestamp"].date() if hasattr(bar["timestamp"], "date") else bar["timestamp"]
+            )
             days_held = (current_date - entry_date).days
             dte_remaining = self.config.dte_min - days_held
 
@@ -305,16 +305,36 @@ class IronCondorBacktester:
             current_iv = iv * (1 + np.random.uniform(-0.1, 0.1))  # IV variation
 
             current_short_put = black_scholes_price(
-                current_price, short_put_strike, T_remaining, self.config.risk_free_rate, current_iv, "put"
+                current_price,
+                short_put_strike,
+                T_remaining,
+                self.config.risk_free_rate,
+                current_iv,
+                "put",
             )
             current_long_put = black_scholes_price(
-                current_price, long_put_strike, T_remaining, self.config.risk_free_rate, current_iv, "put"
+                current_price,
+                long_put_strike,
+                T_remaining,
+                self.config.risk_free_rate,
+                current_iv,
+                "put",
             )
             current_short_call = black_scholes_price(
-                current_price, short_call_strike, T_remaining, self.config.risk_free_rate, current_iv, "call"
+                current_price,
+                short_call_strike,
+                T_remaining,
+                self.config.risk_free_rate,
+                current_iv,
+                "call",
             )
             current_long_call = black_scholes_price(
-                current_price, long_call_strike, T_remaining, self.config.risk_free_rate, current_iv, "call"
+                current_price,
+                long_call_strike,
+                T_remaining,
+                self.config.risk_free_rate,
+                current_iv,
+                "call",
             )
 
             put_side_value = current_short_put - current_long_put
@@ -347,19 +367,27 @@ class IronCondorBacktester:
         if exit_date is None:
             # Expired - determine final P/L based on where price ended
             last_bar = future_bars.iloc[-1] if not future_bars.empty else entry_bar.iloc[0]
-            exit_date = last_bar["timestamp"].date() if hasattr(last_bar["timestamp"], "date") else entry_date
+            exit_date = (
+                last_bar["timestamp"].date()
+                if hasattr(last_bar["timestamp"], "date")
+                else entry_date
+            )
             exit_price = last_bar["close"]
 
             # At expiration
             if exit_price < short_put_strike:
                 # Put side ITM - loss
-                put_side_pnl = put_spread_credit - min(short_put_strike - exit_price, self.config.wing_width)
+                put_side_pnl = put_spread_credit - min(
+                    short_put_strike - exit_price, self.config.wing_width
+                )
             else:
                 put_side_pnl = put_spread_credit
 
             if exit_price > short_call_strike:
                 # Call side ITM - loss
-                call_side_pnl = call_spread_credit - min(exit_price - short_call_strike, self.config.wing_width)
+                call_side_pnl = call_spread_credit - min(
+                    exit_price - short_call_strike, self.config.wing_width
+                )
             else:
                 call_side_pnl = call_spread_credit
 
@@ -418,8 +446,8 @@ class IronCondorBacktester:
             # Get future bars for simulation
             future_end = current_date + timedelta(days=self.config.dte_min + 5)
             bars_slice = bars[
-                (bars["timestamp"].dt.date >= current_date) &
-                (bars["timestamp"].dt.date <= future_end)
+                (bars["timestamp"].dt.date >= current_date)
+                & (bars["timestamp"].dt.date <= future_end)
             ]
 
             if bars_slice.empty:
@@ -465,7 +493,9 @@ class IronCondorBacktester:
             "avg_loss": np.mean(losses) if losses else 0,
             "max_win": max(pnls),
             "max_loss": min(pnls),
-            "profit_factor": abs(sum(wins) / sum(losses)) if losses and sum(losses) != 0 else float("inf"),
+            "profit_factor": abs(sum(wins) / sum(losses))
+            if losses and sum(losses) != 0
+            else float("inf"),
             "sharpe_ratio": np.mean(pnls) / np.std(pnls) if np.std(pnls) > 0 else 0,
             "exit_reasons": {
                 "profit_target": len([r for r in results if r.exit_reason == "profit_target"]),
@@ -479,9 +509,7 @@ class IronCondorBacktester:
             "timestamp": datetime.now().isoformat(),
         }
 
-    def generate_rag_lessons(
-        self, results: list[IronCondorResult], summary: dict
-    ) -> list[dict]:
+    def generate_rag_lessons(self, results: list[IronCondorResult], summary: dict) -> list[dict]:
         """Generate lessons for RAG database."""
         lessons = []
 
@@ -489,11 +517,12 @@ class IronCondorBacktester:
             return lessons
 
         # Lesson 1: Summary
-        lessons.append({
-            "id": f"iron_condor_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            "type": "BACKTEST_SUMMARY",
-            "title": f"Iron Condor Backtest: {summary.get('start_date')} to {summary.get('end_date')}",
-            "content": f"""
+        lessons.append(
+            {
+                "id": f"iron_condor_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                "type": "BACKTEST_SUMMARY",
+                "title": f"Iron Condor Backtest: {summary.get('start_date')} to {summary.get('end_date')}",
+                "content": f"""
 ## Iron Condor Backtest Results
 
 **Period**: {summary.get("start_date")} to {summary.get("end_date")}
@@ -523,8 +552,9 @@ class IronCondorBacktester:
 ### Key Insight
 {"This configuration achieved target 80%+ win rate!" if summary.get("win_rate", 0) >= 0.80 else f"Win rate {summary.get('win_rate', 0) * 100:.1f}% below 80% target. Consider tighter deltas or wider wings."}
             """,
-            "metadata": summary,
-        })
+                "metadata": summary,
+            }
+        )
 
         return lessons
 
