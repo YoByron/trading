@@ -1,6 +1,5 @@
 """Tests for iron condor position management."""
 
-import pytest
 from datetime import datetime, timedelta
 import sys
 from pathlib import Path

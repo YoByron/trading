@@ -21,7 +21,6 @@ Usage:
 
 import json
 import logging
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -57,7 +56,7 @@ def parse_option_symbol(symbol: str) -> dict | None:
 
     try:
         underlying = symbol[:3] if symbol[:3].isalpha() else symbol[:4]
-        rest = symbol[len(underlying):]
+        rest = symbol[len(underlying) :]
 
         # Format: YYMMDDTSSSSSSSS (T=type, S=strike*1000)
         year = int("20" + rest[0:2])
@@ -157,13 +156,21 @@ def check_exit_conditions(ic: dict) -> tuple[bool, str, str]:
 
     # Check 50% profit target
     if pl_pct >= IC_EXIT_CONFIG["profit_target_pct"]:
-        return True, "PROFIT_TARGET", f"{pl_pct*100:.1f}% profit (target: {IC_EXIT_CONFIG['profit_target_pct']*100:.0f}%)"
+        return (
+            True,
+            "PROFIT_TARGET",
+            f"{pl_pct * 100:.1f}% profit (target: {IC_EXIT_CONFIG['profit_target_pct'] * 100:.0f}%)",
+        )
 
     # Check 200% stop-loss
     if pl_pct <= -IC_EXIT_CONFIG["stop_loss_pct"]:
-        return True, "STOP_LOSS", f"{pl_pct*100:.1f}% loss (stop: {IC_EXIT_CONFIG['stop_loss_pct']*100:.0f}%)"
+        return (
+            True,
+            "STOP_LOSS",
+            f"{pl_pct * 100:.1f}% loss (stop: {IC_EXIT_CONFIG['stop_loss_pct'] * 100:.0f}%)",
+        )
 
-    return False, "HOLD", f"P/L: {pl_pct*100:.1f}%, DTE: {dte}"
+    return False, "HOLD", f"P/L: {pl_pct * 100:.1f}%, DTE: {dte}"
 
 
 def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> bool:
@@ -189,7 +196,7 @@ def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> b
         logger.info(f"    {symbol}: {action} {qty}")
 
         if dry_run:
-            logger.info(f"      [DRY RUN] Would submit order")
+            logger.info("      [DRY RUN] Would submit order")
             continue
 
         try:
@@ -230,9 +237,9 @@ def main(dry_run: bool = False):
     logger.info(f"Mode: {'DRY RUN' if dry_run else 'LIVE EXECUTION'}")
     logger.info(f"Time: {datetime.now().isoformat()}")
     logger.info("=" * 70)
-    logger.info(f"Exit Rules (LL-268/LL-277):")
-    logger.info(f"  - Profit Target: {IC_EXIT_CONFIG['profit_target_pct']*100:.0f}% of credit")
-    logger.info(f"  - Stop Loss: {IC_EXIT_CONFIG['stop_loss_pct']*100:.0f}% of credit")
+    logger.info("Exit Rules (LL-268/LL-277):")
+    logger.info(f"  - Profit Target: {IC_EXIT_CONFIG['profit_target_pct'] * 100:.0f}% of credit")
+    logger.info(f"  - Stop Loss: {IC_EXIT_CONFIG['stop_loss_pct'] * 100:.0f}% of credit")
     logger.info(f"  - DTE Exit: {IC_EXIT_CONFIG['exit_dte']} days")
     logger.info("=" * 70)
 
@@ -261,7 +268,11 @@ def main(dry_run: bool = False):
         logger.info(f"  Legs: {len(ic['legs'])}")
         logger.info(f"  DTE: {dte}")
         logger.info(f"  Credit: ${credit:.2f}")
-        logger.info(f"  P/L: ${pl:.2f} ({pl/credit*100:.1f}% of credit)" if credit > 0 else f"  P/L: ${pl:.2f}")
+        logger.info(
+            f"  P/L: ${pl:.2f} ({pl / credit * 100:.1f}% of credit)"
+            if credit > 0
+            else f"  P/L: ${pl:.2f}"
+        )
 
         should_exit, reason, details = check_exit_conditions(ic)
 
@@ -275,7 +286,7 @@ def main(dry_run: bool = False):
             logger.info(f"  Status: HOLD - {details}")
 
     logger.info("\n" + "=" * 70)
-    logger.info(f"SUMMARY")
+    logger.info("SUMMARY")
     logger.info(f"  Iron condors evaluated: {len(iron_condors)}")
     logger.info(f"  Exits triggered: {exits_triggered}")
     logger.info(f"  Exits executed: {exits_executed}")
