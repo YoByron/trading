@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-23 01:07:16
+date: 2026-01-23 02:57:49
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -25,23 +25,23 @@ System stability improved
 
 ---
 
-### Discovery #2: LL-266: OptiMind Evaluation - Not Relevant to Our System
+### Discovery #2: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
 
 **🔍 What Ralph Found:**
-- Manufacturing resource allocation Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
+Identified during automated scanning
 
 **🔧 The Fix:**
-Automated fix applied by Ralph
+1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
 
 **📈 Impact:**
 System stability improved
 
 ---
 
-### Discovery #3: LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+### Discovery #3: LL-281: Position Accumulation Crisis - 8 Contracts Instead of Max 4
 
 **🔍 What Ralph Found:**
-Identified during automated scanning
+- LL-220: Credit spread win rates - LL-246: Position count enforcement - LL-268: Exit timing research
 
 **🔧 The Fix:**
 Automated fix applied by Ralph
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `a6fc149a` | docs(ralph): Auto-publish discovery blog post |
 | `6fc57998` | docs(ralph): Auto-publish discovery blog post |
 | `1e4fbb51` | docs(LL-281): Mark Alpaca API bug lesson as resolved (#2735) |
 | `dbda305b` | feat(backtest): Add iron condor backtester for automated res |
 | `5aad6bbf` | docs(ralph): Auto-publish discovery blog post |
-| `053cb45d` | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-23 01:07:16*
+*Generated automatically by Ralph Mode on 2026-01-23 02:57:49*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
