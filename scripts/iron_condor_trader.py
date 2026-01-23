@@ -603,9 +603,15 @@ class IronCondorStrategy:
                                 )
                                 order = client.submit_order(order_req)
                                 order_ids.append(
-                                    {"leg": leg_name, "order_id": str(order.id), "price": leg_info["price"]}
+                                    {
+                                        "leg": leg_name,
+                                        "order_id": str(order.id),
+                                        "price": leg_info["price"],
+                                    }
                                 )
-                                logger.info(f"   ✅ {leg_name}: {order.id} @ ${leg_info['price']:.2f}")
+                                logger.info(
+                                    f"   ✅ {leg_name}: {order.id} @ ${leg_info['price']:.2f}"
+                                )
                             except Exception as leg_error:
                                 logger.warning(f"   ⚠️ {leg_name} order failed: {leg_error}")
 
