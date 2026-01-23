@@ -25,7 +25,9 @@ from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 from src.core.alpaca_trader import AlpacaTrader
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Maximum positions allowed (1 iron condor = 4 legs)
@@ -37,10 +39,7 @@ def get_option_positions(trader) -> list:
     positions = trader.trading_client.get_all_positions()
 
     # Filter for SPY options only (symbol length > 5 for options)
-    option_positions = [
-        p for p in positions
-        if p.symbol.startswith("SPY") and len(p.symbol) > 5
-    ]
+    option_positions = [p for p in positions if p.symbol.startswith("SPY") and len(p.symbol) > 5]
 
     return option_positions
 
@@ -83,7 +82,7 @@ def close_position(trader, position) -> bool:
             logger.info(f"  ✅ Order submitted: {order.id}")
             return True
         else:
-            logger.error(f"  ❌ Order failed - no order returned")
+            logger.error("  ❌ Order failed - no order returned")
             return False
 
     except Exception as e:
@@ -141,7 +140,7 @@ def main():
     for i, p in enumerate(sorted_positions):
         marker = "← CLOSE" if i < excess else "← KEEP"
         pnl = float(p.unrealized_pl)
-        logger.info(f"  {i+1}. {p.symbol}: P/L ${pnl:.2f} {marker}")
+        logger.info(f"  {i + 1}. {p.symbol}: P/L ${pnl:.2f} {marker}")
     logger.info("")
 
     # Close excess positions (worst P/L first)

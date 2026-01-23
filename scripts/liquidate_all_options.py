@@ -24,13 +24,17 @@ from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 from src.core.alpaca_trader import AlpacaTrader
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Liquidate all options positions")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be closed without executing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be closed without executing"
+    )
     args = parser.parse_args()
 
     logger.info("=" * 60)
@@ -55,10 +59,7 @@ def main():
     positions = trader.trading_client.get_all_positions()
 
     # Filter for SPY options
-    option_positions = [
-        p for p in positions
-        if p.symbol.startswith("SPY") and len(p.symbol) > 5
-    ]
+    option_positions = [p for p in positions if p.symbol.startswith("SPY") and len(p.symbol) > 5]
 
     if not option_positions:
         logger.info("✅ No option positions to close")
@@ -71,7 +72,9 @@ def main():
         direction = "LONG" if qty > 0 else "SHORT"
         pnl = float(p.unrealized_pl)
         total_pnl += pnl
-        logger.info(f"  - {p.symbol}: {direction} {abs(qty)} @ ${float(p.avg_entry_price):.2f} (P/L: ${pnl:.2f})")
+        logger.info(
+            f"  - {p.symbol}: {direction} {abs(qty)} @ ${float(p.avg_entry_price):.2f} (P/L: ${pnl:.2f})"
+        )
 
     logger.info("")
     logger.info(f"Total unrealized P/L: ${total_pnl:.2f}")
@@ -121,7 +124,7 @@ def main():
                 logger.info(f"  ✅ Order submitted: {order.id}")
                 closed += 1
             else:
-                logger.error(f"  ❌ Order failed")
+                logger.error("  ❌ Order failed")
                 errors.append(symbol)
 
         except Exception as e:
