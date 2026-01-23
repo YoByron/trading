@@ -695,8 +695,9 @@ def main():
         "--symbol", type=str, default="SPY", help="Underlying symbol (default: SPY)"
     )
     parser.add_argument(
-        "--force", action="store_true",
-        help="Force execution - bypass VIX checks (CEO directive mode)"
+        "--force",
+        action="store_true",
+        help="Force execution - bypass VIX checks (CEO directive mode)",
     )
     args = parser.parse_args()
 
