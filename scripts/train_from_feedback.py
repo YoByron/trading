@@ -105,21 +105,19 @@ def update_model(feedback_type: str, context: str) -> None:
 
     # Log for observability
     posterior = model["alpha"] / (model["alpha"] + model["beta"])
-    logger.info(
-        f"Feedback: {feedback_type} | Posterior: {posterior:.3f} | "
-        f"Features: {features}"
-    )
+    logger.info(f"Feedback: {feedback_type} | Posterior: {posterior:.3f} | Features: {features}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Train feedback model from signals")
     parser.add_argument(
-        "--feedback", required=True, choices=["positive", "negative"],
-        help="Type of feedback received"
+        "--feedback",
+        required=True,
+        choices=["positive", "negative"],
+        help="Type of feedback received",
     )
     parser.add_argument(
-        "--context", default="",
-        help="Context around the feedback (for feature extraction)"
+        "--context", default="", help="Context around the feedback (for feature extraction)"
     )
     args = parser.parse_args()
 
