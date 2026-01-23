@@ -467,7 +467,9 @@ class IronCondorStrategy:
                 api_key, secret = get_alpaca_credentials()
 
                 # DEBUG: Log credential status
-                logger.info(f"Credentials check: api_key={'SET' if api_key else 'NONE'}, secret={'SET' if secret else 'NONE'}")
+                logger.info(
+                    f"Credentials check: api_key={'SET' if api_key else 'NONE'}, secret={'SET' if secret else 'NONE'}"
+                )
                 if api_key:
                     logger.info(f"  api_key length: {len(api_key)}, starts with: {api_key[:4]}...")
 
@@ -642,6 +644,7 @@ class IronCondorStrategy:
             except Exception as e:
                 logger.error(f"Live execution error: {e}")
                 import traceback
+
                 logger.error(f"Traceback: {traceback.format_exc()}")
                 status = "LIVE_ERROR"
 
