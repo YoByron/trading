@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-23 17:31:51
+date: 2026-01-23 17:48:03
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -38,13 +38,13 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-282: Crisis Mode Failure Analysis - Jan 22, 2026
+### Discovery #3: LL-272: PDT Protection Blocks SOFI Position Close
 
 **🔍 What Ralph Found:**
-- CEO lost trust in the system The trade gateway checked individual trade risk (5% max) but NOT cumulative exposure. - Trade 1: $248 risk (5% of $4,986) - APPROVED - Trade 2: $248 risk (5% of $4,986) - APPROVED - Trade 3: $248 risk (5% of $4,986) - APPROVED - ...continued until 8 contracts ($1,984 risk = 40% exposure)
+Identified during automated scanning
 
 **🔧 The Fix:**
-1. **Circuit Breaker in Trade Gateway** (trade_gateway.py:578-630) - Hard stop before any position-opening trade - Checks TRADING_HALTED flag file - Blocks when unrealized loss > 25% of equity - Blocks when option positions > 4 2. **TRADING_HALTED Flag** (data/TRADING_HALTED) - Manual halt mechanism - Must be explicitly removed to resume trading 3. **Scheduled Position Close** (.github/workflows/scheduled-position-close.yml) - Runs Jan 23, 9:45 AM ET - Attempts close_position() then market order
+**Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `747329fb` | fix(trading): Add daily limit to guaranteed_trader to preven |
+| `95d3a929` | docs(ralph): Auto-publish discovery blog post |
 | `8cf40242` | fix(CRITICAL): Round strikes to $5 increments - CALL legs no |
 | `a17d5c94` | docs(ralph): Auto-publish discovery blog post |
 | `4b2c0bac` | fix(sync): Update hardcoded starting_balance from $5K to $30 |
-| `145b8a6d` | docs(ralph): Auto-publish discovery blog post |
-| `ceb49b33` | feat(trading): Add --force flag to bypass VIX checks for CEO |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-23 17:31:51*
+*Generated automatically by Ralph Mode on 2026-01-23 17:48:03*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
