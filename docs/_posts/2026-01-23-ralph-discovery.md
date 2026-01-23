@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-23 18:35:29
+date: 2026-01-23 18:51:33
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `b67a4446` | 🚨 TRIGGER: Force iron condor with 30K credentials - 18:50 (# |
+| `1f59a23f` | fix(CRITICAL): Use ALPACA_PAPER_TRADING_30K secrets (NOT 5K) |
+| `8e861c87` | docs(ralph): Auto-publish discovery blog post |
 | `dcb6fc92` | fix(trading): Update fallback price to $688 and add pytz (#2 |
 | `a3bcf33f` | fix(CRITICAL): Use correct Alpaca secret names in force work |
-| `81e05025` | fix(CRITICAL): Correct env var name and add live execution ( |
-| `c191eb22` | docs(ralph): Auto-publish discovery blog post |
-| `9f8fb393` | fix(CRITICAL): Use correct Alpaca secrets in force-iron-cond |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-23 18:35:29*
+*Generated automatically by Ralph Mode on 2026-01-23 18:51:33*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
