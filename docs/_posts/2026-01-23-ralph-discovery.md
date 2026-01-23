@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Ralph's Discovery Log: 3 Fixes in 24 Hours"
-date: 2026-01-23 20:14:45
+date: 2026-01-23 20:46:47
 categories: [ralph, automation, ai-engineering]
 tags: [self-healing, ci-cd, autonomous-systems]
 ---
@@ -38,13 +38,13 @@ System stability improved
 
 ---
 
-### Discovery #3: LL-281: Position Accumulation Crisis - 8 Contracts Instead of Max 4
+### Discovery #3: LL-281: CALL Leg Pricing Fix - Aggressive Fallbacks
 
 **🔍 What Ralph Found:**
-- LL-220: Credit spread win rates - LL-246: Position count enforcement - LL-268: Exit timing research
+Identified during automated scanning
 
 **🔧 The Fix:**
-Automated fix applied by Ralph
+1. **Detect CALL vs PUT**: Check symbol for "C" to identify calls 2. **Higher CALL fallback**: $4.00 for CALLs vs $2.00 for PUTs 3. **Price buffer**: Add 10% buffer on BUY orders to ensure fills 4. **Quote validation**: Check for $0 bids/asks before using ```python fallback = 1.50 if is_call: fallback = 4.00  # CALLs are more expensive else: fallback = 2.00  # PUTs ``` 1. **Use realistic fallbacks**: Match typical option prices for each type 2. **Add price buffers**: Ensure aggressive enough for
 
 **📈 Impact:**
 System stability improved
@@ -55,11 +55,11 @@ System stability improved
 
 | SHA | Message |
 |-----|---------|
+| `afafd7ba` | docs(ralph): Auto-publish discovery blog post |
 | `8cf9b22f` | chore(ralph): CI iteration ✅ |
 | `295d9d2b` | fix(CRITICAL): Disable guaranteed_trader - caused $23 loss f |
 | `f4b1fb96` | fix(CRITICAL): Disable guaranteed_trader - caused $23 loss f |
 | `f2688017` | docs(ralph): Auto-publish discovery blog post |
-| `d8e1e22a` | trigger: Execute with correct 30K secrets (#2874) |
 
 
 ## 🎯 Why This Matters
@@ -75,7 +75,7 @@ This is the future of software engineering: systems that improve themselves.
 
 ---
 
-*Generated automatically by Ralph Mode on 2026-01-23 20:14:45*
+*Generated automatically by Ralph Mode on 2026-01-23 20:46:47*
 
 **Follow our journey:** [GitHub](https://github.com/IgorGanapolsky/trading) |
 Building a $100/day trading system with AI.
