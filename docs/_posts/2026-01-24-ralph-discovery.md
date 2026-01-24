@@ -1,13 +1,23 @@
 ---
 layout: post
-title: "Engineering Log: LL-298: Invalid Option Strikes Causing C (+2 more)"
-date: 2026-01-24 18:49:04
+title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
+date: 2026-01-24 19:12:06
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trade, code, history, trades]
+tags: [iron, condor, violating, history]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
+
+## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+
+**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+
+**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+
+---
 
 ## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
@@ -19,21 +29,11 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## ---
+## LL-272: PDT Protection Blocks SOFI Position Close
 
-**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+**The Problem:** See full details in lesson ll_272_pdt_blocks_sofi_close_jan20
 
-**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
-
-**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
-
----
-
-## Ralph Proactive Scan Findings
-
-**The Problem:** - Dead code detected: true
-
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** **Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
 
 **The Takeaway:** Risk reduced and system resilience improved
 
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [a27587fe](https://github.com/IgorGanapolsky/trading/commit/a27587fe) | docs(ralph): Auto-publish discovery blog post |
 | [d7c3ca54](https://github.com/IgorGanapolsky/trading/commit/d7c3ca54) | docs(ralph): Auto-publish discovery blog post |
 | [1f897db0](https://github.com/IgorGanapolsky/trading/commit/1f897db0) | docs(ralph): Auto-publish discovery blog post |
 | [169bfa05](https://github.com/IgorGanapolsky/trading/commit/169bfa05) | docs(ralph): Auto-publish discovery blog post |
 | [1d4688dd](https://github.com/IgorGanapolsky/trading/commit/1d4688dd) | docs(ralph): Auto-publish discovery blog post |
-| [c35fd4e6](https://github.com/IgorGanapolsky/trading/commit/c35fd4e6) | docs: Humanize blog content with real stories and links |
 
 
 ## Why We Share This
