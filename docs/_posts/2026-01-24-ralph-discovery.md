@@ -1,13 +1,33 @@
 ---
 layout: post
-title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
-date: 2026-01-24 19:12:06
+title: "Engineering Log: --- (+2 more)"
+date: 2026-01-24 20:16:23
 categories: [engineering, lessons-learned, ai-trading]
-tags: [iron, condor, violating, history]
+tags: [issues, dead, security, options]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
+
+## ---
+
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
+
+## Ralph Proactive Scan Findings
+
+**The Problem:** - Dead code detected: true
+
+**What We Did:** Applied targeted fix based on root cause analysis
+
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
 
 ## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
@@ -19,37 +39,17 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
-
-**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
-
-**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
-
-## LL-272: PDT Protection Blocks SOFI Position Close
-
-**The Problem:** See full details in lesson ll_272_pdt_blocks_sofi_close_jan20
-
-**What We Did:** **Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
-
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [931c5e90](https://github.com/IgorGanapolsky/trading/commit/931c5e90) | chore(ralph): CI iteration ✅ |
+| [83b045c2](https://github.com/IgorGanapolsky/trading/commit/83b045c2) | docs(ralph): Auto-publish discovery blog post |
 | [a27587fe](https://github.com/IgorGanapolsky/trading/commit/a27587fe) | docs(ralph): Auto-publish discovery blog post |
 | [d7c3ca54](https://github.com/IgorGanapolsky/trading/commit/d7c3ca54) | docs(ralph): Auto-publish discovery blog post |
 | [1f897db0](https://github.com/IgorGanapolsky/trading/commit/1f897db0) | docs(ralph): Auto-publish discovery blog post |
-| [169bfa05](https://github.com/IgorGanapolsky/trading/commit/169bfa05) | docs(ralph): Auto-publish discovery blog post |
-| [1d4688dd](https://github.com/IgorGanapolsky/trading/commit/1d4688dd) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
