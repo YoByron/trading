@@ -106,19 +106,34 @@ def extract_discovery_content(lesson_file: Path) -> dict:
             tag_match = re.findall(r"[a-z\-]+", lower_line)
             tags.extend([t for t in tag_match if len(t) > 2])
 
-        if "problem" in lower_line or "issue" in lower_line or "bug" in lower_line or "what happened" in lower_line:
+        if (
+            "problem" in lower_line
+            or "issue" in lower_line
+            or "bug" in lower_line
+            or "what happened" in lower_line
+        ):
             if current_section and section_content:
                 if "problem" in current_section:
                     problem = " ".join(section_content)
             current_section = "problem"
             section_content = []
-        elif "solution" in lower_line or "fix" in lower_line or "resolution" in lower_line or "how we fixed" in lower_line:
+        elif (
+            "solution" in lower_line
+            or "fix" in lower_line
+            or "resolution" in lower_line
+            or "how we fixed" in lower_line
+        ):
             if current_section and section_content:
                 if "problem" in current_section:
                     problem = " ".join(section_content)
             current_section = "solution"
             section_content = []
-        elif "impact" in lower_line or "result" in lower_line or "outcome" in lower_line or "lesson" in lower_line:
+        elif (
+            "impact" in lower_line
+            or "result" in lower_line
+            or "outcome" in lower_line
+            or "lesson" in lower_line
+        ):
             if current_section and section_content:
                 if "solution" in current_section:
                     solution = " ".join(section_content)
@@ -138,7 +153,11 @@ def extract_discovery_content(lesson_file: Path) -> dict:
 
     # If no structured content, use first meaningful paragraph
     if not problem and not solution:
-        non_header_lines = [l.strip() for l in lines if l.strip() and not l.startswith("#") and not l.startswith("---")]
+        non_header_lines = [
+            l.strip()
+            for l in lines
+            if l.strip() and not l.startswith("#") and not l.startswith("---")
+        ]
         if non_header_lines:
             problem = " ".join(non_header_lines[:3])[:400]
             solution = " ".join(non_header_lines[3:6])[:400] if len(non_header_lines) > 3 else ""
@@ -147,8 +166,12 @@ def extract_discovery_content(lesson_file: Path) -> dict:
     return {
         "title": title,
         "lesson_id": lesson_id,
-        "problem": problem[:500] if problem else f"See full details in lesson {lesson_id or lesson_file.stem}",
-        "solution": solution[:500] if solution else "Applied targeted fix based on root cause analysis",
+        "problem": problem[:500]
+        if problem
+        else f"See full details in lesson {lesson_id or lesson_file.stem}",
+        "solution": solution[:500]
+        if solution
+        else "Applied targeted fix based on root cause analysis",
         "impact": impact[:300] if impact else "Risk reduced and system resilience improved",
         "tags": tags[:5],
         "raw_content": content[:2000],
@@ -164,19 +187,19 @@ def generate_blog_post(discoveries: list[dict], commits: list[dict]) -> dict:
     # Create engaging title based on content
     if len(discoveries) == 1:
         d = discoveries[0]
-        title = d['title'][:60] if d.get('title') else "Today's Engineering Discovery"
+        title = d["title"][:60] if d.get("title") else "Today's Engineering Discovery"
     elif len(discoveries) > 0:
         # Try to pick the most interesting discovery for the title
-        titles = [d['title'] for d in discoveries if d.get('title')]
+        titles = [d["title"] for d in discoveries if d.get("title")]
         main_topic = titles[0][:40] if titles else "System Improvements"
-        title = f"Engineering Log: {main_topic} (+{len(discoveries)-1} more)"
+        title = f"Engineering Log: {main_topic} (+{len(discoveries) - 1} more)"
     else:
         title = f"What We Shipped Today: {len(commits)} Commits"
 
     # Collect all tags from discoveries
     all_tags = set()
     for d in discoveries:
-        all_tags.update(d.get('tags', []))
+        all_tags.update(d.get("tags", []))
 
     # Build the post content
     content = f"""---
@@ -184,7 +207,7 @@ layout: post
 title: "{title}"
 date: {timestamp}
 categories: [engineering, lessons-learned, ai-trading]
-tags: [{', '.join(list(all_tags)[:4]) or 'self-healing, ci-cd, automation'}]
+tags: [{", ".join(list(all_tags)[:4]) or "self-healing, ci-cd, automation"}]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -194,7 +217,7 @@ Building an autonomous AI trading system means things break. Here's what we disc
     # Add discoveries with more narrative style
     for i, discovery in enumerate(discoveries, 1):
         lesson_link = ""
-        if discovery.get('lesson_id'):
+        if discovery.get("lesson_id"):
             lesson_link = f"\n\n*[View full lesson: {discovery['lesson_id']}]({repo_url}/blob/main/rag_knowledge/lessons_learned/)*"
 
         content += f"""
