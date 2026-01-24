@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
-date: 2026-01-24 17:36:40
+date: 2026-01-24 18:08:39
 categories: [engineering, lessons-learned, ai-trading]
-tags: [options, open, trading, history]
+tags: [put, position, trading, options]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [169bfa05](https://github.com/IgorGanapolsky/trading/commit/169bfa05) | docs(ralph): Auto-publish discovery blog post |
 | [1d4688dd](https://github.com/IgorGanapolsky/trading/commit/1d4688dd) | docs(ralph): Auto-publish discovery blog post |
 | [c35fd4e6](https://github.com/IgorGanapolsky/trading/commit/c35fd4e6) | docs: Humanize blog content with real stories and links |
 | [daaed278](https://github.com/IgorGanapolsky/trading/commit/daaed278) | docs(ralph): Auto-publish discovery blog post |
 | [a25e4660](https://github.com/IgorGanapolsky/trading/commit/a25e4660) | docs(ralph): Auto-publish discovery blog post |
-| [a88b49db](https://github.com/IgorGanapolsky/trading/commit/a88b49db) | chore(ralph): CI iteration ✅ |
 
 
 ## Why We Share This
