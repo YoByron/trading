@@ -1,41 +1,41 @@
 ---
 layout: post
-title: "Engineering Log: LL-262: Data Sync Infrastructure Improve (+2 more)"
-date: 2026-01-24 23:37:30
+title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
+date: 2026-01-24 23:38:14
 categories: [engineering, lessons-learned, ai-trading]
-tags: [multi-asset, max, between, account]
+tags: [call, condor, violating, trade]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
 
-## LL-262: Data Sync Infrastructure Improvements
+## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
-**The Problem:** - Max staleness during market hours: 15 min (was 30 min) - Data integrity check: Passes on every health check - Sync health visibility: Full history available
+**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
 
-**What We Did:** - Peak hours (10am-3pm ET): Every 15 minutes - Market open/close: Every 30 minutes - Added manual trigger option with force_sync parameter Added to `src/utils/staleness_guard.py`:
+**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+
+---
+
+## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+
+**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
+
+**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
 **The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
-## LL-258: 5% Position Limit Must Be Enforced BEFORE Trade Execution
+## LL-272: PDT Protection Blocks SOFI Position Close
 
-**The Problem:** - Account equity: $5,000 - 5% limit = $250 max per position - Workflow could place a $300 spread (6% = VIOLATION) - Only blocked if TOTAL exposure exceeded 15% Compliance check was incomplete: ```python if risk_pct > MAX_EXPOSURE_PCT:  # 15% total exit(1) ```
+**The Problem:** See full details in lesson ll_272_pdt_blocks_sofi_close_jan20
 
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** **Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
 
 **The Takeaway:** Risk reduced and system resilience improved
-
----
-
-## LL-266: OptiMind Evaluation - Not Relevant to Our System
-
-**The Problem:** 3. **Single ticker strategy** - SPY ONLY per CLAUDE.md; no portfolio allocation needed 4. **Simplicity is a feature** - Phil Town Rule #1 achieved through discipline, not optimization 5. **Massive overhead** - 20B model for zero benefit - Multi-asset portfolio with allocation constraints - Supply chain / logistics optimization
-
-**What We Did:** Applied targeted fix based on root cause analysis
-
-**The Takeaway:** Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
 
 ---
 
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [2321af0b](https://github.com/IgorGanapolsky/trading/commit/2321af0b) | docs(ralph): Auto-publish discovery blog post |
 | [7b2c75f3](https://github.com/IgorGanapolsky/trading/commit/7b2c75f3) | docs(ralph): Auto-publish discovery blog post |
 | [700ed4fe](https://github.com/IgorGanapolsky/trading/commit/700ed4fe) | docs(ralph): Auto-publish discovery blog post |
 | [931c5e90](https://github.com/IgorGanapolsky/trading/commit/931c5e90) | chore(ralph): CI iteration ✅ |
 | [83b045c2](https://github.com/IgorGanapolsky/trading/commit/83b045c2) | docs(ralph): Auto-publish discovery blog post |
-| [a27587fe](https://github.com/IgorGanapolsky/trading/commit/a27587fe) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
