@@ -1,78 +1,70 @@
 ---
 layout: post
-title: "Day 88: Weekend Maintenance and Strategy Validation"
-date: 2026-01-24 12:00:00
+title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
+date: 2026-01-24 17:36:16
 categories: [engineering, lessons-learned, ai-trading]
-tags: [iron-condors, strategy, research, risk-management]
+tags: [iron, trades, put, call]
 ---
 
-Markets are closed today (Saturday), so Ralph is running maintenance tasks and reviewing recent discoveries. Here's what we're working with.
+Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
-## The 86% Win Rate Research (LL-277)
 
-This week we deep-dived into iron condor optimization research from [Options Trading IQ](https://optionstradingiq.com/iron-condor-success-rate/) and [Project Finance](https://www.projectfinance.com/iron-condor-management/) (based on 71,417 real trades).
+## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
-**The key insight:** Delta selection is everything.
+**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
 
-| Short Strike Delta | Win Rate |
-|-------------------|----------|
-| 10-15 delta | **86%** |
-| 30 delta | 34% |
+**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
 
-We're using 15-20 delta short strikes. The research validates our approach, but also suggests a change: close at **7 DTE** instead of 21 DTE for better win rates.
-
-[View the full lesson: LL-277](https://github.com/IgorGanapolsky/trading/blob/main/rag_knowledge/lessons_learned/ll_277_iron_condor_optimization_research_jan21.md)
+**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
 
 ---
 
-## Position Stacking Bug Fixed (LL-290)
+## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
-Earlier this week, we discovered our safety gate had a critical flaw: it counted unique *symbols* instead of *contracts*. This allowed 8 contracts of the same option to accumulate.
+**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
 
-**The bug:**
-```python
-# Only counted unique positions (wrong)
-current_position_count = len(current_positions)
-```
+**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
-**The fix ([PR #2702](https://github.com/IgorGanapolsky/trading/pull/2702)):**
-```python
-# Now blocks buying more of an existing symbol
-if symbol in existing_symbols:
-    return GateResult(approved=False, reason="POSITION STACKING BLOCKED")
-```
-
-This bug cost $1,472 in paper trading. Better to learn this lesson with fake money.
-
-[Read the full post-mortem](/trading/2026/01/22/position-stacking-disaster-fix.html)
+**The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
-## Dead Code Cleanup
+## ---
 
-Ralph's proactive scanner identified unused imports and deprecated functions across the codebase. Nothing dramatic—just routine maintenance to keep the system lean.
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
-## This Week's Commits
+## Code Changes
+
+These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
-| [daaed27](https://github.com/IgorGanapolsky/trading/commit/daaed27) | Auto-publish discovery blog post |
-| [a88b49d](https://github.com/IgorGanapolsky/trading/commit/a88b49d) | CI iteration |
-| [f7f1dd8](https://github.com/IgorGanapolsky/trading/commit/f7f1dd8) | Auto-publish discovery blog post |
+| [c35fd4e6](https://github.com/IgorGanapolsky/trading/commit/c35fd4e6) | docs: Humanize blog content with real stories and links |
+| [daaed278](https://github.com/IgorGanapolsky/trading/commit/daaed278) | docs(ralph): Auto-publish discovery blog post |
+| [a25e4660](https://github.com/IgorGanapolsky/trading/commit/a25e4660) | docs(ralph): Auto-publish discovery blog post |
+| [a88b49db](https://github.com/IgorGanapolsky/trading/commit/a88b49db) | chore(ralph): CI iteration ✅ |
+| [f7f1dd84](https://github.com/IgorGanapolsky/trading/commit/f7f1dd84) | docs(ralph): Auto-publish discovery blog post |
+
+
+## Why We Share This
+
+Every bug is a lesson. Every fix makes the system stronger. We're building in public because:
+
+1. **Transparency builds trust** - See exactly how an autonomous trading system evolves
+2. **Failures teach more than successes** - Our mistakes help others avoid the same pitfalls
+3. **Documentation prevents regression** - Writing it down means we won't repeat it
 
 ---
 
-## What's Next
+*This is part of our journey building an AI-powered iron condor trading system targeting financial independence.*
 
-Monday the markets reopen. We're ready to:
-1. Paper trade iron condors with validated 15-delta setup
-2. Test the new 7-DTE exit strategy (vs. our previous 21-DTE)
-3. Let the system run autonomously while monitoring for issues
-
-The goal is simple: prove 80%+ win rate over 90 days of paper trading before scaling.
-
----
-
-*Day 88 of building an AI trading system in public. [View the full source code](https://github.com/IgorGanapolsky/trading).*
+**Resources:**
+- [Source Code](https://github.com/IgorGanapolsky/trading)
+- [Strategy Guide](https://igorganapolsky.github.io/trading/2026/01/21/iron-condors-ai-trading-complete-guide.html)
+- [The Silent 74 Days](https://igorganapolsky.github.io/trading/2026/01/07/the-silent-74-days.html) - How we built a system that did nothing
