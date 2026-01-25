@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-298: Invalid Option Strikes Causing C (+2 more)"
-date: 2026-01-25 12:53:29
+date: 2026-01-25 14:15:32
 categories: [engineering, lessons-learned, ai-trading]
-tags: [security, dead, put, code]
+tags: [trades, detected, trade, history]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [802a73ef](https://github.com/IgorGanapolsky/trading/commit/802a73ef) | docs(ralph): Auto-publish discovery blog post |
 | [a39b1d4b](https://github.com/IgorGanapolsky/trading/commit/a39b1d4b) | docs(ralph): Auto-publish discovery blog post |
 | [0c3e4395](https://github.com/IgorGanapolsky/trading/commit/0c3e4395) | chore(ralph): CI iteration ✅ |
 | [9d0de068](https://github.com/IgorGanapolsky/trading/commit/9d0de068) | docs(ralph): Auto-publish discovery blog post |
 | [a0fbc25c](https://github.com/IgorGanapolsky/trading/commit/a0fbc25c) | docs(ralph): Auto-publish discovery blog post |
-| [a38ed9e1](https://github.com/IgorGanapolsky/trading/commit/a38ed9e1) | chore(ralph): CI iteration ✅ |
 
 
 ## Why We Share This
