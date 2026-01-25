@@ -320,7 +320,9 @@ def _check_market_regime(strategy: str, context: dict | None) -> tuple[float, li
         elif "trending" in regime_lower or "trend" in regime_lower:
             # Trending market - iron condors at risk of being tested on one side
             if "iron" in strategy.lower() or "condor" in strategy.lower():
-                warnings.append(f"⚠️ TRENDING regime - iron condor may be directionally tested (regime={regime_label})")
+                warnings.append(
+                    f"⚠️ TRENDING regime - iron condor may be directionally tested (regime={regime_label})"
+                )
                 confidence = 0.8
             else:
                 confidence = 0.9
