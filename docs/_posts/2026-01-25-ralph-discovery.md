@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-25 22:15:50
+date: 2026-01-25 23:24:28
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, left-biased, history, trades]
+tags: [left-biased, asymmetric, put, history]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -19,6 +19,16 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
+## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+
+**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+
+**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+
+---
+
 ## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 **The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
@@ -29,27 +39,17 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## ---
-
-**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
-
-**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
-
-**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
-
----
-
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [e9f050c3](https://github.com/IgorGanapolsky/trading/commit/e9f050c3) | feat(safety): Add regime-based iron condor entry gating |
+| [40698072](https://github.com/IgorGanapolsky/trading/commit/40698072) | feat(rag): Add LL-310 lesson - Iteration 7 RAG learning |
+| [79d2abef](https://github.com/IgorGanapolsky/trading/commit/79d2abef) | feat(rag): Add LL-310 VIX timing for iron condor entry  |
+| [91968d80](https://github.com/IgorGanapolsky/trading/commit/91968d80) | docs(ralph): Auto-publish discovery blog post |
 | [288d5e4b](https://github.com/IgorGanapolsky/trading/commit/288d5e4b) | docs(ralph): Auto-publish discovery blog post |
-| [bfa6ece4](https://github.com/IgorGanapolsky/trading/commit/bfa6ece4) | feat(rag): Add LL-309 iron condor optimal control resea |
-| [6d14e749](https://github.com/IgorGanapolsky/trading/commit/6d14e749) | feat(rag): Add LL-309 lesson (#2957) |
-| [746353b2](https://github.com/IgorGanapolsky/trading/commit/746353b2) | feat(ml): Add fix and trade features to feedback model  |
-| [5ca897c1](https://github.com/IgorGanapolsky/trading/commit/5ca897c1) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
