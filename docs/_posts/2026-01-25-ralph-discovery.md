@@ -1,13 +1,23 @@
 ---
 layout: post
-title: "Engineering Log: LL-298: Invalid Option Strikes Causing C (+2 more)"
-date: 2026-01-25 14:15:32
+title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
+date: 2026-01-25 16:16:53
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trades, detected, trade, history]
+tags: [history, trades, condor, options]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
+
+## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+
+**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+
+**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+
+---
 
 ## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
@@ -29,27 +39,17 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## Ralph Proactive Scan Findings
-
-**The Problem:** - Dead code detected: true
-
-**What We Did:** Applied targeted fix based on root cause analysis
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
-
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [937a9cad](https://github.com/IgorGanapolsky/trading/commit/937a9cad) | chore(ralph): CI iteration ✅ |
+| [1b07ea62](https://github.com/IgorGanapolsky/trading/commit/1b07ea62) | docs(ralph): Auto-publish discovery blog post |
 | [802a73ef](https://github.com/IgorGanapolsky/trading/commit/802a73ef) | docs(ralph): Auto-publish discovery blog post |
 | [a39b1d4b](https://github.com/IgorGanapolsky/trading/commit/a39b1d4b) | docs(ralph): Auto-publish discovery blog post |
 | [0c3e4395](https://github.com/IgorGanapolsky/trading/commit/0c3e4395) | chore(ralph): CI iteration ✅ |
-| [9d0de068](https://github.com/IgorGanapolsky/trading/commit/9d0de068) | docs(ralph): Auto-publish discovery blog post |
-| [a0fbc25c](https://github.com/IgorGanapolsky/trading/commit/a0fbc25c) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
