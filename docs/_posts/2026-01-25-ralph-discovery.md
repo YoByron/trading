@@ -1,21 +1,21 @@
 ---
 layout: post
-title: "Engineering Log: LL-277: Iron Condor Optimization Researc (+2 more)"
-date: 2026-01-25 18:49:15
+title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
+date: 2026-01-25 20:16:39
 categories: [engineering, lessons-learned, ai-trading]
-tags: [condor, iron, options, open]
+tags: [condor, trade, iron, left-biased]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
 
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+## LL-309: Iron Condor Optimal Control Research
 
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+**The Problem:** **Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
 
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+**What We Did:** - **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
 
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+**The Takeaway:** - **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
 
 ---
 
@@ -29,13 +29,13 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-272: PDT Protection Blocks SOFI Position Close
+## ---
 
-**The Problem:** See full details in lesson ll_272_pdt_blocks_sofi_close_jan20
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
 
-**What We Did:** **Option 1**: Wait for a day trade to fall off (5 business days from oldest day trade) **Option 2**: Deposit funds to reach $25K (removes PDT restriction) **Option 3**: Accept the loss and let the option expire worthless (Feb 13, 2026) 1. **Check day trade count BEFORE opening positions** - query Alpaca API for day trade status 2. **Never open non-SPY positions** - this was the original violation 3. **Close positions on different days from opening** - avoid same-day round trips 4. **Track day tr
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
 
-**The Takeaway:** Risk reduced and system resilience improved
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [bfa6ece4](https://github.com/IgorGanapolsky/trading/commit/bfa6ece4) | feat(rag): Add LL-309 iron condor optimal control resea |
+| [6d14e749](https://github.com/IgorGanapolsky/trading/commit/6d14e749) | feat(rag): Add LL-309 lesson (#2957) |
+| [746353b2](https://github.com/IgorGanapolsky/trading/commit/746353b2) | feat(ml): Add fix and trade features to feedback model  |
+| [5ca897c1](https://github.com/IgorGanapolsky/trading/commit/5ca897c1) | docs(ralph): Auto-publish discovery blog post |
 | [d96e6e1d](https://github.com/IgorGanapolsky/trading/commit/d96e6e1d) | docs(ralph): Auto-publish discovery blog post |
-| [7fe18417](https://github.com/IgorGanapolsky/trading/commit/7fe18417) | feat(rag): Add LL-308 lesson - RAG lesson application v |
-| [0a37952e](https://github.com/IgorGanapolsky/trading/commit/0a37952e) | docs(ralph): Auto-publish discovery blog post |
-| [563c1d58](https://github.com/IgorGanapolsky/trading/commit/563c1d58) | feat(rag): Add LL-308 lesson - RAG lesson application v |
-| [26bf8ae1](https://github.com/IgorGanapolsky/trading/commit/26bf8ae1) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
