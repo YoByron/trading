@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-25 20:16:39
+date: 2026-01-25 22:15:50
 categories: [engineering, lessons-learned, ai-trading]
-tags: [condor, trade, iron, left-biased]
+tags: [finding, left-biased, history, trades]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [288d5e4b](https://github.com/IgorGanapolsky/trading/commit/288d5e4b) | docs(ralph): Auto-publish discovery blog post |
 | [bfa6ece4](https://github.com/IgorGanapolsky/trading/commit/bfa6ece4) | feat(rag): Add LL-309 iron condor optimal control resea |
 | [6d14e749](https://github.com/IgorGanapolsky/trading/commit/6d14e749) | feat(rag): Add LL-309 lesson (#2957) |
 | [746353b2](https://github.com/IgorGanapolsky/trading/commit/746353b2) | feat(ml): Add fix and trade features to feedback model  |
 | [5ca897c1](https://github.com/IgorGanapolsky/trading/commit/5ca897c1) | docs(ralph): Auto-publish discovery blog post |
-| [d96e6e1d](https://github.com/IgorGanapolsky/trading/commit/d96e6e1d) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
