@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-298: Invalid Option Strikes Causing C (+2 more)"
-date: 2026-01-25 06:51:03
+date: 2026-01-25 08:18:02
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trades, detected, call, history]
+tags: [issues, detected, security, code]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [a38ed9e1](https://github.com/IgorGanapolsky/trading/commit/a38ed9e1) | chore(ralph): CI iteration ✅ |
+| [37a9aea0](https://github.com/IgorGanapolsky/trading/commit/37a9aea0) | docs(ralph): Auto-publish discovery blog post |
 | [57ef9c9f](https://github.com/IgorGanapolsky/trading/commit/57ef9c9f) | docs(ralph): Auto-publish discovery blog post |
 | [436210d5](https://github.com/IgorGanapolsky/trading/commit/436210d5) | docs(ralph): Auto-publish discovery blog post |
 | [9ddcbe07](https://github.com/IgorGanapolsky/trading/commit/9ddcbe07) | chore(ralph): CI iteration ✅ |
-| [fc571971](https://github.com/IgorGanapolsky/trading/commit/fc571971) | docs(ralph): Auto-publish discovery blog post |
-| [0b4042d3](https://github.com/IgorGanapolsky/trading/commit/0b4042d3) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
 
 
 ## Why We Share This
