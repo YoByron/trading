@@ -1,7 +1,6 @@
 """Tests for RLFilter - Linear Feature Scoring Model (ML-IMP-1)."""
 
 
-
 class TestRLFilterInit:
     """Test RLFilter initialization."""
 

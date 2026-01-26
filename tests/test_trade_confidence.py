@@ -1,7 +1,6 @@
 """Tests for Trade Confidence Model using Thompson Sampling (ML-IMP-3)."""
 
 
-
 class TestTradeConfidenceModel:
     """Test TradeConfidenceModel initialization and loading."""
 
