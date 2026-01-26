@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 01:52:59
+date: 2026-01-26 03:20:39
 categories: [engineering, lessons-learned, ai-trading]
-tags: [left-biased, dead, asymmetric, condor]
+tags: [asymmetric, call, condor, finding]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -21,23 +21,23 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## Ralph Proactive Scan Findings
+## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
-**The Problem:** - Dead code detected: true
+**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
 
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
 **The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
-## Ralph Proactive Scan Findings
+## ---
 
-**The Problem:** - Dead code detected: true
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
 
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
 
-**The Takeaway:** Risk reduced and system resilience improved
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [e1c1a034](https://github.com/IgorGanapolsky/trading/commit/e1c1a034) | chore(ralph): CI iteration ✅ |
+| [5a6943d3](https://github.com/IgorGanapolsky/trading/commit/5a6943d3) | docs(ralph): Auto-publish discovery blog post |
 | [8c3ab843](https://github.com/IgorGanapolsky/trading/commit/8c3ab843) | docs(ralph): Auto-publish discovery blog post |
 | [b03bde9c](https://github.com/IgorGanapolsky/trading/commit/b03bde9c) | docs(ralph): Auto-publish discovery blog post |
 | [b3836675](https://github.com/IgorGanapolsky/trading/commit/b3836675) | chore(ralph): CI iteration ✅ |
-| [bc1220d7](https://github.com/IgorGanapolsky/trading/commit/bc1220d7) | docs(ralph): Auto-publish discovery blog post |
-| [348dfb6e](https://github.com/IgorGanapolsky/trading/commit/348dfb6e) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
 
 
 ## Why We Share This
