@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 11:27:34
+title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
+date: 2026-01-26 11:58:48
 categories: [engineering, lessons-learned, ai-trading]
-tags: [call, asymmetric, history, trades]
+tags: [detected, issues, security, code]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -11,31 +11,31 @@ tags: [call, asymmetric, history, trades]
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
 
-## LL-309: Iron Condor Optimal Control Research
+## Ralph Proactive Scan Findings
 
-**The Problem:** **Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+**The Problem:** - Dead code detected: true
 
-**What We Did:** - **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
+**What We Did:** Applied targeted fix based on root cause analysis
 
-**The Takeaway:** - **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
-
----
-
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
-
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
-
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
-
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+**The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
-## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## Ralph Proactive Scan Findings
 
-**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
+**The Problem:** - Dead code detected: true
 
-**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+**What We Did:** Applied targeted fix based on root cause analysis
+
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
+
+## Ralph Proactive Scan Findings
+
+**The Problem:** - Dead code detected: true
+
+**What We Did:** Applied targeted fix based on root cause analysis
 
 **The Takeaway:** Risk reduced and system resilience improved
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [e5907f48](https://github.com/IgorGanapolsky/trading/commit/e5907f48) | docs(ralph): Auto-publish discovery blog post |
 | [b8e1e455](https://github.com/IgorGanapolsky/trading/commit/b8e1e455) | docs(ralph): Auto-publish discovery blog post |
 | [9ac783ef](https://github.com/IgorGanapolsky/trading/commit/9ac783ef) | chore: Sync system state from main (#3044) |
 | [8a9409fd](https://github.com/IgorGanapolsky/trading/commit/8a9409fd) | chore(ralph): CI iteration ✅ |
 | [a26c21a0](https://github.com/IgorGanapolsky/trading/commit/a26c21a0) | fix(CRITICAL): Update ALL workflows to use 30K secrets  |
-| [4cebf462](https://github.com/IgorGanapolsky/trading/commit/4cebf462) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
