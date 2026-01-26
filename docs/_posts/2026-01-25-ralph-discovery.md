@@ -1,15 +1,25 @@
 ---
 layout: post
-title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-25 23:07:38
+title: "Engineering Log: LL-262: Data Sync Infrastructure Improve (+2 more)"
+date: 2026-01-25 23:38:21
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, asymmetric, condor, put]
+tags: [between, iron, condor, constraints]
 ---
 
 **Sunday, January 25, 2026** (Eastern Time)
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
+
+## LL-262: Data Sync Infrastructure Improvements
+
+**The Problem:** - Max staleness during market hours: 15 min (was 30 min) - Data integrity check: Passes on every health check - Sync health visibility: Full history available
+
+**What We Did:** - Peak hours (10am-3pm ET): Every 15 minutes - Market open/close: Every 30 minutes - Added manual trigger option with force_sync parameter Added to `src/utils/staleness_guard.py`:
+
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
 
 ## LL-309: Iron Condor Optimal Control Research
 
@@ -21,23 +31,13 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## LL-266: OptiMind Evaluation - Not Relevant to Our System
 
-**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
+**The Problem:** 3. **Single ticker strategy** - SPY ONLY per CLAUDE.md; no portfolio allocation needed 4. **Simplicity is a feature** - Phil Town Rule #1 achieved through discipline, not optimization 5. **Massive overhead** - 20B model for zero benefit - Multi-asset portfolio with allocation constraints - Supply chain / logistics optimization
 
-**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+**What We Did:** Applied targeted fix based on root cause analysis
 
-**The Takeaway:** Risk reduced and system resilience improved
-
----
-
-## ---
-
-**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
-
-**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
-
-**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+**The Takeaway:** Not every impressive technology is relevant to our system. Our $5K account with simple rules doesn't need mathematical optimization. The SOFI disaster taught us: complexity ≠ profitability. - evaluation - microsoft-research - optimization - not-applicable
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [b3836675](https://github.com/IgorGanapolsky/trading/commit/b3836675) | chore(ralph): CI iteration ✅ |
+| [bc1220d7](https://github.com/IgorGanapolsky/trading/commit/bc1220d7) | docs(ralph): Auto-publish discovery blog post |
 | [348dfb6e](https://github.com/IgorGanapolsky/trading/commit/348dfb6e) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
 | [6e53d660](https://github.com/IgorGanapolsky/trading/commit/6e53d660) | docs(ralph): Auto-publish discovery blog post |
 | [3a21ecf0](https://github.com/IgorGanapolsky/trading/commit/3a21ecf0) | chore(ralph): Record proactive scan findings |
-| [ea7972b8](https://github.com/IgorGanapolsky/trading/commit/ea7972b8) | chore(ralph): Update workflow health dashboard |
-| [b84fef92](https://github.com/IgorGanapolsky/trading/commit/b84fef92) | fix: Resolve merge conflict in system_state.json, updat |
 
 
 ## Why We Share This
