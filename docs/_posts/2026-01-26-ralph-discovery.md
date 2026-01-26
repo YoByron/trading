@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 07:24:06
+date: 2026-01-26 07:54:11
 categories: [engineering, lessons-learned, ai-trading]
-tags: [success, left-biased, options, put]
+tags: [asymmetric, call, left-biased, iron]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -21,16 +21,6 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
-
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
-
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
-
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
-
----
-
 ## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 **The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
@@ -41,17 +31,27 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
+## ---
+
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
+
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [12922e08](https://github.com/IgorGanapolsky/trading/commit/12922e08) | docs(ralph): Auto-publish discovery blog post |
 | [cf0dc6b2](https://github.com/IgorGanapolsky/trading/commit/cf0dc6b2) | chore(ralph): CI iteration ✅ |
 | [3379fcb9](https://github.com/IgorGanapolsky/trading/commit/3379fcb9) | feat(rag): Add LL-312 lesson - Workflow concurrency aud |
 | [9d772046](https://github.com/IgorGanapolsky/trading/commit/9d772046) | docs(ralph): Auto-publish discovery blog post |
 | [f8bf9ed7](https://github.com/IgorGanapolsky/trading/commit/f8bf9ed7) | docs(ralph): Auto-publish discovery blog post |
-| [32f72e59](https://github.com/IgorGanapolsky/trading/commit/32f72e59) | feat(ml): Complete ML improvements (ML-IMP-1, ML-IMP-3, |
 
 
 ## Why We Share This
