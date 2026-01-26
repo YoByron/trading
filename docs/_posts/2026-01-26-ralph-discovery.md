@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 00:49:34
+date: 2026-01-26 00:55:56
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trade, call, asymmetric, left-biased]
+tags: [put, finding, trade, condor]
 ---
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
@@ -45,11 +45,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [ab3cc781](https://github.com/IgorGanapolsky/trading/commit/ab3cc781) | docs(ralph): Auto-publish discovery blog post |
 | [6a3fc7c6](https://github.com/IgorGanapolsky/trading/commit/6a3fc7c6) | chore(ralph): CI iteration ✅ |
 | [13a6b928](https://github.com/IgorGanapolsky/trading/commit/13a6b928) | docs(ralph): Auto-publish discovery blog post |
 | [e9f050c3](https://github.com/IgorGanapolsky/trading/commit/e9f050c3) | feat(safety): Add regime-based iron condor entry gating |
 | [40698072](https://github.com/IgorGanapolsky/trading/commit/40698072) | feat(rag): Add LL-310 lesson - Iteration 7 RAG learning |
-| [79d2abef](https://github.com/IgorGanapolsky/trading/commit/79d2abef) | feat(rag): Add LL-310 VIX timing for iron condor entry  |
 
 
 ## Why We Share This
