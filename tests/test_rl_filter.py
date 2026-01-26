@@ -1,6 +1,5 @@
 """Tests for RLFilter - Linear Feature Scoring Model (ML-IMP-1)."""
 
-import pytest
 
 
 class TestRLFilterInit:

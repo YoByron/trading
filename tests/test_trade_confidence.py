@@ -1,6 +1,5 @@
 """Tests for Trade Confidence Model using Thompson Sampling (ML-IMP-3)."""
 
-import pytest
 
 
 class TestTradeConfidenceModel:
