@@ -217,7 +217,7 @@ categories: [engineering, lessons-learned, ai-trading]
 tags: [{", ".join(list(all_tags)[:4]) or "self-healing, ci-cd, automation"}]
 ---
 
-**{day_of_week}, {now_et.strftime('%B %d, %Y')}** (Eastern Time)
+**{day_of_week}, {now_et.strftime("%B %d, %Y")}** (Eastern Time)
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
