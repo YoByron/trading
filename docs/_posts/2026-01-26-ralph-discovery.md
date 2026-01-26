@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 07:54:11
+date: 2026-01-26 09:23:16
 categories: [engineering, lessons-learned, ai-trading]
-tags: [asymmetric, call, left-biased, iron]
+tags: [dead, condor, finding, code]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -21,16 +21,6 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
-
-**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
-
-**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
-
 ## ---
 
 **The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
@@ -41,17 +31,27 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
+## Ralph Proactive Scan Findings
+
+**The Problem:** - Dead code detected: true
+
+**What We Did:** Applied targeted fix based on root cause analysis
+
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
+
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [20664b1d](https://github.com/IgorGanapolsky/trading/commit/20664b1d) | fix(hooks): Add Stop hook for lesson capture (fixes LL- |
+| [1a585cb1](https://github.com/IgorGanapolsky/trading/commit/1a585cb1) | docs(ralph): Auto-publish discovery blog post |
 | [12922e08](https://github.com/IgorGanapolsky/trading/commit/12922e08) | docs(ralph): Auto-publish discovery blog post |
 | [cf0dc6b2](https://github.com/IgorGanapolsky/trading/commit/cf0dc6b2) | chore(ralph): CI iteration ✅ |
 | [3379fcb9](https://github.com/IgorGanapolsky/trading/commit/3379fcb9) | feat(rag): Add LL-312 lesson - Workflow concurrency aud |
-| [9d772046](https://github.com/IgorGanapolsky/trading/commit/9d772046) | docs(ralph): Auto-publish discovery blog post |
-| [f8bf9ed7](https://github.com/IgorGanapolsky/trading/commit/f8bf9ed7) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
