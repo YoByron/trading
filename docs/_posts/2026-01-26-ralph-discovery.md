@@ -1,25 +1,15 @@
 ---
 layout: post
-title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-26 01:24:14
+title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
+date: 2026-01-26 01:52:59
 categories: [engineering, lessons-learned, ai-trading]
-tags: [options, finding, security, trading]
+tags: [left-biased, dead, asymmetric, condor]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
-
-## Ralph Proactive Scan Findings
-
-**The Problem:** - Dead code detected: true
-
-**What We Did:** Applied targeted fix based on root cause analysis
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
 
 ## LL-309: Iron Condor Optimal Control Research
 
@@ -31,13 +21,23 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+## Ralph Proactive Scan Findings
 
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+**The Problem:** - Dead code detected: true
 
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+**What We Did:** Applied targeted fix based on root cause analysis
 
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
+
+## Ralph Proactive Scan Findings
+
+**The Problem:** - Dead code detected: true
+
+**What We Did:** Applied targeted fix based on root cause analysis
+
+**The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [8c3ab843](https://github.com/IgorGanapolsky/trading/commit/8c3ab843) | docs(ralph): Auto-publish discovery blog post |
 | [b03bde9c](https://github.com/IgorGanapolsky/trading/commit/b03bde9c) | docs(ralph): Auto-publish discovery blog post |
 | [b3836675](https://github.com/IgorGanapolsky/trading/commit/b3836675) | chore(ralph): CI iteration ✅ |
 | [bc1220d7](https://github.com/IgorGanapolsky/trading/commit/bc1220d7) | docs(ralph): Auto-publish discovery blog post |
 | [348dfb6e](https://github.com/IgorGanapolsky/trading/commit/348dfb6e) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
-| [6e53d660](https://github.com/IgorGanapolsky/trading/commit/6e53d660) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
