@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 09:59:48
+date: 2026-01-26 10:41:32
 categories: [engineering, lessons-learned, ai-trading]
-tags: [left-biased, condor, trade, asymmetric]
+tags: [trades, condor, left-biased, asymmetric]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [ea560a91](https://github.com/IgorGanapolsky/trading/commit/ea560a91) | fix(scripts): Close ALL option positions to unblock tra |
+| [de8c43ba](https://github.com/IgorGanapolsky/trading/commit/de8c43ba) | docs(ralph): Auto-publish discovery blog post |
 | [669c53a2](https://github.com/IgorGanapolsky/trading/commit/669c53a2) | fix(trading): Lower VIX threshold to enable paper tradi |
 | [6c7bf8d5](https://github.com/IgorGanapolsky/trading/commit/6c7bf8d5) | docs(ralph): Auto-publish discovery blog post |
 | [20664b1d](https://github.com/IgorGanapolsky/trading/commit/20664b1d) | fix(hooks): Add Stop hook for lesson capture (fixes LL- |
-| [1a585cb1](https://github.com/IgorGanapolsky/trading/commit/1a585cb1) | docs(ralph): Auto-publish discovery blog post |
-| [12922e08](https://github.com/IgorGanapolsky/trading/commit/12922e08) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
