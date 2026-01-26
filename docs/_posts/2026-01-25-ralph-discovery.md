@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-25 22:37:24
+date: 2026-01-25 22:41:04
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, history, put, left-biased]
+tags: [trades, asymmetric, trade, left-biased]
 ---
 
 **Sunday, January 25, 2026** (Eastern Time)
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [3a21ecf0](https://github.com/IgorGanapolsky/trading/commit/3a21ecf0) | chore(ralph): Record proactive scan findings |
+| [ea7972b8](https://github.com/IgorGanapolsky/trading/commit/ea7972b8) | chore(ralph): Update workflow health dashboard |
+| [b84fef92](https://github.com/IgorGanapolsky/trading/commit/b84fef92) | fix: Resolve merge conflict in system_state.json, updat |
+| [11b246b8](https://github.com/IgorGanapolsky/trading/commit/11b246b8) | docs(ralph): Auto-publish discovery blog post |
 | [99cc4a46](https://github.com/IgorGanapolsky/trading/commit/99cc4a46) | docs(ralph): Auto-publish discovery blog post |
-| [526f489f](https://github.com/IgorGanapolsky/trading/commit/526f489f) | docs(ralph): Auto-publish discovery blog post |
-| [67fc3905](https://github.com/IgorGanapolsky/trading/commit/67fc3905) | docs(ralph): Auto-publish discovery blog post |
-| [ab3cc781](https://github.com/IgorGanapolsky/trading/commit/ab3cc781) | docs(ralph): Auto-publish discovery blog post |
-| [6a3fc7c6](https://github.com/IgorGanapolsky/trading/commit/6a3fc7c6) | chore(ralph): CI iteration ✅ |
 
 
 ## Why We Share This
