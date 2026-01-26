@@ -475,8 +475,8 @@ class IronCondorStrategy:
             logger.info("Entering LIVE execution block...")
             try:
                 from alpaca.trading.client import TradingClient
-                from alpaca.trading.enums import OrderSide, TimeInForce, OrderClass
-                from alpaca.trading.requests import LimitOrderRequest, OptionLegRequest
+                from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
+                from alpaca.trading.requests import OptionLegRequest
                 from src.utils.alpaca_client import get_alpaca_credentials
 
                 api_key, secret = get_alpaca_credentials()
@@ -543,11 +543,18 @@ class IronCondorStrategy:
                         logger.info("🚀 Submitting MLeg iron condor order...")
                         order = client.submit_order(order_req)
 
-                        order_ids.append({
-                            "order_id": str(order.id),
-                            "type": "mleg_iron_condor",
-                            "legs": [long_put_sym, short_put_sym, short_call_sym, long_call_sym],
-                        })
+                        order_ids.append(
+                            {
+                                "order_id": str(order.id),
+                                "type": "mleg_iron_condor",
+                                "legs": [
+                                    long_put_sym,
+                                    short_put_sym,
+                                    short_call_sym,
+                                    long_call_sym,
+                                ],
+                            }
+                        )
 
                         logger.info(f"✅ MLeg order submitted: {order.id}")
                         logger.info(f"   Status: {order.status}")
