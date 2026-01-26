@@ -42,44 +42,30 @@ jobs:
 
       - name: Sync Alpaca Status
         env:
-          # CRITICAL: Use 5K secrets (they point to $30K account - historical naming)
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_5K_API_SECRET }}
+          # CRITICAL: Use 30K secrets (5K secrets appear to be empty/invalid)
+          # The 30K secrets point to the $30K paper account (Jan 22, 2026 reset)
+          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
         run: |
           python3 << 'EOF'
           import os
-          import sys
           import json
           from datetime import datetime, timezone
           from pathlib import Path
+          from alpaca.trading.client import TradingClient
+
+          api_key = os.environ['ALPACA_API_KEY']
+          secret_key = os.environ['ALPACA_SECRET_KEY']
 
           print("=" * 60)
           print("ALPACA PAPER ACCOUNT SYNC")
           print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
           print("=" * 60)
 
-          # Validate environment variables first
-          api_key = os.environ.get('ALPACA_API_KEY', '')
-          secret_key = os.environ.get('ALPACA_SECRET_KEY', '')
+          client = TradingClient(api_key, secret_key, paper=True)
 
-          if not api_key or not secret_key:
-              print("❌ ERROR: ALPACA_API_KEY or ALPACA_SECRET_KEY not set")
-              print("Check GitHub secrets configuration")
-              sys.exit(1)
-
-          try:
-              from alpaca.trading.client import TradingClient
-          except ImportError as e:
-              print(f"❌ ERROR: Failed to import alpaca-py: {e}")
-              sys.exit(1)
-
-          try:
-              client = TradingClient(api_key, secret_key, paper=True)
-              # Get account
-              account = client.get_account()
-          except Exception as e:
-              print(f"❌ ERROR: Failed to connect to Alpaca API: {e}")
-              sys.exit(1)
+          # Get account
+          account = client.get_account()
           equity = float(account.equity)
           cash = float(account.cash)
           buying_power = float(account.buying_power)
