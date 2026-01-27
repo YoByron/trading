@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-27 01:21:43
+date: 2026-01-27 01:51:21
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, left-biased, iron, detected]
+tags: [code, security, issues, finding]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
@@ -21,13 +21,13 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## Ralph Proactive Scan Findings
+## ---
 
-**The Problem:** - Dead code detected: true
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
 
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
 
-**The Takeaway:** Risk reduced and system resilience improved
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [89b15188](https://github.com/IgorGanapolsky/trading/commit/89b15188) | docs(ralph): Auto-publish discovery blog post |
 | [0743f769](https://github.com/IgorGanapolsky/trading/commit/0743f769) | docs(ralph): Auto-publish discovery blog post |
 | [62de4992](https://github.com/IgorGanapolsky/trading/commit/62de4992) | docs(ralph): Auto-publish discovery blog post |
 | [9a4f693f](https://github.com/IgorGanapolsky/trading/commit/9a4f693f) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
 | [39f747eb](https://github.com/IgorGanapolsky/trading/commit/39f747eb) | docs(ralph): Auto-publish discovery blog post |
-| [c9f75a25](https://github.com/IgorGanapolsky/trading/commit/c9f75a25) | chore(ralph): Record proactive scan findings |
 
 
 ## Why We Share This
