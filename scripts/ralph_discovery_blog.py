@@ -284,7 +284,15 @@ flowchart LR
     # Add detection nodes
     for i, d in enumerate(discoveries[:3], 1):
         severity = d.get("severity", "info")
-        icon = "🔴" if severity == "critical" else "🟠" if severity == "high" else "🟡" if severity == "medium" else "🟢"
+        icon = (
+            "🔴"
+            if severity == "critical"
+            else "🟠"
+            if severity == "high"
+            else "🟡"
+            if severity == "medium"
+            else "🟢"
+        )
         # Get lesson_id or create short title from title field
         short_title = d.get("lesson_id") or d.get("title", f"Issue{i}")[:15]
         diagram += f'        D{i}["{icon} {short_title}"]\n'
@@ -352,13 +360,17 @@ def generate_blog_post(discoveries: list[dict], commits: list[dict]) -> dict:
 
     # Find the highest severity discovery for the title
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
-    sorted_discoveries = sorted(discoveries, key=lambda d: severity_order.get(d.get("severity", "info"), 4))
+    sorted_discoveries = sorted(
+        discoveries, key=lambda d: severity_order.get(d.get("severity", "info"), 4)
+    )
 
     # Create engaging title based on content
     if len(sorted_discoveries) == 1:
         d = sorted_discoveries[0]
         sev_badge = SEVERITY_BADGES.get(d.get("severity", "info"), "")
-        title = f"{sev_badge} {d['title'][:50]}" if d.get("title") else "Today's Engineering Discovery"
+        title = (
+            f"{sev_badge} {d['title'][:50]}" if d.get("title") else "Today's Engineering Discovery"
+        )
     elif len(sorted_discoveries) > 0:
         d = sorted_discoveries[0]
         sev_badge = SEVERITY_BADGES.get(d.get("severity", "info"), "")
@@ -414,7 +426,7 @@ mermaid: true
 ### 💻 The Fix
 
 ```python
-{discovery['code_blocks'][0][:500]}
+{discovery["code_blocks"][0][:500]}
 ```
 """
 
@@ -425,7 +437,7 @@ mermaid: true
 
 ### 🔬 Root Cause
 
-{discovery['root_cause'][:300]}
+{discovery["root_cause"][:300]}
 """
 
         # Build the discovery section with narrative
@@ -475,10 +487,10 @@ These commits shipped today ([view on GitHub]({repo_url}/commits/main)):
 
 ### 💻 Featured Code Change
 
-From commit `{significant_commit['sha']}`:
+From commit `{significant_commit["sha"]}`:
 
 ```python
-{significant_commit['code_snippet'][:600]}
+{significant_commit["code_snippet"][:600]}
 ```
 """
 
