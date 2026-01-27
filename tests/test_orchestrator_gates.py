@@ -391,8 +391,8 @@ class TestIntegration:
         """Test that gate results can be chained properly."""
         results = []
 
-        # Simulate gate pipeline
-        ctx = TradeContext(ticker="SPY")
+        # Simulate gate pipeline with SPY context
+        _ctx = TradeContext(ticker="SPY")  # noqa: F841
 
         # Gate S
         results.append(GateResult("security", GateStatus.PASS, "SPY", 1.0, "Valid ticker"))
