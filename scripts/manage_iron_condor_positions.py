@@ -174,13 +174,20 @@ def check_exit_conditions(ic: dict) -> tuple[bool, str, str]:
 
 
 def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> bool:
-    """Close all legs of an iron condor."""
-    from alpaca.trading.enums import OrderSide, TimeInForce
-    from alpaca.trading.requests import MarketOrderRequest
+    """Close all legs of an iron condor using MLeg order for atomic execution.
+
+    FIX Jan 27, 2026: Changed from individual leg orders to MLeg (multi-leg) order.
+    Previous bug: Individual close orders destroyed iron condor structure, leaving
+    orphan legs that caused losses. MLeg ensures all legs close together or not at all.
+    """
+    from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
+    from alpaca.trading.requests import MarketOrderRequest, OptionLegRequest
 
     logger.info(f"  Closing iron condor expiry {ic['expiry_str']} - Reason: {reason}")
+    logger.info("  Using MLeg (multi-leg) order for atomic close")
 
-    success = True
+    # Build option legs for MLeg close order
+    option_legs = []
     for leg in ic["legs"]:
         symbol = leg["symbol"]
         qty = abs(int(leg["qty"]))
@@ -194,25 +201,30 @@ def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> b
             action = "SELL to close long"
 
         logger.info(f"    {symbol}: {action} {qty}")
+        option_legs.append(OptionLegRequest(symbol=symbol, side=side, ratio_qty=qty))
 
-        if dry_run:
-            logger.info("      [DRY RUN] Would submit order")
-            continue
+    if dry_run:
+        logger.info("      [DRY RUN] Would submit MLeg close order")
+        return True
 
-        try:
-            order = MarketOrderRequest(
-                symbol=symbol,
-                qty=qty,
-                side=side,
-                time_in_force=TimeInForce.DAY,
-            )
-            result = client.submit_order(order)
-            logger.info(f"      Order ID: {result.id}")
-        except Exception as e:
-            logger.error(f"      FAILED: {e}")
-            success = False
+    try:
+        # Submit as MLeg order - all legs close together or not at all
+        order_req = MarketOrderRequest(
+            qty=1,  # MLeg uses ratio_qty in legs
+            order_class=OrderClass.MLEG,
+            time_in_force=TimeInForce.DAY,
+            legs=option_legs,
+        )
+        result = client.submit_order(order_req)
+        logger.info(f"    ✅ MLeg close order submitted: {result.id}")
+        logger.info(f"       Status: {result.status}")
+        return True
 
-    return success
+    except Exception as e:
+        logger.error(f"    ❌ MLeg close order FAILED: {e}")
+        logger.error("       Iron condor NOT closed - all legs preserved")
+        logger.error("       Manual intervention may be required")
+        return False
 
 
 def get_alpaca_credentials():
