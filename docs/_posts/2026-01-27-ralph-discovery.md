@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH Portfolio sync failed - blind tradi (+2 more)"
-date: 2026-01-27 14:35:32
+title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
+date: 2026-01-27 14:46:09
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, security, error, detected]
+tags: [asymmetric, issues, detected, dead]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟠 Portfolio sync "]
+        D1["🟢 Ralph Proactive"]
         D2["🟢 Ralph Proactive"]
-        D3["🟢 Ralph Proactive"]
+        D3["🟢 LL-309: Iron Co"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["7529d64"]
-        F2["daff525"]
-        F3["b549464"]
+        F1["d148238"]
+        F2["7529d64"]
+        F3["daff525"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,31 +51,13 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
-
-## 🟠 HIGH Portfolio sync failed - blind trading risk
-
-### 🚨 What Went Wrong
-
-Cannot verify account state. Error: API Error - Symbol: None - Strategy: None - Error: API Error BLOCK all trading until sync restored. Never trade without knowing current positions/equity. failure, sync_failed, auto-generated, reflexion
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
 
 ## ℹ️ INFO Ralph Proactive Scan Findings
 
@@ -110,6 +92,29 @@ Applied targeted fix based on root cause analysis.
 ### 📈 Impact
 
 Risk reduced and system resilience improved.
+
+---
+
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
+
+
+### ✅ How We Fixed It
+
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
+
+
+### 📈 Impact
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
 
 ---
 
@@ -119,33 +124,33 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [d1482384](https://github.com/IgorGanapolsky/trading/commit/d1482384) | feat(blog): Upgrade to 2026 engagement standa |
 | ℹ️ INFO | [7529d64f](https://github.com/IgorGanapolsky/trading/commit/7529d64f) | feat(rlhf): Add LanceDB semantic memory for t |
 | ℹ️ INFO | [daff5251](https://github.com/IgorGanapolsky/trading/commit/daff5251) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b549464e](https://github.com/IgorGanapolsky/trading/commit/b549464e) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d2fc3ab3](https://github.com/IgorGanapolsky/trading/commit/d2fc3ab3) | fix(positions): Make position management iron |
-| ℹ️ INFO | [b1121d65](https://github.com/IgorGanapolsky/trading/commit/b1121d65) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
 
-From commit `7529d64f`:
+From commit `d1482384`:
 
 ```python
-#!/usr/bin/env python3
-"""
-Semantic Memory System v2 - Enhanced RAG/ML Infrastructure for Trading System
-
-Adapted from Random-Timer project (Jan 27, 2026)
-
-FEATURES:
-1. Similarity threshold filtering (no irrelevant results)
-2. LRU cache for embeddings (faster repeated queries)
-3. BM25 hybrid search (keyword + vector fusion)
-4. Active RLHF feedback loop (auto-reindex on feedback)
-5. Query metrics logging (precision/recall tracking)
-6. Trading-specific lesson patterns
-
-Architecture:
+Ralph Discovery Blog Publisher - 2026 Edition
+Automatically generates ENGAGING blog posts when Ralph makes discoveries.
+Posts go to GitHub Pages and Dev.to.
+2026 Standards Applied:
+- Mermaid diagrams for technical flows
+- Severity badges (CRITICAL/HIGH/MEDIUM/INFO)
+- Actual code snippets from fixes
+- Trend analysis with metrics
+- Narrative storytelling structure
+import subprocess
+# Severity classification for discoveries
+SEVERITY_BADGES = {
+    "critical": "🔴 CRITICAL",
+    "high": "🟠 HIGH",
+    "medium": "🟡 MEDIUM",
 ```
 
 
