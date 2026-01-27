@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-26 21:59:43
+date: 2026-01-26 22:36:52
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, condor, asymmetric, trade]
+tags: [trades, finding, asymmetric, iron]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -21,16 +21,6 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
-
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
-
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
-
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
-
----
-
 ## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 **The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
@@ -41,17 +31,27 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
+## ---
+
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
+
 ## Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Commit | Description |
 |--------|-------------|
+| [c9f75a25](https://github.com/IgorGanapolsky/trading/commit/c9f75a25) | chore(ralph): Record proactive scan findings |
+| [54d30e03](https://github.com/IgorGanapolsky/trading/commit/54d30e03) | chore(ralph): Update workflow health dashboard |
+| [d9abc66c](https://github.com/IgorGanapolsky/trading/commit/d9abc66c) | docs(ralph): Auto-publish discovery blog post |
 | [4e7514e0](https://github.com/IgorGanapolsky/trading/commit/4e7514e0) | docs(ralph): Auto-publish discovery blog post |
 | [68b43fcb](https://github.com/IgorGanapolsky/trading/commit/68b43fcb) | docs(ralph): Auto-publish discovery blog post |
-| [69cea21b](https://github.com/IgorGanapolsky/trading/commit/69cea21b) | docs(ralph): Auto-publish discovery blog post |
-| [27e54267](https://github.com/IgorGanapolsky/trading/commit/27e54267) | fix(hooks): Align Claude Code hooks with official docum |
-| [30c6fb4d](https://github.com/IgorGanapolsky/trading/commit/30c6fb4d) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
