@@ -11,10 +11,8 @@ The gate pipeline is the core of the trading system - failures here = real money
 """
 
 import pytest
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 import sys
 
 # Add src to path
@@ -317,9 +315,7 @@ class TestGate15Debate:
         from src.orchestrator.gates import Gate15Debate
 
         mock_telemetry = MagicMock()
-        gate = Gate15Debate(
-            debate_moderator=None, telemetry=mock_telemetry, debate_available=False
-        )
+        gate = Gate15Debate(debate_moderator=None, telemetry=mock_telemetry, debate_available=False)
 
         ctx = TradeContext(ticker="SPY")
         result = gate.evaluate(ticker="SPY", ctx=ctx)
@@ -399,19 +395,13 @@ class TestIntegration:
         ctx = TradeContext(ticker="SPY")
 
         # Gate S
-        results.append(
-            GateResult("security", GateStatus.PASS, "SPY", 1.0, "Valid ticker")
-        )
+        results.append(GateResult("security", GateStatus.PASS, "SPY", 1.0, "Valid ticker"))
 
         # Gate M
-        results.append(
-            GateResult("memory", GateStatus.PASS, "SPY", 0.8, "No bad history")
-        )
+        results.append(GateResult("memory", GateStatus.PASS, "SPY", 0.8, "No bad history"))
 
         # Gate 0
-        results.append(
-            GateResult("psychology", GateStatus.PASS, "SPY", 0.9, "Mental state OK")
-        )
+        results.append(GateResult("psychology", GateStatus.PASS, "SPY", 0.9, "Mental state OK"))
 
         # Verify all passed
         assert all(r.passed for r in results)
@@ -425,9 +415,7 @@ class TestIntegration:
 
         # Gate M rejects
         results.append(
-            GateResult(
-                "memory", GateStatus.REJECT, "SPY", 0.2, "Previous losses on this setup"
-            )
+            GateResult("memory", GateStatus.REJECT, "SPY", 0.2, "Previous losses on this setup")
         )
 
         # Pipeline should stop at first rejection
