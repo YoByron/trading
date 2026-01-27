@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 15:57:47
+date: 2026-01-27 16:10:10
 categories: [engineering, lessons-learned, ai-trading]
-tags: [condor, put, left-biased, call]
+tags: [trades, iron, asymmetric, call]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["7216c04"]
-        F2["a0c5780"]
-        F3["1cdf55d"]
+        F1["424ff2b"]
+        F2["7216c04"]
+        F3["a0c5780"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -141,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [424ff2b3](https://github.com/IgorGanapolsky/trading/commit/424ff2b3) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [7216c04a](https://github.com/IgorGanapolsky/trading/commit/7216c04a) | fix(iron-condor): Use MLeg order for atomic I |
 | ℹ️ INFO | [a0c5780d](https://github.com/IgorGanapolsky/trading/commit/a0c5780d) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [1cdf55dc](https://github.com/IgorGanapolsky/trading/commit/1cdf55dc) | feat(rag): Upgrade to 2026 ML best practices |
 | ℹ️ INFO | [60f83b32](https://github.com/IgorGanapolsky/trading/commit/60f83b32) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [06ee9df4](https://github.com/IgorGanapolsky/trading/commit/06ee9df4) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
