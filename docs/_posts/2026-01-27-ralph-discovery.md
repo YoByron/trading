@@ -1,25 +1,15 @@
 ---
 layout: post
-title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-27 13:11:34
+title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
+date: 2026-01-27 13:19:36
 categories: [engineering, lessons-learned, ai-trading]
-tags: [options, security, code, dead]
+tags: [history, put, finding, trades]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
 
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
-
-## Ralph Proactive Scan Findings
-
-**The Problem:** - Dead code detected: true
-
-**What We Did:** Applied targeted fix based on root cause analysis
-
-**The Takeaway:** Risk reduced and system resilience improved
-
----
 
 ## LL-309: Iron Condor Optimal Control Research
 
@@ -31,13 +21,23 @@ Building an autonomous AI trading system means things break. Here's what we disc
 
 ---
 
-## LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
-**The Problem:** **Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
 
-**What We Did:** - [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
-**The Takeaway:** |-------------------|----------| | **10-15 delta** | **86%** |
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
+
+## ---
+
+**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [cdc399ca](https://github.com/IgorGanapolsky/trading/commit/cdc399ca) | fix(dashboard): Align North Star with $6K/month Financi |
+| [71f8ed89](https://github.com/IgorGanapolsky/trading/commit/71f8ed89) | fix(test): Update day limit from 90 to 365 days |
+| [407e7ab7](https://github.com/IgorGanapolsky/trading/commit/407e7ab7) | docs(ralph): Auto-publish discovery blog post |
 | [5adf1ca8](https://github.com/IgorGanapolsky/trading/commit/5adf1ca8) | docs(ralph): Auto-publish discovery blog post |
 | [0a1a7aac](https://github.com/IgorGanapolsky/trading/commit/0a1a7aac) | docs(ralph): Auto-publish discovery blog post |
-| [5852dd21](https://github.com/IgorGanapolsky/trading/commit/5852dd21) | docs(ralph): Auto-publish discovery blog post |
-| [be55c434](https://github.com/IgorGanapolsky/trading/commit/be55c434) | docs(ralph): Auto-publish discovery blog post |
-| [57fd31c6](https://github.com/IgorGanapolsky/trading/commit/57fd31c6) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
