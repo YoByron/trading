@@ -197,8 +197,9 @@ def get_pdt_safe_close_qty(
                 trade_date = datetime.fromisoformat(trade_date_str.replace("Z", "+00:00")).date()
                 if trade_date == today:
                     buys_today += float(trade.get("filled_qty", trade.get("qty", 0)))
-            except Exception:
-                pass
+            except (ValueError, TypeError, KeyError) as e:
+                # Date parsing or qty extraction failed - skip this trade for PDT calc
+                logger.debug(f"Skipping trade for PDT calculation: {e}")
 
     # Safe to close = current - today's buys
     safe_qty = max(0, abs(current_qty) - buys_today)
