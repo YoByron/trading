@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-27 14:46:09
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-27 14:46:45
 categories: [engineering, lessons-learned, ai-trading]
-tags: [asymmetric, issues, detected, dead]
+tags: [put, trade, asymmetric, left-biased]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 Ralph Proactive"]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 LL-309: Iron Co"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟠 ---"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["d148238"]
-        F2["7529d64"]
-        F3["daff525"]
+        F1["06ee9df"]
+        F2["d148238"]
+        F3["7529d64"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,24 +51,41 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 2 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 1 |
 
 
 ---
 
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
+### 🔬 Root Cause
+
+```python
+
+
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
 
 
 ### 📈 Impact
@@ -77,21 +94,21 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## 🟠 HIGH ---
 
 ### 🚨 What Went Wrong
 
-- Dead code detected: true
+id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
 
 
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
 
 
 ### 📈 Impact
 
-Risk reduced and system resilience improved.
+1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -124,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [06ee9df4](https://github.com/IgorGanapolsky/trading/commit/06ee9df4) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d1482384](https://github.com/IgorGanapolsky/trading/commit/d1482384) | feat(blog): Upgrade to 2026 engagement standa |
 | ℹ️ INFO | [7529d64f](https://github.com/IgorGanapolsky/trading/commit/7529d64f) | feat(rlhf): Add LanceDB semantic memory for t |
 | ℹ️ INFO | [daff5251](https://github.com/IgorGanapolsky/trading/commit/daff5251) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b549464e](https://github.com/IgorGanapolsky/trading/commit/b549464e) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [d2fc3ab3](https://github.com/IgorGanapolsky/trading/commit/d2fc3ab3) | fix(positions): Make position management iron |
 
 
 ### 💻 Featured Code Change
