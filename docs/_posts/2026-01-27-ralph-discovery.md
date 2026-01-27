@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 16:25:12
+date: 2026-01-27 17:19:22
 categories: [engineering, lessons-learned, ai-trading]
-tags: [condor, put, trade, history]
+tags: [condor, asymmetric, left-biased, trades]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟢 LL-277: Iron Co"]
-        D3["🟠 LL-298: Invalid"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟠 ---"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["67bba58"]
-        F2["82ff9e3"]
-        F3["f2d82fe"]
+        F1["e3b2c31"]
+        F2["67bba58"]
+        F3["82ff9e3"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,9 +51,9 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 2 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 1 |
 
 
 ---
@@ -94,6 +94,24 @@ Risk reduced and system resilience improved.
 
 ---
 
+## 🟠 HIGH ---
+
+### 🚨 What Went Wrong
+
+id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+
+### ✅ How We Fixed It
+
+severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+
+### 📈 Impact
+
+1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
+
 ## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
 
 ### 🚨 What Went Wrong
@@ -117,35 +135,17 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
-
-### 🚨 What Went Wrong
-
-**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
-
-
-### ✅ How We Fixed It
-
-- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
-
-
-### 📈 Impact
-
-|-------------------|----------| | **10-15 delta** | **86%** |
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [e3b2c317](https://github.com/IgorGanapolsky/trading/commit/e3b2c317) | docs(ralph): Auto-publish discovery blog post |
 | 🟠 HIGH | [67bba583](https://github.com/IgorGanapolsky/trading/commit/67bba583) | fix(lint): Resolve ruff E741 and F841 errors  |
 | ℹ️ INFO | [82ff9e36](https://github.com/IgorGanapolsky/trading/commit/82ff9e36) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [f2d82fe8](https://github.com/IgorGanapolsky/trading/commit/f2d82fe8) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [424ff2b3](https://github.com/IgorGanapolsky/trading/commit/424ff2b3) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [7216c04a](https://github.com/IgorGanapolsky/trading/commit/7216c04a) | fix(iron-condor): Use MLeg order for atomic I |
 
 
 ### 💻 Featured Code Change
