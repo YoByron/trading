@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-27 16:10:58
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-27 16:25:12
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, iron, finding, asymmetric]
+tags: [condor, put, trade, history]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 Ralph Proactive"]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 LL-309: Iron Co"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟢 LL-277: Iron Co"]
+        D3["🟠 LL-298: Invalid"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["f2d82fe"]
-        F2["424ff2b"]
-        F3["7216c04"]
+        F1["67bba58"]
+        F2["82ff9e3"]
+        F3["f2d82fe"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,42 +51,41 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
-### ✅ How We Fixed It
+### 🔬 Root Cause
 
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
+```python
 
 
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
 
 
 ### 📈 Impact
@@ -118,34 +117,46 @@ Risk reduced and system resilience improved.
 
 ---
 
+## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+
+### 🚨 What Went Wrong
+
+**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+
+
+### ✅ How We Fixed It
+
+- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+
+### 📈 Impact
+
+|-------------------|----------| | **10-15 delta** | **86%** |
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| 🟠 HIGH | [67bba583](https://github.com/IgorGanapolsky/trading/commit/67bba583) | fix(lint): Resolve ruff E741 and F841 errors  |
+| ℹ️ INFO | [82ff9e36](https://github.com/IgorGanapolsky/trading/commit/82ff9e36) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [f2d82fe8](https://github.com/IgorGanapolsky/trading/commit/f2d82fe8) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [424ff2b3](https://github.com/IgorGanapolsky/trading/commit/424ff2b3) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [7216c04a](https://github.com/IgorGanapolsky/trading/commit/7216c04a) | fix(iron-condor): Use MLeg order for atomic I |
-| ℹ️ INFO | [a0c5780d](https://github.com/IgorGanapolsky/trading/commit/a0c5780d) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [1cdf55dc](https://github.com/IgorGanapolsky/trading/commit/1cdf55dc) | feat(rag): Upgrade to 2026 ML best practices |
 
 
 ### 💻 Featured Code Change
 
-From commit `7216c04a`:
+From commit `67bba583`:
 
 ```python
-    """Close all legs of an iron condor using MLeg order for atomic execution.
-
-    FIX Jan 27, 2026: Changed from individual leg orders to MLeg (multi-leg) order.
-    Previous bug: Individual close orders destroyed iron condor structure, leaving
-    orphan legs that caused losses. MLeg ensures all legs close together or not at all.
-    """
-    from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
-    from alpaca.trading.requests import MarketOrderRequest, OptionLegRequest
-    logger.info("  Using MLeg (multi-leg) order for atomic close")
-    # Build option legs for MLeg close or
+        puts = [leg for leg in legs if leg["type"] == "P"]
+        calls = [leg for leg in legs if leg["type"] == "C"]
+        # Simulate gate pipeline with SPY context
+        _ctx = TradeContext(ticker="SPY")  # noqa: F841
 ```
 
 
