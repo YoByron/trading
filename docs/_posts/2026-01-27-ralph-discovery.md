@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-27 13:19:36
+date: 2026-01-27 13:22:56
 categories: [engineering, lessons-learned, ai-trading]
-tags: [history, put, finding, trades]
+tags: [iron, asymmetric, trade, condor]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [21d8721b](https://github.com/IgorGanapolsky/trading/commit/21d8721b) | fix(metrics): Add iron condor filter to win rate calcul |
+| [668591de](https://github.com/IgorGanapolsky/trading/commit/668591de) | docs(ralph): Auto-publish discovery blog post |
 | [cdc399ca](https://github.com/IgorGanapolsky/trading/commit/cdc399ca) | fix(dashboard): Align North Star with $6K/month Financi |
 | [71f8ed89](https://github.com/IgorGanapolsky/trading/commit/71f8ed89) | fix(test): Update day limit from 90 to 365 days |
 | [407e7ab7](https://github.com/IgorGanapolsky/trading/commit/407e7ab7) | docs(ralph): Auto-publish discovery blog post |
-| [5adf1ca8](https://github.com/IgorGanapolsky/trading/commit/5adf1ca8) | docs(ralph): Auto-publish discovery blog post |
-| [0a1a7aac](https://github.com/IgorGanapolsky/trading/commit/0a1a7aac) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
