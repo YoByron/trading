@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 15:17:55
+date: 2026-01-27 15:57:47
 categories: [engineering, lessons-learned, ai-trading]
-tags: [put, trade, trades, left-biased]
+tags: [condor, put, left-biased, call]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["1cdf55d"]
-        F2["60f83b3"]
-        F3["06ee9df"]
+        F1["7216c04"]
+        F2["a0c5780"]
+        F3["1cdf55d"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -141,25 +141,28 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [7216c04a](https://github.com/IgorGanapolsky/trading/commit/7216c04a) | fix(iron-condor): Use MLeg order for atomic I |
+| ℹ️ INFO | [a0c5780d](https://github.com/IgorGanapolsky/trading/commit/a0c5780d) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [1cdf55dc](https://github.com/IgorGanapolsky/trading/commit/1cdf55dc) | feat(rag): Upgrade to 2026 ML best practices |
 | ℹ️ INFO | [60f83b32](https://github.com/IgorGanapolsky/trading/commit/60f83b32) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [06ee9df4](https://github.com/IgorGanapolsky/trading/commit/06ee9df4) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [d1482384](https://github.com/IgorGanapolsky/trading/commit/d1482384) | feat(blog): Upgrade to 2026 engagement standa |
-| ℹ️ INFO | [7529d64f](https://github.com/IgorGanapolsky/trading/commit/7529d64f) | feat(rlhf): Add LanceDB semantic memory for t |
 
 
 ### 💻 Featured Code Change
 
-From commit `1cdf55dc`:
+From commit `7216c04a`:
 
 ```python
-# Model options - UPGRADED Jan 27, 2026
-# Research: all-MiniLM-L6-v2 only 56% accuracy, e5-small-v2 is 100% Top-5
-# Source: https://supermemory.ai/blog/best-open-source-embedding-models-benchmarked-and-ranked/
-    "fast": "intfloat/e5-small-v2",  # 384 dims, 16ms, 100% Top-5 accuracy
-    "better": "intfloat/e5-base-v2",  # 768 dims, ~80ms
-    "best": "BAAI/bge-base-en-v1.5",  # 768 dims, highest quality
-DEFAULT_MODEL = "fast"  # e5-small-v2 - best speed/accuracy tradeoff
+    """Close all legs of an iron condor using MLeg order for atomic execution.
+
+    FIX Jan 27, 2026: Changed from individual leg orders to MLeg (multi-leg) order.
+    Previous bug: Individual close orders destroyed iron condor structure, leaving
+    orphan legs that caused losses. MLeg ensures all legs close together or not at all.
+    """
+    from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
+    from alpaca.trading.requests import MarketOrderRequest, OptionLegRequest
+    logger.info("  Using MLeg (multi-leg) order for atomic close")
+    # Build option legs for MLeg close or
 ```
 
 
