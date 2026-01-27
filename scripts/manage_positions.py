@@ -104,12 +104,14 @@ def identify_iron_condor_legs(positions: list) -> dict:
 
         qty = float(pos.qty if hasattr(pos, "qty") else pos.get("qty", 0))
         key = (parsed["underlying"], parsed["expiry"])
-        grouped[key].append({
-            "symbol": symbol,
-            "type": parsed["type"],
-            "strike": parsed["strike"],
-            "qty": qty,
-        })
+        grouped[key].append(
+            {
+                "symbol": symbol,
+                "type": parsed["type"],
+                "strike": parsed["strike"],
+                "qty": qty,
+            }
+        )
 
     # Identify valid iron condors (must have 4 legs with correct structure)
     iron_condors = {}
@@ -131,9 +133,7 @@ def identify_iron_condor_legs(positions: list) -> dict:
         # Iron condor: 2 puts, 2 calls
         if len(puts) == 2 and len(calls) == 2:
             iron_condors[key] = [leg["symbol"] for leg in legs]
-            logger.info(
-                f"✅ Iron condor detected: {key[0]} exp {key[1]} with {len(legs)} legs"
-            )
+            logger.info(f"✅ Iron condor detected: {key[0]} exp {key[1]} with {len(legs)} legs")
 
     return iron_condors
 
@@ -201,7 +201,9 @@ def main(dry_run: bool = False):
         iron_condor_symbols.update(legs)
 
     if iron_condor_symbols:
-        logger.info(f"🔒 Iron condor legs PROTECTED from individual exit: {len(iron_condor_symbols)}")
+        logger.info(
+            f"🔒 Iron condor legs PROTECTED from individual exit: {len(iron_condor_symbols)}"
+        )
         for key, legs in iron_condors.items():
             logger.info(f"   {key[0]} exp {key[1]}: {', '.join(legs)}")
         logger.info("   These must be managed as a unit via manage_iron_condor_positions.py")
@@ -227,7 +229,9 @@ def main(dry_run: bool = False):
             }
         )
 
-    logger.info(f"Evaluating {len(position_dicts)} non-iron-condor positions (skipped {skipped_count})")
+    logger.info(
+        f"Evaluating {len(position_dicts)} non-iron-condor positions (skipped {skipped_count})"
+    )
 
     if not position_dicts:
         logger.info("No non-iron-condor positions to evaluate")
