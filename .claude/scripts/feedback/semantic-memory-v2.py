@@ -56,13 +56,15 @@ INDEX_STATE_FILE = FEEDBACK_DIR / "lance-index-state.json"
 METRICS_FILE = FEEDBACK_DIR / "query-metrics.jsonl"
 FEEDBACK_LOG = FEEDBACK_DIR / "feedback-log.jsonl"
 
-# Model options
+# Model options - UPGRADED Jan 27, 2026
+# Research: all-MiniLM-L6-v2 only 56% accuracy, e5-small-v2 is 100% Top-5
+# Source: https://supermemory.ai/blog/best-open-source-embedding-models-benchmarked-and-ranked/
 EMBEDDING_MODELS = {
-    "fast": "all-MiniLM-L6-v2",  # 384 dims, ~50ms
-    "better": "intfloat/e5-small-v2",  # 384 dims, ~80ms, better quality
-    "best": "intfloat/e5-base-v2",  # 768 dims, ~150ms, highest quality
+    "fast": "intfloat/e5-small-v2",  # 384 dims, 16ms, 100% Top-5 accuracy
+    "better": "intfloat/e5-base-v2",  # 768 dims, ~80ms
+    "best": "BAAI/bge-base-en-v1.5",  # 768 dims, highest quality
 }
-DEFAULT_MODEL = "fast"  # Start with fast, upgrade if needed
+DEFAULT_MODEL = "fast"  # e5-small-v2 - best speed/accuracy tradeoff
 
 # Search configuration
 SIMILARITY_THRESHOLD = 0.8  # Euclidean distance threshold (lower = more similar)
