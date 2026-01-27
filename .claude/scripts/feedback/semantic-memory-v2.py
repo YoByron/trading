@@ -42,9 +42,8 @@ import sys
 import time
 from collections import OrderedDict
 from datetime import datetime
-from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 # Configuration
 SCRIPT_DIR = Path(__file__).parent
@@ -59,26 +58,26 @@ FEEDBACK_LOG = FEEDBACK_DIR / "feedback-log.jsonl"
 
 # Model options
 EMBEDDING_MODELS = {
-    "fast": "all-MiniLM-L6-v2",       # 384 dims, ~50ms
+    "fast": "all-MiniLM-L6-v2",  # 384 dims, ~50ms
     "better": "intfloat/e5-small-v2",  # 384 dims, ~80ms, better quality
-    "best": "intfloat/e5-base-v2",     # 768 dims, ~150ms, highest quality
+    "best": "intfloat/e5-base-v2",  # 768 dims, ~150ms, highest quality
 }
 DEFAULT_MODEL = "fast"  # Start with fast, upgrade if needed
 
 # Search configuration
 SIMILARITY_THRESHOLD = 0.8  # Euclidean distance threshold (lower = more similar)
-BM25_WEIGHT = 0.3           # Weight for BM25 in hybrid search
-VECTOR_WEIGHT = 0.7         # Weight for vector similarity
+BM25_WEIGHT = 0.3  # Weight for BM25 in hybrid search
+VECTOR_WEIGHT = 0.7  # Weight for vector similarity
 
 # Table names
 LESSONS_TABLE = "lessons_learned"
 FEEDBACK_TABLE = "rlhf_feedback"
 
 
-def get_table_names(db) -> List[str]:
+def get_table_names(db) -> list[str]:
     """Get table names from LanceDB, handling different API versions."""
     result = db.table_names()
-    if hasattr(result, 'tables'):
+    if hasattr(result, "tables"):
         return result.tables
     return list(result)
 
@@ -91,13 +90,14 @@ def table_exists(db, table_name: str) -> bool:
 # LRU Cache for embeddings
 class EmbeddingCache:
     """Thread-safe LRU cache for embeddings"""
+
     def __init__(self, maxsize: int = 1000):
         self.cache = OrderedDict()
         self.maxsize = maxsize
         self.hits = 0
         self.misses = 0
 
-    def get(self, text: str) -> Optional[List[float]]:
+    def get(self, text: str) -> Optional[list[float]]:
         if text in self.cache:
             self.cache.move_to_end(text)
             self.hits += 1
@@ -105,7 +105,7 @@ class EmbeddingCache:
         self.misses += 1
         return None
 
-    def put(self, text: str, embedding: List[float]):
+    def put(self, text: str, embedding: list[float]):
         if text in self.cache:
             self.cache.move_to_end(text)
         else:
@@ -113,7 +113,7 @@ class EmbeddingCache:
                 self.cache.popitem(last=False)
             self.cache[text] = embedding
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         total = self.hits + self.misses
         hit_rate = self.hits / total if total > 0 else 0
         return {
@@ -121,7 +121,7 @@ class EmbeddingCache:
             "misses": self.misses,
             "hit_rate": f"{hit_rate:.2%}",
             "size": len(self.cache),
-            "maxsize": self.maxsize
+            "maxsize": self.maxsize,
         }
 
 
@@ -132,20 +132,17 @@ _embedding_cache = EmbeddingCache()
 # Metrics logger
 class MetricsLogger:
     """Log query metrics for observability"""
+
     def __init__(self, metrics_file: Path):
         self.metrics_file = metrics_file
         self.metrics_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def log(self, event: str, data: Dict[str, Any]):
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": event,
-            **data
-        }
-        with open(self.metrics_file, 'a') as f:
-            f.write(json.dumps(entry) + '\n')
+    def log(self, event: str, data: dict[str, Any]):
+        entry = {"timestamp": datetime.now().isoformat(), "event": event, **data}
+        with open(self.metrics_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
 
-    def get_summary(self, days: int = 7) -> Dict[str, Any]:
+    def get_summary(self, days: int = 7) -> dict[str, Any]:
         """Get metrics summary for last N days"""
         if not self.metrics_file.exists():
             return {"error": "No metrics found"}
@@ -189,6 +186,7 @@ def get_lance_db():
     """Initialize LanceDB"""
     try:
         import lancedb
+
         LANCE_DIR.mkdir(parents=True, exist_ok=True)
         return lancedb.connect(str(LANCE_DIR))
     except ImportError:
@@ -200,6 +198,7 @@ def get_embedding_model(model_key: str = DEFAULT_MODEL):
     """Get sentence transformer model with caching"""
     try:
         from sentence_transformers import SentenceTransformer
+
         model_name = EMBEDDING_MODELS.get(model_key, EMBEDDING_MODELS["fast"])
 
         # Use persistent cache directory
@@ -213,7 +212,7 @@ def get_embedding_model(model_key: str = DEFAULT_MODEL):
         sys.exit(1)
 
 
-def get_embedding_with_cache(text: str, model) -> List[float]:
+def get_embedding_with_cache(text: str, model) -> list[float]:
     """Get embedding with LRU cache"""
     cached = _embedding_cache.get(text)
     if cached is not None:
@@ -227,6 +226,7 @@ def get_embedding_with_cache(text: str, model) -> List[float]:
 # BM25 implementation for hybrid search
 class BM25:
     """Simple BM25 implementation for hybrid search"""
+
     def __init__(self, k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
         self.b = b
@@ -236,7 +236,7 @@ class BM25:
         self.corpus = []
         self.n_docs = 0
 
-    def fit(self, documents: List[str]):
+    def fit(self, documents: list[str]):
         """Index documents for BM25"""
         self.corpus = [self._tokenize(doc) for doc in documents]
         self.n_docs = len(self.corpus)
@@ -251,13 +251,14 @@ class BM25:
                     self.doc_freqs[term] = self.doc_freqs.get(term, 0) + 1
                     seen.add(term)
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         """Simple tokenization"""
-        return re.findall(r'\w+', text.lower())
+        return re.findall(r"\w+", text.lower())
 
     def _idf(self, term: str) -> float:
         """Calculate IDF for a term"""
         import math
+
         df = self.doc_freqs.get(term, 0)
         return math.log((self.n_docs - df + 0.5) / (df + 0.5) + 1)
 
@@ -285,14 +286,14 @@ class BM25:
 
         return score
 
-    def search(self, query: str, top_k: int = 10) -> List[Tuple[int, float]]:
+    def search(self, query: str, top_k: int = 10) -> list[tuple[int, float]]:
         """Search and return (doc_idx, score) tuples"""
         scores = [(i, self.score(query, i)) for i in range(self.n_docs)]
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:top_k]
 
 
-def parse_rag_lessons() -> List[Dict[str, Any]]:
+def parse_rag_lessons() -> list[dict[str, Any]]:
     """Parse lessons from rag_knowledge/lessons_learned/ directory"""
     lessons = []
 
@@ -309,7 +310,7 @@ def parse_rag_lessons() -> List[Dict[str, Any]]:
             lesson_id = filename
 
             # Extract title from first # heading
-            title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+            title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
             title = title_match.group(1) if title_match else filename
 
             # Determine severity from content
@@ -334,23 +335,25 @@ def parse_rag_lessons() -> List[Dict[str, Any]]:
                 if any(kw in content.lower() for kw in keywords):
                     tags.append(tag)
 
-            lessons.append({
-                "id": f"lesson_{lesson_id}",
-                "date": "2026-01-27",  # Use current date
-                "title": title,
-                "severity": severity,
-                "tags": ",".join(tags),
-                "content": content[:1000],
-                "full_text": f"{title}\n\nSeverity: {severity}\nTags: {', '.join(tags)}\n\n{content[:2000]}",
-                "source_file": str(md_file),
-            })
+            lessons.append(
+                {
+                    "id": f"lesson_{lesson_id}",
+                    "date": "2026-01-27",  # Use current date
+                    "title": title,
+                    "severity": severity,
+                    "tags": ",".join(tags),
+                    "content": content[:1000],
+                    "full_text": f"{title}\n\nSeverity: {severity}\nTags: {', '.join(tags)}\n\n{content[:2000]}",
+                    "source_file": str(md_file),
+                }
+            )
         except Exception as e:
             print(f"   Error parsing {md_file}: {e}")
 
     return lessons
 
 
-def load_feedback_patterns() -> List[Dict[str, Any]]:
+def load_feedback_patterns() -> list[dict[str, Any]]:
     """Load RLHF feedback for indexing"""
     if not FEEDBACK_LOG.exists():
         return []
@@ -366,16 +369,20 @@ def load_feedback_patterns() -> List[Dict[str, Any]]:
                     doc_text += f"Tags: {', '.join(entry.get('tags', []))}\n"
                     doc_text += f"Action: {entry.get('actionType', 'unknown')}"
 
-                    patterns.append({
-                        "id": entry.get("id", f"fb_{len(patterns)}"),
-                        "type": "feedback",
-                        "feedback_type": entry.get("feedback", "unknown"),
-                        "reward": entry.get("reward", -1 if entry.get("feedback") == "negative" else 1),
-                        "context": entry.get("context", entry.get("message", ""))[:200],
-                        "tags": ",".join(entry.get("tags", [])),
-                        "full_text": doc_text,
-                        "timestamp": entry.get("timestamp", datetime.now().isoformat()),
-                    })
+                    patterns.append(
+                        {
+                            "id": entry.get("id", f"fb_{len(patterns)}"),
+                            "type": "feedback",
+                            "feedback_type": entry.get("feedback", "unknown"),
+                            "reward": entry.get(
+                                "reward", -1 if entry.get("feedback") == "negative" else 1
+                            ),
+                            "context": entry.get("context", entry.get("message", ""))[:200],
+                            "tags": ",".join(entry.get("tags", [])),
+                            "full_text": doc_text,
+                            "timestamp": entry.get("timestamp", datetime.now().isoformat()),
+                        }
+                    )
                 except json.JSONDecodeError:
                     continue
 
@@ -384,7 +391,7 @@ def load_feedback_patterns() -> List[Dict[str, Any]]:
 
 def index_all(model_key: str = DEFAULT_MODEL):
     """Index all lessons and feedback into LanceDB"""
-    print(f"\nIndexing memories into LanceDB...")
+    print("\nIndexing memories into LanceDB...")
     print(f"   Model: {EMBEDDING_MODELS.get(model_key, model_key)}")
     print(f"   Storage: {LANCE_DIR}")
 
@@ -444,20 +451,23 @@ def index_all(model_key: str = DEFAULT_MODEL):
         "features": ["similarity_threshold", "lru_cache", "bm25_hybrid", "metrics"],
     }
     INDEX_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_STATE_FILE, 'w') as f:
+    with open(INDEX_STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
-    _metrics.log("index", {
-        "lessons_count": len(lessons),
-        "feedback_count": len(feedback),
-        "model": model_key,
-    })
+    _metrics.log(
+        "index",
+        {
+            "lessons_count": len(lessons),
+            "feedback_count": len(feedback),
+            "model": model_key,
+        },
+    )
 
-    print(f"\nIndexing complete!")
+    print("\nIndexing complete!")
     print(f"   Total documents: {len(lessons) + len(feedback)}")
 
 
-def add_feedback(feedback_type: str, context: str, tags: List[str] = None, reward: int = None):
+def add_feedback(feedback_type: str, context: str, tags: list[str] = None, reward: int = None):
     """Add feedback entry and trigger re-indexing"""
     FEEDBACK_LOG.parent.mkdir(parents=True, exist_ok=True)
 
@@ -473,14 +483,17 @@ def add_feedback(feedback_type: str, context: str, tags: List[str] = None, rewar
         "reward": reward,
     }
 
-    with open(FEEDBACK_LOG, 'a') as f:
-        f.write(json.dumps(entry) + '\n')
+    with open(FEEDBACK_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
 
-    _metrics.log("feedback", {
-        "type": feedback_type,
-        "reward": reward,
-        "has_tags": bool(tags),
-    })
+    _metrics.log(
+        "feedback",
+        {
+            "type": feedback_type,
+            "reward": reward,
+            "has_tags": bool(tags),
+        },
+    )
 
     print(f"Feedback recorded: {feedback_type} (reward={reward})")
 
@@ -512,7 +525,7 @@ def hybrid_search(
     threshold: float = SIMILARITY_THRESHOLD,
     table_name: str = None,
     use_bm25: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Hybrid search combining BM25 + vector similarity"""
     start_time = time.time()
 
@@ -558,42 +571,47 @@ def hybrid_search(
 
                 combined_score = (VECTOR_WEIGHT * vector_score) + (BM25_WEIGHT * bm25_score)
 
-                results.append({
-                    "id": r.get("id", "unknown"),
-                    "table": tbl_name,
-                    "title": r.get("title", r.get("context", "Unknown")),
-                    "text": r.get("full_text", "")[:200],
-                    "distance": distance,
-                    "vector_score": vector_score,
-                    "bm25_score": bm25_score,
-                    "combined_score": combined_score,
-                    "metadata": {
-                        "severity": r.get("severity"),
-                        "tags": r.get("tags"),
-                        "date": r.get("date"),
-                        "reward": r.get("reward"),
+                results.append(
+                    {
+                        "id": r.get("id", "unknown"),
+                        "table": tbl_name,
+                        "title": r.get("title", r.get("context", "Unknown")),
+                        "text": r.get("full_text", "")[:200],
+                        "distance": distance,
+                        "vector_score": vector_score,
+                        "bm25_score": bm25_score,
+                        "combined_score": combined_score,
+                        "metadata": {
+                            "severity": r.get("severity"),
+                            "tags": r.get("tags"),
+                            "date": r.get("date"),
+                            "reward": r.get("reward"),
+                        },
                     }
-                })
+                )
         except Exception as e:
             print(f"   Error searching {tbl_name}: {e}")
 
-    results.sort(key=lambda x: x['combined_score'], reverse=True)
+    results.sort(key=lambda x: x["combined_score"], reverse=True)
     results = results[:n_results]
 
     latency_ms = (time.time() - start_time) * 1000
-    _metrics.log("query", {
-        "query": query_text[:50],
-        "result_count": len(results),
-        "latency_ms": latency_ms,
-        "threshold": threshold,
-        "use_bm25": use_bm25,
-        "cache_hit": _embedding_cache.hits > 0,
-    })
+    _metrics.log(
+        "query",
+        {
+            "query": query_text[:50],
+            "result_count": len(results),
+            "latency_ms": latency_ms,
+            "threshold": threshold,
+            "use_bm25": use_bm25,
+            "cache_hit": _embedding_cache.hits > 0,
+        },
+    )
 
     return results
 
 
-def get_session_context(max_lessons: int = 5, max_feedback: int = 3) -> Dict[str, Any]:
+def get_session_context(max_lessons: int = 5, max_feedback: int = 3) -> dict[str, Any]:
     """Get relevant context for session start with hybrid search"""
     start_time = time.time()
 
@@ -629,13 +647,15 @@ def get_session_context(max_lessons: int = 5, max_feedback: int = 3) -> Dict[str
                         seen_ids.add(r["id"])
                         severity = r.get("metadata", {}).get("severity", "INFO")
                         if severity in ["CRITICAL", "HIGH"]:
-                            context["critical_lessons"].append({
-                                "id": r["id"],
-                                "title": r.get("title", "Unknown"),
-                                "date": r.get("metadata", {}).get("date", "Unknown"),
-                                "severity": severity,
-                                "score": r.get("combined_score", 0),
-                            })
+                            context["critical_lessons"].append(
+                                {
+                                    "id": r["id"],
+                                    "title": r.get("title", "Unknown"),
+                                    "date": r.get("metadata", {}).get("date", "Unknown"),
+                                    "severity": severity,
+                                    "score": r.get("combined_score", 0),
+                                }
+                            )
             except Exception:
                 pass
 
@@ -647,17 +667,19 @@ def get_session_context(max_lessons: int = 5, max_feedback: int = 3) -> Dict[str
             results = hybrid_search(
                 "negative feedback thumbs down bad mistake error",
                 n_results=max_feedback * 2,
-                table_name=FEEDBACK_TABLE
+                table_name=FEEDBACK_TABLE,
             )
 
             for r in results:
                 if r.get("metadata", {}).get("reward", 0) <= 0:
-                    context["recent_negative_patterns"].append({
-                        "id": r["id"],
-                        "tags": r.get("metadata", {}).get("tags", "").split(","),
-                        "context": r.get("text", "")[:100],
-                        "score": r.get("combined_score", 0),
-                    })
+                    context["recent_negative_patterns"].append(
+                        {
+                            "id": r["id"],
+                            "tags": r.get("metadata", {}).get("tags", "").split(","),
+                            "context": r.get("text", "")[:100],
+                            "score": r.get("combined_score", 0),
+                        }
+                    )
 
             context["recent_negative_patterns"] = context["recent_negative_patterns"][:max_feedback]
         except Exception:
@@ -700,7 +722,9 @@ def print_session_context():
     if context["critical_lessons"]:
         print("\nCRITICAL LESSONS TO REMEMBER:")
         for lesson in context["critical_lessons"]:
-            print(f"   [{lesson['severity']}] {lesson['title'][:50]}... (score: {lesson.get('score', 0):.2f})")
+            print(
+                f"   [{lesson['severity']}] {lesson['title'][:50]}... (score: {lesson.get('score', 0):.2f})"
+            )
 
     if context["recent_negative_patterns"]:
         print("\nPATTERNS THAT CAUSED THUMBS DOWN:")
@@ -731,8 +755,8 @@ def show_metrics():
     print(f"   Avg results: {summary.get('avg_results', 0):.1f}")
     print(f"   Feedback events: {summary.get('feedback_events', 0)}")
 
-    cache_stats = summary.get('cache_stats', {})
-    print(f"\nCache Stats:")
+    cache_stats = summary.get("cache_stats", {})
+    print("\nCache Stats:")
     print(f"   Hit rate: {cache_stats.get('hit_rate', '0%')}")
     print(f"   Size: {cache_stats.get('size', 0)}/{cache_stats.get('maxsize', 0)}")
     print("=" * 50)
@@ -780,11 +804,17 @@ def main():
     parser.add_argument("--status", action="store_true", help="Show index status")
     parser.add_argument("--metrics", action="store_true", help="Show query metrics")
     parser.add_argument("--add-feedback", action="store_true", help="Add feedback from stdin")
-    parser.add_argument("--feedback-type", type=str, choices=["positive", "negative"], default="negative")
+    parser.add_argument(
+        "--feedback-type", type=str, choices=["positive", "negative"], default="negative"
+    )
     parser.add_argument("--feedback-context", type=str, help="Feedback context")
-    parser.add_argument("--model", type=str, choices=list(EMBEDDING_MODELS.keys()), default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--model", type=str, choices=list(EMBEDDING_MODELS.keys()), default=DEFAULT_MODEL
+    )
     parser.add_argument("-n", "--results", type=int, default=5, help="Number of results")
-    parser.add_argument("--threshold", type=float, default=SIMILARITY_THRESHOLD, help="Similarity threshold")
+    parser.add_argument(
+        "--threshold", type=float, default=SIMILARITY_THRESHOLD, help="Similarity threshold"
+    )
     parser.add_argument("--no-bm25", action="store_true", help="Disable BM25 hybrid search")
 
     args = parser.parse_args()
@@ -801,7 +831,9 @@ def main():
         print(f"\nFound {len(results)} results:\n")
         for i, r in enumerate(results, 1):
             print(f"{i}. [{r['table']}] {r['title'][:60]}...")
-            print(f"   Score: {r['combined_score']:.3f} (vector: {r['vector_score']:.3f}, bm25: {r['bm25_score']:.3f})")
+            print(
+                f"   Score: {r['combined_score']:.3f} (vector: {r['vector_score']:.3f}, bm25: {r['bm25_score']:.3f})"
+            )
             print(f"   Preview: {r['text'][:100]}...")
             print()
     elif args.context:
