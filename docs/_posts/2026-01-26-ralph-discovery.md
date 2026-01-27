@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-26 17:17:01
+date: 2026-01-26 19:50:30
 categories: [engineering, lessons-learned, ai-trading]
-tags: [dead, detected, code, issues]
+tags: [dead, code, security, detected]
 ---
 
 **Monday, January 26, 2026** (Eastern Time)
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [69cea21b](https://github.com/IgorGanapolsky/trading/commit/69cea21b) | docs(ralph): Auto-publish discovery blog post |
 | [27e54267](https://github.com/IgorGanapolsky/trading/commit/27e54267) | fix(hooks): Align Claude Code hooks with official docum |
 | [30c6fb4d](https://github.com/IgorGanapolsky/trading/commit/30c6fb4d) | docs(ralph): Auto-publish discovery blog post |
 | [11741282](https://github.com/IgorGanapolsky/trading/commit/11741282) | fix(workflow): Use 30K secret names for iron condor - C |
 | [4b52f395](https://github.com/IgorGanapolsky/trading/commit/4b52f395) | docs(ralph): Auto-publish discovery blog post |
-| [703bdbf7](https://github.com/IgorGanapolsky/trading/commit/703bdbf7) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
