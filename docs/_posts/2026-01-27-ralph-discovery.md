@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-27 07:52:59
+title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
+date: 2026-01-27 09:22:38
 categories: [engineering, lessons-learned, ai-trading]
-tags: [history, call, finding, asymmetric]
+tags: [detected, dead, issues, code]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
@@ -11,33 +11,33 @@ tags: [history, call, finding, asymmetric]
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
 
-## LL-309: Iron Condor Optimal Control Research
+## Ralph Proactive Scan Findings
 
-**The Problem:** **Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+**The Problem:** - Dead code detected: true
 
-**What We Did:** - **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
-
-**The Takeaway:** - **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
-
----
-
-## LL-298: Invalid Option Strikes Causing CALL Legs to Fail
-
-**The Problem:** See full details in lesson ll_298_invalid_strikes_call_legs_fail_jan23
-
-**What We Did:** - Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+**What We Did:** Applied targeted fix based on root cause analysis
 
 **The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
-## ---
+## Ralph Proactive Scan Findings
 
-**The Problem:** id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+**The Problem:** - Dead code detected: true
 
-**What We Did:** severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+**What We Did:** Applied targeted fix based on root cause analysis
 
-**The Takeaway:** 1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+**The Takeaway:** Risk reduced and system resilience improved
+
+---
+
+## Ralph Proactive Scan Findings
+
+**The Problem:** - Dead code detected: true
+
+**What We Did:** Applied targeted fix based on root cause analysis
+
+**The Takeaway:** Risk reduced and system resilience improved
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [5852dd21](https://github.com/IgorGanapolsky/trading/commit/5852dd21) | docs(ralph): Auto-publish discovery blog post |
 | [be55c434](https://github.com/IgorGanapolsky/trading/commit/be55c434) | docs(ralph): Auto-publish discovery blog post |
 | [57fd31c6](https://github.com/IgorGanapolsky/trading/commit/57fd31c6) | docs(ralph): Auto-publish discovery blog post |
 | [43103a21](https://github.com/IgorGanapolsky/trading/commit/43103a21) | docs(ralph): Auto-publish discovery blog post |
 | [f54756d3](https://github.com/IgorGanapolsky/trading/commit/f54756d3) | docs(ralph): Auto-publish discovery blog post |
-| [89b15188](https://github.com/IgorGanapolsky/trading/commit/89b15188) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
