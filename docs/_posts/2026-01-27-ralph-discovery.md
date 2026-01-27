@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 14:46:45
+date: 2026-01-27 15:17:55
 categories: [engineering, lessons-learned, ai-trading]
-tags: [put, trade, asymmetric, left-biased]
+tags: [put, trade, trades, left-biased]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["06ee9df"]
-        F2["d148238"]
-        F3["7529d64"]
+        F1["1cdf55d"]
+        F2["60f83b3"]
+        F3["06ee9df"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -141,33 +141,25 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [1cdf55dc](https://github.com/IgorGanapolsky/trading/commit/1cdf55dc) | feat(rag): Upgrade to 2026 ML best practices |
+| ℹ️ INFO | [60f83b32](https://github.com/IgorGanapolsky/trading/commit/60f83b32) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [06ee9df4](https://github.com/IgorGanapolsky/trading/commit/06ee9df4) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d1482384](https://github.com/IgorGanapolsky/trading/commit/d1482384) | feat(blog): Upgrade to 2026 engagement standa |
 | ℹ️ INFO | [7529d64f](https://github.com/IgorGanapolsky/trading/commit/7529d64f) | feat(rlhf): Add LanceDB semantic memory for t |
-| ℹ️ INFO | [daff5251](https://github.com/IgorGanapolsky/trading/commit/daff5251) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [b549464e](https://github.com/IgorGanapolsky/trading/commit/b549464e) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
 
-From commit `d1482384`:
+From commit `1cdf55dc`:
 
 ```python
-Ralph Discovery Blog Publisher - 2026 Edition
-Automatically generates ENGAGING blog posts when Ralph makes discoveries.
-Posts go to GitHub Pages and Dev.to.
-2026 Standards Applied:
-- Mermaid diagrams for technical flows
-- Severity badges (CRITICAL/HIGH/MEDIUM/INFO)
-- Actual code snippets from fixes
-- Trend analysis with metrics
-- Narrative storytelling structure
-import subprocess
-# Severity classification for discoveries
-SEVERITY_BADGES = {
-    "critical": "🔴 CRITICAL",
-    "high": "🟠 HIGH",
-    "medium": "🟡 MEDIUM",
+# Model options - UPGRADED Jan 27, 2026
+# Research: all-MiniLM-L6-v2 only 56% accuracy, e5-small-v2 is 100% Top-5
+# Source: https://supermemory.ai/blog/best-open-source-embedding-models-benchmarked-and-ranked/
+    "fast": "intfloat/e5-small-v2",  # 384 dims, 16ms, 100% Top-5 accuracy
+    "better": "intfloat/e5-base-v2",  # 768 dims, ~80ms
+    "best": "BAAI/bge-base-en-v1.5",  # 768 dims, highest quality
+DEFAULT_MODEL = "fast"  # e5-small-v2 - best speed/accuracy tradeoff
 ```
 
 
