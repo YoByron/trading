@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "Engineering Log: Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-27 09:22:38
+title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
+date: 2026-01-27 11:19:31
 categories: [engineering, lessons-learned, ai-trading]
-tags: [detected, dead, issues, code]
+tags: [left-biased, dead, code, detected]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
@@ -11,13 +11,13 @@ tags: [detected, dead, issues, code]
 Building an autonomous AI trading system means things break. Here's what we discovered, fixed, and learned today.
 
 
-## Ralph Proactive Scan Findings
+## LL-309: Iron Condor Optimal Control Research
 
-**The Problem:** - Dead code detected: true
+**The Problem:** **Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
 
-**What We Did:** Applied targeted fix based on root cause analysis
+**What We Did:** - **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
 
-**The Takeaway:** Risk reduced and system resilience improved
+**The Takeaway:** - **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
 
 ---
 
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [0a1a7aac](https://github.com/IgorGanapolsky/trading/commit/0a1a7aac) | docs(ralph): Auto-publish discovery blog post |
 | [5852dd21](https://github.com/IgorGanapolsky/trading/commit/5852dd21) | docs(ralph): Auto-publish discovery blog post |
 | [be55c434](https://github.com/IgorGanapolsky/trading/commit/be55c434) | docs(ralph): Auto-publish discovery blog post |
 | [57fd31c6](https://github.com/IgorGanapolsky/trading/commit/57fd31c6) | docs(ralph): Auto-publish discovery blog post |
 | [43103a21](https://github.com/IgorGanapolsky/trading/commit/43103a21) | docs(ralph): Auto-publish discovery blog post |
-| [f54756d3](https://github.com/IgorGanapolsky/trading/commit/f54756d3) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
