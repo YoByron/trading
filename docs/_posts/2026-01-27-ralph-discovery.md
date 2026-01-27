@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Engineering Log: LL-309: Iron Condor Optimal Control Rese (+2 more)"
-date: 2026-01-27 01:51:21
+date: 2026-01-27 03:21:17
 categories: [engineering, lessons-learned, ai-trading]
-tags: [code, security, issues, finding]
+tags: [security, finding, code, asymmetric]
 ---
 
 **Tuesday, January 27, 2026** (Eastern Time)
@@ -47,11 +47,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Commit | Description |
 |--------|-------------|
+| [f54756d3](https://github.com/IgorGanapolsky/trading/commit/f54756d3) | docs(ralph): Auto-publish discovery blog post |
 | [89b15188](https://github.com/IgorGanapolsky/trading/commit/89b15188) | docs(ralph): Auto-publish discovery blog post |
 | [0743f769](https://github.com/IgorGanapolsky/trading/commit/0743f769) | docs(ralph): Auto-publish discovery blog post |
 | [62de4992](https://github.com/IgorGanapolsky/trading/commit/62de4992) | docs(ralph): Auto-publish discovery blog post |
 | [9a4f693f](https://github.com/IgorGanapolsky/trading/commit/9a4f693f) | docs(blog): Ralph discovery - docs(ralph): Auto-publish |
-| [39f747eb](https://github.com/IgorGanapolsky/trading/commit/39f747eb) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## Why We Share This
