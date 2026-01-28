@@ -7,7 +7,6 @@ CRITICAL for preventing alpha destruction through fees and sequence risk.
 """
 
 import pytest
-from unittest.mock import MagicMock
 
 from src.risk.capital_efficiency import (
     CapitalEfficiencyCalculator,
@@ -177,17 +176,13 @@ class TestCheckStrategyViability:
     def test_iv_rank_constraint_blocks_strategy(self, calculator):
         """Low IV rank should block premium selling strategies."""
         # Iron condor needs IV rank >= 30
-        viability = calculator.check_strategy_viability(
-            "iron_condor", 30000, iv_rank=15
-        )
+        viability = calculator.check_strategy_viability("iron_condor", 30000, iv_rank=15)
         assert viability.is_viable is False
         assert "IV Rank" in viability.reason
 
     def test_iv_rank_constraint_passes(self, calculator):
         """Sufficient IV rank should allow premium selling."""
-        viability = calculator.check_strategy_viability(
-            "iron_condor", 30000, iv_rank=50
-        )
+        viability = calculator.check_strategy_viability("iron_condor", 30000, iv_rank=50)
         assert viability.is_viable is True
 
 
@@ -265,17 +260,17 @@ class TestGetOptimalStrategy:
 
     def test_iron_condor_for_neutral_30k(self, calculator):
         """$30k neutral outlook should get iron_condor."""
-        result = calculator.get_optimal_strategy_for_capital(
-            30000, market_outlook="neutral"
-        )
+        result = calculator.get_optimal_strategy_for_capital(30000, market_outlook="neutral")
         assert result["optimal_strategy"] == "iron_condor"
 
     def test_bullish_outlook_strategies(self, calculator):
         """Bullish outlook should prefer equity or covered calls."""
-        result = calculator.get_optimal_strategy_for_capital(
-            30000, market_outlook="bullish"
-        )
-        assert result["optimal_strategy"] in ["equity_accumulation", "covered_call", "vertical_spread"]
+        result = calculator.get_optimal_strategy_for_capital(30000, market_outlook="bullish")
+        assert result["optimal_strategy"] in [
+            "equity_accumulation",
+            "covered_call",
+            "vertical_spread",
+        ]
 
     def test_includes_warnings(self, calculator):
         """Result should include warnings."""
