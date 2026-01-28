@@ -530,15 +530,16 @@ class IronCondorStrategy:
                     # The actual credit will depend on market conditions
                     # Using market order (no limit_price) lets the market determine credit
                     try:
+                        from alpaca.trading.enums import TimeInForce
                         from alpaca.trading.requests import MarketOrderRequest
 
                         # Submit as market MLeg order - all 4 legs fill together or not at all
-                        # NOTE: TimeInForce not supported for options MLeg orders (Alpaca constraint)
-                        # Error 42210000: "order_time_in_force provided not supported for options trading"
+                        # time_in_force is REQUIRED by SDK even for options (DAY is standard)
                         order_req = MarketOrderRequest(
                             qty=1,
                             order_class=OrderClass.MLEG,
                             legs=option_legs,
+                            time_in_force=TimeInForce.DAY,
                         )
 
                         logger.info("🚀 Submitting MLeg iron condor order...")
