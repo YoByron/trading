@@ -11,9 +11,7 @@ import pytest
 import sqlite3
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from src.orchestrator.checkpoint import (
     PipelineCheckpoint,
@@ -252,6 +250,7 @@ class TestPipelineCheckpointer:
 
     def test_handles_dataclass_context(self, checkpointer):
         """Should serialize dataclass context."""
+
         @dataclass
         class MockContext:
             ticker: str
