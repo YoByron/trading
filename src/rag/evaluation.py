@@ -256,7 +256,9 @@ class RAGEvaluator:
         relevant_in_top_k = sum(1 for doc in top_k if doc in relevant_set)
         return relevant_in_top_k / len(relevant_set)
 
-    def reciprocal_rank(self, retrieved: list[str], relevant: list[str]) -> tuple[float, Optional[int]]:
+    def reciprocal_rank(
+        self, retrieved: list[str], relevant: list[str]
+    ) -> tuple[float, Optional[int]]:
         """
         Calculate Reciprocal Rank.
 

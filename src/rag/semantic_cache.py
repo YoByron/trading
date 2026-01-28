@@ -18,7 +18,6 @@ CEO Directive: Reduce Vertex AI costs via semantic caching
 import hashlib
 import json
 import logging
-import os
 import pickle
 import threading
 import time
@@ -26,7 +25,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -101,9 +100,7 @@ class CacheStats:
             "uptime_seconds": round(uptime_seconds, 2),
             "uptime_hours": round(uptime_seconds / 3600, 2),
             "queries_per_hour": (
-                round(self.total_queries / (uptime_seconds / 3600), 2)
-                if uptime_seconds > 0
-                else 0
+                round(self.total_queries / (uptime_seconds / 3600), 2) if uptime_seconds > 0 else 0
             ),
             "last_updated": datetime.now(timezone.utc).isoformat(),
         }
@@ -308,7 +305,7 @@ class SemanticCache:
                 oldest_key = next(iter(self._cache))
                 del self._cache[oldest_key]
                 self._stats.evictions += 1
-                logger.debug(f"Cache eviction: removed oldest entry")
+                logger.debug("Cache eviction: removed oldest entry")
 
             # Create and store entry
             entry = CacheEntry(

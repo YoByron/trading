@@ -70,7 +70,7 @@ def print_report(report: EvaluationReport, verbose: bool = False) -> None:
         print("\n--- PER-QUERY RESULTS ---")
         for qr in report.query_results:
             status = "[OK]" if qr.recall_at_k >= 0.5 else "[MISS]"
-            print(f"\n{status} Query: \"{qr.query}\"")
+            print(f'\n{status} Query: "{qr.query}"')
             print(f"    Expected: {qr.expected_ids}")
             print(f"    Retrieved: {qr.retrieved_ids[:5]}")
             print(f"    Precision@{qr.k}: {qr.precision_at_k:.3f}")
@@ -203,9 +203,7 @@ Examples:
 
     if report.mrr < args.threshold_mrr:
         if not args.json:
-            print(
-                f"\n[FAIL] MRR ({report.mrr:.4f}) below threshold ({args.threshold_mrr})"
-            )
+            print(f"\n[FAIL] MRR ({report.mrr:.4f}) below threshold ({args.threshold_mrr})")
         exit_code = 1
 
     if exit_code == 0 and not args.json:
