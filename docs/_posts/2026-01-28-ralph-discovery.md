@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 10:28:13
+title: "🟠 HIGH LL-317: CI Scripts Failing + Orphan (+2 more)"
+date: 2026-01-28 11:26:20
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trades, backup, put, finding]
+tags: [state, spy, security, backup]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D1["🟢 LL-318: Claude "]
+        D2["🟢 Ralph Proactive"]
+        D3["🟠 LL-317: CI Scri"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["bb153d6"]
-        F2["2359da2"]
-        F3["fd7af54"]
+        F1["ed2ffb5"]
+        F2["bb153d6"]
+        F3["2359da2"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -59,7 +59,7 @@ flowchart LR
 ---
 
 
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## 🟠 HIGH LL-317: CI Scripts Failing + Orphan Positions Blocking Trades
 
 ### 🚨 What Went Wrong
 
@@ -68,52 +68,24 @@ flowchart LR
 
 ### 🔬 Root Cause
 
-```python
+`manage_iron_condor_positions.py` imported from `src.utils.alpaca_client`: ```python from src.utils.alpaca_client import get_alpaca_credentials ``` But CI only installs `alpaca-py`, not the full `src` package. Three positions left over from Jan 22 crisis: - SPY260227C00730000: +1 (Long Call) - SPY26
 
 
 ### ✅ How We Fixed It
 
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+Rewrote script to iterate through all option positions and close each: ```python option_positions = [pos for pos in positions if is_option(pos.symbol)] for pos in option_positions: client.close_position(pos.symbol) ``` 1. **CI-First Design**: Scripts should get credentials from env vars, not local modules 2. **Position Cleanup Automation**: Orphan positions should be detected and cleaned automatically 3. **Daily Position Audit**: Scheduled workflow to verify position structure is valid 1. Merge 
 
 
 ### 💻 The Fix
 
 ```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+from src.utils.alpaca_client import get_alpaca_credentials
 ```
 
 
 ### 📈 Impact
 
 Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
-
-### 🚨 What Went Wrong
-
-**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
-
-
-### 🔬 Root Cause
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
-
-
-### ✅ How We Fixed It
-
-- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
-
-
-### 📈 Impact
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
 
 ---
 
@@ -147,17 +119,35 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
+## ℹ️ INFO Ralph Proactive Scan Findings
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### ✅ How We Fixed It
+
+Applied targeted fix based on root cause analysis.
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [ed2ffb54](https://github.com/IgorGanapolsky/trading/commit/ed2ffb54) | docs(ralph): Auto-publish discovery blog post |
 | 🟠 HIGH | [bb153d60](https://github.com/IgorGanapolsky/trading/commit/bb153d60) | fix(ci): Resolve lint errors and fixture impo |
 | ℹ️ INFO | [2359da25](https://github.com/IgorGanapolsky/trading/commit/2359da25) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [fd7af546](https://github.com/IgorGanapolsky/trading/commit/fd7af546) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [e24e6f33](https://github.com/IgorGanapolsky/trading/commit/e24e6f33) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [fb8bf4cb](https://github.com/IgorGanapolsky/trading/commit/fb8bf4cb) | chore(ralph): CI iteration ✅ |
 
 
 ### 💻 Featured Code Change
