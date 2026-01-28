@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 01:22:41
+date: 2026-01-28 01:51:09
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trade, put, scripts, asymmetric]
+tags: [iron, trade, asymmetric, state]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["fc9dc97"]
-        F2["910c9bd"]
-        F3["ecd8293"]
+        F1["ed96582"]
+        F2["69e61fc"]
+        F3["fc9dc97"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,33 +153,33 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [ed96582f](https://github.com/IgorGanapolsky/trading/commit/ed96582f) | feat(rag): Add semantic caching and evaluatio |
+| ℹ️ INFO | [69e61fc6](https://github.com/IgorGanapolsky/trading/commit/69e61fc6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [fc9dc979](https://github.com/IgorGanapolsky/trading/commit/fc9dc979) | feat(skills): Add /publish-blog skill and /de |
 | ℹ️ INFO | [910c9bd6](https://github.com/IgorGanapolsky/trading/commit/910c9bd6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [ecd82930](https://github.com/IgorGanapolsky/trading/commit/ecd82930) | fix(system): Consolidate duplicates, add resi |
-| ℹ️ INFO | [9ecf0348](https://github.com/IgorGanapolsky/trading/commit/9ecf0348) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [45ffff43](https://github.com/IgorGanapolsky/trading/commit/45ffff43) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
 
-From commit `fc9dc979`:
+From commit `ed96582f`:
 
 ```python
 #!/usr/bin/env python3
-"""
-Publish blog posts to GitHub Pages and Dev.to.
+"""RAG Evaluation Script.
+
+Runs evaluation queries against the RAG system and generates a report.
 
 Usage:
-    python publish_blog.py "Topic title here"
-    python publish_blog.py  # Auto-generates from recent context
+    python scripts/evaluate_rag.py              # Run with defaults (k=5)
+    python scripts/evaluate_rag.py --k 10       # Top 10 results
+    python scripts/evaluate_rag.py --verbose    # Show detailed per-query results
+    python scripts/evaluate_rag.py --save       # Save report to JSON
+
+Created: January 28, 2026
 """
 
-import json
-import os
-import re
-import subprocess
-import sys
-from datetime import datetime
+import argparse
 ```
 
 
