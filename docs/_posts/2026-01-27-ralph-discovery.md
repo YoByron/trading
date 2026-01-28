@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-309: Iron Condor Optimal Control (+2 more)"
-date: 2026-01-27 22:35:59
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-27 23:04:09
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, asymmetric, iron, code]
+tags: [trades, trade, call, condor]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 Ralph Proactive"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟠 ---"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["cd71541"]
-        F2["656ab66"]
-        F3["acf8fc8"]
+        F1["67ce60c"]
+        F2["2542e55"]
+        F3["cd71541"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,13 +51,66 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 2 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 1 |
 
 
 ---
 
+
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### 🔬 Root Cause
+
+```python
+
+
+### ✅ How We Fixed It
+
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
+## 🟠 HIGH ---
+
+### 🚨 What Went Wrong
+
+id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+
+### ✅ How We Fixed It
+
+severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+
+### 📈 Impact
+
+1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
 
 ## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
 
@@ -82,53 +135,17 @@ flowchart LR
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [67ce60c9](https://github.com/IgorGanapolsky/trading/commit/67ce60c9) | docs(blog): Ralph discovery - docs(ralph): Au |
+| ℹ️ INFO | [2542e55c](https://github.com/IgorGanapolsky/trading/commit/2542e55c) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [cd715410](https://github.com/IgorGanapolsky/trading/commit/cd715410) | chore(ralph): Record proactive scan findings |
 | ℹ️ INFO | [656ab667](https://github.com/IgorGanapolsky/trading/commit/656ab667) | chore(ralph): Update workflow health dashboar |
 | ℹ️ INFO | [acf8fc87](https://github.com/IgorGanapolsky/trading/commit/acf8fc87) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [617673ed](https://github.com/IgorGanapolsky/trading/commit/617673ed) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [4c59add4](https://github.com/IgorGanapolsky/trading/commit/4c59add4) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
