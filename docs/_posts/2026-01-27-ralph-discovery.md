@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 23:04:09
+date: 2026-01-27 23:36:13
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trades, trade, call, condor]
+tags: [left-biased, condor, history, trade]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["67ce60c"]
-        F2["2542e55"]
-        F3["cd71541"]
+        F1["1311ef8"]
+        F2["67ce60c"]
+        F3["2542e55"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -141,23 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [1311ef8e](https://github.com/IgorGanapolsky/trading/commit/1311ef8e) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [67ce60c9](https://github.com/IgorGanapolsky/trading/commit/67ce60c9) | docs(blog): Ralph discovery - docs(ralph): Au |
 | ℹ️ INFO | [2542e55c](https://github.com/IgorGanapolsky/trading/commit/2542e55c) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [cd715410](https://github.com/IgorGanapolsky/trading/commit/cd715410) | chore(ralph): Record proactive scan findings |
 | ℹ️ INFO | [656ab667](https://github.com/IgorGanapolsky/trading/commit/656ab667) | chore(ralph): Update workflow health dashboar |
-| ℹ️ INFO | [acf8fc87](https://github.com/IgorGanapolsky/trading/commit/acf8fc87) | docs(ralph): Auto-publish discovery blog post |
-
-
-### 💻 Featured Code Change
-
-From commit `67bba583`:
-
-```python
-        puts = [leg for leg in legs if leg["type"] == "P"]
-        calls = [leg for leg in legs if leg["type"] == "C"]
-        # Simulate gate pipeline with SPY context
-        _ctx = TradeContext(ticker="SPY")  # noqa: F841
-```
 
 
 ## 🎯 Key Takeaways
