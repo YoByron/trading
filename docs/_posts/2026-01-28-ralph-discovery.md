@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 00:56:59
+date: 2026-01-28 01:16:36
 categories: [engineering, lessons-learned, ai-trading]
-tags: [finding, condor, trade, put]
+tags: [asymmetric, scripts, condor, finding]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟢 LL-277: Iron Co"]
-        D3["🟠 LL-298: Invalid"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟢 LL-318: Claude "]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["45ffff4"]
-        F2["5698fcf"]
-        F3["5e12656"]
+        F1["ecd8293"]
+        F2["9ecf034"]
+        F3["45ffff4"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -117,21 +117,33 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
 ### 🚨 What Went Wrong
 
-**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
 
 
 ### ✅ How We Fixed It
 
-- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
+
+
+### 💻 The Fix
+
+```python
+{
+  "type": "command",
+  "command": "./my-hook.sh",
+  "async": true,
+  "timeout": 30
+}
+```
 
 
 ### 📈 Impact
 
-|-------------------|----------| | **10-15 delta** | **86%** |
+Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
 
 ---
 
@@ -141,33 +153,33 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [ecd82930](https://github.com/IgorGanapolsky/trading/commit/ecd82930) | fix(system): Consolidate duplicates, add resi |
+| ℹ️ INFO | [9ecf0348](https://github.com/IgorGanapolsky/trading/commit/9ecf0348) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [45ffff43](https://github.com/IgorGanapolsky/trading/commit/45ffff43) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [5698fcf5](https://github.com/IgorGanapolsky/trading/commit/5698fcf5) | fix(health): Add critical checks for IC compl |
 | ℹ️ INFO | [5e12656f](https://github.com/IgorGanapolsky/trading/commit/5e12656f) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [1311ef8e](https://github.com/IgorGanapolsky/trading/commit/1311ef8e) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [67ce60c9](https://github.com/IgorGanapolsky/trading/commit/67ce60c9) | docs(blog): Ralph discovery - docs(ralph): Au |
 
 
 ### 💻 Featured Code Change
 
-From commit `5698fcf5`:
+From commit `ecd82930`:
 
 ```python
-Semantic Memory System v2 - Enhanced RAG/ML Infrastructure
-IMPROVEMENTS OVER v1:
-4. Upgraded embedding model option (e5-small-v2)
-5. Active RLHF feedback loop (auto-reindex on feedback)
-6. OpenTelemetry observability (latency, success rates)
-7. Query metrics logging (precision/recall tracking)
-8. Vertex AI bidirectional sync support
-Architecture (Jan 2026 Best Practices):
-LOCAL ONLY - Never commit to repository
+#!/usr/bin/env python3
+"""
+Unified Position Closing Script
 
-  python semantic-memory-v2.py --sync               # Sync to Vertex AI
-import json
-import re
-import hashlib
-from typing import List, Dict, Any, Optional, Tuple
+Consolidates the functionality of multiple close scripts:
+- close_all_positions.py (emergency-all mode)
+- close_excess_spreads.py (excess-only mode)
+- close_all_options.py (options-only mode)
+- close_shorts_first.py (shorts-first mode)
+
+Usage:
+    python scripts/close_positions.py --mode emergency-all
+    python scripts/close_positions.py --mode excess-only
+    python scripts/close_positions.py --mode options-only
+    python scripts/close_positions.py --mode shorts-first
 ```
 
 
