@@ -1,15 +1,14 @@
 #!/bin/bash
-# Capture user feedback (thumbs up/down) - FULLY AUTONOMOUS with LanceDB
-# No human review required - system logs and learns automatically
+# Capture user feedback (thumbs up/down) - ENHANCED with action tracking
 #
-# UPGRADED Jan 27, 2026: Added LanceDB semantic memory (from Random-Timer)
-# - Records feedback WITH context (what went wrong)
-# - Embeds semantically for retrieval
-# - Auto-reindexes on new feedback
-# - Provides session context from negative patterns
+# UPGRADED Jan 28, 2026: Now captures WHAT Claude did, not just user message
+# - Reads last action from session state
+# - Includes files modified, tools used
+# - Provides meaningful learning summary
 
 FEEDBACK_DIR="$CLAUDE_PROJECT_DIR/data/feedback"
 SEMANTIC_MEMORY="$CLAUDE_PROJECT_DIR/.claude/scripts/feedback/semantic-memory-v2.py"
+SESSION_STATE="$CLAUDE_PROJECT_DIR/data/feedback/session_state.json"
 mkdir -p "$FEEDBACK_DIR"
 
 DATE=$(date +%Y-%m-%d)
@@ -32,8 +31,30 @@ fi
 
 # Only record if feedback detected
 if [ "$FEEDBACK_TYPE" != "neutral" ]; then
-    # Log to legacy file (backward compatibility)
-    echo "{\"timestamp\": \"$DATE $TIME\", \"type\": \"$FEEDBACK_TYPE\", \"score\": $FEEDBACK_SCORE}" >> "$FEEDBACK_FILE"
+    # Get last action context from session state (if available)
+    LAST_ACTION="unknown"
+    LAST_FILES=""
+    LAST_TOOL=""
+    LAST_SUMMARY=""
+
+    if [ -f "$SESSION_STATE" ]; then
+        LAST_ACTION=$(jq -r '.last_action // "unknown"' "$SESSION_STATE" 2>/dev/null)
+        LAST_FILES=$(jq -r '.last_files // ""' "$SESSION_STATE" 2>/dev/null)
+        LAST_TOOL=$(jq -r '.last_tool // ""' "$SESSION_STATE" 2>/dev/null)
+        LAST_SUMMARY=$(jq -r '.last_summary // ""' "$SESSION_STATE" 2>/dev/null)
+    fi
+
+    # Build rich context
+    RICH_CONTEXT="Action: ${LAST_ACTION}
+Tool: ${LAST_TOOL}
+Files: ${LAST_FILES}
+Summary: ${LAST_SUMMARY}
+User said: ${USER_MESSAGE:0:200}"
+
+    # Log to legacy file with rich context
+    cat >> "$FEEDBACK_FILE" <<EOF
+{"timestamp": "$DATE $TIME", "type": "$FEEDBACK_TYPE", "score": $FEEDBACK_SCORE, "action": "$LAST_ACTION", "tool": "$LAST_TOOL", "files": "$LAST_FILES", "summary": "$LAST_SUMMARY", "user_message": "${USER_MESSAGE:0:200}"}
+EOF
 
     # Update legacy stats
     STATS_FILE="$FEEDBACK_DIR/stats.json"
@@ -70,24 +91,47 @@ if [ "$FEEDBACK_TYPE" != "neutral" ]; then
 }
 EOF
 
-    # NEW: Record to LanceDB semantic memory AUTOMATICALLY
+    # Record to LanceDB semantic memory with rich context
     LANCE_VENV="$CLAUDE_PROJECT_DIR/.claude/scripts/feedback/venv/bin/python3"
-    if [ -f "$SEMANTIC_MEMORY" ]; then
-        # Use venv if available, fallback to system python
-        if [ -f "$LANCE_VENV" ]; then
-            PYTHON="$LANCE_VENV"
-        else
-            PYTHON="python3"
-        fi
+    if [ -f "$SEMANTIC_MEMORY" ] && [ -x "$LANCE_VENV" ]; then
+        echo "$RICH_CONTEXT" | "$LANCE_VENV" "$SEMANTIC_MEMORY" --add-feedback --feedback-type "$FEEDBACK_TYPE" 2>/dev/null
 
-        # Auto-record feedback with context from user message
-        CONTEXT="User said: ${USER_MESSAGE:0:200}"
-        echo "$CONTEXT" | "$PYTHON" "$SEMANTIC_MEMORY" --add-feedback --feedback-type "$FEEDBACK_TYPE" 2>/dev/null
+        # Auto-extract tags from context
+        TAGS=""
+        if echo "$LAST_ACTION" | grep -qiE "fix|repair|restore"; then TAGS="$TAGS,fix"; fi
+        if echo "$LAST_ACTION" | grep -qiE "create|add|implement"; then TAGS="$TAGS,create"; fi
+        if echo "$LAST_ACTION" | grep -qiE "delete|remove|clean"; then TAGS="$TAGS,delete"; fi
+        if echo "$LAST_TOOL" | grep -qiE "Edit|Write"; then TAGS="$TAGS,file-edit"; fi
+        if echo "$LAST_TOOL" | grep -qiE "Bash"; then TAGS="$TAGS,bash"; fi
+        if echo "$LAST_FILES" | grep -qiE "test"; then TAGS="$TAGS,testing"; fi
+        if echo "$LAST_FILES" | grep -qiE "\.py"; then TAGS="$TAGS,python"; fi
 
+        # Display meaningful feedback summary
+        echo ""
+        echo "═══════════════════════════════════════════════════════════"
         if [ "$FEEDBACK_TYPE" = "positive" ]; then
-            echo "✅ Thumbs up recorded to LanceDB"
+            echo "✅ POSITIVE FEEDBACK RECORDED"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "📋 What Claude did:    ${LAST_ACTION:-unknown}"
+            echo "🔧 Tool used:          ${LAST_TOOL:-unknown}"
+            echo "📁 Files affected:     ${LAST_FILES:-none}"
+            echo "💡 Learning:           This approach worked well"
+            if [ -n "$TAGS" ]; then
+                echo "🏷️  Tags:              ${TAGS#,}"
+            fi
         else
-            echo "🚨 Thumbs down recorded to LanceDB - Claude should ask what went wrong"
+            echo "🚨 NEGATIVE FEEDBACK RECORDED"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "📋 What Claude did:    ${LAST_ACTION:-unknown}"
+            echo "🔧 Tool used:          ${LAST_TOOL:-unknown}"
+            echo "📁 Files affected:     ${LAST_FILES:-none}"
+            echo "⚠️  Learning:           Avoid this approach in similar situations"
+            if [ -n "$TAGS" ]; then
+                echo "🏷️  Tags:              ${TAGS#,}"
+            fi
+            echo ""
+            echo "❓ What went wrong? (Claude should ask for details)"
         fi
+        echo "═══════════════════════════════════════════════════════════"
     fi
 fi
