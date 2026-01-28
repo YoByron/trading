@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 02:55:26
+date: 2026-01-28 02:56:24
 categories: [engineering, lessons-learned, ai-trading]
-tags: [trade, call, iron, critical]
+tags: [iron, put, history, left-biased]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["6d93ec8"]
-        F2["a79c2dd"]
-        F3["3177b4d"]
+        F1["3329d60"]
+        F2["6d93ec8"]
+        F3["a79c2dd"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [3329d603](https://github.com/IgorGanapolsky/trading/commit/3329d603) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [6d93ec8c](https://github.com/IgorGanapolsky/trading/commit/6d93ec8c) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a79c2dd5](https://github.com/IgorGanapolsky/trading/commit/a79c2dd5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [3177b4db](https://github.com/IgorGanapolsky/trading/commit/3177b4db) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [5e713b34](https://github.com/IgorGanapolsky/trading/commit/5e713b34) | fix(options): Remove TimeInForce.DAY from MLe |
-| ℹ️ INFO | [640840df](https://github.com/IgorGanapolsky/trading/commit/640840df) | feat(ml): Add Lag-Llama time series forecasti |
 
 
 ### 💻 Featured Code Change
