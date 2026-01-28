@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 01:16:36
+date: 2026-01-28 01:22:41
 categories: [engineering, lessons-learned, ai-trading]
-tags: [asymmetric, scripts, condor, finding]
+tags: [trade, put, scripts, asymmetric]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["ecd8293"]
-        F2["9ecf034"]
-        F3["45ffff4"]
+        F1["fc9dc97"]
+        F2["910c9bd"]
+        F3["ecd8293"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,33 +153,33 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [fc9dc979](https://github.com/IgorGanapolsky/trading/commit/fc9dc979) | feat(skills): Add /publish-blog skill and /de |
+| ℹ️ INFO | [910c9bd6](https://github.com/IgorGanapolsky/trading/commit/910c9bd6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [ecd82930](https://github.com/IgorGanapolsky/trading/commit/ecd82930) | fix(system): Consolidate duplicates, add resi |
 | ℹ️ INFO | [9ecf0348](https://github.com/IgorGanapolsky/trading/commit/9ecf0348) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [45ffff43](https://github.com/IgorGanapolsky/trading/commit/45ffff43) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [5698fcf5](https://github.com/IgorGanapolsky/trading/commit/5698fcf5) | fix(health): Add critical checks for IC compl |
-| ℹ️ INFO | [5e12656f](https://github.com/IgorGanapolsky/trading/commit/5e12656f) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
 
-From commit `ecd82930`:
+From commit `fc9dc979`:
 
 ```python
 #!/usr/bin/env python3
 """
-Unified Position Closing Script
-
-Consolidates the functionality of multiple close scripts:
-- close_all_positions.py (emergency-all mode)
-- close_excess_spreads.py (excess-only mode)
-- close_all_options.py (options-only mode)
-- close_shorts_first.py (shorts-first mode)
+Publish blog posts to GitHub Pages and Dev.to.
 
 Usage:
-    python scripts/close_positions.py --mode emergency-all
-    python scripts/close_positions.py --mode excess-only
-    python scripts/close_positions.py --mode options-only
-    python scripts/close_positions.py --mode shorts-first
+    python publish_blog.py "Topic title here"
+    python publish_blog.py  # Auto-generates from recent context
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime
 ```
 
 
