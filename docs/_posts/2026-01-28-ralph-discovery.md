@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 02:56:24
+date: 2026-01-28 03:07:33
 categories: [engineering, lessons-learned, ai-trading]
-tags: [iron, put, history, left-biased]
+tags: [options, trades, condor, trade]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D2["🟢 LL-277: Iron Co"]
+        D3["🟠 LL-298: Invalid"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["3329d60"]
-        F2["6d93ec8"]
-        F3["a79c2dd"]
+        F1["616c777"]
+        F2["3329d60"]
+        F3["6d93ec8"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -117,33 +117,21 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
+## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
 ### 🚨 What Went Wrong
 
-Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
+**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
 
 
 ### ✅ How We Fixed It
 
-Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
-
-
-### 💻 The Fix
-
-```python
-{
-  "type": "command",
-  "command": "./my-hook.sh",
-  "async": true,
-  "timeout": 30
-}
-```
+- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
 
 
 ### 📈 Impact
 
-Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
+|-------------------|----------| | **10-15 delta** | **86%** |
 
 ---
 
@@ -153,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [616c7774](https://github.com/IgorGanapolsky/trading/commit/616c7774) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [3329d603](https://github.com/IgorGanapolsky/trading/commit/3329d603) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [6d93ec8c](https://github.com/IgorGanapolsky/trading/commit/6d93ec8c) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a79c2dd5](https://github.com/IgorGanapolsky/trading/commit/a79c2dd5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [3177b4db](https://github.com/IgorGanapolsky/trading/commit/3177b4db) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [5e713b34](https://github.com/IgorGanapolsky/trading/commit/5e713b34) | fix(options): Remove TimeInForce.DAY from MLe |
 
 
 ### 💻 Featured Code Change
