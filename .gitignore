@@ -115,3 +115,9 @@ data/lancedb_feedback/
 data/chroma/
 data/chroma_db/
 .trade_lock
+.envrc
+.claude/memory/feedback/
+.claude/memory/lancedb/
+.claude/memory/model_cache/
+.claude/memory/chroma_db/
+.claude/scripts/feedback/venv/
