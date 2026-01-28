@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 02:37:41
+date: 2026-01-28 02:44:06
 categories: [engineering, lessons-learned, ai-trading]
-tags: [backup, put, call, history]
+tags: [history, trades, put, finding]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["5e713b3"]
-        F2["640840d"]
-        F3["81573ce"]
+        F1["3177b4d"]
+        F2["5e713b3"]
+        F3["640840d"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [3177b4db](https://github.com/IgorGanapolsky/trading/commit/3177b4db) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [5e713b34](https://github.com/IgorGanapolsky/trading/commit/5e713b34) | fix(options): Remove TimeInForce.DAY from MLe |
 | ℹ️ INFO | [640840df](https://github.com/IgorGanapolsky/trading/commit/640840df) | feat(ml): Add Lag-Llama time series forecasti |
 | ℹ️ INFO | [81573cef](https://github.com/IgorGanapolsky/trading/commit/81573cef) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [4bb655ba](https://github.com/IgorGanapolsky/trading/commit/4bb655ba) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [ed96582f](https://github.com/IgorGanapolsky/trading/commit/ed96582f) | feat(rag): Add semantic caching and evaluatio |
 
 
 ### 💻 Featured Code Change
