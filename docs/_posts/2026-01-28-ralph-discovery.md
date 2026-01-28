@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
-date: 2026-01-28 13:26:20
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-28 13:56:03
 categories: [engineering, lessons-learned, ai-trading]
-tags: [state, dead, trades, trading]
+tags: [put, condor, scripts, critical]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-318: Claude "]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 LL-316: Paper T"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟢 LL-318: Claude "]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["b0cae61"]
-        F2["51e69e4"]
-        F3["ed2ffb5"]
+        F1["0cc1fda"]
+        F2["b0cae61"]
+        F3["51e69e4"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,13 +51,71 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
+
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### 🔬 Root Cause
+
+```python
+
+
+### ✅ How We Fixed It
+
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
+
+
+### ✅ How We Fixed It
+
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
+
+
+### 📈 Impact
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
+
+---
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -89,61 +147,17 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO LL-316: Paper Trading Blocked by Overly Strict VIX Threshold
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Lowered `VIX_OPTIMAL_MIN` from 15 to 12 in trading_thresholds.py: ```python VIX_OPTIMAL_MIN = 12  # Allow paper trading even with thin premiums ``` Rationale: - Paper trading is for validation, not profit optimization - VIX 12-15 still allows tradeable premiums on SPY - Better to trade with smaller premium than not trade at all during validation - Live trading can use stricter threshold (15) after validation 1. **Paper Trading Override**: Consider adding `PAPER_TRADING_MODE` flag that relaxes en
-
-
-### 💻 The Fix
-
-```python
-if current_vix < RiskThresholds.VIX_OPTIMAL_MIN:
-    return False, f"VIX {current_vix:.2f} < {RiskThresholds.VIX_OPTIMAL_MIN} (premiums too thin)"
-```
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [0cc1fdac](https://github.com/IgorGanapolsky/trading/commit/0cc1fdac) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b0cae614](https://github.com/IgorGanapolsky/trading/commit/b0cae614) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [51e69e4f](https://github.com/IgorGanapolsky/trading/commit/51e69e4f) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [ed2ffb54](https://github.com/IgorGanapolsky/trading/commit/ed2ffb54) | docs(ralph): Auto-publish discovery blog post |
 | 🟠 HIGH | [bb153d60](https://github.com/IgorGanapolsky/trading/commit/bb153d60) | fix(ci): Resolve lint errors and fixture impo |
-| ℹ️ INFO | [2359da25](https://github.com/IgorGanapolsky/trading/commit/2359da25) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
