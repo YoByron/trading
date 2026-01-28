@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-27 19:55:58
+date: 2026-01-27 22:01:00
 categories: [engineering, lessons-learned, ai-trading]
-tags: [left-biased, finding, trades, call]
+tags: [asymmetric, trades, trade, iron]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["4c59add"]
-        F2["8fd0f71"]
-        F3["e3b2c31"]
+        F1["617673e"]
+        F2["4c59add"]
+        F3["8fd0f71"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -141,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [617673ed](https://github.com/IgorGanapolsky/trading/commit/617673ed) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [4c59add4](https://github.com/IgorGanapolsky/trading/commit/4c59add4) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [8fd0f719](https://github.com/IgorGanapolsky/trading/commit/8fd0f719) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [e3b2c317](https://github.com/IgorGanapolsky/trading/commit/e3b2c317) | docs(ralph): Auto-publish discovery blog post |
 | 🟠 HIGH | [67bba583](https://github.com/IgorGanapolsky/trading/commit/67bba583) | fix(lint): Resolve ruff E741 and F841 errors  |
-| ℹ️ INFO | [82ff9e36](https://github.com/IgorGanapolsky/trading/commit/82ff9e36) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
