@@ -180,7 +180,7 @@ def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> b
     Previous bug: Individual close orders destroyed iron condor structure, leaving
     orphan legs that caused losses. MLeg ensures all legs close together or not at all.
     """
-    from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
+    from alpaca.trading.enums import OrderClass, OrderSide
     from alpaca.trading.requests import MarketOrderRequest, OptionLegRequest
 
     logger.info(f"  Closing iron condor expiry {ic['expiry_str']} - Reason: {reason}")

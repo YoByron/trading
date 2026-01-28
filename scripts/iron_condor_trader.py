@@ -475,7 +475,7 @@ class IronCondorStrategy:
             logger.info("Entering LIVE execution block...")
             try:
                 from alpaca.trading.client import TradingClient
-                from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
+                from alpaca.trading.enums import OrderClass, OrderSide
                 from alpaca.trading.requests import OptionLegRequest
                 from src.utils.alpaca_client import get_alpaca_credentials
 
