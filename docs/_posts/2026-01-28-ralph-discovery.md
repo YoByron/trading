@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
-date: 2026-01-28 05:22:14
+title: "ℹ️ INFO LL-309: Iron Condor Optimal Control (+2 more)"
+date: 2026-01-28 07:27:29
 categories: [engineering, lessons-learned, ai-trading]
-tags: [code, vix, range, detected]
+tags: [state, condor, iron, issues]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-318: Claude "]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 LL-310: VIX Tim"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟢 LL-318: Claude "]
+        D3["🟢 Ralph Proactive"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["4123517"]
-        F2["54773a0"]
-        F3["58a8e38"]
+        F1["fb8bf4c"]
+        F2["8bcd9ed"]
+        F3["4123517"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -58,6 +58,29 @@ flowchart LR
 
 ---
 
+
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
+
+
+### ✅ How We Fixed It
+
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
+
+
+### 📈 Impact
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
+
+---
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -107,40 +130,17 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO LL-310: VIX Timing for Iron Condor Entry
-
-### 🚨 What Went Wrong
-
-**Date**: 2026-01-25 **Category**: Strategy / Entry Timing **Status**: RESEARCH
-
-
-### 🔬 Root Cause
-
-1. **High IV = Rich Premium**: IV Rank ≥50% means options are expensive relative to history 2. **Vol Crush Benefit**: When IV drops after entry, position profits faster 3. **Mean Reversion**: VIX tends to spike then revert - enter AFTER spikes, not during - **VIX 15-25**: Optimal range for iron cond
-
-
-### ✅ How We Fixed It
-
-| Parameter | Recommended Range | Our Current Setup | |-----------|------------------|-------------------| | IV Rank | 50-70% (≥70% preferred) | Not tracked |
-
-
-### 📈 Impact
-
-| VIX Level | 15-25 | Not filtered | | DTE | 30-45 days | ✅ 30-45 DTE |
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [fb8bf4cb](https://github.com/IgorGanapolsky/trading/commit/fb8bf4cb) | chore(ralph): CI iteration ✅ |
+| ℹ️ INFO | [8bcd9ed5](https://github.com/IgorGanapolsky/trading/commit/8bcd9ed5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [41235177](https://github.com/IgorGanapolsky/trading/commit/41235177) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [54773a03](https://github.com/IgorGanapolsky/trading/commit/54773a03) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [58a8e389](https://github.com/IgorGanapolsky/trading/commit/58a8e389) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [fc00cad9](https://github.com/IgorGanapolsky/trading/commit/fc00cad9) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [1713f27f](https://github.com/IgorGanapolsky/trading/commit/1713f27f) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
