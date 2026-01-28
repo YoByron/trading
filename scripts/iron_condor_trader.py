@@ -533,10 +533,11 @@ class IronCondorStrategy:
                         from alpaca.trading.requests import MarketOrderRequest
 
                         # Submit as market MLeg order - all 4 legs fill together or not at all
+                        # NOTE: TimeInForce not supported for options MLeg orders (Alpaca constraint)
+                        # Error 42210000: "order_time_in_force provided not supported for options trading"
                         order_req = MarketOrderRequest(
                             qty=1,
                             order_class=OrderClass.MLEG,
-                            time_in_force=TimeInForce.DAY,
                             legs=option_legs,
                         )
 

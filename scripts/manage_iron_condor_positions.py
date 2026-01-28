@@ -209,10 +209,10 @@ def close_iron_condor(client, ic: dict, reason: str, dry_run: bool = False) -> b
 
     try:
         # Submit as MLeg order - all legs close together or not at all
+        # NOTE: TimeInForce not supported for options MLeg orders (Alpaca constraint)
         order_req = MarketOrderRequest(
             qty=1,  # MLeg uses ratio_qty in legs
             order_class=OrderClass.MLEG,
-            time_in_force=TimeInForce.DAY,
             legs=option_legs,
         )
         result = client.submit_order(order_req)
