@@ -6,9 +6,8 @@ catastrophic losses by auto-closing bleeding positions.
 Per LL-281: This is a crisis-prevention component.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.safety.auto_close_bleeding import (
     PositionCloseRecommendation,
