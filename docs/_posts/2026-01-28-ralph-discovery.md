@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-317: CI Scripts Failing + Orphan (+2 more)"
-date: 2026-01-28 14:58:31
+title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
+date: 2026-01-28 15:21:18
 categories: [engineering, lessons-learned, ai-trading]
-tags: [backup, dead, code, call]
+tags: [backup, vix, scripts, range]
 mermaid: true
 ---
 
@@ -19,15 +19,15 @@ flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-318: Claude "]
         D2["🟢 Ralph Proactive"]
-        D3["🟠 LL-317: CI Scri"]
+        D3["🟢 LL-310: VIX Tim"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["a2143bb"]
-        F2["0cc1fda"]
-        F3["b0cae61"]
+        F1["a847c90"]
+        F2["a2143bb"]
+        F3["0cc1fda"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,43 +51,13 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
-
-## 🟠 HIGH LL-317: CI Scripts Failing + Orphan Positions Blocking Trades
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### 🔬 Root Cause
-
-`manage_iron_condor_positions.py` imported from `src.utils.alpaca_client`: ```python from src.utils.alpaca_client import get_alpaca_credentials ``` But CI only installs `alpaca-py`, not the full `src` package. Three positions left over from Jan 22 crisis: - SPY260227C00730000: +1 (Long Call) - SPY26
-
-
-### ✅ How We Fixed It
-
-Rewrote script to iterate through all option positions and close each: ```python option_positions = [pos for pos in positions if is_option(pos.symbol)] for pos in option_positions: client.close_position(pos.symbol) ``` 1. **CI-First Design**: Scripts should get credentials from env vars, not local modules 2. **Position Cleanup Automation**: Orphan positions should be detected and cleaned automatically 3. **Daily Position Audit**: Scheduled workflow to verify position structure is valid 1. Merge 
-
-
-### 💻 The Fix
-
-```python
-from src.utils.alpaca_client import get_alpaca_credentials
-```
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -137,17 +107,40 @@ Risk reduced and system resilience improved.
 
 ---
 
+## ℹ️ INFO LL-310: VIX Timing for Iron Condor Entry
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Strategy / Entry Timing **Status**: RESEARCH
+
+
+### 🔬 Root Cause
+
+1. **High IV = Rich Premium**: IV Rank ≥50% means options are expensive relative to history 2. **Vol Crush Benefit**: When IV drops after entry, position profits faster 3. **Mean Reversion**: VIX tends to spike then revert - enter AFTER spikes, not during - **VIX 15-25**: Optimal range for iron cond
+
+
+### ✅ How We Fixed It
+
+| Parameter | Recommended Range | Our Current Setup | |-----------|------------------|-------------------| | IV Rank | 50-70% (≥70% preferred) | Not tracked |
+
+
+### 📈 Impact
+
+| VIX Level | 15-25 | Not filtered | | DTE | 30-45 days | ✅ 30-45 DTE |
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [a847c90d](https://github.com/IgorGanapolsky/trading/commit/a847c90d) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a2143bbe](https://github.com/IgorGanapolsky/trading/commit/a2143bbe) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [0cc1fdac](https://github.com/IgorGanapolsky/trading/commit/0cc1fdac) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b0cae614](https://github.com/IgorGanapolsky/trading/commit/b0cae614) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [51e69e4f](https://github.com/IgorGanapolsky/trading/commit/51e69e4f) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [ed2ffb54](https://github.com/IgorGanapolsky/trading/commit/ed2ffb54) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
