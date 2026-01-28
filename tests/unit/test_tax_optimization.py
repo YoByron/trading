@@ -11,8 +11,7 @@ CRITICAL for regulatory compliance and tax efficiency.
 """
 
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from datetime import datetime
 
 from src.utils.tax_optimization import (
     TaxLot,
@@ -280,11 +279,13 @@ class TestPDTRule:
         """Should trigger PDT at 4+ day trades in 5 days."""
         # Simulate 4 day trades
         for i in range(4):
-            optimizer.day_trades.append({
-                "symbol": f"SPY{i}",
-                "date": datetime.now().date(),
-                "trade_id": f"trade-{i}",
-            })
+            optimizer.day_trades.append(
+                {
+                    "symbol": f"SPY{i}",
+                    "date": datetime.now().date(),
+                    "trade_id": f"trade-{i}",
+                }
+            )
 
         # With low equity
         status = optimizer.check_pdt_status(current_equity=10000.0)
@@ -297,11 +298,13 @@ class TestPDTRule:
         """Should be compliant with $25k+ equity even with day trades."""
         # Simulate 4 day trades
         for i in range(4):
-            optimizer.day_trades.append({
-                "symbol": f"SPY{i}",
-                "date": datetime.now().date(),
-                "trade_id": f"trade-{i}",
-            })
+            optimizer.day_trades.append(
+                {
+                    "symbol": f"SPY{i}",
+                    "date": datetime.now().date(),
+                    "trade_id": f"trade-{i}",
+                }
+            )
 
         status = optimizer.check_pdt_status(current_equity=30000.0)
         assert status["is_pdt"] is True
@@ -383,11 +386,13 @@ class TestTaxRecommendations:
         """Should include PDT warnings in recommendations."""
         # Trigger PDT status
         for i in range(4):
-            optimizer.day_trades.append({
-                "symbol": f"SPY{i}",
-                "date": datetime.now().date(),
-                "trade_id": f"trade-{i}",
-            })
+            optimizer.day_trades.append(
+                {
+                    "symbol": f"SPY{i}",
+                    "date": datetime.now().date(),
+                    "trade_id": f"trade-{i}",
+                }
+            )
 
         recommendations = optimizer.get_tax_optimization_recommendations(
             current_equity=10000.0,
@@ -505,32 +510,36 @@ class TestTaxSummary:
     def test_summary_with_events(self, optimizer):
         """Should summarize tax events correctly."""
         # Add some events
-        optimizer.tax_events.append(TaxEvent(
-            symbol="SPY",
-            sale_date=datetime.now(),
-            sale_price=650.0,
-            quantity=10.0,
-            cost_basis=6000.0,
-            holding_period_days=30,
-            gain_loss=500.0,
-            is_long_term=False,
-            is_wash_sale=False,
-            wash_sale_adjustment=0.0,
-            trade_id="test-1",
-        ))
-        optimizer.tax_events.append(TaxEvent(
-            symbol="QQQ",
-            sale_date=datetime.now(),
-            sale_price=400.0,
-            quantity=10.0,
-            cost_basis=5000.0,
-            holding_period_days=400,
-            gain_loss=-1000.0,
-            is_long_term=True,
-            is_wash_sale=False,
-            wash_sale_adjustment=0.0,
-            trade_id="test-2",
-        ))
+        optimizer.tax_events.append(
+            TaxEvent(
+                symbol="SPY",
+                sale_date=datetime.now(),
+                sale_price=650.0,
+                quantity=10.0,
+                cost_basis=6000.0,
+                holding_period_days=30,
+                gain_loss=500.0,
+                is_long_term=False,
+                is_wash_sale=False,
+                wash_sale_adjustment=0.0,
+                trade_id="test-1",
+            )
+        )
+        optimizer.tax_events.append(
+            TaxEvent(
+                symbol="QQQ",
+                sale_date=datetime.now(),
+                sale_price=400.0,
+                quantity=10.0,
+                cost_basis=5000.0,
+                holding_period_days=400,
+                gain_loss=-1000.0,
+                is_long_term=True,
+                is_wash_sale=False,
+                wash_sale_adjustment=0.0,
+                trade_id="test-2",
+            )
+        )
 
         summary = optimizer.get_tax_summary()
         assert summary["total_trades"] == 2
