@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-28 19:58:00
+title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
+date: 2026-01-28 22:13:57
 categories: [engineering, lessons-learned, ai-trading]
-tags: [iron, finding, scripts, history]
+tags: [security, scripts, detected, vix]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D1["🟢 LL-318: Claude "]
+        D2["🟢 Ralph Proactive"]
+        D3["🟢 LL-310: VIX Tim"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["d2960fd"]
-        F2["719370f"]
-        F3["3fd49d0"]
+        F1["84ade80"]
+        F2["d2960fd"]
+        F3["719370f"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,71 +51,13 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
-
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### 🔬 Root Cause
-
-```python
-
-
-### ✅ How We Fixed It
-
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-
-### 💻 The Fix
-
-```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
-```
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
-
-### 🚨 What Went Wrong
-
-**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
-
-
-### 🔬 Root Cause
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
-
-
-### ✅ How We Fixed It
-
-- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
-
-
-### 📈 Impact
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
-
----
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -147,36 +89,58 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
+## ℹ️ INFO Ralph Proactive Scan Findings
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### ✅ How We Fixed It
+
+Applied targeted fix based on root cause analysis.
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
+## ℹ️ INFO LL-310: VIX Timing for Iron Condor Entry
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Strategy / Entry Timing **Status**: RESEARCH
+
+
+### 🔬 Root Cause
+
+1. **High IV = Rich Premium**: IV Rank ≥50% means options are expensive relative to history 2. **Vol Crush Benefit**: When IV drops after entry, position profits faster 3. **Mean Reversion**: VIX tends to spike then revert - enter AFTER spikes, not during - **VIX 15-25**: Optimal range for iron cond
+
+
+### ✅ How We Fixed It
+
+| Parameter | Recommended Range | Our Current Setup | |-----------|------------------|-------------------| | IV Rank | 50-70% (≥70% preferred) | Not tracked |
+
+
+### 📈 Impact
+
+| VIX Level | 15-25 | Not filtered | | DTE | 30-45 days | ✅ 30-45 DTE |
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [84ade807](https://github.com/IgorGanapolsky/trading/commit/84ade807) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d2960fd0](https://github.com/IgorGanapolsky/trading/commit/d2960fd0) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [719370f5](https://github.com/IgorGanapolsky/trading/commit/719370f5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [3fd49d09](https://github.com/IgorGanapolsky/trading/commit/3fd49d09) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a847c90d](https://github.com/IgorGanapolsky/trading/commit/a847c90d) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [a2143bbe](https://github.com/IgorGanapolsky/trading/commit/a2143bbe) | docs(ralph): Auto-publish discovery blog post |
-
-
-### 💻 Featured Code Change
-
-From commit `bb153d60`:
-
-```python
-        _current_price = prices[-1]  # noqa: F841 - may be used in future
-                cache_data = pickle.load(f)  # noqa: S301 - trusted local cache file
-    try:
-        with patch("src.risk.trade_gateway.LessonsLearnedRAG") as mock_rag_class:
-            mock_rag_instance = MagicMock()
-            mock_rag_instance.query.return_value = []
-            mock_rag_class.return_value = mock_rag_instance
-            yield mock_rag_instance
-    except (AttributeError, ModuleNotFoundError):
-        # Module not importable in this test context (e.g., workflow tests)
-        # Skip the mock gracef
-```
 
 
 ## 🎯 Key Takeaways
