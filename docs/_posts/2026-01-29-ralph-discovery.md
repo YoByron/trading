@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-29 11:29:24
+title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
+date: 2026-01-29 12:48:57
 categories: [engineering, lessons-learned, ai-trading]
-tags: [asymmetric, history, options, put]
+tags: [detected, options, asymmetric, condor]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-309: Iron Co"]
-        D2["🟢 LL-277: Iron Co"]
-        D3["🟠 LL-298: Invalid"]
+        D1["🟢 Ralph Proactive"]
+        D2["🟢 LL-309: Iron Co"]
+        D3["🟢 LL-277: Iron Co"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["5466034"]
-        F2["6df06cb"]
-        F3["871adc9"]
+        F1["1b74c41"]
+        F2["5466034"]
+        F3["6df06cb"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,41 +51,24 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
 
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## ℹ️ INFO Ralph Proactive Scan Findings
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
-### 🔬 Root Cause
-
-```python
-
-
 ### ✅ How We Fixed It
 
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-
-### 💻 The Fix
-
-```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
-```
+Applied targeted fix based on root cause analysis.
 
 
 ### 📈 Impact
@@ -141,11 +124,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [1b74c416](https://github.com/IgorGanapolsky/trading/commit/1b74c416) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [54660344](https://github.com/IgorGanapolsky/trading/commit/54660344) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [6df06cb6](https://github.com/IgorGanapolsky/trading/commit/6df06cb6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [871adc97](https://github.com/IgorGanapolsky/trading/commit/871adc97) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [9ef61c34](https://github.com/IgorGanapolsky/trading/commit/9ef61c34) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [6f5f4d64](https://github.com/IgorGanapolsky/trading/commit/6f5f4d64) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
