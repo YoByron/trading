@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-29 03:26:53
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-29 05:27:54
 categories: [engineering, lessons-learned, ai-trading]
-tags: [security, between, live, alpaca]
+tags: [history, state, condor, put]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 Ralph Proactive"]
-        D2["🟢 LL-262: Data Sy"]
-        D3["🟢 LL-309: Iron Co"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟢 LL-318: Claude "]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["d5c52ae"]
-        F2["43fb27f"]
-        F3["e90770f"]
+        F1["6f5f4d6"]
+        F2["d5c52ae"]
+        F3["43fb27f"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,53 +51,40 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
-### ✅ How We Fixed It
+### 🔬 Root Cause
 
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO LL-262: Data Sync Infrastructure Improvements
-
-### 🚨 What Went Wrong
-
-- Max staleness during market hours: 15 min (was 30 min) - Data integrity check: Passes on every health check - Sync health visibility: Full history available
+```python
 
 
 ### ✅ How We Fixed It
 
-- Peak hours (10am-3pm ET): Every 15 minutes - Market open/close: Every 30 minutes - Added manual trigger option with force_sync parameter Added to `src/utils/staleness_guard.py`:
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
 
 ### 💻 The Fix
 
 ```python
-"sync_health": {
-  "last_successful_sync": "timestamp",
-  "sync_source": "github_actions",
-  "sync_count_today": 15,
-  "history": [/* last 24 syncs */]
-}
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
 ```
 
 
@@ -130,17 +117,47 @@ Risk reduced and system resilience improved.
 
 ---
 
+## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
+
+### 🚨 What Went Wrong
+
+Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
+
+
+### ✅ How We Fixed It
+
+Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
+
+
+### 💻 The Fix
+
+```python
+{
+  "type": "command",
+  "command": "./my-hook.sh",
+  "async": true,
+  "timeout": 30
+}
+```
+
+
+### 📈 Impact
+
+Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [6f5f4d64](https://github.com/IgorGanapolsky/trading/commit/6f5f4d64) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d5c52ae6](https://github.com/IgorGanapolsky/trading/commit/d5c52ae6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [43fb27fa](https://github.com/IgorGanapolsky/trading/commit/43fb27fa) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [e90770f4](https://github.com/IgorGanapolsky/trading/commit/e90770f4) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [66367047](https://github.com/IgorGanapolsky/trading/commit/66367047) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [f8724d7a](https://github.com/IgorGanapolsky/trading/commit/f8724d7a) | docs(blog): Ralph discovery - docs(ralph): Au |
 
 
 ## 🎯 Key Takeaways
