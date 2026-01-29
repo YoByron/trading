@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH --- (+2 more)"
-date: 2026-01-28 17:20:48
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-28 19:53:05
 categories: [engineering, lessons-learned, ai-trading]
-tags: [left-biased, finding, asymmetric, scripts]
+tags: [trading, trade, left-biased, asymmetric]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟢 LL-318: Claude "]
-        D3["🟠 ---"]
+        D2["🟢 LL-277: Iron Co"]
+        D3["🟠 LL-298: Invalid"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["3fd49d0"]
-        F2["a847c90"]
-        F3["a2143bb"]
+        F1["719370f"]
+        F2["3fd49d0"]
+        F3["a847c90"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -59,21 +59,38 @@ flowchart LR
 ---
 
 
-## 🟠 HIGH ---
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
-id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+- Dead code detected: true
+
+
+### 🔬 Root Cause
+
+```python
 
 
 ### ✅ How We Fixed It
 
-severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
 
 
 ### 📈 Impact
 
-1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+Risk reduced and system resilience improved.
 
 ---
 
@@ -100,33 +117,21 @@ severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY
 
 ---
 
-## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
+## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
 
 ### 🚨 What Went Wrong
 
-Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
+**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
 
 
 ### ✅ How We Fixed It
 
-Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
-
-
-### 💻 The Fix
-
-```python
-{
-  "type": "command",
-  "command": "./my-hook.sh",
-  "async": true,
-  "timeout": 30
-}
-```
+- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
 
 
 ### 📈 Impact
 
-Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
+|-------------------|----------| | **10-15 delta** | **86%** |
 
 ---
 
@@ -136,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [719370f5](https://github.com/IgorGanapolsky/trading/commit/719370f5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [3fd49d09](https://github.com/IgorGanapolsky/trading/commit/3fd49d09) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a847c90d](https://github.com/IgorGanapolsky/trading/commit/a847c90d) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a2143bbe](https://github.com/IgorGanapolsky/trading/commit/a2143bbe) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [0cc1fdac](https://github.com/IgorGanapolsky/trading/commit/0cc1fdac) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [b0cae614](https://github.com/IgorGanapolsky/trading/commit/b0cae614) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
