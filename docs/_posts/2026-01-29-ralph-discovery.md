@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
-date: 2026-01-29 12:48:57
+date: 2026-01-29 13:14:38
 categories: [engineering, lessons-learned, ai-trading]
-tags: [detected, options, asymmetric, condor]
+tags: [issues, security, left-biased, code]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["1b74c41"]
-        F2["5466034"]
-        F3["6df06cb"]
+        F1["8790923"]
+        F2["1b74c41"]
+        F3["5466034"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -124,11 +124,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [87909232](https://github.com/IgorGanapolsky/trading/commit/87909232) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [1b74c416](https://github.com/IgorGanapolsky/trading/commit/1b74c416) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [54660344](https://github.com/IgorGanapolsky/trading/commit/54660344) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [6df06cb6](https://github.com/IgorGanapolsky/trading/commit/6df06cb6) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [871adc97](https://github.com/IgorGanapolsky/trading/commit/871adc97) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [9ef61c34](https://github.com/IgorGanapolsky/trading/commit/9ef61c34) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
