@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
-date: 2026-01-30 16:07:18
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-01-30 16:17:36
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, security, dead, critical]
+tags: [call, success, asymmetric, iron]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-318: Claude "]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 Ralph Proactive"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟢 LL-277: Iron Co"]
+        D3["🟠 LL-298: Invalid"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["dc959a6"]
-        F2["af049ef"]
-        F3["7688f92"]
+        F1["bff6ea8"]
+        F2["dc959a6"]
+        F3["af049ef"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,77 +51,87 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
 
-## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
-Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
+- Dead code detected: true
+
+
+### 🔬 Root Cause
+
+```python
 
 
 ### ✅ How We Fixed It
 
-Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
 
 
 ### 💻 The Fix
 
 ```python
-{
-  "type": "command",
-  "command": "./my-hook.sh",
-  "async": true,
-  "timeout": 30
-}
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
 ```
 
 
 ### 📈 Impact
 
-Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
-
----
-
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
 Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
 
 ### 🚨 What Went Wrong
 
-- Dead code detected: true
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
 
 
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
 
 
 ### 📈 Impact
 
-Risk reduced and system resilience improved.
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
+
+---
+
+## ℹ️ INFO LL-277: Iron Condor Optimization Research - 86% Win Rate Strategy
+
+### 🚨 What Went Wrong
+
+**Date**: January 21, 2026 **Category**: strategy, research, optimization **Severity**: HIGH
+
+
+### ✅ How We Fixed It
+
+- [Options Trading IQ: Iron Condor Success Rate](https://optionstradingiq.com/iron-condor-success-rate/) - [Project Finance: Iron Condor Management (71,417 trades)](https://www.projectfinance.com/iron-condor-management/) | Short Strike Delta | Win Rate |
+
+
+### 📈 Impact
+
+|-------------------|----------| | **10-15 delta** | **86%** |
 
 ---
 
@@ -131,11 +141,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [bff6ea8a](https://github.com/IgorGanapolsky/trading/commit/bff6ea8a) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [dc959a66](https://github.com/IgorGanapolsky/trading/commit/dc959a66) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [af049ef5](https://github.com/IgorGanapolsky/trading/commit/af049ef5) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [7688f929](https://github.com/IgorGanapolsky/trading/commit/7688f929) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [8722f681](https://github.com/IgorGanapolsky/trading/commit/8722f681) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [58ec2b71](https://github.com/IgorGanapolsky/trading/commit/58ec2b71) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
