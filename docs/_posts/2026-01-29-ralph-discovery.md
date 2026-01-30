@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-29 22:48:49
+title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
+date: 2026-01-29 23:16:54
 categories: [engineering, lessons-learned, ai-trading]
-tags: [put, scripts, state, condor]
+tags: [finding, security, dead, issues]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D1["🟢 Ralph Proactive"]
+        D2["🟢 Ralph Proactive"]
+        D3["🟢 LL-309: Iron Co"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["46e8f69"]
-        F2["663ddc9"]
-        F3["a7e6cc8"]
+        F1["8e2129e"]
+        F2["941fab7"]
+        F3["46e8f69"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,41 +51,42 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
 
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## ℹ️ INFO Ralph Proactive Scan Findings
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
-### 🔬 Root Cause
+### ✅ How We Fixed It
 
-```python
+Applied targeted fix based on root cause analysis.
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
+## ℹ️ INFO Ralph Proactive Scan Findings
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
 
 
 ### ✅ How We Fixed It
 
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-
-### 💻 The Fix
-
-```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
-```
+Applied targeted fix based on root cause analysis.
 
 
 ### 📈 Impact
@@ -117,47 +118,17 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
-
-### 🚨 What Went Wrong
-
-Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
-
-
-### ✅ How We Fixed It
-
-Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
-
-
-### 💻 The Fix
-
-```python
-{
-  "type": "command",
-  "command": "./my-hook.sh",
-  "async": true,
-  "timeout": 30
-}
-```
-
-
-### 📈 Impact
-
-Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [8e2129e4](https://github.com/IgorGanapolsky/trading/commit/8e2129e4) | docs(blog): Ralph discovery - docs(ralph): Au |
+| ℹ️ INFO | [941fab76](https://github.com/IgorGanapolsky/trading/commit/941fab76) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [46e8f698](https://github.com/IgorGanapolsky/trading/commit/46e8f698) | chore(ralph): Record proactive scan findings |
 | ℹ️ INFO | [663ddc90](https://github.com/IgorGanapolsky/trading/commit/663ddc90) | chore(ralph): Update workflow health dashboar |
 | ℹ️ INFO | [a7e6cc89](https://github.com/IgorGanapolsky/trading/commit/a7e6cc89) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [9cef3314](https://github.com/IgorGanapolsky/trading/commit/9cef3314) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [0fee4145](https://github.com/IgorGanapolsky/trading/commit/0fee4145) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
