@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
-date: 2026-01-30 03:25:48
+title: "🟠 HIGH --- (+2 more)"
+date: 2026-01-30 05:25:32
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, critical, scripts, backup]
+tags: [scripts, critical, finding, left-biased]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-318: Claude "]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 Ralph Proactive"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟢 LL-318: Claude "]
+        D3["🟠 ---"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["70f2c32"]
-        F2["24a11f0"]
-        F3["2aa756b"]
+        F1["620a4b8"]
+        F2["70f2c32"]
+        F3["24a11f0"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,13 +51,54 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
+
+## 🟠 HIGH ---
+
+### 🚨 What Went Wrong
+
+id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
+
+
+### ✅ How We Fixed It
+
+severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
+
+
+### 📈 Impact
+
+1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
+
+---
+
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
+
+### 🚨 What Went Wrong
+
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
+
+
+### ✅ How We Fixed It
+
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
+
+
+### 📈 Impact
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
+
+---
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -89,53 +130,17 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [620a4b89](https://github.com/IgorGanapolsky/trading/commit/620a4b89) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [70f2c320](https://github.com/IgorGanapolsky/trading/commit/70f2c320) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [24a11f08](https://github.com/IgorGanapolsky/trading/commit/24a11f08) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [2aa756bd](https://github.com/IgorGanapolsky/trading/commit/2aa756bd) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [2cac9674](https://github.com/IgorGanapolsky/trading/commit/2cac9674) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [8e2129e4](https://github.com/IgorGanapolsky/trading/commit/8e2129e4) | docs(blog): Ralph discovery - docs(ralph): Au |
 
 
 ## 🎯 Key Takeaways
