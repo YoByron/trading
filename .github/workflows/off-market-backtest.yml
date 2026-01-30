@@ -37,9 +37,9 @@ permissions:
   pull-requests: write
 
 env:
-  ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
-  GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+  ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
+  GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID || 'igor-trading-2025-v2' }}
   PAPER_TRADING: 'true'
 
 jobs:
@@ -68,27 +68,27 @@ jobs:
     timeout-minutes: 120
     outputs:
       has_results: ${{ steps.backtest.outputs.has_results }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-          
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install alpaca-py pandas numpy scipy matplotlib google-cloud-aiplatform
-          
+
       - name: Create directories
         run: |
           mkdir -p data/backtests/parameter_sweeps
           mkdir -p data/rag_staging
-          
+
       - name: Determine parameters
         id: params
         run: |
@@ -102,7 +102,7 @@ jobs:
           echo "days=$DAYS" >> $GITHUB_OUTPUT
           echo "sweep=$SWEEP" >> $GITHUB_OUTPUT
           echo "max_combos=$MAX_COMBOS" >> $GITHUB_OUTPUT
-          
+
       - name: Run backtest
         id: backtest
         run: |
@@ -133,7 +133,7 @@ jobs:
           else
             echo "has_results=false" >> $GITHUB_OUTPUT
           fi
-            
+
       - name: Ingest to RAG
         if: success()
         continue-on-error: true
@@ -141,7 +141,7 @@ jobs:
           python scripts/backtest/ingest_backtest_to_rag.py \
             --lessons-dir data/backtests \
             --output data/rag_staging
-            
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
@@ -157,54 +157,54 @@ jobs:
     needs: run-backtest
     if: needs.run-backtest.outputs.has_results == 'true'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Download artifacts
         uses: actions/download-artifact@v7
         with:
           name: backtest-results-${{ github.run_id }}
           path: downloaded_results
-          
+
       - name: Create branch and PR
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           BRANCH_NAME="auto/backtest-$(date +%Y%m%d-%H%M%S)"
           TIMESTAMP=$(date +%Y-%m-%d)
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git checkout -b "$BRANCH_NAME"
-          
+
           # Copy results
           cp -r downloaded_results/backtests/* data/backtests/ 2>/dev/null || true
           cp -r downloaded_results/rag_staging/* data/rag_staging/ 2>/dev/null || true
-          
+
           # Update latest summary
           LATEST=$(ls -t data/backtests/backtest_summary_*.json 2>/dev/null | head -1)
           if [ -n "$LATEST" ]; then
             cp "$LATEST" data/backtests/latest_summary.json
           fi
-          
+
           git add data/backtests/ data/rag_staging/
-          
+
           if ! git diff --staged --quiet; then
             git commit -m "chore(backtest): Add results from $TIMESTAMP"
             git push origin "$BRANCH_NAME"
-            
+
             # Create and auto-merge PR
             PR_URL=$(gh pr create \
               --title "chore(backtest): Add results from $TIMESTAMP" \
               --body "Automated backtest results from off-market run #${{ github.run_id }}" \
               --head "$BRANCH_NAME" \
               --base main)
-            
+
             PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-            
+
             # Auto-merge with admin privileges
             gh pr merge "$PR_NUM" --squash --admin --delete-branch || echo "Manual merge may be required"
           fi

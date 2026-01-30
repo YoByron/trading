@@ -45,8 +45,8 @@ jobs:
       - name: Close Position
         id: close
         env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
           TARGET_SYMBOL: ${{ inputs.symbol }}
           TARGET_QTY: ${{ inputs.quantity }}
         run: |
@@ -95,7 +95,7 @@ jobs:
 
           # FIX #2: Detect position side and use correct order side
           current_qty = float(target_position.qty)
-          
+
           if current_qty > 0:
               # LONG position -> SELL to close
               order_side = OrderSide.SELL
@@ -120,7 +120,7 @@ jobs:
 
           # Submit close order
           print(f"Submitting {order_side.value} order for {target_qty} {target_symbol}")
-          
+
           order_request = MarketOrderRequest(
               symbol=target_symbol,
               qty=target_qty,
@@ -132,7 +132,7 @@ jobs:
               order = client.submit_order(order_request)
               print(f"✅ Order submitted: {order.id}")
               print(f"   Status: {order.status}")
-              
+
               with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                   f.write(f"order_id={order.id}\n")
                   f.write(f"status={order.status}\n")

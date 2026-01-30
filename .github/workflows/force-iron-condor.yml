@@ -36,13 +36,13 @@ jobs:
       - name: Execute Iron Condor NOW
         env:
           # FIX: Use 30K secret names (actual GitHub secrets per screenshot Jan 26, 2026)
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
-          ALPACA_PAPER_TRADING_30K_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-          ALPACA_PAPER_TRADING_30K_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
+          ALPACA_PAPER_TRADING_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+          ALPACA_PAPER_TRADING_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
           # Also set 5K names for backwards compatibility with scripts
-          ALPACA_PAPER_TRADING_5K_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-          ALPACA_PAPER_TRADING_5K_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
+          ALPACA_PAPER_TRADING_5K_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+          ALPACA_PAPER_TRADING_5K_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
           echo "🚀 FORCE IRON CONDOR EXECUTION"
@@ -58,10 +58,10 @@ jobs:
           else
             echo "❌ ALPACA_API_KEY is NOT SET!"
           fi
-          if [ -n "$ALPACA_PAPER_TRADING_30K_API_KEY" ]; then
-            echo "✅ ALPACA_PAPER_TRADING_30K_API_KEY is set (length: ${#ALPACA_PAPER_TRADING_30K_API_KEY})"
+          if [ -n "$ALPACA_PAPER_TRADING_API_KEY" ]; then
+            echo "✅ ALPACA_PAPER_TRADING_API_KEY is set (length: ${#ALPACA_PAPER_TRADING_API_KEY})"
           else
-            echo "❌ ALPACA_PAPER_TRADING_30K_API_KEY is NOT SET!"
+            echo "❌ ALPACA_PAPER_TRADING_API_KEY is NOT SET!"
           fi
 
           # Run iron condor trader with --force --live to ensure live execution
@@ -79,8 +79,8 @@ jobs:
 
       - name: Verify positions
         env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_30K_API_SECRET }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
         run: |
           echo "📊 Verifying positions..."
           python3 -c "
