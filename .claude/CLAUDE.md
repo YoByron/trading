@@ -2,10 +2,10 @@
 
 CTO: Claude | CEO: Igor Ganapolsky
 
-## Strategy (Updated Jan 22, 2026 - FINANCIAL INDEPENDENCE PATH)
+## Strategy (Updated Jan 30, 2026 - FINANCIAL INDEPENDENCE PATH)
 - **North Star**: $6,000/month after-tax = FINANCIAL INDEPENDENCE
-- **Philosophy**: Grow $30K → $600K through disciplined compounding (Phil Town Rule #1)
-- **Current capital**: $30,000 | Fresh start - clean slate Jan 22, 2026
+- **Philosophy**: Grow $100K → $600K through disciplined compounding (Phil Town Rule #1)
+- **Current capital**: $100,000 | Switched to $100K account Jan 30, 2026
 - **Primary strategy**: IRON CONDORS on SPY (current) - evaluating XSP for tax optimization
 - **Tax note**: XSP (Mini-SPX) = same size as SPY but Section 1256 (60/40 tax treatment, no wash sales)
 - **Iron condor setup**:
@@ -15,7 +15,7 @@ CTO: Claude | CEO: Igor Ganapolsky
   - Collect premium from BOTH sides
 - **CRITICAL MATH**: 15-delta = 86% win rate (LL-220). Risk/reward ~1.5:1 (BETTER than credit spreads)
 - **Expiration**: 30-45 DTE, close at 50% max profit OR 7 DTE (whichever first) - LL-268 research
-- **Position limit**: 1 iron condor at a time (5% max = $1,500 risk)
+- **Position limit**: 2 iron condors at a time (5% max = $5,000 risk per position)
 - **Monthly target**: 3-4 iron condors x $150-250 avg x 86% win rate = $400-860/month (conservative)
 - **Stop-loss**: Close if one side reaches 200% of credit - MANDATORY
 - **Adjustment**: If tested, roll untested side closer for additional credit
@@ -23,7 +23,7 @@ CTO: Claude | CEO: Igor Ganapolsky
 - **Risk management**: NEVER more than 5% on single trade. NO NAKED OPTIONS.
 - **Paper phase**: 90 days to validate 80%+ win rate before scaling
 - **Why iron condors beat credit spreads**: Collect premium from BOTH sides, better win rate, profit in range-bound markets
-- **PDT NOTE**: $30K > $25K = NO PDT RESTRICTIONS (can day trade freely)
+- **PDT NOTE**: $100K > $25K = NO PDT RESTRICTIONS (can day trade freely)
 
 ## Financial Independence Framework (Jan 22, 2026)
 
@@ -37,7 +37,7 @@ CTO: Claude | CEO: Igor Ganapolsky
 2. **Compounding** (The Wealth Engine)
    - Reinvest 100% of profits during growth phase
    - Target: 8% monthly return (conservative iron condor avg)
-   - $30K → $76K (Year 1) → $192K (Year 2) → $600K (Year 3)
+   - $100K → $250K (Year 1) → $600K (Year 2)
    - DO NOT WITHDRAW until $600K target reached
 
 3. **Tax Optimization** (Keep What You Earn) - UPDATED Jan 23, 2026
@@ -52,28 +52,27 @@ CTO: Claude | CEO: Igor Ganapolsky
    - File Form 6781 for any Section 1256 contracts (XSP/SPX)
 
 4. **Reinvestment Strategy** (Scale Intelligently)
-   - Phase 1 ($30K-$50K): 1 iron condor max, prove the system
-   - Phase 2 ($50K-$100K): Scale to 2 iron condors if 80%+ win rate
-   - Phase 3 ($100K-$300K): 3-4 iron condors, diversify expirations
-   - Phase 4 ($300K+): Consider adding covered calls on SPY shares
+   - Phase 1 ($100K-$150K): 2 iron condors max, prove the system
+   - Phase 2 ($150K-$300K): Scale to 3-4 iron condors if 80%+ win rate
+   - Phase 3 ($300K-$600K): 5-6 iron condors, diversify expirations
+   - Phase 4 ($600K+): Financial independence reached - withdraw $6K/month
 
-### Path to $6K/Month (Financial Independence)
+### Path to $6K/Month (Financial Independence) - UPDATED Jan 30, 2026
 | Phase | Capital | Monthly Income | After Tax | Timeline |
 |-------|---------|----------------|-----------|----------|
-| Now | $30,000 | ~$500 | ~$350 | Jan 2026 |
-| +12mo | $76,000 | ~$1,200 | ~$840 | Jan 2027 |
-| +24mo | $192,000 | ~$3,000 | ~$2,100 | Jan 2028 |
-| +30mo | $340,000 | ~$5,400 | ~$3,800 | Jul 2028 |
-| +36mo | $600,000 | ~$9,000 | **$6,300** | Jan 2029 🎯 |
+| Now | $100,000 | ~$1,600 | ~$1,100 | Jan 2026 |
+| +12mo | $250,000 | ~$4,000 | ~$2,800 | Jan 2027 |
+| +18mo | $400,000 | ~$6,400 | ~$4,500 | Jul 2027 |
+| +24mo | $600,000 | ~$9,600 | **$6,700** | Jan 2028 🎯 |
 
 ### Why This Works (Phil Town Math)
 - Conservative 8% monthly = 150% annual (iron condor territory)
 - 86% win rate provides margin of safety
-- Compounding turns $30K → $600K in 3 years
+- Compounding turns $100K → $600K in **2 years** (not 3!)
 - At $600K with 15% annual (Phil Town conservative): $90K/year = $7.5K/month
-- **FINANCIAL INDEPENDENCE = work optional**
+- **FINANCIAL INDEPENDENCE = work optional by age 48**
 
-**Note**: $30K starting capital means NO PDT RESTRICTIONS and faster path to goal!
+**Note**: $100K starting capital = FASTER PATH TO GOAL (2 years instead of 3)!
 
 ## MANDATORY Pre-Trade Checklist
 1. [ ] Is ticker SPY? (SPY ONLY - best liquidity, tightest spreads)
@@ -191,8 +190,9 @@ See `docs/ARCHITECTURE.md` for detailed architecture documentation.
 Hooks provide: portfolio status, market hours, trade count, date verification.
 Trust the hooks. They work.
 
-## $30K Paper Account (Jan 22, 2026)
-Account ID: PA3PYE0C9MN - Fresh start with no positions.
-Use `ALPACA_PAPER_TRADING_5K_API_KEY` (now points to $30K account).
+## $100K Paper Account (Jan 30, 2026)
+Account ID: PA3C5AG0CECQ - Primary trading account.
+Use `ALPACA_PAPER_TRADING_API_KEY` (points to $100K account).
 All code must use `get_alpaca_credentials()` from `src/utils/alpaca_client.py`.
 **NO PDT RESTRICTIONS** - Can freely close positions same-day.
+**DEPRECATED**: $5K and $30K accounts are no longer used.

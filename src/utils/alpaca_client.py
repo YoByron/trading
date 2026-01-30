@@ -23,24 +23,19 @@ def get_alpaca_credentials() -> tuple[Optional[str], Optional[str]]:
     """
     Get Alpaca API credentials with proper priority (paper trading).
 
-    Priority order (first found wins):
-    1. ALPACA_PAPER_TRADING_5K_API_KEY / SECRET (GitHub secret - points to $30K account!)
+    Priority order (first found wins) - UPDATED Jan 30, 2026:
+    1. ALPACA_PAPER_TRADING_API_KEY / SECRET ($100K account - PRIMARY)
     2. ALPACA_API_KEY / ALPACA_SECRET_KEY (workflow fallback)
-    3. ALPACA_PAPER_TRADING_30K_API_KEY / SECRET (if renamed in future)
-    4. ALPACA_PAPER_TRADING_API_KEY / SECRET ($100K account)
 
-    NOTE: The GitHub secret is NAMED "5K" but actually points to the $30K account!
-    This is historical naming - don't change secret names to avoid breaking workflows.
+    NOTE: The $5K/$30K accounts are deprecated. Use $100K account only.
+    $100K account = No PDT restrictions, faster path to North Star.
 
     Returns:
         Tuple of (api_key, secret_key) or (None, None) if not found.
     """
-    # DEBUG: Log all env var checks (Jan 23, 2026 - trace SIMULATED issue)
     env_vars_checked = [
-        ("ALPACA_PAPER_TRADING_5K_API_KEY", os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY")),
-        ("ALPACA_API_KEY", os.getenv("ALPACA_API_KEY")),
-        ("ALPACA_PAPER_TRADING_30K_API_KEY", os.getenv("ALPACA_PAPER_TRADING_30K_API_KEY")),
         ("ALPACA_PAPER_TRADING_API_KEY", os.getenv("ALPACA_PAPER_TRADING_API_KEY")),
+        ("ALPACA_API_KEY", os.getenv("ALPACA_API_KEY")),
     ]
 
     logger.info("Credential lookup (checking env vars):")
@@ -50,26 +45,21 @@ def get_alpaca_credentials() -> tuple[Optional[str], Optional[str]]:
         else:
             logger.info(f"  ❌ {var_name}: NOT SET")
 
+    # $100K account is PRIMARY (Jan 30, 2026 decision)
     api_key = (
-        os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY")  # ACTUAL secret -> $30K account
+        os.getenv("ALPACA_PAPER_TRADING_API_KEY")  # $100K account - PRIMARY
         or os.getenv("ALPACA_API_KEY")  # Workflow fallback
-        or os.getenv("ALPACA_PAPER_TRADING_30K_API_KEY")  # If renamed
-        or os.getenv("ALPACA_PAPER_TRADING_API_KEY")
     )
     secret_key = (
-        os.getenv("ALPACA_PAPER_TRADING_5K_API_SECRET")  # ACTUAL secret -> $30K account
+        os.getenv("ALPACA_PAPER_TRADING_API_SECRET")  # $100K account - PRIMARY
         or os.getenv("ALPACA_SECRET_KEY")  # Workflow fallback
-        or os.getenv("ALPACA_PAPER_TRADING_30K_API_SECRET")  # If renamed
-        or os.getenv("ALPACA_PAPER_TRADING_API_SECRET")
     )
 
     if api_key:
-        if os.getenv("ALPACA_PAPER_TRADING_5K_API_KEY"):
-            logger.info("Selected: ALPACA_PAPER_TRADING_5K_API_KEY (->$30K account)")
+        if os.getenv("ALPACA_PAPER_TRADING_API_KEY"):
+            logger.info("Selected: ALPACA_PAPER_TRADING_API_KEY ($100K account)")
         elif os.getenv("ALPACA_API_KEY"):
             logger.info("Selected: ALPACA_API_KEY fallback")
-        else:
-            logger.info("Selected: alternate paper trading credentials")
     else:
         logger.error("NO API KEY FOUND - all env vars are empty!")
 
