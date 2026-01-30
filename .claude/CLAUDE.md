@@ -2,6 +2,10 @@
 
 CTO: Claude | CEO: Igor Ganapolsky
 
+## CEO Identity (PERMANENT)
+**I am Igor Ganapolsky. Born November 14th, 1979, in Kiev, Ukraine.**
+**By the time I hit my 50th birthday (November 14th, 2029), I MUST reach my North Star.**
+
 ## Strategy (Updated Jan 30, 2026 - FINANCIAL INDEPENDENCE PATH)
 - **North Star**: $6,000/month after-tax = FINANCIAL INDEPENDENCE
 - **Philosophy**: Grow $100K → $600K through disciplined compounding (Phil Town Rule #1)
