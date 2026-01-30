@@ -106,17 +106,22 @@ class TestCrisisMonitor:
         """Test that excess positions trigger crisis."""
         from src.safety.crisis_monitor import check_crisis_conditions
 
+        # 9 positions exceeds MAX_POSITIONS (8) - triggers crisis
         positions = [
             {"symbol": "SPY260220P00565000", "qty": -4, "unrealized_pl": -100, "cost_basis": 500},
             {"symbol": "SPY260220P00570000", "qty": 4, "unrealized_pl": -50, "cost_basis": 500},
             {"symbol": "SPY260220P00653000", "qty": -2, "unrealized_pl": -100, "cost_basis": 500},
             {"symbol": "SPY260220P00658000", "qty": 8, "unrealized_pl": -200, "cost_basis": 500},
             {"symbol": "SPY260220P00660000", "qty": 2, "unrealized_pl": -50, "cost_basis": 500},
+            {"symbol": "SPY260220C00700000", "qty": -2, "unrealized_pl": -50, "cost_basis": 500},
+            {"symbol": "SPY260220C00705000", "qty": 2, "unrealized_pl": -50, "cost_basis": 500},
+            {"symbol": "SPY260220C00710000", "qty": -2, "unrealized_pl": -50, "cost_basis": 500},
+            {"symbol": "SPY260220C00715000", "qty": 2, "unrealized_pl": -50, "cost_basis": 500},
         ]
 
         conditions = check_crisis_conditions(positions, account_equity=5000)
 
-        # Should detect excess positions (5 > 4)
+        # Should detect excess positions (9 > 8)
         excess_conditions = [c for c in conditions if c.condition_type == "EXCESS_POSITIONS"]
         assert len(excess_conditions) > 0
 

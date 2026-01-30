@@ -26,10 +26,10 @@ ALLOWED_TICKERS: set[str] = {"SPY"}  # SPY ONLY per CLAUDE.md Jan 19, 2026
 # LL-281 (Jan 22, 2026): 8 contracts accumulated when max was 4 due to
 # scattered definitions and race conditions.
 # =============================================================================
-MAX_POSITION_PCT: float = 0.05  # 5% max per position per CLAUDE.md
+MAX_POSITION_PCT: float = 0.05  # 5% max per position per CLAUDE.md ($5K on $100K account)
 MAX_DAILY_LOSS_PCT: float = 0.05  # 5% max daily loss
-MAX_POSITIONS: int = 4  # 1 iron condor = 4 legs max (HARDCODED per CLAUDE.md)
-MAX_CONTRACTS_PER_TRADE: int = 1  # Max contracts per single trade
+MAX_POSITIONS: int = 8  # 2 iron condors = 8 legs max (UPDATED Jan 30, 2026 for $100K account)
+MAX_CONTRACTS_PER_TRADE: int = 2  # Max contracts per single trade (scaled for $100K)
 CRISIS_LOSS_PCT: float = 0.25  # 25% unrealized loss triggers crisis mode
 CRISIS_POSITION_COUNT: int = 4  # More than 4 positions triggers crisis mode
 # Iron condor stop-loss: close if one side reaches 200% of credit received (per CLAUDE.md)
