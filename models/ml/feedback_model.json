@@ -1,6 +1,6 @@
 {
-  "alpha": 12.75,
-  "beta": 3.0,
+  "alpha": 14.75,
+  "beta": 4.0,
   "feature_weights": {
     "ci": 0.69,
     "rag": 0.4,
@@ -10,18 +10,18 @@
     "entry": 0.1,
     "refactor": 0.1,
     "system_health": 0.2,
-    "test": 0.2
+    "test": 0.3
   },
   "per_category": {
     "test": {
-      "alpha": 3.0,
+      "alpha": 4.0,
       "beta": 1.0,
-      "count": 2
+      "count": 3
     },
     "ci": {
-      "alpha": 7.75,
-      "beta": 1.0,
-      "count": 9
+      "alpha": 8.75,
+      "beta": 2.0,
+      "count": 11
     },
     "trade": {
       "alpha": 2.0,
@@ -54,5 +54,5 @@
       "count": 4
     }
   },
-  "last_updated": "2026-01-29T10:14:24.456139"
+  "last_updated": "2026-01-30T15:46:22.913076"
 }

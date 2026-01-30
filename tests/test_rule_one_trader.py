@@ -64,9 +64,10 @@ class TestRuleOneTraderConfig:
 class TestGetTradingClient:
     """Test trading client initialization."""
 
-    @patch.dict("os.environ", {"ALPACA_API_KEY": "", "ALPACA_SECRET_KEY": ""})
-    def test_returns_none_without_credentials(self):
+    @patch("src.utils.alpaca_client.get_alpaca_credentials")
+    def test_returns_none_without_credentials(self, mock_get_creds):
         """Should return None when credentials missing."""
+        mock_get_creds.return_value = (None, None)
         from scripts.rule_one_trader import get_trading_client
 
         client = get_trading_client()

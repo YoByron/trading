@@ -46,15 +46,10 @@ def test_trailing_pct_defaults():
     assert OPTIONS_TRAILING_PCT == 0.20  # 20% for options
 
 
-@patch.dict(
-    "os.environ",
-    {
-        "ALPACA_API_KEY": "",
-        "ALPACA_SECRET_KEY": "",
-    },
-)
-def test_main_no_credentials():
+@patch("src.utils.alpaca_client.get_alpaca_credentials")
+def test_main_no_credentials(mock_get_creds):
     """Test graceful failure when credentials missing."""
+    mock_get_creds.return_value = (None, None)
     from set_trailing_stops import main
 
     with pytest.raises(SystemExit) as exc_info:

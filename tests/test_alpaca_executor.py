@@ -91,10 +91,12 @@ class TestAlpacaExecutorInitialization:
             assert executor.simulated is False
             assert executor.broker is not None
 
-    @patch("src.brokers.multi_broker.get_multi_broker")
-    def test_init_fallback_to_simulator(self, mock_get_broker):
+    @patch("src.execution.alpaca_executor.AlpacaTrader")
+    @patch("src.execution.alpaca_executor.get_multi_broker")
+    def test_init_fallback_to_simulator(self, mock_get_broker, mock_trader):
         """Should fall back to simulator when broker unavailable."""
         mock_get_broker.side_effect = Exception("Connection failed")
+        mock_trader.side_effect = Exception("Trader init failed")
 
         with patch.dict(os.environ, {"ALPACA_SIMULATED": "false"}):
             from src.execution.alpaca_executor import AlpacaExecutor

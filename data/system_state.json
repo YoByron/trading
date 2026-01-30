@@ -1,179 +1,180 @@
 {
-  "last_updated": "2026-01-30T20:44:52.059876+00:00",
+  "last_updated": "2026-01-29T17:57:31.657936+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-01-30T20:44:52.059879+00:00",
+    "last_successful_sync": "2026-01-29T17:57:31.657938+00:00",
     "sync_source": "github_actions",
-    "sync_count_today": 22,
+    "sync_count_today": 12,
     "history": [
       {
-        "timestamp": "2026-01-29T20:11:24.484078+00:00",
-        "equity": 29966.42,
+        "timestamp": "2026-01-28T17:41:25.370415+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-29T20:45:21.265830+00:00",
-        "equity": 29967.42,
+        "timestamp": "2026-01-28T17:54:35.692372+00:00",
+        "equity": 29988.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T14:16:40.811776+00:00",
-        "equity": 29970.42,
+        "timestamp": "2026-01-28T18:03:36.855053+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T14:46:32.908062+00:00",
-        "equity": 29967.42,
+        "timestamp": "2026-01-28T18:23:24.358076+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T15:07:12.410290+00:00",
-        "equity": 29969.42,
+        "timestamp": "2026-01-28T18:43:04.795165+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T15:23:26.279730+00:00",
-        "equity": 29969.42,
+        "timestamp": "2026-01-28T18:57:42.164191+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T15:42:52.088021+00:00",
-        "equity": 29973.42,
+        "timestamp": "2026-01-28T19:10:23.282038+00:00",
+        "equity": 29985.79,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T15:56:58.907546+00:00",
-        "equity": 29971.42,
+        "timestamp": "2026-01-28T19:22:58.099815+00:00",
+        "equity": 29989.75,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T16:09:56.431222+00:00",
-        "equity": 29969.42,
+        "timestamp": "2026-01-28T19:39:32.192499+00:00",
+        "equity": 29984.75,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T16:23:55.076095+00:00",
-        "equity": 29966.42,
+        "timestamp": "2026-01-28T19:51:17.963988+00:00",
+        "equity": 29975.75,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T16:43:29.524751+00:00",
-        "equity": 29969.42,
+        "timestamp": "2026-01-28T20:10:55.074139+00:00",
+        "equity": 29968.65,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T17:01:25.640578+00:00",
+        "timestamp": "2026-01-28T20:45:48.169749+00:00",
+        "equity": 29966.65,
+        "success": true
+      },
+      {
+        "timestamp": "2026-01-29T14:20:08.216039+00:00",
         "equity": 29964.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T17:23:48.530057+00:00",
-        "equity": 29966.42,
+        "timestamp": "2026-01-29T14:47:42.040611+00:00",
+        "equity": 29959.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T17:42:42.114709+00:00",
-        "equity": 29965.42,
+        "timestamp": "2026-01-29T15:09:02.564326+00:00",
+        "equity": 29958.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T17:57:16.141274+00:00",
-        "equity": 29964.42,
+        "timestamp": "2026-01-29T15:23:47.613604+00:00",
+        "equity": 29959.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T18:12:12.346088+00:00",
-        "equity": 29963.42,
+        "timestamp": "2026-01-29T15:43:01.828245+00:00",
+        "equity": 29948.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T18:26:34.124086+00:00",
+        "timestamp": "2026-01-29T15:57:47.639110+00:00",
+        "equity": 29951.42,
+        "success": true
+      },
+      {
+        "timestamp": "2026-01-29T16:15:06.582995+00:00",
+        "equity": 29952.42,
+        "success": true
+      },
+      {
+        "timestamp": "2026-01-29T16:30:51.080060+00:00",
+        "equity": 29959.42,
+        "success": true
+      },
+      {
+        "timestamp": "2026-01-29T16:59:30.700942+00:00",
         "equity": 29960.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T18:45:52.667743+00:00",
+        "timestamp": "2026-01-29T17:19:11.447476+00:00",
+        "equity": 29964.42,
+        "success": true
+      },
+      {
+        "timestamp": "2026-01-29T17:42:43.240655+00:00",
         "equity": 29963.42,
         "success": true
       },
       {
-        "timestamp": "2026-01-30T19:10:33.551291+00:00",
-        "equity": 29968.42,
-        "success": true
-      },
-      {
-        "timestamp": "2026-01-30T19:23:57.031225+00:00",
-        "equity": 29966.42,
-        "success": true
-      },
-      {
-        "timestamp": "2026-01-30T19:40:47.976634+00:00",
-        "equity": 29965.42,
-        "success": true
-      },
-      {
-        "timestamp": "2026-01-30T19:53:06.473134+00:00",
-        "equity": 29965.42,
-        "success": true
-      },
-      {
-        "timestamp": "2026-01-30T20:10:58.967579+00:00",
-        "equity": 29963.42,
-        "success": true
-      },
-      {
-        "timestamp": "2026-01-30T20:44:52.059867+00:00",
-        "equity": 29965.42,
+        "timestamp": "2026-01-29T17:57:31.657927+00:00",
+        "equity": 29959.42,
         "success": true
       }
     ]
   },
   "portfolio": {
-    "equity": 29965.42,
+    "equity": 29959.42,
     "cash": 30034.42
   },
   "paper_account": {
-    "equity": 29965.42,
-    "cash": 30034.42,
-    "buying_power": 59068.84,
-    "total_pl": -34.580000000001746,
-    "total_pl_pct": -0.12,
+    "equity": 29959.42,
+    "cash": 3267.71,
+    "buying_power": 0.0,
+    "total_pl": 0.0,
+    "total_pl_pct": 0.0,
     "positions_count": 4,
-    "daily_change": -4.0,
-    "win_rate": 20.0,
-    "win_rate_sample_size": 15,
-    "starting_balance": 30000.0
+    "daily_change": -17.0,
+    "win_rate": 0.0,
+    "win_rate_sample_size": 0,
+    "starting_balance": 30000.0,
+    "current_equity": 4099.71
   },
   "positions": [
     {
       "symbol": "SPY260227C00730000",
       "qty": -1.0,
-      "price": 0.31,
-      "value": -31.0,
-      "pnl": 29.0,
+      "price": 0.35,
+      "value": -35.0,
+      "pnl": 25.0,
       "type": "option"
     },
     {
       "symbol": "SPY260227C00735000",
       "qty": 1.0,
-      "price": 0.17,
-      "value": 17.0,
-      "pnl": -20.0,
+      "price": 0.21,
+      "value": 21.0,
+      "pnl": -16.0,
       "type": "option"
     },
     {
       "symbol": "SPY260227P00655000",
       "qty": 1.0,
-      "price": 3.07,
-      "value": 307.0,
-      "pnl": 65.0,
+      "price": 3.57,
+      "value": 357.0,
+      "pnl": 115.0,
       "type": "option"
     },
     {
       "symbol": "SPY260227P00660000",
       "qty": -1.0,
-      "price": 3.62,
-      "value": -362.0,
-      "pnl": -81.0,
+      "price": 4.18,
+      "value": -418.0,
+      "pnl": -137.0,
       "type": "option"
     }
   ],
@@ -701,32 +702,42 @@
   ],
   "trades_loaded": 65,
   "trades": {
-    "last_trade_date": "2026-01-30",
+    "last_trade_date": "2026-01-29",
     "today_trades": 0,
     "total_trades_today": 0,
     "last_trade_symbol": "SPY260227C00730000"
   },
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
-    "total_pl": -34.580000000001746,
-    "unrealized_pl": -7.0
+    "total_pl": -40.580000000001746,
+    "unrealized_pl": -13.0
   },
   "account": {
-    "current_equity": 29965.42,
-    "total_pl": -34.580000000001746,
-    "total_pl_pct": -0.12,
+    "current_equity": 29959.42,
+    "total_pl": -40.580000000001746,
+    "total_pl_pct": -0.14,
     "positions_count": 4
   },
   "meta": {
-    "last_updated": "2026-01-30T20:44:52.059895+00:00",
+    "last_updated": "2026-01-30T15:11:13.874059",
     "trade_sync": "alpaca_api",
-    "sync_frequency_minutes": 5
+    "sync_frequency_minutes": 5,
+    "last_sync": "2026-01-30T09:35:03.865290",
+    "sync_mode": "paper_account"
   },
   "paper_trading": {
-    "start_date": "2026-01-22",
+    "start_date": "2026-01-30",
     "target_duration_days": 90,
     "target_win_rate": 0.8,
-    "current_day": 9,
-    "notes": "Paper phase per CLAUDE.md - validate 80%+ win rate before scaling"
+    "current_day": 0,
+    "notes": "RESET Jan 30, 2026 - Fresh 90-day validation. Goal: $6K/month by age 50."
+  },
+  "trailing_stops": {
+    "last_set": "2026-01-30T15:45:42.687010",
+    "stops_active": 1,
+    "positions_skipped": 0,
+    "value_protected": 500.0,
+    "default_trail_pct": 0.1,
+    "options_trail_pct": 0.2
   }
 }
