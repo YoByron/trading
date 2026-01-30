@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
-date: 2026-01-30 01:54:27
+date: 2026-01-30 03:25:48
 categories: [engineering, lessons-learned, ai-trading]
-tags: [state, backup, dead, code]
+tags: [issues, critical, scripts, backup]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["24a11f0"]
-        F2["2aa756b"]
-        F3["2cac967"]
+        F1["70f2c32"]
+        F2["24a11f0"]
+        F3["2aa756b"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -131,11 +131,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [70f2c320](https://github.com/IgorGanapolsky/trading/commit/70f2c320) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [24a11f08](https://github.com/IgorGanapolsky/trading/commit/24a11f08) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [2aa756bd](https://github.com/IgorGanapolsky/trading/commit/2aa756bd) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [2cac9674](https://github.com/IgorGanapolsky/trading/commit/2cac9674) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [8e2129e4](https://github.com/IgorGanapolsky/trading/commit/8e2129e4) | docs(blog): Ralph discovery - docs(ralph): Au |
-| ℹ️ INFO | [941fab76](https://github.com/IgorGanapolsky/trading/commit/941fab76) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
