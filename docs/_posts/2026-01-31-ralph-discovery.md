@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-31 11:39:44
+date: 2026-01-31 13:09:41
 categories: [engineering, lessons-learned, ai-trading]
-tags: [state, call, left-biased, scripts]
+tags: [trade, condor, put, asymmetric]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["8f032d2"]
-        F2["00ef3c2"]
-        F3["7dc5427"]
+        F1["928bc3a"]
+        F2["8f032d2"]
+        F3["00ef3c2"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [928bc3aa](https://github.com/IgorGanapolsky/trading/commit/928bc3aa) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [8f032d2c](https://github.com/IgorGanapolsky/trading/commit/8f032d2c) | fix(ci): Allow backtest to complete even if w |
 | ℹ️ INFO | [00ef3c29](https://github.com/IgorGanapolsky/trading/commit/00ef3c29) | docs(ralph): Auto-publish discovery blog post |
 | 🟡 MEDIUM | [7dc54279](https://github.com/IgorGanapolsky/trading/commit/7dc54279) | fix(ci): Add pytz dependency for alpaca-py, r |
 | ℹ️ INFO | [1c55b6be](https://github.com/IgorGanapolsky/trading/commit/1c55b6be) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [c2fb151e](https://github.com/IgorGanapolsky/trading/commit/c2fb151e) | docs(ralph): Auto-publish discovery blog post |
 
 
 ### 💻 Featured Code Change
