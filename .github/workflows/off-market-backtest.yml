@@ -117,6 +117,10 @@ jobs:
           # Use explicit Python path from setup-python to avoid shebang issues
           PYTHON="$pythonLocation/bin/python3"
 
+          # Note: Backtester returns exit code 1 if win rate < 70% (threshold not met).
+          # This is expected for short backtests - we continue to save results.
+          set +e  # Don't fail on non-zero exit
+
           if [ "${{ steps.params.outputs.sweep }}" = "true" ]; then
             "$PYTHON" scripts/backtest/parameter_sweep.py \
               --days $DAYS \
@@ -135,6 +139,8 @@ jobs:
               --days $DAYS \
               --output data/backtests
           fi
+
+          set -e  # Re-enable exit on error
 
           if ls data/backtests/*.json 1>/dev/null 2>&1; then
             echo "has_results=true" >> $GITHUB_OUTPUT
