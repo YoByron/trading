@@ -60,8 +60,13 @@ try:
     from alpaca.data.requests import StockBarsRequest
     from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
     from alpaca.trading.client import TradingClient
-except ImportError:
+except ImportError as e:
+    import traceback
+
     print("ERROR: alpaca-py not installed. Run: pip install alpaca-py")
+    print(f"DEBUG: Actual ImportError: {e}")
+    print("DEBUG: Full traceback:")
+    traceback.print_exc()
     sys.exit(1)
 
 
