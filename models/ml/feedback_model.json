@@ -1,5 +1,5 @@
 {
-  "alpha": 14.75,
+  "alpha": 16.75,
   "beta": 4.0,
   "feature_weights": {
     "ci": 0.69,
@@ -10,13 +10,13 @@
     "entry": 0.1,
     "refactor": 0.1,
     "system_health": 0.2,
-    "test": 0.3
+    "test": 0.5
   },
   "per_category": {
     "test": {
-      "alpha": 4.0,
+      "alpha": 6.0,
       "beta": 1.0,
-      "count": 3
+      "count": 5
     },
     "ci": {
       "alpha": 8.75,
@@ -54,5 +54,5 @@
       "count": 4
     }
   },
-  "last_updated": "2026-01-30T15:46:22.913076"
+  "last_updated": "2026-01-31T10:46:01.002637"
 }
