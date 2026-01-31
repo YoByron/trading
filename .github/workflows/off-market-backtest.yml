@@ -83,7 +83,10 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install alpaca-py pandas numpy scipy matplotlib google-cloud-aiplatform
-          # Verify alpaca-py is installed
+          # Verify alpaca-py is installed and show python path
+          which python3
+          python3 --version
+          python3 -c "import sys; print('Python executable:', sys.executable)"
           python3 -c "from alpaca.trading.client import TradingClient; print('✅ alpaca-py verified')"
 
       - name: Create directories
@@ -111,21 +114,25 @@ jobs:
           STRATEGY="${{ github.event.inputs.strategy || 'iron_condor' }}"
           DAYS="${{ steps.params.outputs.days }}"
 
+          # Use explicit Python path from setup-python to avoid shebang issues
+          PYTHON="$pythonLocation/bin/python3"
+          echo "Using Python: $PYTHON"
+
           if [ "${{ steps.params.outputs.sweep }}" = "true" ]; then
-            python3 scripts/backtest/parameter_sweep.py \
+            "$PYTHON" scripts/backtest/parameter_sweep.py \
               --days $DAYS \
               --max-combos ${{ steps.params.outputs.max_combos }} \
               --output data/backtests/parameter_sweeps
           elif [ "$STRATEGY" = "iron_condor" ] || [ "$STRATEGY" = "both" ]; then
             echo "🦅 Running Iron Condor backtest..."
-            python3 scripts/backtest/iron_condor_backtester.py \
+            "$PYTHON" scripts/backtest/iron_condor_backtester.py \
               --days $DAYS \
               --output data/backtests
           fi
 
           if [ "$STRATEGY" = "bull_put_spread" ] || [ "$STRATEGY" = "both" ]; then
             echo "🐂 Running Bull Put Spread backtest..."
-            python3 scripts/backtest/bull_put_spread_backtester.py \
+            "$PYTHON" scripts/backtest/bull_put_spread_backtester.py \
               --days $DAYS \
               --output data/backtests
           fi
@@ -140,7 +147,7 @@ jobs:
         if: success()
         continue-on-error: true
         run: |
-          python3 scripts/backtest/ingest_backtest_to_rag.py \
+          "$pythonLocation/bin/python3" scripts/backtest/ingest_backtest_to_rag.py \
             --lessons-dir data/backtests \
             --output data/rag_staging
 
