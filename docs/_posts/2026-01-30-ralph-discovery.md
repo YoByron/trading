@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-30 22:47:35
+title: "ℹ️ INFO LL-318: Claude Code Async Hooks for (+2 more)"
+date: 2026-01-30 22:55:22
 categories: [engineering, lessons-learned, ai-trading]
-tags: [scripts, history, iron, left-biased]
+tags: [detected, scripts, code, issues]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D1["🟢 LL-318: Claude "]
+        D2["🟢 Ralph Proactive"]
+        D3["🟢 Ralph Proactive"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["aa6db8d"]
-        F2["3a6488a"]
-        F3["f572e0d"]
+        F1["c9004f0"]
+        F2["1f1d1d7"]
+        F3["aa6db8d"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,71 +51,13 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 1 |
+| 🟠 High | 0 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 2 |
+| 🟢 Low/Info | 3 |
 
 
 ---
 
-
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### 🔬 Root Cause
-
-```python
-
-
-### ✅ How We Fixed It
-
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-
-### 💻 The Fix
-
-```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
-```
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
-## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
-
-### 🚨 What Went Wrong
-
-**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
-
-
-### 🔬 Root Cause
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
-
-
-### ✅ How We Fixed It
-
-- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
-
-
-### 📈 Impact
-
-- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
-
----
 
 ## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
@@ -147,17 +89,53 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
+## ℹ️ INFO Ralph Proactive Scan Findings
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### ✅ How We Fixed It
+
+Applied targeted fix based on root cause analysis.
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
+## ℹ️ INFO Ralph Proactive Scan Findings
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### ✅ How We Fixed It
+
+Applied targeted fix based on root cause analysis.
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
+
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [c9004f05](https://github.com/IgorGanapolsky/trading/commit/c9004f05) | docs(blog): Ralph discovery - docs(ralph): Au |
+| ℹ️ INFO | [1f1d1d7a](https://github.com/IgorGanapolsky/trading/commit/1f1d1d7a) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [aa6db8d7](https://github.com/IgorGanapolsky/trading/commit/aa6db8d7) | chore(ralph): Record proactive scan findings |
 | ℹ️ INFO | [3a6488ae](https://github.com/IgorGanapolsky/trading/commit/3a6488ae) | chore(ralph): Update workflow health dashboar |
 | ℹ️ INFO | [f572e0d2](https://github.com/IgorGanapolsky/trading/commit/f572e0d2) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [14d5ea32](https://github.com/IgorGanapolsky/trading/commit/14d5ea32) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [5cb068fd](https://github.com/IgorGanapolsky/trading/commit/5cb068fd) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
