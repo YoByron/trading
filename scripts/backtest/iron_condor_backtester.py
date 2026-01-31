@@ -4,7 +4,22 @@ import sys as _sys
 
 print(f"DEBUG: Script executing with Python: {_sys.executable}", flush=True)
 print(f"DEBUG: Python version: {_sys.version}", flush=True)
-print(f"DEBUG: sys.path[0:3]: {_sys.path[0:3]}", flush=True)
+print("DEBUG: Full sys.path:", flush=True)
+for p in _sys.path:
+    print(f"  - {p}", flush=True)
+
+# Try to find alpaca in site-packages
+import importlib.util
+
+spec = importlib.util.find_spec("alpaca")
+print(f"DEBUG: alpaca module spec: {spec}", flush=True)
+if spec is None:
+    # Check if we can manually add site-packages
+    import site
+
+    print(f"DEBUG: site.getsitepackages(): {site.getsitepackages()}", flush=True)
+    print(f"DEBUG: site.getusersitepackages(): {site.getusersitepackages()}", flush=True)
+
 """
 Iron Condor Backtester for SPY/SPX
 
