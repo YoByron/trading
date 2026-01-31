@@ -50,14 +50,25 @@ class VIXMeanReversionSignal:
     but fear subsiding = ideal selling opportunity).
     """
 
-    # Configuration
-    VIX_SPIKE_THRESHOLD = 20.0  # VIX above this = "elevated"
-    VIX_OPTIMAL_MIN = 15.0  # VIX below this = premiums too thin
-    VIX_OPTIMAL_MAX = 25.0  # VIX above this = too risky
-    VIX_EXTREME = 30.0  # VIX above this = AVOID
+    # Configuration - Updated Jan 31, 2026 (LL-321 Research)
+    # Uses RiskThresholds for centralized constants
+    VIX_SPIKE_THRESHOLD = 20.0  # VIX above this = "elevated" (optimal zone start)
+    VIX_OPTIMAL_MIN = 15.0  # VIX below this = premiums too thin (low-medium zone)
+    VIX_OPTIMAL_MAX = 25.0  # VIX above this = high volatility, use caution
+    VIX_EXTREME = 30.0  # VIX above this = AVOID (extreme zone per LL-321)
     MA_PERIOD = 3  # 3-day moving average
     STD_LOOKBACK = 30  # 30-day std dev lookback
     STD_MULTIPLIER = 2.0  # 2 standard deviations for threshold
+
+    # Position sizing multipliers by VIX zone (LL-321)
+    # Full position = 1.0, reduced = 0.5, none = 0.0
+    POSITION_SIZE_BY_ZONE = {
+        "low": 0.0,  # VIX < 15 - avoid
+        "low_medium": 0.5,  # VIX 15-20 - half position
+        "optimal": 1.0,  # VIX 20-25 - full position
+        "high": 0.75,  # VIX 25-30 - 75% position
+        "extreme": 0.0,  # VIX > 30 - avoid
+    }
 
     def __init__(self):
         """Initialize the signal generator."""

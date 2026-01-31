@@ -113,10 +113,14 @@ class RiskThresholds:
     VIX_HALT_THRESHOLD = 30  # Halt all new trades above VIX 30
     VIX_REDUCE_THRESHOLD = 25  # Reduce position sizing above VIX 25
 
-    # VIX optimal range for iron condors (LL-269 research, Jan 21 2026)
-    # VIX 15-25: Ideal - premiums decent, risk manageable
-    # VIX < 15: Lower premiums but still tradeable in paper phase
-    # VIX > 25: Caution - volatility too high, wider strikes needed
+    # VIX-based Entry Zones for Iron Condors (LL-321 Research, Jan 31 2026)
+    # Research from 71,417 trade study + industry best practices
+    #
+    # Zone 1: LOW (VIX < 15) - Premiums too thin, avoid new entries
+    # Zone 2: LOW-MEDIUM (15-20) - Tradeable with caution, smaller positions
+    # Zone 3: OPTIMAL (20-25) - Best entry zone, full position size
+    # Zone 4: HIGH (25-30) - Excellent premiums but higher risk
+    # Zone 5: EXTREME (> 30) - Wide spreads or avoid entirely
     #
     # CRITICAL FIX Jan 26, 2026 (LL-316):
     # VIX_OPTIMAL_MIN=15 blocked ALL trades for 5 days during paper validation!
@@ -124,14 +128,55 @@ class RiskThresholds:
     VIX_OPTIMAL_MIN = 12  # Allow paper trading even with thin premiums
     VIX_OPTIMAL_MAX = 25  # Use caution when VIX > 25 (high volatility)
 
+    # Entry recommendation by VIX zone (LL-321)
+    VIX_ENTRY_ZONES = {
+        "low": {"min": 0, "max": 15, "action": "AVOID", "position_pct": 0.0},
+        "low_medium": {"min": 15, "max": 20, "action": "CAUTION", "position_pct": 0.5},
+        "optimal": {"min": 20, "max": 25, "action": "ENTER", "position_pct": 1.0},
+        "high": {"min": 25, "max": 30, "action": "CAUTION", "position_pct": 0.75},
+        "extreme": {"min": 30, "max": 100, "action": "AVOID", "position_pct": 0.0},
+    }
+
+    @classmethod
+    def get_vix_entry_recommendation(cls, vix: float) -> dict:
+        """Get entry recommendation based on current VIX level (LL-321).
+
+        Args:
+            vix: Current VIX level
+
+        Returns:
+            dict with zone, action, and position_pct
+        """
+        for zone_name, zone in cls.VIX_ENTRY_ZONES.items():
+            if zone["min"] <= vix < zone["max"]:
+                return {
+                    "zone": zone_name,
+                    "action": zone["action"],
+                    "position_pct": zone["position_pct"],
+                    "vix": vix,
+                }
+        # Default to AVOID for any unexpected VIX value
+        return {"zone": "unknown", "action": "AVOID", "position_pct": 0.0, "vix": vix}
+
     # Stop loss levels
     CSP_STOP_LOSS_MULTIPLIER = 2.0  # Exit at 2x premium received
     COVERED_CALL_STOP_LOSS_MULTIPLIER = 2.0
     IRON_CONDOR_STOP_LOSS_MULTIPLIER = 2.2  # McMillan rule
 
-    # Take profit levels
+    # Take profit levels (LL-323: 71,417 trade study findings)
+    # 50% profit target = optimal balance of win rate and capital efficiency
+    # Captures 50% of profit in ~40% of the time = faster capital turnover
     CSP_TAKE_PROFIT_PCT = 0.50  # Close at 50% profit
-    IRON_CONDOR_TAKE_PROFIT_PCT = 0.50
+    IRON_CONDOR_TAKE_PROFIT_PCT = 0.50  # 85% win rate at 50% profit target
+
+    # Profit management by delta (LL-323 research)
+    # Tighter spreads (30-delta) benefit from earlier profit taking
+    # Wider spreads (16-delta) can hold longer for higher targets
+    PROFIT_TARGET_BY_DELTA = {
+        "16_delta": {"profit_target": 0.75, "win_rate": 0.75},  # Wide condors
+        "20_delta": {"profit_target": 0.50, "win_rate": 0.85},  # Standard condors
+        "30_delta": {"profit_target": 0.25, "win_rate": 0.90},  # Tight condors
+    }
 
     # DTE thresholds (per CLAUDE.md Jan 19 - Iron Condor strategy)
     # Entry: 30-45 DTE optimal for theta decay
