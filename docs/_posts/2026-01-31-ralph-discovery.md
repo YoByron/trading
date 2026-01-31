@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-31 11:25:17
+date: 2026-01-31 11:34:18
 categories: [engineering, lessons-learned, ai-trading]
-tags: [put, history, finding, call]
+tags: [trade, state, iron, trades]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["c2fb151"]
-        F2["b6ce8e3"]
-        F3["4b447a4"]
+        F1["7dc5427"]
+        F2["1c55b6b"]
+        F3["c2fb151"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,29 +153,19 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| 🟡 MEDIUM | [7dc54279](https://github.com/IgorGanapolsky/trading/commit/7dc54279) | fix(ci): Add pytz dependency for alpaca-py, r |
+| ℹ️ INFO | [1c55b6be](https://github.com/IgorGanapolsky/trading/commit/1c55b6be) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [c2fb151e](https://github.com/IgorGanapolsky/trading/commit/c2fb151e) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b6ce8e31](https://github.com/IgorGanapolsky/trading/commit/b6ce8e31) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [4b447a4d](https://github.com/IgorGanapolsky/trading/commit/4b447a4d) | fix(ci): Use explicit $pythonLocation for bac |
-| ℹ️ INFO | [c918eb04](https://github.com/IgorGanapolsky/trading/commit/c918eb04) | fix(ci): Use python3 instead of python in bac |
-| ℹ️ INFO | [65cec6da](https://github.com/IgorGanapolsky/trading/commit/65cec6da) | fix(ci): Disable pip cache for backtest workf |
 
 
 ### 💻 Featured Code Change
 
-From commit `3c061ebb`:
+From commit `7dc54279`:
 
 ```python
-    # VIX-based Entry Zones for Iron Condors (LL-321 Research, Jan 31 2026)
-    # Research from 71,417 trade study + industry best practices
-    #
-    # Zone 1: LOW (VIX < 15) - Premiums too thin, avoid new entries
-    # Zone 2: LOW-MEDIUM (15-20) - Tradeable with caution, smaller positions
-    # Zone 3: OPTIMAL (20-25) - Best entry zone, full position size
-    # Zone 4: HIGH (25-30) - Excellent premiums but higher risk
-    # Zone 5: EXTREME (> 30) - Wide spreads or avoid entirely
-    # Entry recommendation by VIX zone (LL-321)
-    VIX_ENTRY_ZONES = {
-        "low": {"min": 0, "max": 15, "acti
+except ImportError:
 ```
 
 
