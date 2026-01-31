@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-30 22:10:12
+date: 2026-01-30 22:47:35
 categories: [engineering, lessons-learned, ai-trading]
-tags: [history, call, trades, state]
+tags: [scripts, history, iron, left-biased]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["14d5ea3"]
-        F2["5cb068f"]
-        F3["8d40b90"]
+        F1["aa6db8d"]
+        F2["3a6488a"]
+        F3["f572e0d"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [aa6db8d7](https://github.com/IgorGanapolsky/trading/commit/aa6db8d7) | chore(ralph): Record proactive scan findings |
+| ℹ️ INFO | [3a6488ae](https://github.com/IgorGanapolsky/trading/commit/3a6488ae) | chore(ralph): Update workflow health dashboar |
+| ℹ️ INFO | [f572e0d2](https://github.com/IgorGanapolsky/trading/commit/f572e0d2) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [14d5ea32](https://github.com/IgorGanapolsky/trading/commit/14d5ea32) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [5cb068fd](https://github.com/IgorGanapolsky/trading/commit/5cb068fd) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [8d40b90d](https://github.com/IgorGanapolsky/trading/commit/8d40b90d) | feat(weekend): Learning pipeline update 21534 |
-| ℹ️ INFO | [72fd777f](https://github.com/IgorGanapolsky/trading/commit/72fd777f) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [1dd82ab3](https://github.com/IgorGanapolsky/trading/commit/1dd82ab3) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
