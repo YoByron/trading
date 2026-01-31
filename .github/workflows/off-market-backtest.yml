@@ -112,20 +112,20 @@ jobs:
           DAYS="${{ steps.params.outputs.days }}"
 
           if [ "${{ steps.params.outputs.sweep }}" = "true" ]; then
-            python scripts/backtest/parameter_sweep.py \
+            python3 scripts/backtest/parameter_sweep.py \
               --days $DAYS \
               --max-combos ${{ steps.params.outputs.max_combos }} \
               --output data/backtests/parameter_sweeps
           elif [ "$STRATEGY" = "iron_condor" ] || [ "$STRATEGY" = "both" ]; then
             echo "🦅 Running Iron Condor backtest..."
-            python scripts/backtest/iron_condor_backtester.py \
+            python3 scripts/backtest/iron_condor_backtester.py \
               --days $DAYS \
               --output data/backtests
           fi
 
           if [ "$STRATEGY" = "bull_put_spread" ] || [ "$STRATEGY" = "both" ]; then
             echo "🐂 Running Bull Put Spread backtest..."
-            python scripts/backtest/bull_put_spread_backtester.py \
+            python3 scripts/backtest/bull_put_spread_backtester.py \
               --days $DAYS \
               --output data/backtests
           fi
@@ -140,7 +140,7 @@ jobs:
         if: success()
         continue-on-error: true
         run: |
-          python scripts/backtest/ingest_backtest_to_rag.py \
+          python3 scripts/backtest/ingest_backtest_to_rag.py \
             --lessons-dir data/backtests \
             --output data/rag_staging
 
