@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# Debug: Print Python info immediately at start before any imports
+import sys as _sys
+
+print(f"DEBUG: Script executing with Python: {_sys.executable}", flush=True)
+print(f"DEBUG: Python version: {_sys.version}", flush=True)
+print(f"DEBUG: sys.path[0:3]: {_sys.path[0:3]}", flush=True)
 """
 Iron Condor Backtester for SPY/SPX
 
