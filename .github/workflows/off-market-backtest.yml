@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install alpaca-py pandas numpy scipy matplotlib google-cloud-aiplatform
+          pip install alpaca-py pandas numpy scipy matplotlib google-cloud-aiplatform pytz
           # Verify alpaca-py is installed and show python path
           which python3
           python3 --version
@@ -116,14 +116,6 @@ jobs:
 
           # Use explicit Python path from setup-python to avoid shebang issues
           PYTHON="$pythonLocation/bin/python3"
-          echo "Using Python: $PYTHON"
-
-          # Debug: verify alpaca-py is accessible from this Python right before running
-          "$PYTHON" -c "import sys; print('Python path:', sys.executable)"
-          "$PYTHON" -c "from alpaca.trading.client import TradingClient; print('✅ Pre-run alpaca check passed')"
-
-          # Also check PYTHONPATH
-          echo "PYTHONPATH: $PYTHONPATH"
 
           if [ "${{ steps.params.outputs.sweep }}" = "true" ]; then
             "$PYTHON" scripts/backtest/parameter_sweep.py \

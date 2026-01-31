@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-# Debug: Print Python info immediately at start before any imports
-import sys as _sys
-
-print(f"DEBUG: Script executing with Python: {_sys.executable}", flush=True)
-print(f"DEBUG: Python version: {_sys.version}", flush=True)
-print("DEBUG: Full sys.path:", flush=True)
-for p in _sys.path:
-    print(f"  - {p}", flush=True)
-
-# Try to find alpaca in site-packages
-import importlib.util
-
-spec = importlib.util.find_spec("alpaca")
-print(f"DEBUG: alpaca module spec: {spec}", flush=True)
-if spec is None:
-    # Check if we can manually add site-packages
-    import site
-
-    print(f"DEBUG: site.getsitepackages(): {site.getsitepackages()}", flush=True)
-    print(f"DEBUG: site.getusersitepackages(): {site.getusersitepackages()}", flush=True)
-
 """
 Iron Condor Backtester for SPY/SPX
 
@@ -60,13 +39,8 @@ try:
     from alpaca.data.requests import StockBarsRequest
     from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
     from alpaca.trading.client import TradingClient
-except ImportError as e:
-    import traceback
-
+except ImportError:
     print("ERROR: alpaca-py not installed. Run: pip install alpaca-py")
-    print(f"DEBUG: Actual ImportError: {e}")
-    print("DEBUG: Full traceback:")
-    traceback.print_exc()
     sys.exit(1)
 
 
