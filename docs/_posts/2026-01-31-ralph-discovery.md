@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-31 11:19:12
+date: 2026-01-31 11:25:17
 categories: [engineering, lessons-learned, ai-trading]
-tags: [backup, condor, left-biased, iron]
+tags: [put, history, finding, call]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["b6ce8e3"]
-        F2["4b447a4"]
-        F3["c918eb0"]
+        F1["c2fb151"]
+        F2["b6ce8e3"]
+        F3["4b447a4"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [c2fb151e](https://github.com/IgorGanapolsky/trading/commit/c2fb151e) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [b6ce8e31](https://github.com/IgorGanapolsky/trading/commit/b6ce8e31) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [4b447a4d](https://github.com/IgorGanapolsky/trading/commit/4b447a4d) | fix(ci): Use explicit $pythonLocation for bac |
 | ℹ️ INFO | [c918eb04](https://github.com/IgorGanapolsky/trading/commit/c918eb04) | fix(ci): Use python3 instead of python in bac |
 | ℹ️ INFO | [65cec6da](https://github.com/IgorGanapolsky/trading/commit/65cec6da) | fix(ci): Disable pip cache for backtest workf |
-| ℹ️ INFO | [3c061ebb](https://github.com/IgorGanapolsky/trading/commit/3c061ebb) | feat(strategy): Implement VIX entry zones and |
 
 
 ### 💻 Featured Code Change
