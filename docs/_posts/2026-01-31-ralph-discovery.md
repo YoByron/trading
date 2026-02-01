@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-01-31 22:59:54
+date: 2026-01-31 23:27:54
 categories: [engineering, lessons-learned, ai-trading]
-tags: [iron, call, put, finding]
+tags: [state, call, scripts, finding]
 mermaid: true
 ---
 
@@ -25,9 +25,9 @@ flowchart LR
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["a5585d3"]
-        F2["8e9c69d"]
-        F3["a04a776"]
+        F1["d2d0f6b"]
+        F2["cba2486"]
+        F3["a5585d3"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -153,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [d2d0f6b1](https://github.com/IgorGanapolsky/trading/commit/d2d0f6b1) | docs(blog): Ralph discovery - docs(ralph): Au |
+| ℹ️ INFO | [cba24860](https://github.com/IgorGanapolsky/trading/commit/cba24860) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [a5585d3b](https://github.com/IgorGanapolsky/trading/commit/a5585d3b) | chore(ralph): Record proactive scan findings |
 | ℹ️ INFO | [8e9c69d1](https://github.com/IgorGanapolsky/trading/commit/8e9c69d1) | chore(ralph): Update workflow health dashboar |
 | ℹ️ INFO | [a04a776b](https://github.com/IgorGanapolsky/trading/commit/a04a776b) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [30ca3e77](https://github.com/IgorGanapolsky/trading/commit/30ca3e77) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [be3c34be](https://github.com/IgorGanapolsky/trading/commit/be3c34be) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
