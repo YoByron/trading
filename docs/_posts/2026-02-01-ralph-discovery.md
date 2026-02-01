@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
-date: 2026-02-01 03:22:59
+title: "🟠 HIGH --- (+2 more)"
+date: 2026-02-01 05:19:29
 categories: [engineering, lessons-learned, ai-trading]
-tags: [put, critical, history, trades]
+tags: [iron, critical, left-biased, finding]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟠 LL-298: Invalid"]
-        D3["🟢 LL-318: Claude "]
+        D2["🟢 LL-318: Claude "]
+        D3["🟠 ---"]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["fa233c4"]
-        F2["05065a9"]
-        F3["205ec71"]
+        F1["5c27791"]
+        F2["fa233c4"]
+        F3["05065a9"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -59,38 +59,21 @@ flowchart LR
 ---
 
 
-## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+## 🟠 HIGH ---
 
 ### 🚨 What Went Wrong
 
-- Dead code detected: true
-
-
-### 🔬 Root Cause
-
-```python
+id: LL-298 title: $22.61 Loss from SPY Share Churning - Crisis Workflow Failure date: 2026-01-23
 
 
 ### ✅ How We Fixed It
 
-- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
-
-
-### 💻 The Fix
-
-```python
-# BROKEN CODE (before fix)
-short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
-
-# FIXED CODE
-def round_to_5(x): return round(x / 5) * 5
-short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
-```
+severity: CRITICAL category: trading Lost $22.61 on January 23, 2026 from 49 SPY share trades instead of iron condor execution.
 
 
 ### 📈 Impact
 
-Risk reduced and system resilience improved.
+1. Crisis workflows traded SPY SHARES (not options) 2. Iron condor failed due to:
 
 ---
 
@@ -153,11 +136,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [5c277916](https://github.com/IgorGanapolsky/trading/commit/5c277916) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [fa233c45](https://github.com/IgorGanapolsky/trading/commit/fa233c45) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [05065a91](https://github.com/IgorGanapolsky/trading/commit/05065a91) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [205ec713](https://github.com/IgorGanapolsky/trading/commit/205ec713) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [813feaf0](https://github.com/IgorGanapolsky/trading/commit/813feaf0) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [d2d0f6b1](https://github.com/IgorGanapolsky/trading/commit/d2d0f6b1) | docs(blog): Ralph discovery - docs(ralph): Au |
 
 
 ## 🎯 Key Takeaways
