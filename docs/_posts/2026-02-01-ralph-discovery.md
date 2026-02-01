@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO Ralph Proactive Scan Findings (+2 more)"
-date: 2026-02-01 07:25:36
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-02-01 07:54:43
 categories: [engineering, lessons-learned, ai-trading]
-tags: [issues, detected, security, code]
+tags: [asymmetric, history, iron, critical]
 mermaid: true
 ---
 
@@ -17,17 +17,17 @@ mermaid: true
 ```mermaid
 flowchart LR
     subgraph Detection["🔍 Detection"]
-        D1["🟢 Ralph Proactive"]
-        D2["🟢 Ralph Proactive"]
-        D3["🟢 Ralph Proactive"]
+        D1["🟢 LL-309: Iron Co"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟢 LL-318: Claude "]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["96cea0e"]
-        F2["5c27791"]
-        F3["fa233c4"]
+        F1["78ba3bd"]
+        F2["96cea0e"]
+        F3["5c27791"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,24 +51,41 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
 
 ### 🚨 What Went Wrong
 
 - Dead code detected: true
 
 
+### 🔬 Root Cause
+
+```python
+
+
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
 
 
 ### 📈 Impact
@@ -77,39 +94,56 @@ Risk reduced and system resilience improved.
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
 
 ### 🚨 What Went Wrong
 
-- Dead code detected: true
+**Date**: 2026-01-25 **Category**: Research / Strategy Optimization **Source**: arXiv:2501.12397 - "Stochastic Optimal Control of Iron Condor Portfolios"
+
+
+### 🔬 Root Cause
+
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration - **Our current rule**: Exit at 50% profit OR 7 DTE aligns with research - **Pro**: Higher profitability and success rates - **Con**: Extreme loss potential in tail events
 
 
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+- **Finding**: "Asymmetric, left-biased Iron Condor portfolios with τ = T are optimal in SPX markets" - **Meaning**: Put spread should be closer to current price than call spread - **Why**: Markets have negative skew (crashes more likely than rallies)
 
 
 ### 📈 Impact
 
-Risk reduced and system resilience improved.
+- **Left-biased portfolios**: Hold to expiration (τ = T) is optimal - **Non-left-biased portfolios**: Exit at 50-75% of duration
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
+## ℹ️ INFO LL-318: Claude Code Async Hooks for Performance
 
 ### 🚨 What Went Wrong
 
-- Dead code detected: true
+Session startup and prompt submission were slow due to many synchronous hooks running sequentially. Each hook blocked Claude's execution until completion.
 
 
 ### ✅ How We Fixed It
 
-Applied targeted fix based on root cause analysis.
+Add `"async": true` to hooks that are pure side-effects (logging, backups, notifications) and don't need to block execution. ```json { "type": "command", "command": "./my-hook.sh", "async": true, "timeout": 30 } ``` **YES - Make Async:** - Backup scripts (backup_critical_state.sh) - Feedback capture (capture_feedback.sh) - Blog generators (auto_blog_generator.sh) - Session learning capture (capture_session_learnings.sh) - Any pure logging/notification hook **NO - Keep Synchronous:** - Hooks that
+
+
+### 💻 The Fix
+
+```python
+{
+  "type": "command",
+  "command": "./my-hook.sh",
+  "async": true,
+  "timeout": 30
+}
+```
 
 
 ### 📈 Impact
 
-Risk reduced and system resilience improved.
+Reduced startup latency by ~15-20 seconds by making 5 hooks async. The difference between `&` at end of command (shell background) vs `"async": true`: - Shell `&` detaches completely, may get killed - `"async": true` runs in managed background, respects timeout, proper lifecycle - capture_feedback.s
 
 ---
 
@@ -119,11 +153,11 @@ These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [78ba3bd7](https://github.com/IgorGanapolsky/trading/commit/78ba3bd7) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [96cea0eb](https://github.com/IgorGanapolsky/trading/commit/96cea0eb) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [5c277916](https://github.com/IgorGanapolsky/trading/commit/5c277916) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [fa233c45](https://github.com/IgorGanapolsky/trading/commit/fa233c45) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [05065a91](https://github.com/IgorGanapolsky/trading/commit/05065a91) | docs(ralph): Auto-publish discovery blog post |
-| ℹ️ INFO | [205ec713](https://github.com/IgorGanapolsky/trading/commit/205ec713) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
