@@ -1,9 +1,9 @@
 ---
 layout: post
-title: "ℹ️ INFO LL-309: Iron Condor Optimal Control (+2 more)"
-date: 2026-02-01 01:54:05
+title: "🟠 HIGH LL-298: Invalid Option Strikes Caus (+2 more)"
+date: 2026-02-01 03:22:59
 categories: [engineering, lessons-learned, ai-trading]
-tags: [asymmetric, issues, detected, state]
+tags: [put, critical, history, trades]
 mermaid: true
 ---
 
@@ -18,16 +18,16 @@ mermaid: true
 flowchart LR
     subgraph Detection["🔍 Detection"]
         D1["🟢 LL-309: Iron Co"]
-        D2["🟢 LL-318: Claude "]
-        D3["🟢 Ralph Proactive"]
+        D2["🟠 LL-298: Invalid"]
+        D3["🟢 LL-318: Claude "]
     end
     subgraph Analysis["🔬 Analysis"]
         A1["Root Cause Found"]
     end
     subgraph Fix["🔧 Fix Applied"]
-        F1["05065a9"]
-        F2["205ec71"]
-        F3["813feaf"]
+        F1["fa233c4"]
+        F2["05065a9"]
+        F3["205ec71"]
     end
     subgraph Verify["✅ Verified"]
         V1["Tests Pass"]
@@ -51,13 +51,48 @@ flowchart LR
 |--------|-------|
 | Issues Detected | 3 |
 | 🔴 Critical | 0 |
-| 🟠 High | 0 |
+| 🟠 High | 1 |
 | 🟡 Medium | 0 |
-| 🟢 Low/Info | 3 |
+| 🟢 Low/Info | 2 |
 
 
 ---
 
+
+## 🟠 HIGH LL-298: Invalid Option Strikes Causing CALL Legs to Fail
+
+### 🚨 What Went Wrong
+
+- Dead code detected: true
+
+
+### 🔬 Root Cause
+
+```python
+
+
+### ✅ How We Fixed It
+
+- Added `round_to_5()` function to `calculate_strikes()` - All strikes now rounded to nearest $5 multiple - Commit: `8b3e411` (PR pending merge) 1. Always round SPY strikes to $5 increments 2. Verify ALL 4 legs fill before considering trade complete 3. Add validation that option symbols exist before submitting orders 4. Log when any leg fails to fill - LL-297: Incomplete iron condor crisis (PUT-only positions) - LL-281: CALL leg pricing fallback iron_condor, options, strikes, call_legs, validati
+
+
+### 💻 The Fix
+
+```python
+# BROKEN CODE (before fix)
+short_call = round(price * 1.05)  # round(690*1.05) = $724 INVALID!
+
+# FIXED CODE
+def round_to_5(x): return round(x / 5) * 5
+short_call = round_to_5(price * 1.05)  # round_to_5(724.5) = $725 VALID!
+```
+
+
+### 📈 Impact
+
+Risk reduced and system resilience improved.
+
+---
 
 ## ℹ️ INFO LL-309: Iron Condor Optimal Control Research
 
@@ -112,35 +147,17 @@ Reduced startup latency by ~15-20 seconds by making 5 hooks async. The differenc
 
 ---
 
-## ℹ️ INFO Ralph Proactive Scan Findings
-
-### 🚨 What Went Wrong
-
-- Dead code detected: true
-
-
-### ✅ How We Fixed It
-
-Applied targeted fix based on root cause analysis.
-
-
-### 📈 Impact
-
-Risk reduced and system resilience improved.
-
----
-
 ## 🚀 Code Changes
 
 These commits shipped today ([view on GitHub](https://github.com/IgorGanapolsky/trading/commits/main)):
 
 | Severity | Commit | Description |
 |----------|--------|-------------|
+| ℹ️ INFO | [fa233c45](https://github.com/IgorGanapolsky/trading/commit/fa233c45) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [05065a91](https://github.com/IgorGanapolsky/trading/commit/05065a91) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [205ec713](https://github.com/IgorGanapolsky/trading/commit/205ec713) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [813feaf0](https://github.com/IgorGanapolsky/trading/commit/813feaf0) | docs(ralph): Auto-publish discovery blog post |
 | ℹ️ INFO | [d2d0f6b1](https://github.com/IgorGanapolsky/trading/commit/d2d0f6b1) | docs(blog): Ralph discovery - docs(ralph): Au |
-| ℹ️ INFO | [cba24860](https://github.com/IgorGanapolsky/trading/commit/cba24860) | docs(ralph): Auto-publish discovery blog post |
 
 
 ## 🎯 Key Takeaways
