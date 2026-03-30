@@ -33,9 +33,16 @@ def _ensure_module(name):
 
 # Alpaca SDK stubs
 for mod in [
-    "alpaca", "alpaca.trading", "alpaca.trading.client", "alpaca.trading.enums",
-    "alpaca.trading.requests", "alpaca.data", "alpaca.data.historical",
-    "alpaca.data.historical.option", "alpaca.data.requests", "alpaca.data.timeframe",
+    "alpaca",
+    "alpaca.trading",
+    "alpaca.trading.client",
+    "alpaca.trading.enums",
+    "alpaca.trading.requests",
+    "alpaca.data",
+    "alpaca.data.historical",
+    "alpaca.data.historical.option",
+    "alpaca.data.requests",
+    "alpaca.data.timeframe",
 ]:
     _ensure_module(mod)
 
@@ -47,18 +54,34 @@ _enums.TimeInForce = type("TimeInForce", (), {"DAY": "day", "GTC": "gtc"})
 _enums.QueryOrderStatus = type("QueryOrderStatus", (), {"CLOSED": "closed", "OPEN": "open"})
 
 _requests = _sys.modules["alpaca.trading.requests"]
-_requests.LimitOrderRequest = type("LimitOrderRequest", (), {
-    "__init__": lambda self, **kw: self.__dict__.update(kw),
-})
-_requests.MarketOrderRequest = type("MarketOrderRequest", (), {
-    "__init__": lambda self, **kw: self.__dict__.update(kw),
-})
-_requests.OptionLegRequest = type("OptionLegRequest", (), {
-    "__init__": lambda self, **kw: self.__dict__.update(kw),
-})
-_requests.GetOrdersRequest = type("GetOrdersRequest", (), {
-    "__init__": lambda self, **kw: self.__dict__.update(kw),
-})
+_requests.LimitOrderRequest = type(
+    "LimitOrderRequest",
+    (),
+    {
+        "__init__": lambda self, **kw: self.__dict__.update(kw),
+    },
+)
+_requests.MarketOrderRequest = type(
+    "MarketOrderRequest",
+    (),
+    {
+        "__init__": lambda self, **kw: self.__dict__.update(kw),
+    },
+)
+_requests.OptionLegRequest = type(
+    "OptionLegRequest",
+    (),
+    {
+        "__init__": lambda self, **kw: self.__dict__.update(kw),
+    },
+)
+_requests.GetOrdersRequest = type(
+    "GetOrdersRequest",
+    (),
+    {
+        "__init__": lambda self, **kw: self.__dict__.update(kw),
+    },
+)
 
 # Safety gate stub
 _ensure_module("src.safety.mandatory_trade_gate")
@@ -95,8 +118,10 @@ class TestStrikeSelectionNetCredit:
         Fixed: credit = (put_bid + call_bid) - (long_put_ask + long_call_ask).
         """
         sel = self._make_selection(
-            put_bid=3.90, call_bid=3.89,  # Short legs: we collect $7.79 gross
-            long_put_ask=2.50, long_call_ask=2.60,  # Long legs: we pay $5.10
+            put_bid=3.90,
+            call_bid=3.89,  # Short legs: we collect $7.79 gross
+            long_put_ask=2.50,
+            long_call_ask=2.60,  # Long legs: we pay $5.10
         )
         # Net credit should be $7.79 - $5.10 = $2.69, NOT $7.79
         assert sel.net_credit == pytest.approx(2.69, abs=0.01)
@@ -109,8 +134,10 @@ class TestStrikeSelectionNetCredit:
     def test_net_credit_realistic_15_delta(self):
         """Realistic 15-delta $10-wide IC should yield $1.50-$3.50 net credit."""
         sel = self._make_selection(
-            put_bid=2.10, call_bid=1.80,
-            long_put_ask=1.20, long_call_ask=0.90,
+            put_bid=2.10,
+            call_bid=1.80,
+            long_put_ask=1.20,
+            long_call_ask=0.90,
         )
         credit = sel.net_credit
         assert 1.50 <= credit <= 3.50, f"Net credit ${credit:.2f} outside realistic range"
@@ -118,8 +145,10 @@ class TestStrikeSelectionNetCredit:
     def test_net_credit_never_equals_gross_when_wings_have_cost(self):
         """Regression: net credit must always be less than gross when wings cost money."""
         sel = self._make_selection(
-            put_bid=4.00, call_bid=3.50,
-            long_put_ask=1.00, long_call_ask=0.80,
+            put_bid=4.00,
+            call_bid=3.50,
+            long_put_ask=1.00,
+            long_call_ask=0.80,
         )
         gross = sel.put_bid + sel.call_bid
         assert sel.net_credit < gross
@@ -128,8 +157,10 @@ class TestStrikeSelectionNetCredit:
     def test_net_credit_negative_when_wings_too_expensive(self):
         """If long legs cost more than short legs collect, credit is negative."""
         sel = self._make_selection(
-            put_bid=1.00, call_bid=0.80,
-            long_put_ask=1.50, long_call_ask=1.20,
+            put_bid=1.00,
+            call_bid=0.80,
+            long_put_ask=1.50,
+            long_call_ask=1.20,
         )
         assert sel.net_credit < 0
 
@@ -144,11 +175,16 @@ class TestFindOpportunity:
 
     def _mock_selection(self, net_credit_val, method="live_delta"):
         sel = StrikeSelection(
-            short_put=620.0, long_put=610.0,
-            short_call=680.0, long_call=690.0,
-            put_delta=0.15, call_delta=0.15,
-            method=method, expiry="2026-05-01",
-            put_bid=3.90, call_bid=3.89,
+            short_put=620.0,
+            long_put=610.0,
+            short_call=680.0,
+            long_call=690.0,
+            put_delta=0.15,
+            call_delta=0.15,
+            method=method,
+            expiry="2026-05-01",
+            put_bid=3.90,
+            call_bid=3.89,
             # Set long asks so net_credit matches desired value
             long_put_ask=(3.90 + 3.89 - net_credit_val) / 2,
             long_call_ask=(3.90 + 3.89 - net_credit_val) / 2,
@@ -180,7 +216,9 @@ class TestFindOpportunity:
     def test_heuristic_fallback_uses_conservative_estimate(self, mock_select):
         from scripts.ic_simple import find_opportunity
 
-        mock_select.return_value = self._mock_selection(net_credit_val=0.0, method="heuristic_fallback")
+        mock_select.return_value = self._mock_selection(
+            net_credit_val=0.0, method="heuristic_fallback"
+        )
         opp = find_opportunity(spy_price=650.0)
         assert opp is not None
         assert opp["est_credit"] == pytest.approx(1.50)
@@ -399,9 +437,18 @@ class TestE2EPipeline:
     @patch("scripts.ic_simple.get_spy_price", return_value=650.0)
     @patch("scripts.ic_simple.get_client")
     def test_full_entry_uses_net_credit_in_limit_price(
-        self, mock_client_fn, mock_spy, mock_exits, mock_fills,
-        mock_stale, mock_count, mock_opp, mock_submit, mock_wait,
-        mock_load, mock_save,
+        self,
+        mock_client_fn,
+        mock_spy,
+        mock_exits,
+        mock_fills,
+        mock_stale,
+        mock_count,
+        mock_opp,
+        mock_submit,
+        mock_wait,
+        mock_load,
+        mock_save,
     ):
         """The single most important test: verify the limit price sent to Alpaca
         is based on NET credit (~$2-3), not GROSS short bids (~$7-8)."""
@@ -439,7 +486,9 @@ class TestE2EPipeline:
 
         # limit_price should be negative (credit), around -2.45 (est - $0.05 concession)
         assert limit_price < 0, "Limit price must be negative for credit orders"
-        assert abs(limit_price) < 5.0, f"Limit ${abs(limit_price):.2f} too high — using gross bids, not net credit"
+        assert abs(limit_price) < 5.0, (
+            f"Limit ${abs(limit_price):.2f} too high — using gross bids, not net credit"
+        )
         assert abs(limit_price) == pytest.approx(2.45, abs=0.25), (
             f"Expected ~$2.45 limit (net $2.50 - $0.05), got ${abs(limit_price):.2f}"
         )
@@ -456,9 +505,18 @@ class TestE2EPipeline:
     @patch("scripts.ic_simple.get_spy_price", return_value=650.0)
     @patch("scripts.ic_simple.get_client")
     def test_no_trade_when_position_limit_reached(
-        self, mock_client_fn, mock_spy, mock_exits, mock_fills,
-        mock_stale, mock_count, mock_opp, mock_submit, mock_wait,
-        mock_load, mock_save,
+        self,
+        mock_client_fn,
+        mock_spy,
+        mock_exits,
+        mock_fills,
+        mock_stale,
+        mock_count,
+        mock_opp,
+        mock_submit,
+        mock_wait,
+        mock_load,
+        mock_save,
     ):
         mock_client_fn.return_value = MagicMock()
         mock_count.return_value = 2  # At MAX_IC limit
