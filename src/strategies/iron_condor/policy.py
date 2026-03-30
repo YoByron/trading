@@ -14,18 +14,23 @@ from .position import IronCondorPosition
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ExitDecision:
     should_exit: bool
     reason: Optional[str] = None
     rule_name: Optional[str] = None
 
+
 class ExitPolicyEngine:
     """Evaluates exit policies against IronCondorPosition state."""
 
-    def __init__(self, profit_target: float = IC_PROFIT_TARGET_PCT,
-                 stop_loss_mult: float = IRON_CONDOR_STOP_LOSS_MULTIPLIER,
-                 time_exit_dte: int = RiskThresholds.EXIT_AT_DTE):
+    def __init__(
+        self,
+        profit_target: float = IC_PROFIT_TARGET_PCT,
+        stop_loss_mult: float = IRON_CONDOR_STOP_LOSS_MULTIPLIER,
+        time_exit_dte: int = RiskThresholds.EXIT_AT_DTE,
+    ):
         self.profit_target = profit_target
         self.stop_loss_mult = stop_loss_mult
         self.time_exit_dte = time_exit_dte
@@ -38,7 +43,7 @@ class ExitPolicyEngine:
             return ExitDecision(
                 should_exit=True,
                 reason=f"Target hit: {pnl_pct:.1%} >= {self.profit_target:.1%}",
-                rule_name="PROFIT_TARGET"
+                rule_name="PROFIT_TARGET",
             )
 
         # 2. Stop Exit (Credit Spread Rule: current value > stop_loss_mult * entry_credit)
@@ -50,7 +55,7 @@ class ExitPolicyEngine:
             return ExitDecision(
                 should_exit=True,
                 reason=f"Stop hit: loss {loss_pct:.1%} >= {self.stop_loss_mult:.1%}",
-                rule_name="STOP_LOSS"
+                rule_name="STOP_LOSS",
             )
 
         # 3. Time Exit
@@ -58,7 +63,7 @@ class ExitPolicyEngine:
             return ExitDecision(
                 should_exit=True,
                 reason=f"Time exit: {pos.dte} DTE <= {self.time_exit_dte} threshold",
-                rule_name="TIME_EXIT"
+                rule_name="TIME_EXIT",
             )
 
         return ExitDecision(should_exit=False)

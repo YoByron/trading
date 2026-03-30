@@ -135,7 +135,8 @@ def place_ic(client, opp: dict) -> str | None:
 
         logger.info(f"MLEG limit order: credit >= ${current_credit:.2f} (walk ${walk_total:.2f})")
 
-        order = safe_submit_order(client,
+        order = safe_submit_order(
+            client,
             LimitOrderRequest(
                 qty=1,
                 order_class=OrderClass.MLEG,
@@ -148,7 +149,9 @@ def place_ic(client, opp: dict) -> str | None:
         order_id = str(order.id)
         logger.info(f"Order {order_id}: {order.status}")
 
-        filled = _wait_for_fill(client, order_id, timeout_seconds=WALK_WAIT_SECONDS, poll_interval=5)
+        filled = _wait_for_fill(
+            client, order_id, timeout_seconds=WALK_WAIT_SECONDS, poll_interval=5
+        )
         if not filled:
             try:
                 client.cancel_order_by_id(order_id)

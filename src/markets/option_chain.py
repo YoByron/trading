@@ -265,7 +265,9 @@ def _select_from_live_chain(
 
     # Use ask price for long legs (we're buying), with conservative estimate if not found
     long_put_ask = long_put_opt.get("ask", 0.0) if long_put_opt else best_put.get("bid", 0.0) * 0.4
-    long_call_ask = long_call_opt.get("ask", 0.0) if long_call_opt else best_call.get("bid", 0.0) * 0.4
+    long_call_ask = (
+        long_call_opt.get("ask", 0.0) if long_call_opt else best_call.get("bid", 0.0) * 0.4
+    )
 
     result = StrikeSelection(
         short_put=short_put,

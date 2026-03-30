@@ -12,6 +12,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class IronCondorPosition:
     """Canonical model for an active Iron Condor position."""
@@ -45,7 +46,7 @@ class IronCondorPosition:
     def max_loss(self) -> float:
         width = max(
             self.short_put_strike - self.long_put_strike,
-            self.long_call_strike - self.short_call_strike
+            self.long_call_strike - self.short_call_strike,
         )
         return (width - self.entry_credit) * 100 * self.quantity
 
@@ -75,5 +76,5 @@ class IronCondorPosition:
             "entry_credit": self.entry_credit,
             "quantity": self.quantity,
             "dte": self.dte,
-            "entry_date": self.entry_date.isoformat()
+            "entry_date": self.entry_date.isoformat(),
         }

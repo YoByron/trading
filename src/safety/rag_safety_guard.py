@@ -10,6 +10,7 @@ from src.rag.lessons_learned_rag import LessonsLearnedRAG
 
 logger = logging.getLogger(__name__)
 
+
 class RAGSafetyGuard:
     """Consults the RAG database for similar past incidents before entry."""
 
@@ -37,10 +38,10 @@ class RAGSafetyGuard:
 
             if warnings:
                 return {
-                    "veto": False, # Soft veto (warning)
+                    "veto": False,  # Soft veto (warning)
                     "warning": True,
                     "reason": f"Historical parallels found in lessons: {', '.join(warnings)}",
-                    "lessons": warnings
+                    "lessons": warnings,
                 }
 
             return {"veto": False, "warning": False, "reason": "No immediate historical red flags."}

@@ -12,12 +12,13 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+
 class PromoterAgent:
     """Generates and posts content to Zernio for X, LinkedIn, and Reddit."""
 
     def __init__(self):
         self.api_key = os.getenv("ZERNIO_API_KEY")
-        self.api_url = "https://zernio.com/api/v1/posts" # Corrected GSD endpoint
+        self.api_url = "https://zernio.com/api/v1/posts"  # Corrected GSD endpoint
         if not self.api_key:
             logger.warning("ZERNIO_API_KEY not found in .env. Social promotion will be MOCKED.")
 
@@ -47,9 +48,9 @@ class PromoterAgent:
         copy = self.generate_copy(trade_data)
 
         payload = {
-            "text": copy, # Corrected key
+            "text": copy,  # Corrected key
             "platforms": ["twitter", "linkedin", "reddit"],
-            "scheduledFor": None # Post immediately
+            "scheduledFor": None,  # Post immediately
         }
 
         if not self.api_key:
@@ -57,7 +58,10 @@ class PromoterAgent:
             return {"status": "MOCKED", "content": copy}
 
         try:
-            headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
             response = requests.post(self.api_url, json=payload, headers=headers)
             # Log status for debugging
             logger.info(f"Zernio Request: {json.dumps(payload)}")
@@ -69,6 +73,6 @@ class PromoterAgent:
             return response.json()
         except Exception as e:
             logger.error(f"❌ Zernio Broadcast Failed: {e}")
-            if hasattr(e, 'response') and e.response:
+            if hasattr(e, "response") and e.response:
                 logger.error(f"Details: {e.response.text}")
             return {"error": str(e)}
