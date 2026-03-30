@@ -28,9 +28,16 @@ STRATEGY_PARAMS_FILE = Path(__file__).parent.parent / "data" / "strategy_params.
 def _load_strategy_params() -> dict:
     """Load strategy params from ML-writable config. Falls back to defaults."""
     defaults = {
-        "target_delta": 0.15, "wing_width": 10, "target_dte": 30,
-        "min_dte": 21, "max_dte": 45, "min_credit": 0.50,
-        "profit_target": 0.50, "stop_loss": 1.0, "exit_dte": 7, "max_ic": 2,
+        "target_delta": 0.15,
+        "wing_width": 10,
+        "target_dte": 30,
+        "min_dte": 21,
+        "max_dte": 45,
+        "min_credit": 0.50,
+        "profit_target": 0.50,
+        "stop_loss": 1.0,
+        "exit_dte": 7,
+        "max_ic": 2,
     }
     try:
         if STRATEGY_PARAMS_FILE.exists():
@@ -38,7 +45,9 @@ def _load_strategy_params() -> dict:
             params = data.get("params", {})
             merged = {**defaults, **params}
             if data.get("updated_by") != "seed":
-                logger.info(f"ML params loaded (by {data.get('updated_by', '?')}, confidence={data.get('confidence', 0):.2f})")
+                logger.info(
+                    f"ML params loaded (by {data.get('updated_by', '?')}, confidence={data.get('confidence', 0):.2f})"
+                )
             return merged
     except Exception as e:
         logger.debug(f"Strategy params load failed: {e}")
@@ -620,14 +629,14 @@ def _adjust_strategy_params(adjustments: dict, reason: str, source: str, confide
     Safety: only adjusts if confidence >= 0.7 and changes are within bounds.
     """
     BOUNDS = {
-        "target_delta": (0.10, 0.25),   # Never go below 10-delta or above 25-delta
-        "wing_width": (5, 15),           # $5-$15 wide
-        "target_dte": (21, 60),          # 21-60 DTE
-        "min_credit": (0.30, 2.00),      # Floor $0.30, cap $2.00
-        "profit_target": (0.25, 0.75),   # 25-75% profit take
-        "stop_loss": (0.75, 2.0),        # 75-200% stop
-        "exit_dte": (3, 14),             # 3-14 DTE exit
-        "max_ic": (1, 4),                # 1-4 concurrent ICs
+        "target_delta": (0.10, 0.25),  # Never go below 10-delta or above 25-delta
+        "wing_width": (5, 15),  # $5-$15 wide
+        "target_dte": (21, 60),  # 21-60 DTE
+        "min_credit": (0.30, 2.00),  # Floor $0.30, cap $2.00
+        "profit_target": (0.25, 0.75),  # 25-75% profit take
+        "stop_loss": (0.75, 2.0),  # 75-200% stop
+        "exit_dte": (3, 14),  # 3-14 DTE exit
+        "max_ic": (1, 4),  # 1-4 concurrent ICs
     }
 
     if confidence < 0.7:
@@ -656,17 +665,23 @@ def _adjust_strategy_params(adjustments: dict, reason: str, source: str, confide
         data["updated_at"] = datetime.now().isoformat()
         data["updated_by"] = source
         data["confidence"] = confidence
-        data.setdefault("adjustments", []).append({
-            "timestamp": datetime.now().isoformat(),
-            "source": source,
-            "confidence": confidence,
-            "reason": reason,
-            "changes": {k: {"old": old_params.get(k), "new": v} for k, v in safe_adjustments.items()},
-        })
+        data.setdefault("adjustments", []).append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "source": source,
+                "confidence": confidence,
+                "reason": reason,
+                "changes": {
+                    k: {"old": old_params.get(k), "new": v} for k, v in safe_adjustments.items()
+                },
+            }
+        )
         # Keep last 50 adjustments
         data["adjustments"] = data["adjustments"][-50:]
         STRATEGY_PARAMS_FILE.write_text(json.dumps(data, indent=2))
-        logger.info(f"Strategy params adjusted by {source}: {safe_adjustments} (confidence={confidence:.2f})")
+        logger.info(
+            f"Strategy params adjusted by {source}: {safe_adjustments} (confidence={confidence:.2f})"
+        )
     except Exception as e:
         logger.warning(f"Failed to write strategy params: {e}")
 
@@ -763,7 +778,9 @@ def _auto_adjust_from_performance(stats: dict):
     # Stop loss adjustment
     if avg_loss > 0 and avg_win > 0 and avg_loss > 2 * avg_win and trade_count >= 10:
         adjustments["stop_loss"] = 0.75  # Tighter stop
-        reasons.append(f"avg loss ${avg_loss:.0f} > 2x avg win ${avg_win:.0f} → tighten stop to 75%")
+        reasons.append(
+            f"avg loss ${avg_loss:.0f} > 2x avg win ${avg_win:.0f} → tighten stop to 75%"
+        )
 
     if adjustments:
         _adjust_strategy_params(
@@ -808,6 +825,7 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
         req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             import json as _json
+
             data = _json.loads(resp.read().decode("utf-8"))
             if data.get("AbstractText"):
                 snippets.append(data["AbstractText"][:300])
