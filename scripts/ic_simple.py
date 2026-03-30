@@ -98,6 +98,7 @@ def place_ic(client, opp: dict) -> str | None:
     """Submit limit MLEG order. Returns order ID or None."""
     from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
     from alpaca.trading.requests import LimitOrderRequest, OptionLegRequest
+    from src.safety.mandatory_trade_gate import safe_submit_order
 
     expiry_yymmdd = opp["expiry"].replace("-", "")[2:]
 
@@ -117,14 +118,15 @@ def place_ic(client, opp: dict) -> str | None:
 
     logger.info(f"Submitting MLEG limit order: credit >= ${limit_credit:.2f}")
 
-    order = client.submit_order(
+    order = safe_submit_order(client,
         LimitOrderRequest(
             qty=1,
             order_class=OrderClass.MLEG,
             legs=legs,
             time_in_force=TimeInForce.DAY,
             limit_price=round(-limit_credit, 2),
-        )
+        ),
+        strategy="iron_condor",
     )
 
     logger.info(f"Order {order.id}: {order.status}")
@@ -142,14 +144,15 @@ def place_ic(client, opp: dict) -> str | None:
         retry_credit = round(limit_credit - 0.10, 2)
         if retry_credit >= MIN_CREDIT:
             logger.info(f"Retry MLEG at ${retry_credit:.2f} credit (was ${limit_credit:.2f})")
-            retry_order = client.submit_order(
+            retry_order = safe_submit_order(client,
                 LimitOrderRequest(
                     qty=1,
                     order_class=OrderClass.MLEG,
                     legs=legs,
                     time_in_force=TimeInForce.DAY,
                     limit_price=round(-retry_credit, 2),
-                )
+                ),
+                strategy="iron_condor",
             )
             order_id = str(retry_order.id)
             logger.info(f"Retry order {order_id}: {retry_order.status}")
@@ -297,6 +300,7 @@ def _close_ic(client, legs: list[dict], qty: int):
     """Close IC with MLEG limit order. Fallback to individual legs."""
     from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
     from alpaca.trading.requests import LimitOrderRequest, MarketOrderRequest, OptionLegRequest
+    from src.safety.mandatory_trade_gate import safe_submit_order
 
     # Calculate current debit
     current_debit = abs(sum(leg["current"] * (1 if leg["qty"] < 0 else -1) for leg in legs))
@@ -312,14 +316,15 @@ def _close_ic(client, legs: list[dict], qty: int):
     ]
 
     try:
-        order = client.submit_order(
+        order = safe_submit_order(client,
             LimitOrderRequest(
                 qty=qty,
                 order_class=OrderClass.MLEG,
                 legs=option_legs,
                 time_in_force=TimeInForce.DAY,
                 limit_price=round(limit_debit, 2),
-            )
+            ),
+            strategy="iron_condor",
         )
         logger.info(f"MLEG close: {order.id} @ ${limit_debit:.2f} debit")
     except Exception as e:
@@ -327,13 +332,14 @@ def _close_ic(client, legs: list[dict], qty: int):
         for leg in legs:
             try:
                 side = OrderSide.BUY if leg["qty"] < 0 else OrderSide.SELL
-                client.submit_order(
+                safe_submit_order(client,
                     MarketOrderRequest(
                         symbol=leg["symbol"],
                         qty=abs(leg["qty"]),
                         side=side,
                         time_in_force=TimeInForce.DAY,
-                    )
+                    ),
+                    strategy="iron_condor",
                 )
             except Exception as le:
                 logger.error(f"Failed to close {leg['symbol']}: {le}")
