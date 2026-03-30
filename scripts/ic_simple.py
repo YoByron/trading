@@ -21,15 +21,39 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("ic_simple")
 
-# ── Constants ────────────────────────────────────────────────────────────────
-MAX_IC = 2  # Max concurrent iron condors
-MIN_CREDIT = 0.50  # Minimum net credit per share
-MIN_HOLD_HOURS = 4  # Don't close until held this long
-PROFIT_TARGET = 0.50  # Close at 50% of credit
-STOP_LOSS = 1.0  # Close at 100% loss of credit
-EXIT_DTE = 7  # Close at 7 DTE
-WING_WIDTH = 10  # $10 wide spreads
-TARGET_DELTA = 0.15
+# ── Strategy Parameters (ML-adjustable) ──────────────────────────────────────
+STRATEGY_PARAMS_FILE = Path(__file__).parent.parent / "data" / "strategy_params.json"
+
+
+def _load_strategy_params() -> dict:
+    """Load strategy params from ML-writable config. Falls back to defaults."""
+    defaults = {
+        "target_delta": 0.15, "wing_width": 10, "target_dte": 30,
+        "min_dte": 21, "max_dte": 45, "min_credit": 0.50,
+        "profit_target": 0.50, "stop_loss": 1.0, "exit_dte": 7, "max_ic": 2,
+    }
+    try:
+        if STRATEGY_PARAMS_FILE.exists():
+            data = json.loads(STRATEGY_PARAMS_FILE.read_text())
+            params = data.get("params", {})
+            merged = {**defaults, **params}
+            if data.get("updated_by") != "seed":
+                logger.info(f"ML params loaded (by {data.get('updated_by', '?')}, confidence={data.get('confidence', 0):.2f})")
+            return merged
+    except Exception as e:
+        logger.debug(f"Strategy params load failed: {e}")
+    return defaults
+
+
+_SP = _load_strategy_params()
+MAX_IC = _SP["max_ic"]
+MIN_CREDIT = _SP["min_credit"]
+MIN_HOLD_HOURS = 4  # Not ML-adjustable (safety)
+PROFIT_TARGET = _SP["profit_target"]
+STOP_LOSS = _SP["stop_loss"]
+EXIT_DTE = _SP["exit_dte"]
+WING_WIDTH = _SP["wing_width"]
+TARGET_DELTA = _SP["target_delta"]
 ENTRIES_FILE = Path(__file__).parent.parent / "data" / "ic_entries.json"
 
 
@@ -590,6 +614,63 @@ def _weekend_learn():
     _research_strategies(win_rate, len(trades), total_pnl)
 
 
+def _adjust_strategy_params(adjustments: dict, reason: str, source: str, confidence: float):
+    """Write adjusted strategy parameters. Called by GRPO or research pipeline.
+
+    Safety: only adjusts if confidence >= 0.7 and changes are within bounds.
+    """
+    BOUNDS = {
+        "target_delta": (0.10, 0.25),   # Never go below 10-delta or above 25-delta
+        "wing_width": (5, 15),           # $5-$15 wide
+        "target_dte": (21, 60),          # 21-60 DTE
+        "min_credit": (0.30, 2.00),      # Floor $0.30, cap $2.00
+        "profit_target": (0.25, 0.75),   # 25-75% profit take
+        "stop_loss": (0.75, 2.0),        # 75-200% stop
+        "exit_dte": (3, 14),             # 3-14 DTE exit
+        "max_ic": (1, 4),                # 1-4 concurrent ICs
+    }
+
+    if confidence < 0.7:
+        logger.info(f"Param adjustment skipped: confidence {confidence:.2f} < 0.70")
+        return
+
+    # Validate bounds
+    safe_adjustments = {}
+    for key, value in adjustments.items():
+        if key in BOUNDS:
+            lo, hi = BOUNDS[key]
+            clamped = max(lo, min(hi, value))
+            if clamped != value:
+                logger.warning(f"Clamped {key}: {value} → {clamped} (bounds {lo}-{hi})")
+            safe_adjustments[key] = clamped
+
+    if not safe_adjustments:
+        return
+
+    try:
+        data = json.loads(STRATEGY_PARAMS_FILE.read_text()) if STRATEGY_PARAMS_FILE.exists() else {}
+        params = data.get("params", {})
+        old_params = dict(params)
+        params.update(safe_adjustments)
+        data["params"] = params
+        data["updated_at"] = datetime.now().isoformat()
+        data["updated_by"] = source
+        data["confidence"] = confidence
+        data.setdefault("adjustments", []).append({
+            "timestamp": datetime.now().isoformat(),
+            "source": source,
+            "confidence": confidence,
+            "reason": reason,
+            "changes": {k: {"old": old_params.get(k), "new": v} for k, v in safe_adjustments.items()},
+        })
+        # Keep last 50 adjustments
+        data["adjustments"] = data["adjustments"][-50:]
+        STRATEGY_PARAMS_FILE.write_text(json.dumps(data, indent=2))
+        logger.info(f"Strategy params adjusted by {source}: {safe_adjustments} (confidence={confidence:.2f})")
+    except Exception as e:
+        logger.warning(f"Failed to write strategy params: {e}")
+
+
 def _daily_learn():
     """Continuous learning: runs after every trading session (not just weekends).
 
@@ -599,18 +680,43 @@ def _daily_learn():
     """
     logger.info("\n--- DAILY LEARNING ---")
 
-    # 1. GRPO retrain from closed trade data
+    # 1. GRPO retrain and apply policy adjustments
     try:
         from src.ml.grpo_trade_learner import GRPOTradeLearner
 
         learner = GRPOTradeLearner()
         result = learner.train()
         logger.info(f"GRPO retrain: {result}")
+
+        # Extract recommended params from GRPO policy if available
+        meta_file = Path(__file__).parent.parent / "models" / "ml" / "grpo_trade_metadata.json"
+        if meta_file.exists():
+            meta = json.loads(meta_file.read_text())
+            fp = meta.get("fallback_params", {})
+            trades_trained = meta.get("trades_trained_on", 0)
+            if trades_trained >= 10 and fp:
+                # GRPO has enough data — apply its recommendations
+                grpo_adjustments = {}
+                if "delta" in fp and 0.10 <= fp["delta"] <= 0.25:
+                    grpo_adjustments["target_delta"] = fp["delta"]
+                if "dte" in fp and 21 <= fp["dte"] <= 60:
+                    grpo_adjustments["target_dte"] = int(fp["dte"])
+                if grpo_adjustments:
+                    confidence = min(0.5 + (trades_trained / 100), 0.95)
+                    _adjust_strategy_params(
+                        grpo_adjustments,
+                        reason=f"GRPO policy after {trades_trained} trades",
+                        source="grpo",
+                        confidence=confidence,
+                    )
     except Exception as e:
         logger.debug(f"GRPO retrain skipped: {e}")
 
     # 2. Quick strategy research (one query per session, saves to RAG)
     stats_file = Path(__file__).parent.parent / "data" / "ic_stats.json"
+    trade_count = 0
+    win_rate = 0
+    total_pnl = 0
     try:
         stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
         win_rate = stats.get("win_rate", 0)
@@ -620,42 +726,127 @@ def _daily_learn():
     except Exception as e:
         logger.debug(f"Research skipped: {e}")
 
-    # 3. Brief performance snapshot
+    # 3. Performance-based auto-adjustment (data-driven, not research-driven)
+    if trade_count >= 10:
+        _auto_adjust_from_performance(stats)
+
+    # 4. Brief performance snapshot
     _print_report()
 
 
+def _auto_adjust_from_performance(stats: dict):
+    """Adjust strategy params based on actual trade performance data.
+
+    Rules:
+    - Win rate < 70% after 10+ trades → widen delta (more OTM = higher win rate)
+    - Win rate > 90% after 15+ trades → tighten delta (closer = more premium)
+    - Avg loss > 2x avg win → tighten stop loss
+    - Most exits at DTE → could enter shorter DTE for faster theta decay
+    """
+    trade_count = stats.get("total", 0)
+    win_rate = stats.get("win_rate", 0)
+    avg_win = stats.get("avg_win", 0)
+    avg_loss = abs(stats.get("avg_loss", 0))
+
+    adjustments = {}
+    reasons = []
+    confidence = min(0.5 + (trade_count / 60), 0.90)  # Caps at 0.90
+
+    # Delta adjustment based on win rate
+    if win_rate < 70 and trade_count >= 10:
+        adjustments["target_delta"] = 0.12  # Wider = higher probability
+        reasons.append(f"win rate {win_rate:.0f}% < 70% → widen to 12-delta")
+    elif win_rate > 90 and trade_count >= 15:
+        adjustments["target_delta"] = 0.18  # Tighter = more premium
+        reasons.append(f"win rate {win_rate:.0f}% > 90% → tighten to 18-delta for more premium")
+
+    # Stop loss adjustment
+    if avg_loss > 0 and avg_win > 0 and avg_loss > 2 * avg_win and trade_count >= 10:
+        adjustments["stop_loss"] = 0.75  # Tighter stop
+        reasons.append(f"avg loss ${avg_loss:.0f} > 2x avg win ${avg_win:.0f} → tighten stop to 75%")
+
+    if adjustments:
+        _adjust_strategy_params(
+            adjustments,
+            reason=" | ".join(reasons),
+            source="performance_auto",
+            confidence=confidence,
+        )
+    else:
+        logger.info("Auto-adjust: no changes needed based on current performance")
+
+
 def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
-    """Fetch latest iron condor strategy research and save actionable findings to RAG."""
+    """Fetch iron condor strategy research from multiple sources, save to RAG.
+
+    Sources (tried in order): DuckDuckGo API JSON, DuckDuckGo Lite HTML.
+    Results are deduplicated and saved as a daily research note.
+    """
+    import re
+    import urllib.parse
+    import urllib.request
+
+    # Rotate queries based on performance gaps
+    queries = []
+    if trade_count < 10:
+        queries.append("iron condor SPY 15 delta fill rate MLEG limit order 2024 2025")
+        queries.append("tastytrade iron condor entry frequency mechanical systematic")
+    elif win_rate < 80:
+        queries.append(f"iron condor improve win rate below {win_rate:.0f}% delta adjustment")
+        queries.append("iron condor adjustment rolling strategy when tested")
+    else:
+        queries.append("iron condor scale position sizing $100K account management")
+        queries.append("iron condor SPX vs SPY tax 1256 advantages scaling")
+
+    # Pick one query per session (rotate by day)
+    query = queries[datetime.now().timetuple().tm_yday % len(queries)]
+
+    snippets = []
     try:
-        import urllib.request
-
-        # Query focused on our current performance gap
-        if trade_count < 10:
-            query = "iron condor SPY automated trading system low trade frequency how to increase entries"
-        elif win_rate < 80:
-            query = f"iron condor win rate {win_rate:.0f}% improvement delta selection adjustment strategy"
-        else:
-            query = "iron condor scaling strategy position sizing advanced management"
-
-        # Use DuckDuckGo Lite (no API key needed)
-        url = f"https://lite.duckduckgo.com/lite/?q={urllib.parse.quote(query)}&kl=us-en"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        # Try DuckDuckGo JSON API first (more structured)
+        api_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json&no_html=1&skip_disambig=1"
+        req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
+            import json as _json
+            data = _json.loads(resp.read().decode("utf-8"))
+            if data.get("AbstractText"):
+                snippets.append(data["AbstractText"][:300])
+            for topic in data.get("RelatedTopics", [])[:5]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    snippets.append(topic["Text"][:200])
+    except Exception:
+        pass
 
-        # Extract text snippets (basic parsing)
-        import re
+    if len(snippets) < 3:
+        # Fallback: DuckDuckGo Lite HTML
+        try:
+            url = f"https://lite.duckduckgo.com/lite/?q={urllib.parse.quote(query)}&kl=us-en"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                html = resp.read().decode("utf-8", errors="ignore")
+            html_snippets = re.findall(r'class="result-snippet">(.*?)</td>', html, re.DOTALL)
+            if not html_snippets:
+                html_snippets = re.findall(r"<td[^>]*>(.*?)</td>", html, re.DOTALL)
+            for s in html_snippets[:5]:
+                clean = re.sub(r"<[^>]+>", "", s).strip()
+                if len(clean) > 30:
+                    snippets.append(clean[:200])
+        except Exception:
+            pass
 
-        snippets = re.findall(r'class="result-snippet">(.*?)</td>', html, re.DOTALL)
-        if not snippets:
-            snippets = re.findall(r"<td[^>]*>(.*?)</td>", html, re.DOTALL)
+    # Deduplicate
+    seen = set()
+    unique = []
+    for s in snippets:
+        key = s[:50].lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(s)
 
-        clean = [re.sub(r"<[^>]+>", "", s).strip() for s in snippets[:5] if len(s) > 30]
-
-        if clean:
-            research_file = LESSONS_DIR / f"research_{datetime.now().strftime('%Y%m%d')}.md"
-            LESSONS_DIR.mkdir(parents=True, exist_ok=True)
-            content = f"""# Strategy Research — {datetime.now().strftime("%Y-%m-%d")}
+    if unique:
+        research_file = LESSONS_DIR / f"research_{datetime.now().strftime('%Y%m%d')}.md"
+        LESSONS_DIR.mkdir(parents=True, exist_ok=True)
+        content = f"""# Strategy Research — {datetime.now().strftime("%Y-%m-%d")}
 
 ## Context
 - Trade count: {trade_count}
@@ -665,16 +856,19 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
 
 ## Findings
 """
-            for i, snippet in enumerate(clean, 1):
-                content += f"\n{i}. {snippet}\n"
+        for i, snippet in enumerate(unique, 1):
+            content += f"\n{i}. {snippet}\n"
 
-            content += "\n## Action Items\n- Review findings and adjust strategy parameters if applicable\n"
-            research_file.write_text(content)
-            logger.info(f"Research saved: {research_file.name} ({len(clean)} findings)")
-        else:
-            logger.info("Research: no actionable findings this week")
-    except Exception as e:
-        logger.debug(f"Research fetch skipped: {e}")
+        content += f"""
+## Auto-Analysis
+- Trades needed for significance: {max(0, 30 - trade_count)}
+- Current phase: {"validation" if trade_count < 30 else "scaling" if win_rate >= 80 else "optimization"}
+- Priority: {"increase trade frequency" if trade_count < 10 else "improve win rate" if win_rate < 80 else "scale up"}
+"""
+        research_file.write_text(content)
+        logger.info(f"Research saved: {research_file.name} ({len(unique)} findings)")
+    else:
+        logger.info("Research: no findings from web sources")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

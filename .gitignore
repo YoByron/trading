@@ -35,6 +35,9 @@ data/*.json
 !data/trades.json
 !data/ic_entries.json
 !data/thumbgate_rules.json
+!data/strategy_params.json
+!data/ic_stats.json
+!data/trade_journal.jsonl
 logs/*.log
 population_log*.txt
 
