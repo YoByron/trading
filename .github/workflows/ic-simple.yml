@@ -75,6 +75,14 @@ jobs:
           fi
           python3 scripts/ic_simple.py $FLAGS
 
+      - name: Retrain GRPO model
+        if: steps.mode.outputs.mode != 'status' && steps.mode.outputs.dry_run != 'true'
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          echo "Retraining GRPO from closed trade history..."
+          python3 scripts/run_grpo_training.py || echo "GRPO training skipped (insufficient data or missing deps)"
+
       - name: Commit trade data
         if: steps.mode.outputs.mode != 'status' && steps.mode.outputs.dry_run != 'true'
         env:
@@ -84,6 +92,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f data/ic_entries.json data/ic_stats.json data/trade_journal.jsonl 2>/dev/null || true
           git add -f data/rag_knowledge/lessons_learned/ 2>/dev/null || true
+          git add -f models/ml/grpo_trade_policy.pt models/ml/grpo_trade_metadata.json 2>/dev/null || true
+          git add -f data/feedback/trade_trajectories.jsonl 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No trade data changes"
           else

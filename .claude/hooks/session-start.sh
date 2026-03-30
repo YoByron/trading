@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
 RLHF_DIR="${PROJECT_ROOT}/.rlhf"
 RULES_FILE="${RLHF_DIR}/prevention-rules.md"
-GATEWAY_CMD=(npx -y mcp-memory-gateway@0.7.1)
+GATEWAY_CMD=(npx -y mcp-memory-gateway@0.8.4)
 
 mkdir -p "${RLHF_DIR}"
 
@@ -71,5 +71,29 @@ if [[ -f "${RULES_FILE}" ]]; then
   echo "Active Prevention Rules:"
   sed -n '1,20p' "${RULES_FILE}" || true
 fi
+
+# Also surface recent mistakes directly from memory log (prevention rules may be empty)
+python3 - "${RLHF_DIR}" <<'MISTAKES' 2>/dev/null || true
+import json, sys
+from pathlib import Path
+mem_log = Path(sys.argv[1]) / "memory-log.jsonl"
+if not mem_log.exists():
+    sys.exit(0)
+mistakes = []
+for raw in mem_log.read_text(encoding="utf-8").splitlines():
+    if not raw.strip():
+        continue
+    try:
+        entry = json.loads(raw)
+    except json.JSONDecodeError:
+        continue
+    if entry.get("category") == "error":
+        mistakes.append(entry)
+if mistakes:
+    print(f"\nRecorded Mistakes ({len(mistakes)}):")
+    for m in mistakes[-5:]:  # Show last 5
+        title = m.get("title", "")[:80]
+        print(f"  - {title}")
+MISTAKES
 
 echo ""

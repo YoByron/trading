@@ -586,6 +586,61 @@ def _weekend_learn():
     lesson_file.write_text(lesson)
     logger.info(f"\nWeekly lesson saved: {lesson_file.name}")
 
+    # Research: fetch latest IC strategy insights and save to RAG
+    _research_strategies(win_rate, len(trades), total_pnl)
+
+
+def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
+    """Fetch latest iron condor strategy research and save actionable findings to RAG."""
+    try:
+        import urllib.request
+
+        # Query focused on our current performance gap
+        if trade_count < 10:
+            query = "iron condor SPY automated trading system low trade frequency how to increase entries"
+        elif win_rate < 80:
+            query = f"iron condor win rate {win_rate:.0f}% improvement delta selection adjustment strategy"
+        else:
+            query = "iron condor scaling strategy position sizing advanced management"
+
+        # Use DuckDuckGo Lite (no API key needed)
+        url = f"https://lite.duckduckgo.com/lite/?q={urllib.parse.quote(query)}&kl=us-en"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+
+        # Extract text snippets (basic parsing)
+        import re
+        snippets = re.findall(r'class="result-snippet">(.*?)</td>', html, re.DOTALL)
+        if not snippets:
+            snippets = re.findall(r'<td[^>]*>(.*?)</td>', html, re.DOTALL)
+
+        clean = [re.sub(r'<[^>]+>', '', s).strip() for s in snippets[:5] if len(s) > 30]
+
+        if clean:
+            research_file = LESSONS_DIR / f"research_{datetime.now().strftime('%Y%m%d')}.md"
+            LESSONS_DIR.mkdir(parents=True, exist_ok=True)
+            content = f"""# Strategy Research — {datetime.now().strftime("%Y-%m-%d")}
+
+## Context
+- Trade count: {trade_count}
+- Win rate: {win_rate:.1f}%
+- Total P/L: ${total_pnl:+.2f}
+- Query: {query}
+
+## Findings
+"""
+            for i, snippet in enumerate(clean, 1):
+                content += f"\n{i}. {snippet}\n"
+
+            content += "\n## Action Items\n- Review findings and adjust strategy parameters if applicable\n"
+            research_file.write_text(content)
+            logger.info(f"Research saved: {research_file.name} ({len(clean)} findings)")
+        else:
+            logger.info("Research: no actionable findings this week")
+    except Exception as e:
+        logger.debug(f"Research fetch skipped: {e}")
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _thumbgate_matches(rule: dict) -> bool:
