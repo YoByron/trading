@@ -30,6 +30,11 @@ __pycache__/
 # Data
 data/*.csv
 data/*.json
+# Whitelist canonical trade data files
+!data/system_state.json
+!data/trades.json
+!data/ic_entries.json
+!data/thumbgate_rules.json
 logs/*.log
 population_log*.txt
 

@@ -214,7 +214,7 @@ jobs:
 
           # Use LIMIT order: accept credit >= estimated - $0.05 concession
           from alpaca.trading.requests import LimitOrderRequest
-          limit_credit = round(result.get("est_credit", 1.50) - 0.05, 2)
+          limit_credit = round(opp.get("est_credit", 1.50) - 0.05, 2)
           if limit_credit < 0.50:
               limit_credit = 0.50
           print(f"Limit credit: ${limit_credit:.2f}")
@@ -320,7 +320,7 @@ jobs:
           if [ ${#files[@]} -eq 0 ]; then
             echo "No trade artifacts found to stage"
           else
-            git add "${files[@]}"
+            git add -f "${files[@]}"
           fi
           git diff --cached --quiet || git commit -m "fix: record autonomous IC trade data"
           git push || echo "Push failed - data will sync on next workflow"

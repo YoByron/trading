@@ -129,6 +129,36 @@ def place_ic(client, opp: dict) -> str | None:
 
     logger.info(f"Order {order.id}: {order.status}")
 
+    # Wait for fill — poll every 10s for up to 2 minutes
+    order_id = str(order.id)
+    filled = _wait_for_fill(client, order_id, timeout_seconds=120, poll_interval=10)
+    if not filled:
+        # Try once more with a wider limit (give up $0.10 more credit)
+        logger.warning(f"Order {order_id} not filled. Cancelling and retrying at wider price.")
+        try:
+            client.cancel_order_by_id(order_id)
+        except Exception:
+            pass
+        retry_credit = round(limit_credit - 0.10, 2)
+        if retry_credit >= MIN_CREDIT:
+            logger.info(f"Retry MLEG at ${retry_credit:.2f} credit (was ${limit_credit:.2f})")
+            retry_order = client.submit_order(
+                LimitOrderRequest(
+                    qty=1,
+                    order_class=OrderClass.MLEG,
+                    legs=legs,
+                    time_in_force=TimeInForce.DAY,
+                    limit_price=round(-retry_credit, 2),
+                )
+            )
+            order_id = str(retry_order.id)
+            logger.info(f"Retry order {order_id}: {retry_order.status}")
+            filled = _wait_for_fill(client, order_id, timeout_seconds=120, poll_interval=10)
+            if not filled:
+                logger.warning(f"Retry order {order_id} also unfilled. Will check next session.")
+        else:
+            logger.warning(f"Retry credit ${retry_credit:.2f} < min ${MIN_CREDIT:.2f}. Skipping retry.")
+
     # Save entry data
     entries = _load_entries()
     entry_key = f"IC_{expiry_yymmdd}"
@@ -637,6 +667,31 @@ def _cancel_stale_orders(client):
                     logger.info(f"Cancelled stale order {order.id} ({age_hours:.1f}h old)")
     except Exception as e:
         logger.warning(f"Stale order cleanup failed: {e}")
+
+
+def _wait_for_fill(client, order_id: str, timeout_seconds: int = 120, poll_interval: int = 10) -> bool:
+    """Poll order status until filled or timeout. Returns True if filled."""
+    import time
+
+    elapsed = 0
+    while elapsed < timeout_seconds:
+        try:
+            order = client.get_order_by_id(order_id)
+            status = str(order.status)
+            if "FILLED" in status.upper():
+                fill_price = getattr(order, "filled_avg_price", None)
+                logger.info(f"Order {order_id} FILLED @ ${abs(float(fill_price)):.2f}" if fill_price else f"Order {order_id} FILLED")
+                return True
+            if any(s in status.upper() for s in ["CANCELED", "CANCELLED", "EXPIRED", "REJECTED"]):
+                logger.warning(f"Order {order_id} terminal status: {status}")
+                return False
+            logger.info(f"Order {order_id}: {status} ({elapsed}s/{timeout_seconds}s)")
+        except Exception as e:
+            logger.debug(f"Fill poll error: {e}")
+        time.sleep(poll_interval)
+        elapsed += poll_interval
+    logger.warning(f"Order {order_id} not filled after {timeout_seconds}s")
+    return False
 
 
 def _count_open_ics(client) -> int:
