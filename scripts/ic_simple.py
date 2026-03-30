@@ -611,11 +611,12 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
 
         # Extract text snippets (basic parsing)
         import re
+
         snippets = re.findall(r'class="result-snippet">(.*?)</td>', html, re.DOTALL)
         if not snippets:
-            snippets = re.findall(r'<td[^>]*>(.*?)</td>', html, re.DOTALL)
+            snippets = re.findall(r"<td[^>]*>(.*?)</td>", html, re.DOTALL)
 
-        clean = [re.sub(r'<[^>]+>', '', s).strip() for s in snippets[:5] if len(s) > 30]
+        clean = [re.sub(r"<[^>]+>", "", s).strip() for s in snippets[:5] if len(s) > 30]
 
         if clean:
             research_file = LESSONS_DIR / f"research_{datetime.now().strftime('%Y%m%d')}.md"
