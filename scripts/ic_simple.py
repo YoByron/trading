@@ -157,7 +157,9 @@ def place_ic(client, opp: dict) -> str | None:
             if not filled:
                 logger.warning(f"Retry order {order_id} also unfilled. Will check next session.")
         else:
-            logger.warning(f"Retry credit ${retry_credit:.2f} < min ${MIN_CREDIT:.2f}. Skipping retry.")
+            logger.warning(
+                f"Retry credit ${retry_credit:.2f} < min ${MIN_CREDIT:.2f}. Skipping retry."
+            )
 
     # Save entry data
     entries = _load_entries()
@@ -669,7 +671,9 @@ def _cancel_stale_orders(client):
         logger.warning(f"Stale order cleanup failed: {e}")
 
 
-def _wait_for_fill(client, order_id: str, timeout_seconds: int = 120, poll_interval: int = 10) -> bool:
+def _wait_for_fill(
+    client, order_id: str, timeout_seconds: int = 120, poll_interval: int = 10
+) -> bool:
     """Poll order status until filled or timeout. Returns True if filled."""
     import time
 
@@ -680,7 +684,11 @@ def _wait_for_fill(client, order_id: str, timeout_seconds: int = 120, poll_inter
             status = str(order.status)
             if "FILLED" in status.upper():
                 fill_price = getattr(order, "filled_avg_price", None)
-                logger.info(f"Order {order_id} FILLED @ ${abs(float(fill_price)):.2f}" if fill_price else f"Order {order_id} FILLED")
+                logger.info(
+                    f"Order {order_id} FILLED @ ${abs(float(fill_price)):.2f}"
+                    if fill_price
+                    else f"Order {order_id} FILLED"
+                )
                 return True
             if any(s in status.upper() for s in ["CANCELED", "CANCELLED", "EXPIRED", "REJECTED"]):
                 logger.warning(f"Order {order_id} terminal status: {status}")
