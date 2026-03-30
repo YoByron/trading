@@ -590,6 +590,40 @@ def _weekend_learn():
     _research_strategies(win_rate, len(trades), total_pnl)
 
 
+def _daily_learn():
+    """Continuous learning: runs after every trading session (not just weekends).
+
+    - Retrains GRPO model from latest closed trades
+    - Researches one strategy topic based on current performance gaps
+    - Updates stats and prints brief report
+    """
+    logger.info("\n--- DAILY LEARNING ---")
+
+    # 1. GRPO retrain from closed trade data
+    try:
+        from src.ml.grpo_trade_learner import GRPOTradeLearner
+
+        learner = GRPOTradeLearner()
+        result = learner.train()
+        logger.info(f"GRPO retrain: {result}")
+    except Exception as e:
+        logger.debug(f"GRPO retrain skipped: {e}")
+
+    # 2. Quick strategy research (one query per session, saves to RAG)
+    stats_file = Path(__file__).parent.parent / "data" / "ic_stats.json"
+    try:
+        stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
+        win_rate = stats.get("win_rate", 0)
+        trade_count = stats.get("total", 0)
+        total_pnl = stats.get("total_pnl", 0)
+        _research_strategies(win_rate, trade_count, total_pnl)
+    except Exception as e:
+        logger.debug(f"Research skipped: {e}")
+
+    # 3. Brief performance snapshot
+    _print_report()
+
+
 def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
     """Fetch latest iron condor strategy research and save actionable findings to RAG."""
     try:
@@ -906,6 +940,10 @@ def main():
 
     if args.mode == "learn":
         _weekend_learn()
+
+    # Continuous learning: run research + report on every execution (not just weekends)
+    if args.mode in ("both", "exit") and not args.dry_run:
+        _daily_learn()
 
     logger.info("\nDone.")
 
