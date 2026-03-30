@@ -174,10 +174,11 @@ class IronCondorStrategy:
         # Use live bids from chain if available
         selection = getattr(self, "_last_strike_selection", None)
         if selection and selection.method == "live_delta" and selection.put_bid > 0:
-            estimated_credit = round(selection.put_bid + selection.call_bid, 2)
+            estimated_credit = round(selection.net_credit, 2)
             logger.info(
-                f"Live credit estimate: ${estimated_credit:.2f} "
-                f"(put ${selection.put_bid:.2f} + call ${selection.call_bid:.2f})"
+                f"Live net credit: ${estimated_credit:.2f} "
+                f"(short put ${selection.put_bid:.2f} + short call ${selection.call_bid:.2f} "
+                f"- long put ${selection.long_put_ask:.2f} - long call ${selection.long_call_ask:.2f})"
             )
         else:
             # Conservative fallback: $10-wide wings on SPY typically collect $1.50-2.50

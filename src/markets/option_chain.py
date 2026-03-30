@@ -45,8 +45,15 @@ class StrikeSelection:
     call_delta: float  # Actual delta of selected short call
     method: str  # "live_delta" or "heuristic_fallback"
     expiry: str  # YYYY-MM-DD
-    put_bid: float = 0.0
-    call_bid: float = 0.0
+    put_bid: float = 0.0  # Short put bid (we collect this)
+    call_bid: float = 0.0  # Short call bid (we collect this)
+    long_put_ask: float = 0.0  # Long put ask (we pay this)
+    long_call_ask: float = 0.0  # Long call ask (we pay this)
+
+    @property
+    def net_credit(self) -> float:
+        """Net credit = short premiums collected - long premiums paid."""
+        return (self.put_bid + self.call_bid) - (self.long_put_ask + self.long_call_ask)
 
 
 @dataclass
@@ -247,24 +254,40 @@ def _select_from_live_chain(
 
     short_put = best_put["strike"]
     short_call = best_call["strike"]
+    long_put_strike = short_put - wing_width
+    long_call_strike = short_call + wing_width
+
+    # Find long leg pricing from the full options list (these are further OTM, may not have delta in range)
+    all_puts = [o for o in options if o["type"] == "put"]
+    all_calls = [o for o in options if o["type"] == "call"]
+    long_put_opt = next((o for o in all_puts if o["strike"] == long_put_strike), None)
+    long_call_opt = next((o for o in all_calls if o["strike"] == long_call_strike), None)
+
+    # Use ask price for long legs (we're buying), with conservative estimate if not found
+    long_put_ask = long_put_opt.get("ask", 0.0) if long_put_opt else best_put.get("bid", 0.0) * 0.4
+    long_call_ask = long_call_opt.get("ask", 0.0) if long_call_opt else best_call.get("bid", 0.0) * 0.4
 
     result = StrikeSelection(
         short_put=short_put,
-        long_put=short_put - wing_width,
+        long_put=long_put_strike,
         short_call=short_call,
-        long_call=short_call + wing_width,
+        long_call=long_call_strike,
         put_delta=abs(best_put["delta"]),
         call_delta=abs(best_call["delta"]),
         method="live_delta",
         expiry=expiry_str,
         put_bid=best_put.get("bid", 0.0),
         call_bid=best_call.get("bid", 0.0),
+        long_put_ask=long_put_ask,
+        long_call_ask=long_call_ask,
     )
 
     logger.info(
         f"Delta-selected strikes: SP={short_put} (delta={result.put_delta:.3f}) "
         f"SC={short_call} (delta={result.call_delta:.3f}) | "
-        f"Put bid=${result.put_bid:.2f} Call bid=${result.call_bid:.2f} | "
+        f"Short bids: put=${result.put_bid:.2f} call=${result.call_bid:.2f} | "
+        f"Long asks: put=${result.long_put_ask:.2f} call=${result.long_call_ask:.2f} | "
+        f"Net credit=${result.net_credit:.2f} | "
         f"Expiry={expiry_str}"
     )
     return result

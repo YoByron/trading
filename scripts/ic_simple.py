@@ -69,9 +69,10 @@ def find_opportunity(spy_price: float) -> dict | None:
         max_dte=45,
     )
 
-    est_credit = selection.put_bid + selection.call_bid
-    if selection.method == "heuristic_fallback":
-        est_credit = 1.50  # Conservative guess
+    # Net credit = short premiums - long premiums (NOT just short bids)
+    est_credit = selection.net_credit
+    if selection.method == "heuristic_fallback" or est_credit <= 0:
+        est_credit = 1.50  # Conservative guess when we can't price the wings
 
     if est_credit < MIN_CREDIT:
         logger.warning(f"Credit ${est_credit:.2f} < ${MIN_CREDIT:.2f} minimum. Skip.")
@@ -116,55 +117,47 @@ def place_ic(client, opp: dict) -> str | None:
     if limit_credit < MIN_CREDIT:
         limit_credit = MIN_CREDIT
 
-    logger.info(f"Submitting MLEG limit order: credit >= ${limit_credit:.2f}")
+    # Price-walking: start at mid, walk $0.05 worse per attempt, up to $0.20 max concession
+    # Industry standard: Option Alpha SmartPricing uses 4 levels at 10-15s each
+    WALK_INCREMENT = 0.05
+    MAX_WALK = 0.20
+    WALK_WAIT_SECONDS = 20
 
-    order = safe_submit_order(
-        client,
-        LimitOrderRequest(
-            qty=1,
-            order_class=OrderClass.MLEG,
-            legs=legs,
-            time_in_force=TimeInForce.DAY,
-            limit_price=round(-limit_credit, 2),
-        ),
-        strategy="iron_condor",
-    )
+    order_id = None
+    filled = False
+    walk_total = 0.0
 
-    logger.info(f"Order {order.id}: {order.status}")
+    while walk_total <= MAX_WALK and not filled:
+        current_credit = round(limit_credit - walk_total, 2)
+        if current_credit < MIN_CREDIT:
+            logger.warning(f"Price walk would drop below ${MIN_CREDIT:.2f} min. Stopping.")
+            break
 
-    # Wait for fill — poll every 10s for up to 2 minutes
-    order_id = str(order.id)
-    filled = _wait_for_fill(client, order_id, timeout_seconds=120, poll_interval=10)
+        logger.info(f"MLEG limit order: credit >= ${current_credit:.2f} (walk ${walk_total:.2f})")
+
+        order = safe_submit_order(client,
+            LimitOrderRequest(
+                qty=1,
+                order_class=OrderClass.MLEG,
+                legs=legs,
+                time_in_force=TimeInForce.DAY,
+                limit_price=round(-current_credit, 2),
+            ),
+            strategy="iron_condor",
+        )
+        order_id = str(order.id)
+        logger.info(f"Order {order_id}: {order.status}")
+
+        filled = _wait_for_fill(client, order_id, timeout_seconds=WALK_WAIT_SECONDS, poll_interval=5)
+        if not filled:
+            try:
+                client.cancel_order_by_id(order_id)
+            except Exception:
+                pass
+            walk_total = round(walk_total + WALK_INCREMENT, 2)
+
     if not filled:
-        # Try once more with a wider limit (give up $0.10 more credit)
-        logger.warning(f"Order {order_id} not filled. Cancelling and retrying at wider price.")
-        try:
-            client.cancel_order_by_id(order_id)
-        except Exception:
-            pass
-        retry_credit = round(limit_credit - 0.10, 2)
-        if retry_credit >= MIN_CREDIT:
-            logger.info(f"Retry MLEG at ${retry_credit:.2f} credit (was ${limit_credit:.2f})")
-            retry_order = safe_submit_order(
-                client,
-                LimitOrderRequest(
-                    qty=1,
-                    order_class=OrderClass.MLEG,
-                    legs=legs,
-                    time_in_force=TimeInForce.DAY,
-                    limit_price=round(-retry_credit, 2),
-                ),
-                strategy="iron_condor",
-            )
-            order_id = str(retry_order.id)
-            logger.info(f"Retry order {order_id}: {retry_order.status}")
-            filled = _wait_for_fill(client, order_id, timeout_seconds=120, poll_interval=10)
-            if not filled:
-                logger.warning(f"Retry order {order_id} also unfilled. Will check next session.")
-        else:
-            logger.warning(
-                f"Retry credit ${retry_credit:.2f} < min ${MIN_CREDIT:.2f}. Skipping retry."
-            )
+        logger.warning(f"Price walk exhausted (${MAX_WALK:.2f} concession). No fill.")
 
     # Save entry data
     entries = _load_entries()

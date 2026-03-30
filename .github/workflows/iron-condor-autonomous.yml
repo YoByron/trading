@@ -131,8 +131,8 @@ jobs:
           )
           print(f"Method: {selection.method} | SP={selection.short_put} SC={selection.short_call}")
 
-          est_credit = selection.put_bid + selection.call_bid
-          if selection.method == "heuristic_fallback":
+          est_credit = selection.net_credit
+          if selection.method == "heuristic_fallback" or est_credit <= 0:
               est_credit = 1.50
 
           if est_credit < 0.50:
