@@ -118,7 +118,8 @@ def place_ic(client, opp: dict) -> str | None:
 
     logger.info(f"Submitting MLEG limit order: credit >= ${limit_credit:.2f}")
 
-    order = safe_submit_order(client,
+    order = safe_submit_order(
+        client,
         LimitOrderRequest(
             qty=1,
             order_class=OrderClass.MLEG,
@@ -144,7 +145,8 @@ def place_ic(client, opp: dict) -> str | None:
         retry_credit = round(limit_credit - 0.10, 2)
         if retry_credit >= MIN_CREDIT:
             logger.info(f"Retry MLEG at ${retry_credit:.2f} credit (was ${limit_credit:.2f})")
-            retry_order = safe_submit_order(client,
+            retry_order = safe_submit_order(
+                client,
                 LimitOrderRequest(
                     qty=1,
                     order_class=OrderClass.MLEG,
@@ -316,7 +318,8 @@ def _close_ic(client, legs: list[dict], qty: int):
     ]
 
     try:
-        order = safe_submit_order(client,
+        order = safe_submit_order(
+            client,
             LimitOrderRequest(
                 qty=qty,
                 order_class=OrderClass.MLEG,
@@ -332,7 +335,8 @@ def _close_ic(client, legs: list[dict], qty: int):
         for leg in legs:
             try:
                 side = OrderSide.BUY if leg["qty"] < 0 else OrderSide.SELL
-                safe_submit_order(client,
+                safe_submit_order(
+                    client,
                     MarketOrderRequest(
                         symbol=leg["symbol"],
                         qty=abs(leg["qty"]),
