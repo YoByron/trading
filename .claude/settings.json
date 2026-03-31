@@ -85,6 +85,12 @@
         "mcp-memory-gateway@0.8.4",
         "serve"
       ]
+    },
+    "massive": {
+      "command": "mcp_massive",
+      "env": {
+        "MASSIVE_API_KEY": "${MASSIVE_API_KEY}"
+      }
     }
   }
 }
