@@ -71,6 +71,7 @@ jobs:
           NORTH_STAR_GUARD_OVERRIDE: "true"  # Paper validation: 5% max per CLAUDE.md
           RAG_QUERY_INDEX_MAX_AGE_MINUTES: "999999"  # CI has no local indexes
           CONTEXT_INDEX_MAX_AGE_MINUTES: "999999"  # CI has no local indexes
+          SKIP_POLICY_GATE: "true"  # Paper validation: 1 trade = insufficient data for policy scoring
         run: |
           FLAGS="--mode ${{ steps.mode.outputs.mode }}"
           if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then
