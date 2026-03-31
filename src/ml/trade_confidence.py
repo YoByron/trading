@@ -51,15 +51,22 @@ class TradeConfidenceModel:
             return self._default_model()
 
     def _default_model(self) -> dict:
-        """Return default model with uniform priors."""
+        """Return default model with informative priors from Tastytrade research.
+
+        Beta(86, 14) encodes the documented 86% win rate for 15-delta SPY iron
+        condors over 15+ years of backtesting. This solves the cold-start problem:
+        the system starts with strong priors and updates with each real trade.
+
+        Source: Tastytrade research, Spintwig 45-DTE IC backtests, LL-220.
+        """
         return {
-            "iron_condor": {"alpha": 1.0, "beta": 1.0, "wins": 0, "losses": 0},
-            "spy_specific": {"alpha": 1.0, "beta": 1.0, "wins": 0, "losses": 0},
+            "iron_condor": {"alpha": 86.0, "beta": 14.0, "wins": 0, "losses": 0},
+            "spy_specific": {"alpha": 86.0, "beta": 14.0, "wins": 0, "losses": 0},
             "regime_adjustments": {
-                "calm": 1.1,
-                "trending": 0.9,
-                "volatile": 0.8,
-                "spike": 0.0,
+                "calm": 1.1,      # Low VIX: slightly boost confidence
+                "trending": 0.9,  # Trending market: reduce (IC is neutral strategy)
+                "volatile": 0.8,  # High VIX: reduce (wider swings test strikes)
+                "spike": 0.5,     # VIX spike: strongly reduce (not 0 — still tradeable)
             },
         }
 

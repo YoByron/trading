@@ -321,6 +321,7 @@ def check_exits(client):
             logger.warning(f"EXIT IC {expiry}: {reason}")
             _close_ic(client, legs, contract_count)
             _record_lesson(expiry, entry_credit, pnl, reason, dte, contract_count)
+            _update_thompson("WIN" if pnl > 0 else "LOSS")
         else:
             logger.info(
                 f"IC {expiry}: HOLD. Target=${max_profit * PROFIT_TARGET:.2f} Stop=-${max_profit * STOP_LOSS:.2f}"
@@ -389,6 +390,20 @@ def _record_lesson(expiry: str, credit: float, pnl: float, reason: str, dte: int
     outcome = "WIN" if pnl > 0 else "LOSS"
     pnl_pct = (pnl / (credit * qty * 100)) * 100 if credit > 0 else 0
 
+    # 0. Compute composite reward (ML training signal)
+    reward_data = {}
+    try:
+        from src.ml.reward import compute_trade_reward
+        max_loss = WING_WIDTH * 100 - credit * qty * 100
+        reward_data = compute_trade_reward(
+            pnl=pnl, credit=credit, max_loss=max_loss, dte_at_exit=dte,
+        )
+        logger.info(f"Reward: {reward_data['total_reward']:+.3f} "
+                     f"(return={reward_data['components']['return']:+.3f} "
+                     f"downside={reward_data['components']['downside']:+.3f})")
+    except Exception as e:
+        logger.debug(f"Reward computation skipped: {e}")
+
     # 1. Trade journal (append-only JSONL)
     entry = {
         "timestamp": datetime.now().isoformat(),
@@ -400,6 +415,8 @@ def _record_lesson(expiry: str, credit: float, pnl: float, reason: str, dte: int
         "outcome": outcome,
         "exit_reason": reason,
         "dte_at_exit": dte,
+        "composite_reward": reward_data.get("total_reward", 0),
+        "reward_components": reward_data.get("components", {}),
     }
     try:
         JOURNAL_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -889,6 +906,47 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
         logger.info("Research: no findings from web sources")
 
 
+# ── Thompson Sampling ────────────────────────────────────────────────────────
+
+def _get_thompson_confidence() -> float:
+    """Sample from Thompson posterior. Returns confidence 0-1."""
+    try:
+        from src.ml.trade_confidence import TradeConfidenceModel
+        model = TradeConfidenceModel()
+        return model.sample_confidence(strategy="iron_condor", ticker="SPY")
+    except Exception as e:
+        logger.debug(f"Thompson sampling unavailable: {e}")
+        return 0.86  # Fall back to prior mean
+
+
+def _query_rag_before_entry(spy_price: float):
+    """Query RAG for relevant lessons before entering a trade."""
+    try:
+        from src.rag.vector_store import query_lessons
+        question = f"SPY iron condor entry at ${spy_price:.0f} lessons risks warnings"
+        results = query_lessons(question, top_k=3)
+        if results:
+            logger.info(f"RAG: {len(results)} relevant lessons found")
+            for r in results:
+                logger.info(f"  [{r['source']}] {r['content'][:100]}... (score={r['score']:.2f})")
+        else:
+            logger.info("RAG: no relevant lessons")
+    except Exception as e:
+        logger.debug(f"RAG query skipped: {e}")
+
+
+def _update_thompson(outcome: str):
+    """Update Thompson model after trade close. outcome: 'WIN' or 'LOSS'."""
+    try:
+        from src.ml.trade_confidence import TradeConfidenceModel
+        model = TradeConfidenceModel()
+        model.record_trade_outcome(success=(outcome == "WIN"), strategy="iron_condor", ticker="SPY")
+        posterior = model.get_posterior_mean(strategy="iron_condor", ticker="SPY")
+        logger.info(f"Thompson updated: {outcome} → posterior mean={posterior:.3f}")
+    except Exception as e:
+        logger.debug(f"Thompson update failed: {e}")
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _thumbgate_matches(rule: dict) -> bool:
     """Check if a ThumbGate rule matches current conditions."""
@@ -1130,9 +1188,20 @@ def main():
             spy_price = get_spy_price(client)
             logger.info(f"SPY: ${spy_price:.2f}")
 
+            # Thompson Sampling confidence check
+            thompson_conf = _get_thompson_confidence()
+            logger.info(f"Thompson confidence: {thompson_conf:.3f}")
+
+            # RAG: retrieve relevant lessons for current conditions
+            _query_rag_before_entry(spy_price)
+
             opp = find_opportunity(spy_price)
             if opp:
-                if args.dry_run:
+                if thompson_conf < 0.40:
+                    logger.warning(
+                        f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry"
+                    )
+                elif args.dry_run:
                     logger.info(f"(dry run — would place IC: {opp})")
                 else:
                     order_id = place_ic(client, opp)
