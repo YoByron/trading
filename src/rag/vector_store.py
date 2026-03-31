@@ -34,6 +34,7 @@ class TradeRAG:
         """Initialize embedding model. Try sentence-transformers → TF-IDF fallback."""
         try:
             from sentence_transformers import SentenceTransformer
+
             self._embedder = SentenceTransformer("paraphrase-MiniLM-L6-v2")
             self._use_faiss = True
             logger.info("RAG: Using MiniLM-L6-v2 embeddings + FAISS")
@@ -49,12 +50,14 @@ class TradeRAG:
         if LESSONS_DIR.exists():
             for f in sorted(LESSONS_DIR.glob("*.md")):
                 content = f.read_text(encoding="utf-8", errors="ignore")
-                self.documents.append({
-                    "id": f.stem,
-                    "content": content,
-                    "source": "lesson",
-                    "path": str(f),
-                })
+                self.documents.append(
+                    {
+                        "id": f.stem,
+                        "content": content,
+                        "source": "lesson",
+                        "path": str(f),
+                    }
+                )
 
         # Load journal entries as documents
         if JOURNAL_FILE.exists():
@@ -69,12 +72,14 @@ class TradeRAG:
                         f"Exit: {entry.get('exit_reason', '?')} DTE={entry.get('dte_at_exit', '?')} "
                         f"Credit: ${entry.get('credit_per_share', 0):.2f}"
                     )
-                    self.documents.append({
-                        "id": f"journal_{entry.get('expiry', 'unknown')}",
-                        "content": text,
-                        "source": "journal",
-                        "metadata": entry,
-                    })
+                    self.documents.append(
+                        {
+                            "id": f"journal_{entry.get('expiry', 'unknown')}",
+                            "content": text,
+                            "source": "journal",
+                            "metadata": entry,
+                        }
+                    )
                 except json.JSONDecodeError:
                     continue
 
@@ -94,6 +99,7 @@ class TradeRAG:
     def _build_faiss_index(self, texts: list[str]):
         """Build FAISS index from text embeddings."""
         import numpy as np
+
         try:
             import faiss
         except ImportError:
@@ -115,6 +121,7 @@ class TradeRAG:
         """TF-IDF fallback when sentence-transformers/FAISS not available."""
         try:
             from sklearn.feature_extraction.text import TfidfVectorizer
+
             vectorizer = TfidfVectorizer(max_features=500, stop_words="english")
             self.embeddings = vectorizer.fit_transform(texts)
             self._vectorizer = vectorizer

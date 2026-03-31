@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 JOURNAL_FILE = Path(__file__).parent.parent.parent / "data" / "trade_journal.jsonl"
 
 # Reward weights — loss avoidance > return maximization (Phil Town Rule #1)
-W_RETURN = 1.0      # Reward for positive returns
-W_DOWNSIDE = 2.0    # Penalty for downside risk (2x weight = loss aversion)
-W_BENCHMARK = 0.5   # Reward for exceeding risk-free benchmark
+W_RETURN = 1.0  # Reward for positive returns
+W_DOWNSIDE = 2.0  # Penalty for downside risk (2x weight = loss aversion)
+W_BENCHMARK = 0.5  # Reward for exceeding risk-free benchmark
 
 
 def compute_trade_reward(

@@ -394,13 +394,19 @@ def _record_lesson(expiry: str, credit: float, pnl: float, reason: str, dte: int
     reward_data = {}
     try:
         from src.ml.reward import compute_trade_reward
+
         max_loss = WING_WIDTH * 100 - credit * qty * 100
         reward_data = compute_trade_reward(
-            pnl=pnl, credit=credit, max_loss=max_loss, dte_at_exit=dte,
+            pnl=pnl,
+            credit=credit,
+            max_loss=max_loss,
+            dte_at_exit=dte,
         )
-        logger.info(f"Reward: {reward_data['total_reward']:+.3f} "
-                     f"(return={reward_data['components']['return']:+.3f} "
-                     f"downside={reward_data['components']['downside']:+.3f})")
+        logger.info(
+            f"Reward: {reward_data['total_reward']:+.3f} "
+            f"(return={reward_data['components']['return']:+.3f} "
+            f"downside={reward_data['components']['downside']:+.3f})"
+        )
     except Exception as e:
         logger.debug(f"Reward computation skipped: {e}")
 
@@ -908,10 +914,12 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
 
 # ── Thompson Sampling ────────────────────────────────────────────────────────
 
+
 def _get_thompson_confidence() -> float:
     """Sample from Thompson posterior. Returns confidence 0-1."""
     try:
         from src.ml.trade_confidence import TradeConfidenceModel
+
         model = TradeConfidenceModel()
         return model.sample_confidence(strategy="iron_condor", ticker="SPY")
     except Exception as e:
@@ -923,6 +931,7 @@ def _query_rag_before_entry(spy_price: float):
     """Query RAG for relevant lessons before entering a trade."""
     try:
         from src.rag.vector_store import query_lessons
+
         question = f"SPY iron condor entry at ${spy_price:.0f} lessons risks warnings"
         results = query_lessons(question, top_k=3)
         if results:
@@ -939,6 +948,7 @@ def _update_thompson(outcome: str):
     """Update Thompson model after trade close. outcome: 'WIN' or 'LOSS'."""
     try:
         from src.ml.trade_confidence import TradeConfidenceModel
+
         model = TradeConfidenceModel()
         model.record_trade_outcome(success=(outcome == "WIN"), strategy="iron_condor", ticker="SPY")
         posterior = model.get_posterior_mean(strategy="iron_condor", ticker="SPY")
@@ -1198,9 +1208,7 @@ def main():
             opp = find_opportunity(spy_price)
             if opp:
                 if thompson_conf < 0.40:
-                    logger.warning(
-                        f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry"
-                    )
+                    logger.warning(f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry")
                 elif args.dry_run:
                     logger.info(f"(dry run — would place IC: {opp})")
                 else:

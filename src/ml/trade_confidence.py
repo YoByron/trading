@@ -63,10 +63,10 @@ class TradeConfidenceModel:
             "iron_condor": {"alpha": 86.0, "beta": 14.0, "wins": 0, "losses": 0},
             "spy_specific": {"alpha": 86.0, "beta": 14.0, "wins": 0, "losses": 0},
             "regime_adjustments": {
-                "calm": 1.1,      # Low VIX: slightly boost confidence
+                "calm": 1.1,  # Low VIX: slightly boost confidence
                 "trending": 0.9,  # Trending market: reduce (IC is neutral strategy)
                 "volatile": 0.8,  # High VIX: reduce (wider swings test strikes)
-                "spike": 0.5,     # VIX spike: strongly reduce (not 0 — still tradeable)
+                "spike": 0.5,  # VIX spike: strongly reduce (not 0 — still tradeable)
             },
         }
 
