@@ -886,7 +886,11 @@ def validate_trade_mandatory(
         # (Skip in paper validation: insufficient data to evaluate policy)
         # =========================================================================
         if os.environ.get("SKIP_POLICY_GATE") == "true":
-            policy_decision = {"eligible": True, "block_reasons": [], "decision_summary": "SKIPPED (paper validation)"}
+            policy_decision = {
+                "eligible": True,
+                "block_reasons": [],
+                "decision_summary": "SKIPPED (paper validation)",
+            }
         else:
             policy_decision = _evaluate_policy_gate(strategy, context)
         checks_performed.append(
