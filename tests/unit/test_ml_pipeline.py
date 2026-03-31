@@ -4,11 +4,11 @@ import json
 import sys
 import types
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 
 # Stub heavy deps not installed locally
 def _ensure_module(name):
@@ -19,13 +19,14 @@ def _ensure_module(name):
             if partial not in sys.modules:
                 sys.modules[partial] = types.ModuleType(partial)
 
+
 # numpy stub (needed by grpo_trade_learner import chain)
 _ensure_module("numpy")
 np_mod = sys.modules["numpy"]
 np_mod.array = lambda *a, **k: []
 np_mod.float32 = float
 np_mod.std = lambda *a, **k: 0.0
-np_mod.sqrt = lambda x: x ** 0.5
+np_mod.sqrt = lambda x: x**0.5
 np_mod.diff = lambda *a, **k: []
 np_mod.log = lambda *a, **k: []
 np_mod.ndarray = type("ndarray", (), {})
@@ -46,7 +47,9 @@ torch_mod = sys.modules["torch"]
 torch_mod.tensor = lambda *a, **k: None
 torch_mod.load = lambda *a, **k: {}
 torch_mod.save = lambda *a, **k: None
-torch_mod.no_grad = lambda: type("ctx", (), {"__enter__": lambda s: None, "__exit__": lambda s, *a: None})()
+torch_mod.no_grad = lambda: type(
+    "ctx", (), {"__enter__": lambda s: None, "__exit__": lambda s, *a: None}
+)()
 nn_mod = sys.modules["torch.nn"]
 nn_mod.Module = type("Module", (), {})
 nn_mod.Linear = type("Linear", (), {"__init__": lambda s, *a, **k: None})
@@ -250,8 +253,18 @@ class TestStrategyParams:
         from scripts.ic_simple import _load_strategy_params
 
         params = _load_strategy_params()
-        required = ["target_delta", "wing_width", "target_dte", "min_dte", "max_dte",
-                     "min_credit", "profit_target", "stop_loss", "exit_dte", "max_ic"]
+        required = [
+            "target_delta",
+            "wing_width",
+            "target_dte",
+            "min_dte",
+            "max_dte",
+            "min_credit",
+            "profit_target",
+            "stop_loss",
+            "exit_dte",
+            "max_ic",
+        ]
         for key in required:
             assert key in params, f"Missing param: {key}"
 
