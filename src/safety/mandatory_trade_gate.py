@@ -1280,10 +1280,12 @@ def _validate_short_iron_condor_orientation(order_request: Any, strategy: str | 
         limit_price_val = float(limit_price)
     except (TypeError, ValueError):
         limit_price_val = None
-    if limit_price_val is not None and limit_price_val <= 0:
+    # Alpaca MLEG credit orders use NEGATIVE limit_price (e.g., -2.29 = $2.29 credit).
+    # A negative limit_price IS a positive net credit on Alpaca. Only block if price is 0.
+    if limit_price_val is not None and limit_price_val == 0:
         return (
-            "OPTIONS-INCOME BLOCKED: opening iron condor limit price must encode "
-            "a positive net credit."
+            "OPTIONS-INCOME BLOCKED: opening iron condor limit price is zero "
+            "(must be negative for credit or positive for debit)."
         )
 
     return None
