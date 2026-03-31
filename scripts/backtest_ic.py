@@ -171,7 +171,7 @@ def run_backtest(
         sys.exit(1)
 
     # Flatten MultiIndex columns if present
-    if hasattr(spy.columns, 'levels'):
+    if hasattr(spy.columns, "levels"):
         spy.columns = [col[0] if isinstance(col, tuple) else col for col in spy.columns]
 
     prices = spy["Close"].values.tolist()
@@ -190,7 +190,7 @@ def run_backtest(
             trade, entry_idx = trade_info
             days_since_entry = i - entry_idx
             if days_since_entry > 0:
-                trade_prices = prices[entry_idx + 1: entry_idx + 1 + days_since_entry]
+                trade_prices = prices[entry_idx + 1 : entry_idx + 1 + days_since_entry]
                 if trade_prices:
                     pnl, reason, dte_at_exit, max_dd = simulate_ic_pnl(
                         entry_price=prices[entry_idx],
@@ -216,10 +216,7 @@ def run_backtest(
         open_trades = still_open
 
         # Entry: check if we can open a new IC
-        if (
-            len(open_trades) < max_concurrent
-            and (i - last_entry_idx) >= entry_interval_days
-        ):
+        if len(open_trades) < max_concurrent and (i - last_entry_idx) >= entry_interval_days:
             spy_price = prices[i]
             short_put, short_call = get_strikes(spy_price, delta, wing_width)
             credit = estimate_ic_credit(spy_price, delta, wing_width, target_dte)
@@ -239,7 +236,7 @@ def run_backtest(
     for trade, entry_idx in open_trades:
         days = len(prices) - entry_idx - 1
         if days > 0:
-            trade_prices = prices[entry_idx + 1:]
+            trade_prices = prices[entry_idx + 1 :]
             pnl, reason, dte, max_dd = simulate_ic_pnl(
                 entry_price=prices[entry_idx],
                 prices_during_trade=trade_prices,
@@ -286,7 +283,9 @@ def run_backtest(
         mean_pnl = sum(pnls) / len(pnls)
         std_pnl = math.sqrt(sum((p - mean_pnl) ** 2 for p in pnls) / (len(pnls) - 1))
         trades_per_year = len(trades) / years
-        result.sharpe = round((mean_pnl / std_pnl) * math.sqrt(trades_per_year), 2) if std_pnl > 0 else 0
+        result.sharpe = (
+            round((mean_pnl / std_pnl) * math.sqrt(trades_per_year), 2) if std_pnl > 0 else 0
+        )
 
     # Max drawdown
     cumulative = []
@@ -310,7 +309,7 @@ def print_report(result: BacktestResult, delta: float, wing_width: float):
     print("IRON CONDOR BACKTEST RESULTS")
     print("=" * 60)
     print(f"Period: {result.years} years")
-    print(f"Strategy: {delta*100:.0f}-delta, ${wing_width:.0f}-wide wings")
+    print(f"Strategy: {delta * 100:.0f}-delta, ${wing_width:.0f}-wide wings")
     print("Rules: 50% profit, 100% stop, 7 DTE exit")
     print()
     print(f"Total trades:    {len(result.trades)}")
@@ -348,7 +347,9 @@ def print_report(result: BacktestResult, delta: float, wing_width: float):
     if result.monthly_avg > 0:
         # Scale from 1 contract to account size
         monthly_per_contract = result.monthly_avg
-        contracts_for_6k = math.ceil(6000 / monthly_per_contract) if monthly_per_contract > 0 else 999
+        contracts_for_6k = (
+            math.ceil(6000 / monthly_per_contract) if monthly_per_contract > 0 else 999
+        )
         capital_needed = contracts_for_6k * wing_width * 100  # Max risk per contract
         print(f"Monthly avg per contract: ${monthly_per_contract:+,.2f}")
         print(f"Contracts needed for $6K/mo: {contracts_for_6k}")
@@ -366,7 +367,7 @@ def save_results(result: BacktestResult, delta: float, wing_width: float):
     output_dir = Path(__file__).parent.parent / "data" / "rag_knowledge" / "lessons_learned"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    lesson = f"""# Backtest Results: {delta*100:.0f}-Delta ${wing_width:.0f}-Wide IC
+    lesson = f"""# Backtest Results: {delta * 100:.0f}-Delta ${wing_width:.0f}-Wide IC
 
 - **Period**: {result.years} years
 - **Total trades**: {len(result.trades)}
@@ -383,7 +384,7 @@ def save_results(result: BacktestResult, delta: float, wing_width: float):
 ## Generated
 {datetime.now().strftime("%Y-%m-%d %H:%M")}
 """
-    filename = f"backtest_{delta*100:.0f}d_{wing_width:.0f}w_{result.years}y_{datetime.now().strftime('%Y%m%d')}.md"
+    filename = f"backtest_{delta * 100:.0f}d_{wing_width:.0f}w_{result.years}y_{datetime.now().strftime('%Y%m%d')}.md"
     (output_dir / filename).write_text(lesson)
 
     # Also save raw trades as JSON for ML training
