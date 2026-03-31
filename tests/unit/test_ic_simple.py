@@ -519,7 +519,7 @@ class TestE2EPipeline:
         mock_save,
     ):
         mock_client_fn.return_value = MagicMock()
-        mock_count.return_value = 2  # At MAX_IC limit
+        mock_count.return_value = 4  # At MAX_IC limit
 
         import scripts.ic_simple as ic
 

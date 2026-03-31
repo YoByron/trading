@@ -37,7 +37,7 @@ def _load_strategy_params() -> dict:
         "profit_target": 0.50,
         "stop_loss": 1.0,
         "exit_dte": 7,
-        "max_ic": 2,
+        "max_ic": 4,
     }
     try:
         if STRATEGY_PARAMS_FILE.exists():
