@@ -132,4 +132,11 @@ fi
 python -m coverage xml -o coverage.xml
 python -m coverage report --fail-under="${COV_FAIL_UNDER}" | tee "${REPORT_DIR}/coverage.txt"
 
+# Per-file coverage enforcement for critical trading files
+log "checking critical file coverage minimums..."
+python3 scripts/ci/check_critical_coverage.py coverage.xml || {
+  log "CRITICAL FILE COVERAGE CHECK FAILED"
+  exit 1
+}
+
 log "all phases complete"
