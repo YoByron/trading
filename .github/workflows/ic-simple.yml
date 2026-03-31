@@ -68,6 +68,7 @@ jobs:
         env:
           ALPACA_PAPER_TRADING_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
           ALPACA_PAPER_TRADING_API_SECRET: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
+          NORTH_STAR_GUARD_OVERRIDE: "true"  # Paper validation: 5% max per CLAUDE.md
         run: |
           FLAGS="--mode ${{ steps.mode.outputs.mode }}"
           if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then
