@@ -20,41 +20,46 @@ def _ensure_module(name):
                 sys.modules[partial] = types.ModuleType(partial)
 
 
-# numpy stub (needed by grpo_trade_learner import chain)
-_ensure_module("numpy")
-np_mod = sys.modules["numpy"]
-np_mod.array = lambda *a, **k: []
-np_mod.float32 = float
-np_mod.std = lambda *a, **k: 0.0
-np_mod.sqrt = lambda x: x**0.5
-np_mod.diff = lambda *a, **k: []
-np_mod.log = lambda *a, **k: []
-np_mod.ndarray = type("ndarray", (), {})
-np_mod.isscalar = lambda x: isinstance(x, (int, float, complex))
-np_mod.asarray = lambda x, **k: x
-np_mod.bool_ = bool
-np_mod.int_ = int
-np_mod.float_ = float
-np_mod.complex_ = complex
-np_mod.object_ = object
-np_mod.str_ = str
+# Only stub modules that aren't already installed
+try:
+    import numpy
+except ImportError:
+    _ensure_module("numpy")
+    np_mod = sys.modules["numpy"]
+    np_mod.array = lambda *a, **k: []
+    np_mod.float32 = float
+    np_mod.std = lambda *a, **k: 0.0
+    np_mod.sqrt = lambda x: x**0.5
+    np_mod.diff = lambda *a, **k: []
+    np_mod.log = lambda *a, **k: []
+    np_mod.ndarray = type("ndarray", (), {})
+    np_mod.isscalar = lambda x: isinstance(x, (int, float, complex))
+    np_mod.asarray = lambda x, **k: x
+    np_mod.bool_ = bool
+    np_mod.int_ = int
+    np_mod.float_ = float
+    np_mod.complex_ = complex
+    np_mod.object_ = object
+    np_mod.str_ = str
 
-# torch stub
-_ensure_module("torch")
-_ensure_module("torch.nn")
-_ensure_module("torch.optim")
-torch_mod = sys.modules["torch"]
-torch_mod.tensor = lambda *a, **k: None
-torch_mod.load = lambda *a, **k: {}
-torch_mod.save = lambda *a, **k: None
-torch_mod.no_grad = lambda: type(
-    "ctx", (), {"__enter__": lambda s: None, "__exit__": lambda s, *a: None}
-)()
-nn_mod = sys.modules["torch.nn"]
-nn_mod.Module = type("Module", (), {})
-nn_mod.Linear = type("Linear", (), {"__init__": lambda s, *a, **k: None})
-nn_mod.ReLU = type("ReLU", (), {})
-nn_mod.Sequential = type("Sequential", (), {"__init__": lambda s, *a: None})
+try:
+    import torch
+except ImportError:
+    _ensure_module("torch")
+    _ensure_module("torch.nn")
+    _ensure_module("torch.optim")
+    torch_mod = sys.modules["torch"]
+    torch_mod.tensor = lambda *a, **k: None
+    torch_mod.load = lambda *a, **k: {}
+    torch_mod.save = lambda *a, **k: None
+    torch_mod.no_grad = lambda: type(
+        "ctx", (), {"__enter__": lambda s: None, "__exit__": lambda s, *a: None}
+    )()
+    nn_mod = sys.modules["torch.nn"]
+    nn_mod.Module = type("Module", (), {})
+    nn_mod.Linear = type("Linear", (), {"__init__": lambda s, *a, **k: None})
+    nn_mod.ReLU = type("ReLU", (), {})
+    nn_mod.Sequential = type("Sequential", (), {"__init__": lambda s, *a: None})
 
 from src.ml.reward import compute_trade_reward, compute_portfolio_reward
 from src.rag.vector_store import TradeRAG

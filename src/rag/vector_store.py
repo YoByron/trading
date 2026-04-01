@@ -35,9 +35,10 @@ class TradeRAG:
         try:
             from sentence_transformers import SentenceTransformer
 
-            self._embedder = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+            # BGE-base-en-v1.5: 84.7% accuracy vs MiniLM's 56% (MTEB benchmark)
+            self._embedder = SentenceTransformer("BAAI/bge-base-en-v1.5")
             self._use_faiss = True
-            logger.info("RAG: Using MiniLM-L6-v2 embeddings + FAISS")
+            logger.info("RAG: Using BGE-base-en-v1.5 embeddings + FAISS")
         except ImportError:
             logger.info("RAG: sentence-transformers not available, using TF-IDF fallback")
             self._use_faiss = False
