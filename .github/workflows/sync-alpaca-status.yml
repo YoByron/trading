@@ -64,14 +64,12 @@ jobs:
           python3 scripts/sync_closed_positions.py || echo "⚠️ Closed positions sync failed - win rate may be stale"
           python3 scripts/update_north_star_operating_plan.py || echo "⚠️ North Star operating plan update failed"
 
-      - name: Manage Iron Condor Exits (Intraday)
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_PAPER_TRADING_API_SECRET }}
-          PYTHONPATH: ${{ github.workspace }}
-        run: |
-          echo "📊 Checking iron condor exit conditions (50% profit | 100% stop | 7 DTE)..."
-          python3 scripts/manage_iron_condor_positions.py || echo "⚠️ IC management skipped"
+      # DISABLED: ic_simple.py is the sole position manager (2026-04-01)
+      # manage_iron_condor_positions.py was closing positions via individual legs
+      # while ic_simple.py manages them via MLEG — two competing systems caused
+      # unexpected position closures and potential P/L loss.
+      # - name: Manage Iron Condor Exits (Intraday)
+      #   run: python3 scripts/manage_iron_condor_positions.py
 
       - name: Retrain GRPO Model
         env:
