@@ -28,5 +28,16 @@
       "long_put": 645.0,
       "long_call": 735.0
     }
+  },
+  "IC_260501": {
+    "credit": 2.2800000000000002,
+    "date": "2026-04-01T14:49:46.683854",
+    "order_id": "86ce433e-3688-4a23-86d4-de51d0fc5e1d",
+    "strikes": {
+      "short_put": 610.0,
+      "short_call": 688.0,
+      "long_put": 600.0,
+      "long_call": 698.0
+    }
   }
 }
