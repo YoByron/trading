@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
 RLHF_DIR="${PROJECT_ROOT}/.rlhf"
 RULES_FILE="${RLHF_DIR}/prevention-rules.md"
-GATEWAY_CMD=(npx -y mcp-memory-gateway@0.8.4)
+GATEWAY_CMD=(npx -y mcp-memory-gateway@0.8.5)
 
 mkdir -p "${RLHF_DIR}"
 
