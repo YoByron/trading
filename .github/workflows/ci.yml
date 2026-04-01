@@ -135,14 +135,11 @@ jobs:
       - name: Verify pinned versions exist on PyPI
         run: python scripts/check_pypi_pins.py
 
-      - name: Install Ruff
-        run: pip install ruff
-
-      - name: Run Ruff linter
-        run: ruff check . --output-format=github
-
-      - name: Run Ruff formatter check
-        run: ruff format --check .
+      - name: Trunk Check
+        uses: trunk-io/trunk-action@v1
+        with:
+          check-mode: ${{ github.event_name == 'pull_request' && 'pull_request' || 'all' }}
+          trunk-token: ${{ secrets.TRUNK_API_TOKEN }}
 
       - name: Anthropic compliance guardrail
         if: steps.content-scope.outputs.content_checks == 'true'
