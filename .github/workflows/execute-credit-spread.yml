@@ -1,9 +1,10 @@
 name: Execute Credit Spread
 
 on:
-  schedule:
+  # DISABLED: ic_simple.py is sole trader (2026-04-01)
+  # schedule:
     # Run at 9:35 AM ET on weekdays (covers EST/EDT)
-    - cron: "35 13,14 * * 1-5"
+    #     - cron: "35 13,14 * * 1-5"
   workflow_dispatch:
     inputs:
       symbol:

@@ -4,11 +4,11 @@ name: Iron Condor Autonomous System
 # Per LL-306: "Trust the guardrails, not the agent"
 
 on:
-  schedule:
-    # Scan at 9:45 AM ET (14:45 UTC) Mon-Fri
-    - cron: "45 14 * * 1-5"
-    # Retry scan at 12:30 PM ET (17:30 UTC) Mon-Fri
-    - cron: "30 17 * * 1-5"
+  # DISABLED: ic_simple.py is the sole trader (2026-04-01)
+  # This was a competing entry system opening ICs independently.
+  # schedule:
+  #   - cron: "45 14 * * 1-5"
+  #   - cron: "30 17 * * 1-5"
   workflow_dispatch:
     inputs:
       action:
