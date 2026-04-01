@@ -1150,38 +1150,25 @@ def main():
         except Exception as e:
             logger.debug(f"ThumbGate check skipped: {e}")
 
-        # IV vs RV check: only sell premium when IV > RV
+        # IV vs RV check: only sell premium when IV is rich (free data — no Alpaca SIP needed)
         iv_rv_blocked = False
         try:
-            from src.data.iv_data_provider import IVDataProvider
+            from src.data.free_greeks import get_iv_percentile, get_spy_iv, get_vix
 
-            provider = IVDataProvider()
-            current_iv = provider.get_current_iv("SPY")
-            # Compute 20-day realized vol
-            import numpy as np
-            from alpaca.data.historical import StockHistoricalDataClient
-            from alpaca.data.requests import StockBarsRequest
-            from alpaca.data.timeframe import TimeFrame
-            from src.utils.alpaca_client import get_alpaca_credentials
+            current_vix = get_vix()
+            current_iv = get_spy_iv()
+            iv_pctile = get_iv_percentile()
 
-            api_key, secret = get_alpaca_credentials()
-            dc = StockHistoricalDataClient(api_key, secret)
-            bars = dc.get_stock_bars(
-                StockBarsRequest(
-                    symbol_or_symbols="SPY",
-                    timeframe=TimeFrame.Day,
-                    start=datetime.now() - timedelta(days=30),
-                    end=datetime.now(),
-                )
-            )
-            closes = [float(b.close) for b in bars.data.get("SPY", [])]
-            if len(closes) >= 10:
-                rv = float(np.std(np.diff(np.log(closes))) * np.sqrt(252))
-                iv_rv_ratio = current_iv / rv if rv > 0 else 999
-                logger.info(f"IV={current_iv:.1%} RV={rv:.1%} ratio={iv_rv_ratio:.2f}")
-                if iv_rv_ratio < 0.90:
-                    logger.warning(f"IV/RV={iv_rv_ratio:.2f} < 0.90 — premium too cheap")
+            if current_vix is not None:
+                logger.info(f"VIX={current_vix}")
+            if current_iv is not None and iv_pctile is not None:
+                logger.info(f"SPY IV={current_iv:.1%} | IV Percentile={iv_pctile:.0f}%")
+                # Block entry when IV percentile is very low (premium too cheap)
+                if iv_pctile < 20:
+                    logger.warning(f"IV Percentile {iv_pctile:.0f}% < 20% — premium too cheap to sell")
                     iv_rv_blocked = True
+                elif iv_pctile > 50:
+                    logger.info(f"IV Percentile {iv_pctile:.0f}% — premium is rich, good to sell")
         except Exception as e:
             logger.debug(f"IV/RV check skipped: {e}")
 
