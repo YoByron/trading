@@ -1165,7 +1165,9 @@ def main():
                 logger.info(f"SPY IV={current_iv:.1%} | IV Percentile={iv_pctile:.0f}%")
                 # Block entry when IV percentile is very low (premium too cheap)
                 if iv_pctile < 20:
-                    logger.warning(f"IV Percentile {iv_pctile:.0f}% < 20% — premium too cheap to sell")
+                    logger.warning(
+                        f"IV Percentile {iv_pctile:.0f}% < 20% — premium too cheap to sell"
+                    )
                     iv_rv_blocked = True
                 elif iv_pctile > 50:
                     logger.info(f"IV Percentile {iv_pctile:.0f}% — premium is rich, good to sell")
