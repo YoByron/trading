@@ -41,7 +41,7 @@
     }
   },
   "IC_260508": {
-    "credit": 2.2720000000000002,
+    "credit": 2.28,
     "date": "2026-04-02T19:33:26.147729",
     "order_id": "551dac61-fa74-45aa-98f3-13f11b93cb7a",
     "strikes": {
@@ -49,6 +49,7 @@
       "short_call": 690.0,
       "long_put": 590.0,
       "long_call": 700.0
-    }
+    },
+    "fill_confirmed": true
   }
 }
