@@ -1194,22 +1194,23 @@ def main():
             # RAG: retrieve relevant lessons for current conditions
             _query_rag_before_entry(spy_price)
 
-            # Fill all available IC slots in one run
-            while _count_open_ics(client) < MAX_IC:
+            # Place ONE IC per run — safe, predictable, no runaway loops
+            # (Previous while loop opened ~80 contracts due to stale count bug)
+            ic_count = _count_open_ics(client)
+            if ic_count >= MAX_IC:
+                logger.info(f"Position limit: {ic_count}/{MAX_IC} ICs. No new entry.")
+            else:
                 opp = find_opportunity(spy_price)
-                if not opp:
+                if opp:
+                    if thompson_conf < 0.40:
+                        logger.warning(f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry")
+                    elif args.dry_run:
+                        logger.info(f"(dry run — would place IC: {opp})")
+                    else:
+                        order_id = place_ic(client, opp)
+                        logger.info(f"Placed IC: order={order_id}")
+                else:
                     logger.info("No opportunity found.")
-                    break
-                if thompson_conf < 0.40:
-                    logger.warning(f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry")
-                    break
-                if args.dry_run:
-                    logger.info(f"(dry run — would place IC: {opp})")
-                    break
-                order_id = place_ic(client, opp)
-                logger.info(f"Placed IC: order={order_id}")
-                ic_count = _count_open_ics(client)
-                logger.info(f"Open ICs: {ic_count}/{MAX_IC}")
 
     if args.mode == "status":
         ic_count = _count_open_ics(client)
