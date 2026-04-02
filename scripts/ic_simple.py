@@ -1203,7 +1203,9 @@ def main():
                 opp = find_opportunity(spy_price)
                 if opp:
                     if thompson_conf < 0.40:
-                        logger.warning(f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry")
+                        logger.warning(
+                            f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry"
+                        )
                     elif args.dry_run:
                         logger.info(f"(dry run — would place IC: {opp})")
                     else:
