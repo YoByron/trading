@@ -83,9 +83,7 @@ def build_public_status(repo_root: Path) -> dict[str, Any]:
         "system": {
             "name": "SPY Options Validation Platform",
             "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
-            "public_status": _short_status(
-                weekly.get("block_new_positions"), weekly.get("mode")
-            ),
+            "public_status": _short_status(weekly.get("block_new_positions"), weekly.get("mode")),
         },
         "paper": {
             "equity": paper.get("equity"),
@@ -120,7 +118,9 @@ def build_public_status(repo_root: Path) -> dict[str, Any]:
             "qualified_setups_this_week": cadence.get("qualified_setups_observed"),
             "closed_trades_this_week": cadence.get("closed_trades_observed"),
             "scale_allowed": not bool(weekly.get("block_new_positions")),
-            "scaling_gate_closed_trades_observed": scaling.get("closed_trades_observed", closed_total),
+            "scaling_gate_closed_trades_observed": scaling.get(
+                "closed_trades_observed", closed_total
+            ),
             "scaling_gate_min_closed_trades": scaling.get("min_closed_trades_for_scaling"),
         },
         "narrative": {
@@ -297,12 +297,15 @@ def check_public_surfaces(repo_root: Path) -> int:
     actual_status = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
 
     if actual_status != expected_json:
-        failures.append("docs/data/public_status.json is out of date. Run scripts/build_public_status.py.")
+        failures.append(
+            "docs/data/public_status.json is out of date. Run scripts/build_public_status.py."
+        )
 
     expected_pages = {
         "wiki/Home.md": render_home(expected_status) + "\n",
         "wiki/Progress-Dashboard.md": render_progress_dashboard(expected_status) + "\n",
-        "wiki/Development-Engine-and-Evidence.md": render_development_engine(expected_status) + "\n",
+        "wiki/Development-Engine-and-Evidence.md": render_development_engine(expected_status)
+        + "\n",
     }
     for rel, content in expected_pages.items():
         path = repo_root / rel
