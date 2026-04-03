@@ -52,9 +52,19 @@ jobs:
             git checkout -b "$branch"
             git commit -m "style: Auto-format with ruff"
             git push origin "HEAD:$branch"
-            gh pr create \
+            pr_url="https://github.com/${{ github.repository }}/pull/new/$branch"
+            if ! gh pr create \
               --base main \
               --head "$branch" \
               --title "style: auto-format with ruff" \
-              --body "Automated Ruff formatting from workflow run ${{ github.run_id }}."
+              --body "Automated Ruff formatting from workflow run ${{ github.run_id }}."; then
+              echo "::warning::Branch $branch was pushed but PR creation is blocked for GitHub Actions. Open $pr_url manually."
+              {
+                echo "## Auto-format PR follow-up"
+                echo ""
+                echo "Pushed branch \`$branch\` but GitHub Actions could not create the PR automatically."
+                echo ""
+                echo "Open manually: $pr_url"
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
