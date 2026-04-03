@@ -1,6 +1,6 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-04-03T19:46:19.270786+00:00`.
+Generated from canonical ledgers at `2026-04-03T20:14:20.971225+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
