@@ -1,6 +1,6 @@
 # SPY Options Validation Platform Wiki
 
-Generated from canonical ledgers at `2026-04-03T16:08:38.016192+00:00`.
+Generated from canonical ledgers at `2026-04-03T16:25:01.632357+00:00`.
 
 This wiki is generated from the same source used by the public dashboard and repo copy. It should never carry frozen win-rate, equity, or trade-count claims that drift from the ledgers.
 
@@ -15,7 +15,7 @@ This wiki is generated from the same source used by the public dashboard and rep
 ## Key Links
 
 - [Public dashboard](https://igorganapolsky.github.io/trading)
-- [Operator dashboard](Progress-Dashboard)
+- [Operator dashboard](https://igorganapolsky.github.io/trading/rag-query.html)
 - [Progress Dashboard](Progress-Dashboard)
 - [Development Engine and Evidence](Development-Engine-and-Evidence)
 
