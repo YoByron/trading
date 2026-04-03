@@ -53,6 +53,7 @@ class TestVIXMeanReversionSignal:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV, meets 5% threshold
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -74,6 +75,7 @@ class TestVIXMeanReversionSignal:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -120,6 +122,7 @@ class TestVIXMeanReversionSignal:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -152,6 +155,7 @@ class TestVIXMeanReversionSignal:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -181,6 +185,7 @@ class TestVIXMeanReversionSignal:
 
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -238,6 +243,7 @@ class TestEdgeCases:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
@@ -257,6 +263,7 @@ class TestEdgeCases:
         signal_gen = VIXMeanReversionSignal()
         # Mock IV data provider
         from unittest.mock import MagicMock
+
         mock_iv_metrics = MagicMock()
         mock_iv_metrics.current_iv = 0.20  # 20% IV > 10% RV
         signal_gen.iv_provider.get_full_metrics = MagicMock(return_value=mock_iv_metrics)
