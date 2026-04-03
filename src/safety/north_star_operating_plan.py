@@ -1007,9 +1007,10 @@ def compute_weekly_gate(
 
     contradiction_detected = False
     contradiction_reason = None
-    if lifetime_ledger["closed_trades"] >= DEFAULT_MIN_CLOSED_TRADES_FOR_SCALING and not lifetime_ledger[
-        "edge_confirmed"
-    ]:
+    if (
+        lifetime_ledger["closed_trades"] >= DEFAULT_MIN_CLOSED_TRADES_FOR_SCALING
+        and not lifetime_ledger["edge_confirmed"]
+    ):
         contradiction_detected = samples > 0 and expectancy > 0
         contradiction_reason = (
             "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. "

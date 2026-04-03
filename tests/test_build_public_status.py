@@ -109,9 +109,10 @@ def test_write_and_check_public_surfaces(tmp_path: Path):
     assert changed["docs/data/public_status.json"] is True
     assert changed["wiki/Home.md"] is True
     assert changed["wiki/Progress-Dashboard.md"] is True
-    assert "lifetime paired-trade ledger" in (
-        repo / "wiki/Progress-Dashboard.md"
-    ).read_text(encoding="utf-8").lower()
+    assert (
+        "lifetime paired-trade ledger"
+        in (repo / "wiki/Progress-Dashboard.md").read_text(encoding="utf-8").lower()
+    )
     assert check_public_surfaces(repo) == 0
 
 

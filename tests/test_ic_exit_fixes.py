@@ -138,13 +138,10 @@ def test_manage_script_credential_lookup_uses_canonical():
 
 def test_gate_scale_allowed_requires_win_rate_and_sample():
     """scale_allowed should require >= 50% win rate AND 30+ trades."""
+
     # Simulate the logic from build_public_status.py
     def compute_scale_allowed(block_new_positions, win_rate_pct, closed_total):
-        return (
-            not bool(block_new_positions)
-            and (win_rate_pct or 0) >= 50
-            and closed_total >= 30
-        )
+        return not bool(block_new_positions) and (win_rate_pct or 0) >= 50 and closed_total >= 30
 
     # 24% win rate, 66 trades -> not scalable
     assert not compute_scale_allowed(False, 24.24, 66)
@@ -160,11 +157,7 @@ def test_gate_verified_edge_requires_win_rate_and_sample():
     """verified_edge_available should require >= 50% win rate AND 30+ trades."""
 
     def compute_verified_edge(weekly_edge, win_rate_pct, closed_total):
-        return (
-            bool(weekly_edge)
-            and (win_rate_pct or 0) >= 50
-            and closed_total >= 30
-        )
+        return bool(weekly_edge) and (win_rate_pct or 0) >= 50 and closed_total >= 30
 
     # Weekly says edge, but all-time is 24% -> no edge
     assert not compute_verified_edge(True, 24.24, 66)

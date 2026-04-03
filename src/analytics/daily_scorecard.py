@@ -514,9 +514,7 @@ def _load_north_star_status(repo_root: Path, now: datetime) -> dict[str, Any]:
     north_star_raw = state.get("north_star")
     north_star: dict[str, Any] = north_star_raw if isinstance(north_star_raw, dict) else {}
     weekly_gate_raw = state.get("north_star_weekly_gate")
-    weekly_gate: dict[str, Any] = (
-        weekly_gate_raw if isinstance(weekly_gate_raw, dict) else {}
-    )
+    weekly_gate: dict[str, Any] = weekly_gate_raw if isinstance(weekly_gate_raw, dict) else {}
     cadence_kpi_raw = weekly_gate.get("cadence_kpi")
     cadence_kpi: dict[str, Any] = cadence_kpi_raw if isinstance(cadence_kpi_raw, dict) else {}
     scaling_sample_gate_raw = weekly_gate.get("scaling_sample_gate")
