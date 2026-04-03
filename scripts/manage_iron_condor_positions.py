@@ -431,13 +431,9 @@ def get_alpaca_credentials():
     except ImportError:
         import os
 
-        api_key = (
-            os.environ.get("ALPACA_PAPER_TRADING_API_KEY")
-            or os.environ.get("ALPACA_API_KEY")
-        )
-        secret_key = (
-            os.environ.get("ALPACA_PAPER_TRADING_API_SECRET")
-            or os.environ.get("ALPACA_SECRET_KEY")
+        api_key = os.environ.get("ALPACA_PAPER_TRADING_API_KEY") or os.environ.get("ALPACA_API_KEY")
+        secret_key = os.environ.get("ALPACA_PAPER_TRADING_API_SECRET") or os.environ.get(
+            "ALPACA_SECRET_KEY"
         )
         return api_key, secret_key
 

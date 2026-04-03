@@ -35,7 +35,6 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
-
 from src.core.trading_constants import IC_PROFIT_TARGET_PCT
 from src.core.trading_constants import MAX_POSITIONS as MAX_OPTION_LEGS
 from src.orchestrator.telemetry import OrchestratorTelemetry
@@ -114,7 +113,6 @@ class IronCondorStrategy:
         try:
             from alpaca.data.historical import StockHistoricalDataClient
             from alpaca.data.requests import StockLatestQuoteRequest
-
             from src.utils.alpaca_client import get_alpaca_credentials
 
             api_key, secret = get_alpaca_credentials()
@@ -399,7 +397,6 @@ class IronCondorStrategy:
             from alpaca.data.historical import StockHistoricalDataClient
             from alpaca.data.requests import StockBarsRequest
             from alpaca.data.timeframe import TimeFrame
-
             from src.utils.alpaca_client import get_alpaca_credentials
 
             api_key, secret = get_alpaca_credentials()
@@ -493,7 +490,6 @@ class IronCondorStrategy:
             logger.info("=" * 60)
             try:
                 from alpaca.trading.client import TradingClient
-
                 from src.utils.alpaca_client import get_alpaca_credentials
 
                 api_key, secret = get_alpaca_credentials()
@@ -685,7 +681,6 @@ class IronCondorStrategy:
                 from alpaca.trading.client import TradingClient
                 from alpaca.trading.enums import OrderClass, OrderSide
                 from alpaca.trading.requests import OptionLegRequest
-
                 from src.utils.alpaca_client import get_alpaca_credentials
 
                 api_key, secret = get_alpaca_credentials()
@@ -798,22 +793,38 @@ class IronCondorStrategy:
                                 refreshed = client.get_order_by_id(order.id)
                                 if str(refreshed.status) in ("OrderStatus.FILLED", "filled"):
                                     entry_filled = True
-                                    logger.info(f"   Entry order FILLED at {refreshed.filled_avg_price}")
+                                    logger.info(
+                                        f"   Entry order FILLED at {refreshed.filled_avg_price}"
+                                    )
                                     break
                                 if str(refreshed.status) in (
-                                    "OrderStatus.CANCELED", "OrderStatus.EXPIRED",
-                                    "OrderStatus.REJECTED", "canceled", "expired", "rejected",
+                                    "OrderStatus.CANCELED",
+                                    "OrderStatus.EXPIRED",
+                                    "OrderStatus.REJECTED",
+                                    "canceled",
+                                    "expired",
+                                    "rejected",
                                 ):
-                                    logger.warning(f"   Entry order {refreshed.status} — skipping close order")
+                                    logger.warning(
+                                        f"   Entry order {refreshed.status} — skipping close order"
+                                    )
                                     break
                                 time.sleep(5)
 
                             if entry_filled:
                                 close_legs = [
-                                    OptionLegRequest(symbol=long_put_sym, side=OrderSide.SELL, ratio_qty=1),
-                                    OptionLegRequest(symbol=short_put_sym, side=OrderSide.BUY, ratio_qty=1),
-                                    OptionLegRequest(symbol=short_call_sym, side=OrderSide.BUY, ratio_qty=1),
-                                    OptionLegRequest(symbol=long_call_sym, side=OrderSide.SELL, ratio_qty=1),
+                                    OptionLegRequest(
+                                        symbol=long_put_sym, side=OrderSide.SELL, ratio_qty=1
+                                    ),
+                                    OptionLegRequest(
+                                        symbol=short_put_sym, side=OrderSide.BUY, ratio_qty=1
+                                    ),
+                                    OptionLegRequest(
+                                        symbol=short_call_sym, side=OrderSide.BUY, ratio_qty=1
+                                    ),
+                                    OptionLegRequest(
+                                        symbol=long_call_sym, side=OrderSide.SELL, ratio_qty=1
+                                    ),
                                 ]
 
                                 close_order_req = LimitOrderRequest(
@@ -825,8 +836,12 @@ class IronCondorStrategy:
                                 )
 
                                 close_order = safe_submit_order(client, close_order_req)
-                                logger.info(f"✅ GTC 50% profit close order placed: {close_order.id}")
-                                logger.info(f"   Close at ${close_debit:.2f} debit (50% of ${limit_credit:.2f} credit)")
+                                logger.info(
+                                    f"✅ GTC 50% profit close order placed: {close_order.id}"
+                                )
+                                logger.info(
+                                    f"   Close at ${close_debit:.2f} debit (50% of ${limit_credit:.2f} credit)"
+                                )
                                 order_ids.append(
                                     {
                                         "order_id": str(close_order.id),
@@ -835,10 +850,14 @@ class IronCondorStrategy:
                                     }
                                 )
                             else:
-                                logger.warning("   Entry not filled within 60s — close order deferred to manage script")
+                                logger.warning(
+                                    "   Entry not filled within 60s — close order deferred to manage script"
+                                )
                         except Exception as close_err:
                             logger.warning(f"⚠️ Could not place GTC profit close: {close_err}")
-                            logger.warning("   Will rely on manage_iron_condor_positions.py for exits")
+                            logger.warning(
+                                "   Will rely on manage_iron_condor_positions.py for exits"
+                            )
 
                         # Save entry credit so Guardian knows the real entry price
                         try:
