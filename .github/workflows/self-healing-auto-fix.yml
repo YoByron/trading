@@ -87,11 +87,21 @@ jobs:
           git add -A
           git commit -m "style: auto-heal lint fixes" || true
           git push origin "HEAD:${{ steps.fix.outputs.branch }}"
-          gh pr create \
+          pr_url="https://github.com/${{ github.repository }}/pull/new/${{ steps.fix.outputs.branch }}"
+          if ! gh pr create \
             --base main \
             --head "${{ steps.fix.outputs.branch }}" \
             --title "style: self-healing lint fixes" \
-            --body "Automated lint/self-healing fixes from workflow run ${{ github.run_id }}."
+            --body "Automated lint/self-healing fixes from workflow run ${{ github.run_id }}."; then
+            echo "::warning::Branch ${{ steps.fix.outputs.branch }} was pushed but PR creation is blocked for GitHub Actions. Open $pr_url manually."
+            {
+              echo "## Self-healing PR follow-up"
+              echo ""
+              echo "Pushed branch \`${{ steps.fix.outputs.branch }}\` but GitHub Actions could not create the PR automatically."
+              echo ""
+              echo "Open manually: $pr_url"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   # Job 2: Run tests and report failures
   test-and-report:
