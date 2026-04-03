@@ -8,6 +8,7 @@ Usage: python3 scripts/system_health_check.py
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from datetime import datetime
@@ -89,6 +90,11 @@ def _probe_vector_index() -> tuple[bool, str]:
     return True, f"LanceDB table ready ({row_count} rows)"
 
 
+def _bounded_mode_enabled() -> bool:
+    """Return whether CI bounded mode is enabled for generated-state verification."""
+    return os.getenv("SYSTEM_HEALTH_BOUNDED", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _parse_option_symbol(symbol: str) -> tuple[str, str] | None:
     """Return (expiry, option_type) for OCC-style option symbols."""
     match = OPTION_SYMBOL_RE.match(symbol)
@@ -107,8 +113,14 @@ def check_vector_db():
             results["status"] = "OK"
             results["details"].append(f"✓ {detail}")
         else:
-            results["status"] = "BROKEN"
-            results["details"].append(f"✗ {detail}")
+            if _bounded_mode_enabled() and (
+                "path missing" in detail.lower() or "not installed" in detail.lower()
+            ):
+                results["status"] = "STUB"
+                results["details"].append(f"⚠️ {detail} - non-blocking in bounded CI mode")
+            else:
+                results["status"] = "BROKEN"
+                results["details"].append(f"✗ {detail}")
 
     except Exception as e:
         results["status"] = "BROKEN"

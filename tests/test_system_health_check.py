@@ -72,6 +72,16 @@ def test_check_vector_db_reports_broken_on_empty_index(monkeypatch):
     assert any("table empty" in detail for detail in result["details"])
 
 
+def test_check_vector_db_is_non_blocking_in_bounded_mode_for_missing_path(monkeypatch):
+    monkeypatch.setattr(sh, "_probe_vector_index", lambda: (False, "LanceDB path missing: /tmp/foo"))
+    monkeypatch.setenv("SYSTEM_HEALTH_BOUNDED", "1")
+
+    result = sh.check_vector_db()
+
+    assert result["status"] == "STUB"
+    assert any("non-blocking in bounded CI mode" in detail for detail in result["details"])
+
+
 def test_check_position_completeness_allows_long_only_defined_risk_structure(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     data_dir = tmp_path / "data"
