@@ -114,7 +114,9 @@ def build_public_status(repo_root: Path) -> dict[str, Any]:
             "positions_count": runtime_paper.get("positions_count"),
         },
         "live": {
-            "equity": _pick_first(runtime_live.get("equity"), scorecard.get("live", {}).get("equity")),
+            "equity": _pick_first(
+                runtime_live.get("equity"), scorecard.get("live", {}).get("equity")
+            ),
             "total_pnl_today": _pick_first(
                 runtime_live.get("daily_change"),
                 scorecard.get("live", {}).get("total_pnl_today"),
