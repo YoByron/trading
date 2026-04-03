@@ -42,6 +42,8 @@ jobs:
           pip install -e . pytest pyyaml
 
       - name: Verify bounded system health check
+        env:
+          SYSTEM_HEALTH_BOUNDED: "1"
         run: |
           python - <<'PY'
           import subprocess

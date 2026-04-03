@@ -5,10 +5,10 @@ Prevents ll_025-type failures where workflows use deprecated CLI flags
 that cause silent failures in production.
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
-import re
 
 try:
     import yaml
@@ -158,6 +158,21 @@ def test_public_surface_guard_workflow_exists():
     assert "scripts/build_public_status.py --repo-root . --check" in workflow_text
     assert "scripts/check_public_copy_freshness.py --repo-root ." in workflow_text
     assert "tests/test_build_public_status.py" in workflow_text
+
+
+def test_auto_format_uses_repo_token_not_pat_checkout():
+    """Auto-format must use the repository token path that works on default-branch pushes."""
+    workflow_text = Path(".github/workflows/auto-format.yml").read_text()
+
+    assert "actions/checkout@v6" in workflow_text
+    assert "secrets.GH_PAT" not in workflow_text
+
+
+def test_main_head_verification_runs_bounded_health_mode():
+    """Main-head verification must opt into bounded health checks in CI."""
+    workflow_text = Path(".github/workflows/main-head-verification.yml").read_text()
+
+    assert 'SYSTEM_HEALTH_BOUNDED: "1"' in workflow_text
 
 
 if __name__ == "__main__":
