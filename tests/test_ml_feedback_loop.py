@@ -99,13 +99,35 @@ def test_postmortem_generates_from_losses():
     trades = {
         "stats": {},
         "trades": [
-            {"id": "trade1", "outcome": "loss", "realized_pnl": -100, "entry_date": "2026-03-01",
-             "exit_date": "2026-03-01", "entry_time": "2026-03-01T14:00:00+00:00",
-             "exit_time": "2026-03-01T14:30:00+00:00", "signature": "SPY_test", "source": ""},
-            {"id": "trade2", "outcome": "win", "realized_pnl": 50, "entry_date": "2026-03-02",
-             "exit_date": "2026-03-05", "signature": "SPY_win", "source": ""},
-            {"id": "trade3", "outcome": "loss", "realized_pnl": -5, "entry_date": "2026-03-03",
-             "exit_date": "2026-03-03", "signature": "SPY_small", "source": ""},
+            {
+                "id": "trade1",
+                "outcome": "loss",
+                "realized_pnl": -100,
+                "entry_date": "2026-03-01",
+                "exit_date": "2026-03-01",
+                "entry_time": "2026-03-01T14:00:00+00:00",
+                "exit_time": "2026-03-01T14:30:00+00:00",
+                "signature": "SPY_test",
+                "source": "",
+            },
+            {
+                "id": "trade2",
+                "outcome": "win",
+                "realized_pnl": 50,
+                "entry_date": "2026-03-02",
+                "exit_date": "2026-03-05",
+                "signature": "SPY_win",
+                "source": "",
+            },
+            {
+                "id": "trade3",
+                "outcome": "loss",
+                "realized_pnl": -5,
+                "entry_date": "2026-03-03",
+                "exit_date": "2026-03-03",
+                "signature": "SPY_small",
+                "source": "",
+            },
         ],
     }
     lessons = generate_loss_postmortems(trades)
@@ -119,9 +141,15 @@ def test_postmortem_categorizes_orphan_cleanup():
     trades = {
         "stats": {},
         "trades": [
-            {"id": "orphan1", "outcome": "loss", "realized_pnl": -500,
-             "entry_date": "2026-03-01", "exit_date": "2026-03-01",
-             "signature": "SPY_orphan", "source": "alpaca_leg_cluster->ORPHAN"},
+            {
+                "id": "orphan1",
+                "outcome": "loss",
+                "realized_pnl": -500,
+                "entry_date": "2026-03-01",
+                "exit_date": "2026-03-01",
+                "signature": "SPY_orphan",
+                "source": "alpaca_leg_cluster->ORPHAN",
+            },
         ],
     }
     lessons = generate_loss_postmortems(trades)
@@ -146,9 +174,15 @@ def test_postmortem_limits_count():
     trades = {
         "stats": {},
         "trades": [
-            {"id": f"loss{i}", "outcome": "loss", "realized_pnl": -100 * (i + 1),
-             "entry_date": "2026-03-01", "exit_date": "2026-03-01",
-             "signature": f"SPY_loss{i}", "source": ""}
+            {
+                "id": f"loss{i}",
+                "outcome": "loss",
+                "realized_pnl": -100 * (i + 1),
+                "entry_date": "2026-03-01",
+                "exit_date": "2026-03-01",
+                "signature": f"SPY_loss{i}",
+                "source": "",
+            }
             for i in range(20)
         ],
     }
