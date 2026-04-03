@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-04-03T15:04:23.096927+00:00",
+  "last_updated": "2026-04-03T15:12:53.772057+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-04-03T15:04:23.096927+00:00",
+    "last_successful_sync": "2026-04-03T15:12:53.772057+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 4,
+    "sync_count_today": 5,
     "history": [
-      {
-        "timestamp": "2026-04-01T19:37:22.405419+00:00",
-        "equity": 95375.11,
-        "success": true
-      },
       {
         "timestamp": "2026-04-01T20:01:44.513201+00:00",
         "equity": 95369.11,
@@ -124,9 +119,14 @@
         "timestamp": "2026-04-03T15:04:23.096927+00:00",
         "equity": 93990.3,
         "success": true
+      },
+      {
+        "timestamp": "2026-04-03T15:12:53.772057+00:00",
+        "equity": 93990.3,
+        "success": true
       }
     ],
-    "last_attempt": "2026-04-03T15:04:23.096927+00:00"
+    "last_attempt": "2026-04-03T15:12:53.772057+00:00"
   },
   "portfolio": {
     "equity": 93990.3,
@@ -2610,12 +2610,12 @@
     "buying_power": 186466.6
   },
   "meta": {
-    "last_updated": "2026-04-03T15:04:23.096927+00:00",
+    "last_updated": "2026-04-03T15:12:53.772057+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-04-03T15:04:23.096927+00:00",
+    "last_sync_attempt": "2026-04-03T15:12:53.772057+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-04-03T11:04:22.931101",
+    "last_sync": "2026-04-03T15:12:53.610712",
     "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-03-25T14:58:32.591868+00:00"
   },
@@ -2679,11 +2679,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-04-03T11:04:23.095165"
+    "synced_at": "2026-04-03T15:12:53.769100"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-04-03T15:04:23.102167Z",
+    "generated_at": "2026-04-03T15:12:53.778048Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
@@ -2782,7 +2782,7 @@
     "estimated_cagr_from_expectancy": -0.2222,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-04-03T15:04:23.102167Z",
+    "updated_at": "2026-04-03T15:12:53.778048Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2919,9 +2919,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-04-03T15:04:23.103952+00:00"
+      "updated_at": "2026-04-03T15:12:54.875828+00:00"
     },
-    "updated_at": "2026-04-03T15:04:23.104155+00:00"
+    "updated_at": "2026-04-03T15:12:54.876134+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -2951,7 +2951,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-04-03T15:04:23.104211+00:00"
+    "updated_at": "2026-04-03T15:12:54.876206+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3504,7 +3504,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-04-03T15:04:21.790464Z",
+    "generated_at_utc": "2026-04-03T15:12:54.876271Z",
     "cadence_optimizer": {
       "decision": "hold",
       "reason": "Liquidity floor unchanged.",
@@ -3547,7 +3547,7 @@
         {
           "name": "state_freshness",
           "status": "ok",
-          "detail": "fresh (0.3h old)."
+          "detail": "fresh (0.0h old)."
         },
         {
           "name": "weekly_gate_freshness",
@@ -3583,11 +3583,11 @@
       }
     ],
     "override_write": {
-      "path": "/Users/igorganapolsky/workspace/git/igor/trading/.worktrees/public-surface-main-sync/data/runtime/north_star_gate_overrides.json",
+      "path": "/home/runner/work/trading/trading/data/runtime/north_star_gate_overrides.json",
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-04-03T15:04:21.790464+00:00",
+        "updated_at": "2026-04-03T15:12:54.876271+00:00",
         "source": "north_star_autopilot"
       }
     }
