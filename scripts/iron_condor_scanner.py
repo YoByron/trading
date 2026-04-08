@@ -32,7 +32,6 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
-
 from src.core.trading_constants import (
     IRON_CONDOR_TARGET_DELTA,
     IRON_CONDOR_UNDERLYING,
@@ -228,9 +227,38 @@ def find_expiration_date(
 
 
 def calculate_strikes(underlying_price: float) -> dict:
-    """Calculate iron condor strikes based on 15-20 delta targeting."""
-    # 15 delta is roughly 5% OTM for the current profile.
+    """Calculate iron condor strikes using live delta when available.
 
+    Falls back to heuristic only for scanning (not execution). The heuristic
+    is clearly marked as approximate — actual trades MUST use live delta
+    via iron_condor_trader.py / ic_simple.py.
+    """
+    try:
+        from src.markets.option_chain import select_strikes_by_delta
+
+        selection = select_strikes_by_delta(
+            underlying=UNDERLYING,
+            underlying_price=underlying_price,
+            wing_width=WING_WIDTH,
+            target_delta=TARGET_DELTA,
+            target_dte=(MIN_DTE + MAX_DTE) // 2,
+            min_dte=MIN_DTE,
+            max_dte=MAX_DTE,
+        )
+        if selection.method == "live_delta":
+            return {
+                "short_put": selection.short_put,
+                "long_put": selection.long_put,
+                "short_call": selection.short_call,
+                "long_call": selection.long_call,
+                "method": "live_delta",
+                "put_delta": selection.put_delta,
+                "call_delta": selection.call_delta,
+            }
+    except Exception as e:
+        logger.warning(f"Live delta lookup failed: {e}")
+
+    # Heuristic fallback — SCAN ONLY, not for execution
     def round_to_5(x: float) -> float:
         return round(x / 5) * 5
 
@@ -245,6 +273,7 @@ def calculate_strikes(underlying_price: float) -> dict:
         "long_put": long_put,
         "short_call": short_call,
         "long_call": long_call,
+        "method": "heuristic_approximate",
     }
 
 
@@ -287,10 +316,33 @@ def validate_symbols_exist(options_client, expiry: str, strikes: dict) -> bool:
 
 
 def estimate_credit(strikes: dict) -> dict:
-    """Estimate credit and risk for the iron condor."""
-    # Conservative estimate for the current profile's $10-wide condor.
-    # Using $1.85 as middle estimate
-    estimated_credit = 2.00
+    """Estimate credit and risk for the iron condor.
+
+    Uses live option chain pricing when available. Falls back to conservative
+    estimate only for scanning purposes — actual execution gets real prices.
+    """
+    try:
+        from src.markets.option_chain import get_live_premium
+
+        live_credit = get_live_premium(
+            strikes["short_put"], strikes["long_put"],
+            strikes["short_call"], strikes["long_call"],
+        )
+        if live_credit and live_credit > 0:
+            max_risk = (WING_WIDTH * 100) - (live_credit * 100)
+            return {
+                "credit": live_credit,
+                "credit_dollars": live_credit * 100,
+                "max_risk": max_risk,
+                "risk_reward": (max_risk / (live_credit * 100) if live_credit > 0 else 0),
+                "method": "live_pricing",
+                "win_probability": 0.85,
+            }
+    except (ImportError, Exception) as e:
+        logger.debug(f"Live pricing unavailable: {e}")
+
+    # Fallback: conservative range estimate (SCAN ONLY — not for execution decisions)
+    estimated_credit = 1.50  # Conservative low estimate (was 2.00)
     max_risk = (WING_WIDTH * 100) - (estimated_credit * 100)
 
     return {
@@ -298,7 +350,8 @@ def estimate_credit(strikes: dict) -> dict:
         "credit_dollars": estimated_credit * 100,
         "max_risk": max_risk,
         "risk_reward": (max_risk / (estimated_credit * 100) if estimated_credit > 0 else 0),
-        "win_probability": 0.85,  # 15 delta = ~85% POP
+        "method": "estimate_only",  # Clearly marked as not real
+        "win_probability": 0.85,
     }
 
 

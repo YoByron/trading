@@ -20,7 +20,6 @@ from zoneinfo import ZoneInfo
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
-
 from src.core.trading_constants import (
     IC_PROFIT_TARGET_PCT,
     IRON_CONDOR_EXIT_DTE,
@@ -369,9 +368,13 @@ def run_guardian():
             entry_credit = entries[entry_key]["credit"]
             logger.info(f"  Entry credit: ${entry_credit:.2f}")
 
-        # Calculate current P/L
+        # Calculate current P/L (scale thresholds by contract count)
         current_value, pnl = calculate_ic_pnl(ic_data, entry_credit)
-        max_profit = entry_credit * 100
+        contract_count = max(
+            (abs(pos["qty"]) for pos in ic_data["positions"]),
+            default=1,
+        )
+        max_profit = entry_credit * contract_count * 100
         logger.info(f"  Current P/L: ${pnl:.2f} (max profit: ${max_profit:.2f})")
 
         # CHECK 0: Minimum holding period (prevent same-day churn)
@@ -402,8 +405,8 @@ def run_guardian():
             close_iron_condor(client, ic_data, f"DTE={dte} <= {MIN_DTE} (gamma risk)", expiry, pnl)
             continue
 
-        # CHECK 2: Stop Loss (100% of credit)
-        stop_loss = entry_credit * STOP_LOSS_MULTIPLIER * 100
+        # CHECK 2: Stop Loss (100% of credit, scaled by contract count)
+        stop_loss = entry_credit * contract_count * STOP_LOSS_MULTIPLIER * 100
         if pnl < -stop_loss:
             close_iron_condor(
                 client,
