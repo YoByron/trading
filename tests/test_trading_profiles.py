@@ -27,7 +27,7 @@ def test_default_iron_condor_profile_values():
     assert profile.min_hold_hours == 24
     assert profile.position_size_pct == 0.05
     assert profile.max_contracts_per_trade == 2
-    assert profile.max_concurrent_positions == 4
+    assert profile.max_concurrent_positions == 2  # CLAUDE.md mandate: 2 ICs max
     assert profile.max_daily_structures == 1
 
 
@@ -46,7 +46,7 @@ def test_strategy_config_bridge_matches_profile():
     assert config["min_hold_hours"] == 24
     assert config["position_size_pct"] == 0.05
     assert config["max_contracts_per_trade"] == 2
-    assert config["max_positions"] == 4
+    assert config["max_positions"] == 2  # CLAUDE.md mandate: 2 ICs max
 
 
 def test_trading_constants_derive_from_active_profile():

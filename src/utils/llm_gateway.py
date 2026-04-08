@@ -31,6 +31,13 @@ class OpenAICompatibleConfig:
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
+# OpenRouter observability headers (Apr 2026)
+# These appear in the OpenRouter dashboard for debugging and cost tracking.
+OPENROUTER_HEADERS = {
+    "HTTP-Referer": "https://github.com/IgorGanapolsky/trading",
+    "X-Title": "AI Trading System",
+}
+
 
 def _get_env(name: str) -> str:
     return (os.getenv(name) or "").strip()
