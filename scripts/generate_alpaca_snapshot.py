@@ -45,6 +45,7 @@ def fetch_paper_account() -> dict | None:
     """Fetch paper trading account data via Alpaca API."""
     try:
         from alpaca.trading.client import TradingClient
+
         from src.utils.alpaca_client import get_alpaca_credentials
 
         api_key, secret_key = get_alpaca_credentials()
@@ -82,6 +83,7 @@ def fetch_brokerage_account() -> dict | None:
     """Fetch brokerage (live) account data via Alpaca API."""
     try:
         from alpaca.trading.client import TradingClient
+
         from src.utils.alpaca_client import get_brokerage_credentials
 
         api_key, secret_key = get_brokerage_credentials()
@@ -227,6 +229,11 @@ def generate_chart(account_data: dict, output_path: Path) -> bool:
     return True
 
 
+def write_manifest(manifest: dict, output_path: Path) -> None:
+    """Write the snapshot manifest with stable JSON formatting."""
+    output_path.write_text(json.dumps(manifest, indent=2, default=str) + "\n", encoding="utf-8")
+
+
 def main():
     """Main entry point."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -271,7 +278,7 @@ def main():
 
     # Write manifest
     manifest_path = SNAPSHOTS_DIR / "latest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, default=str))
+    write_manifest(manifest, manifest_path)
     logger.info(f"Manifest written: {manifest_path}")
 
     # Summary

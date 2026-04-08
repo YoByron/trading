@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from unittest.mock import patch
 
 import pytest
@@ -106,6 +107,21 @@ class TestFetchAccounts:
 
         result = fetch_brokerage_account()
         assert result is None
+
+
+class TestManifestWriting:
+    def test_write_manifest_uses_stable_json_with_trailing_newline(self, tmp_path, mock_paper_data):
+        """Test manifest writer emits pretty JSON with a final newline."""
+        from scripts.generate_alpaca_snapshot import write_manifest
+
+        manifest = {"generated_at": "2026-04-08T18:11:17-04:00", "accounts": [mock_paper_data]}
+        output = tmp_path / "latest.json"
+
+        write_manifest(manifest, output)
+
+        written = output.read_text(encoding="utf-8")
+        assert written.endswith("\n")
+        assert json.loads(written) == manifest
 
 
 class TestConstants:
