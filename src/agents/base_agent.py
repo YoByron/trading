@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from anthropic import Anthropic
+
 from src.orchestration.context_engine import (
     ContextMemory,
     MemoryTimescale,
@@ -85,9 +86,12 @@ class BaseAgent(ABC):
                 self._openrouter_primary_base_url = primary_cfg.base_url or OPENROUTER_BASE_URL
                 self._openrouter_fallback_cfg = fallback_cfg
 
+                from src.utils.llm_gateway import OPENROUTER_HEADERS
+
                 self._openrouter_client = OpenAI(
                     api_key=primary_cfg.api_key,
                     base_url=self._openrouter_primary_base_url,
+                    default_headers=OPENROUTER_HEADERS,
                 )
                 self.client = None  # Not using Anthropic for this agent
                 logger.info(f"{name}: Using OpenRouter provider for model {self.model}")
@@ -277,9 +281,12 @@ class BaseAgent(ABC):
                     if self._openrouter_fallback_client is None:
                         from openai import OpenAI
 
+                        from src.utils.llm_gateway import OPENROUTER_HEADERS
+
                         self._openrouter_fallback_client = OpenAI(
                             api_key=self._openrouter_fallback_cfg.api_key,
                             base_url=self._openrouter_fallback_cfg.base_url,
+                            default_headers=OPENROUTER_HEADERS,
                         )
                     fallback_kwargs = dict(kwargs)
                     fallback_kwargs["model"] = self.model  # canonical OpenRouter ID

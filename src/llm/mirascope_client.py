@@ -24,6 +24,7 @@ from enum import Enum
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
+
 from src.utils.llm_gateway import (
     OPENROUTER_BASE_URL,
     resolve_openai_compatible_config,
@@ -204,9 +205,16 @@ class MirascopeTradingClient:
                         default_base_url=None,
                     )
 
+                # Add OpenRouter observability headers for dashboard tracking
+                extra_headers = {}
+                if self.provider == LLMProvider.OPENROUTER:
+                    from src.utils.llm_gateway import OPENROUTER_HEADERS
+                    extra_headers = OPENROUTER_HEADERS
+
                 self._openai_client = OpenAI(
                     api_key=cfg.api_key,
                     base_url=cfg.base_url,
+                    default_headers=extra_headers or None,
                 )
             except ImportError:
                 raise ImportError("openai package not installed. Run: pip install openai")
@@ -244,9 +252,12 @@ class MirascopeTradingClient:
             if self._openrouter_fallback_client is None:
                 from openai import OpenAI
 
+                from src.utils.llm_gateway import OPENROUTER_HEADERS
+
                 self._openrouter_fallback_client = OpenAI(
                     api_key=self._openrouter_fallback_cfg.api_key,
                     base_url=self._openrouter_fallback_cfg.base_url,
+                    default_headers=OPENROUTER_HEADERS,
                 )
             fallback_kwargs = dict(kwargs)
             fallback_kwargs["model"] = model  # canonical OpenRouter ID
