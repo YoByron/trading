@@ -36,14 +36,16 @@ def test_detect_feedback_signal_explicit_and_implicit() -> None:
     assert detect_feedback_signal("neutral request") is None
 
 
-def test_process_payload_records_gateway_commands_and_rlhf_state(tmp_path: Path) -> None:
+def test_process_payload_records_thumbgate_commands_and_shared_state(tmp_path: Path) -> None:
     project = tmp_path / "project"
     (project / ".claude").mkdir(parents=True)
 
     commands: list[list[str]] = []
+    envs: list[dict[str, str] | None] = []
 
-    def fake_runner(command: list[str], **_: object) -> int:
+    def fake_runner(command: list[str], **kwargs: object) -> int:
         commands.append(command)
+        envs.append(kwargs.get("env"))
         return 0
 
     payload = {
@@ -56,23 +58,25 @@ def test_process_payload_records_gateway_commands_and_rlhf_state(tmp_path: Path)
     result = process_payload(payload, runner=fake_runner)
 
     assert result["status"] == "processed"
-    assert any("mcp-memory-gateway@0.7.1" in " ".join(cmd) for cmd in commands)
+    assert any("thumbgate@0.9.14" in " ".join(cmd) for cmd in commands)
     assert any(" capture " in f" {' '.join(cmd)} " for cmd in commands)
     assert any(" rules " in f" {' '.join(cmd)} " for cmd in commands)
+    assert envs[-1] is not None
+    assert envs[-1]["THUMBGATE_FEEDBACK_DIR"] == str(project / ".thumbgate")
 
-    state_file = project / ".rlhf" / "codex_notify_state.json"
+    state_file = project / ".thumbgate" / "codex_notify_state.json"
     assert state_file.exists()
     state = json.loads(state_file.read_text(encoding="utf-8"))
     assert state["last_signal"] == "thumbs_up"
-    assert state["last_pipeline_status"]["gateway_capture"] is True
-    assert state["last_pipeline_status"]["gateway_rules"] is True
+    assert state["last_pipeline_status"]["thumbgate_capture"] is True
+    assert state["last_pipeline_status"]["thumbgate_rules"] is True
     assert state["last_pipeline_status"]["fallback_log"] is False
 
-    event_log = project / ".rlhf" / "codex_notify_events.jsonl"
+    event_log = project / ".thumbgate" / "codex_notify_events.jsonl"
     assert event_log.exists()
     row = json.loads(event_log.read_text(encoding="utf-8").strip().splitlines()[-1])
     assert row["event_key"] == result["event_key"]
-    assert row["pipeline_status"]["gateway_capture"] is True
+    assert row["pipeline_status"]["thumbgate_capture"] is True
 
 
 def test_process_payload_falls_back_to_rlhf_log_on_gateway_failure(tmp_path: Path) -> None:
@@ -93,10 +97,10 @@ def test_process_payload_falls_back_to_rlhf_log_on_gateway_failure(tmp_path: Pat
     result = process_payload(payload, runner=failing_runner)
 
     assert result["status"] == "processed"
-    assert result["pipeline_status"]["gateway_capture"] is False
+    assert result["pipeline_status"]["thumbgate_capture"] is False
     assert result["pipeline_status"]["fallback_log"] is True
 
-    feedback_log = project / ".rlhf" / "feedback-log.jsonl"
+    feedback_log = project / ".thumbgate" / "feedback-log.jsonl"
     assert feedback_log.exists()
     row = json.loads(feedback_log.read_text(encoding="utf-8").strip().splitlines()[-1])
     assert row["signal"] == "down"

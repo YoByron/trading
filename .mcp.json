@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "mcp-memory-gateway@0.7.1",
+        "thumbgate@0.9.14",
         "serve"
       ]
     }

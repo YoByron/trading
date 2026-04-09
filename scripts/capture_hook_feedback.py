@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Thin CLI wrapper for hook feedback capture via MCP Memory Gateway."""
+"""Thin CLI wrapper for hook feedback capture via ThumbGate."""
 
 from __future__ import annotations
 
@@ -8,25 +8,34 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from src.learning.memory_gateway_feedback import (
-    append_feedback_fallback,
-    build_feedback_context,
-    command_return_code,
-    detect_feedback_signal,
-    extract_last_assistant_response,
-    gateway_capture_command,
-    gateway_rules_command,
-    normalize_text,
-    run_command,
-)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def process_user_message(
     user_message: str,
     *,
     project_root: Path,
-    runner: Any = run_command,
+    runner: Any = None,
 ) -> dict[str, Any]:
+    from src.learning.memory_gateway_feedback import (
+        append_feedback_fallback,
+        build_feedback_context,
+        command_return_code,
+        detect_feedback_signal,
+        extract_last_assistant_response,
+        normalize_text,
+        resolve_thumbgate_paths,
+        run_command,
+        thumbgate_capture_command,
+        thumbgate_env,
+        thumbgate_rules_command,
+    )
+
+    if runner is None:
+        runner = run_command
+
     normalized_message = normalize_text(user_message, limit=1000)
     signal = detect_feedback_signal(normalized_message)
     if signal is None:
@@ -40,8 +49,9 @@ def process_user_message(
     )
 
     capture_result = runner(
-        gateway_capture_command(signal, context, detail, improvement),
+        thumbgate_capture_command(signal, context, detail, improvement),
         cwd=project_root,
+        env=thumbgate_env(project_root),
     )
     accepted = command_return_code(capture_result) in {0, 2}
 
@@ -55,10 +65,14 @@ def process_user_message(
             assistant_response=assistant_response,
         )
 
-    prevention_rules = project_root / ".rlhf" / "prevention-rules.md"
+    prevention_rules = resolve_thumbgate_paths(project_root).prevention_rules
     rules_refreshed = False
     if accepted:
-        rules_result = runner(gateway_rules_command(prevention_rules), cwd=project_root)
+        rules_result = runner(
+            thumbgate_rules_command(prevention_rules),
+            cwd=project_root,
+            env=thumbgate_env(project_root),
+        )
         rules_refreshed = command_return_code(rules_result) == 0
 
     return {
@@ -78,14 +92,14 @@ def main() -> int:
         return 0
 
     if result["signal"] == "thumbs_down":
-        print("THUMBS DOWN DETECTED - recording via MCP Memory Gateway")
+        print("THUMBS DOWN DETECTED - recording via ThumbGate")
     elif result["signal"] == "thumbs_up":
-        print("THUMBS UP DETECTED - recording via MCP Memory Gateway")
+        print("THUMBS UP DETECTED - recording via ThumbGate")
 
     if result["fallback_log"]:
-        print(f"Gateway capture unavailable - wrote fallback log to {result['fallback_log']}")
+        print(f"ThumbGate capture unavailable - wrote fallback log to {result['fallback_log']}")
     elif result["accepted"]:
-        print("Gateway capture recorded")
+        print("ThumbGate capture recorded")
 
     return 0
 

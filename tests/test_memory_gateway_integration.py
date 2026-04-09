@@ -9,16 +9,16 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def test_mcp_config_pins_memory_gateway_server() -> None:
+def test_mcp_config_pins_thumbgate_server() -> None:
     config = json.loads((PROJECT_ROOT / ".mcp.json").read_text(encoding="utf-8"))
     server = config["mcpServers"]["rlhf"]
     assert server["command"] == "npx"
-    assert server["args"] == ["-y", "mcp-memory-gateway@0.7.1", "serve"]
+    assert server["args"] == ["-y", "thumbgate@0.9.14", "serve"]
 
     settings = json.loads((PROJECT_ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
     claude_server = settings["mcpServers"]["rlhf"]
     assert claude_server["command"] == "npx"
-    assert claude_server["args"] == ["-y", "mcp-memory-gateway@0.8.5", "serve"]
+    assert claude_server["args"] == ["-y", "thumbgate@0.9.14", "serve"]
 
 
 def test_gsd_pipeline_uses_gateway_backed_hooks_only() -> None:
@@ -46,7 +46,7 @@ def test_gateway_hook_scripts_have_valid_bash_syntax() -> None:
         assert result.returncode == 0, result.stderr
 
 
-def test_auto_record_lesson_workflow_uses_gateway_and_no_main_push() -> None:
+def test_auto_record_lesson_workflow_uses_thumbgate_and_no_main_push() -> None:
     workflow = yaml.safe_load(
         (PROJECT_ROOT / ".github" / "workflows" / "auto-record-lesson.yml").read_text(
             encoding="utf-8"
@@ -54,7 +54,7 @@ def test_auto_record_lesson_workflow_uses_gateway_and_no_main_push() -> None:
     )
     record_job = workflow["jobs"]["record-lesson"]
     step_commands = "\n".join(step.get("run", "") for step in record_job["steps"])
-    assert "mcp-memory-gateway@0.7.1 capture" in step_commands
+    assert "thumbgate@0.9.14 capture" in step_commands
     assert "git push origin main" not in step_commands
 
 

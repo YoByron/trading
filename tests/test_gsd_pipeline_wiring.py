@@ -2,7 +2,6 @@ import json
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SETTINGS_PATH = PROJECT_ROOT / ".claude" / "settings.json"
 GSD_PIPELINE_PATH = PROJECT_ROOT / ".claude" / "hooks" / "gsd-pipeline.sh"
@@ -61,4 +60,4 @@ def test_project_mcp_config_registers_gateway_server():
     config = json.loads(MCP_CONFIG_PATH.read_text(encoding="utf-8"))
     server = config["mcpServers"]["rlhf"]
     assert server["command"] == "npx"
-    assert server["args"] == ["-y", "mcp-memory-gateway@0.7.1", "serve"]
+    assert server["args"] == ["-y", "thumbgate@0.9.14", "serve"]

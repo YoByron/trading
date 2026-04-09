@@ -32,37 +32,37 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          mkdir -p artifacts/rlhf
+          mkdir -p artifacts/thumbgate
           WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
           RUN_ID="${{ github.event.workflow_run.id }}"
           RUN_URL="${{ github.event.workflow_run.html_url }}"
           WORKFLOW_SLUG=$(printf '%s' "$WORKFLOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
 
-          gh run view "$RUN_ID" --log-failed 2>/dev/null | head -100 > artifacts/rlhf/failure-log.txt || \
-            echo "Could not fetch failed log lines for $RUN_ID" > artifacts/rlhf/failure-log.txt
+          gh run view "$RUN_ID" --log-failed 2>/dev/null | head -100 > artifacts/thumbgate/failure-log.txt || \
+            echo "Could not fetch failed log lines for $RUN_ID" > artifacts/thumbgate/failure-log.txt
 
-          ERROR_MSG=$(grep -i "error\|failed\|denied\|exception" artifacts/rlhf/failure-log.txt | head -5 | tr '\n' ' ' | cut -c1-500)
+          ERROR_MSG=$(grep -i "error\|failed\|denied\|exception" artifacts/thumbgate/failure-log.txt | head -5 | tr '\n' ' ' | cut -c1-500)
 
           echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
           echo "workflow_slug=$WORKFLOW_SLUG" >> "$GITHUB_OUTPUT"
           echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
           echo "error_msg=$ERROR_MSG" >> "$GITHUB_OUTPUT"
 
-      - name: Capture failure through MCP Memory Gateway
+      - name: Capture failure through ThumbGate
         run: |
-          mkdir -p .rlhf
+          mkdir -p .thumbgate
           CONTEXT="${{ steps.failure.outputs.workflow_name }} failed in CI: ${{ steps.failure.outputs.run_url }}"
           ERROR_MSG="${{ steps.failure.outputs.error_msg }}"
 
-          npx -y mcp-memory-gateway@0.7.1 capture \
+          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@0.9.14 capture \
             --feedback=down \
             --context="$CONTEXT" \
             --what-went-wrong="${ERROR_MSG:-Workflow failed without a concise extracted error message.}" \
             --what-to-change="Fix the workflow root cause, verify the failing path locally, and re-run the workflow before the next trading session." \
             --tags="workflow-failure,ci,${{ steps.failure.outputs.workflow_slug }}" || true
 
-          npx -y mcp-memory-gateway@0.7.1 rules \
-            --output=.rlhf/prevention-rules.md \
+          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@0.9.14 rules \
+            --output=.thumbgate/prevention-rules.md \
             --min=2 || true
 
       - name: Write workflow summary
@@ -72,15 +72,15 @@ jobs:
             echo ""
             echo "- Workflow: ${{ steps.failure.outputs.workflow_name }}"
             echo "- Run URL: ${{ steps.failure.outputs.run_url }}"
-            echo "- Gateway capture: attempted via \`mcp-memory-gateway@0.7.1\`"
-            echo "- Artifact: \`.rlhf/\` plus extracted failure log"
+            echo "- ThumbGate capture: attempted via \`thumbgate@0.9.14\`"
+            echo "- Artifact: \`.thumbgate/\` plus extracted failure log"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RLHF artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: auto-record-lesson-rlhf
+          name: auto-record-lesson-thumbgate
           path: |
-            .rlhf/
-            artifacts/rlhf/failure-log.txt
+            .thumbgate/
+            artifacts/thumbgate/failure-log.txt
