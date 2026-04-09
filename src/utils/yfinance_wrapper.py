@@ -258,14 +258,19 @@ def download(
     yf = _try_import_yfinance()
     if yf:
         try:
-            return yf.download(
-                tickers,
-                start=start,
-                end=end,
-                period=period,
-                interval=interval,
-                **kwargs,
-            )
+            # yfinance rejects period + start + end together.
+            # When start/end are provided, omit period.
+            dl_kwargs = {"interval": interval, **kwargs}
+            if start and end:
+                dl_kwargs["start"] = start
+                dl_kwargs["end"] = end
+            else:
+                dl_kwargs["period"] = period
+                if start:
+                    dl_kwargs["start"] = start
+                if end:
+                    dl_kwargs["end"] = end
+            return yf.download(tickers, **dl_kwargs)
         except Exception as e:
             logger.warning(f"yfinance download failed: {e}")
 
