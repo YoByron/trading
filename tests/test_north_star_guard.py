@@ -109,3 +109,31 @@ def test_guard_applies_autopilot_regime_sizing_cap(tmp_path):
     guard = get_guard_context(state)
     assert guard["block_new_positions"] is False
     assert guard["max_position_pct"] <= 0.0115
+
+
+def test_guard_allows_validation_reset_entries_while_live_risk_stays_blocked(tmp_path):
+    state = tmp_path / "system_state.json"
+    state.write_text(
+        """
+{
+  "paper_account": {"equity": 93838.3, "win_rate": 24.24, "win_rate_sample_size": 66},
+  "paper_trading": {"current_day": 91, "target_duration_days": 90},
+  "north_star_weekly_gate": {
+    "mode": "validation_reset",
+    "recommended_max_position_pct": 0.01,
+    "block_new_positions": false,
+    "block_live_new_positions": true,
+    "allow_validation_entries": true,
+    "validation_reset_reason": "Legacy lifetime ledger remains negative."
+  }
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    guard = get_guard_context(state)
+    assert guard["mode"] == "validation_reset"
+    assert guard["block_new_positions"] is False
+    assert guard["allow_validation_entries"] is True
+    assert guard["block_live_new_positions"] is True
+    assert guard["max_position_pct"] <= 0.01

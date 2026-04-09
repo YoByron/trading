@@ -134,8 +134,20 @@ def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
     max_position_pct = 0.025
     block_new_positions = False
     reasons: list[str] = []
+    validation_reset_active = bool(
+        isinstance(weekly_gate, dict)
+        and _to_bool(weekly_gate.get("allow_validation_entries"), default=False)
+        and _to_bool(weekly_gate.get("block_live_new_positions"), default=False)
+    )
 
-    if sample_size >= DEFAULT_MIN_SAMPLE_SIZE and win_rate < 75.0:
+    if validation_reset_active:
+        mode = "validation_reset"
+        max_position_pct = 0.01
+        reasons.append(
+            "Legacy lifetime ledger remains negative; live/scaling stays blocked while "
+            "controlled paper validation continues at minimum size."
+        )
+    elif sample_size >= DEFAULT_MIN_SAMPLE_SIZE and win_rate < 75.0:
         mode = "capital_preservation"
         max_position_pct = 0.01
         block_new_positions = True
@@ -169,11 +181,17 @@ def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
                 f"Weekly gate ({weekly_mode}) caps max position size at {weekly_limit * 100:.1f}%."
             )
 
-        if _to_bool(weekly_gate.get("block_new_positions"), default=False):
+        if _to_bool(weekly_gate.get("block_new_positions"), default=False) and not validation_reset_active:
             block_new_positions = True
             weekly_reason = str(weekly_gate.get("reason") or "").strip()
             if weekly_reason:
                 reasons.append(f"Weekly gate block: {weekly_reason}")
+        elif validation_reset_active:
+            reset_reason = str(
+                weekly_gate.get("validation_reset_reason") or weekly_gate.get("reason") or ""
+            ).strip()
+            if reset_reason:
+                reasons.append(f"Live risk remains blocked: {reset_reason}")
 
         cadence = weekly_gate.get("cadence_kpi")
         cadence_present = isinstance(cadence, dict) and "passed" in cadence
@@ -218,6 +236,11 @@ def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
         "mode": mode,
         "max_position_pct": round(max_position_pct, 4),
         "block_new_positions": block_new_positions,
+        "allow_validation_entries": validation_reset_active,
+        "block_live_new_positions": bool(
+            isinstance(weekly_gate, dict)
+            and _to_bool(weekly_gate.get("block_live_new_positions"), default=False)
+        ),
         "block_reason": block_reason,
         "win_rate": win_rate,
         "sample_size": sample_size,
