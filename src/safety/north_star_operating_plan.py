@@ -140,6 +140,13 @@ def _load_gate_overrides(data_dir: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _live_account_inactive(state: dict[str, Any]) -> bool:
+    live = state.get("live_account", {}) if isinstance(state.get("live_account"), dict) else {}
+    equity = _as_float(live.get("equity"), 0.0)
+    positions = _as_int(live.get("positions_count"), 0)
+    return equity <= 0.0 and positions <= 0
+
+
 def _resolve_min_liquidity_volume_ratio(data_dir: Path) -> float:
     overrides = _load_gate_overrides(data_dir)
     ratio = _as_float(
@@ -787,6 +794,10 @@ def compute_weekly_gate(
     mode = "validation"
     recommended_max = 0.01 if samples == 0 else 0.02
     block_new_positions = False
+    block_live_new_positions = False
+    allow_validation_entries = False
+    validation_reset_active = False
+    validation_reset_reason = None
     if samples == 0:
         reason = (
             "No recent paired closed trades; do not infer edge from raw fills. "
@@ -1019,10 +1030,23 @@ def compute_weekly_gate(
             f"total realized P/L ${_as_float(lifetime_ledger.get('total_realized_pnl'), 0.0):.2f} "
             f"over {lifetime_ledger['closed_trades']} closed trades. Trading HALTED."
         )
-        mode = "defensive"
-        recommended_max = min(recommended_max, 0.01)
-        block_new_positions = True
-        reason = contradiction_reason
+        if _live_account_inactive(state) and not block_new_positions:
+            validation_reset_active = True
+            validation_reset_reason = contradiction_reason
+            allow_validation_entries = True
+            block_live_new_positions = True
+            mode = "validation_reset"
+            recommended_max = min(recommended_max, 0.01)
+            reason = (
+                "CRITICAL: Lifetime paired-trade ledger remains negative. "
+                "Live/scaling stays blocked, but controlled paper validation remains allowed "
+                "at minimum size until a fresh cohort proves edge."
+            )
+        else:
+            mode = "defensive"
+            recommended_max = min(recommended_max, 0.01)
+            block_new_positions = True
+            reason = contradiction_reason
 
     weekly_history_path.parent.mkdir(parents=True, exist_ok=True)
     new_weekly_payload = json.dumps(weekly_history, indent=2) + "\n"
@@ -1041,6 +1065,10 @@ def compute_weekly_gate(
         "expectancy_per_trade": expectancy,
         "recommended_max_position_pct": round(recommended_max, 4),
         "block_new_positions": block_new_positions,
+        "block_live_new_positions": block_live_new_positions,
+        "allow_validation_entries": allow_validation_entries,
+        "validation_reset_active": validation_reset_active,
+        "validation_reset_reason": validation_reset_reason,
         "reason": reason,
         "positive_weeks_streak": positive_streak,
         "evidence_source": evidence_source,

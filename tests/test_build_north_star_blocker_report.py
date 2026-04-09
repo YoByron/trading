@@ -160,3 +160,41 @@ def test_compute_report_parses_boolean_like_strings_in_weekly_gate() -> None:
     assert report["current_gate"]["scale_blocked_by_cadence"] is False
     blocker_ids = {item["id"] for item in report["blockers"]}
     assert "cadence_failed" in blocker_ids
+
+
+def test_compute_report_marks_live_block_only_validation_reset() -> None:
+    now = datetime(2026, 4, 9, 18, 0, tzinfo=timezone.utc)
+    state = {
+        "meta": {"last_updated": "2026-04-09T17:30:00Z"},
+        "last_updated": "2026-04-09T17:30:00Z",
+        "north_star_weekly_gate": {
+            "updated_at": "2026-04-09T17:30:00Z",
+            "mode": "validation_reset",
+            "sample_size": 1,
+            "expectancy_per_trade": 96.0,
+            "block_new_positions": False,
+            "block_live_new_positions": True,
+            "allow_validation_entries": True,
+            "validation_reset_active": True,
+            "reason": "Controlled paper validation only.",
+            "validation_reset_reason": "Legacy lifetime ledger remains negative.",
+            "cadence_kpi": {
+                "passed": False,
+                "summary": "Cadence KPI miss",
+                "qualified_setups_observed": 0,
+                "min_qualified_setups_per_week": 1,
+                "closed_trades_observed": 1,
+                "min_closed_trades_per_week": 1,
+            },
+        },
+    }
+
+    report = compute_report(state=state, weekly_history=[], halt_exists=False, now_utc=now)
+
+    assert report["blocked"] is True
+    blocker_ids = {item["id"] for item in report["blockers"]}
+    warning_ids = {item["id"] for item in report["warnings"]}
+    assert "live_block_new_positions" in blocker_ids
+    assert "validation_reset_active" in warning_ids
+    assert report["current_gate"]["allow_validation_entries"] is True
+    assert report["current_gate"]["block_live_new_positions"] is True

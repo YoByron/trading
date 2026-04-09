@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Update weekly North Star gate and contribution plan from current state/trades."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import json
@@ -13,8 +15,16 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.build_north_star_blocker_report import compute_report
+from src.safety.milestone_controller import (
+    apply_snapshot_to_state as apply_milestone_snapshot_to_state,
+)
+from src.safety.milestone_controller import (
+    compute_milestone_snapshot,
+)
 from src.safety.north_star_autopilot import (
-    apply_snapshot_to_state,
+    apply_snapshot_to_state as apply_autopilot_snapshot_to_state,
+)
+from src.safety.north_star_autopilot import (
     build_autopilot_snapshot,
     render_autopilot_markdown,
     write_gate_overrides,
@@ -65,7 +75,7 @@ def _run_autopilot(state: dict[str, Any]) -> dict[str, Any]:
         now_utc=now_utc,
         halt_exists=HALT_FILE.exists(),
     )
-    apply_snapshot_to_state(state, snapshot)
+    apply_autopilot_snapshot_to_state(state, snapshot)
 
     override_result = write_gate_overrides(
         data_dir=STATE_PATH.parent,
@@ -92,7 +102,7 @@ def _run_autopilot(state: dict[str, Any]) -> dict[str, Any]:
             now_utc=now_utc,
             halt_exists=HALT_FILE.exists(),
         )
-        apply_snapshot_to_state(state, snapshot)
+        apply_autopilot_snapshot_to_state(state, snapshot)
         override_result = write_gate_overrides(
             data_dir=STATE_PATH.parent,
             snapshot=snapshot,
@@ -111,6 +121,12 @@ def main() -> int:
         weekly_history_path=WEEKLY_HISTORY_PATH,
     )
     snapshot = _run_autopilot(state)
+    milestone_snapshot = compute_milestone_snapshot(
+        state=state,
+        state_path=STATE_PATH,
+        trades_path=TRADES_PATH,
+    )
+    apply_milestone_snapshot_to_state(state, milestone_snapshot)
 
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATE_PATH.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")

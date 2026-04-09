@@ -85,6 +85,16 @@ def _load_json_dict(path: Path) -> dict[str, Any]:
         return {}
 
 
+def _validation_reset_active(state: dict[str, Any]) -> bool:
+    weekly_gate = state.get("north_star_weekly_gate", {}) if isinstance(state, dict) else {}
+    if not isinstance(weekly_gate, dict):
+        return False
+    return bool(
+        _as_bool(weekly_gate.get("allow_validation_entries"), default=False)
+        and _as_bool(weekly_gate.get("block_live_new_positions"), default=False)
+    )
+
+
 def resolve_strategy_family(strategy: str) -> str:
     """Map a strategy label to a coarse family for gating."""
     text = (strategy or "").strip().lower()
@@ -222,7 +232,9 @@ def _thresholds_for_family(family: str) -> dict[str, float | int]:
     }
 
 
-def _evaluate_family_status(family: str, metrics: dict[str, Any]) -> dict[str, Any]:
+def _evaluate_family_status(
+    family: str, metrics: dict[str, Any], state: dict[str, Any]
+) -> dict[str, Any]:
     thresholds = _thresholds_for_family(family)
     samples = _as_int(metrics.get("samples"), 0)
     win_rate = metrics.get("win_rate_pct")
@@ -241,17 +253,56 @@ def _evaluate_family_status(family: str, metrics: dict[str, Any]) -> dict[str, A
         )
         return {"status": status, "paused": paused, "reason": reason, "thresholds": thresholds}
 
+    validation_reset = _validation_reset_active(state) and family == DEFAULT_PRIMARY_FAMILY
     if win_rate is None or _as_float(win_rate) < min_win_rate:
+        if validation_reset:
+            value = "N/A" if win_rate is None else f"{_as_float(win_rate):.1f}%"
+            reason = (
+                f"{family} remains in controlled paper-validation reset: rolling win rate {value} "
+                f"is below {min_win_rate:.1f}%, so live/scaling stays blocked while a fresh cohort "
+                "is collected."
+            )
+            return {
+                "status": "validation_reset",
+                "paused": False,
+                "live_risk_blocked": True,
+                "reason": reason,
+                "thresholds": thresholds,
+            }
         value = "N/A" if win_rate is None else f"{_as_float(win_rate):.1f}%"
         reason = f"{family} paused: win rate {value} below {min_win_rate:.1f}% threshold."
         return {"status": "paused", "paused": True, "reason": reason, "thresholds": thresholds}
 
     if expectancy is None:
+        if validation_reset:
+            reason = (
+                f"{family} remains in controlled paper-validation reset: expectancy unavailable "
+                "for the fresh cohort, so live/scaling stays blocked."
+            )
+            return {
+                "status": "validation_reset",
+                "paused": False,
+                "live_risk_blocked": True,
+                "reason": reason,
+                "thresholds": thresholds,
+            }
         reason = f"{family} paused: expectancy unavailable with {samples} closed trades."
         return {"status": "paused", "paused": True, "reason": reason, "thresholds": thresholds}
 
     expectancy_val = _as_float(expectancy, 0.0)
     if expectancy_val <= min_expectancy:
+        if validation_reset:
+            reason = (
+                f"{family} remains in controlled paper-validation reset: expectancy "
+                f"${expectancy_val:.2f}/trade is not yet positive, so live/scaling stays blocked."
+            )
+            return {
+                "status": "validation_reset",
+                "paused": False,
+                "live_risk_blocked": True,
+                "reason": reason,
+                "thresholds": thresholds,
+            }
         reason = (
             f"{family} paused: expectancy ${expectancy_val:.2f}/trade "
             f"<= ${min_expectancy:.2f} threshold."
@@ -383,6 +434,8 @@ def _north_star_probability(
     # Hard cap probability when primary strategy family is explicitly paused.
     if primary_status.get("paused"):
         score = min(score, 35.0)
+    if str(primary_status.get("status") or "").lower() == "validation_reset":
+        score = min(score, 25.0)
 
     if score >= 75:
         label = "high"
@@ -428,10 +481,11 @@ def compute_milestone_snapshot(
 
     for family in KNOWN_FAMILIES:
         metrics = _metrics_for_family(family, closed, loaded_state)
-        status = _evaluate_family_status(family, metrics)
+        status = _evaluate_family_status(family, metrics, loaded_state)
         family_state = {
             "status": status["status"],
             "paused": status["paused"],
+            "live_risk_blocked": bool(_as_bool(status.get("live_risk_blocked"), default=False)),
             "reason": status["reason"],
             "thresholds": status["thresholds"],
             "metrics": metrics,

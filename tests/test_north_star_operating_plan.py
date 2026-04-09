@@ -85,6 +85,49 @@ def test_weekly_gate_blocks_early_when_two_recent_losses_show_negative_expectanc
     assert "negative expectancy" in gate["reason"].lower()
 
 
+def test_weekly_gate_keeps_live_block_but_allows_paper_validation_reset(tmp_path):
+    trades_path = tmp_path / "trades.json"
+    history_path = tmp_path / "weekly_history.json"
+    today = date(2026, 4, 9)
+    _write_json(
+        trades_path,
+        {
+            "stats": {
+                "closed_trades": 66,
+                "win_rate_pct": 24.24,
+                "profit_factor": 0.25,
+                "total_realized_pnl": -3402.0,
+            },
+            "trades": [
+                {
+                    "status": "closed",
+                    "strategy": "iron_condor",
+                    "realized_pnl": 96.0,
+                    "outcome": "win",
+                    "exit_date": today.isoformat(),
+                }
+            ],
+        },
+    )
+
+    gate, _history = compute_weekly_gate(
+        {
+            "paper_account": {"equity": 93838.3, "win_rate": 24.24, "win_rate_sample_size": 66},
+            "live_account": {"equity": 0.0, "positions_count": 0},
+        },
+        trades_path=trades_path,
+        weekly_history_path=history_path,
+        today=today,
+    )
+
+    assert gate["mode"] == "validation_reset"
+    assert gate["block_new_positions"] is False
+    assert gate["block_live_new_positions"] is True
+    assert gate["allow_validation_entries"] is True
+    assert gate["validation_reset_active"] is True
+    assert "paper validation" in gate["reason"].lower()
+
+
 def test_contribution_plan_tracks_monthly_target_progress():
     plan = compute_contribution_plan(
         {
@@ -393,7 +436,10 @@ def test_weekly_gate_halts_when_recent_window_conflicts_with_lifetime_losing_led
     )
 
     gate, _history = compute_weekly_gate(
-        {"paper_account": {"win_rate": 24.24, "win_rate_sample_size": 66, "total_pl": -3402.0}},
+        {
+            "paper_account": {"win_rate": 24.24, "win_rate_sample_size": 66, "total_pl": -3402.0},
+            "live_account": {"equity": 1000.0, "positions_count": 0},
+        },
         trades_path=trades_path,
         weekly_history_path=history_path,
         today=today,

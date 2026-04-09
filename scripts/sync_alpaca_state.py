@@ -490,7 +490,21 @@ def update_system_state(alpaca_data: dict | None) -> None:
             ]
         )
 
+    # Compute weekly operating gate + contribution plan for North Star execution.
+    try:
+        from src.safety.north_star_operating_plan import apply_operating_plan_to_state
+
+        apply_operating_plan_to_state(
+            state,
+            trades_path=PROJECT_ROOT / "data" / "trades.json",
+            weekly_history_path=PROJECT_ROOT / "data" / "north_star_weekly_history.json",
+        )
+    except Exception as e:
+        logger.warning(f"Could not update North Star operating plan in system_state: {e}")
+
     # Compute and persist milestone controller + North Star probability snapshot.
+    # This must run after the weekly operating gate so probability scoring uses
+    # the current cadence and gating state, not the previous snapshot.
     try:
         from src.safety.milestone_controller import (
             apply_snapshot_to_state,
@@ -505,18 +519,6 @@ def update_system_state(alpaca_data: dict | None) -> None:
         apply_snapshot_to_state(state, snapshot)
     except Exception as e:
         logger.warning(f"Could not update milestone snapshot in system_state: {e}")
-
-    # Compute weekly operating gate + contribution plan for North Star execution.
-    try:
-        from src.safety.north_star_operating_plan import apply_operating_plan_to_state
-
-        apply_operating_plan_to_state(
-            state,
-            trades_path=PROJECT_ROOT / "data" / "trades.json",
-            weekly_history_path=PROJECT_ROOT / "data" / "north_star_weekly_history.json",
-        )
-    except Exception as e:
-        logger.warning(f"Could not update North Star operating plan in system_state: {e}")
 
     # Win-rate fields in system_state MUST be derived from the paired-trade ledger (trades.json),
     # not from raw Alpaca fills (which are not paired into outcomes).

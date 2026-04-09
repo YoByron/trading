@@ -2,7 +2,10 @@
 
 import json
 
-from src.safety.milestone_controller import compute_milestone_snapshot, get_milestone_context
+from src.safety.milestone_controller import (
+    compute_milestone_snapshot,
+    get_milestone_context,
+)
 
 
 def _write_json(path, payload):
@@ -118,6 +121,55 @@ def test_milestone_snapshot_activates_family_with_positive_edge(tmp_path):
     assert options_state["status"] == "active"
     assert 0.0 <= snapshot["north_star_probability"]["score"] <= 100.0
     assert snapshot["north_star_probability"]["target_date"] is None
+
+
+def test_milestone_snapshot_uses_validation_reset_for_primary_family(tmp_path):
+    state_path = tmp_path / "system_state.json"
+    trades_path = tmp_path / "trades.json"
+
+    _write_json(
+        state_path,
+        {
+            "paper_account": {"equity": 93838.3, "win_rate": 24.24, "win_rate_sample_size": 66},
+            "paper_trading": {"current_day": 91, "target_duration_days": 90},
+            "live_account": {"equity": 0.0, "positions_count": 0},
+            "north_star_weekly_gate": {
+                "allow_validation_entries": True,
+                "block_live_new_positions": True,
+                "block_new_positions": False,
+                "cadence_kpi": {
+                    "passed": False,
+                    "qualified_setups_observed": 1,
+                    "closed_trades_observed": 1,
+                    "min_qualified_setups_per_week": 1,
+                    "min_closed_trades_per_week": 1,
+                },
+            },
+        },
+    )
+    _write_json(
+        trades_path,
+        {
+            "trades": [
+                {
+                    "strategy": "iron_condor",
+                    "status": "closed",
+                    "realized_pnl": -50,
+                    "outcome": "loss",
+                    "exit_date": f"2026-02-{idx + 1:02d}",
+                }
+                for idx in range(12)
+            ]
+        },
+    )
+
+    snapshot = compute_milestone_snapshot(state_path=state_path, trades_path=trades_path)
+    options_state = snapshot["strategy_families"]["options_income"]
+
+    assert options_state["paused"] is False
+    assert options_state["status"] == "validation_reset"
+    assert options_state["live_risk_blocked"] is True
+    assert snapshot["north_star_probability"]["score"] <= 25.0
 
 
 def test_north_star_score_is_stable_across_lifetime_day_growth(tmp_path):

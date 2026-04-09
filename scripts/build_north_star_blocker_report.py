@@ -174,6 +174,20 @@ def compute_report(
                 )
             )
             root_causes.append("Weekly gate set `block_new_positions=true`.")
+        elif _to_bool(weekly_gate.get("block_live_new_positions"), default=False):
+            blockers.append(
+                Blocker(
+                    id="live_block_new_positions",
+                    severity="high",
+                    message="Live/scaling remains blocked while paper validation reset continues.",
+                    evidence=str(
+                        weekly_gate.get("validation_reset_reason")
+                        or weekly_gate.get("reason")
+                        or "No reason provided."
+                    ),
+                )
+            )
+            root_causes.append("Legacy ledger still blocks live/scaling; paper validation reset is active.")
 
         if _to_bool(weekly_gate.get("scale_blocked_by_cadence"), default=False):
             blockers.append(
@@ -234,6 +248,19 @@ def compute_report(
                     evidence="Mode=validation requires conservative sizing until evidence improves.",
                 )
             )
+        if _to_bool(weekly_gate.get("validation_reset_active"), default=False):
+            warnings.append(
+                Blocker(
+                    id="validation_reset_active",
+                    severity="warning",
+                    message="Controlled paper-validation reset is active.",
+                    evidence=str(
+                        weekly_gate.get("reason")
+                        or weekly_gate.get("validation_reset_reason")
+                        or "Legacy ledger remains negative."
+                    ),
+                )
+            )
 
     # Staleness checks with concrete timestamps.
     report_last = _parse_dt(meta.get("last_updated")) or _parse_dt(state.get("last_updated"))
@@ -288,6 +315,15 @@ def compute_report(
             "expectancy_per_trade": _to_float(weekly_gate.get("expectancy_per_trade")),
             "sample_size": _to_int(weekly_gate.get("sample_size")),
             "block_new_positions": _to_bool(weekly_gate.get("block_new_positions"), default=False),
+            "block_live_new_positions": _to_bool(
+                weekly_gate.get("block_live_new_positions"), default=False
+            ),
+            "allow_validation_entries": _to_bool(
+                weekly_gate.get("allow_validation_entries"), default=False
+            ),
+            "validation_reset_active": _to_bool(
+                weekly_gate.get("validation_reset_active"), default=False
+            ),
             "scale_blocked_by_cadence": _to_bool(
                 weekly_gate.get("scale_blocked_by_cadence"), default=False
             ),
@@ -327,6 +363,9 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.append(f"- Mode: `{gate.get('mode', 'unknown')}`")
     lines.append(f"- Expectancy / Trade: `{gate.get('expectancy_per_trade')}`")
     lines.append(f"- Sample Size: `{gate.get('sample_size')}`")
+    lines.append(f"- Block New Positions: `{gate.get('block_new_positions')}`")
+    lines.append(f"- Block Live/Scale Only: `{gate.get('block_live_new_positions')}`")
+    lines.append(f"- Allow Validation Entries: `{gate.get('allow_validation_entries')}`")
     lines.append(
         "- Cadence: "
         f"`{gate.get('qualified_setups_observed')}/{gate.get('min_qualified_setups_per_week')}` setups, "
