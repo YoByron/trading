@@ -1,4 +1,4 @@
-"""Tests for BehavioralGuard — FOMO, stop-loss cooling, and blacklist checks."""
+"""Tests for BehavioralGuard — FOMO, recent-loss block, stop-loss cooling, and blacklist."""
 
 import json
 import sys
@@ -97,6 +97,69 @@ class TestStopLossCooling:
         assert updated["stop_loss_exits"][0]["expiry"] == "2026-03-20"
 
 
+class TestRecentLossBlock:
+    """Validation mode should block same-expiry re-entry after any closed loss."""
+
+    def test_recent_loss_in_trades_ledger_blocks_same_expiry(self, tmp_path):
+        state_path = tmp_path / "behavioral_guard_state.json"
+        trades_path = tmp_path / "trades.json"
+        state_path.write_text(json.dumps({"stop_loss_exits": []}))
+        trades_path.write_text(
+            json.dumps(
+                {
+                    "trades": [
+                        {
+                            "strategy": "iron_condor",
+                            "status": "closed",
+                            "outcome": "loss",
+                            "realized_pnl": -80.0,
+                            "exit_time": "2026-04-08T19:00:00+00:00",
+                            "legs": {"expiry": "2026-05-08"},
+                        }
+                    ]
+                }
+            )
+        )
+
+        with (
+            patch("src.safety.behavioral_guard._STATE_PATH", state_path),
+            patch("src.safety.behavioral_guard._TRADES_PATH", trades_path),
+        ):
+            result = BehavioralGuard.evaluate("SPY", expiry="2026-05-08", spy_change_pct=0.001)
+
+        assert result.passed is False
+        assert any("Recent-loss block" in rejection for rejection in result.rejections)
+
+    def test_recent_loss_allows_other_expiry(self, tmp_path):
+        state_path = tmp_path / "behavioral_guard_state.json"
+        trades_path = tmp_path / "trades.json"
+        state_path.write_text(json.dumps({"stop_loss_exits": []}))
+        trades_path.write_text(
+            json.dumps(
+                {
+                    "trades": [
+                        {
+                            "strategy": "iron_condor",
+                            "status": "closed",
+                            "outcome": "loss",
+                            "realized_pnl": -80.0,
+                            "exit_time": "2026-04-08T19:00:00+00:00",
+                            "legs": {"expiry": "2026-05-08"},
+                        }
+                    ]
+                }
+            )
+        )
+
+        with (
+            patch("src.safety.behavioral_guard._STATE_PATH", state_path),
+            patch("src.safety.behavioral_guard._TRADES_PATH", trades_path),
+        ):
+            result = BehavioralGuard.evaluate("SPY", expiry="2026-05-15", spy_change_pct=0.001)
+
+        assert result.passed is True
+
+
 class TestBlacklist:
     """Belt+suspenders blacklist check against TargetSymbols.BLACKLIST."""
 
@@ -118,10 +181,19 @@ class TestBlacklist:
 class TestIntegration:
     """End-to-end behavioral guard scenarios."""
 
-    def test_clean_trade_passes_all(self):
-        result = BehavioralGuard.evaluate("SPY", expiry="2026-04-17", spy_change_pct=0.005)
+    def test_clean_trade_passes_all(self, tmp_path):
+        state_path = tmp_path / "behavioral_guard_state.json"
+        trades_path = tmp_path / "trades.json"
+        state_path.write_text(json.dumps({"stop_loss_exits": []}))
+        trades_path.write_text(json.dumps({"trades": []}))
+
+        with (
+            patch("src.safety.behavioral_guard._STATE_PATH", state_path),
+            patch("src.safety.behavioral_guard._TRADES_PATH", trades_path),
+        ):
+            result = BehavioralGuard.evaluate("SPY", expiry="2026-04-17", spy_change_pct=0.005)
         assert result.passed is True
-        assert len(result.checks_run) == 3
+        assert len(result.checks_run) == 4
         assert len(result.rejections) == 0
 
     def test_multiple_rejections(self):

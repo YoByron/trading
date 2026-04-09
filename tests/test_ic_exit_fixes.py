@@ -6,7 +6,7 @@ Validates:
 2. Missing entry_date defaults to HOLD
 3. Orphan cleanup grace period (24h)
 4. Credential lookup uses canonical function
-5. Scale to 2 contracts via MAX_CONTRACTS_PER_TRADE
+5. Validation phase stays at 1 contract via MAX_CONTRACTS_PER_TRADE
 6. Gate congruency: verified_edge requires >= 50% win rate + 30 trades
 """
 
@@ -105,11 +105,11 @@ def test_dte_exit_triggers_after_hold():
 # --- Test 4: MAX_CONTRACTS_PER_TRADE ---
 
 
-def test_max_contracts_per_trade_is_2():
-    """Verify scaling constant is 2."""
+def test_max_contracts_per_trade_is_1():
+    """Validation phase must stay at one contract until edge is proven."""
     from src.core.trading_constants import MAX_CONTRACTS_PER_TRADE
 
-    assert MAX_CONTRACTS_PER_TRADE == 2
+    assert MAX_CONTRACTS_PER_TRADE == 1
 
 
 # --- Test 5: Credential lookup ---

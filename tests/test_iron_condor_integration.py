@@ -14,6 +14,7 @@ All external calls are mocked. No real API calls.
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -122,11 +123,21 @@ class TestIronCondorSuccessfulEntry:
         mock_client = MagicMock()
         mock_client.get_all_positions.return_value = []
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
                 return_value=("test_key", "test_secret"),
             ),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
+            patch(
+                "src.safety.behavioral_guard.BehavioralGuard.evaluate",
+                return_value=SimpleNamespace(
+                    passed=True,
+                    checks_run=["fomo_intraday_move", "same_expiry_loss_block"],
+                    rejections=[],
+                    warnings=[],
+                ),
+            ),
         ):
             with patch.object(strategy, "_record_trade"):
                 trade = strategy.execute(ic, live=True)
@@ -229,11 +240,21 @@ class TestIronCondorAPIFailure:
         mock_client = MagicMock()
         mock_client.get_all_positions.return_value = []
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
                 return_value=("test_key", "test_secret"),
             ),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
+            patch(
+                "src.safety.behavioral_guard.BehavioralGuard.evaluate",
+                return_value=SimpleNamespace(
+                    passed=True,
+                    checks_run=["fomo_intraday_move", "same_expiry_loss_block"],
+                    rejections=[],
+                    warnings=[],
+                ),
+            ),
         ):
             trade = strategy.execute(ic, live=True)
 

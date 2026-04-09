@@ -57,7 +57,8 @@ _BASELINE_IRON_CONDOR_PROFILE = IronCondorProfile(
     exit_dte=7,
     min_hold_hours=24,
     position_size_pct=0.05,
-    max_contracts_per_trade=2,
+    # Validation phase: prove edge with one-lot sizing before scaling.
+    max_contracts_per_trade=1,
     max_concurrent_positions=2,  # CLAUDE.md mandate: 2 ICs max (8 legs)
     max_daily_structures=1,
 )

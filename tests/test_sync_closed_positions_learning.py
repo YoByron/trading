@@ -88,12 +88,14 @@ def _configure_paths(monkeypatch, project_root: Path) -> tuple[Path, Path]:
     data_dir = project_root / "data"
     system_state_file = data_dir / "system_state.json"
     trades_file = data_dir / "trades.json"
+    ic_entries_file = data_dir / "ic_entries.json"
     trajectory_file = data_dir / "feedback" / "trade_trajectories.jsonl"
 
     monkeypatch.setattr(sync_closed, "PROJECT_ROOT", project_root)
     monkeypatch.setattr(sync_closed, "DATA_DIR", data_dir)
     monkeypatch.setattr(sync_closed, "SYSTEM_STATE_FILE", system_state_file)
     monkeypatch.setattr(sync_closed, "TRADES_FILE", trades_file)
+    monkeypatch.setattr(sync_closed, "IC_ENTRIES_FILE", ic_entries_file)
 
     monkeypatch.setattr(rlhf_storage, "TRAJECTORY_PATH", trajectory_file)
     return trades_file, trajectory_file
@@ -217,3 +219,43 @@ def test_sync_closed_positions_pairs_debit_entry_credit_exit_round_trip(
     assert trade["exit_credit"] == 436.0
     assert trade["realized_pnl"] == 174.0
     assert trade["outcome"] == "win"
+
+
+def test_sync_closed_positions_merges_entry_provenance_into_closed_trade(
+    monkeypatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    trades_file, _ = _configure_paths(monkeypatch, project_root)
+    _seed_system_state(project_root / "data" / "system_state.json")
+    (project_root / "data" / "ic_entries.json").write_text(
+        json.dumps(
+            {
+                "IC_260320": {
+                    "signature": "SPY_2026-03-20_P645-655_C725-735",
+                    "entry_time": "2026-02-10T15:30:00+00:00",
+                    "selection_method": "live_delta",
+                    "strike_selection_method": "live_delta",
+                    "target_delta": 0.15,
+                    "put_delta": 0.143,
+                    "call_delta": 0.154,
+                    "validation_phase": True,
+                    "profile_name": "spy-core",
+                }
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = sync_closed.sync_closed_positions(dry_run=False)
+
+    assert result["success"] is True
+    payload = _read_json(trades_file)
+    trade = payload["trades"][0]
+    assert trade["selection_method"] == "live_delta"
+    assert trade["strike_selection_method"] == "live_delta"
+    assert trade["target_delta"] == 0.15
+    assert trade["put_delta"] == 0.143
+    assert trade["call_delta"] == 0.154
+    assert trade["validation_phase"] is True
+    assert trade["profile_name"] == "spy-core"

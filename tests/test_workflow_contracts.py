@@ -169,6 +169,16 @@ def test_public_surface_guard_workflow_exists():
     assert "tests/test_build_public_status.py" in workflow_text
 
 
+def test_ic_simple_workflow_commits_canonical_state_outputs():
+    """IC Simple must persist the canonical ledgers it refreshes after each run."""
+    workflow_text = Path(".github/workflows/ic-simple.yml").read_text()
+
+    assert "data/system_state.json" in workflow_text
+    assert "data/trades.json" in workflow_text
+    assert "data/runtime/intraday_pnl_latest.json" in workflow_text
+    assert "data/runtime/intraday_pnl_history.json" in workflow_text
+
+
 def test_auto_format_uses_repo_token_not_pat_checkout():
     """Auto-format must use the repository token path that works on default-branch pushes."""
     workflow_text = Path(".github/workflows/auto-format.yml").read_text()

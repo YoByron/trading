@@ -17,6 +17,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -354,6 +355,7 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
@@ -374,6 +376,7 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
@@ -396,9 +399,19 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
                 return_value=(None, None),
+            ),
+            patch(
+                "src.safety.behavioral_guard.BehavioralGuard.evaluate",
+                return_value=SimpleNamespace(
+                    passed=True,
+                    checks_run=["fomo_intraday_move", "same_expiry_loss_block"],
+                    rejections=[],
+                    warnings=[],
+                ),
             ),
         ):
             with patch.object(strategy, "_record_trade"):
