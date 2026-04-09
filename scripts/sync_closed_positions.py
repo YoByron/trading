@@ -25,9 +25,20 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 SYSTEM_STATE_FILE = DATA_DIR / "system_state.json"
 TRADES_FILE = DATA_DIR / "trades.json"
+IC_ENTRIES_FILE = DATA_DIR / "ic_entries.json"
 DEFAULT_BROKER_ORDER_LIMIT = 1000
 OPTION_SYMBOL_RE = re.compile(
     r"^(?P<underlying>[A-Z]{1,8})(?P<yy>\d{2})(?P<mm>\d{2})(?P<dd>\d{2})(?P<kind>[CP])(?P<strike>\d{8})$"
+)
+ENTRY_PROVENANCE_FIELDS = (
+    "selection_method",
+    "strike_selection_method",
+    "target_delta",
+    "put_delta",
+    "call_delta",
+    "profile_name",
+    "validation_phase",
+    "entry_reason",
 )
 
 
@@ -223,6 +234,7 @@ def _fetch_broker_trade_history(limit: int = DEFAULT_BROKER_ORDER_LIMIT) -> list
         from alpaca.trading.client import TradingClient
         from alpaca.trading.enums import QueryOrderStatus
         from alpaca.trading.requests import GetOrdersRequest
+
         from src.utils.alpaca_client import get_alpaca_credentials
     except Exception as exc:
         logger.info("Broker trade-history sync unavailable: %s", exc)
@@ -890,6 +902,111 @@ def _load_system_state() -> dict[str, Any]:
     return _load_json(SYSTEM_STATE_FILE, {})
 
 
+def _load_ic_entries() -> dict[str, Any]:
+    return _load_json(IC_ENTRIES_FILE, {})
+
+
+def _expiry_from_entry_key(key: str) -> str | None:
+    raw = str(key or "").strip()
+    if not raw.startswith("IC_"):
+        return None
+    token = raw[3:9]
+    if not re.fullmatch(r"\d{6}", token):
+        return None
+    year = 2000 + int(token[:2])
+    month = int(token[2:4])
+    day = int(token[4:6])
+    try:
+        return datetime(year, month, day, tzinfo=timezone.utc).date().isoformat()
+    except ValueError:
+        return None
+
+
+def _normalize_entry_provenance_records(raw_entries: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw_entries, dict):
+        return []
+
+    records: list[dict[str, Any]] = []
+    for key, value in raw_entries.items():
+        if not isinstance(value, dict):
+            continue
+        record = dict(value)
+        record["_key"] = str(key)
+        record["signature"] = str(record.get("signature") or "").strip()
+        record["expiry"] = str(record.get("expiry") or _expiry_from_entry_key(str(key)) or "").strip()
+        entry_ts = _parse_dt(record.get("entry_time") or record.get("date"))
+        record["_entry_ts"] = entry_ts
+        records.append(record)
+    return records
+
+
+def _normalized_dt(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _entry_provenance_for_trade(
+    signature: str,
+    entry_ts: datetime,
+    raw_entries: Any,
+) -> dict[str, Any]:
+    records = _normalize_entry_provenance_records(raw_entries)
+    if not records:
+        return {}
+
+    expiry = str(_signature_to_legs(signature).get("expiry") or "")
+    target_ts = _normalized_dt(entry_ts)
+    candidates = [
+        record
+        for record in records
+        if record.get("signature") == signature or (expiry and record.get("expiry") == expiry)
+    ]
+    if not candidates:
+        return {}
+
+    def sort_key(record: dict[str, Any]) -> tuple[int, int, float]:
+        signature_penalty = 0 if record.get("signature") == signature else 1
+        expiry_penalty = 0 if record.get("expiry") == expiry else 1
+        record_ts = _normalized_dt(record.get("_entry_ts"))
+        if target_ts is None or record_ts is None:
+            time_penalty = float("inf")
+        else:
+            time_penalty = abs((record_ts - target_ts).total_seconds())
+        return (signature_penalty, expiry_penalty, time_penalty)
+
+    chosen = min(candidates, key=sort_key)
+    merged = {
+        field: chosen.get(field)
+        for field in ENTRY_PROVENANCE_FIELDS
+        if chosen.get(field) not in (None, "", [])
+    }
+    if chosen.get("quantity") not in (None, "", []):
+        merged["quantity"] = chosen.get("quantity")
+    if chosen.get("entry_time") not in (None, "", []):
+        merged["entry_time"] = chosen.get("entry_time")
+    return merged
+
+
+def _merge_entry_provenance(trade: dict[str, Any], raw_entries: Any) -> dict[str, Any]:
+    signature = str(trade.get("signature") or "").strip()
+    entry_ts = _parse_dt(trade.get("entry_time"))
+    if not signature or entry_ts is None:
+        return trade
+
+    provenance = _entry_provenance_for_trade(signature, entry_ts, raw_entries)
+    if not provenance:
+        return trade
+
+    merged = dict(trade)
+    for key, value in provenance.items():
+        if merged.get(key) in (None, "", []):
+            merged[key] = value
+    return merged
+
+
 def _empty_ledger() -> dict[str, Any]:
     now_iso = datetime.now(timezone.utc).isoformat()
     return {
@@ -1118,8 +1235,10 @@ def sync_closed_positions(dry_run: bool = False) -> dict[str, Any]:
     events = _collect_events(trade_history)
     inventory_candidates = _pair_closed_trades_from_inventory(trade_history)
     legacy_candidates = _pair_closed_trades(events)
+    raw_ic_entries = _load_ic_entries()
     deduped_candidates: dict[str, dict[str, Any]] = {}
     for row in inventory_candidates + legacy_candidates:
+        row = _merge_entry_provenance(row, raw_ic_entries)
         row_id = str(row.get("id") or "")
         if row_id and row_id not in deduped_candidates:
             deduped_candidates[row_id] = row

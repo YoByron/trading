@@ -354,6 +354,7 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
@@ -374,6 +375,7 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch("alpaca.trading.client.TradingClient", return_value=mock_client),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
@@ -396,6 +398,7 @@ class TestExecute:
         ic = self._make_ic()
 
         with (
+            patch.object(strategy, "_validate_sync_freshness", return_value=(True, "", {})),
             patch(
                 "src.utils.alpaca_client.get_alpaca_credentials",
                 return_value=(None, None),

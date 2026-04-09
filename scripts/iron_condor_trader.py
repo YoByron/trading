@@ -27,7 +27,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -53,6 +53,11 @@ init_sentry()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = Path(__file__).parent.parent
+SYSTEM_STATE_PATH = PROJECT_ROOT / "data" / "system_state.json"
+IC_ENTRIES_PATH = PROJECT_ROOT / "data" / "ic_entries.json"
+MAX_SYNC_STALENESS_HOURS = 18
 
 
 def select_strikes_by_delta(*args, **kwargs):
@@ -100,6 +105,113 @@ class IronCondorStrategy:
             self.config["max_positions"],
             max(1, int(MAX_OPTION_LEGS) // 4),
         )
+        self._last_strike_selection = None
+
+    @staticmethod
+    def _parse_iso_datetime(raw: object) -> datetime | None:
+        if raw is None:
+            return None
+        text = str(raw).strip()
+        if not text:
+            return None
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    def _build_trade_signature(self, ic: IronCondorLegs) -> str:
+        return (
+            f"{ic.underlying}_{ic.expiry}_"
+            f"P{int(ic.long_put) if float(ic.long_put).is_integer() else ic.long_put}"
+            f"-{int(ic.short_put) if float(ic.short_put).is_integer() else ic.short_put}_"
+            f"C{int(ic.short_call) if float(ic.short_call).is_integer() else ic.short_call}"
+            f"-{int(ic.long_call) if float(ic.long_call).is_integer() else ic.long_call}"
+        )
+
+    def _validate_sync_freshness(self) -> tuple[bool, str, dict]:
+        if not SYSTEM_STATE_PATH.exists():
+            return False, "system_state.json missing", {"path": str(SYSTEM_STATE_PATH)}
+        try:
+            state = json.loads(SYSTEM_STATE_PATH.read_text(encoding="utf-8"))
+        except Exception as exc:
+            return False, f"Could not read system_state.json: {exc}", {"path": str(SYSTEM_STATE_PATH)}
+
+        sync_health = state.get("sync_health") if isinstance(state, dict) else {}
+        if not isinstance(sync_health, dict):
+            sync_health = {}
+        last_sync_raw = sync_health.get("last_successful_sync")
+        sync_time = self._parse_iso_datetime(last_sync_raw)
+        if sync_time is None:
+            return False, "sync_health.last_successful_sync missing or invalid", {
+                "path": str(SYSTEM_STATE_PATH),
+                "last_successful_sync": last_sync_raw,
+            }
+
+        now_utc = datetime.now(timezone.utc)
+        age_hours = round((now_utc - sync_time).total_seconds() / 3600, 2)
+        details = {
+            "path": str(SYSTEM_STATE_PATH),
+            "last_successful_sync": sync_time.isoformat(),
+            "age_hours": age_hours,
+            "max_age_hours": MAX_SYNC_STALENESS_HOURS,
+        }
+        if age_hours > MAX_SYNC_STALENESS_HOURS:
+            return (
+                False,
+                f"Broker sync stale: last successful sync was {age_hours:.1f}h ago",
+                details,
+            )
+        return True, "", details
+
+    def _persist_entry_metadata(
+        self,
+        ic: IronCondorLegs,
+        *,
+        order_id: str,
+        quantity: int,
+        entry_reason: str,
+    ) -> None:
+        selection = getattr(self, "_last_strike_selection", None)
+        entry_timestamp = datetime.now(timezone.utc).isoformat()
+        entry_key = f"IC_{ic.expiry.replace('-', '')[2:]}"
+        ic_entries: dict = {}
+        if IC_ENTRIES_PATH.exists():
+            try:
+                ic_entries = json.loads(IC_ENTRIES_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                ic_entries = {}
+
+        ic_entries[entry_key] = {
+            "credit": ic.credit_received,
+            "date": entry_timestamp,
+            "entry_time": entry_timestamp,
+            "order_id": order_id,
+            "underlying": ic.underlying,
+            "expiry": ic.expiry,
+            "signature": self._build_trade_signature(ic),
+            "quantity": quantity,
+            "profile_name": self.config.get("name"),
+            "validation_phase": True,
+            "entry_reason": entry_reason,
+            "target_delta": self.config.get("short_delta"),
+            "selection_method": getattr(selection, "method", "unknown"),
+            "strike_selection_method": getattr(selection, "method", "unknown"),
+            "put_delta": getattr(selection, "put_delta", None),
+            "call_delta": getattr(selection, "call_delta", None),
+            "strikes": {
+                "short_put": ic.short_put,
+                "short_call": ic.short_call,
+                "long_put": ic.long_put,
+                "long_call": ic.long_call,
+            },
+        }
+        IC_ENTRIES_PATH.parent.mkdir(parents=True, exist_ok=True)
+        IC_ENTRIES_PATH.write_text(json.dumps(ic_entries, indent=2) + "\n", encoding="utf-8")
 
     def get_underlying_price(self) -> float:
         """Get current price of the configured underlying from Alpaca."""
@@ -495,6 +607,22 @@ class IronCondorStrategy:
         # FIX Jan 22, 2026: Move position check to VERY START before any other logic
         # ROOT CAUSE: Multiple workflow runs could race past position check if it ran late
         if live:
+            sync_ok, sync_reason, sync_details = self._validate_sync_freshness()
+            if not sync_ok:
+                logger.error("=" * 60)
+                logger.error("SYNC FRESHNESS BLOCKING NEW TRADE")
+                logger.error("=" * 60)
+                logger.error(sync_reason)
+                logger.error(sync_details)
+                logger.error("=" * 60)
+                return {
+                    "timestamp": datetime.now().isoformat(),
+                    "strategy": "iron_condor",
+                    "underlying": ic.underlying,
+                    "status": "BLOCKED_STALE_SYNC",
+                    "reason": sync_reason,
+                    "sync_health": sync_details,
+                }
             logger.info("=" * 60)
             logger.info("POSITION CHECK (MANDATORY FIRST STEP)")
             logger.info("=" * 60)
@@ -665,6 +793,30 @@ class IronCondorStrategy:
 
         logger.info("RAG checks passed - proceeding with execution")
 
+        if live:
+            try:
+                from src.safety.behavioral_guard import BehavioralGuard
+
+                guard_result = BehavioralGuard.evaluate(
+                    ic.underlying,
+                    expiry=ic.expiry,
+                    spy_change_pct=None,
+                )
+                if not guard_result.passed:
+                    reason = "; ".join(guard_result.rejections) or "behavioral guard rejection"
+                    logger.warning("BLOCKED by behavioral guard: %s", reason)
+                    return {
+                        "timestamp": datetime.now().isoformat(),
+                        "strategy": "iron_condor",
+                        "underlying": ic.underlying,
+                        "status": "BLOCKED_BEHAVIORAL_GUARD",
+                        "reason": reason,
+                        "checks_run": guard_result.checks_run,
+                        "warnings": guard_result.warnings,
+                    }
+            except Exception as guard_err:
+                logger.warning(f"Behavioral guard check skipped due to error: {guard_err}")
+
         logger.info("=" * 60)
         logger.info("EXECUTING IRON CONDOR" + (" (LIVE)" if live else " (SIMULATED)"))
         logger.info("=" * 60)
@@ -735,12 +887,10 @@ class IronCondorStrategy:
                         OptionLegRequest(symbol=long_call_sym, side=OrderSide.BUY, ratio_qty=1),
                     ]
 
-                    # FIX Apr 3, 2026: Scale to 2 contracts per IC.
-                    # 1 contract collects ~$200 (0.2% of account). 2 contracts = ~$400.
-                    # MAX_CONTRACTS_PER_TRADE from constants controls this.
+                    # Validation phase: size at one contract until expectancy is proven.
                     from src.core.trading_constants import MAX_CONTRACTS_PER_TRADE
 
-                    ic_qty = MAX_CONTRACTS_PER_TRADE  # Default: 2
+                    ic_qty = MAX_CONTRACTS_PER_TRADE
 
                     logger.info(f"📋 Building MLeg iron condor order ({ic_qty} contracts)...")
                     logger.info(f"   Long Put:   {long_put_sym} (BUY x{ic_qty})")
@@ -874,33 +1024,20 @@ class IronCondorStrategy:
                                 "   Will rely on manage_iron_condor_positions.py for exits"
                             )
 
-                        # Save entry credit so Guardian knows the real entry price
+                        # Save entry provenance so exits and audits can trace the actual setup.
                         try:
-                            ic_entries_file = Path("data/ic_entries.json")
-                            ic_entries = {}
-                            if ic_entries_file.exists():
-                                ic_entries = json.loads(ic_entries_file.read_text())
-                            entry_key = (
-                                f"IC_{ic.expiry.replace('-', '')[2:]}"  # YYMMDD to match Guardian
+                            self._persist_entry_metadata(
+                                ic,
+                                order_id=str(order.id),
+                                quantity=ic_qty,
+                                entry_reason=entry_reason,
                             )
-                            ic_entries[entry_key] = {
-                                "credit": ic.credit_received,
-                                "date": datetime.now().isoformat(),
-                                "order_id": str(order.id),
-                                "strikes": {
-                                    "short_put": ic.short_put,
-                                    "short_call": ic.short_call,
-                                    "long_put": ic.long_put,
-                                    "long_call": ic.long_call,
-                                },
-                            }
-                            ic_entries_file.write_text(json.dumps(ic_entries, indent=2))
                             logger.info(
-                                f"   Saved entry credit ${ic.credit_received:.2f} "
-                                f"to ic_entries.json (key={entry_key})"
+                                f"   Saved entry provenance for {self._build_trade_signature(ic)} "
+                                f"to {IC_ENTRIES_PATH}"
                             )
                         except Exception as e:
-                            logger.warning(f"   Failed to save entry credit: {e}")
+                            logger.warning(f"   Failed to save entry provenance: {e}")
 
                     except Exception as mleg_error:
                         logger.error(f"❌ MLeg order failed: {mleg_error}")
@@ -1331,7 +1468,7 @@ def main():
         # Multiple workflow runs could pass position check simultaneously without lock
         try:
             with acquire_trade_lock(timeout=10):
-                trade = strategy.execute(ic, live=live_mode)
+                trade = strategy.execute(ic, live=live_mode, entry_reason=reason)
         except TradeLockTimeout:
             logger.warning("⚠️ Could not acquire trade lock - another trade may be in progress")
             telemetry.update_ticker_decision(
@@ -1341,6 +1478,19 @@ def main():
                 rejection_reason="trade_lock_timeout",
             )
             return {"success": False, "reason": "trade_lock_timeout"}
+
+        trade_status = str(trade.get("status") or "")
+        if trade_status.startswith(("BLOCKED", "SKIPPED")):
+            rejection_reason = str(trade.get("reason") or trade_status)
+            telemetry.update_ticker_decision(
+                ticker,
+                gate=4,
+                status="REJECT",
+                rejection_reason=rejection_reason,
+                indicators={"trade_status": trade_status},
+            )
+            logger.info("IRON CONDOR TRADER - COMPLETE (blocked)")
+            return {"success": False, "reason": rejection_reason, "trade": trade}
 
         telemetry.update_ticker_decision(
             ticker,

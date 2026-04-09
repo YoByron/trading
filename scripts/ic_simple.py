@@ -127,6 +127,9 @@ def find_opportunity(spy_price: float) -> dict | None:
         "long_call": selection.long_call,
         "est_credit": est_credit,
         "method": selection.method,
+        "put_delta": selection.put_delta,
+        "call_delta": selection.call_delta,
+        "target_delta": TARGET_DELTA,
     }
 
 
@@ -204,7 +207,21 @@ def place_ic(client, opp: dict) -> str | None:
     entries[entry_key] = {
         "credit": opp["est_credit"],
         "date": datetime.now().isoformat(),
+        "entry_time": datetime.now().isoformat(),
         "order_id": str(order.id),
+        "signature": (
+            f"SPY_{opp['expiry']}_"
+            f"P{int(opp['long_put'])}-{int(opp['short_put'])}_"
+            f"C{int(opp['short_call'])}-{int(opp['long_call'])}"
+        ),
+        "selection_method": opp.get("method"),
+        "strike_selection_method": opp.get("method"),
+        "put_delta": opp.get("put_delta"),
+        "call_delta": opp.get("call_delta"),
+        "target_delta": opp.get("target_delta", TARGET_DELTA),
+        "validation_phase": True,
+        "profile_name": "spy-core",
+        "quantity": 1,
         "strikes": {
             "short_put": opp["short_put"],
             "short_call": opp["short_call"],
@@ -545,7 +562,7 @@ def _print_report():
     logger.info(f"Losses:         {stats.get('losses', 0)}")
     logger.info(f"Win rate:       {stats.get('win_rate', 0):.1f}%")
     logger.info(f"Profit factor:  {stats.get('profit_factor', 0):.2f}")
-    logger.info(f"Total P/L:      ${stats.get('total_pnl', 0):+,.2f}")
+    logger.info(f"Closed P/L:     ${stats.get('total_pnl', 0):+,.2f}")
     logger.info(f"Avg win:        ${stats.get('avg_win', 0):+,.2f}")
     logger.info(f"Avg loss:       ${stats.get('avg_loss', 0):+,.2f}")
 
@@ -1097,6 +1114,44 @@ def _count_open_ics(client) -> int:
     return len(spy_options) // 4
 
 
+def _refresh_canonical_state() -> None:
+    """Refresh canonical state files after an IC Simple run."""
+    try:
+        from scripts import sync_alpaca_state
+
+        alpaca_data = sync_alpaca_state.sync_from_alpaca()
+        sync_alpaca_state.update_system_state(alpaca_data)
+        logger.info("Canonical state refreshed via sync_alpaca_state.py")
+    except Exception as exc:
+        logger.warning(f"Canonical state refresh failed: {exc}")
+
+    try:
+        from scripts import sync_closed_positions
+
+        result = sync_closed_positions.sync_closed_positions(dry_run=False)
+        logger.info(
+            "Closed-trade ledger refresh: success=%s new_closed=%s total_closed=%s",
+            result.get("success"),
+            result.get("new_closed"),
+            result.get("closed_total"),
+        )
+    except Exception as exc:
+        logger.warning(f"Closed-trade ledger refresh failed: {exc}")
+
+    try:
+        from scripts.daily_verification import verify_today
+
+        report = verify_today()
+        logger.info(
+            "Daily verification refreshed canonical metrics: equity=$%.2f daily_pnl=$%+.2f positions=%s",
+            report.equity,
+            report.daily_pnl,
+            report.positions_count,
+        )
+    except Exception as exc:
+        logger.warning(f"Daily verification refresh failed: {exc}")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
     import argparse
@@ -1269,6 +1324,10 @@ def main():
         logger.info(f"Equity: ${float(account.equity):,.2f}")
         logger.info(f"Open ICs: {ic_count}/{MAX_IC}")
         logger.info(f"Today P/L: ${float(account.equity) - float(account.last_equity):+,.2f}")
+
+    if args.mode in ("entry", "exit", "both", "status") and not args.dry_run:
+        logger.info("\n--- CANONICAL STATE REFRESH ---")
+        _refresh_canonical_state()
 
     if args.mode == "report":
         _print_report()

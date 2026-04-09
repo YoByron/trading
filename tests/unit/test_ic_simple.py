@@ -264,6 +264,19 @@ class TestFindOpportunity:
         assert opp is None
 
     @patch("src.markets.option_chain.select_strikes_by_delta")
+    def test_returns_delta_provenance_for_audit(self, mock_select):
+        from scripts.ic_simple import TARGET_DELTA, find_opportunity
+
+        mock_select.return_value = self._mock_selection(net_credit_val=2.10)
+        opp = find_opportunity(spy_price=650.0)
+
+        assert opp is not None
+        assert opp["method"] == "live_delta"
+        assert opp["put_delta"] == pytest.approx(0.15)
+        assert opp["call_delta"] == pytest.approx(0.15)
+        assert opp["target_delta"] == TARGET_DELTA
+
+    @patch("src.markets.option_chain.select_strikes_by_delta")
     def test_heuristic_fallback_uses_conservative_estimate(self, mock_select):
         from scripts.ic_simple import find_opportunity
 
@@ -486,12 +499,14 @@ class TestE2EPipeline:
     @patch("scripts.ic_simple._cancel_stale_orders")
     @patch("scripts.ic_simple._check_recent_fills")
     @patch("scripts.ic_simple.check_exits")
+    @patch("scripts.ic_simple._refresh_canonical_state")
     @patch("scripts.ic_simple.get_spy_price", return_value=650.0)
     @patch("scripts.ic_simple.get_client")
     def test_full_entry_uses_net_credit_in_limit_price(
         self,
         mock_client_fn,
         mock_spy,
+        mock_refresh,
         mock_exits,
         mock_fills,
         mock_stale,
@@ -527,8 +542,19 @@ class TestE2EPipeline:
         # Run main with entry mode
         import scripts.ic_simple as ic
 
+        class _Snapshot:
+            label = "calm"
+            regime_id = 0
+            confidence = 0.85
+            vix_level = 18.0
+            transition_prediction = None
+
         sys.argv = ["ic_simple.py", "--mode", "both"]
-        ic.main()
+        with patch(
+            "src.utils.regime_detector.RegimeDetector.detect_live_regime_with_prediction",
+            return_value=_Snapshot(),
+        ):
+            ic.main()
 
         # Verify order was submitted
         assert mock_submit.called
@@ -555,12 +581,14 @@ class TestE2EPipeline:
     @patch("scripts.ic_simple._cancel_stale_orders")
     @patch("scripts.ic_simple._check_recent_fills")
     @patch("scripts.ic_simple.check_exits")
+    @patch("scripts.ic_simple._refresh_canonical_state")
     @patch("scripts.ic_simple.get_spy_price", return_value=650.0)
     @patch("scripts.ic_simple.get_client")
     def test_no_trade_when_position_limit_reached(
         self,
         mock_client_fn,
         mock_spy,
+        mock_refresh,
         mock_exits,
         mock_fills,
         mock_stale,
