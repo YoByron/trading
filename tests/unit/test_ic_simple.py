@@ -527,8 +527,19 @@ class TestE2EPipeline:
         # Run main with entry mode
         import scripts.ic_simple as ic
 
+        class _Snapshot:
+            label = "calm"
+            regime_id = 0
+            confidence = 0.85
+            vix_level = 18.0
+            transition_prediction = None
+
         sys.argv = ["ic_simple.py", "--mode", "both"]
-        ic.main()
+        with patch(
+            "src.utils.regime_detector.RegimeDetector.detect_live_regime_with_prediction",
+            return_value=_Snapshot(),
+        ):
+            ic.main()
 
         # Verify order was submitted
         assert mock_submit.called
