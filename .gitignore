@@ -180,5 +180,8 @@ rag_knowledge/
 # Consolidated memory (local only)
 .claude/memory/consolidated_memory.json
 
-# MCP Memory Gateway local state
+# Legacy MCP Memory Gateway local state
 .rlhf/
+
+# ThumbGate local state
+.thumbgate/

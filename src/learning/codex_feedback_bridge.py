@@ -1,7 +1,7 @@
-"""Codex notify-hook bridge into MCP Memory Gateway.
+"""Codex notify-hook bridge into ThumbGate.
 
 This bridge keeps Codex feedback on the same canonical local path used by
-the hook pipeline: `.rlhf/feedback-log.jsonl` plus generated prevention rules.
+the hook pipeline: the repo's shared `.thumbgate/` state across worktrees.
 """
 
 from __future__ import annotations
@@ -18,18 +18,20 @@ from src.learning.memory_gateway_feedback import (
     build_feedback_context,
     command_return_code,
     detect_feedback_signal,
-    gateway_capture_command,
-    gateway_rules_command,
     normalize_text,
+    resolve_thumbgate_paths,
     run_command,
     safe_now_iso,
+    thumbgate_capture_command,
+    thumbgate_env,
+    thumbgate_rules_command,
 )
 
 
 @dataclass(frozen=True)
 class BridgePaths:
     project_root: Path
-    rlhf_dir: Path
+    feedback_dir: Path
     state_file: Path
     event_log: Path
     prevention_rules: Path
@@ -109,13 +111,13 @@ def resolve_paths(payload: dict[str, Any], cwd: Path | None = None) -> BridgePat
         Path(payload_cwd).expanduser().resolve() if payload_cwd else (cwd or Path.cwd()).resolve()
     )
     project_root = _find_project_root(base)
-    rlhf_dir = project_root / ".rlhf"
+    thumbgate_paths = resolve_thumbgate_paths(project_root)
     return BridgePaths(
         project_root=project_root,
-        rlhf_dir=rlhf_dir,
-        state_file=rlhf_dir / "codex_notify_state.json",
-        event_log=rlhf_dir / "codex_notify_events.jsonl",
-        prevention_rules=rlhf_dir / "prevention-rules.md",
+        feedback_dir=thumbgate_paths.feedback_dir,
+        state_file=thumbgate_paths.feedback_dir / "codex_notify_state.json",
+        event_log=thumbgate_paths.feedback_dir / "codex_notify_events.jsonl",
+        prevention_rules=thumbgate_paths.prevention_rules,
     )
 
 
@@ -188,8 +190,9 @@ def process_payload(
         return {"status": "ignored", "reason": "duplicate", "event_key": event_key}
 
     capture_result = runner(
-        gateway_capture_command(signal, context, detail, improvement),
+        thumbgate_capture_command(signal, context, detail, improvement),
         cwd=paths.project_root,
+        env=thumbgate_env(paths.project_root),
     )
     capture_ok = command_return_code(capture_result) in {0, 2}
 
@@ -197,8 +200,9 @@ def process_payload(
     fallback_log = None
     if capture_ok:
         rules_result = runner(
-            gateway_rules_command(paths.prevention_rules),
+            thumbgate_rules_command(paths.prevention_rules),
             cwd=paths.project_root,
+            env=thumbgate_env(paths.project_root),
         )
         rules_ok = command_return_code(rules_result) == 0
     else:
@@ -211,8 +215,8 @@ def process_payload(
         )
 
     pipeline_status = {
-        "gateway_capture": capture_ok,
-        "gateway_rules": rules_ok,
+        "thumbgate_capture": capture_ok,
+        "thumbgate_rules": rules_ok,
         "fallback_log": fallback_log is not None,
     }
 

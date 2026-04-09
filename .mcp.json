@@ -2,11 +2,7 @@
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-memory-gateway@0.7.1",
-        "serve"
-      ]
+      "args": ["-y", "thumbgate@0.9.14", "serve"]
     }
   }
 }
