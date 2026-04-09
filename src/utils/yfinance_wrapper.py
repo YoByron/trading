@@ -258,25 +258,16 @@ def download(
     yf = _try_import_yfinance()
     if yf:
         try:
-            request_kwargs = dict(kwargs)
-            # yfinance rejects requests that combine explicit start/end with period.
+            request_kwargs = {"interval": interval, **kwargs}
+            # yfinance rejects requests that combine period with explicit boundaries.
             if start is not None or end is not None:
-                request_kwargs.pop("period", None)
-                return yf.download(
-                    tickers,
-                    start=start,
-                    end=end,
-                    interval=interval,
-                    **request_kwargs,
-                )
-            return yf.download(
-                tickers,
-                start=start,
-                end=end,
-                period=period,
-                interval=interval,
-                **request_kwargs,
-            )
+                if start is not None:
+                    request_kwargs["start"] = start
+                if end is not None:
+                    request_kwargs["end"] = end
+            else:
+                request_kwargs["period"] = period
+            return yf.download(tickers, **request_kwargs)
         except Exception as e:
             logger.warning(f"yfinance download failed: {e}")
 
