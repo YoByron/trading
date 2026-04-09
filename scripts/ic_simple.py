@@ -1187,7 +1187,7 @@ def main():
         except Exception as e:
             logger.debug(f"IV/RV check skipped: {e}")
 
-        # REGIME GATE: Iron condors lose in trending/spike markets (research: ADX > 30 = loss)
+        # REGIME GATE: Fail-closed. Unknown regime = no entry.
         regime_blocked = False
         try:
             from src.utils.regime_detector import RegimeDetector
@@ -1198,7 +1198,14 @@ def main():
                 f"Regime: {snapshot.label} (id={snapshot.regime_id}, "
                 f"confidence={snapshot.confidence:.2f}, VIX={snapshot.vix_level:.1f})"
             )
-            if snapshot.regime_id >= 2:  # volatile or spike
+            if snapshot.regime_id < 0 or snapshot.confidence < 0.3:
+                logger.warning(
+                    f"REGIME BLOCKED: unknown/low-confidence regime "
+                    f"(id={snapshot.regime_id}, conf={snapshot.confidence:.2f}). "
+                    f"Fail-closed: no entry without regime clarity."
+                )
+                regime_blocked = True
+            elif snapshot.regime_id >= 2:  # volatile or spike
                 logger.warning(
                     f"REGIME BLOCKED: {snapshot.label} regime (id={snapshot.regime_id}). "
                     f"Iron condors require calm/low-trend markets."
@@ -1213,7 +1220,8 @@ def main():
                     )
                     regime_blocked = True
         except Exception as e:
-            logger.debug(f"Regime check skipped: {e}")
+            logger.warning(f"REGIME BLOCKED: detection failed ({e}). Fail-closed.")
+            regime_blocked = True
 
         # Cancel stale unfilled orders before checking entry
         _cancel_stale_orders(client)

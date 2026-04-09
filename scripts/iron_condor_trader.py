@@ -35,6 +35,7 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 from src.core.trading_constants import MAX_POSITIONS as MAX_OPTION_LEGS
 from src.core.trading_profiles import get_iron_condor_strategy_config
 from src.orchestrator.telemetry import OrchestratorTelemetry
@@ -56,7 +57,9 @@ logger = logging.getLogger(__name__)
 
 def select_strikes_by_delta(*args, **kwargs):
     """Compatibility seam for trader tests and callers patching this module."""
-    from src.markets.option_chain import select_strikes_by_delta as select_strikes_by_delta_impl
+    from src.markets.option_chain import (
+        select_strikes_by_delta as select_strikes_by_delta_impl,
+    )
 
     return select_strikes_by_delta_impl(*args, **kwargs)
 
@@ -106,6 +109,7 @@ class IronCondorStrategy:
         try:
             from alpaca.data.historical import StockHistoricalDataClient
             from alpaca.data.requests import StockLatestQuoteRequest
+
             from src.utils.alpaca_client import get_alpaca_credentials
 
             api_key, secret = get_alpaca_credentials()
@@ -401,6 +405,7 @@ class IronCondorStrategy:
             from alpaca.data.historical import StockHistoricalDataClient
             from alpaca.data.requests import StockBarsRequest
             from alpaca.data.timeframe import TimeFrame
+
             from src.utils.alpaca_client import get_alpaca_credentials
 
             api_key, secret = get_alpaca_credentials()
@@ -495,6 +500,7 @@ class IronCondorStrategy:
             logger.info("=" * 60)
             try:
                 from alpaca.trading.client import TradingClient
+
                 from src.utils.alpaca_client import get_alpaca_credentials
 
                 api_key, secret = get_alpaca_credentials()
@@ -686,6 +692,7 @@ class IronCondorStrategy:
                 from alpaca.trading.client import TradingClient
                 from alpaca.trading.enums import OrderClass, OrderSide
                 from alpaca.trading.requests import OptionLegRequest
+
                 from src.utils.alpaca_client import get_alpaca_credentials
 
                 api_key, secret = get_alpaca_credentials()
@@ -1149,8 +1156,7 @@ def main():
                 logger.info("Skipping trade - conditions not met")
                 return {"success": False, "reason": reason}
 
-        # REGIME GATE: Block iron condors in trending/volatile/spike markets
-        # Research: 71,417-trade study shows ICs lose in trending markets (ADX > 30)
+        # REGIME GATE: Fail-closed. Unknown regime = no entry.
         try:
             from src.utils.regime_detector import RegimeDetector
 
@@ -1160,6 +1166,18 @@ def main():
                 f"Regime: {snapshot.label} (id={snapshot.regime_id}, "
                 f"confidence={snapshot.confidence:.2f}, VIX={snapshot.vix_level:.1f})"
             )
+            if snapshot.regime_id < 0 or snapshot.confidence < 0.3:
+                msg = (
+                    f"REGIME BLOCKED: unknown/low-confidence "
+                    f"(id={snapshot.regime_id}, conf={snapshot.confidence:.2f}). Fail-closed."
+                )
+                logger.warning(msg)
+                telemetry.update_ticker_decision(
+                    ticker, gate=2, status="REJECT",
+                    rejection_reason=msg,
+                    indicators={"regime": "unknown", "regime_id": snapshot.regime_id},
+                )
+                return {"success": False, "reason": msg}
             if snapshot.regime_id >= 2:  # volatile or spike
                 msg = (
                     f"REGIME BLOCKED: {snapshot.label} (id={snapshot.regime_id}). "
@@ -1182,7 +1200,9 @@ def main():
                     logger.warning(msg)
                     return {"success": False, "reason": msg}
         except Exception as e:
-            logger.debug(f"Regime check skipped (non-blocking): {e}")
+            msg = f"REGIME BLOCKED: detection failed ({e}). Fail-closed."
+            logger.warning(msg)
+            return {"success": False, "reason": msg}
 
         # IV RANK GATE: Only sell premium when IV is rich (IV Rank > 20)
         try:
