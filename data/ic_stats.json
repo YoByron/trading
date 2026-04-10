@@ -7,8 +7,6 @@
   "avg_loss": 0,
   "win_rate": 100.0,
   "profit_factor": 999.0,
-  "win_pnls": [
-    41.0
-  ],
+  "win_pnls": [41.0],
   "loss_pnls": []
 }
