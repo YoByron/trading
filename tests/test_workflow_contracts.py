@@ -185,7 +185,22 @@ def test_state_writer_workflows_fail_closed_on_rebase_or_push_errors():
     assert "set -euo pipefail" in ic_text
     assert "git push origin HEAD:main ||" not in sync_text
     assert "git push origin HEAD:main ||" not in ic_text
-    assert "git pull --rebase origin main ||" not in ic_text
+    assert "git pull --rebase origin main" not in ic_text
+    assert "git pull --ff-only origin main" in sync_text
+    assert "git pull --ff-only origin main" in ic_text
+
+
+def test_state_writer_workflows_refresh_to_latest_main_before_mutating_state():
+    """Queued state writers must base their outputs on the newest main head before running."""
+    sync_text = Path(".github/workflows/sync-alpaca-status.yml").read_text()
+    ic_text = Path(".github/workflows/ic-simple.yml").read_text()
+
+    assert "name: Refresh to latest main" in sync_text
+    assert "name: Refresh to latest main" in ic_text
+    assert "git fetch origin main" in sync_text
+    assert "git fetch origin main" in ic_text
+    assert "git checkout -B main origin/main" in sync_text
+    assert "git checkout -B main origin/main" in ic_text
 
 
 def test_public_surface_guard_workflow_exists():

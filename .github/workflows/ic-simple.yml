@@ -35,6 +35,11 @@ jobs:
           token: ${{ secrets.GH_PAT || github.token }}
           fetch-depth: 0
 
+      - name: Refresh to latest main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -118,6 +123,6 @@ jobs:
             echo "No trade data changes"
           else
             git commit -m "chore: IC Simple trade data [auto]"
-            git pull --rebase origin main
+            git pull --ff-only origin main
             git push origin HEAD:main
           fi
