@@ -1245,6 +1245,7 @@ def main():
         # REGIME GATE: Fail-closed. Unknown regime = no entry.
         regime_blocked = False
         try:
+            from src.safety.regime_entry_gate import evaluate_regime_entry
             from src.utils.regime_detector import RegimeDetector
 
             detector = RegimeDetector()
@@ -1253,27 +1254,12 @@ def main():
                 f"Regime: {snapshot.label} (id={snapshot.regime_id}, "
                 f"confidence={snapshot.confidence:.2f}, VIX={snapshot.vix_level:.1f})"
             )
-            if snapshot.regime_id < 0 or snapshot.confidence < 0.3:
-                logger.warning(
-                    f"REGIME BLOCKED: unknown/low-confidence regime "
-                    f"(id={snapshot.regime_id}, conf={snapshot.confidence:.2f}). "
-                    f"Fail-closed: no entry without regime clarity."
-                )
-                regime_blocked = True
-            elif snapshot.regime_id >= 2:  # volatile or spike
-                logger.warning(
-                    f"REGIME BLOCKED: {snapshot.label} regime (id={snapshot.regime_id}). "
-                    f"Iron condors require calm/low-trend markets."
-                )
-                regime_blocked = True
-            elif hasattr(snapshot, 'transition_prediction') and snapshot.transition_prediction:
-                tp = snapshot.transition_prediction
-                if tp.transition_detected and tp.predicted_regime in ("volatile", "spike"):
-                    logger.warning(
-                        f"REGIME WARNING: Transition to {tp.predicted_regime} predicted "
-                        f"(prob={tp.transition_probability:.2f}). Blocking entry."
-                    )
-                    regime_blocked = True
+            regime_decision = evaluate_regime_entry(snapshot)
+            if regime_decision.level == "pass":
+                logger.info(regime_decision.reason)
+            else:
+                logger.warning(regime_decision.reason)
+            regime_blocked = not regime_decision.allowed
         except Exception as e:
             logger.warning(f"REGIME BLOCKED: detection failed ({e}). Fail-closed.")
             regime_blocked = True
