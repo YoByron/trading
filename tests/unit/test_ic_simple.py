@@ -4,6 +4,7 @@ Covers: StrikeSelection.net_credit, find_opportunity, _wait_for_fill,
 price-walking, and full E2E pipeline with mocked Alpaca client.
 """
 
+import json
 import sys
 from dataclasses import dataclass
 from enum import Enum
@@ -482,7 +483,51 @@ class TestPriceWalk:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 5. E2E: Full pipeline mock
+# 5. Thompson validation-reset gate
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestThompsonValidationResetGate:
+    def test_low_thompson_blocks_without_validation_reset(self, tmp_path, monkeypatch):
+        import scripts.ic_simple as ic
+
+        state_file = tmp_path / "system_state.json"
+        state_file.write_text(json.dumps({"north_star_weekly_gate": {"mode": "validation"}}))
+        monkeypatch.setattr(ic, "SYSTEM_STATE_FILE", state_file)
+
+        should_skip, reason = ic._should_skip_for_thompson(0.277)
+
+        assert should_skip is True
+        assert "skip entry" in reason
+
+    def test_low_thompson_allows_controlled_paper_validation_reset(
+        self, tmp_path, monkeypatch
+    ):
+        import scripts.ic_simple as ic
+
+        state_file = tmp_path / "system_state.json"
+        state_file.write_text(
+            json.dumps(
+                {
+                    "north_star_weekly_gate": {
+                        "mode": "validation_reset",
+                        "allow_validation_entries": True,
+                        "block_live_new_positions": True,
+                    }
+                }
+            )
+        )
+        monkeypatch.setattr(ic, "SYSTEM_STATE_FILE", state_file)
+
+        should_skip, reason = ic._should_skip_for_thompson(0.277)
+
+        assert should_skip is False
+        assert "controlled paper validation" in reason
+        assert "live/scaling remains blocked" in reason
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. E2E: Full pipeline mock
 # ══════════════════════════════════════════════════════════════════════════════
 
 

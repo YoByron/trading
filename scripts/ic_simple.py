@@ -23,6 +23,7 @@ logger = logging.getLogger("ic_simple")
 
 # ── Strategy Parameters (ML-adjustable) ──────────────────────────────────────
 STRATEGY_PARAMS_FILE = Path(__file__).parent.parent / "data" / "strategy_params.json"
+SYSTEM_STATE_FILE = Path(__file__).parent.parent / "data" / "system_state.json"
 
 
 def _load_strategy_params() -> dict:
@@ -943,6 +944,7 @@ def _research_strategies(win_rate: float, trade_count: int, total_pnl: float):
 
 
 # ── Thompson Sampling ────────────────────────────────────────────────────────
+THOMPSON_MIN_CONFIDENCE = 0.40
 
 
 def _get_thompson_confidence() -> float:
@@ -955,6 +957,47 @@ def _get_thompson_confidence() -> float:
     except Exception as e:
         logger.debug(f"Thompson sampling unavailable: {e}")
         return 0.86  # Fall back to prior mean
+
+
+def _load_north_star_weekly_gate() -> dict:
+    """Load the weekly gate that separates paper validation from live/scaling."""
+    try:
+        data = json.loads(SYSTEM_STATE_FILE.read_text())
+        gate = data.get("north_star_weekly_gate", {})
+        return gate if isinstance(gate, dict) else {}
+    except Exception as e:
+        logger.debug(f"North Star weekly gate unavailable: {e}")
+        return {}
+
+
+def _allows_controlled_paper_validation_entry() -> bool:
+    gate = _load_north_star_weekly_gate()
+    return (
+        gate.get("mode") == "validation_reset"
+        and bool(gate.get("allow_validation_entries"))
+        and bool(gate.get("block_live_new_positions"))
+    )
+
+
+def _should_skip_for_thompson(thompson_conf: float) -> tuple[bool, str]:
+    """Return whether Thompson should block this paper validation entry."""
+    if thompson_conf >= THOMPSON_MIN_CONFIDENCE:
+        return (
+            False,
+            f"Thompson confidence {thompson_conf:.3f} >= {THOMPSON_MIN_CONFIDENCE:.2f}",
+        )
+
+    if _allows_controlled_paper_validation_entry():
+        return (
+            False,
+            f"Thompson confidence {thompson_conf:.3f} < {THOMPSON_MIN_CONFIDENCE:.2f}, "
+            "but controlled paper validation entries are allowed; live/scaling remains blocked.",
+        )
+
+    return (
+        True,
+        f"Thompson confidence {thompson_conf:.3f} < {THOMPSON_MIN_CONFIDENCE:.2f} — skip entry",
+    )
 
 
 def _query_rag_before_entry(spy_price: float):
@@ -1245,6 +1288,7 @@ def main():
         # REGIME GATE: Fail-closed. Unknown regime = no entry.
         regime_blocked = False
         try:
+            from src.safety.regime_entry_gate import evaluate_regime_entry
             from src.utils.regime_detector import RegimeDetector
 
             detector = RegimeDetector()
@@ -1253,27 +1297,12 @@ def main():
                 f"Regime: {snapshot.label} (id={snapshot.regime_id}, "
                 f"confidence={snapshot.confidence:.2f}, VIX={snapshot.vix_level:.1f})"
             )
-            if snapshot.regime_id < 0 or snapshot.confidence < 0.3:
-                logger.warning(
-                    f"REGIME BLOCKED: unknown/low-confidence regime "
-                    f"(id={snapshot.regime_id}, conf={snapshot.confidence:.2f}). "
-                    f"Fail-closed: no entry without regime clarity."
-                )
-                regime_blocked = True
-            elif snapshot.regime_id >= 2:  # volatile or spike
-                logger.warning(
-                    f"REGIME BLOCKED: {snapshot.label} regime (id={snapshot.regime_id}). "
-                    f"Iron condors require calm/low-trend markets."
-                )
-                regime_blocked = True
-            elif hasattr(snapshot, 'transition_prediction') and snapshot.transition_prediction:
-                tp = snapshot.transition_prediction
-                if tp.transition_detected and tp.predicted_regime in ("volatile", "spike"):
-                    logger.warning(
-                        f"REGIME WARNING: Transition to {tp.predicted_regime} predicted "
-                        f"(prob={tp.transition_probability:.2f}). Blocking entry."
-                    )
-                    regime_blocked = True
+            regime_decision = evaluate_regime_entry(snapshot)
+            if regime_decision.level == "pass":
+                logger.info(regime_decision.reason)
+            else:
+                logger.warning(regime_decision.reason)
+            regime_blocked = not regime_decision.allowed
         except Exception as e:
             logger.warning(f"REGIME BLOCKED: detection failed ({e}). Fail-closed.")
             regime_blocked = True
@@ -1306,13 +1335,14 @@ def main():
             else:
                 opp = find_opportunity(spy_price)
                 if opp:
-                    if thompson_conf < 0.40:
-                        logger.warning(
-                            f"Thompson confidence {thompson_conf:.3f} < 0.40 — skip entry"
-                        )
+                    skip_thompson, thompson_reason = _should_skip_for_thompson(thompson_conf)
+                    if skip_thompson:
+                        logger.warning(thompson_reason)
                     elif args.dry_run:
+                        logger.info(thompson_reason)
                         logger.info(f"(dry run — would place IC: {opp})")
                     else:
+                        logger.info(thompson_reason)
                         order_id = place_ic(client, opp)
                         logger.info(f"Placed IC: order={order_id}")
                 else:
