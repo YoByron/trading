@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
-LESSONS_DIR = PROJECT_ROOT / "data" / "rag_knowledge" / "lessons_learned"
+LESSONS_DIR = PROJECT_ROOT / "rag_knowledge" / "lessons_learned"  # Primary corpus (191+ lessons)
 RESEARCH_STATE_FILE = PROJECT_ROOT / "data" / "research_state.json"
 
 # Public data sources (no auth required)
@@ -231,9 +231,18 @@ def main(dry_run: bool = False):
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
     lesson_file = LESSONS_DIR / f"research_{today}.md"
 
+    # Quality gate: don't save lessons with no real data (dilutes RAG)
+    has_real_data = (
+        "$unknown" not in lesson_content
+        and "unavailable" not in lesson_content
+        and vix_analysis.get("vix") is not None
+    )
+
     if dry_run:
         logger.info(f"[DRY RUN] Would write: {lesson_file.name}")
         logger.info(lesson_content[:200] + "...")
+    elif not has_real_data:
+        logger.warning("Research lesson skipped: no real market data (VIX/SPY unavailable)")
     else:
         LESSONS_DIR.mkdir(parents=True, exist_ok=True)
         lesson_file.write_text(lesson_content)

@@ -430,7 +430,7 @@ def _close_ic(client, legs: list[dict], qty: int):
 # ── Learning: RAG + Trade Journal + Stats ────────────────────────────────────
 
 JOURNAL_FILE = Path(__file__).parent.parent / "data" / "trade_journal.jsonl"
-LESSONS_DIR = Path(__file__).parent.parent / "data" / "rag_knowledge" / "lessons_learned"
+LESSONS_DIR = Path(__file__).parent.parent / "rag_knowledge" / "lessons_learned"  # Primary corpus
 
 
 def _record_lesson(expiry: str, credit: float, pnl: float, reason: str, dte: int, qty: int):

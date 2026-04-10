@@ -177,12 +177,11 @@ if TORCH_AVAILABLE:
         - Output: 4 parameters (delta, dte, entry_hour, exit_pct)
         """
 
-        def __init__(self, input_dim: int = 9, hidden_dim: int = 32):
+        def __init__(self, input_dim: int = 9, hidden_dim: int = 12):
+            # Reduced from 32→12 (1,152→196 params for 66 samples)
             super().__init__()
             self.network = nn.Sequential(
                 nn.Linear(input_dim, hidden_dim),
-                nn.ReLU(),
-                nn.Linear(hidden_dim, hidden_dim),
                 nn.ReLU(),
                 nn.Linear(hidden_dim, 4),  # delta, dte, entry_hour, exit_pct
             )
@@ -255,7 +254,7 @@ class GRPOTradeLearner:
 
     def __init__(
         self,
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.0001,  # Reduced: prevents divergence with MSE loss
         batch_size: int = 16,
         gamma: float = 0.99,
         group_size: int = 8,
@@ -765,18 +764,19 @@ class GRPOTradeLearner:
                 self.optimizer.zero_grad()
                 outputs = self.policy(batch_features)
 
-                # GRPO loss: negative advantage-weighted log probability
-                # Using MSE proxy since we're predicting continuous params
-                target_scaled = advantages.unsqueeze(1).expand_as(outputs)
-                loss = -torch.mean(target_scaled * torch.log_softmax(outputs, dim=1))
+                # GRPO loss: advantage-weighted MSE for continuous parameter prediction.
+                # Old log_softmax loss caused divergence because it treats
+                # continuous outputs as categorical probabilities.
+                target_params = batch_features[:, :4]
+                adv_weight = advantages.unsqueeze(1).expand_as(outputs).detach()
+                mse = (outputs - target_params) ** 2
+                loss = torch.mean(mse * (1.0 - adv_weight.clamp(-1, 1)))
 
-                # Add regularization to keep params in valid ranges
                 reg_loss = 0.01 * torch.mean(outputs**2)
                 total_loss = loss + reg_loss
 
-                # Backward pass
                 total_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 5.0)
                 self.optimizer.step()
 
                 epoch_loss += total_loss.item()
