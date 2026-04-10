@@ -159,6 +159,8 @@ def test_sync_alpaca_status_updates_public_surfaces():
     assert "docs/data/public_status.json" in workflow_text
     assert "wiki/Progress-Dashboard.md" in workflow_text
     assert "models/ml/trade_confidence_model.json" in workflow_text
+    assert "data/post_market_analysis/*.json" in workflow_text
+    assert "data/research_state.json" in workflow_text
     assert "gh repo edit" in workflow_text
 
 

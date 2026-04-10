@@ -101,8 +101,13 @@ jobs:
             data/system_state.json \
             data/runtime/intraday_pnl_history.json \
             data/runtime/intraday_pnl_latest.json \
+            data/runtime/north_star_gate_overrides.json \
+            data/north_star_weekly_history.json \
             data/trades.json \
+            data/research_state.json \
+            data/post_market_analysis/*.json \
             docs/data/public_status.json \
+            models/ml/feedback_model.json \
             models/ml/grpo_trade_metadata.json \
             models/ml/trade_confidence_model.json \
             || true
