@@ -164,6 +164,30 @@ def test_sync_alpaca_status_updates_public_surfaces():
     assert "gh repo edit" in workflow_text
 
 
+def test_state_writer_workflows_share_a_single_queue():
+    """Sync Alpaca and IC Simple must serialize writes to generated state on main."""
+    sync_text = Path(".github/workflows/sync-alpaca-status.yml").read_text()
+    ic_text = Path(".github/workflows/ic-simple.yml").read_text()
+
+    queue_expr = "format('state-writer-{0}-{1}', github.repository, github.ref_name || 'main')"
+    assert queue_expr in sync_text
+    assert queue_expr in ic_text
+    assert "cancel-in-progress: false" in sync_text
+    assert "cancel-in-progress: false" in ic_text
+
+
+def test_state_writer_workflows_fail_closed_on_rebase_or_push_errors():
+    """State-writing workflows must not report green when main-update rebases or pushes fail."""
+    sync_text = Path(".github/workflows/sync-alpaca-status.yml").read_text()
+    ic_text = Path(".github/workflows/ic-simple.yml").read_text()
+
+    assert "set -euo pipefail" in sync_text
+    assert "set -euo pipefail" in ic_text
+    assert "git push origin HEAD:main ||" not in sync_text
+    assert "git push origin HEAD:main ||" not in ic_text
+    assert "git pull --rebase origin main ||" not in ic_text
+
+
 def test_public_surface_guard_workflow_exists():
     """Public-facing copy must have its own lightweight guard workflow."""
     workflow_text = Path(".github/workflows/public-surface-guard.yml").read_text()

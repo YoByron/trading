@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: global-trade-execution
+  group: ${{ format('state-writer-{0}-{1}', github.repository, github.ref_name || 'main') }}
   cancel-in-progress: false
 
 jobs:
@@ -92,6 +92,7 @@ jobs:
       - name: Commit trade data
         if: steps.mode.outputs.mode != 'status' && steps.mode.outputs.dry_run != 'true'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -117,6 +118,6 @@ jobs:
             echo "No trade data changes"
           else
             git commit -m "chore: IC Simple trade data [auto]"
-            git pull --rebase origin main || true
-            git push origin HEAD:main || echo "Push failed"
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
