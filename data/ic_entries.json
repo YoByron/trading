@@ -52,7 +52,7 @@
     }
   },
   "IC_260515": {
-    "credit": 1.3099999999999996,
+    "credit": 1.26,
     "date": "2026-04-10T15:29:45.451850",
     "entry_time": "2026-04-10T15:29:45.451860",
     "order_id": "733c5a22-4c8d-470f-9c1f-0a51ea7fef79",
@@ -70,6 +70,7 @@
       "short_call": 712.0,
       "long_put": 628.0,
       "long_call": 715.0
-    }
+    },
+    "fill_confirmed": true
   }
 }
