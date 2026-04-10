@@ -5,16 +5,16 @@
   "prior_source": "Tastytrade 15-delta IC research: 86% win rate over 15+ years",
   "validation_reset": "2026-04-10: Reset for controlled experiment. Old 66-trade data was from broken system (82 ICs/day, hour-long holds). Fresh start with informative prior.",
   "iron_condor": {
-    "alpha": 86.0,
-    "beta": 14.0,
-    "wins": 0,
-    "losses": 0
+    "alpha": 17.0,
+    "beta": 50.0,
+    "wins": 16,
+    "losses": 49
   },
   "spy_specific": {
-    "alpha": 86.0,
-    "beta": 14.0,
-    "wins": 0,
-    "losses": 0
+    "alpha": 17.0,
+    "beta": 50.0,
+    "wins": 16,
+    "losses": 49
   },
   "regime_adjustments": {
     "calm": 1.1,
@@ -22,52 +22,52 @@
     "volatile": 0.8,
     "spike": 0.5
   },
-  "last_updated": "2026-04-10T14:00:00.000000+00:00",
-  "feedback_source": "validation_reset",
+  "last_updated": "2026-04-10T14:54:30.585094+00:00",
+  "feedback_source": "canonical_trades_json",
   "gate": {
-    "should_trade": true,
-    "total_trades": 0,
-    "win_rate": 0.0,
-    "expectancy_per_trade": 0.0,
-    "min_trades_met": false,
+    "should_trade": false,
+    "total_trades": 66,
+    "win_rate": 24.24,
+    "expectancy_per_trade": -52.95,
+    "min_trades_met": true,
     "min_win_rate_met": false,
-    "block_reason": null
+    "block_reason": "Win rate 24.2% < 50.0%"
   },
   "regime_samplers": {
     "calm": {
-      "alpha": 86.0,
-      "beta": 14.0,
-      "wins": 0,
+      "alpha": 2.0,
+      "beta": 1.0,
+      "wins": 1,
       "losses": 0,
-      "total": 0,
-      "win_rate_pct": 0,
-      "should_trade": true
+      "total": 1,
+      "win_rate_pct": 100.0,
+      "should_trade": false
     },
     "normal": {
-      "alpha": 86.0,
-      "beta": 14.0,
-      "wins": 0,
-      "losses": 0,
-      "total": 0,
-      "win_rate_pct": 0,
-      "should_trade": true
+      "alpha": 2.0,
+      "beta": 3.0,
+      "wins": 1,
+      "losses": 2,
+      "total": 3,
+      "win_rate_pct": 33.3,
+      "should_trade": false
     },
     "elevated": {
-      "alpha": 86.0,
-      "beta": 14.0,
-      "wins": 0,
-      "losses": 0,
-      "total": 0,
-      "win_rate_pct": 0,
-      "should_trade": true
+      "alpha": 5.0,
+      "beta": 11.0,
+      "wins": 4,
+      "losses": 10,
+      "total": 14,
+      "win_rate_pct": 28.6,
+      "should_trade": false
     },
     "volatile": {
-      "alpha": 86.0,
-      "beta": 14.0,
-      "wins": 0,
-      "losses": 0,
-      "total": 0,
-      "win_rate_pct": 0,
+      "alpha": 11.0,
+      "beta": 38.0,
+      "wins": 10,
+      "losses": 37,
+      "total": 47,
+      "win_rate_pct": 21.3,
       "should_trade": false
     },
     "spike": {
