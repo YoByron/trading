@@ -94,6 +94,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          npx --yes prettier@3.6.2 --write \
+            data/ic_entries.json \
+            data/ic_stats.json \
+            data/system_state.json \
+            data/trades.json \
+            data/verification_reports.json \
+            data/runtime/intraday_pnl_latest.json \
+            data/runtime/intraday_pnl_history.json \
+            models/ml/grpo_trade_metadata.json \
+            || true
+
           git add -f data/ic_entries.json data/ic_stats.json data/trade_journal.jsonl 2>/dev/null || true
           git add -f data/system_state.json data/trades.json data/verification_reports.json 2>/dev/null || true
           git add -f data/runtime/intraday_pnl_latest.json data/runtime/intraday_pnl_history.json 2>/dev/null || true

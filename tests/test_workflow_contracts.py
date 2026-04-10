@@ -173,10 +173,12 @@ def test_ic_simple_workflow_commits_canonical_state_outputs():
     """IC Simple must persist the canonical ledgers it refreshes after each run."""
     workflow_text = Path(".github/workflows/ic-simple.yml").read_text()
 
+    assert "npx --yes prettier@3.6.2 --write" in workflow_text
     assert "data/system_state.json" in workflow_text
     assert "data/trades.json" in workflow_text
     assert "data/runtime/intraday_pnl_latest.json" in workflow_text
     assert "data/runtime/intraday_pnl_history.json" in workflow_text
+    assert "models/ml/grpo_trade_metadata.json" in workflow_text
 
 
 def test_auto_format_uses_repo_token_not_pat_checkout():
@@ -200,7 +202,7 @@ def test_auto_format_opens_pr_instead_of_pushing_main():
 
     assert "gh pr create" in workflow_text
     assert "git push origin main" not in workflow_text
-    assert 'pull-requests: write' in workflow_text
+    assert "pull-requests: write" in workflow_text
 
 
 def test_self_healing_uses_pr_safe_mutation_flow():
