@@ -212,7 +212,8 @@ class RegimeDetector:
                 confidence = 0.6 + skew_percentile / 200
             else:
                 regime_id = 0  # calm
-                confidence = 0.8 - (vix / 30)
+                # Confidence scales from 0.9 (VIX=10) to 0.5 (VIX=20)
+                confidence = max(0.5, 0.9 - (vix / 50))
 
             label = REGIME_LABELS.get(regime_id, "unknown")
             allocation = REGIME_ALLOCATIONS.get(label, {"equities": 0.5, "treasuries": 0.5})
