@@ -315,8 +315,13 @@ def main(dry_run: bool = False):
         logger.info(f"Updated {MODEL_FILE}")
 
         # Enforce ML gate via trading halt file (hard gate)
+        # BYPASS during validation phase: the model was reset for the controlled
+        # experiment (Apr 2026). The old 66-trade data produces should_trade=false
+        # but we need to allow paper validation entries to prove edge.
+        # See .claude/rules/controlled-experiment.md
         halt_file = PROJECT_ROOT / "data" / "TRADING_HALTED"
-        if not gate["should_trade"]:
+        validation_reset = model.get("validation_reset") or model.get("feedback_source") == "validation_reset"
+        if not gate["should_trade"] and not validation_reset:
             halt_file.write_text(
                 f"ML GATE BLOCKED: {gate.get('block_reason', 'unknown')}\n"
                 f"Updated: {datetime.now(timezone.utc).isoformat()}\n"
@@ -324,6 +329,8 @@ def main(dry_run: bool = False):
                 f"Unblock: improve win rate above {MIN_WIN_RATE_TO_TRADE}% over {MIN_TRADES_FOR_GATE}+ trades"
             )
             logger.warning(f"  HALT FILE WRITTEN: {halt_file}")
+        elif not gate["should_trade"] and validation_reset:
+            logger.info("  ML gate would halt, but validation_reset active — allowing paper validation entries")
         elif halt_file.exists():
             # Only remove halt if it was set by ML gate (not manual)
             content = halt_file.read_text()
