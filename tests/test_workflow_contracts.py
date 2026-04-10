@@ -153,10 +153,12 @@ def test_sync_alpaca_status_updates_public_surfaces():
     """Alpaca sync must regenerate the public bundle and wiki surfaces."""
     workflow_text = Path(".github/workflows/sync-alpaca-status.yml").read_text()
 
+    assert "npx --yes prettier@3.6.2 --write" in workflow_text
     assert "scripts/daily_scorecard.py --repo-root ." in workflow_text
     assert "scripts/build_public_status.py --repo-root ." in workflow_text
     assert "docs/data/public_status.json" in workflow_text
     assert "wiki/Progress-Dashboard.md" in workflow_text
+    assert "models/ml/trade_confidence_model.json" in workflow_text
     assert "gh repo edit" in workflow_text
 
 

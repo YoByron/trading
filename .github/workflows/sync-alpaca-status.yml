@@ -104,6 +104,7 @@ jobs:
             data/trades.json \
             docs/data/public_status.json \
             models/ml/grpo_trade_metadata.json \
+            models/ml/trade_confidence_model.json \
             || true
 
           git add data/system_state.json
