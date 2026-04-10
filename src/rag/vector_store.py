@@ -14,7 +14,8 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-LESSONS_DIR = Path(__file__).parent.parent.parent / "data" / "rag_knowledge" / "lessons_learned"
+# Primary lessons directory (191 lessons). data/rag_knowledge/ only has 15.
+LESSONS_DIR = Path(__file__).parent.parent.parent / "rag_knowledge" / "lessons_learned"
 INDEX_DIR = Path(__file__).parent.parent.parent / "data" / "rag_index"
 JOURNAL_FILE = Path(__file__).parent.parent.parent / "data" / "trade_journal.jsonl"
 

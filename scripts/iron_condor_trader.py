@@ -758,8 +758,6 @@ class IronCondorStrategy:
             if any(fixed_id in lesson.id for fixed_id in ["LL-279", "LL-268", "LL-277"]):
                 logger.info(f"Skipping known-fixed lesson: {lesson.id}")
                 continue
-                logger.info(f"Skipping research lesson: {lesson.id} - {lesson.title}")
-                continue
             if lesson.severity == "CRITICAL" and "iron condor" in lesson.title.lower():
                 logger.error(f"BLOCKED by RAG: {lesson.title} (severity: {lesson.severity})")
                 logger.error(f"Prevention: {lesson.prevention}")
@@ -1295,7 +1293,6 @@ def main():
 
         # REGIME GATE: Fail-closed. Unknown regime = no entry.
         try:
-            from src.safety.regime_entry_gate import evaluate_regime_entry
             from src.utils.regime_detector import RegimeDetector
 
             detector = RegimeDetector()
@@ -1304,20 +1301,39 @@ def main():
                 f"Regime: {snapshot.label} (id={snapshot.regime_id}, "
                 f"confidence={snapshot.confidence:.2f}, VIX={snapshot.vix_level:.1f})"
             )
-            regime_decision = evaluate_regime_entry(snapshot)
-            if regime_decision.level == "pass":
-                logger.info(regime_decision.reason)
-            else:
-                logger.warning(regime_decision.reason)
-            if not regime_decision.allowed:
+            if snapshot.regime_id < 0 or snapshot.confidence < 0.3:
+                msg = (
+                    f"REGIME BLOCKED: unknown/low-confidence "
+                    f"(id={snapshot.regime_id}, conf={snapshot.confidence:.2f}). Fail-closed."
+                )
+                logger.warning(msg)
                 telemetry.update_ticker_decision(
-                    ticker,
-                    gate=2,
-                    status="REJECT",
-                    rejection_reason=regime_decision.reason,
+                    ticker, gate=2, status="REJECT",
+                    rejection_reason=msg,
+                    indicators={"regime": "unknown", "regime_id": snapshot.regime_id},
+                )
+                return {"success": False, "reason": msg}
+            if snapshot.regime_id >= 2:  # volatile or spike
+                msg = (
+                    f"REGIME BLOCKED: {snapshot.label} (id={snapshot.regime_id}). "
+                    f"Iron condors require calm/low-trend markets."
+                )
+                logger.warning(msg)
+                telemetry.update_ticker_decision(
+                    ticker, gate=2, status="REJECT",
+                    rejection_reason=msg,
                     indicators={"regime": snapshot.label, "regime_id": snapshot.regime_id},
                 )
-                return {"success": False, "reason": regime_decision.reason}
+                return {"success": False, "reason": msg}
+            if hasattr(snapshot, 'transition_prediction') and snapshot.transition_prediction:
+                tp = snapshot.transition_prediction
+                if tp.transition_detected and tp.predicted_regime in ("volatile", "spike"):
+                    msg = (
+                        f"REGIME TRANSITION: {tp.predicted_regime} predicted "
+                        f"(prob={tp.transition_probability:.2f}). Blocking entry."
+                    )
+                    logger.warning(msg)
+                    return {"success": False, "reason": msg}
         except Exception as e:
             msg = f"REGIME BLOCKED: detection failed ({e}). Fail-closed."
             logger.warning(msg)
