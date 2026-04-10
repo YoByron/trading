@@ -43,6 +43,11 @@ SYSTEM_STATE_FILE = PROJECT_ROOT / "data" / "system_state.json"
 MIN_TRADES_FOR_GATE = 30
 MIN_WIN_RATE_TO_TRADE = 50.0  # %
 DRIFT_ALERT_THRESHOLD = 20.0  # % divergence between model and realized
+VALIDATION_PHASE_START_DATE = "2026-04-10"
+VALIDATION_RESET_NOTE = (
+    "2026-04-10: Reset for controlled paper validation. Legacy 66-trade data "
+    "came from the broken pre-fix system and must not overwrite validation priors."
+)
 
 
 def load_trades() -> dict:
@@ -64,6 +69,71 @@ def load_model() -> dict:
         }
     result: dict = json.loads(MODEL_FILE.read_text())
     return result
+
+
+def is_validation_reset_model(model: dict) -> bool:
+    """Detect validation-reset mode across old and new model file shapes."""
+    return bool(model.get("validation_reset")) or (
+        str(model.get("feedback_source") or "").strip().lower() == "validation_reset"
+    )
+
+
+def _is_validation_phase_trade(trade: dict) -> bool:
+    if trade.get("validation_phase"):
+        return True
+    entry_date = (
+        trade.get("entry_date")
+        or trade.get("opened_at")
+        or trade.get("entry_time")
+        or trade.get("timestamp")
+        or ""
+    )
+    return str(entry_date)[:10] >= VALIDATION_PHASE_START_DATE
+
+
+def validation_phase_trades(trades_data: dict) -> list[dict]:
+    """Return only validation-phase trades; excludes legacy failure cohort."""
+    trades = trades_data.get("trades", [])
+    return [
+        trade for trade in trades if isinstance(trade, dict) and _is_validation_phase_trade(trade)
+    ]
+
+
+def stats_from_trades(trades: list[dict]) -> dict:
+    """Build the stats shape expected by the Thompson updater from trade rows."""
+    wins: list[float] = []
+    losses: list[float] = []
+    for trade in trades:
+        outcome = str(trade.get("outcome") or "").strip().lower()
+        pnl = trade.get("realized_pnl", trade.get("pnl", 0)) or 0
+        try:
+            pnl_float = float(pnl)
+        except (TypeError, ValueError):
+            pnl_float = 0.0
+
+        if outcome not in {"win", "loss"}:
+            if pnl_float > 0:
+                outcome = "win"
+            elif pnl_float < 0:
+                outcome = "loss"
+            else:
+                continue
+
+        if outcome == "win":
+            wins.append(pnl_float)
+        elif outcome == "loss":
+            losses.append(pnl_float)
+
+    closed = len(wins) + len(losses)
+    win_rate = (len(wins) / closed * 100) if closed else 0.0
+    return {
+        "wins": len(wins),
+        "losses": len(losses),
+        "closed_trades": closed,
+        "win_rate_pct": round(win_rate, 2),
+        "avg_win": sum(wins) / len(wins) if wins else 0,
+        "avg_loss": abs(sum(losses) / len(losses)) if losses else 0,
+    }
 
 
 def update_thompson_sampler(trades_data: dict, model: dict) -> dict:
@@ -291,6 +361,8 @@ def main(dry_run: bool = False):
     trades_data = load_trades()
     model = load_model()
     stats = trades_data.get("stats", {})
+    validation_reset = is_validation_reset_model(model)
+    validation_stats: dict | None = None
 
     if not stats.get("closed_trades"):
         logger.warning("No closed trades found — nothing to update")
@@ -299,22 +371,27 @@ def main(dry_run: bool = False):
     # 2. Update Thompson Sampler with real data
     # SKIP during validation phase: the old 66-trade data would overwrite
     # the Beta(86,14) prior reset. Only update from validation-phase trades.
-    if model.get("validation_reset"):
-        # Count only validation-phase trades (after Apr 10, 2026)
-        validation_trades = [
-            t for t in trades_data.get("trades", [])
-            if t.get("validation_phase") or t.get("entry_date", "") >= "2026-04-10"
-        ]
-        if validation_trades:
-            logger.info(f"Updating Thompson from {len(validation_trades)} validation trades only")
-            model = update_thompson_sampler({"trades": validation_trades}, model)
+    if validation_reset:
+        validation_trades = validation_phase_trades(trades_data)
+        validation_stats = stats_from_trades(validation_trades)
+        closed_validation_trades = validation_stats["closed_trades"]
+        if closed_validation_trades:
+            logger.info(f"Updating Thompson from {closed_validation_trades} validation trades only")
+            model = update_thompson_sampler(
+                {"stats": validation_stats, "trades": validation_trades}, model
+            )
         else:
             logger.info("Thompson update skipped: no validation-phase closed trades yet")
     else:
         model = update_thompson_sampler(trades_data, model)
 
     # 3. Check trading gate
-    gate = check_trading_gate(stats)
+    gate_stats = validation_stats if validation_reset and validation_stats is not None else stats
+    gate = check_trading_gate(gate_stats)
+    if validation_reset:
+        gate["validation_reset_active"] = True
+        gate["allow_validation_entries"] = True
+        gate["block_live_new_positions"] = True
 
     # 4. Generate post-mortem lessons
     lessons = generate_loss_postmortems(trades_data)
@@ -323,7 +400,15 @@ def main(dry_run: bool = False):
     # 5. Write everything
     if not dry_run:
         model["last_updated"] = datetime.now(timezone.utc).isoformat()
-        model["feedback_source"] = "canonical_trades_json"
+        if validation_reset:
+            model.setdefault("validation_reset", VALIDATION_RESET_NOTE)
+            model["feedback_source"] = (
+                "validation_trades"
+                if gate_stats.get("closed_trades", 0) > 0
+                else "validation_reset"
+            )
+        else:
+            model["feedback_source"] = "canonical_trades_json"
         model["gate"] = gate
         MODEL_FILE.write_text(json.dumps(model, indent=2))
         logger.info(f"Updated {MODEL_FILE}")
@@ -334,7 +419,6 @@ def main(dry_run: bool = False):
         # but we need to allow paper validation entries to prove edge.
         # See .claude/rules/controlled-experiment.md
         halt_file = PROJECT_ROOT / "data" / "TRADING_HALTED"
-        validation_reset = model.get("validation_reset") or model.get("feedback_source") == "validation_reset"
         if not gate["should_trade"] and not validation_reset:
             halt_file.write_text(
                 f"ML GATE BLOCKED: {gate.get('block_reason', 'unknown')}\n"
@@ -344,7 +428,9 @@ def main(dry_run: bool = False):
             )
             logger.warning(f"  HALT FILE WRITTEN: {halt_file}")
         elif not gate["should_trade"] and validation_reset:
-            logger.info("  ML gate would halt, but validation_reset active — allowing paper validation entries")
+            logger.info(
+                "  ML gate would halt, but validation_reset active — allowing paper validation entries"
+            )
         elif halt_file.exists():
             # Only remove halt if it was set by ML gate (not manual)
             content = halt_file.read_text()
@@ -361,7 +447,10 @@ def main(dry_run: bool = False):
     logger.info(
         f"  Thompson Sampler: alpha={model['iron_condor']['alpha']}, beta={model['iron_condor']['beta']}"
     )
-    logger.info(f"  Win rate: {stats.get('win_rate_pct', 0):.1f}%")
+    if validation_reset:
+        logger.info(f"  Legacy win rate: {stats.get('win_rate_pct', 0):.1f}%")
+        logger.info(f"  Gate cohort: validation_phase ({gate.get('total_trades', 0)} trades)")
+    logger.info(f"  Gate win rate: {gate.get('win_rate', 0):.1f}%")
     logger.info(f"  Trading gate: {'OPEN' if gate['should_trade'] else 'BLOCKED'}")
     if not gate["should_trade"]:
         logger.info(f"  Block reason: {gate.get('block_reason', 'unknown')}")

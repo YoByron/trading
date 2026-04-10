@@ -15,7 +15,10 @@ from __future__ import annotations
 from scripts.update_ml_from_trades import (
     check_trading_gate,
     generate_loss_postmortems,
+    is_validation_reset_model,
+    stats_from_trades,
     update_thompson_sampler,
+    validation_phase_trades,
 )
 
 # --- Thompson Sampler Tests ---
@@ -54,6 +57,51 @@ def test_thompson_update_syncs_spy_specific():
     updated = update_thompson_sampler(trades, model)
     assert updated["iron_condor"]["alpha"] == updated["spy_specific"]["alpha"]
     assert updated["iron_condor"]["beta"] == updated["spy_specific"]["beta"]
+
+
+def test_validation_reset_detects_feedback_source_shape():
+    """Validation reset must survive model files that only kept feedback_source."""
+    assert is_validation_reset_model({"feedback_source": "validation_reset"})
+    assert is_validation_reset_model({"validation_reset": "reset active"})
+    assert not is_validation_reset_model({"feedback_source": "canonical_trades_json"})
+
+
+def test_validation_phase_stats_exclude_legacy_failure_cohort():
+    """Validation reset should not relearn from the broken pre-fix 66-trade cohort."""
+    trades = {
+        "trades": [
+            {
+                "id": "legacy-loss",
+                "entry_date": "2026-04-02",
+                "outcome": "loss",
+                "realized_pnl": -120,
+            },
+            {
+                "id": "validation-win",
+                "entry_date": "2026-04-10",
+                "outcome": "win",
+                "realized_pnl": 41,
+            },
+            {
+                "id": "validation-loss",
+                "validation_phase": True,
+                "outcome": "loss",
+                "realized_pnl": -20,
+            },
+        ]
+    }
+
+    validation_trades = validation_phase_trades(trades)
+    stats = stats_from_trades(validation_trades)
+
+    assert [trade["id"] for trade in validation_trades] == [
+        "validation-win",
+        "validation-loss",
+    ]
+    assert stats["closed_trades"] == 2
+    assert stats["wins"] == 1
+    assert stats["losses"] == 1
+    assert stats["win_rate_pct"] == 50.0
 
 
 # --- Trading Gate Tests ---

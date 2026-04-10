@@ -1,4 +1,9 @@
 {
+  "model_type": "thompson_sampling",
+  "description": "Trade entry confidence using Thompson Sampling with controlled validation reset",
+  "created": "2026-01-26",
+  "prior_source": "Tastytrade 15-delta IC research reset for controlled paper validation",
+  "validation_reset": "2026-04-10: Reset for controlled paper validation. Legacy 66-trade data came from the broken pre-fix system and must not overwrite validation priors.",
   "iron_condor": {
     "alpha": 86.0,
     "beta": 14.0,
@@ -19,13 +24,16 @@
   },
   "last_updated": "2026-04-10T13:42:04.456563",
   "gate": {
-    "should_trade": true,
+    "should_trade": false,
     "total_trades": 0,
     "win_rate": 0.0,
     "expectancy_per_trade": 0.0,
     "min_trades_met": false,
     "min_win_rate_met": false,
-    "block_reason": null
+    "block_reason": "Validation reset active: live/scaling blocked until validation-phase trades prove edge.",
+    "validation_reset_active": true,
+    "allow_validation_entries": true,
+    "block_live_new_positions": true
   },
   "feedback_source": "validation_reset"
 }
