@@ -296,6 +296,18 @@ def _select_from_live_chain(
     long_put_strike = _snap_to_chain(short_put - wing_width, all_puts, "below")
     long_call_strike = _snap_to_chain(short_call + wing_width, all_calls, "above")
 
+    # Validate wing widths — reject if snap produced a wing too narrow
+    MIN_WING_PCT = 0.7  # Allow up to 30% narrower than target (e.g., $7 for $10 target)
+    put_wing = short_put - long_put_strike
+    call_wing = long_call_strike - short_call
+    if put_wing < wing_width * MIN_WING_PCT or call_wing < wing_width * MIN_WING_PCT:
+        logger.warning(
+            f"Wing too narrow after chain snap: put_wing=${put_wing:.0f} call_wing=${call_wing:.0f} "
+            f"(target=${wing_width:.0f}, min=${wing_width * MIN_WING_PCT:.0f}). "
+            f"Chain may not have strikes far enough OTM."
+        )
+        return _heuristic_fallback(price, wing_width, expiry_date)
+
     long_put_opt = next((o for o in all_puts if o["strike"] == long_put_strike), None)
     long_call_opt = next((o for o in all_calls if o["strike"] == long_call_strike), None)
 
