@@ -22,7 +22,7 @@
     "volatile": 0.8,
     "spike": 0.5
   },
-  "last_updated": "2026-04-10T16:04:01.692434+00:00",
+  "last_updated": "2026-04-10T17:37:50.882230+00:00",
   "feedback_source": "canonical_trades_json",
   "gate": {
     "should_trade": false,
