@@ -1313,12 +1313,50 @@ def main():
             logger.warning(f"REGIME BLOCKED: detection failed ({e}). Fail-closed.")
             regime_blocked = True
 
+        # SAME-EXPIRY RE-ENTRY BLOCK: no re-entry on an expiry that already lost
+        reentry_blocked = False
+        try:
+            trades_file = Path(__file__).parent.parent / "data" / "trades.json"
+            trades_data = json.loads(trades_file.read_text()) if trades_file.exists() else {}
+            closed = trades_data.get("trades", []) if isinstance(trades_data, dict) else []
+            losing_expiries = set()
+            for t in closed:
+                if t.get("realized_pnl", 0) < 0:
+                    sig = t.get("signature", "")
+                    # Extract expiry from signature like "SPY_2026-05-08_P628-638_C712-715"
+                    parts = sig.split("_")
+                    if len(parts) >= 2:
+                        losing_expiries.add(parts[1] if parts[0] == "SPY" else "")
+            if losing_expiries:
+                logger.info(f"Losing expiries (re-entry blocked): {losing_expiries}")
+        except Exception as e:
+            logger.debug(f"Re-entry check skipped: {e}")
+
+        # BROKER SYNC FRESHNESS GATE: no entry if sync is stale (>2h)
+        sync_blocked = False
+        try:
+            ss = json.loads((Path(__file__).parent.parent / "data" / "system_state.json").read_text())
+            last_sync = ss.get("sync_health", {}).get("last_successful_sync", "")
+            if last_sync:
+                sync_dt = datetime.fromisoformat(last_sync.replace("+00:00", ""))
+                sync_age_hours = (datetime.utcnow() - sync_dt).total_seconds() / 3600
+                if sync_age_hours > 2:
+                    logger.warning(
+                        f"SYNC STALE: last sync {sync_age_hours:.1f}h ago. "
+                        f"No entry without fresh broker data."
+                    )
+                    sync_blocked = True
+                else:
+                    logger.info(f"Broker sync fresh: {sync_age_hours:.1f}h ago")
+        except Exception as e:
+            logger.debug(f"Sync freshness check skipped: {e}")
+
         # Cancel stale unfilled orders before checking entry
         _cancel_stale_orders(client)
 
         # Position limit
         ic_count = _count_open_ics(client)
-        if fomc_blocked or thumbgate_blocked or iv_rv_blocked or regime_blocked:
+        if fomc_blocked or thumbgate_blocked or iv_rv_blocked or regime_blocked or sync_blocked:
             pass  # Skip entry
         elif ic_count >= MAX_IC:
             logger.info(f"Position limit: {ic_count}/{MAX_IC} ICs. No new entry.")
@@ -1340,6 +1378,12 @@ def main():
                 logger.info(f"Position limit: {ic_count}/{MAX_IC} ICs. No new entry.")
             else:
                 opp = find_opportunity(spy_price)
+                if opp and reentry_blocked and opp.get("expiry", "") in losing_expiries:
+                    logger.warning(
+                        f"RE-ENTRY BLOCKED: expiry {opp['expiry']} already had a losing trade. "
+                        f"No same-expiry re-entry after loss."
+                    )
+                    opp = None
                 if opp:
                     should_skip, thompson_reason = _should_skip_for_thompson(thompson_conf)
                     if should_skip:
