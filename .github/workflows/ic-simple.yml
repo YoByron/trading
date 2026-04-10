@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[dev]" 2>/dev/null || pip install alpaca-py python-dotenv scipy numpy
-          pip install sentence-transformers faiss-cpu 2>/dev/null || echo "Semantic RAG unavailable"
+          pip install sentence-transformers faiss-cpu lancedb 2>/dev/null || echo "Semantic RAG unavailable"
           pip install torch --index-url https://download.pytorch.org/whl/cpu 2>/dev/null || echo "PyTorch unavailable"
 
       - name: Determine mode

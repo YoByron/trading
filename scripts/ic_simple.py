@@ -498,6 +498,12 @@ def _record_lesson(expiry: str, credit: float, pnl: float, reason: str, dte: int
         LESSONS_DIR.mkdir(parents=True, exist_ok=True)
         (LESSONS_DIR / f"{lesson_id}.md").write_text(lesson)
         logger.info(f"RAG lesson saved: {lesson_id}")
+        # Refresh singleton so next query in this session sees the new lesson
+        try:
+            from src.rag.lessons_search import get_lessons_search
+            get_lessons_search(refresh=True)
+        except Exception:
+            pass
     except Exception as e:
         logger.warning(f"Failed to write RAG lesson: {e}")
 

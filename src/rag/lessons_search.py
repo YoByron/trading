@@ -260,10 +260,15 @@ class LessonsSearch:
 _search_instance: Optional[LessonsSearch] = None
 
 
-def get_lessons_search() -> LessonsSearch:
-    """Get or create singleton LessonsSearch instance."""
+def get_lessons_search(refresh: bool = False) -> LessonsSearch:
+    """Get or create singleton LessonsSearch instance.
+
+    Args:
+        refresh: If True, recreate the instance to pick up new lessons
+                 written to disk since last load.
+    """
     global _search_instance
-    if _search_instance is None:
+    if _search_instance is None or refresh:
         _search_instance = LessonsSearch()
     return _search_instance
 
