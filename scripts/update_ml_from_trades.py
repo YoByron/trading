@@ -297,7 +297,21 @@ def main(dry_run: bool = False):
         return
 
     # 2. Update Thompson Sampler with real data
-    model = update_thompson_sampler(trades_data, model)
+    # SKIP during validation phase: the old 66-trade data would overwrite
+    # the Beta(86,14) prior reset. Only update from validation-phase trades.
+    if model.get("validation_reset"):
+        # Count only validation-phase trades (after Apr 10, 2026)
+        validation_trades = [
+            t for t in trades_data.get("trades", [])
+            if t.get("validation_phase") or t.get("entry_date", "") >= "2026-04-10"
+        ]
+        if validation_trades:
+            logger.info(f"Updating Thompson from {len(validation_trades)} validation trades only")
+            model = update_thompson_sampler({"trades": validation_trades}, model)
+        else:
+            logger.info("Thompson update skipped: no validation-phase closed trades yet")
+    else:
+        model = update_thompson_sampler(trades_data, model)
 
     # 3. Check trading gate
     gate = check_trading_gate(stats)
