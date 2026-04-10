@@ -22,18 +22,65 @@
     "volatile": 0.8,
     "spike": 0.5
   },
-  "last_updated": "2026-04-10T13:42:04.456563",
+  "last_updated": "2026-04-10T18:11:52.284043+00:00",
   "gate": {
     "should_trade": false,
     "total_trades": 0,
     "win_rate": 0.0,
-    "expectancy_per_trade": 0.0,
+    "expectancy_per_trade": 0,
     "min_trades_met": false,
     "min_win_rate_met": false,
-    "block_reason": "Validation reset active: live/scaling blocked until validation-phase trades prove edge.",
+    "block_reason": "Only 0/30 trades; Win rate 0.0% < 50.0%",
     "validation_reset_active": true,
     "allow_validation_entries": true,
     "block_live_new_positions": true
   },
-  "feedback_source": "validation_reset"
+  "feedback_source": "validation_reset",
+  "regime_samplers": {
+    "calm": {
+      "alpha": 2.0,
+      "beta": 1.0,
+      "wins": 1,
+      "losses": 0,
+      "total": 1,
+      "win_rate_pct": 100.0,
+      "should_trade": false
+    },
+    "normal": {
+      "alpha": 2.0,
+      "beta": 3.0,
+      "wins": 1,
+      "losses": 2,
+      "total": 3,
+      "win_rate_pct": 33.3,
+      "should_trade": false
+    },
+    "elevated": {
+      "alpha": 5.0,
+      "beta": 11.0,
+      "wins": 4,
+      "losses": 10,
+      "total": 14,
+      "win_rate_pct": 28.6,
+      "should_trade": false
+    },
+    "volatile": {
+      "alpha": 11.0,
+      "beta": 38.0,
+      "wins": 10,
+      "losses": 37,
+      "total": 47,
+      "win_rate_pct": 21.3,
+      "should_trade": false
+    },
+    "spike": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "wins": 0,
+      "losses": 0,
+      "total": 0,
+      "win_rate_pct": 0,
+      "should_trade": false
+    }
+  }
 }
