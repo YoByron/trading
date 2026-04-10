@@ -275,12 +275,27 @@ def _select_from_live_chain(
 
     short_put = best_put["strike"]
     short_call = best_call["strike"]
-    long_put_strike = short_put - wing_width
-    long_call_strike = short_call + wing_width
-
-    # Find long leg pricing from the full options list (these are further OTM, may not have delta in range)
+    # Compute target wing strikes, then snap to nearest valid strike in the chain.
+    # SPY has $1 strikes near the money but $5 increments further OTM.
+    # Without snapping, 712 + 10 = 722 which doesn't exist (should be 720 or 725).
     all_puts = [o for o in options if o["type"] == "put"]
     all_calls = [o for o in options if o["type"] == "call"]
+
+    def _snap_to_chain(target: float, chain: list[dict], direction: str) -> float:
+        """Find the nearest valid strike to target from the option chain."""
+        strikes = sorted(set(o["strike"] for o in chain))
+        if not strikes:
+            return target
+        if direction == "below":  # long put: want strike <= target
+            valid = [s for s in strikes if s <= target]
+            return max(valid) if valid else min(strikes)
+        else:  # long call: want strike >= target
+            valid = [s for s in strikes if s >= target]
+            return min(valid) if valid else max(strikes)
+
+    long_put_strike = _snap_to_chain(short_put - wing_width, all_puts, "below")
+    long_call_strike = _snap_to_chain(short_call + wing_width, all_calls, "above")
+
     long_put_opt = next((o for o in all_puts if o["strike"] == long_put_strike), None)
     long_call_opt = next((o for o in all_calls if o["strike"] == long_call_strike), None)
 
