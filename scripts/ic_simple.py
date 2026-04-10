@@ -176,17 +176,32 @@ def place_ic(client, opp: dict) -> str | None:
 
         logger.info(f"MLEG limit order: credit >= ${current_credit:.2f} (walk ${walk_total:.2f})")
 
-        order = safe_submit_order(
-            client,
-            LimitOrderRequest(
-                qty=1,
-                order_class=OrderClass.MLEG,
-                legs=legs,
-                time_in_force=TimeInForce.DAY,
-                limit_price=round(-current_credit, 2),
-            ),
-            strategy="iron_condor",
-        )
+        try:
+            order = safe_submit_order(
+                client,
+                LimitOrderRequest(
+                    qty=1,
+                    order_class=OrderClass.MLEG,
+                    legs=legs,
+                    time_in_force=TimeInForce.DAY,
+                    limit_price=round(-current_credit, 2),
+                ),
+                strategy="iron_condor",
+            )
+        except Exception as submit_err:
+            # Log full error for debugging 422s from Alpaca
+            resp_body = getattr(getattr(submit_err, "response", None), "text", "")
+            if not resp_body:
+                cause = getattr(submit_err, "__cause__", None)
+                resp_body = getattr(getattr(cause, "response", None), "text", "")
+            leg_symbols = [str(leg.symbol) for leg in legs]
+            logger.error(
+                f"Order submission failed: {submit_err}\n"
+                f"  Legs: {leg_symbols}\n"
+                f"  Limit: {round(-current_credit, 2)}\n"
+                f"  Response: {resp_body}"
+            )
+            return None
         order_id = str(order.id)
         logger.info(f"Order {order_id}: {order.status}")
 
