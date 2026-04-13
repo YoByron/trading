@@ -1,5 +1,5 @@
 {
-  "generated_at_et": "2026-04-13T17:40:00.885577+00:00",
+  "generated_at_et": "2026-04-13T18:09:22.909355+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
@@ -26,7 +26,7 @@
     "profit_factor": 0.25,
     "total_realized_pnl": -3402.0,
     "expectancy_per_trade": -51.5455,
-    "last_updated": "2026-04-13T17:40:03.883444+00:00"
+    "last_updated": "2026-04-13T18:09:25.734105+00:00"
   },
   "gate": {
     "mode": "validation_reset",
