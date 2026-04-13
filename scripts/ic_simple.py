@@ -1454,6 +1454,20 @@ def main():
             spy_price = get_spy_price(client)
             logger.info(f"SPY: ${spy_price:.2f}")
 
+            # Pre-trade research via Perplexity (advisory, non-blocking)
+            try:
+                from src.research.pre_trade_research import get_pre_trade_research
+
+                vix_val = current_vix if "current_vix" in dir() and current_vix else 0
+                regime_label = snapshot.label if "snapshot" in dir() else "unknown"
+                research = get_pre_trade_research(
+                    spy_price=spy_price, vix=vix_val, regime=regime_label
+                )
+                if research.get("summary"):
+                    logger.info(f"Perplexity: {research['summary'][:120]}")
+            except Exception as e:
+                logger.debug(f"Pre-trade research skipped: {e}")
+
             # Thompson Sampling confidence check
             thompson_conf = _get_thompson_confidence()
             logger.info(f"Thompson confidence: {thompson_conf:.3f}")
