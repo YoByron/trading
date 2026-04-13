@@ -47,12 +47,13 @@ def _short_status(block_new_positions: bool | None, mode: str | None) -> str:
     The contradiction is expected — lifetime ledger is negative from old trades
     while validation is proving new edge.
     """
-    if mode and "validation" in str(mode).lower():
-        return str(mode).lower()
+    normalized_mode = str(mode).lower() if mode else None
+    if normalized_mode == "validation_reset":
+        return normalized_mode
     if block_new_positions:
         return "halted"
-    if mode:
-        return str(mode).lower()
+    if normalized_mode:
+        return normalized_mode
     return "unknown"
 
 
