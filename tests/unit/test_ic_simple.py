@@ -600,11 +600,25 @@ class TestE2EPipeline:
             vix_level = 18.0
             transition_prediction = None
 
+        # Patch sync freshness and re-entry gates (added Apr 2026)
+        import json
+        from datetime import datetime, timezone
+
+        fresh_sync = {"sync_health": {"last_successful_sync": datetime.now(timezone.utc).isoformat()}}
+        original_read = Path.read_text
+
+        def _patched_read(self):
+            if "system_state" in str(self):
+                return json.dumps(fresh_sync)
+            if "trades.json" in str(self):
+                return json.dumps({"trades": []})
+            return original_read(self)
+
         sys.argv = ["ic_simple.py", "--mode", "both"]
         with patch(
             "src.utils.regime_detector.RegimeDetector.detect_live_regime_with_prediction",
             return_value=_Snapshot(),
-        ):
+        ), patch.object(Path, "read_text", _patched_read):
             ic.main()
 
         # Verify order was submitted
