@@ -7,7 +7,9 @@ name: Sync Alpaca Status
 on:
   schedule:
     - cron: "*/15 15-19 * * 1-5" # Every 15 min, 10 AM - 3 PM ET (peak hours)
-    - cron: "30,0 14,20 * * 1-5" # Every 30 min at market open (9:30 AM) and close (4 PM)
+    - cron: "45 13 * * 1-5" # 9:45 AM ET — sync before IC Simple entry at 10:00 AM
+    - cron: "30 14 * * 1-5" # 10:30 AM ET
+    - cron: "0,30 20 * * 1-5" # 4:00/4:30 PM ET — market close
     - cron: "0 15 * * 0,6" # Once daily on weekends at 10 AM ET
   workflow_dispatch:
     inputs:
