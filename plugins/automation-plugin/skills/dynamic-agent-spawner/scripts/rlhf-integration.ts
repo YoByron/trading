@@ -15,7 +15,8 @@ import {
   openSync,
   readFileSync,
 } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
+import { fileURLToPath } from "url";
 
 interface RLHFEvent {
   taskId: string;
@@ -232,7 +233,11 @@ Memory Systems:
   }
 }
 
-if (require.main === module) {
+const isMainModule =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   main().catch(console.error);
 }
 
