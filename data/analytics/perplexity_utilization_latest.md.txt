@@ -1,9 +1,9 @@
 # Perplexity Utilization Audit
 
-- Generated UTC: `2026-04-13T21:24:45.233340+00:00`
-- Runtime credential available: `False`
+- Generated UTC: `2026-04-14T21:47:30.329406+00:00`
+- Runtime credential available: `True`
 - Active Perplexity files: `25`
-- Max utilization score: `70/100`
+- Max utilization score: `90/100`
 - Models referenced: `sonar, sonar-pro`
 
 ## Workflows
@@ -12,5 +12,4 @@
 - `.github/workflows/pre-market-scan.yml` models=`n/a`
 
 ## Gaps
-- `local_runtime_missing_perplexity_credential`
 - `agent_playground_not_versioned_in_repo`

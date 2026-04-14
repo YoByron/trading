@@ -1,6 +1,6 @@
 {
   "active_perplexity_files": 25,
-  "credential_available_in_runtime": false,
+  "credential_available_in_runtime": true,
   "expected_high_roi_files": [
     "src/analytics/perplexity_trading_intel.py",
     "src/analytics/perplexity_utilization_audit.py",
@@ -9,13 +9,15 @@
     ".github/workflows/perplexity-trading-intel.yml"
   ],
   "gaps": [
-    "local_runtime_missing_perplexity_credential",
     "agent_playground_not_versioned_in_repo"
   ],
-  "generated_at_utc": "2026-04-13T21:24:45.233340+00:00",
-  "max_utilization_score": 70,
+  "generated_at_utc": "2026-04-14T21:47:30.329406+00:00",
+  "max_utilization_score": 90,
   "missing_expected_files": [],
-  "models_referenced": ["sonar", "sonar-pro"],
+  "models_referenced": [
+    "sonar",
+    "sonar-pro"
+  ],
   "scripts_with_perplexity": [
     {
       "mentions_agent_playground": false,
@@ -49,14 +51,18 @@
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar-pro"],
+      "models": [
+        "sonar-pro"
+      ],
       "path": "src/agents/billing_guardian_agent.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar-pro"],
+      "models": [
+        "sonar-pro"
+      ],
       "path": "src/agents/research_agent.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
@@ -77,14 +83,18 @@
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar-pro"],
+      "models": [
+        "sonar-pro"
+      ],
       "path": "src/analytics/perplexity_trading_intel.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar"],
+      "models": [
+        "sonar"
+      ],
       "path": "src/analytics/perplexity_utilization_audit.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
@@ -112,7 +122,9 @@
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar-pro"],
+      "models": [
+        "sonar-pro"
+      ],
       "path": "src/orchestrator/gates.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
@@ -126,7 +138,9 @@
     },
     {
       "mentions_agent_playground": false,
-      "models": ["sonar"],
+      "models": [
+        "sonar"
+      ],
       "path": "src/research/pre_trade_research.py",
       "uses_api_endpoint": true,
       "uses_perplexity_credential": true
