@@ -1023,14 +1023,18 @@ def compute_weekly_gate(
         and not lifetime_ledger["edge_confirmed"]
     ):
         contradiction_detected = samples > 0 and expectancy > 0
-        contradiction_reason = (
+        lifetime_ledger_evidence = (
             "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. "
             f"Ledger expectancy ${_as_float(lifetime_ledger.get('expectancy_per_trade'), 0.0):.2f}/trade, "
             f"profit factor {_as_float(lifetime_ledger.get('profit_factor'), 0.0):.2f}, "
             f"total realized P/L ${_as_float(lifetime_ledger.get('total_realized_pnl'), 0.0):.2f} "
-            f"over {lifetime_ledger['closed_trades']} closed trades. Trading HALTED."
+            f"over {lifetime_ledger['closed_trades']} closed trades."
         )
         if _live_account_inactive(state) and not block_new_positions:
+            contradiction_reason = (
+                f"{lifetime_ledger_evidence} Live/scaling remains blocked while controlled "
+                "paper validation continues at minimum size."
+            )
             validation_reset_active = True
             validation_reset_reason = contradiction_reason
             allow_validation_entries = True
@@ -1043,6 +1047,7 @@ def compute_weekly_gate(
                 "at minimum size until a fresh cohort proves edge."
             )
         else:
+            contradiction_reason = f"{lifetime_ledger_evidence} Trading halted."
             mode = "defensive"
             recommended_max = min(recommended_max, 0.01)
             block_new_positions = True
