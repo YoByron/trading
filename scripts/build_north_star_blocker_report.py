@@ -298,6 +298,60 @@ def compute_report(
     probability = _to_float(north_star.get("probability_score"))
     probability_label = str(north_star.get("probability_label") or "unknown")
     recent_history = weekly_history[-8:]
+    allow_validation_entries = _to_bool(
+        weekly_gate.get("allow_validation_entries"), default=False
+    )
+    block_live_new_positions = _to_bool(
+        weekly_gate.get("block_live_new_positions"), default=False
+    )
+    block_new_positions = _to_bool(weekly_gate.get("block_new_positions"), default=False)
+    lifetime_ledger = (
+        weekly_gate.get("lifetime_ledger", {})
+        if isinstance(weekly_gate.get("lifetime_ledger"), dict)
+        else {}
+    )
+    scaling_gate = (
+        weekly_gate.get("scaling_sample_gate", {})
+        if isinstance(weekly_gate.get("scaling_sample_gate"), dict)
+        else {}
+    )
+    min_scaling_trades = _to_int(scaling_gate.get("min_closed_trades_for_scaling")) or _to_int(
+        lifetime_ledger.get("min_closed_trades_for_confirmed_edge")
+    )
+    closed_for_scaling = _to_int(scaling_gate.get("closed_trades_observed")) or _to_int(
+        lifetime_ledger.get("closed_trades")
+    )
+
+    if block_new_positions:
+        action_lane_summary = "All new risk-on entries are blocked."
+    elif allow_validation_entries and block_live_new_positions:
+        action_lane_summary = (
+            "Controlled paper validation entries are allowed; live trading and scale-up remain blocked."
+        )
+    elif block_live_new_positions:
+        action_lane_summary = "Live trading and scale-up remain blocked."
+    else:
+        action_lane_summary = "No North Star live/scale lane block is active."
+
+    resolution_criteria: list[str] = []
+    if lifetime_ledger:
+        min_text = min_scaling_trades if min_scaling_trades is not None else "configured"
+        closed_text = closed_for_scaling if closed_for_scaling is not None else "current"
+        resolution_criteria.append(
+            "Confirm positive edge before live/scaling: "
+            f"sample {closed_text}/{min_text}; required metrics are expectancy > 0, "
+            "profit factor > 1, and total realized P/L > 0."
+        )
+    if cadence:
+        resolution_criteria.append(
+            "Meet weekly cadence KPI: "
+            f"qualified setups {cadence.get('qualified_setups_observed')}/"
+            f"{cadence.get('min_qualified_setups_per_week')}, closed trades "
+            f"{cadence.get('closed_trades_observed')}/{cadence.get('min_closed_trades_per_week')}."
+        )
+    resolution_criteria.append(
+        f"Keep system_state and north_star_weekly_gate fresh within {stale_threshold_hours:.0f} hours."
+    )
 
     return {
         "generated_at_utc": _fmt_utc(now_utc),
@@ -314,13 +368,9 @@ def compute_report(
             "mode": str(weekly_gate.get("mode") or "unknown"),
             "expectancy_per_trade": _to_float(weekly_gate.get("expectancy_per_trade")),
             "sample_size": _to_int(weekly_gate.get("sample_size")),
-            "block_new_positions": _to_bool(weekly_gate.get("block_new_positions"), default=False),
-            "block_live_new_positions": _to_bool(
-                weekly_gate.get("block_live_new_positions"), default=False
-            ),
-            "allow_validation_entries": _to_bool(
-                weekly_gate.get("allow_validation_entries"), default=False
-            ),
+            "block_new_positions": block_new_positions,
+            "block_live_new_positions": block_live_new_positions,
+            "allow_validation_entries": allow_validation_entries,
             "validation_reset_active": _to_bool(
                 weekly_gate.get("validation_reset_active"), default=False
             ),
@@ -336,6 +386,12 @@ def compute_report(
         "north_star_probability": {
             "score": probability,
             "label": probability_label,
+        },
+        "action_lane": {
+            "summary": action_lane_summary,
+            "paper_validation_allowed": bool(allow_validation_entries and not block_new_positions),
+            "live_scaling_blocked": bool(block_new_positions or block_live_new_positions),
+            "resolution_criteria": resolution_criteria,
         },
         "last_trade_date": str(state.get("trades", {}).get("last_trade_date", "")),
         "trading_halted_file_exists": halt_exists,
@@ -375,6 +431,20 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.append(
         f"- North Star Probability: `{prob.get('score')}` (`{prob.get('label', 'unknown')}`)"
     )
+    lines.append("")
+
+    lane = report.get("action_lane", {})
+    lines.append("## Action Lane")
+    lines.append(f"- Summary: {lane.get('summary') or 'n/a'}")
+    lines.append(f"- Paper Validation Allowed: `{lane.get('paper_validation_allowed')}`")
+    lines.append(f"- Live/Scaling Blocked: `{lane.get('live_scaling_blocked')}`")
+    lines.append("- Resolution Criteria:")
+    criteria = lane.get("resolution_criteria", [])
+    if criteria:
+        for i, item in enumerate(criteria, start=1):
+            lines.append(f"  {i}. {item}")
+    else:
+        lines.append("  1. None.")
     lines.append("")
 
     blockers = report.get("blockers", [])

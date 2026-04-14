@@ -126,6 +126,8 @@ def test_weekly_gate_keeps_live_block_but_allows_paper_validation_reset(tmp_path
     assert gate["allow_validation_entries"] is True
     assert gate["validation_reset_active"] is True
     assert "paper validation" in gate["reason"].lower()
+    assert "trading halted" not in gate["validation_reset_reason"].lower()
+    assert "live/scaling remains blocked" in gate["validation_reset_reason"].lower()
 
 
 def test_contribution_plan_tracks_monthly_target_progress():
