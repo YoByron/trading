@@ -1,6 +1,6 @@
 # SPY Options Validation Platform Wiki
 
-Generated from canonical ledgers at `2026-04-14T20:18:34.428639+00:00`.
+Generated from canonical ledgers at `2026-04-14T20:46:41.694824+00:00`.
 
 This wiki is generated from the same source used by the public dashboard and repo copy. It should never carry frozen win-rate, equity, or trade-count claims that drift from the ledgers.
 
