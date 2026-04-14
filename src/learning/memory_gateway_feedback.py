@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-THUMBGATE_VERSION = "0.9.14"
+THUMBGATE_VERSION = "1.4.6"
 TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
 
 EXPLICIT_NEGATIVE_RE = re.compile(

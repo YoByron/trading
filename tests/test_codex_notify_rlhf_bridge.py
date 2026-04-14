@@ -58,7 +58,7 @@ def test_process_payload_records_thumbgate_commands_and_shared_state(tmp_path: P
     result = process_payload(payload, runner=fake_runner)
 
     assert result["status"] == "processed"
-    assert any("thumbgate@0.9.14" in " ".join(cmd) for cmd in commands)
+    assert any("thumbgate@1.4.6" in " ".join(cmd) for cmd in commands)
     assert any(" capture " in f" {' '.join(cmd)} " for cmd in commands)
     assert any(" rules " in f" {' '.join(cmd)} " for cmd in commands)
     assert envs[-1] is not None

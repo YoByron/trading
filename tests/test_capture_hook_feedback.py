@@ -29,7 +29,7 @@ def test_process_user_message_uses_gateway_commands(tmp_path: Path) -> None:
     assert result["status"] == "processed"
     assert result["accepted"] is True
     assert result["rules_refreshed"] is True
-    assert any("thumbgate@0.9.14" in " ".join(cmd) for cmd in commands)
+    assert any("thumbgate@1.4.6" in " ".join(cmd) for cmd in commands)
     assert any(" capture " in f" {' '.join(cmd)} " for cmd in commands)
     assert any(" rules " in f" {' '.join(cmd)} " for cmd in commands)
     assert envs[-1] is not None
