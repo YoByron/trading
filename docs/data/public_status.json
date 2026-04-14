@@ -1,9 +1,9 @@
 {
-  "generated_at_et": "2026-04-14T20:46:41.694824+00:00",
+  "generated_at_et": "2026-04-14T21:11:10.365789+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
-    "public_status": "quarantine"
+    "public_status": "validation_reset"
   },
   "paper": {
     "equity": 93711.9,
@@ -26,17 +26,17 @@
     "profit_factor": 0.24,
     "total_realized_pnl": -3669.0,
     "expectancy_per_trade": -54.7612,
-    "last_updated": "2026-04-14T20:46:44.332289+00:00"
+    "last_updated": "2026-04-14T18:36:03.639648+00:00"
   },
   "gate": {
-    "mode": "quarantine",
-    "block_new_positions": true,
+    "mode": "validation_reset",
+    "block_new_positions": false,
     "verified_edge_available": false,
-    "recommended_max_position_pct": 0.0,
+    "recommended_max_position_pct": 0.01,
     "sample_size": 1,
     "expectancy_per_trade": -267.0,
     "win_rate_pct": 0.0,
-    "blocker_reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
+    "blocker_reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
     "qualified_setups_this_week": 0,
     "closed_trades_this_week": 1,
     "scale_allowed": false,

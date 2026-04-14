@@ -71,6 +71,13 @@ def _clamp(value: float, *, lo: float, hi: float) -> float:
     return min(hi, max(lo, value))
 
 
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
 def _weekly_gate(state: dict[str, Any]) -> dict[str, Any]:
     payload = state.get("north_star_weekly_gate", {})
     return payload if isinstance(payload, dict) else {}
@@ -501,7 +508,7 @@ def write_gate_overrides(
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     return {
-        "path": str(path),
+        "path": _display_path(path),
         "changed": changed,
         "payload": payload,
     }

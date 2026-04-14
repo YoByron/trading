@@ -1,6 +1,6 @@
 # Development Engine and Evidence
 
-Generated from canonical ledgers at `2026-04-14T20:46:41.694824+00:00`.
+Generated from canonical ledgers at `2026-04-14T21:11:10.365789+00:00`.
 
 This page explains how public-facing system copy stays congruent with live state.
 
@@ -21,9 +21,9 @@ This page explains how public-facing system copy stays congruent with live state
 
 - Paper equity: `$93,711.90`
 - Total realized P/L ledger: `$-3,669.00`
-- Weekly gate mode: `quarantine`
-- Block new positions: `True`
+- Weekly gate mode: `validation_reset`
+- Block new positions: `False`
 
 ## Exact Blocker
 
-`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`

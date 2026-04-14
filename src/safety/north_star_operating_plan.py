@@ -140,6 +140,13 @@ def _load_json_list(path: Path) -> list[dict[str, Any]]:
         return []
 
 
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
 def _load_gate_overrides(data_dir: Path) -> dict[str, Any]:
     payload = _load_json_dict(data_dir / DEFAULT_GATE_OVERRIDES_PATH)
     return payload if isinstance(payload, dict) else {}
@@ -148,11 +155,12 @@ def _load_gate_overrides(data_dir: Path) -> dict[str, Any]:
 def _validation_hypothesis_status(data_dir: Path) -> dict[str, Any]:
     """Validate the written hypothesis required to restart a losing strategy."""
     path = data_dir / DEFAULT_VALIDATION_HYPOTHESIS_PATH
+    path_label = _display_path(path)
     payload = _load_json_dict(path)
     errors: list[str] = []
 
     if not payload:
-        errors.append(f"{path} missing or empty")
+        errors.append(f"{path_label} missing or empty")
     if _as_bool(payload.get("enabled"), default=False) is not True:
         errors.append("enabled must be true")
 
@@ -192,7 +200,7 @@ def _validation_hypothesis_status(data_dir: Path) -> dict[str, Any]:
 
     valid = not errors
     return {
-        "path": str(path),
+        "path": path_label,
         "valid": valid,
         "errors": errors,
         "strategy_family": strategy_family or None,
@@ -1169,8 +1177,8 @@ def compute_weekly_gate(
             reason = (
                 "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current "
                 "strategy cannot reach the North Star. New entries are blocked until "
-                f"{data_dir / DEFAULT_VALIDATION_HYPOTHESIS_PATH} defines a changed-rule "
-                "hypothesis and hard kill criteria."
+                f"{_display_path(data_dir / DEFAULT_VALIDATION_HYPOTHESIS_PATH)} defines "
+                "a changed-rule hypothesis and hard kill criteria."
             )
             strategy_quarantine.update(
                 {
@@ -1202,6 +1210,27 @@ def compute_weekly_gate(
                     "required_action": "Stop new entries until lifetime edge is positive.",
                 }
             )
+
+    final_weekly_entry_fields = {
+        "week_start": week_start_iso,
+        "sample_size": samples,
+        "win_rate_pct": win_rate_pct,
+        "expectancy_per_trade": expectancy,
+        "mode": mode,
+        "qualified_setups": qualified_setups,
+        "cadence_passed": cadence_kpi["passed"],
+    }
+    for idx, row in enumerate(weekly_history):
+        if str(row.get("week_start")) != week_start_iso:
+            continue
+        final_unchanged = all(row.get(key) == value for key, value in final_weekly_entry_fields.items())
+        if not final_unchanged:
+            weekly_history[idx] = {
+                **row,
+                **final_weekly_entry_fields,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        break
 
     weekly_history_path.parent.mkdir(parents=True, exist_ok=True)
     new_weekly_payload = json.dumps(weekly_history, indent=2) + "\n"

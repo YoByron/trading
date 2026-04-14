@@ -1,6 +1,6 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-04-14T20:46:41.694824+00:00`.
+Generated from canonical ledgers at `2026-04-14T21:11:10.365789+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
@@ -18,10 +18,10 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Gate State
 
-- Mode: `quarantine`
-- Block new positions: `True`
+- Mode: `validation_reset`
+- Block new positions: `False`
 - Verified edge available: `False`
-- Recommended max position size: `0.0`
+- Recommended max position size: `0.01`
 - Weekly expectancy per trade: `$-267.00`
 - Scaling gate: `67` / `30`
 - Qualified setups this week: `0`
@@ -29,7 +29,7 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Exact Blocker
 
-`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`
 
 ## Canonical Links
 
