@@ -52,7 +52,7 @@ print(json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}))
 PY
 )"
 
-RESULT="$(printf '%s' "${HOOK_JSON}" | npx -y thumbgate@1.4.6 gate-check 2>/dev/null || true)"
+RESULT="$(printf '%s' "${HOOK_JSON}" | npx -y thumbgate@1.5.0 gate-check 2>/dev/null || true)"
 
 if [[ -z ${RESULT} || ${RESULT} == "{}" ]]; then
 	exit 0

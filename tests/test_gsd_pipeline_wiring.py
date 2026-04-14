@@ -60,4 +60,4 @@ def test_project_mcp_config_registers_gateway_server():
     config = json.loads(MCP_CONFIG_PATH.read_text(encoding="utf-8"))
     server = config["mcpServers"]["rlhf"]
     assert server["command"] == "npx"
-    assert server["args"] == ["-y", "thumbgate@1.4.6", "serve"]
+    assert server["args"] == ["-y", "thumbgate@1.5.0", "serve"]
