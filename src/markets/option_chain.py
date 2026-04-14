@@ -296,8 +296,9 @@ def _select_from_live_chain(
     long_put_strike = _snap_to_chain(short_put - wing_width, all_puts, "below")
     long_call_strike = _snap_to_chain(short_call + wing_width, all_calls, "above")
 
-    # Validate wing widths — reject if snap produced a wing too narrow
-    MIN_WING_PCT = 0.7  # Allow up to 30% narrower than target (e.g., $7 for $10 target)
+    # Validate wing widths — reject if snap produced a wing too narrow.
+    # SPY far OTM has $5 strike increments, so $5 wing on $10 target is valid (50%).
+    MIN_WING_PCT = 0.5  # Allow $5 wings on $10 target (SPY far OTM reality)
     put_wing = short_put - long_put_strike
     call_wing = long_call_strike - short_call
     if put_wing < wing_width * MIN_WING_PCT or call_wing < wing_width * MIN_WING_PCT:
