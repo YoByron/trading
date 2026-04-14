@@ -1,6 +1,6 @@
 # Development Engine and Evidence
 
-Generated from canonical ledgers at `2026-04-14T19:46:59.016854+00:00`.
+Generated from canonical ledgers at `2026-04-14T20:18:34.428639+00:00`.
 
 This page explains how public-facing system copy stays congruent with live state.
 
