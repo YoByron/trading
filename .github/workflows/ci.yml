@@ -58,6 +58,8 @@ jobs:
                 ;;
               data/north_star_weekly_history.json | data/runtime/north_star_gate_overrides.json | data/TRADING_HALTED)
                 ;;
+              data/analytics/perplexity_utilization_latest.json)
+                ;;
               *)
                 safe_only=false
                 ;;
