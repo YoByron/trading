@@ -91,13 +91,12 @@ class TestValidateTradeMandatory:
     """Test validate_trade_mandatory function."""
 
     def test_valid_trade_approved(self):
-        """Test that valid trade is approved (within 10% position limit)."""
+        """Test that valid trade is approved within the 2% position limit."""
         from src.safety.mandatory_trade_gate import validate_trade_mandatory
 
-        # Trade must be <5% of equity to pass (per CLAUDE.md)
         result = validate_trade_mandatory(
             symbol="SPY",
-            amount=200.0,  # 4% of 5000 - within 5% limit
+            amount=100.0,  # 2% of 5000 - within limit
             side="BUY",
             strategy="CSP",
             context={"equity": 5000.0},
@@ -248,6 +247,28 @@ class TestValidateTradeMandatory:
         )
         assert result.approved is False
         assert "guard blocked" in result.reason.lower()
+
+    def test_weekly_gate_validation_override_rejects_strategy_quarantine(self):
+        """Validation-reset ML bypass must fail closed under math quarantine."""
+        from src.safety.mandatory_trade_gate import (
+            _weekly_gate_allows_validation_entries,
+        )
+
+        assert (
+            _weekly_gate_allows_validation_entries(
+                {
+                    "mode": "validation_reset",
+                    "allow_validation_entries": True,
+                    "block_live_new_positions": True,
+                    "strategy_quarantine": {
+                        "active": True,
+                        "block_new_positions": True,
+                        "paper_validation_allowed": False,
+                    },
+                }
+            )
+            is False
+        )
 
     def test_trading_halt_blocks_new_openings(self, monkeypatch):
         """Repo halt sentinel must block new openings regardless of strategy details."""
@@ -468,7 +489,7 @@ class TestPolicyGate:
 
         result = validate_trade_mandatory(
             symbol="SPY",
-            amount=200.0,
+            amount=100.0,
             side="BUY",
             strategy="iron_condor",
             context={"equity": 5000.0},
@@ -492,7 +513,7 @@ class TestPolicyGate:
 
         result = gate_mod.validate_trade_mandatory(
             symbol="SPY",
-            amount=200.0,
+            amount=100.0,
             side="BUY",
             strategy="iron_condor",
             context={"equity": 5000.0},
@@ -521,7 +542,7 @@ class TestPolicyGate:
 
         result = gate_mod.validate_trade_mandatory(
             symbol="SPY",
-            amount=200.0,
+            amount=100.0,
             side="BUY",
             strategy="iron_condor",
             context={"equity": 5000.0},
@@ -541,7 +562,7 @@ class TestRegimeCheck:
 
         result = validate_trade_mandatory(
             symbol="SPY",
-            amount=200.0,
+            amount=100.0,
             side="BUY",
             strategy="iron_condor",
             context={"equity": 5000.0},
