@@ -1,13 +1,13 @@
 {
-  "generated_at_et": "2026-04-14T16:35:37.852775+00:00",
+  "generated_at_et": "2026-04-14T17:10:22.089980+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
-    "public_status": "validation_reset"
+    "public_status": "quarantine"
   },
   "paper": {
-    "equity": 93714.9,
-    "total_pnl_today": -32.0,
+    "equity": 93717.9,
+    "total_pnl_today": -29.0,
     "realized_pnl_today": null,
     "unrealized_pnl_today": null,
     "fills_today_count": null,
@@ -26,17 +26,17 @@
     "profit_factor": 0.24,
     "total_realized_pnl": -3669.0,
     "expectancy_per_trade": -54.7612,
-    "last_updated": "2026-04-14T16:35:40.594564+00:00"
+    "last_updated": "2026-04-14T17:10:24.962274+00:00"
   },
   "gate": {
-    "mode": "validation_reset",
-    "block_new_positions": false,
+    "mode": "quarantine",
+    "block_new_positions": true,
     "verified_edge_available": false,
-    "recommended_max_position_pct": 0.01,
+    "recommended_max_position_pct": 0.0,
     "sample_size": 1,
     "expectancy_per_trade": -267.0,
     "win_rate_pct": 0.0,
-    "blocker_reason": "CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size until a fresh cohort proves edge.",
+    "blocker_reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
     "qualified_setups_this_week": 0,
     "closed_trades_this_week": 1,
     "scale_allowed": false,
@@ -50,7 +50,7 @@
     "lifetime_total_realized_pnl": -3669.0
   },
   "narrative": {
-    "summary": "Latest tracked broker sync shows $-32.00 today with 4 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
+    "summary": "Latest tracked broker sync shows $-29.00 today with 4 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
     "thesis": "This project is currently a paper-first validation platform, not a proven passive-income engine. Public surfaces should show current gate state and broker-backed evidence rather than frozen claims."
   },
   "links": {

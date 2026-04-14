@@ -1,13 +1,13 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-04-14T16:35:37.852775+00:00`.
+Generated from canonical ledgers at `2026-04-14T17:10:22.089980+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
 ## Current Status
 
-- Paper equity: `$93,714.90`
-- Paper total P/L today: `$-32.00`
+- Paper equity: `$93,717.90`
+- Paper total P/L today: `$-29.00`
 - Paper realized P/L today: `n/a`
 - Paper unrealized P/L today: `n/a`
 - Fills today: `None`
@@ -18,10 +18,10 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Gate State
 
-- Mode: `validation_reset`
-- Block new positions: `False`
+- Mode: `quarantine`
+- Block new positions: `True`
 - Verified edge available: `False`
-- Recommended max position size: `0.01`
+- Recommended max position size: `0.0`
 - Weekly expectancy per trade: `$-267.00`
 - Scaling gate: `67` / `30`
 - Qualified setups this week: `0`
@@ -29,7 +29,7 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Exact Blocker
 
-`CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size until a fresh cohort proves edge.`
+`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
 
 ## Canonical Links
 

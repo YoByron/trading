@@ -1,6 +1,6 @@
 # Development Engine and Evidence
 
-Generated from canonical ledgers at `2026-04-14T16:35:37.852775+00:00`.
+Generated from canonical ledgers at `2026-04-14T17:10:22.089980+00:00`.
 
 This page explains how public-facing system copy stays congruent with live state.
 
@@ -19,11 +19,11 @@ This page explains how public-facing system copy stays congruent with live state
 
 ## Current Operator Summary
 
-- Paper equity: `$93,714.90`
+- Paper equity: `$93,717.90`
 - Total realized P/L ledger: `$-3,669.00`
-- Weekly gate mode: `validation_reset`
-- Block new positions: `False`
+- Weekly gate mode: `quarantine`
+- Block new positions: `True`
 
 ## Exact Blocker
 
-`CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size until a fresh cohort proves edge.`
+`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`

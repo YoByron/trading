@@ -1,16 +1,16 @@
 # SPY Options Validation Platform Wiki
 
-Generated from canonical ledgers at `2026-04-14T16:35:37.852775+00:00`.
+Generated from canonical ledgers at `2026-04-14T17:10:22.089980+00:00`.
 
 This wiki is generated from the same source used by the public dashboard and repo copy. It should never carry frozen win-rate, equity, or trade-count claims that drift from the ledgers.
 
 ## Current Snapshot
 
-- Public status: `validation_reset`
-- Paper equity: `$93,714.90`
+- Public status: `quarantine`
+- Paper equity: `$93,717.90`
 - Closed trades total: `67`
 - Total realized P/L: `$-3,669.00`
-- Weekly gate mode: `validation_reset`
+- Weekly gate mode: `quarantine`
 
 ## Key Links
 
@@ -25,4 +25,4 @@ This project is currently a paper-first validation platform, not a proven passiv
 
 ## Current Blocker
 
-`CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size until a fresh cohort proves edge.`
+`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
