@@ -52,7 +52,7 @@ jobs:
           safe_only=true
           while IFS= read -r path; do
             case "${path}" in
-              .github/workflows/* | .github/dependabot.yml | .gitignore | docs/* | *.md)
+              .github/workflows/* | .github/dependabot.yml | .gitignore | .claude/*.json | docs/* | *.md)
                 ;;
               *)
                 safe_only=false
