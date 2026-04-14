@@ -141,12 +141,23 @@ def test_browser_automation_pilot_respects_pr_only_rule():
         assert re.search(pattern, workflow_text) is None, pattern
 
 
-def test_main_ci_concurrency_uses_per_sha_key():
-    """Main CI must not serialize newer main SHAs behind stale runs."""
+def test_main_ci_concurrency_cancels_stale_branch_runs():
+    """CI should cancel superseded branch/PR runs without canceling main verification."""
     workflow_text = Path(".github/workflows/ci.yml").read_text()
 
-    assert "format('ci-{0}-{1}', github.ref, github.sha)" in workflow_text
+    assert "github.event.pull_request.number || github.ref" in workflow_text
     assert "cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}" in workflow_text
+
+
+def test_main_ci_fast_paths_workflow_docs_config_changes():
+    """Workflow/docs/config-only changes should keep the required test check fast."""
+    workflow_text = Path(".github/workflows/ci.yml").read_text()
+
+    assert "Detect Changed Paths" in workflow_text
+    assert "run_full_tests" in workflow_text
+    assert "Only workflow/docs/config files changed" in workflow_text
+    assert "Skipping full Python test suite" in workflow_text
+    assert ".github/workflows/*" in workflow_text
 
 
 def test_sync_alpaca_status_updates_public_surfaces():
