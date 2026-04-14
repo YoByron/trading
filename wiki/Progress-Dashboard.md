@@ -18,10 +18,10 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Gate State
 
-- Mode: `quarantine`
-- Block new positions: `True`
+- Mode: `validation_reset`
+- Block new positions: `False`
 - Verified edge available: `False`
-- Recommended max position size: `0.0`
+- Recommended max position size: `0.01`
 - Weekly expectancy per trade: `$-267.00`
 - Scaling gate: `67` / `30`
 - Qualified setups this week: `0`
@@ -29,7 +29,7 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Exact Blocker
 
-`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`
 
 ## Canonical Links
 

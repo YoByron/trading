@@ -6,11 +6,11 @@ This wiki is generated from the same source used by the public dashboard and rep
 
 ## Current Snapshot
 
-- Public status: `quarantine`
+- Public status: `validation_reset`
 - Paper equity: `$93,711.90`
 - Closed trades total: `67`
 - Total realized P/L: `$-3,669.00`
-- Weekly gate mode: `quarantine`
+- Weekly gate mode: `validation_reset`
 
 ## Key Links
 
@@ -25,4 +25,4 @@ This project is currently a paper-first validation platform, not a proven passiv
 
 ## Current Blocker
 
-`MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`

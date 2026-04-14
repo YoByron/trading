@@ -2,6 +2,7 @@
 
 import json
 from datetime import date, timedelta
+from pathlib import Path
 
 from src.safety.north_star_operating_plan import (
     apply_operating_plan_to_state,
@@ -36,6 +37,56 @@ def _write_valid_hypothesis(root):
             },
         },
     )
+
+
+def test_committed_strategy_validation_hypothesis_authorizes_validation_reset(tmp_path):
+    repo_root = Path(__file__).resolve().parents[1]
+    hypothesis_path = repo_root / "data/runtime/strategy_validation_hypothesis.json"
+    hypothesis = json.loads(hypothesis_path.read_text(encoding="utf-8"))
+    assert "Example only" not in json.dumps(hypothesis)
+
+    _write_json(tmp_path / "runtime" / "strategy_validation_hypothesis.json", hypothesis)
+    trades_path = tmp_path / "trades.json"
+    history_path = tmp_path / "weekly_history.json"
+    today = date(2026, 4, 9)
+    _write_json(
+        trades_path,
+        {
+            "stats": {
+                "closed_trades": 67,
+                "win_rate_pct": 23.88,
+                "profit_factor": 0.24,
+                "total_realized_pnl": -3669.0,
+            },
+            "trades": [
+                {
+                    "status": "closed",
+                    "strategy": "iron_condor",
+                    "realized_pnl": -267.0,
+                    "outcome": "loss",
+                    "exit_date": today.isoformat(),
+                }
+            ],
+        },
+    )
+
+    gate, history = compute_weekly_gate(
+        {
+            "paper_account": {"equity": 93711.9, "win_rate": 23.88, "win_rate_sample_size": 67},
+            "live_account": {"equity": 0.0, "positions_count": 0},
+        },
+        trades_path=trades_path,
+        weekly_history_path=history_path,
+        today=today,
+    )
+
+    assert gate["mode"] == "validation_reset"
+    assert gate["block_new_positions"] is False
+    assert gate["block_live_new_positions"] is True
+    assert gate["allow_validation_entries"] is True
+    assert gate["strategy_quarantine"]["paper_validation_allowed"] is True
+    assert gate["strategy_quarantine"]["validation_hypothesis"]["valid"] is True
+    assert history[-1]["mode"] == "validation_reset"
 
 
 def test_weekly_gate_blocks_when_recent_expectancy_negative(tmp_path):

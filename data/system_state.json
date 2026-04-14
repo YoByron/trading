@@ -2591,8 +2591,8 @@
     "status": "WARNING - NEGATIVE P/L",
     "total_pl": -6288.100000000006,
     "unrealized_pl": -18.0,
-    "weekly_gate_mode": "quarantine",
-    "weekly_gate_recommended_max_position_pct": 0.0,
+    "weekly_gate_mode": "validation_reset",
+    "weekly_gate_recommended_max_position_pct": 0.01,
     "weekly_cadence_kpi_passed": false,
     "weekly_scaling_sample_gate_passed": true,
     "weekly_ai_credit_stress_status": "unknown",
@@ -2689,21 +2689,16 @@
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-04-14T20:46:43.360612Z",
+    "generated_at": "2026-04-14T21:13:51.217297Z",
     "primary_family": "options_income",
     "rolling_window": 50,
-    "paused_families": [
-      "options_income",
-      "equity_momentum",
-      "alternatives",
-      "other"
-    ],
+    "paused_families": ["equity_momentum", "alternatives", "other"],
     "strategy_families": {
       "options_income": {
-        "status": "paused",
-        "paused": true,
-        "live_risk_blocked": false,
-        "reason": "options_income paused: win rate 20.0% below 60.0% threshold.",
+        "status": "validation_reset",
+        "paused": false,
+        "live_risk_blocked": true,
+        "reason": "options_income remains in controlled paper-validation reset: rolling win rate 20.0% is below 60.0%, so live/scaling stays blocked while a fresh cohort is collected.",
         "thresholds": {
           "min_win_rate_pct": 60.0,
           "min_expectancy": 0.0,
@@ -2792,7 +2787,7 @@
     "estimated_cagr_from_expectancy": -0.1872,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-04-14T20:46:43.360612Z",
+    "updated_at": "2026-04-14T21:13:51.217297Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2801,18 +2796,18 @@
   "north_star_weekly_gate": {
     "enabled": true,
     "lookback_days": 7,
-    "mode": "quarantine",
+    "mode": "validation_reset",
     "sample_size": 1,
     "win_rate_pct": 0.0,
     "expectancy_per_trade": -267.0,
-    "recommended_max_position_pct": 0.0,
-    "block_new_positions": true,
+    "recommended_max_position_pct": 0.01,
+    "block_new_positions": false,
     "block_live_new_positions": true,
-    "allow_validation_entries": false,
-    "validation_reset_active": false,
-    "validation_reset_reason": null,
+    "allow_validation_entries": true,
+    "validation_reset_active": true,
+    "validation_reset_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-54.76/trade, profit factor 0.24, total realized P/L $-3669.00 over 67 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
     "north_star_claims_frozen": true,
-    "reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
+    "reason": "CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size under a written changed-rule hypothesis until a fresh cohort proves edge.",
     "positive_weeks_streak": 0,
     "evidence_source": "trades.json",
     "verified_edge_available": false,
@@ -2884,44 +2879,41 @@
     },
     "strategy_quarantine": {
       "active": true,
-      "block_new_positions": true,
-      "paper_validation_allowed": false,
+      "block_new_positions": false,
+      "paper_validation_allowed": true,
       "north_star_claims_frozen": true,
-      "reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until /home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
-      "required_action": "Audit the failed ledger, write strategy_validation_hypothesis.json, then run only minimum-size paper validation. If the next cohort fails positive expectancy, profit factor, and realized-P/L criteria, kill IC Simple.",
+      "reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
+      "required_action": "Complete the fresh validation cohort. If the cohort misses kill criteria, remove IC Simple as a North Star candidate.",
       "validation_hypothesis": {
-        "path": "/home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json",
-        "valid": false,
-        "errors": [
-          "/home/runner/work/trading/trading/data/runtime/strategy_validation_hypothesis.json missing or empty",
-          "enabled must be true",
-          "strategy_family must be iron_condor, ic_simple, or options_income",
-          "hypothesis must describe the changed edge thesis",
-          "changed_rules must contain at least one concrete rule change",
-          "kill_criteria.min_closed_trades must be >= 30",
-          "kill_criteria.min_expectancy_per_trade must be > 0",
-          "kill_criteria.min_profit_factor must be > 1",
-          "kill_criteria.min_total_realized_pnl must be > 0"
+        "path": "data/runtime/strategy_validation_hypothesis.json",
+        "valid": true,
+        "errors": [],
+        "strategy_family": "ic_simple",
+        "hypothesis": "Restart only controlled paper validation for IC Simple after the failed legacy ledger, using live-delta SPY iron condors, minimum-size validation entries, stricter credit and regime filters, and hard cohort kill criteria to test whether the changed rules can restore positive expectancy.",
+        "changed_rules": [
+          "Run validation_reset as paper-only: live trading and scale-up remain blocked while the fresh validation cohort is collected.",
+          "Limit validation entries to IC Simple SPY iron condors with one contract per structure, no more than one new structure per day, and no more than two concurrent iron condors.",
+          "Require live-delta strike provenance; reject heuristic fallback, non-positive net credit, and net credit below $0.50 before any validation entry.",
+          "Use 30-45 DTE, target 0.15 short delta, accepted short-delta band 0.08-0.22, and $10 wings for the validation cohort.",
+          "Keep the exit plan fixed: take profit at 50% of max profit, stop at 100% of entry credit, close by 7 DTE, and require the safety gates to refresh canonical state after runs.",
+          "Keep learned blockers active: FOMC blackout, ThumbGate rules, low IV percentile, unknown or volatile regime, stale broker sync, same-expiry re-entry after a loss, and Thompson confidence unless validation_reset explicitly allows controlled paper validation."
         ],
-        "strategy_family": null,
-        "hypothesis": null,
-        "changed_rules": [],
         "kill_criteria": {
-          "min_closed_trades": 0,
-          "min_expectancy_per_trade": -999999.0,
-          "min_profit_factor": 0.0,
-          "min_total_realized_pnl": -999999.0
+          "min_closed_trades": 30,
+          "min_expectancy_per_trade": 1.0,
+          "min_profit_factor": 1.05,
+          "min_total_realized_pnl": 1.0
         }
       },
       "kill_criteria": {
         "min_closed_trades": 30,
-        "min_expectancy_per_trade": 0.0,
-        "min_profit_factor": 1.0,
-        "min_total_realized_pnl": 0.0
+        "min_expectancy_per_trade": 1.0,
+        "min_profit_factor": 1.05,
+        "min_total_realized_pnl": 1.0
       }
     },
     "contradiction_detected": false,
-    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-54.76/trade, profit factor 0.24, total realized P/L $-3669.00 over 67 closed trades. All new entries are quarantined until a written changed-rule validation hypothesis with hard kill criteria is present.",
+    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-54.76/trade, profit factor 0.24, total realized P/L $-3669.00 over 67 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
     "liquidity_min_volume_ratio": 0.2,
     "no_trade_diagnostic": {
       "lookback_days": 7,
@@ -2988,9 +2980,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-04-14T20:46:43.358088+00:00"
+      "updated_at": "2026-04-14T21:13:51.215491+00:00"
     },
-    "updated_at": "2026-04-14T20:46:43.358391+00:00"
+    "updated_at": "2026-04-14T21:13:51.215877+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -3020,7 +3012,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-04-14T20:46:43.358463+00:00"
+    "updated_at": "2026-04-14T21:13:51.215920+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3558,10 +3550,10 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-04-14T20:46:43.358517Z",
+    "generated_at_utc": "2026-04-14T21:13:51.215951Z",
     "cadence_optimizer": {
-      "decision": "hold_risk_blocked",
-      "reason": "Block-new-positions is active; no cadence tuning is applied.",
+      "decision": "hold",
+      "reason": "Liquidity floor unchanged.",
       "cadence_passed": false,
       "setups_shortfall": 1,
       "liquidity_block_share": 0.0,
@@ -3571,16 +3563,16 @@
       "apply_override": false
     },
     "regime_aware_sizing": {
-      "base_max_position_pct": 0.005,
-      "recommended_max_position_pct": 0.0,
-      "block_new_positions": true,
+      "base_max_position_pct": 0.01,
+      "recommended_max_position_pct": 0.01,
+      "block_new_positions": false,
       "applied_multipliers": [
         {
-          "name": "weekly_block",
-          "value": 0.0
+          "name": "none",
+          "value": 1.0
         }
       ],
-      "reason": "Weekly gate blocks new positions."
+      "reason": "Applied regime/macro multipliers to weekly cap."
     },
     "hard_gate_monitor": {
       "status": "ok",
@@ -3601,7 +3593,7 @@
         {
           "name": "state_freshness",
           "status": "ok",
-          "detail": "fresh (0.0h old)."
+          "detail": "fresh (0.5h old)."
         },
         {
           "name": "weekly_gate_freshness",
@@ -3618,9 +3610,9 @@
     "blocker_report": {
       "blocked": true,
       "blocker_count": 4,
-      "warning_count": 0,
+      "warning_count": 1,
       "root_causes": [
-        "Weekly gate set `block_new_positions=true`.",
+        "Legacy ledger still blocks live/scaling; paper validation reset is active.",
         "Setup cadence is below weekly minimum.",
         "Cadence KPI is failing.",
         "Trade quality/edge is below zero expectancy."
@@ -3628,15 +3620,9 @@
     },
     "active_overrides": {
       "min_liquidity_volume_ratio": 0.2,
-      "max_position_pct_cap": 0.0
+      "max_position_pct_cap": 0.01
     },
     "execution_actions": [
-      {
-        "priority": 3,
-        "action": "enforce_regime_sizing_cap",
-        "automated": true,
-        "reason": "Weekly gate blocks new positions."
-      },
       {
         "priority": 4,
         "action": "publish_blocker_report",
@@ -3645,11 +3631,11 @@
       }
     ],
     "override_write": {
-      "path": "/home/runner/work/trading/trading/data/runtime/north_star_gate_overrides.json",
+      "path": "data/runtime/north_star_gate_overrides.json",
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-04-14T20:46:43.358517+00:00",
+        "updated_at": "2026-04-14T21:13:51.215951+00:00",
         "source": "north_star_autopilot"
       }
     }
