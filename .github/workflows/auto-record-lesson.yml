@@ -54,14 +54,14 @@ jobs:
           CONTEXT="${{ steps.failure.outputs.workflow_name }} failed in CI: ${{ steps.failure.outputs.run_url }}"
           ERROR_MSG="${{ steps.failure.outputs.error_msg }}"
 
-          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@1.4.6 capture \
+          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@1.5.0 capture \
             --feedback=down \
             --context="$CONTEXT" \
             --what-went-wrong="${ERROR_MSG:-Workflow failed without a concise extracted error message.}" \
             --what-to-change="Fix the workflow root cause, verify the failing path locally, and re-run the workflow before the next trading session." \
             --tags="workflow-failure,ci,${{ steps.failure.outputs.workflow_slug }}" || true
 
-          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@1.4.6 rules \
+          THUMBGATE_FEEDBACK_DIR="$PWD/.thumbgate" npx -y thumbgate@1.5.0 rules \
             --output=.thumbgate/prevention-rules.md \
             --min=2 || true
 
@@ -72,7 +72,7 @@ jobs:
             echo ""
             echo "- Workflow: ${{ steps.failure.outputs.workflow_name }}"
             echo "- Run URL: ${{ steps.failure.outputs.run_url }}"
-            echo "- ThumbGate capture: attempted via \`thumbgate@1.4.6\`"
+            echo "- ThumbGate capture: attempted via \`thumbgate@1.5.0\`"
             echo "- Artifact: \`.thumbgate/\` plus extracted failure log"
           } >> "$GITHUB_STEP_SUMMARY"
 
