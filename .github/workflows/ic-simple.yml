@@ -2,8 +2,8 @@ name: IC Simple
 
 on:
   schedule:
-    - cron: "0 14 * * 1-5" # Entry + exit: 10:00 AM ET
-    - cron: 0 16 * * 1-5 # Exit check: 12:00 PM ET (closes 4h gap)
+    - cron: "0 15 * * 1-5" # Entry + exit: 11:00 AM ET (research: tighter spreads than 10 AM)
+    - cron: 0 16 * * 1-5 # Exit check: 12:00 PM ET
     - cron: "0 18 * * 1-5" # Exit check: 2:00 PM ET
     - cron: "30 19 * * 1-5" # EOD exit: 3:30 PM ET
     - cron: "0 14 * * 6" # Weekend learning: Saturday
@@ -61,8 +61,8 @@ jobs:
           if [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "$DOW" = "6" ]; then
               MODE="learn"
-            elif [ "$HOUR" = "14" ]; then
-              MODE="both"
+            elif [ "$HOUR" = "15" ]; then
+              MODE="both"  # 11:00 AM ET (15:00 UTC) — entry + exit
             else
               MODE="exit"
             fi

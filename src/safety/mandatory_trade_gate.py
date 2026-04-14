@@ -896,7 +896,12 @@ def validate_trade_mandatory(
     ):
         guard_mode = str(north_star_guard.get("mode", "unknown"))
         guard_limit = north_star_guard.get("max_position_pct")
-        if isinstance(guard_limit, (int, float)) and guard_limit > 0:
+        guard_mode_str = str(north_star_guard.get("mode", "")).lower()
+        # During validation_reset, use the profile's position size (2%), not the
+        # guard's defensive 1%. The validation needs to open trades to prove edge.
+        if "validation" in guard_mode_str:
+            effective_max_position_pct = MAX_POSITION_PCT
+        elif isinstance(guard_limit, (int, float)) and guard_limit > 0:
             effective_max_position_pct = min(float(guard_limit), MAX_POSITION_PCT)
 
         checks_performed.append(

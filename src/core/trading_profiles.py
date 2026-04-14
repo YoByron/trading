@@ -56,7 +56,7 @@ _BASELINE_IRON_CONDOR_PROFILE = IronCondorProfile(
     stop_loss_pct=1.0,
     exit_dte=7,
     min_hold_hours=24,
-    position_size_pct=0.05,
+    position_size_pct=0.02,  # 2% — industry standard for defined risk (was 5% scaling, 1% validation)
     # Validation phase: prove edge with one-lot sizing before scaling.
     max_contracts_per_trade=1,
     max_concurrent_positions=2,  # CLAUDE.md mandate: 2 ICs max (8 legs)
