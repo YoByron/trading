@@ -1,10 +1,15 @@
 {
-  "last_updated": "2026-04-14T20:46:41.694824+00:00",
+  "last_updated": "2026-04-14T21:11:10.365789+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-04-14T20:46:41.694824+00:00",
+    "last_successful_sync": "2026-04-14T20:18:34.428639+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 20,
+    "sync_count_today": 19,
     "history": [
+      {
+        "timestamp": "2026-04-13T19:14:39.556882+00:00",
+        "equity": 93778.1,
+        "success": true
+      },
       {
         "timestamp": "2026-04-13T19:47:05.278493+00:00",
         "equity": 93768.1,
@@ -119,14 +124,9 @@
         "timestamp": "2026-04-14T20:18:34.428639+00:00",
         "equity": 93711.9,
         "success": true
-      },
-      {
-        "timestamp": "2026-04-14T20:46:41.694824+00:00",
-        "equity": 93711.9,
-        "success": true
       }
     ],
-    "last_attempt": "2026-04-14T20:46:41.694824+00:00"
+    "last_attempt": "2026-04-14T21:11:10.365789+00:00"
   },
   "portfolio": {
     "equity": 93711.9,
@@ -2615,13 +2615,13 @@
     "buying_power": 185711.8
   },
   "meta": {
-    "last_updated": "2026-04-14T20:46:41.694824+00:00",
+    "last_updated": "2026-04-14T21:11:10.365789+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-04-14T20:46:41.694824+00:00",
-    "alpaca_keys_present": true,
-    "last_sync": "2026-04-14T20:46:41.318022",
-    "sync_mode": "paper+live",
+    "last_sync_attempt": "2026-04-14T21:11:10.365789+00:00",
+    "alpaca_keys_present": false,
+    "last_sync": "2026-04-14T21:11:10.365789+00:00",
+    "sync_mode": "skipped_no_keys",
     "last_daily_verification_at": "2026-04-14T18:36:04.822923+00:00",
     "verification_source": "daily_verification.py"
   },
@@ -2685,11 +2685,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-04-14T20:46:41.692341"
+    "synced_at": "2026-04-14T20:18:34.426371"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-04-14T21:13:51.217297Z",
+    "generated_at": "2026-04-14T21:29:45.636200Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": ["equity_momentum", "alternatives", "other"],
@@ -2787,7 +2787,7 @@
     "estimated_cagr_from_expectancy": -0.1872,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-04-14T21:13:51.217297Z",
+    "updated_at": "2026-04-14T21:29:45.636200Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2980,9 +2980,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-04-14T21:13:51.215491+00:00"
+      "updated_at": "2026-04-14T21:29:45.634049+00:00"
     },
-    "updated_at": "2026-04-14T21:13:51.215877+00:00"
+    "updated_at": "2026-04-14T21:29:45.634545+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -3012,7 +3012,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-04-14T21:13:51.215920+00:00"
+    "updated_at": "2026-04-14T21:29:45.634594+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3550,7 +3550,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-04-14T21:13:51.215951Z",
+    "generated_at_utc": "2026-04-14T21:29:45.634630Z",
     "cadence_optimizer": {
       "decision": "hold",
       "reason": "Liquidity floor unchanged.",
@@ -3593,7 +3593,7 @@
         {
           "name": "state_freshness",
           "status": "ok",
-          "detail": "fresh (0.5h old)."
+          "detail": "fresh (0.3h old)."
         },
         {
           "name": "weekly_gate_freshness",
@@ -3635,7 +3635,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-04-14T21:13:51.215951+00:00",
+        "updated_at": "2026-04-14T21:29:45.634630+00:00",
         "source": "north_star_autopilot"
       }
     }
