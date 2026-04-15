@@ -208,7 +208,8 @@ def test_guard_blocks_quarantined_validation_reset_entries(tmp_path):
         encoding="utf-8",
     )
 
-    guard = get_guard_context(state)
+    # Pass a nonexistent hypothesis path to verify quarantine blocks without a hypothesis.
+    guard = get_guard_context(state, hypothesis_path=tmp_path / "no_hypothesis.json")
     assert guard["mode"] == "quarantine"
     assert guard["block_new_positions"] is True
     assert guard["allow_validation_entries"] is False

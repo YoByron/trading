@@ -11,6 +11,7 @@ Intent:
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import date, datetime
 from pathlib import Path
@@ -30,6 +31,7 @@ except Exception:
     NORTH_STAR_PAPER_VALIDATION_DAYS = 90
 
 DEFAULT_STATE_PATH = Path("data/system_state.json")
+DEFAULT_HYPOTHESIS_PATH = Path("data/runtime/strategy_validation_hypothesis.json")
 DEFAULT_TARGET_MODE = "asap_monthly_income"
 DEFAULT_MONTHLY_AFTER_TAX_TARGET = NORTH_STAR_MONTHLY_AFTER_TAX
 DEFAULT_TARGET_CAPITAL = NORTH_STAR_TARGET_CAPITAL
@@ -75,8 +77,6 @@ def _load_state(path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        import json
-
         with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
             return data if isinstance(data, dict) else {}
@@ -100,7 +100,10 @@ def _resolve_current_day(paper_trading: dict[str, Any]) -> int:
         return 0
 
 
-def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
+def get_guard_context(
+    state_path: Path = DEFAULT_STATE_PATH,
+    hypothesis_path: Path = DEFAULT_HYPOTHESIS_PATH,
+) -> dict[str, Any]:
     """Return dynamic risk constraints for mandatory trade validation."""
     state = _load_state(state_path)
     override_requested = _truthy(os.getenv("NORTH_STAR_GUARD_OVERRIDE", ""))
@@ -151,10 +154,25 @@ def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
             and not _to_bool(quarantine.get("paper_validation_allowed"), default=False)
         )
     )
-    if quarantine_blocks_new:
+
+    # Check if a validated hypothesis exists — allows paper validation through quarantine.
+    hypothesis_active = False
+    if hypothesis_path.exists():
+        try:
+            hyp = json.loads(hypothesis_path.read_text(encoding="utf-8"))
+            hypothesis_active = bool(
+                isinstance(hyp, dict)
+                and hyp.get("enabled")
+                and hyp.get("changed_rules")
+                and hyp.get("kill_criteria")
+            )
+        except (OSError, ValueError, KeyError):
+            hypothesis_active = False
+
+    if quarantine_blocks_new and not hypothesis_active:
         validation_reset_active = False
 
-    if quarantine_blocks_new:
+    if quarantine_blocks_new and not hypothesis_active:
         mode = "quarantine"
         max_position_pct = 0.0
         block_new_positions = True
@@ -163,6 +181,16 @@ def get_guard_context(state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
                 quarantine.get("reason")
                 or "Mathematical quarantine active; negative expectancy blocks new entries."
             )
+        )
+    elif quarantine_blocks_new and hypothesis_active:
+        # Hypothesis on file: allow paper validation at minimum size, keep live blocked.
+        mode = "validation_reset"
+        validation_reset_active = True
+        max_position_pct = 0.01
+        block_new_positions = False
+        reasons.append(
+            "Quarantine active but validation hypothesis deployed; "
+            "paper validation entries allowed at minimum size. Live/scaling remains blocked."
         )
     elif validation_reset_active:
         mode = "validation_reset"
