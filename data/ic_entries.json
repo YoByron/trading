@@ -74,7 +74,7 @@
     "fill_confirmed": true
   },
   "IC_260522": {
-    "credit": 1.459999999999999,
+    "credit": 1.47,
     "date": "2026-04-15T15:36:30.742054",
     "entry_time": "2026-04-15T15:36:30.742065",
     "order_id": "7e0f64e5-1b92-46e6-b5ff-b8a53038b108",
@@ -92,6 +92,7 @@
       "short_call": 730.0,
       "long_put": 644.0,
       "long_call": 735.0
-    }
+    },
+    "fill_confirmed": true
   }
 }
