@@ -1,12 +1,13 @@
 # Perplexity Utilization Audit
 
-- Generated UTC: `2026-04-14T21:47:30.329406+00:00`
+- Generated UTC: `2026-04-15T21:38:57.544492+00:00`
 - Runtime credential available: `True`
-- Active Perplexity files: `25`
+- Active Perplexity files: `26`
 - Max utilization score: `90/100`
 - Models referenced: `sonar, sonar-pro`
 
 ## Workflows
+- `.github/workflows/ci.yml` models=`n/a`
 - `.github/workflows/ic-simple.yml` models=`n/a`
 - `.github/workflows/perplexity-trading-intel.yml` models=`n/a`
 - `.github/workflows/pre-market-scan.yml` models=`n/a`
