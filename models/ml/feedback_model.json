@@ -1,5 +1,5 @@
 {
-  "alpha": 62.0,
+  "alpha": 66.0,
   "beta": 55.0,
   "feature_weights": {
     "ci": -0.1,
@@ -8,7 +8,7 @@
     "pr": -0.2,
     "analysis": 0.0,
     "system_health": -0.2,
-    "test": 0.4,
+    "test": 0.8,
     "entry": -1.2,
     "trade": -0.2,
     "log_parsing": 0.0,
@@ -21,9 +21,9 @@
       "count": 103
     },
     "test": {
-      "alpha": 3.0,
+      "alpha": 7.0,
       "beta": 3.0,
-      "count": 4
+      "count": 8
     },
     "fix": {
       "alpha": 1.0,
@@ -61,6 +61,6 @@
       "count": 12
     }
   },
-  "last_updated": "2026-04-01T15:55:36.020439+00:00",
+  "last_updated": "2026-04-15T15:55:20.518856",
   "reset_reason": "Corrupted by backfill counting 828 undo_revert as negative. Reset to real feedback: 55 positive, 41 negative from 103 entries. Feature weights zeroed for fresh training."
 }
