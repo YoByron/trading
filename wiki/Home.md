@@ -1,13 +1,13 @@
 # SPY Options Validation Platform Wiki
 
-Generated from canonical ledgers at `2026-04-16T15:10:07.260481+00:00`.
+Generated from canonical ledgers at `2026-04-16T15:36:06.428641+00:00`.
 
 This wiki is generated from the same source used by the public dashboard and repo copy. It should never carry frozen win-rate, equity, or trade-count claims that drift from the ledgers.
 
 ## Current Snapshot
 
 - Public status: `validation_reset`
-- Paper equity: `$93,662.70`
+- Paper equity: `$93,656.70`
 - Closed trades total: `67`
 - Total realized P/L: `$-3,669.00`
 - Weekly gate mode: `validation_reset`
