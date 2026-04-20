@@ -1,13 +1,13 @@
 {
-  "generated_at_et": "2026-04-19T15:12:27.800735+00:00",
+  "generated_at_et": "2026-04-20T14:21:32.930446+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
     "public_status": "validation_reset"
   },
   "paper": {
-    "equity": 93612.7,
-    "total_pnl_today": -3.0,
+    "equity": 93606.7,
+    "total_pnl_today": -9.0,
     "realized_pnl_today": null,
     "unrealized_pnl_today": null,
     "fills_today_count": null,
@@ -26,19 +26,19 @@
     "profit_factor": 0.24,
     "total_realized_pnl": -3669.0,
     "expectancy_per_trade": -54.7612,
-    "last_updated": "2026-04-19T15:12:30.872075+00:00"
+    "last_updated": "2026-04-20T14:21:36.663704+00:00"
   },
   "gate": {
     "mode": "validation_reset",
     "block_new_positions": false,
     "verified_edge_available": false,
     "recommended_max_position_pct": 0.01,
-    "sample_size": 1,
-    "expectancy_per_trade": -267.0,
+    "sample_size": 0,
+    "expectancy_per_trade": 0.0,
     "win_rate_pct": 0.0,
     "blocker_reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
     "qualified_setups_this_week": 0,
-    "closed_trades_this_week": 1,
+    "closed_trades_this_week": 0,
     "scale_allowed": false,
     "scaling_gate_closed_trades_observed": 67,
     "scaling_gate_min_closed_trades": 30,
@@ -50,7 +50,7 @@
     "lifetime_total_realized_pnl": -3669.0
   },
   "narrative": {
-    "summary": "Latest tracked broker sync shows $-3.00 today with 8 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
+    "summary": "Latest tracked broker sync shows $-9.00 today with 8 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
     "thesis": "This project is currently a paper-first validation platform, not a proven passive-income engine. Public surfaces should show current gate state and broker-backed evidence rather than frozen claims."
   },
   "links": {
