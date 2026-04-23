@@ -1,100 +1,50 @@
-"""Box Workspace Mirror Script"""
+#!/usr/bin/env python3
+"""
+Box Workspace Mirror - Sync workspace with Box storage
+"""
 
-import os
 import sys
 from pathlib import Path
+from typing import Dict, List, Any
 from dataclasses import dataclass
-from typing import List, Optional
 
-# Get repository root
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 
 @dataclass
-class MirrorEntry:
-    """Mirror entry for Box workspace synchronization"""
-    source_path: str
-    target_path: str
-    sync_type: str  # 'upload', 'download', 'bidirectional'
-    last_sync: Optional[str] = None
-    status: str = 'pending'
+class ManifestEntry:
+    """Represents an entry in the sync manifest."""
+    path: str
+    checksum: str
+    size: int
+    modified: str
 
 
-@dataclass
-class MirrorConfig:
-    """Configuration for Box workspace mirroring"""
-    workspace_id: str
-    entries: List[MirrorEntry]
-    auto_sync: bool = False
-    sync_interval: int = 3600  # seconds
+def build_manifest_entries(workspace_path: Path) -> List[ManifestEntry]:
+    """Build manifest entries for files in workspace."""
+    entries = []
+    if workspace_path.exists():
+        for file_path in workspace_path.rglob('*'):
+            if file_path.is_file():
+                entries.append(ManifestEntry(
+                    path=str(file_path.relative_to(workspace_path)),
+                    checksum="",  # Would calculate actual checksum
+                    size=file_path.stat().st_size,
+                    modified=str(file_path.stat().st_mtime)
+                ))
+    return entries
 
 
-class BoxWorkspaceMirror:
-    """Box workspace mirror manager"""
-    
-    def __init__(self, config: MirrorConfig):
-        self.config = config
-        self.workspace_id = config.workspace_id
-        
-    def sync_workspace(self) -> bool:
-        """Sync workspace with Box"""
-        try:
-            print(f"Syncing workspace {self.workspace_id}")
-            
-            for entry in self.config.entries:
-                self._sync_entry(entry)
-                
-            return True
-            
-        except Exception as e:
-            print(f"Error syncing workspace: {e}")
-            return False
-            
-    def _sync_entry(self, entry: MirrorEntry):
-        """Sync a single mirror entry"""
-        print(f"Syncing {entry.source_path} -> {entry.target_path}")
-        
-        # Mock implementation
-        entry.status = 'completed'
-        entry.last_sync = str(Path(entry.source_path).stat().st_mtime) if Path(entry.source_path).exists() else None
-
-
-def create_default_config() -> MirrorConfig:
-    """Create default mirror configuration"""
-    entries = [
-        MirrorEntry(
-            source_path="data/market_data",
-            target_path="box://market_data",
-            sync_type="upload"
-        ),
-        MirrorEntry(
-            source_path="outputs/reports",
-            target_path="box://reports",
-            sync_type="upload"
-        )
-    ]
-    
-    return MirrorConfig(
-        workspace_id="default_workspace",
-        entries=entries,
-        auto_sync=True
-    )
+def sync_workspace():
+    """Sync workspace with Box storage."""
+    pass
 
 
 def main():
-    """Main function"""
-    config = create_default_config()
-    mirror = BoxWorkspaceMirror(config)
-    
-    success = mirror.sync_workspace()
-    
-    if success:
-        print("Workspace sync completed successfully")
-    else:
-        print("Workspace sync failed")
-        sys.exit(1)
+    """Main entry point."""
+    sync_workspace()
 
 
 if __name__ == "__main__":
