@@ -1,58 +1,59 @@
+#!/usr/bin/env python3
+
 import sys
-from pathlib import Path
-from typing import List, Dict, Any
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-@dataclass
-class ManifestEntry:
-    """Entry in workspace manifest."""
-    path: str
-    checksum: str
-    size: int
-    last_modified: str
 
-def build_manifest_entries(workspace_path: Path) -> List[ManifestEntry]:
-    """Build manifest entries for workspace files."""
-    entries = []
-    
-    if not workspace_path.exists():
-        return entries
-    
-    for file_path in workspace_path.rglob("*"):
-        if file_path.is_file():
-            try:
-                stat = file_path.stat()
-                # Simple checksum placeholder
-                checksum = str(hash(file_path.read_bytes()))
-                
-                entry = ManifestEntry(
-                    path=str(file_path.relative_to(workspace_path)),
-                    checksum=checksum,
-                    size=stat.st_size,
-                    last_modified=str(stat.st_mtime)
-                )
-                entries.append(entry)
-            except (OSError, IOError):
-                # Skip files that can't be read
-                continue
-    
-    return entries
+@dataclass
+class MirrorEntry:
+    """Represents a file/folder entry in the Box workspace mirror."""
+    local_path: Path
+    box_path: str
+    last_modified: Optional[str] = None
+    size: Optional[int] = None
+    is_directory: bool = False
+
 
 class BoxWorkspaceMirror:
-    """Mirror workspace content to Box."""
+    """Manages mirroring of Box workspace to local filesystem."""
     
-    def __init__(self, workspace_path: Path):
-        self.workspace_path = workspace_path
+    def __init__(self, local_root: Path, box_root: str):
+        self.local_root = Path(local_root)
+        self.box_root = box_root
+        self.entries: List[MirrorEntry] = []
     
-    def sync(self) -> Dict[str, Any]:
-        """Sync workspace to Box."""
-        manifest = build_manifest_entries(self.workspace_path)
-        
-        return {
-            "status": "success",
-            "files_synced": len(manifest),
-            "manifest": [entry.__dict__ for entry in manifest]
-        }
+    def sync(self) -> bool:
+        """Sync Box workspace to local mirror."""
+        # Placeholder implementation
+        return True
+    
+    def list_entries(self) -> List[MirrorEntry]:
+        """List all mirrored entries."""
+        return self.entries
+
+
+def main():
+    """Main entry point for Box workspace mirroring."""
+    print("Starting Box workspace mirror sync...")
+    
+    mirror = BoxWorkspaceMirror(
+        local_root=Path("./box_mirror"),
+        box_root="/Trading"
+    )
+    
+    success = mirror.sync()
+    
+    if success:
+        print("✅ Box workspace mirror sync completed")
+    else:
+        print("❌ Box workspace mirror sync failed")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

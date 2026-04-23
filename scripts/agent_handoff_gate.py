@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+
 import sys
-from pathlib import Path
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -11,55 +13,86 @@ from src.safety.trading_policy_drift import (
     PolicyDriftMonitor,
 )
 
-@dataclass
-class GateStepResult:
-    """Result of a gate step execution."""
-    step_name: str
-    success: bool
-    message: str
-    data: Optional[Dict] = None
 
 @dataclass
 class GateReport:
-    """Report from gate validation."""
     passed: bool
-    warnings: List[str]
     policy_violations: List[str]
-    steps: List[GateStepResult]
+    steps: List[str]
 
-class AgentHandoffGate:
-    """Gate to validate agent handoffs and policy compliance."""
 
-    def __init__(self, policy_paths: Optional[List[Path]] = None):
-        self.policy_paths = policy_paths or DEFAULT_POLICY_DOC_PATHS
-        self.drift_monitor = PolicyDriftMonitor(self.policy_paths)
+def parse_changed_paths(changed_files: str) -> List[Path]:
+    """Parse changed file paths from git diff output."""
+    if not changed_files.strip():
+        return []
+    
+    paths = []
+    for line in changed_files.strip().split('\n'):
+        if line.strip():
+            paths.append(Path(line.strip()))
+    return paths
 
-    def validate_handoff(self, context: Dict) -> GateReport:
-        """Validate an agent handoff request."""
-        steps = []
-        warnings = []
-        policy_violations = []
 
-        # Check for policy drift
-        drift_result = self.drift_monitor.check_drift()
-        drift_detected = drift_result.drift_detected
+def run_policy_gate(changed_files: List[Path]) -> GateReport:
+    """Run policy drift checks on changed files."""
+    steps = []
+    policy_violations = []
+    
+    steps.append("Initializing policy drift monitor")
+    monitor = PolicyDriftMonitor(
+        policy_doc_paths=DEFAULT_POLICY_DOC_PATHS,
+        repo_root=REPO_ROOT
+    )
+    
+    steps.append(f"Checking {len(changed_files)} changed files for policy violations")
+    
+    for file_path in changed_files:
+        if file_path.suffix == '.py':
+            steps.append(f"Analyzing {file_path}")
+            violations = monitor.check_file_for_violations(file_path)
+            if violations:
+                policy_violations.extend(violations)
+    
+    if policy_violations:
+        steps.append(f"Found {len(policy_violations)} policy violations")
+        for violation in policy_violations:
+            steps.append(f"  - {violation}")
+    else:
+        steps.append("No policy violations found")
+    
+    passed = len(policy_violations) == 0
 
-        if drift_detected:
-            policy_violations.extend(drift_result.violations)
+    return GateReport(
+        passed=passed,
+        policy_violations=policy_violations,
+        steps=steps
+    )
 
-        step_result = GateStepResult(
-            step_name="policy_drift_check",
-            success=not drift_detected,
-            message=f"Policy drift {'detected' if drift_detected else 'not detected'}",
-            data={"violations": drift_result.violations}
-        )
-        steps.append(step_result)
 
-        passed = len(policy_violations) == 0
-        
-        return GateReport(
-            passed=passed,
-            warnings=warnings,
-            policy_violations=policy_violations,
-            steps=steps
-        )
+def main():
+    """Main entry point for the agent handoff gate."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Run agent handoff gate checks")
+    parser.add_argument("changed_files", nargs="*", help="List of changed files")
+    args = parser.parse_args()
+    
+    changed_paths = [Path(f) for f in args.changed_files]
+    report = run_policy_gate(changed_paths)
+    
+    print("Agent Handoff Gate Report")
+    print("=" * 25)
+    
+    for step in report.steps:
+        print(f"  {step}")
+    
+    if report.passed:
+        print("\n✅ Gate PASSED - No policy violations found")
+        sys.exit(0)
+    else:
+        print(f"\n❌ Gate FAILED - {len(report.policy_violations)} violations found")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
