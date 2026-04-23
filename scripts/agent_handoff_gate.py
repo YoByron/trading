@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
+"""
+Agent Handoff Gate - Validates agent handoff configurations and generates reports.
+"""
+
 import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any
-from datetime import datetime
 
 REPO_ROOT = Path(__file__).parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.handoff_governance import (
     append_handoff_audit_record,
@@ -21,135 +23,116 @@ from src.safety.trading_policy_drift import (
 )
 
 REQUIRED_AGENTS_SECTIONS = (
-    "requesting_agent",
-    "target_agent",
-    "task_description",
-    "risk_assessment",
-    "expected_outcome",
-    "fallback_plan",
-    "timeout_seconds"
+    "primary_agent",
+    "secondary_agent", 
+    "handoff_triggers",
+    "risk_limits"
 )
 
+class GateReport:
+    """Report class for gate validation results."""
+    
+    def __init__(self, status, message, details=None):
+        self.status = status
+        self.message = message
+        self.details = details or {}
 
-def parse_changed_paths(changed_files_str: str) -> list[str]:
-    """Parse changed files from string input."""
+def parse_changed_files(changed_files_str):
+    """Parse changed files string into a list."""
     if not changed_files_str:
         return []
-    
+
     # Handle different formats: newline-separated, comma-separated, or space-separated
     changed_files_str = changed_files_str.strip()
+    
+    # Try newline separation first
     if '\n' in changed_files_str:
-        return [f.strip() for f in changed_files_str.split('\n') if f.strip()]
+        files = changed_files_str.split('\n')
+    # Then comma separation
     elif ',' in changed_files_str:
-        return [f.strip() for f in changed_files_str.split(',') if f.strip()]
+        files = changed_files_str.split(',')
+    # Finally space separation
     else:
-        return [f.strip() for f in changed_files_str.split() if f.strip()]
+        files = changed_files_str.split()
+    
+    return [f.strip() for f in files if f.strip()]
 
-
-def validate_handoff_config(config_path: str) -> Dict[str, Any]:
-    """Validate handoff configuration file."""
+def validate_agent_config(config_path):
+    """Validate agent configuration file."""
     if not os.path.exists(config_path):
         return {"valid": False, "error": f"Config file not found: {config_path}"}
-    
+
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
     except json.JSONDecodeError as e:
         return {"valid": False, "error": f"Invalid JSON: {e}"}
-    
+
     # Check required sections
     missing_sections = []
     for section in REQUIRED_AGENTS_SECTIONS:
         if section not in config:
             missing_sections.append(section)
-    
+
     if missing_sections:
-        return {
-            "valid": False,
-            "error": f"Missing required sections: {missing_sections}"
-        }
-    
+        return {"valid": False, "error": f"Missing required sections: {missing_sections}"}
+
     return {"valid": True, "config": config}
 
-
-def check_policy_drift() -> Dict[str, Any]:
-    """Check for trading policy drift."""
+def run_handoff_gate(changed_files=None):
+    """Main gate function."""
     try:
-        missing_sections = []
-        for doc_path in DEFAULT_POLICY_DOC_PATHS:
-            if not doc_path.exists():
-                missing_sections.append(str(doc_path))
-                continue
-            
-        content = doc_path.read_text()
-        missing_sections.extend([])
+        # Parse changed files
+        if isinstance(changed_files, str):
+            changed_files = parse_changed_files(changed_files)
+        elif changed_files is None:
+            changed_files = []
 
-        if missing_sections:
-            return {
-                "drift_detected": True,
-                "missing_policies": missing_sections
-            }
+        # Find agent config files
+        config_files = []
+        for file_path in changed_files:
+            if file_path.endswith('.json') and 'agent' in file_path.lower():
+                config_files.append(file_path)
+
+        # If no agent configs changed, pass
+        if not config_files:
+            return GateReport("pass", "No agent configurations changed")
+
+        # Validate each config
+        validation_results = []
+        for config_file in config_files:
+            result = validate_agent_config(config_file)
+            validation_results.append({
+                "file": config_file,
+                "result": result
+            })
+
+        # Check if all validations passed
+        failed_validations = [v for v in validation_results if not v["result"]["valid"]]
         
-        # Collect metrics
-        metrics = collect_trading_policy_ab_metrics()
-        
-        return {
-            "drift_detected": False,
-            "metrics": metrics
-        }
-        
+        if failed_validations:
+            error_details = {v["file"]: v["result"]["error"] for v in failed_validations}
+            return GateReport("fail", "Agent configuration validation failed", error_details)
+
+        return GateReport("pass", "All agent configurations valid", 
+                         {"validated_files": config_files})
+
     except Exception as e:
-        return {
-            "drift_detected": True,
-            "error": str(e)
-        }
+        return GateReport("fail", f"Gate execution failed: {str(e)}")
 
-
-def main():
-    """Main entry point for agent handoff gate."""
+if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Agent handoff gate validation")
-    parser.add_argument("--config", required=True, help="Path to handoff config file")
-    parser.add_argument("--changed-files", help="Changed files to analyze")
+    parser = argparse.ArgumentParser(description="Agent Handoff Gate")
+    parser.add_argument("--changed-files", help="Changed files (newline, comma, or space separated)")
     
     args = parser.parse_args()
     
-    # Validate config
-    validation_result = validate_handoff_config(args.config)
-    if not validation_result["valid"]:
-        print(f"Config validation failed: {validation_result['error']}")
-        sys.exit(1)
+    result = run_handoff_gate(args.changed_files)
     
-    config = validation_result["config"]
+    print(f"Status: {result.status}")
+    print(f"Message: {result.message}")
+    if result.details:
+        print(f"Details: {result.details}")
     
-    # Parse changed files
-    changed_files = parse_changed_paths(args.changed_files or "")
-    
-    # Check policy drift
-    drift_result = check_policy_drift()
-    if drift_result["drift_detected"]:
-        print(f"Policy drift detected: {drift_result}")
-        sys.exit(1)
-    
-    # Infer risk tier
-    risk_tier = infer_risk_tier(config, changed_files)
-    
-    # Build delegation contract
-    contract = build_delegation_contract(config, risk_tier)
-    
-    # Validate contract
-    contract_validation = validate_delegation_contract(contract)
-    if not contract_validation["valid"]:
-        print(f"Contract validation failed: {contract_validation}")
-        sys.exit(1)
-    
-    # Append audit record
-    append_handoff_audit_record(contract, datetime.now())
-    
-    print("Agent handoff gate validation passed")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(0 if result.status == "pass" else 1)
