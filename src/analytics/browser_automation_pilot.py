@@ -2,70 +2,62 @@
 
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from typing import List, Optional
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+@dataclass
+class BrowserPilotRunResult:
+    success: bool
+    steps_completed: int
+    total_steps: int
+    error_message: Optional[str] = None
+    screenshots: List[str] = None
 
-class AnchorBrowserProvider:
-    """Provides browser automation capabilities for anchor-based navigation."""
-    
-    def __init__(self, headless: bool = True):
-        self.headless = headless
-        self.driver = None
-    
-    def start_browser(self) -> bool:
-        """Start the browser instance."""
-        # Placeholder implementation
-        return True
-    
-    def stop_browser(self) -> None:
-        """Stop the browser instance."""
-        pass
-    
-    def navigate_to_anchor(self, url: str, anchor_id: str) -> bool:
-        """Navigate to a specific anchor on a page."""
-        # Placeholder implementation
-        return True
-    
-    def extract_data(self, selectors: Dict[str, str]) -> Dict[str, Any]:
-        """Extract data using CSS selectors."""
-        # Placeholder implementation
-        return {}
-
+    def __post_init__(self):
+        if self.screenshots is None:
+            self.screenshots = []
 
 class BrowserAutomationPilot:
-    """Main pilot class for browser automation tasks."""
+    """Browser automation pilot for trading analytics."""
     
     def __init__(self):
-        self.provider = AnchorBrowserProvider()
+        self.steps = []
     
-    def run_extraction_task(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Run a data extraction task."""
-        # Placeholder implementation
-        return {}
-
+    def add_step(self, action: str, target: str):
+        """Add a step to the automation sequence."""
+        self.steps.append({"action": action, "target": target})
+    
+    def run(self) -> BrowserPilotRunResult:
+        """Run the browser automation sequence."""
+        try:
+            # Simulate running steps
+            for i, step in enumerate(self.steps):
+                print(f"Executing step {i+1}: {step['action']} on {step['target']}")
+            
+            return BrowserPilotRunResult(
+                success=True,
+                steps_completed=len(self.steps),
+                total_steps=len(self.steps)
+            )
+        except Exception as e:
+            return BrowserPilotRunResult(
+                success=False,
+                steps_completed=0,
+                total_steps=len(self.steps),
+                error_message=str(e)
+            )
 
 def main():
     """Main entry point for browser automation pilot."""
-    print("Starting browser automation pilot...")
-    
     pilot = BrowserAutomationPilot()
+    pilot.add_step("navigate", "https://example.com")
+    pilot.add_step("click", "#submit-button")
     
-    # Example task
-    config = {
-        "url": "https://example.com",
-        "anchor": "data-section",
-        "selectors": {
-            "title": "h1",
-            "value": ".data-value"
-        }
-    }
-    
-    result = pilot.run_extraction_task(config)
-    print(f"✅ Extraction completed: {result}")
-
+    result = pilot.run()
+    print(f"Browser automation result: {result}")
 
 if __name__ == "__main__":
     main()

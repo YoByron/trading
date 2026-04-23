@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import os
+import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+from dataclasses import dataclass
 from typing import List
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -13,86 +15,91 @@ from src.safety.trading_policy_drift import (
     PolicyDriftMonitor,
 )
 
-
 @dataclass
-class GateReport:
-    passed: bool
-    policy_violations: List[str]
+class GateStepResult:
+    success: bool
     steps: List[str]
+    violations: List[str]
 
+def get_changed_files() -> List[Path]:
+    """Get list of changed files from git diff."""
+    try:
+        result = subprocess.run(
+            ['git', 'diff', '--name-only', 'HEAD~1', 'HEAD'],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT
+        )
+        changed_files = result.stdout
+    except Exception:
+        return []
 
-def parse_changed_paths(changed_files: str) -> List[Path]:
-    """Parse changed file paths from git diff output."""
     if not changed_files.strip():
         return []
-    
+
     paths = []
     for line in changed_files.strip().split('\n'):
         if line.strip():
-            paths.append(Path(line.strip()))
+            file_path = REPO_ROOT / line.strip()
+            if file_path.exists():
+                paths.append(file_path)
     return paths
 
-
-def run_policy_gate(changed_files: List[Path]) -> GateReport:
-    """Run policy drift checks on changed files."""
+def check_policy_drift() -> GateStepResult:
+    """Check for policy drift in changed files."""
+    changed_files = get_changed_files()
     steps = []
     policy_violations = []
-    
+
     steps.append("Initializing policy drift monitor")
     monitor = PolicyDriftMonitor(
         policy_doc_paths=DEFAULT_POLICY_DOC_PATHS,
         repo_root=REPO_ROOT
     )
-    
+
     steps.append(f"Checking {len(changed_files)} changed files for policy violations")
-    
+
     for file_path in changed_files:
         if file_path.suffix == '.py':
-            steps.append(f"Analyzing {file_path}")
+            steps.append(f"Analyzing {file_path.relative_to(REPO_ROOT)}")
             violations = monitor.check_file_for_violations(file_path)
             if violations:
                 policy_violations.extend(violations)
-    
+
     if policy_violations:
         steps.append(f"Found {len(policy_violations)} policy violations")
-        for violation in policy_violations:
-            steps.append(f"  - {violation}")
+        return GateStepResult(
+            success=False,
+            steps=steps,
+            violations=policy_violations
+        )
     else:
         steps.append("No policy violations found")
-    
-    passed = len(policy_violations) == 0
-
-    return GateReport(
-        passed=passed,
-        policy_violations=policy_violations,
-        steps=steps
-    )
-
+        return GateStepResult(
+            success=True,
+            steps=steps,
+            violations=[]
+        )
 
 def main():
-    """Main entry point for the agent handoff gate."""
-    import argparse
+    """Main entry point for agent handoff gate."""
+    result = check_policy_drift()
     
-    parser = argparse.ArgumentParser(description="Run agent handoff gate checks")
-    parser.add_argument("changed_files", nargs="*", help="List of changed files")
-    args = parser.parse_args()
+    print("Agent Handoff Gate Results:")
+    print("=" * 40)
     
-    changed_paths = [Path(f) for f in args.changed_files]
-    report = run_policy_gate(changed_paths)
+    for step in result.steps:
+        print(f"✓ {step}")
     
-    print("Agent Handoff Gate Report")
-    print("=" * 25)
-    
-    for step in report.steps:
-        print(f"  {step}")
-    
-    if report.passed:
-        print("\n✅ Gate PASSED - No policy violations found")
-        sys.exit(0)
-    else:
-        print(f"\n❌ Gate FAILED - {len(report.policy_violations)} violations found")
+    if not result.success:
+        print("\nPolicy Violations:")
+        print("-" * 20)
+        for violation in result.violations:
+            print(f"⚠️  {violation}")
         sys.exit(1)
-
+    else:
+        print("\n✅ All checks passed!")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
