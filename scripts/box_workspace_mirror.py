@@ -2,50 +2,31 @@
 
 import sys
 from pathlib import Path
-from dataclasses import dataclass
-from typing import List, Optional
-from datetime import datetime
+from typing import Dict, List
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-
-@dataclass
-class MirrorEntry:
-    local_path: str
-    box_path: str
-    last_sync: Optional[datetime]
-    sync_status: str
-
-
-def create_workspace_mirror():
-    """Create a mirror of the workspace in Box."""
-    print("📦 Creating Box Workspace Mirror...")
+def build_manifest_entries(workspace_data: Dict) -> List[Dict]:
+    """Build manifest entries from workspace data"""
+    entries = []
     
-    # Placeholder implementation
-    mirror_entries = [
-        MirrorEntry(
-            local_path="./data",
-            box_path="/trading/data",
-            last_sync=datetime.now(),
-            sync_status="synced"
-        ),
-        MirrorEntry(
-            local_path="./scripts",
-            box_path="/trading/scripts",
-            last_sync=datetime.now(),
-            sync_status="synced"
-        )
-    ]
+    if 'files' in workspace_data:
+        for file_info in workspace_data['files']:
+            entry = {
+                'path': file_info.get('path', ''),
+                'size': file_info.get('size', 0),
+                'modified': file_info.get('modified', ''),
+                'type': file_info.get('type', 'file')
+            }
+            entries.append(entry)
     
-    print(f"✅ Created mirror with {len(mirror_entries)} entries")
-    
-    for entry in mirror_entries:
-        print(f"   📁 {entry.local_path} -> {entry.box_path}")
-    
-    return mirror_entries
+    return entries
 
+def main():
+    """Main entry point for box workspace mirror"""
+    print("Box Workspace Mirror")
+    return 0
 
 if __name__ == "__main__":
-    create_workspace_mirror()
+    sys.exit(main())
