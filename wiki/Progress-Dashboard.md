@@ -1,13 +1,13 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-04-23T18:52:12.344492+00:00`.
+Generated from canonical ledgers at `2026-04-23T19:32:27.396933+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
 ## Current Status
 
-- Paper equity: `$93,610.70`
-- Paper total P/L today: `$12.00`
+- Paper equity: `$93,613.70`
+- Paper total P/L today: `$15.00`
 - Paper realized P/L today: `n/a`
 - Paper unrealized P/L today: `n/a`
 - Fills today: `None`
