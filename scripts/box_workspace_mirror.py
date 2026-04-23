@@ -1,139 +1,62 @@
 #!/usr/bin/env python3
-"""Box workspace mirror for trading system file synchronization."""
 
-import json
+import os
 import sys
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Dict, Any
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+# Add project root to path
+REPO_ROOT = Path(__file__).parent.parent.absolute()
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 
-@dataclass
-class MirrorEntry:
-    """Entry representing a file/folder in the mirror."""
-    path: str
-    box_id: str
-    local_path: str
-    last_modified: str
-    size: int
-    is_folder: bool
-
-
-@dataclass
-class SyncResult:
-    """Result of a sync operation."""
-    success: bool
-    files_synced: int
-    errors: List[str]
-    timestamp: str
-
-
-class BoxWorkspaceMirror:
-    """Box workspace mirror for file synchronization."""
+def build_manifest_entries(workspace_path: Path) -> List[Dict[str, Any]]:
+    """Build manifest entries for workspace files"""
+    entries = []
     
-    def __init__(self, workspace_path: Path):
-        self.workspace_path = workspace_path
-        self.mirror_index_path = workspace_path / ".box_mirror_index.json"
-        
-    def load_mirror_index(self) -> Dict[str, MirrorEntry]:
-        """Load the mirror index from disk."""
-        if not self.mirror_index_path.exists():
-            return {}
-            
-        try:
-            with open(self.mirror_index_path, 'r') as f:
-                data = json.load(f)
-                
-            index = {}
-            for path, entry_data in data.items():
-                index[path] = MirrorEntry(
-                    path=entry_data['path'],
-                    box_id=entry_data['box_id'],
-                    local_path=entry_data['local_path'],
-                    last_modified=entry_data['last_modified'],
-                    size=entry_data['size'],
-                    is_folder=entry_data['is_folder']
-                )
-                
-            return index
-            
-        except Exception as e:
-            print(f"Error loading mirror index: {e}")
-            return {}
+    if not workspace_path.exists():
+        return entries
     
-    def save_mirror_index(self, index: Dict[str, MirrorEntry]) -> None:
-        """Save the mirror index to disk."""
-        data = {}
-        for path, entry in index.items():
-            data[path] = {
-                'path': entry.path,
-                'box_id': entry.box_id,
-                'local_path': entry.local_path,
-                'last_modified': entry.last_modified,
-                'size': entry.size,
-                'is_folder': entry.is_folder
-            }
-            
-        with open(self.mirror_index_path, 'w') as f:
-            json.dump(data, f, indent=2)
+    for file_path in workspace_path.rglob("*"):
+        if file_path.is_file():
+            relative_path = file_path.relative_to(workspace_path)
+            entries.append({
+                'path': str(relative_path),
+                'size': file_path.stat().st_size,
+                'modified': file_path.stat().st_mtime,
+                'type': 'file'
+            })
     
-    def sync_workspace(self) -> SyncResult:
-        """Sync the workspace with Box."""
-        print(f"🔄 Syncing workspace: {self.workspace_path}")
-        
-        errors = []
-        files_synced = 0
-        
-        try:
-            # Load current mirror index
-            index = self.load_mirror_index()
-            
-            # Mock sync operation for now
-            # In real implementation, this would connect to Box API
-            print("   📁 Checking for changes...")
-            print("   ✅ No changes detected (mock implementation)")
-            
-            # Save updated index
-            self.save_mirror_index(index)
-            
-            return SyncResult(
-                success=True,
-                files_synced=files_synced,
-                errors=errors,
-                timestamp=datetime.now().isoformat()
-            )
-            
-        except Exception as e:
-            errors.append(str(e))
-            return SyncResult(
-                success=False,
-                files_synced=files_synced,
-                errors=errors,
-                timestamp=datetime.now().isoformat()
-            )
+    return entries
+
+
+def mirror_workspace_to_box(workspace_path: Path, box_folder_id: str = None):
+    """Mirror local workspace to Box folder"""
+    # This would integrate with Box API
+    manifest = build_manifest_entries(workspace_path)
+    
+    print(f"Found {len(manifest)} files to mirror")
+    for entry in manifest:
+        print(f"  {entry['path']} ({entry['size']} bytes)")
+    
+    # TODO: Implement actual Box API integration
+    return manifest
 
 
 def main():
-    """Main function for Box workspace mirror."""
-    workspace_path = REPO_ROOT / "data" / "box_workspace"
-    workspace_path.mkdir(parents=True, exist_ok=True)
+    """Main execution function"""
+    workspace_path = REPO_ROOT / "workspace"
     
-    mirror = BoxWorkspaceMirror(workspace_path)
-    result = mirror.sync_workspace()
-    
-    if result.success:
-        print(f"✅ Sync completed successfully")
-        print(f"   Files synced: {result.files_synced}")
-    else:
-        print(f"❌ Sync failed with {len(result.errors)} errors:")
-        for error in result.errors:
-            print(f"   - {error}")
+    try:
+        result = mirror_workspace_to_box(workspace_path)
+        print(f"Workspace mirror completed: {len(result)} files processed")
+        return True
+    except Exception as e:
+        print(f"Error mirroring workspace: {e}")
+        return False
 
 
 if __name__ == "__main__":
-    main()
+    success = main()
+    sys.exit(0 if success else 1)

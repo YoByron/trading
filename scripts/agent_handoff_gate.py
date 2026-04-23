@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Agent handoff gate for trading system safety checks."""
 
+import os
 import sys
-from dataclasses import dataclass
+import subprocess
 from pathlib import Path
+from dataclasses import dataclass
 from typing import List, Set
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).parent.parent.absolute()
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -18,79 +19,101 @@ from src.safety.trading_policy_drift import (
 
 @dataclass
 class GateResult:
-    """Result from a gate check."""
     success: bool
     message: str
     details: List[str]
 
 
-def parse_changed_paths(changed_files_str: str) -> Set[str]:
-    """Parse changed file paths from a string."""
+@dataclass
+class GateReport:
+    gate_name: str
+    result: GateResult
+    timestamp: str
+
+
+def get_changed_files() -> Set[Path]:
+    """Get list of changed files from git diff"""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT
+        )
+        changed_files_str = result.stdout
+    except subprocess.CalledProcessError:
+        return set()
+
     if not changed_files_str or changed_files_str.strip() == "":
         return set()
-    
+
     paths = set()
     for line in changed_files_str.strip().split('\n'):
         if line.strip():
-            paths.add(line.strip())
+            full_path = REPO_ROOT / line.strip()
+            if full_path.exists():
+                paths.add(full_path)
     return paths
 
 
 def check_policy_drift() -> GateResult:
-    """Check for policy drift in trading documents."""
+    """Check for policy drift in changed files"""
     try:
         monitor = PolicyDriftMonitor(
             policy_docs=DEFAULT_POLICY_DOC_PATHS,
             output_file=REPO_ROOT / "data" / "policy_drift_analysis.json"
         )
-        
+
         drift_results = monitor.analyze_drift()
-        
+
         if drift_results.has_significant_drift:
             return GateResult(
                 success=False,
-                message="Significant policy drift detected",
+                message="Policy drift detected - handoff blocked",
                 details=[
                     f"Overall drift score: {drift_results.overall_drift_score:.3f}",
-                    f"Files with high drift: {len(drift_results.high_drift_files)}",
-                    f"Threshold: {drift_results.drift_threshold}"
+                    f"Files with significant drift: {len(drift_results.files_with_drift)}",
+                    "Review drift analysis in data/policy_drift_analysis.json",
+                    "Consider updating policy documents or code alignment"
                 ]
             )
-        
+
         return GateResult(
             success=True,
-            message="No significant policy drift detected",
+            message="Policy drift check passed",
             details=[
                 f"Overall drift score: {drift_results.overall_drift_score:.3f}",
-                f"All files within acceptable drift threshold"
+                "All files within acceptable drift threshold"
             ]
         )
-        
+
     except Exception as e:
         return GateResult(
             success=False,
-            message=f"Policy drift check failed with error: {str(e)}",
-            details=[]
+            message=f"Policy drift check failed: {str(e)}",
+            details=["Check logs for detailed error information"]
         )
 
 
 def main():
-    """Main entry point for the agent handoff gate."""
-    print("🔍 Running agent handoff gate checks...")
-
-    # Run policy drift check
-    policy_result = check_policy_drift()
-
-    if not policy_result.success:
-        print("❌ Policy drift check failed:")
-        print(f"   {policy_result.message}")
-        for detail in policy_result.details:
-            print(f"   - {detail}")
+    """Main gate check function"""
+    import datetime
+    
+    gate_result = check_policy_drift()
+    
+    report = GateReport(
+        gate_name="policy_drift_check",
+        result=gate_result,
+        timestamp=datetime.datetime.now().isoformat()
+    )
+    
+    print(f"Gate Result: {'PASS' if gate_result.success else 'FAIL'}")
+    print(f"Message: {gate_result.message}")
+    for detail in gate_result.details:
+        print(f"  - {detail}")
+    
+    if not gate_result.success:
         sys.exit(1)
-    else:
-        print("✅ Policy drift check passed")
-
-    print("🎉 All gate checks passed!")
 
 
 if __name__ == "__main__":
