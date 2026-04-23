@@ -1,132 +1,117 @@
 #!/usr/bin/env python3
 """
-Update AI credit stress signal for trading system.
+Update AI Credit Stress Signal for trading system.
 """
-import os
 import sys
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any, Optional
 import json
+from datetime import datetime
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 
-@dataclass
-class SeriesSummary:
-    """Summary of a time series for credit stress analysis."""
-    series_id: str
-    count: int
-    mean: float
-    std: float
-    min_value: float
-    max_value: float
-    last_value: float
-    trend: str  # 'up', 'down', 'stable'
+def evaluate_ai_credit_stress_signal(market_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Evaluate AI credit stress signal based on market data."""
+    # Default stress indicators
+    stress_indicators = {
+        'credit_spreads': market_data.get('credit_spreads', 0.0),
+        'volatility_index': market_data.get('vix', 0.0),
+        'yield_curve_inversion': market_data.get('yield_inversion', False),
+        'liquidity_stress': market_data.get('liquidity_stress', 0.0)
+    }
+    
+    # Calculate stress score (0-100)
+    stress_score = 0.0
+    
+    # Credit spreads component (0-40 points)
+    if stress_indicators['credit_spreads'] > 0.05:  # 5% threshold
+        stress_score += min(40, stress_indicators['credit_spreads'] * 800)
+    
+    # Volatility component (0-30 points)
+    if stress_indicators['volatility_index'] > 20:
+        stress_score += min(30, (stress_indicators['volatility_index'] - 20) * 1.5)
+    
+    # Yield curve inversion (0-20 points)
+    if stress_indicators['yield_curve_inversion']:
+        stress_score += 20
+    
+    # Liquidity stress component (0-10 points)
+    stress_score += min(10, stress_indicators['liquidity_stress'] * 10)
+    
+    # Determine signal level
+    if stress_score >= 70:
+        signal_level = 'CRITICAL'
+    elif stress_score >= 50:
+        signal_level = 'HIGH'
+    elif stress_score >= 30:
+        signal_level = 'MEDIUM'
+    else:
+        signal_level = 'LOW'
+    
+    return {
+        'signal_level': signal_level,
+        'stress_score': min(100, stress_score),
+        'indicators': stress_indicators,
+        'timestamp': datetime.now().isoformat(),
+        'recommendation': get_recommendation(signal_level)
+    }
 
 
-class CreditStressSignalUpdater:
-    """Updates credit stress signals for the AI trading system."""
+def get_recommendation(signal_level: str) -> str:
+    """Get trading recommendation based on signal level."""
+    recommendations = {
+        'CRITICAL': 'Reduce exposure, increase cash position, hedge credit risk',
+        'HIGH': 'Cautious positioning, monitor closely, consider defensive trades',
+        'MEDIUM': 'Normal operations with enhanced monitoring',
+        'LOW': 'Normal operations, consider opportunistic trades'
+    }
+    return recommendations.get(signal_level, 'Monitor market conditions')
+
+
+def update_signal_file(signal_data: Dict[str, Any], output_file: Optional[str] = None) -> Path:
+    """Update the AI credit stress signal file."""
+    if output_file is None:
+        output_file = REPO_ROOT / "data" / "ai_credit_stress_signal.json"
+    else:
+        output_file = Path(output_file)
     
-    def __init__(self):
-        self.data_path = REPO_ROOT / "data" / "credit_stress"
-        self.data_path.mkdir(parents=True, exist_ok=True)
-        self.signals_file = self.data_path / "stress_signals.json"
+    # Ensure directory exists
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     
-    def generate_series_summary(self, series_id: str, data: List[float]) -> SeriesSummary:
-        """Generate summary statistics for a data series."""
-        if not data:
-            return SeriesSummary(
-                series_id=series_id,
-                count=0,
-                mean=0.0,
-                std=0.0,
-                min_value=0.0,
-                max_value=0.0,
-                last_value=0.0,
-                trend='stable'
-            )
-        
-        import statistics
-        
-        count = len(data)
-        mean_val = statistics.mean(data)
-        std_val = statistics.stdev(data) if count > 1 else 0.0
-        min_val = min(data)
-        max_val = max(data)
-        last_val = data[-1]
-        
-        # Simple trend detection
-        if count >= 2:
-            if data[-1] > data[-2]:
-                trend = 'up'
-            elif data[-1] < data[-2]:
-                trend = 'down'
-            else:
-                trend = 'stable'
-        else:
-            trend = 'stable'
-        
-        return SeriesSummary(
-            series_id=series_id,
-            count=count,
-            mean=mean_val,
-            std=std_val,
-            min_value=min_val,
-            max_value=max_val,
-            last_value=last_val,
-            trend=trend
-        )
+    # Write signal data
+    with open(output_file, 'w') as f:
+        json.dump(signal_data, f, indent=2)
     
-    def update_stress_signals(self) -> bool:
-        """Update credit stress signals."""
-        try:
-            # Mock data for demonstration
-            mock_data = {
-                "credit_spreads": [1.2, 1.3, 1.4, 1.5, 1.6],
-                "default_rates": [0.02, 0.025, 0.03, 0.028, 0.032],
-                "liquidity_index": [0.8, 0.75, 0.7, 0.72, 0.68]
-            }
-            
-            summaries = {}
-            for series_id, data in mock_data.items():
-                summary = self.generate_series_summary(series_id, data)
-                summaries[series_id] = {
-                    "series_id": summary.series_id,
-                    "count": summary.count,
-                    "mean": summary.mean,
-                    "std": summary.std,
-                    "min_value": summary.min_value,
-                    "max_value": summary.max_value,
-                    "last_value": summary.last_value,
-                    "trend": summary.trend
-                }
-            
-            # Save to file
-            with open(self.signals_file, 'w') as f:
-                json.dump(summaries, f, indent=2)
-            
-            return True
-            
-        except Exception as e:
-            print(f"Error updating stress signals: {e}")
-            return False
+    return output_file
 
 
 def main():
-    """Main function to update credit stress signals."""
-    updater = CreditStressSignalUpdater()
-    success = updater.update_stress_signals()
+    """Main entry point for updating AI credit stress signal."""
+    # Example market data (in production, this would come from data feeds)
+    sample_market_data = {
+        'credit_spreads': 0.03,  # 3%
+        'vix': 25.0,
+        'yield_inversion': False,
+        'liquidity_stress': 0.2
+    }
     
-    if success:
-        print("✅ Credit stress signals updated successfully")
-    else:
-        print("❌ Failed to update credit stress signals")
+    print("🔍 Evaluating AI Credit Stress Signal...")
     
-    return success
+    # Evaluate signal
+    signal_result = evaluate_ai_credit_stress_signal(sample_market_data)
+    
+    print(f"📊 Signal Level: {signal_result['signal_level']}")
+    print(f"📈 Stress Score: {signal_result['stress_score']:.1f}/100")
+    print(f"💡 Recommendation: {signal_result['recommendation']}")
+    
+    # Update signal file
+    signal_file = update_signal_file(signal_result)
+    print(f"💾 Signal updated in: {signal_file}")
+    
+    return signal_result
 
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()
