@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
+"""Agent handoff gate validation script."""
 
-import argparse
 import json
 import logging
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 # Add repo root to Python path for imports
-SCRIPT_DIR = Path(__file__).parent.absolute()
-REPO_ROOT = SCRIPT_DIR.parent
-
+REPO_ROOT = Path(__file__).parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -31,298 +28,300 @@ from src.safety.trading_policy_drift import (
 )
 
 REQUIRED_AGENTS_SECTIONS = (
-    "market_analysis",
-    "risk_management",
-    "execution",
-    "monitoring"
+    "## 🎯 Current Focus",
+    "## 🔄 Status Update",
+    "## 📊 Key Metrics",
+    "## 🔄 Agent Transition",
+    "## ⚠️ Risk Assessment", 
+    "## 🎯 Next Steps"
 )
 
-# Configuration file paths
-DEFAULT_CONFIG_PATH = REPO_ROOT / "config" / "agent_handoff_gate.json"
-HANDOFF_LOG_PATH = REPO_ROOT / "logs" / "agent_handoffs.json"
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class GateStepResult:
     """Result of a gate validation step."""
-    
-    def __init__(self, step_name: str, passed: bool, message: str = ""):
+
+    def __init__(self, step_name: str, passed: bool, message: str, details: Optional[Dict] = None):
         self.step_name = step_name
         self.passed = passed
         self.message = message
-        self.timestamp = datetime.now().isoformat()
-    
+        self.details = details or {}
+        self.timestamp = datetime.now()
+
     def to_dict(self) -> Dict:
+        """Convert result to dictionary."""
         return {
             "step_name": self.step_name,
             "passed": self.passed,
             "message": self.message,
-            "timestamp": self.timestamp
+            "details": self.details,
+            "timestamp": self.timestamp.isoformat()
         }
 
 
-class GateReport:
-    """Report containing handoff gate analysis results."""
-
-    def __init__(self):
-        self.timestamp = datetime.now().isoformat()
-        self.policy_drift_metrics = {}
-        self.handoff_validation = {}
-        self.delegation_contract = {}
-        self.fallback_plan = {}
-        self.risk_tier = None
-        self.required_steps = []
-        self.completed_steps = []
-        self.gate_results = []
-        self.passed = False
-        self.errors = []
-        self.warnings = []
-
-    def to_dict(self) -> Dict:
-        """Convert report to dictionary."""
-        return {
-            "timestamp": self.timestamp,
-            "policy_drift_metrics": self.policy_drift_metrics,
-            "handoff_validation": self.handoff_validation,
-            "delegation_contract": self.delegation_contract,
-            "fallback_plan": self.fallback_plan,
-            "risk_tier": self.risk_tier,
-            "required_steps": self.required_steps,
-            "completed_steps": self.completed_steps,
-            "gate_results": [result.to_dict() for result in self.gate_results],
-            "passed": self.passed,
-            "errors": self.errors,
-            "warnings": self.warnings
-        }
-
-
-def load_handoff_config(config_path: Optional[Path] = None) -> Dict:
-    """Load agent handoff gate configuration."""
-    if config_path is None:
-        config_path = DEFAULT_CONFIG_PATH
+def parse_changed_paths(changed_files_str: str) -> list:
+    """Parse changed files string into list of paths."""
+    if not changed_files_str or changed_files_str.strip() == '':
+        return []
     
-    if not config_path.exists():
-        logging.warning(f"Config file not found at {config_path}, using defaults")
-        return {
-            "risk_thresholds": {
-                "low": 0.3,
-                "medium": 0.6,
-                "high": 0.8
-            },
-            "required_approvals": {
-                "low": 1,
-                "medium": 2,
-                "high": 3
-            },
-            "timeout_seconds": 300
-        }
-    
+    # Split by newlines and filter out empty strings
+    paths = [line.strip() for line in changed_files_str.strip().split('\n') if line.strip()]
+    return paths
+
+
+def validate_handoff_documentation(handoff_doc_path: str) -> GateStepResult:
+    """Validate that handoff documentation exists and contains required sections."""
     try:
-        with open(config_path, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logging.error(f"Failed to load config from {config_path}: {e}")
-        raise
-
-
-def analyze_trading_policy_drift(report: GateReport) -> None:
-    """Analyze trading policy drift and add results to report."""
-    try:
-        # Collect policy drift metrics
-        metrics = collect_trading_policy_ab_metrics(DEFAULT_POLICY_DOC_PATHS)
-        report.policy_drift_metrics = metrics
+        doc_path = Path(handoff_doc_path)
         
-        # Write metrics to output file
-        write_trading_policy_ab_metrics(metrics)
+        if not doc_path.exists():
+            return GateStepResult(
+                "handoff_documentation",
+                False,
+                f"Handoff documentation not found at {handoff_doc_path}"
+            )
         
-        # Analyze drift severity
-        drift_score = metrics.get("overall_drift_score", 0.0)
-        if drift_score > 0.5:
-            report.errors.append(f"High policy drift detected: {drift_score:.2f}")
-            step_result = GateStepResult("policy_drift_check", False, 
-                                       f"Drift score {drift_score:.2f} exceeds threshold")
-        else:
-            step_result = GateStepResult("policy_drift_check", True, 
-                                       f"Drift score {drift_score:.2f} within acceptable range")
-        
-        report.gate_results.append(step_result)
-        
-    except Exception as e:
-        error_msg = f"Failed to analyze policy drift: {e}"
-        logging.error(error_msg)
-        report.errors.append(error_msg)
-        step_result = GateStepResult("policy_drift_check", False, error_msg)
-        report.gate_results.append(step_result)
-
-
-def validate_handoff_requirements(handoff_data: Dict, report: GateReport) -> None:
-    """Validate handoff requirements and update report."""
-    try:
-        # Infer risk tier based on handoff data
-        risk_tier = infer_risk_tier(handoff_data)
-        report.risk_tier = risk_tier
-        
-        # Get required steps for this risk tier
-        required_steps = required_step_names_for_tier(risk_tier)
-        report.required_steps = required_steps
-        
-        # Validate delegation contract
-        delegation_contract = build_delegation_contract(handoff_data)
-        validation_result = validate_delegation_contract(delegation_contract)
-        
-        report.delegation_contract = delegation_contract
-        report.handoff_validation = validation_result
-        
-        if validation_result.get("valid", False):
-            step_result = GateStepResult("delegation_validation", True, 
-                                       "Delegation contract is valid")
-        else:
-            errors = validation_result.get("errors", [])
-            error_msg = f"Delegation validation failed: {errors}"
-            report.errors.append(error_msg)
-            step_result = GateStepResult("delegation_validation", False, error_msg)
-        
-        report.gate_results.append(step_result)
-        
-        # Build fallback plan
-        fallback_plan = build_fallback_plan(handoff_data)
-        report.fallback_plan = fallback_plan
-        
-        step_result = GateStepResult("fallback_plan", True, "Fallback plan generated")
-        report.gate_results.append(step_result)
-        
-    except Exception as e:
-        error_msg = f"Failed to validate handoff requirements: {e}"
-        logging.error(error_msg)
-        report.errors.append(error_msg)
-        step_result = GateStepResult("handoff_validation", False, error_msg)
-        report.gate_results.append(step_result)
-
-
-def check_agent_readiness(handoff_data: Dict, report: GateReport) -> None:
-    """Check if all required agents are ready for handoff."""
-    try:
-        agents_config = handoff_data.get("agents", {})
+        content = doc_path.read_text()
+        missing_sections = []
         
         for section in REQUIRED_AGENTS_SECTIONS:
-            if section not in agents_config:
-                error_msg = f"Missing required agent section: {section}"
-                report.errors.append(error_msg)
-                step_result = GateStepResult(f"agent_check_{section}", False, error_msg)
-                report.gate_results.append(step_result)
-                continue
-            
-            agent_config = agents_config[section]
-            if not agent_config.get("enabled", False):
-                warning_msg = f"Agent section {section} is disabled"
-                report.warnings.append(warning_msg)
-                step_result = GateStepResult(f"agent_check_{section}", False, warning_msg)
-            else:
-                step_result = GateStepResult(f"agent_check_{section}", True, 
-                                           f"Agent {section} is ready")
-            
-            report.gate_results.append(step_result)
-            
+            if section not in content:
+                missing_sections.append(section)
+        
+        if missing_sections:
+            return GateStepResult(
+                "handoff_documentation",
+                False,
+                f"Missing required sections: {', '.join(missing_sections)}",
+                {"missing_sections": missing_sections}
+            )
+        
+        return GateStepResult(
+            "handoff_documentation",
+            True,
+            "All required sections present in handoff documentation"
+        )
+        
     except Exception as e:
-        error_msg = f"Failed to check agent readiness: {e}"
-        logging.error(error_msg)
-        report.errors.append(error_msg)
-        step_result = GateStepResult("agent_readiness", False, error_msg)
-        report.gate_results.append(step_result)
+        return GateStepResult(
+            "handoff_documentation", 
+            False,
+            f"Error validating handoff documentation: {str(e)}"
+        )
 
 
-def execute_handoff_gate(handoff_data: Dict, config_path: Optional[Path] = None) -> GateReport:
-    """Execute the complete agent handoff gate process."""
-    report = GateReport()
-    
+def validate_risk_assessment(changed_paths: list) -> GateStepResult:
+    """Validate risk assessment based on changed files."""
     try:
-        # Load configuration
-        load_handoff_config(config_path)
+        # Determine risk tier based on changed paths
+        risk_tier = infer_risk_tier(changed_paths)
         
-        # Step 1: Analyze trading policy drift
-        analyze_trading_policy_drift(report)
+        return GateStepResult(
+            "risk_assessment",
+            True,
+            f"Risk tier determined: {risk_tier}",
+            {"risk_tier": risk_tier, "changed_paths": changed_paths}
+        )
         
-        # Step 2: Validate handoff requirements
-        validate_handoff_requirements(handoff_data, report)
+    except Exception as e:
+        return GateStepResult(
+            "risk_assessment",
+            False,
+            f"Error during risk assessment: {str(e)}"
+        )
+
+
+def validate_policy_compliance(changed_paths: list) -> GateStepResult:
+    """Validate that changes comply with trading policies."""
+    try:
+        # Collect policy metrics for changed areas
+        metrics = collect_trading_policy_ab_metrics(
+            changed_paths=changed_paths,
+            policy_doc_paths=DEFAULT_POLICY_DOC_PATHS
+        )
         
-        # Step 3: Check agent readiness
-        check_agent_readiness(handoff_data, report)
+        # Write metrics to file
+        write_trading_policy_ab_metrics(metrics)
         
-        # Determine overall pass/fail status
-        failed_steps = [r for r in report.gate_results if not r.passed]
-        report.passed = len(failed_steps) == 0 and len(report.errors) == 0
+        # Check for any policy violations
+        violations = []
+        for metric in metrics.get('violations', []):
+            violations.append(metric)
         
-        # Record handoff attempt
-        handoff_record = {
-            "timestamp": report.timestamp,
-            "handoff_data": handoff_data,
-            "gate_passed": report.passed,
-            "errors": report.errors,
-            "warnings": report.warnings
+        if violations:
+            return GateStepResult(
+                "policy_compliance",
+                False,
+                f"Policy violations detected: {len(violations)}",
+                {"violations": violations}
+            )
+        
+        return GateStepResult(
+            "policy_compliance",
+            True,
+            "No policy violations detected",
+            {"metrics": metrics}
+        )
+        
+    except Exception as e:
+        return GateStepResult(
+            "policy_compliance",
+            False,
+            f"Error validating policy compliance: {str(e)}"
+        )
+
+
+def validate_delegation_contract(contract_data: Dict) -> GateStepResult:
+    """Validate delegation contract structure and content."""
+    try:
+        # Use the imported validation function
+        is_valid, errors = validate_delegation_contract(contract_data)
+        
+        if not is_valid:
+            return GateStepResult(
+                "delegation_contract",
+                False,
+                f"Delegation contract validation failed: {'; '.join(errors)}",
+                {"errors": errors}
+            )
+        
+        return GateStepResult(
+            "delegation_contract",
+            True,
+            "Delegation contract is valid"
+        )
+        
+    except Exception as e:
+        return GateStepResult(
+            "delegation_contract",
+            False,
+            f"Error validating delegation contract: {str(e)}"
+        )
+
+
+def run_gate_validation(
+    handoff_doc_path: str,
+    changed_files: str,
+    output_path: str = "gate_validation_results.json"
+) -> Dict:
+    """Run complete gate validation process."""
+    results = []
+    
+    logger.info("Starting agent handoff gate validation...")
+    
+    # Parse changed files
+    changed_paths = parse_changed_paths(changed_files)
+    logger.info(f"Detected {len(changed_paths)} changed files")
+    
+    # Step 1: Validate handoff documentation
+    logger.info("Validating handoff documentation...")
+    doc_result = validate_handoff_documentation(handoff_doc_path)
+    results.append(doc_result)
+    
+    # Step 2: Validate risk assessment  
+    logger.info("Performing risk assessment...")
+    risk_result = validate_risk_assessment(changed_paths)
+    results.append(risk_result)
+    
+    # Step 3: Validate policy compliance
+    logger.info("Checking policy compliance...")
+    policy_result = validate_policy_compliance(changed_paths)
+    results.append(policy_result)
+    
+    # Step 4: Build and validate delegation contract
+    logger.info("Building delegation contract...")
+    try:
+        risk_tier = risk_result.details.get('risk_tier', 'LOW')
+        contract_data = build_delegation_contract(
+            from_agent="current",
+            to_agent="next", 
+            risk_tier=risk_tier,
+            changed_paths=changed_paths
+        )
+        
+        contract_result = validate_delegation_contract(contract_data)
+        results.append(contract_result)
+        
+    except Exception as e:
+        contract_result = GateStepResult(
+            "delegation_contract",
+            False, 
+            f"Error building delegation contract: {str(e)}"
+        )
+        results.append(contract_result)
+    
+    # Compile final results
+    all_passed = all(result.passed for result in results)
+    
+    final_results = {
+        "gate_passed": all_passed,
+        "timestamp": datetime.now().isoformat(),
+        "steps": [result.to_dict() for result in results],
+        "summary": {
+            "total_steps": len(results),
+            "passed_steps": sum(1 for r in results if r.passed),
+            "failed_steps": sum(1 for r in results if not r.passed)
         }
-        append_handoff_audit_record(handoff_record)
-        
-    except Exception as e:
-        error_msg = f"Critical error in handoff gate execution: {e}"
-        logging.error(error_msg)
-        report.errors.append(error_msg)
-        report.passed = False
+    }
     
-    return report
-
-
-def main():
-    """Main entry point for agent handoff gate."""
-    parser = argparse.ArgumentParser(description="Agent Handoff Gate")
-    parser.add_argument("--config", type=Path, help="Path to configuration file")
-    parser.add_argument("--handoff-data", type=Path, required=True,
-                       help="Path to handoff data JSON file")
-    parser.add_argument("--output", type=Path, 
-                       help="Path to write gate report (default: stdout)")
-    parser.add_argument("--log-level", default="INFO", 
-                       choices=["DEBUG", "INFO", "WARNING", "ERROR"])
+    # Save results to file
+    output_file = Path(output_path)
+    output_file.write_text(json.dumps(final_results, indent=2))
     
-    args = parser.parse_args()
-    
-    # Setup logging
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
+    # Append to audit record
     try:
-        # Load handoff data
-        if not args.handoff_data.exists():
-            logging.error(f"Handoff data file not found: {args.handoff_data}")
-            sys.exit(1)
-        
-        with open(args.handoff_data, 'r') as f:
-            handoff_data = json.load(f)
-        
-        # Execute handoff gate
-        report = execute_handoff_gate(handoff_data, args.config)
-        
-        # Output results
-        report_json = json.dumps(report.to_dict(), indent=2)
-        
-        if args.output:
-            with open(args.output, 'w') as f:
-                f.write(report_json)
-            logging.info(f"Gate report written to {args.output}")
-        else:
-            print(report_json)
-        
-        # Exit with error code if gate failed
-        if not report.passed:
-            logging.error("Agent handoff gate FAILED")
-            sys.exit(1)
-        else:
-            logging.info("Agent handoff gate PASSED")
-            sys.exit(0)
-            
+        append_handoff_audit_record({
+            "gate_validation": final_results,
+            "changed_paths": changed_paths
+        })
     except Exception as e:
-        logging.error(f"Failed to execute handoff gate: {e}")
-        sys.exit(1)
+        logger.warning(f"Failed to append audit record: {str(e)}")
+    
+    logger.info(f"Gate validation completed. Results saved to {output_path}")
+    logger.info(f"Gate status: {'PASSED' if all_passed else 'FAILED'}")
+    
+    return final_results
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Agent handoff gate validation")
+    parser.add_argument(
+        "--handoff-doc", 
+        required=True,
+        help="Path to handoff documentation file"
+    )
+    parser.add_argument(
+        "--changed-files",
+        default="",
+        help="Newline-separated list of changed files"
+    )
+    parser.add_argument(
+        "--output",
+        default="gate_validation_results.json",
+        help="Output file for validation results"
+    )
+    
+    args = parser.parse_args()
+    
+    try:
+        results = run_gate_validation(
+            args.handoff_doc,
+            args.changed_files, 
+            args.output
+        )
+        
+        # Exit with appropriate code
+        exit_code = 0 if results["gate_passed"] else 1
+        sys.exit(exit_code)
+        
+    except Exception as e:
+        logger.error(f"Gate validation failed with error: {str(e)}")
+        sys.exit(1)
