@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-import os
 import subprocess
 import sys
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List
 
 REPO_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.trading_policy_drift import (
     DEFAULT_POLICY_DOC_PATHS,
@@ -16,89 +16,93 @@ from src.safety.trading_policy_drift import (
 )
 
 @dataclass
-class GateStepResult:
+class GateReport:
+    """Report from agent handoff gate checks."""
     success: bool
     steps: List[str]
-    violations: List[str]
+    violations: List[str] = None
 
-def get_changed_files() -> List[Path]:
-    """Get list of changed files from git diff."""
-    try:
-        result = subprocess.run(
-            ['git', 'diff', '--name-only', 'HEAD~1', 'HEAD'],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT
-        )
-        changed_files = result.stdout
-    except Exception:
-        return []
+    def __post_init__(self):
+        if self.violations is None:
+            self.violations = []
 
-    if not changed_files.strip():
-        return []
-
-    paths = []
-    for line in changed_files.strip().split('\n'):
-        if line.strip():
-            file_path = REPO_ROOT / line.strip()
-            if file_path.exists():
-                paths.append(file_path)
-    return paths
-
-def check_policy_drift() -> GateStepResult:
-    """Check for policy drift in changed files."""
-    changed_files = get_changed_files()
+def check_policy_drift() -> GateReport:
+    """
+    Check for policy drift using the PolicyDriftMonitor.
+    
+    Returns:
+        GateReport: Success status and details of the check
+    """
     steps = []
-    policy_violations = []
-
-    steps.append("Initializing policy drift monitor")
-    monitor = PolicyDriftMonitor(
-        policy_doc_paths=DEFAULT_POLICY_DOC_PATHS,
-        repo_root=REPO_ROOT
-    )
-
-    steps.append(f"Checking {len(changed_files)} changed files for policy violations")
-
-    for file_path in changed_files:
-        if file_path.suffix == '.py':
-            steps.append(f"Analyzing {file_path.relative_to(REPO_ROOT)}")
-            violations = monitor.check_file_for_violations(file_path)
-            if violations:
-                policy_violations.extend(violations)
-
-    if policy_violations:
-        steps.append(f"Found {len(policy_violations)} policy violations")
-        return GateStepResult(
+    violations = []
+    
+    try:
+        # Initialize the policy drift monitor
+        steps.append("Initializing policy drift monitor")
+        monitor = PolicyDriftMonitor(
+            policy_doc_paths=DEFAULT_POLICY_DOC_PATHS,
+            repo_root=REPO_ROOT
+        )
+        
+        # Check for policy violations
+        steps.append("Scanning for policy violations")
+        violations_found = monitor.check_violations()
+        
+        if violations_found:
+            violations.extend([str(v) for v in violations_found])
+            steps.append(f"Found {len(violations_found)} policy violations")
+            return GateReport(
+                success=False,
+                steps=steps,
+                violations=violations
+            )
+        else:
+            steps.append("No policy violations detected")
+            return GateReport(
+                success=True,
+                steps=steps,
+                violations=violations
+            )
+            
+    except Exception as e:
+        violations.append(f"Error during policy drift check: {str(e)}")
+        steps.append("Policy drift check failed with error")
+        return GateReport(
             success=False,
             steps=steps,
-            violations=policy_violations
+            violations=violations
         )
-    else:
-        steps.append("No policy violations found")
-        return GateStepResult(
-            success=True,
-            steps=steps,
-            violations=[]
-        )
+
+def run_gate_checks() -> GateReport:
+    """
+    Run all agent handoff gate checks.
+    
+    Returns:
+        GateReport: Aggregated results from all checks
+    """
+    # For now, just run policy drift check
+    # Can be extended with additional checks
+    return check_policy_drift()
 
 def main():
     """Main entry point for agent handoff gate."""
     result = check_policy_drift()
-    
+
     print("Agent Handoff Gate Results:")
     print("=" * 40)
-    
+
     for step in result.steps:
         print(f"✓ {step}")
-    
+
     if not result.success:
         print("\nPolicy Violations:")
-        print("-" * 20)
         for violation in result.violations:
-            print(f"⚠️  {violation}")
+            print(f"  ⚠️  {violation}")
+        
+        print(f"\nGate Status: ❌ BLOCKED ({len(result.violations)} violations)")
         sys.exit(1)
     else:
-        print("\n✅ All checks passed!")
+        print("\nGate Status: ✅ APPROVED")
         sys.exit(0)
 
 if __name__ == "__main__":
