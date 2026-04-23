@@ -1,120 +1,103 @@
-#!/usr/bin/env python3
-
 import json
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List
 from dataclasses import dataclass
 
-# Add project root to path for imports
 REPO_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.trading_policy_drift import (
     DEFAULT_POLICY_DOC_PATHS,
 )
 
 @dataclass
-class GateReport:
-    """Report from the agent handoff gate analysis"""
-    has_policy_changes: bool
-    policy_changes: List[str]
-    recommendations: List[str]
-    risk_level: str
+class GateStepResult:
+    step_name: str
+    passed: bool
+    message: str
+    risk_level: str = "LOW"
 
-def parse_changed_paths(changes_file: str) -> List[str]:
-    """Parse changed file paths from a changes file"""
+def load_changes_from_file(changes_file: str = "changes.json") -> List[str]:
+    """Load changed file paths from a JSON file"""
     if not Path(changes_file).exists():
         return []
-    
+
     with open(changes_file, 'r') as f:
         changes_data = json.load(f)
 
-    # Extract file paths from the changes data
-    changed_files = []
-    if isinstance(changes_data, list):
-        # If it's a list of file paths
-        changed_files = [str(item) for item in changes_data if isinstance(item, str)]
-    elif isinstance(changes_data, dict) and 'files' in changes_data:
-        changed_files = changes_data['files']
+    changed_paths = []
+    if isinstance(changes_data, dict):
+        if 'files' in changes_data:
+            changed_paths.extend(changes_data['files'])
+        if 'changed_files' in changes_data:
+            changed_paths.extend(changes_data['changed_files'])
+    elif isinstance(changes_data, list):
+        changed_paths = changes_data
 
-    return changed_files
+    return changed_paths
 
 def check_policy_changes(changed_paths: List[str]) -> tuple[bool, List[str]]:
-    """Check if any changed files are policy-related"""
+    """Check if any policy files were changed"""
     policy_changes = []
 
     for path in changed_paths:
-        # Check against default policy paths
-        if path in DEFAULT_POLICY_DOC_PATHS:
-            policy_changes.append(f"Policy document changed: {path}")
+        path_obj = Path(path)
+        for policy_path in DEFAULT_POLICY_DOC_PATHS:
+            if str(path_obj).startswith(str(policy_path)):
+                policy_changes.append(path)
+                break
 
-        # Check for other policy-related patterns
-        if any(pattern in path.lower() for pattern in ['policy', 'compliance', 'risk']):
-            policy_changes.append(f"Policy-related file changed: {path}")
+    return len(policy_changes) > 0, policy_changes
 
-    has_changes = len(policy_changes) > 0
-    return has_changes, policy_changes
-
-def generate_handoff_report(changed_paths: List[str]) -> GateReport:
+def generate_handoff_report(changed_paths: List[str]) -> GateStepResult:
     """Generate a comprehensive handoff report"""
     has_policy_changes, policy_changes = check_policy_changes(changed_paths)
-    
+
     recommendations = []
     risk_level = "LOW"
-    
+
     if has_policy_changes:
         risk_level = "HIGH"
         recommendations.append("Manual review required for policy changes")
         recommendations.append("Verify compliance with trading regulations")
-    
-    # Check for other high-risk patterns
-    high_risk_patterns = ['trading', 'execution', 'order', 'position']
-    for path in changed_paths:
-        if any(pattern in path.lower() for pattern in high_risk_patterns):
-            if risk_level == "LOW":
-                risk_level = "MEDIUM"
-            recommendations.append(f"Review trading logic changes in: {path}")
-    
-    if not recommendations:
-        recommendations.append("No high-risk changes detected")
-    
-    return GateReport(
-        has_policy_changes=has_policy_changes,
-        policy_changes=policy_changes,
-        recommendations=recommendations,
+
+    if not changed_paths:
+        return GateStepResult(
+            step_name="handoff_gate",
+            passed=True,
+            message="No changes detected - proceeding with standard workflow",
+            risk_level=risk_level
+        )
+
+    report_lines = [
+        f"Files changed: {len(changed_paths)}",
+        f"Policy files affected: {len(policy_changes)}",
+        f"Risk level: {risk_level}"
+    ]
+
+    if recommendations:
+        report_lines.append("Recommendations:")
+        report_lines.extend(f"- {rec}" for rec in recommendations)
+
+    return GateStepResult(
+        step_name="handoff_gate",
+        passed=risk_level != "HIGH",
+        message="\n".join(report_lines),
         risk_level=risk_level
     )
 
 def main():
-    """Main entry point for the agent handoff gate"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Agent handoff gate analysis")
-    parser.add_argument("--changes-file", required=True, help="Path to changes file")
-    parser.add_argument("--output", help="Output file for report")
-    
-    args = parser.parse_args()
-    
-    # Parse changed paths
-    changed_paths = parse_changed_paths(args.changes_file)
-    
-    # Generate report
-    report = generate_handoff_report(changed_paths)
-    
-    # Output report
-    report_data = {
-        "has_policy_changes": report.has_policy_changes,
-        "policy_changes": report.policy_changes,
-        "recommendations": report.recommendations,
-        "risk_level": report.risk_level
-    }
-    
-    if args.output:
-        with open(args.output, 'w') as f:
-            json.dump(report_data, f, indent=2)
-    else:
-        print(json.dumps(report_data, indent=2))
+    """Main entry point for agent handoff gate"""
+    changed_paths = load_changes_from_file()
+    result = generate_handoff_report(changed_paths)
+
+    print(f"Handoff Gate Result: {'PASS' if result.passed else 'FAIL'}")
+    print(f"Risk Level: {result.risk_level}")
+    print(f"Message:\n{result.message}")
+
+    return 0 if result.passed else 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
