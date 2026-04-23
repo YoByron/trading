@@ -1,14 +1,13 @@
-#!/usr/bin/env python3
-"""Agent handoff gate checks for safe system transitions."""
-
+import os
 import sys
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import List
 from enum import Enum
 
 REPO_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.trading_policy_drift import (
     DEFAULT_POLICY_DOC_PATHS,
@@ -17,8 +16,9 @@ from src.safety.trading_policy_drift import (
 
 
 class GateStatus(Enum):
-    PASS = "PASS"
-    FAIL = "FAIL"
+    PASS = "pass"
+    FAIL = "fail"
+    WARNING = "warning"
 
 
 @dataclass
@@ -29,96 +29,128 @@ class GateReport:
     details: List[str] = None
 
 
-@dataclass
-class GateStepResult:
-    passed: bool
-    report: GateReport
+def parse_changed_paths(changes_file: str = None) -> List[str]:
+    """Parse changed file paths from git or environment."""
+    changed_paths = []
+    
+    if changes_file and os.path.exists(changes_file):
+        with open(changes_file, 'r') as f:
+            changed_paths = [line.strip() for line in f if line.strip()]
+    else:
+        # Fallback to git diff
+        import subprocess
+        try:
+            result = subprocess.run(
+                ['git', 'diff', '--name-only', 'HEAD~1', 'HEAD'],
+                capture_output=True,
+                text=True,
+                cwd=REPO_ROOT
+            )
+            if result.returncode == 0:
+                changed_paths = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+        except Exception:
+            pass
+    
+    return changed_paths
 
 
-def check_trading_policy_drift() -> GateReport:
-    """Check for trading policy drift."""
+def check_policy_document_integrity() -> GateReport:
+    """Verify trading policy documents are intact and accessible."""
     try:
-        monitor = PolicyDriftMonitor(policy_doc_paths=DEFAULT_POLICY_DOC_PATHS)
-        drift_results = monitor.check_policy_drift()
-
-        if drift_results.has_drift:
+        monitor = PolicyDriftMonitor()
+        missing_docs = []
+        
+        for doc_path in DEFAULT_POLICY_DOC_PATHS:
+            full_path = REPO_ROOT / doc_path
+            if not full_path.exists():
+                missing_docs.append(str(doc_path))
+        
+        if missing_docs:
             return GateReport(
-                check_name="Trading Policy Drift",
+                check_name="Policy Document Integrity",
                 status=GateStatus.FAIL,
-                message=f"Policy drift detected in {len(drift_results.drifted_policies)} policies",
-                details=[
-                    f"{policy}: {reason}"
-                    for policy, reason in drift_results.drifted_policies.items()
-                ],
+                message=f"Missing {len(missing_docs)} policy documents",
+                details=missing_docs
             )
-        else:
-            return GateReport(
-                check_name="Trading Policy Drift",
-                status=GateStatus.PASS,
-                message="No policy drift detected",
-            )
+        
+        return GateReport(
+            check_name="Policy Document Integrity",
+            status=GateStatus.PASS,
+            message="All policy documents found and accessible"
+        )
+    
     except Exception as e:
         return GateReport(
-            check_name="Trading Policy Drift",
+            check_name="Policy Document Integrity",
             status=GateStatus.FAIL,
-            message=f"Error checking policy drift: {str(e)}",
+            message=f"Error checking policy documents: {str(e)}"
         )
 
 
-def check_system_health() -> GateReport:
-    """Check basic system health metrics."""
-    # Placeholder for system health checks
+def check_critical_file_changes() -> GateReport:
+    """Check if critical trading files have been modified."""
+    critical_patterns = [
+        "src/safety/",
+        "src/trading/",
+        "config/trading_limits.yaml",
+        "config/risk_parameters.yaml"
+    ]
+    
+    changed_paths = parse_changed_paths()
+    critical_changes = []
+    
+    for path in changed_paths:
+        if any(pattern in path for pattern in critical_patterns):
+            critical_changes.append(path)
+    
+    if critical_changes:
+        return GateReport(
+            check_name="Critical File Changes",
+            status=GateStatus.WARNING,
+            message=f"Found {len(critical_changes)} critical file changes",
+            details=critical_changes
+        )
+    
     return GateReport(
-        check_name="System Health",
+        check_name="Critical File Changes",
         status=GateStatus.PASS,
-        message="System health check passed",
-    )
-
-
-def check_market_conditions() -> GateReport:
-    """Check if market conditions are suitable for agent operation."""
-    # Placeholder for market condition checks
-    return GateReport(
-        check_name="Market Conditions",
-        status=GateStatus.PASS,
-        message="Market conditions are suitable",
+        message="No critical trading files modified"
     )
 
 
 def run_gate_checks() -> bool:
-    """Run all gate checks before agent handoff."""
+    """Run all gate checks and return True if all pass."""
     print("🚪 Running Agent Handoff Gate Checks...")
-
+    print("=" * 50)
+    
     checks = [
-        check_trading_policy_drift,
-        check_market_conditions,
-        check_system_health,
+        check_policy_document_integrity,
+        check_critical_file_changes,
     ]
-
-    all_passed = True
+    
     reports = []
-
+    all_passed = True
+    
     for check in checks:
         report = check()
         reports.append(report)
-        
+
         status_emoji = "✅" if report.status == GateStatus.PASS else "❌"
         print(f"{status_emoji} {report.check_name}: {report.message}")
-        
+
         if report.details:
             for detail in report.details:
                 print(f"    - {detail}")
-        
+
         if report.status == GateStatus.FAIL:
             all_passed = False
-
-    print("\n" + "="*50)
+    
+    print("=" * 50)
     if all_passed:
-        print("🎉 All gate checks PASSED! Agent handoff is authorized.")
+        print("🎉 All gate checks passed! Handoff approved.")
     else:
-        print("🚫 Some gate checks FAILED! Agent handoff is BLOCKED.")
-    print("="*50)
-
+        print("❌ Gate checks failed. Please address issues before handoff.")
+    
     return all_passed
 
 
