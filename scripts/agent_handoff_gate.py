@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
+"""Agent handoff gate checks for safe system transitions."""
 
 import sys
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Callable
+from enum import Enum
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.trading_policy_drift import (
     DEFAULT_POLICY_DOC_PATHS,
@@ -15,99 +16,109 @@ from src.safety.trading_policy_drift import (
 )
 
 
+class GateStatus(Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+
 @dataclass
 class GateReport:
-    step_name: str
+    check_name: str
+    status: GateStatus
     message: str
-    details: Optional[List[str]] = None
-    success: bool = True
+    details: List[str] = None
+
+
+@dataclass
+class GateStepResult:
+    passed: bool
+    report: GateReport
 
 
 def check_trading_policy_drift() -> GateReport:
-    """Check for trading policy drift before agent handoff."""
+    """Check for trading policy drift."""
     try:
         monitor = PolicyDriftMonitor(policy_doc_paths=DEFAULT_POLICY_DOC_PATHS)
         drift_results = monitor.check_policy_drift()
-        
+
         if drift_results.has_drift:
             return GateReport(
-                step_name="Trading Policy Drift",
+                check_name="Trading Policy Drift",
+                status=GateStatus.FAIL,
                 message=f"Policy drift detected in {len(drift_results.drifted_policies)} policies",
                 details=[
-                    f"{policy}: {reason}" 
+                    f"{policy}: {reason}"
                     for policy, reason in drift_results.drifted_policies.items()
                 ],
-                success=False
             )
         else:
             return GateReport(
-                step_name="Trading Policy Drift",
+                check_name="Trading Policy Drift",
+                status=GateStatus.PASS,
                 message="No policy drift detected",
-                success=True
             )
     except Exception as e:
         return GateReport(
-            step_name="Trading Policy Drift",
+            check_name="Trading Policy Drift",
+            status=GateStatus.FAIL,
             message=f"Error checking policy drift: {str(e)}",
-            success=False
         )
 
 
-def check_market_conditions() -> GateReport:
-    """Check market conditions for safe trading."""
-    # Placeholder for market condition checks
+def check_system_health() -> GateReport:
+    """Check basic system health metrics."""
+    # Placeholder for system health checks
     return GateReport(
-        step_name="Market Conditions",
-        message="Market conditions check passed",
-        success=True
+        check_name="System Health",
+        status=GateStatus.PASS,
+        message="System health check passed",
     )
 
 
-def check_system_health() -> GateReport:
-    """Check system health metrics."""
-    # Placeholder for system health checks
+def check_market_conditions() -> GateReport:
+    """Check if market conditions are suitable for agent operation."""
+    # Placeholder for market condition checks
     return GateReport(
-        step_name="System Health",
-        message="System health check passed",
-        success=True
+        check_name="Market Conditions",
+        status=GateStatus.PASS,
+        message="Market conditions are suitable",
     )
 
 
 def run_gate_checks() -> bool:
     """Run all gate checks before agent handoff."""
     print("🚪 Running Agent Handoff Gate Checks...")
-    
+
     checks = [
         check_trading_policy_drift,
         check_market_conditions,
         check_system_health,
     ]
-    
+
     all_passed = True
     reports = []
-    
+
     for check in checks:
         report = check()
         reports.append(report)
         
-        status = "✅" if report.success else "❌"
-        print(f"{status} {report.step_name}: {report.message}")
+        status_emoji = "✅" if report.status == GateStatus.PASS else "❌"
+        print(f"{status_emoji} {report.check_name}: {report.message}")
         
         if report.details:
             for detail in report.details:
-                print(f"   - {detail}")
+                print(f"    - {detail}")
         
-        if not report.success:
+        if report.status == GateStatus.FAIL:
             all_passed = False
-    
-    print(f"\n🚪 Gate Status: {'OPEN' if all_passed else 'CLOSED'}")
-    
-    if not all_passed:
-        print("❌ Agent handoff blocked due to failed gate checks")
-        print("Fix the issues above before proceeding with agent handoff")
+
+    print("\n" + "="*50)
+    if all_passed:
+        print("🎉 All gate checks PASSED! Agent handoff is authorized.")
     else:
-        print("✅ All gate checks passed - agent handoff approved")
-    
+        print("🚫 Some gate checks FAILED! Agent handoff is BLOCKED.")
+    print("="*50)
+
     return all_passed
 
 
