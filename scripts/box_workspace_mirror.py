@@ -1,77 +1,36 @@
-import os
-import sys
-from pathlib import Path
-from typing import Dict, Any, Optional, List
-import json
+"""Box Workspace Mirror Script"""
+from dataclasses import dataclass
+from typing import List, Optional
 from datetime import datetime
 
-REPO_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(REPO_ROOT))
-
-# Try to import requests, make it optional
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
+@dataclass
+class MirrorEntry:
+    """Represents a file or folder to be mirrored"""
+    source_path: str
+    destination_path: str
+    last_modified: Optional[datetime] = None
+    size_bytes: Optional[int] = None
 
 class BoxWorkspaceMirror:
-    """Mirror Box workspace content locally"""
+    """Handles mirroring of Box workspace content"""
     
-    def __init__(self, workspace_path: Optional[Path] = None):
-        self.workspace_path = workspace_path or REPO_ROOT / "box_mirror"
-        self.workspace_path.mkdir(exist_ok=True)
+    def __init__(self, workspace_id: str):
+        self.workspace_id = workspace_id
+        self.mirror_entries: List[MirrorEntry] = []
+    
+    def add_mirror_entry(self, entry: MirrorEntry) -> None:
+        """Add a new mirror entry"""
+        self.mirror_entries.append(entry)
     
     def sync_workspace(self) -> bool:
-        """Sync Box workspace content"""
-        if not HAS_REQUESTS:
-            print("Warning: requests module not available, creating mock sync")
-            self._create_mock_content()
-            return True
-        
-        try:
-            # In a real implementation, this would sync with Box API
-            self._create_mock_content()
-            print(f"Workspace synced to {self.workspace_path}")
-            return True
-        
-        except Exception as e:
-            print(f"Error syncing workspace: {str(e)}")
-            return False
-    
-    def _create_mock_content(self):
-        """Create mock content for testing"""
-        mock_files = [
-            "trading_policies.md",
-            "risk_guidelines.md", 
-            "compliance_docs.pdf"
-        ]
-        
-        for filename in mock_files:
-            file_path = self.workspace_path / filename
-            with open(file_path, "w") as f:
-                f.write(f"Mock content for {filename}\nGenerated at {datetime.now()}")
-    
-    def list_files(self) -> List[str]:
-        """List files in workspace"""
-        if not self.workspace_path.exists():
-            return []
-        
-        return [f.name for f in self.workspace_path.iterdir() if f.is_file()]
+        """Sync the workspace mirror"""
+        # Implementation would handle actual Box API sync
+        return True
 
 def main():
-    """Main function"""
-    print("Starting Box workspace mirror...")
-    
-    mirror = BoxWorkspaceMirror()
-    success = mirror.sync_workspace()
-    
-    if success:
-        files = mirror.list_files()
-        print(f"Synced {len(files)} files: {files}")
-    
-    return success
+    """Main function for Box workspace mirroring"""
+    mirror = BoxWorkspaceMirror("test-workspace")
+    print(f"Initialized mirror for workspace: {mirror.workspace_id}")
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()
