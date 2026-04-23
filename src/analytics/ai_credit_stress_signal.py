@@ -1,47 +1,88 @@
+"""AI Credit Stress Signal Module"""
+
+import pandas as pd
+import numpy as np
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 @dataclass
-class CreditStressSignal:
-    """AI-driven credit stress signal."""
-    timestamp: datetime
-    stress_level: float
-    confidence: float
-    contributing_factors: Dict[str, float]
-    metadata: Optional[Dict[str, Any]] = None
+class AICreditStressSignal:
+    """AI-driven credit stress signal analyzer"""
     
-    def __post_init__(self):
-        if not 0 <= self.stress_level <= 1:
-            raise ValueError("Stress level must be between 0 and 1")
-        if not 0 <= self.confidence <= 1:
-            raise ValueError("Confidence must be between 0 and 1")
-
-class CreditStressAnalyzer:
-    """Analyzer for credit stress signals."""
-    
-    def __init__(self):
-        self.model_weights = {
-            "market_volatility": 0.3,
-            "credit_spreads": 0.4,
-            "liquidity_conditions": 0.2,
-            "macro_indicators": 0.1
-        }
-    
-    def analyze(self, market_data: Dict[str, Any]) -> CreditStressSignal:
-        """Analyze market data to generate credit stress signal."""
-        # Simplified stress calculation
-        stress_components = {}
-        total_stress = 0.0
+    def __init__(self, lookback_days: int = 252):
+        self.lookback_days = lookback_days
+        self.stress_threshold = 0.7  # Threshold for stress signal
         
-        for factor, weight in self.model_weights.items():
-            factor_value = market_data.get(factor, 0.5)
-            stress_components[factor] = factor_value
-            total_stress += factor_value * weight
+    def calculate_signal(self, credit_data: pd.DataFrame) -> Dict:
+        """Calculate credit stress signal"""
+        try:
+            # Basic implementation - can be enhanced with ML models
+            spreads = credit_data.get('spread', pd.Series())
+            volumes = credit_data.get('volume', pd.Series())
+            
+            if spreads.empty or volumes.empty:
+                return {
+                    'signal': 0.0,
+                    'stress_level': 'LOW',
+                    'confidence': 0.0,
+                    'timestamp': datetime.now().isoformat()
+                }
+            
+            # Calculate stress indicators
+            spread_zscore = (spreads - spreads.mean()) / spreads.std()
+            volume_ratio = volumes / volumes.rolling(window=20).mean()
+            
+            # Combine indicators
+            stress_signal = np.tanh(spread_zscore.iloc[-1] + (1 - volume_ratio.iloc[-1]))
+            
+            # Determine stress level
+            if stress_signal > self.stress_threshold:
+                stress_level = 'HIGH'
+            elif stress_signal > 0.3:
+                stress_level = 'MEDIUM'
+            else:
+                stress_level = 'LOW'
+                
+            return {
+                'signal': float(stress_signal),
+                'stress_level': stress_level,
+                'confidence': min(1.0, abs(stress_signal)),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                'signal': 0.0,
+                'stress_level': 'UNKNOWN',
+                'confidence': 0.0,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    def get_stress_factors(self, credit_data: pd.DataFrame) -> List[str]:
+        """Identify key stress factors"""
+        factors = []
         
-        return CreditStressSignal(
-            timestamp=datetime.now(),
-            stress_level=min(1.0, max(0.0, total_stress)),
-            confidence=0.8,  # Default confidence
-            contributing_factors=stress_components
-        )
+        try:
+            spreads = credit_data.get('spread', pd.Series())
+            if not spreads.empty:
+                recent_spread = spreads.iloc[-1]
+                avg_spread = spreads.mean()
+                
+                if recent_spread > avg_spread * 1.5:
+                    factors.append("Elevated credit spreads")
+                    
+            volumes = credit_data.get('volume', pd.Series())
+            if not volumes.empty:
+                recent_volume = volumes.iloc[-1]
+                avg_volume = volumes.mean()
+                
+                if recent_volume < avg_volume * 0.5:
+                    factors.append("Reduced trading volume")
+                    
+        except Exception:
+            factors.append("Unable to analyze stress factors")
+            
+        return factors
