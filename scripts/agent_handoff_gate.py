@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, List, Optional
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -12,54 +12,82 @@ from src.safety.trading_policy_drift import (
 )
 
 @dataclass
-class GateStepResult:
-    """Result of a gate validation step"""
+class GateReport:
+    """Report from the agent handoff gate analysis."""
     passed: bool
-    message: str
-    data: Dict[str, Any] = None
+    errors: List[str]
+    warnings: List[str]
+    drift_detected: bool
+    policy_violations: List[str]
 
-def check_policy_drift() -> GateStepResult:
-    """Check for policy drift in trading policies"""
-    monitor = PolicyDriftMonitor()
-
-    try:
-        drift_score = monitor.calculate_drift_score(DEFAULT_POLICY_DOC_PATHS)
-
-        if drift_score > 0.3:
-            return GateStepResult(
-                passed=False,
-                message=f"Policy drift detected: {drift_score:.3f}",
-                data={"drift_score": drift_score}
-            )
-
-        return GateStepResult(
-            passed=True,
-            message=f"Policy drift within acceptable range: {drift_score:.3f}",
-            data={"drift_score": drift_score}
+@dataclass
+class AgentHandoffGate:
+    """Gate to validate agent handoffs and policy compliance."""
+    
+    def __init__(self, policy_paths: Optional[List[Path]] = None):
+        self.policy_paths = policy_paths or DEFAULT_POLICY_DOC_PATHS
+        self.drift_monitor = PolicyDriftMonitor(self.policy_paths)
+    
+    def validate_handoff(self, context: Dict) -> GateReport:
+        """Validate an agent handoff request."""
+        errors = []
+        warnings = []
+        policy_violations = []
+        
+        # Check for policy drift
+        drift_result = self.drift_monitor.check_drift()
+        drift_detected = drift_result.drift_detected
+        
+        if drift_detected:
+            policy_violations.extend(drift_result.violations)
+        
+        # Validate context completeness
+        required_fields = ['agent_id', 'target_agent', 'task', 'risk_level']
+        for field in required_fields:
+            if field not in context:
+                errors.append(f"Missing required field: {field}")
+        
+        # Check risk level
+        if 'risk_level' in context:
+            risk_level = context['risk_level']
+            if risk_level not in ['low', 'medium', 'high']:
+                errors.append(f"Invalid risk level: {risk_level}")
+            elif risk_level == 'high':
+                warnings.append("High risk handoff requires additional approval")
+        
+        passed = len(errors) == 0 and not drift_detected
+        
+        return GateReport(
+            passed=passed,
+            errors=errors,
+            warnings=warnings,
+            drift_detected=drift_detected,
+            policy_violations=policy_violations
         )
 
-    except Exception as e:
-        return GateStepResult(
-            passed=False,
-            message=f"Policy drift check failed: {str(e)}",
-            data={"error": str(e)}
-        )
-
-def main():
-    """Main gate validation function"""
-    print("Running agent handoff gate...")
-
-    # Check policy drift
-    drift_result = check_policy_drift()
-    print(f"Policy drift check: {'PASSED' if drift_result.passed else 'FAILED'}")
-    print(f"  {drift_result.message}")
-
-    if not drift_result.passed:
-        print("Gate validation FAILED")
-        return False
-
-    print("Gate validation PASSED")
-    return True
+def main() -> bool:
+    """Main entry point for the agent handoff gate."""
+    gate = AgentHandoffGate()
+    
+    # Example validation
+    test_context = {
+        'agent_id': 'test_agent',
+        'target_agent': 'execution_agent',
+        'task': 'execute_trade',
+        'risk_level': 'medium'
+    }
+    
+    report = gate.validate_handoff(test_context)
+    
+    print(f"Gate validation: {'PASSED' if report.passed else 'FAILED'}")
+    if report.errors:
+        print("Errors:", report.errors)
+    if report.warnings:
+        print("Warnings:", report.warnings)
+    if report.drift_detected:
+        print("Policy drift detected:", report.policy_violations)
+    
+    return report.passed
 
 if __name__ == "__main__":
     success = main()

@@ -1,82 +1,130 @@
-"""Box workspace mirroring utilities."""
-
-import os
 import sys
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Dict, List, Optional
-import logging
+import json
+import shutil
 
-# Add src to path for imports
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-logger = logging.getLogger(__name__)
+@dataclass
+class MirrorEntry:
+    """Entry representing a file/folder to be mirrored."""
+    source_path: Path
+    target_path: Path
+    is_directory: bool
+    last_modified: Optional[float] = None
+    size: Optional[int] = None
+    checksum: Optional[str] = None
 
-def build_manifest_entries(workspace_path: str) -> List[Dict[str, str]]:
-    """Build manifest entries for Box workspace mirroring."""
-    entries = []
-    workspace = Path(workspace_path)
+class BoxWorkspaceMirror:
+    """Mirror Box workspace files to local filesystem."""
     
-    if not workspace.exists():
-        logger.warning(f"Workspace path does not exist: {workspace_path}")
+    def __init__(self, config_path: Optional[Path] = None):
+        self.config_path = config_path or REPO_ROOT / "config" / "box_mirror.json"
+        self.config = self._load_config()
+        self.mirror_entries: List[MirrorEntry] = []
+    
+    def _load_config(self) -> Dict:
+        """Load mirror configuration."""
+        if not self.config_path.exists():
+            return {
+                "source_folder": "/Box/Trading Workspace",
+                "target_folder": str(REPO_ROOT / "data" / "box_mirror"),
+                "exclude_patterns": ["*.tmp", "~*", ".DS_Store"],
+                "include_extensions": [".pdf", ".xlsx", ".docx", ".txt", ".md"]
+            }
+        
+        with open(self.config_path, 'r') as f:
+            return json.load(f)
+    
+    def scan_source(self) -> List[MirrorEntry]:
+        """Scan source directory for files to mirror."""
+        source_path = Path(self.config["source_folder"])
+        target_base = Path(self.config["target_folder"])
+        entries = []
+        
+        if not source_path.exists():
+            print(f"Source path does not exist: {source_path}")
+            return entries
+        
+        for item in source_path.rglob("*"):
+            if self._should_include(item):
+                relative_path = item.relative_to(source_path)
+                target_path = target_base / relative_path
+                
+                entry = MirrorEntry(
+                    source_path=item,
+                    target_path=target_path,
+                    is_directory=item.is_dir(),
+                    last_modified=item.stat().st_mtime if item.exists() else None,
+                    size=item.stat().st_size if item.is_file() else None
+                )
+                entries.append(entry)
+        
+        self.mirror_entries = entries
         return entries
     
-    for file_path in workspace.rglob("*"):
-        if file_path.is_file():
-            relative_path = file_path.relative_to(workspace)
-            entries.append({
-                "path": str(relative_path),
-                "full_path": str(file_path),
-                "size": str(file_path.stat().st_size),
-                "modified": str(file_path.stat().st_mtime)
-            })
-    
-    return entries
-
-def sync_workspace_to_box(workspace_path: str, box_folder_id: str) -> bool:
-    """Sync local workspace to Box folder."""
-    try:
-        entries = build_manifest_entries(workspace_path)
-        logger.info(f"Found {len(entries)} files to sync")
+    def _should_include(self, path: Path) -> bool:
+        """Check if path should be included in mirror."""
+        # Check exclude patterns
+        for pattern in self.config["exclude_patterns"]:
+            if path.match(pattern):
+                return False
         
-        # In real implementation, this would use Box API
-        # For now, just return success
-        return len(entries) > 0
+        # For files, check extensions
+        if path.is_file():
+            extensions = self.config["include_extensions"]
+            if extensions and path.suffix.lower() not in extensions:
+                return False
         
-    except Exception as e:
-        logger.error(f"Failed to sync workspace to Box: {e}")
-        return False
-
-def download_box_folder(box_folder_id: str, local_path: str) -> bool:
-    """Download Box folder to local path."""
-    try:
-        local_dir = Path(local_path)
-        local_dir.mkdir(parents=True, exist_ok=True)
-        
-        # In real implementation, this would use Box API
-        logger.info(f"Would download Box folder {box_folder_id} to {local_path}")
         return True
+    
+    def sync_files(self) -> Dict[str, int]:
+        """Sync files from source to target."""
+        stats = {"copied": 0, "updated": 0, "skipped": 0, "errors": 0}
         
-    except Exception as e:
-        logger.error(f"Failed to download Box folder: {e}")
-        return False
+        for entry in self.mirror_entries:
+            try:
+                if entry.is_directory:
+                    entry.target_path.mkdir(parents=True, exist_ok=True)
+                    stats["skipped"] += 1
+                else:
+                    self._sync_file(entry, stats)
+            except Exception as e:
+                print(f"Error syncing {entry.source_path}: {e}")
+                stats["errors"] += 1
+        
+        return stats
+    
+    def _sync_file(self, entry: MirrorEntry, stats: Dict[str, int]):
+        """Sync a single file."""
+        entry.target_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if not entry.target_path.exists():
+            shutil.copy2(entry.source_path, entry.target_path)
+            stats["copied"] += 1
+        elif entry.last_modified and entry.target_path.stat().st_mtime < entry.last_modified:
+            shutil.copy2(entry.source_path, entry.target_path)
+            stats["updated"] += 1
+        else:
+            stats["skipped"] += 1
 
-def main():
-    """Main function for Box workspace mirroring."""
-    workspace_path = os.getenv("WORKSPACE_PATH", ".")
-    box_folder_id = os.getenv("BOX_FOLDER_ID", "")
+def main() -> bool:
+    """Main entry point for Box workspace mirror."""
+    mirror = BoxWorkspaceMirror()
     
-    if not box_folder_id:
-        logger.error("BOX_FOLDER_ID environment variable not set")
-        return False
+    print("Scanning source directory...")
+    entries = mirror.scan_source()
+    print(f"Found {len(entries)} items to process")
     
-    success = sync_workspace_to_box(workspace_path, box_folder_id)
-    if success:
-        logger.info("Workspace sync completed successfully")
-    else:
-        logger.error("Workspace sync failed")
+    if entries:
+        print("Syncing files...")
+        stats = mirror.sync_files()
+        print(f"Sync complete: {stats}")
     
-    return success
+    return True
 
 if __name__ == "__main__":
     success = main()
