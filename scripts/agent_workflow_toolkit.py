@@ -1,43 +1,70 @@
-import os
+"""Agent workflow toolkit for managing trading workflows."""
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+
 
 @dataclass
-class RetroCapture:
-    timestamp: str
-    action: str
-    context: Dict[str, Any]
+class WorkflowStep:
+    """Represents a single step in a workflow."""
+    name: str
+    status: str
+    timestamp: datetime
+    details: Optional[str] = None
 
-def build_context_bundle():
-    """Build a context bundle for agent workflow operations."""
-    project_root = os.getcwd()
 
-    config = {
-        "environment": "development",
-        "project_root": project_root,
-        "features_enabled": ["analytics", "trading", "portfolio"]
-    }
+@dataclass
+class WorkflowRun:
+    """Represents a complete workflow execution."""
+    workflow_id: str
+    steps: List[WorkflowStep]
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    status: str = "running"
+
+
+def build_retro_markdown(workflow_run: WorkflowRun) -> str:
+    """Build a retrospective markdown report for a workflow run."""
+    lines = []
+    lines.append(f"# Workflow Retrospective: {workflow_run.workflow_id}")
+    lines.append(f"**Start Time:** {workflow_run.start_time}")
+    if workflow_run.end_time:
+        lines.append(f"**End Time:** {workflow_run.end_time}")
+        duration = workflow_run.end_time - workflow_run.start_time
+        lines.append(f"**Duration:** {duration}")
+    lines.append(f"**Status:** {workflow_run.status}")
+    lines.append("")
     
-    return config
-
-def capture_workflow_state() -> RetroCapture:
-    """Capture current workflow state for retrospective analysis."""
-    import datetime
+    lines.append("## Steps")
+    for step in workflow_run.steps:
+        lines.append(f"- **{step.name}** ({step.status}) - {step.timestamp}")
+        if step.details:
+            lines.append(f"  - {step.details}")
     
-    return RetroCapture(
-        timestamp=datetime.datetime.now().isoformat(),
-        action="workflow_checkpoint",
-        context=build_context_bundle()
+    return "\n".join(lines)
+
+
+def create_workflow_step(name: str, status: str = "pending", details: str = None) -> WorkflowStep:
+    """Create a new workflow step."""
+    return WorkflowStep(
+        name=name,
+        status=status,
+        timestamp=datetime.now(),
+        details=details
     )
 
-def generate_workflow_report():
-    """Generate a workflow execution report."""
-    state = capture_workflow_state()
-    
-    report = {
-        "capture_time": state.timestamp,
-        "project_status": "active",
-        "context": state.context
-    }
-    
-    return report
+
+def start_workflow(workflow_id: str) -> WorkflowRun:
+    """Start a new workflow run."""
+    return WorkflowRun(
+        workflow_id=workflow_id,
+        steps=[],
+        start_time=datetime.now()
+    )
+
+
+def complete_workflow(workflow_run: WorkflowRun, status: str = "completed") -> WorkflowRun:
+    """Mark a workflow as completed."""
+    workflow_run.end_time = datetime.now()
+    workflow_run.status = status
+    return workflow_run
