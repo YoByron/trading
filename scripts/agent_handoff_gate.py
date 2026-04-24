@@ -1,30 +1,28 @@
 from enum import Enum
-from typing import List, Any
+from typing import List
 
 class StepStatus(Enum):
     PENDING = "pending"
-    RUNNING = "running" 
+    RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
 
 class GateStep:
-    def __init__(self, name: str, handler=None):
+    def __init__(self, name: str, handler):
         self.name = name
         self.status = StepStatus.PENDING
         self.handler = handler
         self.error: str = ""
-        
+
     def start(self):
         self.status = StepStatus.RUNNING
-        if self.handler:
-            try:
-                self.handler()
-                self.status = StepStatus.COMPLETED
-            except Exception as e:
-                self.status = StepStatus.FAILED
-                self.error = str(e)
-        else:
-            self.status = StepStatus.COMPLETED
+
+    def complete(self):
+        self.status = StepStatus.COMPLETED
+
+    def fail(self, error: str = ""):
+        self.status = StepStatus.FAILED
+        self.error = error
 
 class GateStepResult:
     def __init__(self, step_name: str, success: bool, error: str = ""):
@@ -34,16 +32,21 @@ class GateStepResult:
 
 class GateReport:
     def __init__(self):
-        self.steps: List[GateStep] = []
-        self.success: bool = False
+        self.results: List[GateStepResult] = []
+        self.success = True
+
+    def add_result(self, result: GateStepResult):
+        self.results.append(result)
+        if not result.success:
+            self.success = False
 
 class AgentHandoffGate:
     def __init__(self):
         self.steps: List[GateStep] = []
-        
+
     def add_step(self, step: GateStep):
         self.steps.append(step)
-        
+
     def execute_step(self, step_name: str) -> GateStepResult:
         step = next((s for s in self.steps if s.name == step_name), None)
         if not step:
@@ -51,16 +54,23 @@ class AgentHandoffGate:
 
         try:
             step.start()
-            return GateStepResult(step_name, step.status == StepStatus.COMPLETED, step.error)
+            step.handler()
+            step.complete()
+            return GateStepResult(step_name, True)
         except Exception as e:
             return GateStepResult(step_name, False, error=str(e))
-            
+
     def execute_all(self) -> GateReport:
         report = GateReport()
-        
         for step in self.steps:
-            self.execute_step(step.name)
-            
-        report.steps = self.steps.copy()
-        report.success = all(step.status == StepStatus.COMPLETED for step in self.steps)
+            result = self.execute_step(step.name)
+            report.add_result(result)
+            if not result.success:
+                break
         return report
+
+def parse_changed_paths(paths_str: str) -> List[str]:
+    """Parse changed file paths from string input."""
+    if not paths_str:
+        return []
+    return [path.strip() for path in paths_str.split('\n') if path.strip()]
