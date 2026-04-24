@@ -1,88 +1,147 @@
-import sys
-from pathlib import Path
-from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Dict, List, Any, Optional, NamedTuple
+import json
+import os
+from datetime import datetime
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+class RetroCapture(NamedTuple):
+    """Capture of workflow execution for retrospective analysis."""
+    timestamp: str
+    workflow_id: str
+    step_results: List[Dict[str, Any]]
+    final_outcome: str
+    metrics: Dict[str, Any]
 
-@dataclass
-class ContextBundle:
-    market_data: Dict[str, Any]
-    risk_parameters: Dict[str, Any]
-    trading_policies: List[str]
-    metadata: Dict[str, Any]
-
-def build_context_bundle(market_symbols: List[str] = None) -> ContextBundle:
-    """Build a context bundle for agent workflow operations."""
-    if market_symbols is None:
-        market_symbols = ["SPY", "QQQ", "IWM"]
+def capture_workflow_execution(
+    workflow_id: str,
+    step_results: List[Dict[str, Any]],
+    final_outcome: str,
+    metrics: Optional[Dict[str, Any]] = None
+) -> RetroCapture:
+    """Capture workflow execution for analysis.
     
-    market_data = {}
-    for symbol in market_symbols:
-        market_data[symbol] = {
-            "price": 100.0,
-            "volume": 1000000,
-            "volatility": 0.2
-        }
-    
-    risk_parameters = {
-        "max_position_size": 0.1,
-        "stop_loss": 0.05,
-        "max_drawdown": 0.15
-    }
-    
-    trading_policies = [
-        "No trading during market close",
-        "Maximum position size 10% of portfolio",
-        "Stop loss at 5% decline"
-    ]
-    
-    metadata = {
-        "timestamp": "2024-01-01T00:00:00Z",
-        "version": "1.0.0",
-        "source": "agent_workflow_toolkit"
-    }
-    
-    return ContextBundle(
-        market_data=market_data,
-        risk_parameters=risk_parameters,
-        trading_policies=trading_policies,
-        metadata=metadata
+    Args:
+        workflow_id: Unique identifier for the workflow
+        step_results: Results from each step in the workflow
+        final_outcome: Final result of the workflow
+        metrics: Optional metrics about the execution
+        
+    Returns:
+        RetroCapture object with execution data
+    """
+    return RetroCapture(
+        timestamp=datetime.now().isoformat(),
+        workflow_id=workflow_id,
+        step_results=step_results,
+        final_outcome=final_outcome,
+        metrics=metrics or {}
     )
 
-def validate_workflow_context(context: ContextBundle) -> bool:
-    """Validate that a context bundle has required components."""
-    required_fields = ["market_data", "risk_parameters", "trading_policies", "metadata"]
+def save_retro_capture(capture: RetroCapture, output_dir: str = "workflow_captures") -> str:
+    """Save a RetroCapture to disk.
     
-    for field in required_fields:
-        if not hasattr(context, field):
-            return False
+    Args:
+        capture: RetroCapture object to save
+        output_dir: Directory to save the capture file
+        
+    Returns:
+        Path to the saved file
+    """
+    os.makedirs(output_dir, exist_ok=True)
     
-    # Validate market data structure
-    if not isinstance(context.market_data, dict):
-        return False
+    filename = f"{capture.workflow_id}_{capture.timestamp.replace(':', '-')}.json"
+    filepath = os.path.join(output_dir, filename)
     
-    # Validate risk parameters
-    required_risk_params = ["max_position_size", "stop_loss", "max_drawdown"]
-    for param in required_risk_params:
-        if param not in context.risk_parameters:
-            return False
+    with open(filepath, 'w') as f:
+        json.dump(capture._asdict(), f, indent=2)
     
-    return True
+    return filepath
+
+def load_retro_capture(filepath: str) -> RetroCapture:
+    """Load a RetroCapture from disk.
+    
+    Args:
+        filepath: Path to the capture file
+        
+    Returns:
+        RetroCapture object
+    """
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+    
+    return RetroCapture(**data)
+
+def analyze_workflow_patterns(captures_dir: str = "workflow_captures") -> Dict[str, Any]:
+    """Analyze patterns across multiple workflow captures.
+    
+    Args:
+        captures_dir: Directory containing capture files
+        
+    Returns:
+        Analysis results
+    """
+    if not os.path.exists(captures_dir):
+        return {"error": "Captures directory not found"}
+    
+    captures = []
+    for filename in os.listdir(captures_dir):
+        if filename.endswith('.json'):
+            filepath = os.path.join(captures_dir, filename)
+            try:
+                captures.append(load_retro_capture(filepath))
+            except Exception as e:
+                print(f"Error loading {filepath}: {e}")
+    
+    if not captures:
+        return {"error": "No valid captures found"}
+    
+    # Basic analysis
+    analysis = {
+        "total_workflows": len(captures),
+        "unique_workflow_ids": len(set(c.workflow_id for c in captures)),
+        "outcomes": {},
+        "avg_steps": 0,
+        "common_metrics": {}
+    }
+    
+    # Analyze outcomes
+    for capture in captures:
+        outcome = capture.final_outcome
+        analysis["outcomes"][outcome] = analysis["outcomes"].get(outcome, 0) + 1
+    
+    # Average steps
+    total_steps = sum(len(c.step_results) for c in captures)
+    analysis["avg_steps"] = total_steps / len(captures) if captures else 0
+    
+    return analysis
 
 def main():
-    """Main entry point for workflow toolkit operations."""
-    print("Building context bundle...")
-    context = build_context_bundle()
+    """Example usage of the workflow toolkit."""
+    # Example workflow execution
+    step_results = [
+        {"step": "initialize", "status": "success", "duration": 1.2},
+        {"step": "process_data", "status": "success", "duration": 3.5},
+        {"step": "generate_output", "status": "success", "duration": 0.8}
+    ]
     
-    if validate_workflow_context(context):
-        print("Context bundle validation: PASSED")
-        print(f"Market symbols: {list(context.market_data.keys())}")
-        print(f"Risk parameters: {context.risk_parameters}")
-        print(f"Trading policies: {len(context.trading_policies)} policies loaded")
-    else:
-        print("Context bundle validation: FAILED")
+    metrics = {
+        "total_duration": 5.5,
+        "memory_usage": "45MB",
+        "cpu_utilization": "12%"
+    }
+    
+    capture = capture_workflow_execution(
+        workflow_id="example_workflow_001",
+        step_results=step_results,
+        final_outcome="success",
+        metrics=metrics
+    )
+    
+    saved_path = save_retro_capture(capture)
+    print(f"Workflow capture saved to: {saved_path}")
+    
+    # Analyze patterns
+    analysis = analyze_workflow_patterns()
+    print(f"Workflow analysis: {json.dumps(analysis, indent=2)}")
 
 if __name__ == "__main__":
     main()
