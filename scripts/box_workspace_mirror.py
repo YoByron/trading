@@ -1,60 +1,49 @@
-import os
-from typing import List, Dict, Any
 from dataclasses import dataclass
-from pathlib import Path
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import os
+
 
 @dataclass
-class ManifestEntry:
-    file_path: str
-    file_size: int
-    last_modified: str
-    checksum: str
+class MirrorEntry:
+    local_path: str
+    remote_path: str
+    last_sync: datetime
+    size_bytes: int
+    status: str
 
-def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
-    """Build manifest entries for all files in the workspace"""
-    entries = []
-    workspace = Path(workspace_path)
-    
-    if not workspace.exists():
-        return entries
-    
-    for file_path in workspace.rglob('*'):
-        if file_path.is_file():
-            try:
-                stat = file_path.stat()
-                entries.append(ManifestEntry(
-                    file_path=str(file_path.relative_to(workspace)),
-                    file_size=stat.st_size,
-                    last_modified=str(stat.st_mtime),
-                    checksum=f"md5_{hash(file_path.read_bytes()) % 1000000}"
-                ))
-            except (OSError, IOError):
-                continue
-    
-    return entries
 
-def sync_workspace_to_box(workspace_path: str, box_folder_id: str) -> Dict[str, Any]:
-    """Sync local workspace to Box folder"""
-    manifest = build_manifest_entries(workspace_path)
+class BoxWorkspaceMirror:
+    def __init__(self, workspace_path: str):
+        self.workspace_path = workspace_path
+        self.entries: List[MirrorEntry] = []
     
-    result = {
-        'synced_files': len(manifest),
-        'box_folder_id': box_folder_id,
-        'status': 'success',
-        'manifest': manifest
-    }
-    
-    return result
+    def sync_workspace(self) -> Dict[str, Any]:
+        """Sync the workspace with Box."""
+        # Mock implementation
+        for root, dirs, files in os.walk(self.workspace_path):
+            for file in files:
+                local_path = os.path.join(root, file)
+                try:
+                    size = os.path.getsize(local_path)
+                    entry = MirrorEntry(
+                        local_path=local_path,
+                        remote_path=f"/box/{file}",
+                        last_sync=datetime.now(),
+                        size_bytes=size,
+                        status="synced"
+                    )
+                    self.entries.append(entry)
+                except OSError:
+                    continue
+        
+        return {
+            'synced_files': len(self.entries),
+            'total_size': sum(e.size_bytes for e in self.entries),
+            'status': 'completed'
+        }
 
-def mirror_box_to_local(box_folder_id: str, local_path: str) -> Dict[str, Any]:
-    """Mirror Box folder to local workspace"""
-    os.makedirs(local_path, exist_ok=True)
-    
-    result = {
-        'mirrored_files': 0,
-        'local_path': local_path,
-        'box_folder_id': box_folder_id,
-        'status': 'success'
-    }
-    
-    return result
+
+def create_mirror(workspace_path: str) -> BoxWorkspaceMirror:
+    """Create a new Box workspace mirror."""
+    return BoxWorkspaceMirror(workspace_path)

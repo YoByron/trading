@@ -1,80 +1,77 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-from enum import Enum
+from typing import Dict, List, Any, Optional
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
 
-class PilotStatus(Enum):
-    SUCCESS = "success"
-    FAILED = "failed"
-    PARTIAL = "partial"
-    TIMEOUT = "timeout"
 
 @dataclass
 class BrowserAction:
     action_type: str
-    target_element: str
-    value: Optional[str]
-    timestamp: datetime
+    target: str
+    value: Optional[str] = None
+
 
 @dataclass
-class BrowserPilotRunResult:
-    run_id: str
-    status: PilotStatus
-    actions_completed: List[BrowserAction]
-    execution_time_seconds: float
-    error_message: Optional[str]
-    screenshots: List[str]
-    page_data: Dict[str, Any]
-
-class BrowserAutomationPilot:
-    def __init__(self, headless: bool = True):
-        self.headless = headless
-        self.current_run_id = None
+class AnchorBrowserProvider:
+    browser_type: str
+    headless: bool = True
     
-    def execute_automation_sequence(self, sequence: List[Dict[str, Any]]) -> BrowserPilotRunResult:
-        """Execute a sequence of browser automation actions"""
-        run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        start_time = datetime.now()
-        
-        actions_completed = []
-        status = PilotStatus.SUCCESS
-        error_message = None
+    def __post_init__(self):
+        self.driver = None
+    
+    def start_browser(self) -> None:
+        """Start the browser instance."""
+        if self.browser_type == "chrome":
+            options = webdriver.ChromeOptions()
+            if self.headless:
+                options.add_argument("--headless")
+            self.driver = webdriver.Chrome(options=options)
+        else:
+            raise ValueError(f"Unsupported browser type: {self.browser_type}")
+    
+    def stop_browser(self) -> None:
+        """Stop the browser instance."""
+        if self.driver:
+            self.driver.quit()
+            self.driver = None
+    
+    def execute_action(self, action: BrowserAction) -> Dict[str, Any]:
+        """Execute a browser action."""
+        if not self.driver:
+            return {"status": "error", "message": "Browser not started"}
         
         try:
-            for action_config in sequence:
-                action = BrowserAction(
-                    action_type=action_config.get('type', 'unknown'),
-                    target_element=action_config.get('target', ''),
-                    value=action_config.get('value'),
-                    timestamp=datetime.now()
-                )
-                actions_completed.append(action)
-                
+            if action.action_type == "navigate":
+                self.driver.get(action.target)
+            elif action.action_type == "click":
+                element = self.driver.find_element(By.CSS_SELECTOR, action.target)
+                element.click()
+            elif action.action_type == "type":
+                element = self.driver.find_element(By.CSS_SELECTOR, action.target)
+                element.send_keys(action.value)
+            
+            return {"status": "success", "action": action.action_type}
         except Exception as e:
-            status = PilotStatus.FAILED
-            error_message = str(e)
-        
-        execution_time = (datetime.now() - start_time).total_seconds()
-        
-        return BrowserPilotRunResult(
-            run_id=run_id,
-            status=status,
-            actions_completed=actions_completed,
-            execution_time_seconds=execution_time,
-            error_message=error_message,
-            screenshots=[],
-            page_data={}
-        )
+            return {"status": "error", "message": str(e)}
+
+
+def create_browser_provider(browser_type: str = "chrome", headless: bool = True) -> AnchorBrowserProvider:
+    """Create a new browser provider instance."""
+    return AnchorBrowserProvider(browser_type=browser_type, headless=headless)
+
+
+def execute_automation_sequence(provider: AnchorBrowserProvider, actions: List[BrowserAction]) -> List[Dict[str, Any]]:
+    """Execute a sequence of browser automation actions."""
+    results = []
+    provider.start_browser()
     
-    def take_screenshot(self, filename: str) -> str:
-        """Take a screenshot and return the filename"""
-        return f"screenshot_{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    try:
+        for action in actions:
+            result = provider.execute_action(action)
+            results.append(result)
+            time.sleep(1)  # Brief pause between actions
+    finally:
+        provider.stop_browser()
     
-    def extract_page_data(self) -> Dict[str, Any]:
-        """Extract data from the current page"""
-        return {
-            'title': 'Sample Page Title',
-            'url': 'https://example.com',
-            'elements_found': 0,
-            'timestamp': datetime.now().isoformat()
-        }
+    return results

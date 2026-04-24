@@ -1,65 +1,46 @@
+from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
 import pandas as pd
-from typing import Dict, Any, Optional
 from datetime import datetime
 
-def evaluate_ai_credit_stress_signal(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Evaluate AI credit stress signal based on input data"""
+
+@dataclass
+class SeriesSummary:
+    series_name: str
+    last_value: float
+    last_update: datetime
+    trend: str
+    volatility: float
+
+
+def analyze_credit_stress_signals(data: pd.DataFrame) -> List[SeriesSummary]:
+    """Analyze credit stress signals from data."""
+    summaries = []
     
-    # Extract key metrics
-    credit_spread = data.get('credit_spread', 0)
-    default_probability = data.get('default_probability', 0)
-    market_volatility = data.get('market_volatility', 0)
+    for column in data.select_dtypes(include=['number']).columns:
+        series = data[column].dropna()
+        if len(series) > 0:
+            trend = "up" if series.iloc[-1] > series.mean() else "down"
+            summary = SeriesSummary(
+                series_name=column,
+                last_value=float(series.iloc[-1]),
+                last_update=datetime.now(),
+                trend=trend,
+                volatility=float(series.std())
+            )
+            summaries.append(summary)
     
-    # Calculate stress score
-    stress_score = (credit_spread * 0.4 + 
-                   default_probability * 0.4 + 
-                   market_volatility * 0.2)
-    
-    # Determine signal level
-    if stress_score > 0.7:
-        signal_level = 'HIGH'
-    elif stress_score > 0.4:
-        signal_level = 'MEDIUM'
-    else:
-        signal_level = 'LOW'
+    return summaries
+
+
+def update_stress_signals(data_source: str) -> Dict[str, Any]:
+    """Update AI credit stress signals."""
+    # Mock implementation
+    df = pd.DataFrame({'signal': [1, 2, 3]})
+    summaries = analyze_credit_stress_signals(df)
     
     return {
-        'stress_score': stress_score,
-        'signal_level': signal_level,
-        'timestamp': datetime.now().isoformat(),
-        'components': {
-            'credit_spread': credit_spread,
-            'default_probability': default_probability,
-            'market_volatility': market_volatility
-        }
+        'updated_at': datetime.now().isoformat(),
+        'summaries': summaries,
+        'status': 'success'
     }
-
-def update_credit_stress_database(signal_data: Dict[str, Any]) -> bool:
-    """Update the credit stress signal in the database"""
-    try:
-        # Simulate database update
-        print(f"Updating credit stress signal: {signal_data}")
-        return True
-    except Exception as e:
-        print(f"Error updating database: {e}")
-        return False
-
-def generate_stress_report(signal_data: Dict[str, Any]) -> str:
-    """Generate a human-readable stress report"""
-    level = signal_data['signal_level']
-    score = signal_data['stress_score']
-    
-    report = f"""
-    AI Credit Stress Signal Report
-    ============================
-    Signal Level: {level}
-    Stress Score: {score:.3f}
-    Timestamp: {signal_data['timestamp']}
-    
-    Component Analysis:
-    - Credit Spread: {signal_data['components']['credit_spread']:.3f}
-    - Default Probability: {signal_data['components']['default_probability']:.3f}
-    - Market Volatility: {signal_data['components']['market_volatility']:.3f}
-    """
-    
-    return report.strip()
