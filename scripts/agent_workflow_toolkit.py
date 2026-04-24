@@ -1,46 +1,31 @@
-import datetime
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
 
 @dataclass
 class RetroCapture:
-    """Captures retrospective information for workflow analysis."""
-    agent_id: str
-    workflow_step: str
-    timestamp: str
-    performance_metrics: Dict[str, Any]
-    context: Dict[str, Any]
+    context: str
+    analysis: str
+    recommendations: List[str]
 
-@dataclass
-class WorkflowState:
-    """Represents current state of workflow execution."""
-    workflow_id: str
-    current_step: str
-    completed_steps: list
-    data: Dict[str, Any]
+def build_context_bundle(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Build a context bundle from input data"""
+    return {
+        "timestamp": data.get("timestamp"),
+        "source": data.get("source", "unknown"),
+        "context": data.get("context", ""),
+        "metadata": data.get("metadata", {})
+    }
 
-def create_retro_capture(agent_id: str, workflow_step: str,
-                        performance_metrics: Dict[str, Any] = None,
-                        context: Dict[str, Any] = None) -> RetroCapture:
-    """Create a retrospective capture for workflow analysis."""
-    return RetroCapture(
-        agent_id=agent_id,
-        workflow_step=workflow_step,
-        timestamp=datetime.datetime.now().isoformat(),
-        performance_metrics=performance_metrics or {},
-        context=context or {}
-    )
+def generate_retro_template(retro_capture: RetroCapture) -> str:
+    """Generate a retrospective template from capture data"""
+    return f"""
+# Retrospective Analysis
 
-def build_retro_markdown(retro_capture: RetroCapture) -> str:
-    """Build markdown report from retrospective capture."""
-    return f"""# Workflow Retrospective
+## Analysis
+{retro_capture.analysis}
 
-## Agent: {retro_capture.agent_id}
-## Step: {retro_capture.workflow_step}
-## Timestamp: {retro_capture.timestamp}
-
-### Performance Metrics
-{retro_capture.performance_metrics}
+## Recommendations
+{chr(10).join([f"- {rec}" for rec in retro_capture.recommendations])}
 
 ### Context
 {retro_capture.context}

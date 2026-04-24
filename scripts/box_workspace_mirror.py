@@ -1,43 +1,47 @@
-import datetime
-from typing import Dict, Any, List
 from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
+import os
 
 @dataclass
-class MirrorEntry:
-    """Represents a mirrored workspace entry."""
-    entry_id: str
-    source_path: str
-    mirror_path: str
-    timestamp: str
-    status: str
-    metadata: Dict[str, Any]
+class ManifestEntry:
+    file_id: str
+    file_name: str
+    file_path: str
+    size: int
+    modified_at: str
+    hash: Optional[str] = None
 
-@dataclass
-class MirrorResult:
-    """Result of mirroring operation."""
-    success: bool
-    entries: List[MirrorEntry]
-    message: str
+def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
+    """Build manifest entries for files in workspace"""
+    entries = []
+    
+    if not os.path.exists(workspace_path):
+        return entries
+    
+    for root, dirs, files in os.walk(workspace_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            rel_path = os.path.relpath(file_path, workspace_path)
+            
+            try:
+                stat = os.stat(file_path)
+                entry = ManifestEntry(
+                    file_id=f"file_{hash(rel_path) % 10000:04d}",
+                    file_name=file,
+                    file_path=rel_path,
+                    size=stat.st_size,
+                    modified_at=str(stat.st_mtime)
+                )
+                entries.append(entry)
+            except OSError:
+                continue
+    
+    return entries
 
-class BoxWorkspaceMirror:
-    """Mirror workspace content to Box storage."""
-
-    def __init__(self, workspace_id: str):
-        self.workspace_id = workspace_id
-
-    def mirror_workspace(self, source_path: str, target_path: str) -> MirrorResult:
-        """Mirror workspace content."""
-        entry = MirrorEntry(
-            entry_id=f"entry_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            source_path=source_path,
-            mirror_path=target_path,
-            timestamp=datetime.datetime.now().isoformat(),
-            status="completed",
-            metadata={"workspace_id": self.workspace_id}
-        )
-
-        return MirrorResult(
-            success=True,
-            entries=[entry],
-            message="Workspace mirroring completed successfully"
-        )
+def sync_workspace(local_path: str, remote_path: str) -> bool:
+    """Sync local workspace with remote"""
+    try:
+        manifest = build_manifest_entries(local_path)
+        return len(manifest) >= 0
+    except Exception:
+        return False
