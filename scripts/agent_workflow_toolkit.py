@@ -1,115 +1,90 @@
-#!/usr/bin/env python3
-"""Agent workflow toolkit for managing multi-step processes."""
-
 import json
 import os
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-
 @dataclass
-class WorkflowContext:
-    """Context for workflow execution."""
-    session_id: str
-    current_step: str
-    data: Dict[str, Any]
+class WorkflowStep:
+    name: str
+    status: str
+    timestamp: str
     metadata: Dict[str, Any]
 
+@dataclass
+class RetroCapture:
+    workflow_id: str
+    steps: List[WorkflowStep]
+    overall_status: str
+    created_at: str
+    metadata: Dict[str, Any]
 
-def build_context_bundle(session_id: str, step_name: str, data: Dict[str, Any] = None) -> WorkflowContext:
-    """Build a context bundle for workflow execution.
+class AgentWorkflowToolkit:
+    """Toolkit for managing agent workflows"""
     
-    Args:
-        session_id: Unique identifier for the workflow session
-        step_name: Name of the current workflow step
-        data: Data payload for the step
+    def __init__(self, workspace_dir: str = "workspace"):
+        self.workspace_dir = workspace_dir
+        self.retro_captures: List[RetroCapture] = []
         
-    Returns:
-        WorkflowContext object
-    """
-    if data is None:
-        data = {}
+    def create_workflow_step(self, name: str, status: str = "PENDING", 
+                           metadata: Optional[Dict[str, Any]] = None) -> WorkflowStep:
+        """Create a new workflow step"""
+        return WorkflowStep(
+            name=name,
+            status=status,
+            timestamp=datetime.now().isoformat(),
+            metadata=metadata or {}
+        )
+    
+    def capture_retro(self, workflow_id: str, steps: List[WorkflowStep], 
+                     overall_status: str = "COMPLETED", 
+                     metadata: Optional[Dict[str, Any]] = None) -> RetroCapture:
+        """Capture a retrospective of workflow execution"""
+        retro = RetroCapture(
+            workflow_id=workflow_id,
+            steps=steps,
+            overall_status=overall_status,
+            created_at=datetime.now().isoformat(),
+            metadata=metadata or {}
+        )
+        self.retro_captures.append(retro)
+        return retro
+    
+    def save_retro_capture(self, retro: RetroCapture, filepath: str) -> None:
+        """Save retrospective capture to file"""
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, 'w') as f:
+            json.dump(asdict(retro), f, indent=2)
+    
+    def load_retro_capture(self, filepath: str) -> RetroCapture:
+        """Load retrospective capture from file"""
+        with open(filepath, 'r') as f:
+            data = json.load(f)
         
-    return WorkflowContext(
-        session_id=session_id,
-        current_step=step_name,
-        data=data,
-        metadata={
-            "created_at": datetime.now().isoformat(),
-            "version": "1.0"
-        }
-    )
+        steps = [WorkflowStep(**step) for step in data['steps']]
+        return RetroCapture(
+            workflow_id=data['workflow_id'],
+            steps=steps,
+            overall_status=data['overall_status'],
+            created_at=data['created_at'],
+            metadata=data['metadata']
+        )
 
+def create_workflow_toolkit(workspace_dir: str = "workspace") -> AgentWorkflowToolkit:
+    """Factory function to create workflow toolkit"""
+    return AgentWorkflowToolkit(workspace_dir)
 
-def save_context(context: WorkflowContext, file_path: str = None) -> str:
-    """Save workflow context to file.
+def main():
+    """Main function for testing the toolkit"""
+    toolkit = create_workflow_toolkit()
     
-    Args:
-        context: WorkflowContext to save
-        file_path: Optional file path, defaults to session-based name
-        
-    Returns:
-        Path to saved file
-    """
-    if file_path is None:
-        file_path = f"workflow_{context.session_id}.json"
+    # Example usage
+    step1 = toolkit.create_workflow_step("Initialize", "COMPLETED")
+    step2 = toolkit.create_workflow_step("Process Data", "COMPLETED") 
+    step3 = toolkit.create_workflow_step("Generate Report", "COMPLETED")
     
-    context_dict = {
-        "session_id": context.session_id,
-        "current_step": context.current_step,
-        "data": context.data,
-        "metadata": context.metadata
-    }
-    
-    with open(file_path, 'w') as f:
-        json.dump(context_dict, f, indent=2)
-    
-    return file_path
-
-
-def load_context(file_path: str) -> WorkflowContext:
-    """Load workflow context from file.
-    
-    Args:
-        file_path: Path to context file
-        
-    Returns:
-        WorkflowContext object
-    """
-    with open(file_path, 'r') as f:
-        context_dict = json.load(f)
-    
-    return WorkflowContext(
-        session_id=context_dict["session_id"],
-        current_step=context_dict["current_step"],
-        data=context_dict["data"],
-        metadata=context_dict["metadata"]
-    )
-
-
-def execute_workflow_step(context: WorkflowContext, step_function: callable) -> WorkflowContext:
-    """Execute a workflow step and update context.
-    
-    Args:
-        context: Current workflow context
-        step_function: Function to execute for this step
-        
-    Returns:
-        Updated WorkflowContext
-    """
-    try:
-        result = step_function(context.data)
-        context.data.update(result)
-        context.metadata["last_updated"] = datetime.now().isoformat()
-        return context
-    except Exception as e:
-        context.metadata["error"] = str(e)
-        context.metadata["error_step"] = context.current_step
-        return context
-
+    retro = toolkit.capture_retro("test_workflow", [step1, step2, step3])
+    print(f"Created retro capture for workflow: {retro.workflow_id}")
 
 if __name__ == "__main__":
-    # Example usage
-    context = build_context_bundle("test-session", "init", {"message": "Hello World"})
-    print(f"Created context for session: {context.session_id}")
+    main()

@@ -1,118 +1,110 @@
-import sys
-from pathlib import Path
-from dataclasses import dataclass
+import os
+import json
+import hashlib
+from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+@dataclass
+class ManifestEntry:
+    file_path: str
+    file_hash: str
+    size: int
+    last_modified: str
+    metadata: Dict[str, Any]
 
 @dataclass
-class MirrorEntry:
-    local_path: str
-    remote_path: str
-    last_sync: str
-    status: str
-    file_size: int
-    checksum: Optional[str] = None
+class WorkspaceMirror:
+    source_path: str
+    mirror_path: str
+    manifest: List[ManifestEntry]
+    sync_timestamp: str
+    metadata: Dict[str, Any]
 
-@dataclass
-class SyncResult:
-    success: bool
-    entries_synced: int
-    errors: List[str]
-    sync_time: str
-
-def create_mirror_entry(local_path: str, remote_path: str) -> MirrorEntry:
-    """Create a mirror entry for a file."""
-    local_file = Path(local_path)
+class BoxWorkspaceMirror:
+    """Box workspace mirroring utility"""
     
-    status = "pending"
-    file_size = 0
-    
-    if local_file.exists():
-        file_size = local_file.stat().st_size
-        status = "ready"
-    
-    return MirrorEntry(
-        local_path=local_path,
-        remote_path=remote_path,
-        last_sync=datetime.now().isoformat(),
-        status=status,
-        file_size=file_size
-    )
-
-def sync_workspace_files(mirror_entries: List[MirrorEntry]) -> SyncResult:
-    """Sync files between local workspace and Box."""
-    errors = []
-    synced_count = 0
-    
-    for entry in mirror_entries:
+    def __init__(self, source_dir: str, mirror_dir: str):
+        self.source_dir = source_dir
+        self.mirror_dir = mirror_dir
+        self.manifest_entries: List[ManifestEntry] = []
+        
+    def calculate_file_hash(self, file_path: str) -> str:
+        """Calculate MD5 hash of file"""
+        hash_md5 = hashlib.md5()
         try:
-            # Simulate file sync operation
-            local_file = Path(entry.local_path)
-            
-            if not local_file.exists():
-                errors.append(f"Local file not found: {entry.local_path}")
-                continue
-            
-            # In a real implementation, this would upload to Box
-            # For now, just update the entry status
-            entry.status = "synced"
-            entry.last_sync = datetime.now().isoformat()
-            synced_count += 1
-            
-        except Exception as e:
-            errors.append(f"Error syncing {entry.local_path}: {str(e)}")
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except Exception:
+            return ""
     
-    return SyncResult(
-        success=len(errors) == 0,
-        entries_synced=synced_count,
-        errors=errors,
-        sync_time=datetime.now().isoformat()
-    )
+    def create_manifest_entry(self, file_path: str) -> Optional[ManifestEntry]:
+        """Create a manifest entry for a file"""
+        if not os.path.exists(file_path):
+            return None
+            
+        try:
+            stat = os.stat(file_path)
+            file_hash = self.calculate_file_hash(file_path)
+            
+            return ManifestEntry(
+                file_path=file_path,
+                file_hash=file_hash,
+                size=stat.st_size,
+                last_modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                metadata={"type": "file"}
+            )
+        except Exception:
+            return None
+    
+    def build_manifest_entries(self, directory: str) -> List[ManifestEntry]:
+        """Build manifest entries for all files in directory"""
+        entries = []
+        
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                file_path = os.path.join(root, file)
+                entry = self.create_manifest_entry(file_path)
+                if entry:
+                    entries.append(entry)
+        
+        self.manifest_entries = entries
+        return entries
+    
+    def create_workspace_mirror(self) -> WorkspaceMirror:
+        """Create a complete workspace mirror"""
+        manifest = self.build_manifest_entries(self.source_dir)
+        
+        return WorkspaceMirror(
+            source_path=self.source_dir,
+            mirror_path=self.mirror_dir,
+            manifest=manifest,
+            sync_timestamp=datetime.now().isoformat(),
+            metadata={"version": "1.0", "total_files": len(manifest)}
+        )
+    
+    def save_manifest(self, mirror: WorkspaceMirror, manifest_path: str) -> None:
+        """Save manifest to JSON file"""
+        os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+        with open(manifest_path, 'w') as f:
+            json.dump(asdict(mirror), f, indent=2)
 
-def get_workspace_files(workspace_path: str = "src/") -> List[MirrorEntry]:
-    """Get list of files in workspace for mirroring."""
-    workspace = Path(workspace_path)
-    mirror_entries = []
-    
-    if not workspace.exists():
-        return mirror_entries
-    
-    for file_path in workspace.rglob("*.py"):
-        if file_path.is_file():
-            relative_path = str(file_path.relative_to(workspace))
-            remote_path = f"/box_workspace/{relative_path}"
-            
-            entry = create_mirror_entry(str(file_path), remote_path)
-            mirror_entries.append(entry)
-    
-    return mirror_entries
+def build_manifest_entries(directory: str) -> List[ManifestEntry]:
+    """Standalone function to build manifest entries"""
+    mirror = BoxWorkspaceMirror(directory, "")
+    return mirror.build_manifest_entries(directory)
+
+def create_workspace_mirror(source_dir: str, mirror_dir: str) -> BoxWorkspaceMirror:
+    """Factory function to create workspace mirror"""
+    return BoxWorkspaceMirror(source_dir, mirror_dir)
 
 def main():
-    """Main entry point for Box workspace mirror."""
-    print("Starting Box workspace mirror...")
-    
-    try:
-        mirror_entries = get_workspace_files()
-        print(f"Found {len(mirror_entries)} files to sync")
-        
-        if mirror_entries:
-            result = sync_workspace_files(mirror_entries)
-            
-            print(f"Sync completed: {result.success}")
-            print(f"Files synced: {result.entries_synced}")
-            
-            if result.errors:
-                print("Errors encountered:")
-                for error in result.errors:
-                    print(f"  - {error}")
-        else:
-            print("No files found to sync")
-            
-    except Exception as e:
-        print(f"Error in main execution: {e}")
+    """Main function for testing workspace mirroring"""
+    mirror = create_workspace_mirror("src", "mirror")
+    workspace_mirror = mirror.create_workspace_mirror()
+    print(f"Created mirror with {len(workspace_mirror.manifest)} files")
 
 if __name__ == "__main__":
     main()

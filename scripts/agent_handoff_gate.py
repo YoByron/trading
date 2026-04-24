@@ -1,139 +1,138 @@
-#!/usr/bin/env python3
-"""Agent handoff gate for assessing change risk and providing recommendations."""
-
-import re
 import subprocess
-from typing import List, Dict, Any
+import sys
 from dataclasses import dataclass
-
-
-def parse_changed_paths(git_diff_output: str) -> List[str]:
-    """Parse git diff output to extract changed file paths.
-
-    Args:
-        git_diff_output: Raw output from git diff command
-
-    Returns:
-        List of changed file paths
-    """
-    changed_files = []
-    lines = git_diff_output.strip().split('\n')
-    
-    for line in lines:
-        if line.startswith('+++') or line.startswith('---'):
-            # Extract file path from git diff header
-            if not line.endswith('/dev/null'):
-                file_path = line[4:]  # Remove '+++ ' or '--- '
-                if file_path not in changed_files and not file_path.startswith('b/'):
-                    changed_files.append(file_path)
-    
-    return changed_files
-
+from typing import List, Dict, Any
 
 @dataclass
 class GateStepResult:
-    """Result from a gate assessment step."""
     status: str
     risk_level: str
     recommendations: List[str]
-    details: Dict[str, Any]
+    metadata: Dict[str, Any]
 
+def get_changed_files_from_git() -> List[str]:
+    """
+    Get list of changed files from git diff
+    
+    Returns:
+        List of file paths that have been changed
+    """
+    try:
+        result = subprocess.run(['git', 'diff', '--name-only', 'HEAD~1'], 
+                              capture_output=True, text=True)
+        git_diff_output = result.stdout
+    except Exception:
+        return []
+    
+    changed_files = []
+    lines = git_diff_output.strip().split('\n')
 
-@dataclass
-class GateReport:
-    """Comprehensive gate assessment report."""
-    overall_status: str
-    risk_assessment: GateStepResult
-    test_results: Dict[str, Any]
-    recommendations: List[str]
-    timestamp: str
+    for line in lines:
+        if line.startswith('+++') or line.startswith('---'):
+            continue
+        else:
+            parts = line.split()
+            if parts:
+                file_path = parts[-1]
+                if file_path not in changed_files and not file_path.startswith('b/'):
+                    changed_files.append(file_path)
 
+    return changed_files
 
-def assess_handoff_risk(changed_files: List[str]) -> GateStepResult:
-    """Assess risk level based on changed files.
-
+def assess_risk_level(changed_files: List[str]) -> GateStepResult:
+    """
+    Assess the risk level of changed files
+    
     Args:
-        changed_files: List of file paths that have changed
-
+        changed_files: List of file paths that have been changed
+        
     Returns:
         GateStepResult with risk assessment
     """
-    
+
     risk_level = "LOW"
     recommendations = []
-
-    # Patterns that indicate higher risk
+    
     high_risk_patterns = [
-        r'requirements\.txt',
-        r'setup\.py',
-        r'Dockerfile',
-        r'\.github/',
-        r'pyproject\.toml'
+        "src/core/",
+        "src/trading/",
+        "requirements.txt",
+        "pyproject.toml",
+        "Dockerfile"
     ]
-
+    
     medium_risk_patterns = [
-        r'src/',
-        r'scripts/',
-        r'\.py$'
+        "src/",
+        "tests/",
+        "scripts/"
     ]
-
+    
     for file_path in changed_files:
         for pattern in high_risk_patterns:
-            if re.search(pattern, file_path):
+            if pattern in file_path:
                 risk_level = "HIGH"
                 recommendations.append(f"High-risk file changed: {file_path}")
                 break
-        
+
         if risk_level != "HIGH":
             for pattern in medium_risk_patterns:
-                if re.search(pattern, file_path):
+                if pattern in file_path:
                     risk_level = "MEDIUM"
                     recommendations.append(f"Medium-risk file changed: {file_path}")
                     break
-    
+
     if not recommendations:
         recommendations = ["Low risk changes detected"]
-    
+
     return GateStepResult(
         status="ASSESSED",
         risk_level=risk_level,
         recommendations=recommendations,
-        details={"changed_files": changed_files}
+        metadata={"changed_files": changed_files}
     )
 
-
-def run_gate_assessment() -> GateReport:
-    """Run comprehensive gate assessment."""
-    try:
-        # Get changed files from git
-        result = subprocess.run(['git', 'diff', '--name-only', 'HEAD~1'], 
-                               capture_output=True, text=True)
-        changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
-        
-        # Assess risk
-        risk_assessment = assess_handoff_risk(changed_files)
-        
-        return GateReport(
-            overall_status="COMPLETE",
-            risk_assessment=risk_assessment,
-            test_results={"status": "pending"},
-            recommendations=risk_assessment.recommendations,
-            timestamp="2024-01-01T00:00:00Z"
-        )
+def render_markdown_report(gate_result: GateStepResult) -> str:
+    """
+    Render a markdown report from gate result
     
-    except Exception as e:
-        return GateReport(
-            overall_status="ERROR",
-            risk_assessment=GateStepResult("ERROR", "UNKNOWN", [str(e)], {}),
-            test_results={"status": "error", "message": str(e)},
-            recommendations=[f"Error during assessment: {str(e)}"],
-            timestamp="2024-01-01T00:00:00Z"
-        )
+    Args:
+        gate_result: The gate step result to render
+        
+    Returns:
+        Markdown formatted report string
+    """
+    report = f"# Gate Assessment Report\n\n"
+    report += f"**Status:** {gate_result.status}\n"
+    report += f"**Risk Level:** {gate_result.risk_level}\n\n"
+    
+    report += "## Recommendations\n\n"
+    for rec in gate_result.recommendations:
+        report += f"- {rec}\n"
+    
+    if gate_result.metadata.get("changed_files"):
+        report += "\n## Changed Files\n\n"
+        for file_path in gate_result.metadata["changed_files"]:
+            report += f"- {file_path}\n"
+    
+    return report
 
+def main():
+    """Main function to run the agent handoff gate"""
+    changed_files = get_changed_files_from_git()
+    gate_result = assess_risk_level(changed_files)
+    
+    print("Agent Handoff Gate Assessment")
+    print("=" * 30)
+    print(f"Risk Level: {gate_result.risk_level}")
+    print(f"Status: {gate_result.status}")
+    print("\nRecommendations:")
+    for rec in gate_result.recommendations:
+        print(f"  - {rec}")
+    
+    if gate_result.risk_level == "HIGH":
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 if __name__ == "__main__":
-    report = run_gate_assessment()
-    print(f"Gate Assessment: {report.overall_status}")
-    print(f"Risk Level: {report.risk_assessment.risk_level}")
-    for rec in report.recommendations:
-        print(f"- {rec}")
+    main()
