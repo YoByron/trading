@@ -1,169 +1,134 @@
-from typing import NamedTuple, List, Dict, Any, Optional
+#!/usr/bin/env python3
+"""Update AI credit stress signal analysis."""
+
 import json
-import os
+import pandas as pd
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
 from datetime import datetime
 
-class SeriesSummary(NamedTuple):
-    """Summary statistics for a time series."""
-    name: str
-    count: int
-    mean: float
-    std: float
-    min_value: float
-    max_value: float
-    last_value: float
-    last_updated: str
 
-def calculate_series_summary(data: List[float], name: str) -> SeriesSummary:
-    """Calculate summary statistics for a time series.
+@dataclass
+class CreditStressResult:
+    """Result from credit stress evaluation."""
+    signal_strength: float
+    risk_level: str
+    factors: List[str]
+    confidence: float
+    timestamp: str
+
+
+def evaluate_ai_credit_stress_signal(market_data: Dict[str, Any] = None) -> CreditStressResult:
+    """Evaluate AI credit stress signal based on market indicators.
     
     Args:
-        data: List of numeric values
-        name: Name of the series
+        market_data: Dictionary containing market data and indicators
         
     Returns:
-        SeriesSummary with calculated statistics
+        CreditStressResult with analysis
     """
-    if not data:
-        return SeriesSummary(
-            name=name,
-            count=0,
-            mean=0.0,
-            std=0.0,
-            min_value=0.0,
-            max_value=0.0,
-            last_value=0.0,
-            last_updated=datetime.now().isoformat()
-        )
+    if market_data is None:
+        market_data = {}
     
-    count = len(data)
-    mean = sum(data) / count
-    variance = sum((x - mean) ** 2 for x in data) / count
-    std = variance ** 0.5
+    # Default analysis when no data provided
+    signal_strength = 0.3  # Low stress
+    risk_level = "LOW"
+    factors = ["Stable market conditions", "No major stress indicators"]
+    confidence = 0.75
     
-    return SeriesSummary(
-        name=name,
-        count=count,
-        mean=round(mean, 4),
-        std=round(std, 4),
-        min_value=min(data),
-        max_value=max(data),
-        last_value=data[-1],
-        last_updated=datetime.now().isoformat()
+    # Analyze provided market data
+    if market_data:
+        # Check for stress indicators
+        stress_indicators = market_data.get("stress_indicators", {})
+        
+        if stress_indicators.get("credit_spreads", 0) > 0.02:
+            signal_strength += 0.3
+            factors.append("Elevated credit spreads")
+        
+        if stress_indicators.get("volatility", 0) > 0.25:
+            signal_strength += 0.2
+            factors.append("High market volatility")
+        
+        if stress_indicators.get("liquidity_stress", False):
+            signal_strength += 0.4
+            factors.append("Liquidity stress detected")
+        
+        # Determine risk level
+        if signal_strength >= 0.7:
+            risk_level = "HIGH"
+        elif signal_strength >= 0.4:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+        
+        # Adjust confidence based on data quality
+        data_quality = market_data.get("data_quality", 0.5)
+        confidence = min(0.95, 0.6 + (data_quality * 0.35))
+    
+    return CreditStressResult(
+        signal_strength=round(signal_strength, 3),
+        risk_level=risk_level,
+        factors=factors,
+        confidence=round(confidence, 3),
+        timestamp=datetime.now().isoformat()
     )
 
-def update_stress_signal(
-    historical_data: List[float],
-    new_value: float,
-    threshold_multiplier: float = 2.0
-) -> Dict[str, Any]:
-    """Update credit stress signal based on new data point.
+
+def update_stress_signal_database(result: CreditStressResult) -> bool:
+    """Update the stress signal database with new results.
     
     Args:
-        historical_data: Historical stress indicator values
-        new_value: New stress indicator value
-        threshold_multiplier: Multiplier for stress threshold calculation
+        result: CreditStressResult to store
         
     Returns:
-        Updated signal information
+        True if successful, False otherwise
     """
-    # Calculate baseline statistics
-    if len(historical_data) < 2:
-        return {
-            "signal": "INSUFFICIENT_DATA",
-            "current_value": new_value,
-            "threshold": None,
-            "stress_level": 0.0,
-            "recommendation": "Collect more data points"
+    try:
+        # In a real implementation, this would write to a database
+        # For now, we'll write to a JSON file
+        data = {
+            "signal_strength": result.signal_strength,
+            "risk_level": result.risk_level,
+            "factors": result.factors,
+            "confidence": result.confidence,
+            "timestamp": result.timestamp
         }
+        
+        with open("credit_stress_signal.json", "w") as f:
+            json.dump(data, f, indent=2)
+        
+        return True
+    except Exception:
+        return False
+
+
+def get_latest_market_data() -> Dict[str, Any]:
+    """Fetch latest market data for analysis.
     
-    summary = calculate_series_summary(historical_data, "stress_indicator")
-    threshold = summary.mean + (threshold_multiplier * summary.std)
-    
-    # Determine stress level
-    if new_value > threshold:
-        signal = "HIGH_STRESS"
-        stress_level = min((new_value - threshold) / summary.std, 10.0)
-        recommendation = "Consider reducing position sizes and increasing monitoring"
-    elif new_value > summary.mean:
-        signal = "MODERATE_STRESS"
-        stress_level = (new_value - summary.mean) / summary.std
-        recommendation = "Monitor closely for further developments"
-    else:
-        signal = "LOW_STRESS"
-        stress_level = 0.0
-        recommendation = "Normal operating conditions"
-    
+    Returns:
+        Dictionary containing market data
+    """
+    # Mock data for testing
     return {
-        "signal": signal,
-        "current_value": round(new_value, 4),
-        "threshold": round(threshold, 4),
-        "stress_level": round(stress_level, 2),
-        "recommendation": recommendation,
-        "baseline_mean": summary.mean,
-        "baseline_std": summary.std,
-        "data_points": summary.count
+        "stress_indicators": {
+            "credit_spreads": 0.015,
+            "volatility": 0.18,
+            "liquidity_stress": False
+        },
+        "data_quality": 0.85,
+        "timestamp": datetime.now().isoformat()
     }
 
-def save_signal_update(signal_data: Dict[str, Any], output_file: str = "credit_stress_signal.json") -> None:
-    """Save signal update to file.
-    
-    Args:
-        signal_data: Signal data to save
-        output_file: Output file path
-    """
-    signal_data["last_updated"] = datetime.now().isoformat()
-    
-    with open(output_file, 'w') as f:
-        json.dump(signal_data, f, indent=2)
-
-def load_historical_data(data_file: str = "historical_stress_data.json") -> List[float]:
-    """Load historical stress data from file.
-    
-    Args:
-        data_file: Path to historical data file
-        
-    Returns:
-        List of historical stress values
-    """
-    if not os.path.exists(data_file):
-        return []
-    
-    try:
-        with open(data_file, 'r') as f:
-            data = json.load(f)
-        return data.get("stress_values", [])
-    except Exception as e:
-        print(f"Error loading historical data: {e}")
-        return []
-
-def main():
-    """Main function to update AI credit stress signal."""
-    # Load historical data
-    historical_data = load_historical_data()
-    
-    # Simulate new stress indicator value
-    # In practice, this would come from your AI model
-    import random
-    new_value = random.uniform(0.1, 5.0)
-    
-    print(f"Processing new stress indicator value: {new_value}")
-    
-    # Update signal
-    signal_data = update_stress_signal(historical_data, new_value)
-    
-    print(f"Signal: {signal_data['signal']}")
-    print(f"Stress Level: {signal_data['stress_level']}")
-    print(f"Recommendation: {signal_data['recommendation']}")
-    
-    # Save updated signal
-    save_signal_update(signal_data)
-    print("Signal data saved to credit_stress_signal.json")
-    
-    # Update historical data
-    historical_data.append(new_value)
-    with open("historical_stress_data.json", 'w') as f:
-        json.dump({"stress_values": historical_data}, f)
 
 if __name__ == "__main__":
-    main()
+    market_data = get_latest_market_data()
+    result = evaluate_ai_credit_stress_signal(market_data)
+    
+    print(f"Credit Stress Signal: {result.signal_strength}")
+    print(f"Risk Level: {result.risk_level}")
+    print(f"Confidence: {result.confidence}")
+    
+    if update_stress_signal_database(result):
+        print("Signal updated successfully")
+    else:
+        print("Failed to update signal")
