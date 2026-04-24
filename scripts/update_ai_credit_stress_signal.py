@@ -1,111 +1,65 @@
-import json
-import requests
-from dataclasses import dataclass
-from typing import Dict, List, Any, Optional
+import pandas as pd
+from typing import Dict, Any, Optional
 from datetime import datetime
 
-@dataclass
-class SeriesSummary:
-    symbol: str
-    current_value: float
-    change_percent: float
-    last_updated: str
-    status: str
-
-@dataclass
-class StressSignal:
-    level: str
-    confidence: float
-    indicators: List[str]
-    timestamp: str
-
-def fetch_credit_data() -> Dict[str, Any]:
-    """Fetch credit market data from external sources."""
-    # Mock implementation - in real scenario, this would fetch from actual APIs
-    mock_data = {
-        'high_yield_spread': 450.5,
-        'investment_grade_spread': 125.2,
-        'volatility_index': 23.8,
-        'treasury_10y': 4.25,
-        'timestamp': datetime.now().isoformat()
-    }
-    return mock_data
-
-def calculate_stress_level(data: Dict[str, Any]) -> StressSignal:
-    """Calculate stress signal based on credit market data."""
-    hy_spread = data.get('high_yield_spread', 0)
-    ig_spread = data.get('investment_grade_spread', 0)
-    volatility = data.get('volatility_index', 0)
+def evaluate_ai_credit_stress_signal(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Evaluate AI credit stress signal based on input data"""
     
-    indicators = []
-    stress_score = 0
+    # Extract key metrics
+    credit_spread = data.get('credit_spread', 0)
+    default_probability = data.get('default_probability', 0)
+    market_volatility = data.get('market_volatility', 0)
     
-    # High yield spread analysis
-    if hy_spread > 500:
-        stress_score += 3
-        indicators.append("High yield spreads elevated")
-    elif hy_spread > 400:
-        stress_score += 2
-        indicators.append("High yield spreads moderately elevated")
+    # Calculate stress score
+    stress_score = (credit_spread * 0.4 + 
+                   default_probability * 0.4 + 
+                   market_volatility * 0.2)
     
-    # Investment grade spread analysis
-    if ig_spread > 150:
-        stress_score += 2
-        indicators.append("Investment grade spreads widening")
-    elif ig_spread > 120:
-        stress_score += 1
-        indicators.append("Investment grade spreads slightly elevated")
-    
-    # Volatility analysis
-    if volatility > 30:
-        stress_score += 2
-        indicators.append("Market volatility high")
-    elif volatility > 20:
-        stress_score += 1
-        indicators.append("Market volatility elevated")
-    
-    # Determine stress level
-    if stress_score >= 5:
-        level = "HIGH"
-        confidence = 0.8
-    elif stress_score >= 3:
-        level = "MEDIUM"
-        confidence = 0.7
+    # Determine signal level
+    if stress_score > 0.7:
+        signal_level = 'HIGH'
+    elif stress_score > 0.4:
+        signal_level = 'MEDIUM'
     else:
-        level = "LOW"
-        confidence = 0.6
+        signal_level = 'LOW'
     
-    return StressSignal(
-        level=level,
-        confidence=confidence,
-        indicators=indicators,
-        timestamp=data.get('timestamp', datetime.now().isoformat())
-    )
+    return {
+        'stress_score': stress_score,
+        'signal_level': signal_level,
+        'timestamp': datetime.now().isoformat(),
+        'components': {
+            'credit_spread': credit_spread,
+            'default_probability': default_probability,
+            'market_volatility': market_volatility
+        }
+    }
 
-def update_signal_database(signal: StressSignal) -> bool:
-    """Update the stress signal in the database."""
-    # Mock implementation - would connect to actual database
+def update_credit_stress_database(signal_data: Dict[str, Any]) -> bool:
+    """Update the credit stress signal in the database"""
     try:
         # Simulate database update
-        print(f"Updated stress signal: {signal.level} (confidence: {signal.confidence})")
+        print(f"Updating credit stress signal: {signal_data}")
         return True
     except Exception as e:
-        print(f"Failed to update database: {e}")
+        print(f"Error updating database: {e}")
         return False
 
-def generate_series_summary(symbol: str, data: Dict[str, Any]) -> SeriesSummary:
-    """Generate summary for a specific financial series."""
-    current_value = data.get('current_value', 0.0)
-    previous_value = data.get('previous_value', current_value)
+def generate_stress_report(signal_data: Dict[str, Any]) -> str:
+    """Generate a human-readable stress report"""
+    level = signal_data['signal_level']
+    score = signal_data['stress_score']
     
-    change_percent = 0.0
-    if previous_value != 0:
-        change_percent = ((current_value - previous_value) / previous_value) * 100
+    report = f"""
+    AI Credit Stress Signal Report
+    ============================
+    Signal Level: {level}
+    Stress Score: {score:.3f}
+    Timestamp: {signal_data['timestamp']}
     
-    return SeriesSummary(
-        symbol=symbol,
-        current_value=current_value,
-        change_percent=change_percent,
-        last_updated=datetime.now().isoformat(),
-        status="ACTIVE"
-    )
+    Component Analysis:
+    - Credit Spread: {signal_data['components']['credit_spread']:.3f}
+    - Default Probability: {signal_data['components']['default_probability']:.3f}
+    - Market Volatility: {signal_data['components']['market_volatility']:.3f}
+    """
+    
+    return report.strip()
