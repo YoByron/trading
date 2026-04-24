@@ -1,90 +1,125 @@
-import json
 import os
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+import json
+from dataclasses import dataclass
+from typing import Dict, List, Any, Optional
 
 @dataclass
-class WorkflowStep:
-    name: str
-    status: str
-    timestamp: str
-    metadata: Dict[str, Any]
+class ContextBundle:
+    """Bundle of context information for agent workflows"""
+    project_info: Dict[str, Any]
+    file_structure: Dict[str, Any]
+    recent_changes: List[str]
+    dependencies: List[str]
+    environment_vars: Dict[str, str]
 
-@dataclass
-class RetroCapture:
-    workflow_id: str
-    steps: List[WorkflowStep]
-    overall_status: str
-    created_at: str
-    metadata: Dict[str, Any]
+def get_project_structure(root_path: str = ".") -> Dict[str, Any]:
+    """
+    Get project file structure
 
-class AgentWorkflowToolkit:
-    """Toolkit for managing agent workflows"""
+    Args:
+        root_path: Root directory to scan
+
+    Returns:
+        Dictionary representing project structure
+    """
+    structure = {}
     
-    def __init__(self, workspace_dir: str = "workspace"):
-        self.workspace_dir = workspace_dir
-        self.retro_captures: List[RetroCapture] = []
+    for root, dirs, files in os.walk(root_path):
+        # Skip hidden directories and __pycache__
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__']
         
-    def create_workflow_step(self, name: str, status: str = "PENDING", 
-                           metadata: Optional[Dict[str, Any]] = None) -> WorkflowStep:
-        """Create a new workflow step"""
-        return WorkflowStep(
-            name=name,
-            status=status,
-            timestamp=datetime.now().isoformat(),
-            metadata=metadata or {}
-        )
-    
-    def capture_retro(self, workflow_id: str, steps: List[WorkflowStep], 
-                     overall_status: str = "COMPLETED", 
-                     metadata: Optional[Dict[str, Any]] = None) -> RetroCapture:
-        """Capture a retrospective of workflow execution"""
-        retro = RetroCapture(
-            workflow_id=workflow_id,
-            steps=steps,
-            overall_status=overall_status,
-            created_at=datetime.now().isoformat(),
-            metadata=metadata or {}
-        )
-        self.retro_captures.append(retro)
-        return retro
-    
-    def save_retro_capture(self, retro: RetroCapture, filepath: str) -> None:
-        """Save retrospective capture to file"""
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'w') as f:
-            json.dump(asdict(retro), f, indent=2)
-    
-    def load_retro_capture(self, filepath: str) -> RetroCapture:
-        """Load retrospective capture from file"""
-        with open(filepath, 'r') as f:
-            data = json.load(f)
+        rel_root = os.path.relpath(root, root_path)
+        if rel_root == '.':
+            rel_root = ''
         
-        steps = [WorkflowStep(**step) for step in data['steps']]
-        return RetroCapture(
-            workflow_id=data['workflow_id'],
-            steps=steps,
-            overall_status=data['overall_status'],
-            created_at=data['created_at'],
-            metadata=data['metadata']
-        )
-
-def create_workflow_toolkit(workspace_dir: str = "workspace") -> AgentWorkflowToolkit:
-    """Factory function to create workflow toolkit"""
-    return AgentWorkflowToolkit(workspace_dir)
-
-def main():
-    """Main function for testing the toolkit"""
-    toolkit = create_workflow_toolkit()
+        current = structure
+        if rel_root:
+            parts = rel_root.split(os.sep)
+            for part in parts:
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+        
+        for file in files:
+            if not file.startswith('.') and not file.endswith('.pyc'):
+                current[file] = 'file'
     
-    # Example usage
-    step1 = toolkit.create_workflow_step("Initialize", "COMPLETED")
-    step2 = toolkit.create_workflow_step("Process Data", "COMPLETED") 
-    step3 = toolkit.create_workflow_step("Generate Report", "COMPLETED")
-    
-    retro = toolkit.capture_retro("test_workflow", [step1, step2, step3])
-    print(f"Created retro capture for workflow: {retro.workflow_id}")
+    return structure
 
-if __name__ == "__main__":
-    main()
+def get_dependencies() -> List[str]:
+    """
+    Get project dependencies
+
+    Returns:
+        List of dependencies
+    """
+    dependencies = []
+    
+    # Check requirements.txt
+    if os.path.exists('requirements.txt'):
+        with open('requirements.txt', 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    dependencies.append(line)
+    
+    # Check pyproject.toml
+    if os.path.exists('pyproject.toml'):
+        try:
+            import tomllib
+            with open('pyproject.toml', 'rb') as f:
+                data = tomllib.load(f)
+                if 'project' in data and 'dependencies' in data['project']:
+                    dependencies.extend(data['project']['dependencies'])
+        except ImportError:
+            pass
+    
+    return dependencies
+
+def build_context_bundle(project_path: str = ".") -> ContextBundle:
+    """
+    Build a comprehensive context bundle for agent workflows
+
+    Args:
+        project_path: Path to the project root
+
+    Returns:
+        ContextBundle with project context
+    """
+    # Get project info
+    project_info = {
+        "name": os.path.basename(os.path.abspath(project_path)),
+        "path": os.path.abspath(project_path),
+        "python_files": [],
+        "test_files": []
+    }
+    
+    # Find Python and test files
+    for root, dirs, files in os.walk(project_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__']
+        for file in files:
+            if file.endswith('.py'):
+                rel_path = os.path.relpath(os.path.join(root, file), project_path)
+                project_info["python_files"].append(rel_path)
+                if 'test' in file or 'tests' in root:
+                    project_info["test_files"].append(rel_path)
+    
+    # Get file structure
+    file_structure = get_project_structure(project_path)
+    
+    # Get recent changes (placeholder)
+    recent_changes = []
+    
+    # Get dependencies
+    dependencies = get_dependencies()
+    
+    # Get environment variables
+    environment_vars = dict(os.environ)
+    
+    return ContextBundle(
+        project_info=project_info,
+        file_structure=file_structure,
+        recent_changes=recent_changes,
+        dependencies=dependencies,
+        environment_vars=environment_vars
+    )
