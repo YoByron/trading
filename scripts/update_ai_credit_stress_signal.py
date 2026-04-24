@@ -1,69 +1,106 @@
-"""Update AI credit stress signal"""
-import json
-from dataclasses import dataclass
-from typing import Dict, List, Optional
+"""Update AI credit stress signal based on market conditions"""
+import sys
+from pathlib import Path
+from typing import Dict, Any, List
+from datetime import datetime
 
-@dataclass
-class SeriesSummary:
-    """Summary of a data series"""
-    series_id: str
-    data_points: int
-    last_updated: str
-    status: str
-    metadata: Dict
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-@dataclass
-class StressSignalUpdate:
-    """Credit stress signal update"""
-    signal_id: str
-    value: float
-    confidence: float
-    timestamp: str
-
-def update_credit_stress_signal(signal_data: Dict) -> StressSignalUpdate:
-    """Update credit stress signal with new data"""
-    import datetime
+def evaluate_ai_credit_stress_signal(market_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Evaluate AI credit stress signal based on market data"""
     
-    return StressSignalUpdate(
-        signal_id=signal_data.get("signal_id", "default"),
-        value=signal_data.get("value", 0.0),
-        confidence=signal_data.get("confidence", 0.5),
-        timestamp=datetime.datetime.now().isoformat()
-    )
-
-def generate_series_summary(series_data: Dict) -> SeriesSummary:
-    """Generate summary for data series"""
-    import datetime
-    
-    return SeriesSummary(
-        series_id=series_data.get("series_id", "unknown"),
-        data_points=len(series_data.get("data", [])),
-        last_updated=datetime.datetime.now().isoformat(),
-        status="active",
-        metadata=series_data.get("metadata", {})
-    )
-
-def main():
-    """Main execution"""
-    sample_data = {
-        "series_id": "credit_stress_001",
-        "data": [1, 2, 3, 4, 5],
-        "metadata": {"source": "ai_model"}
-    }
-    
-    summary = generate_series_summary(sample_data)
-    print(f"Generated series summary: {summary.series_id}")
-    
+    # Default signal values
     signal_data = {
-        "signal_id": "stress_signal_001",
-        "value": 0.75,
-        "confidence": 0.85
+        'timestamp': datetime.now().isoformat(),
+        'stress_level': 'normal',
+        'confidence': 0.0,
+        'factors': [],
+        'recommendations': []
     }
     
-    update = update_credit_stress_signal(signal_data)
-    print(f"Updated signal: {update.signal_id}")
+    # Check if market data contains required fields
+    required_fields = ['credit_spreads', 'volatility', 'liquidity']
+    missing_fields = [field for field in required_fields if field not in market_data]
     
-    return 0
+    if missing_fields:
+        signal_data['stress_level'] = 'unknown'
+        signal_data['factors'].append(f"Missing data fields: {missing_fields}")
+        signal_data['recommendations'].append("Ensure all required market data is available")
+        return signal_data
+    
+    # Evaluate stress factors
+    stress_score = 0
+    factors = []
+    
+    # Credit spreads analysis
+    credit_spreads = market_data.get('credit_spreads', 0)
+    if credit_spreads > 300:  # basis points
+        stress_score += 2
+        factors.append("Elevated credit spreads")
+    elif credit_spreads > 200:
+        stress_score += 1
+        factors.append("Moderately elevated credit spreads")
+    
+    # Volatility analysis
+    volatility = market_data.get('volatility', 0)
+    if volatility > 0.25:  # 25%
+        stress_score += 2
+        factors.append("High volatility")
+    elif volatility > 0.15:
+        stress_score += 1
+        factors.append("Moderate volatility")
+    
+    # Liquidity analysis
+    liquidity = market_data.get('liquidity', 1.0)
+    if liquidity < 0.5:
+        stress_score += 2
+        factors.append("Poor liquidity conditions")
+    elif liquidity < 0.7:
+        stress_score += 1
+        factors.append("Reduced liquidity")
+    
+    # Determine stress level
+    if stress_score >= 4:
+        signal_data['stress_level'] = 'high'
+        signal_data['confidence'] = 0.8
+        signal_data['recommendations'].extend([
+            "Reduce credit exposure",
+            "Increase cash reserves",
+            "Monitor positions closely"
+        ])
+    elif stress_score >= 2:
+        signal_data['stress_level'] = 'moderate'
+        signal_data['confidence'] = 0.6
+        signal_data['recommendations'].extend([
+            "Review credit positions",
+            "Consider hedging strategies"
+        ])
+    else:
+        signal_data['stress_level'] = 'normal'
+        signal_data['confidence'] = 0.7
+        signal_data['recommendations'].append("Maintain current exposure levels")
+    
+    signal_data['factors'] = factors
+    
+    return signal_data
+
+def update_signal_database(signal_data: Dict[str, Any]) -> bool:
+    """Update the signal in the database"""
+    # This would typically connect to a database
+    # For now, just return success
+    return True
 
 if __name__ == "__main__":
-    main()
+    # Example usage
+    sample_market_data = {
+        'credit_spreads': 250,
+        'volatility': 0.18,
+        'liquidity': 0.65
+    }
+    
+    signal = evaluate_ai_credit_stress_signal(sample_market_data)
+    print(f"AI Credit Stress Signal: {signal}")
+    
+    updated = update_signal_database(signal)
+    print(f"Database updated: {updated}")

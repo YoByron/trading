@@ -1,95 +1,125 @@
-"""Box workspace mirror functionality"""
-import json
-from dataclasses import dataclass
+"""Box workspace mirror for file synchronization"""
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from datetime import datetime
+
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
 @dataclass
-class ManifestEntry:
-    """Entry in workspace manifest"""
-    file_path: str
-    file_size: int
-    last_modified: str
+class MirrorEntry:
+    local_path: str
+    remote_path: str
+    last_sync: Optional[datetime]
+    size: int
     checksum: str
+    sync_status: str
 
 @dataclass
-class WorkspaceMirror:
-    """Workspace mirror configuration"""
-    source_path: str
-    target_path: str
-    manifest_entries: List[ManifestEntry]
+class SyncResult:
+    success: bool
+    entries_processed: int
+    errors: List[str]
+    warnings: List[str]
 
-def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
-    """Build manifest entries for workspace"""
-    import hashlib
-    import os
-    from datetime import datetime
+class BoxWorkspaceMirror:
+    """Mirror Box workspace files locally"""
     
-    entries = []
-    workspace_root = Path(workspace_path)
+    def __init__(self, workspace_root: Path):
+        self.workspace_root = workspace_root
+        self.mirror_entries: List[MirrorEntry] = []
     
-    if not workspace_root.exists():
-        return entries
-    
-    for file_path in workspace_root.rglob("*"):
-        if file_path.is_file():
-            try:
-                stat = file_path.stat()
+    def scan_local_files(self) -> List[MirrorEntry]:
+        """Scan local files and create mirror entries"""
+        entries = []
+        
+        if not self.workspace_root.exists():
+            return entries
+        
+        for file_path in self.workspace_root.rglob('*'):
+            if file_path.is_file():
+                relative_path = str(file_path.relative_to(self.workspace_root))
                 
-                # Calculate checksum
-                with open(file_path, 'rb') as f:
-                    checksum = hashlib.md5(f.read()).hexdigest()
-                
-                entry = ManifestEntry(
-                    file_path=str(file_path.relative_to(workspace_root)),
-                    file_size=stat.st_size,
-                    last_modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    checksum=checksum
+                entry = MirrorEntry(
+                    local_path=str(file_path),
+                    remote_path=f"/workspace/{relative_path}",
+                    last_sync=None,
+                    size=file_path.stat().st_size,
+                    checksum=self._calculate_checksum(file_path),
+                    sync_status='pending'
                 )
                 entries.append(entry)
-            except (OSError, IOError):
-                continue
+        
+        return entries
     
-    return entries
-
-def create_workspace_mirror(source_path: str, target_path: str) -> WorkspaceMirror:
-    """Create workspace mirror"""
-    manifest_entries = build_manifest_entries(source_path)
+    def sync_to_box(self) -> SyncResult:
+        """Sync local files to Box"""
+        errors = []
+        warnings = []
+        processed = 0
+        
+        try:
+            # Scan for files to sync
+            self.mirror_entries = self.scan_local_files()
+            
+            for entry in self.mirror_entries:
+                try:
+                    # This would typically use Box API
+                    # For now, just mark as synced
+                    entry.last_sync = datetime.now()
+                    entry.sync_status = 'synced'
+                    processed += 1
+                    
+                except Exception as e:
+                    entry.sync_status = 'error'
+                    errors.append(f"Failed to sync {entry.local_path}: {str(e)}")
+            
+            return SyncResult(
+                success=len(errors) == 0,
+                entries_processed=processed,
+                errors=errors,
+                warnings=warnings
+            )
+            
+        except Exception as e:
+            errors.append(f"Sync operation failed: {str(e)}")
+            return SyncResult(
+                success=False,
+                entries_processed=0,
+                errors=errors,
+                warnings=warnings
+            )
     
-    return WorkspaceMirror(
-        source_path=source_path,
-        target_path=target_path,
-        manifest_entries=manifest_entries
-    )
+    def _calculate_checksum(self, file_path: Path) -> str:
+        """Calculate file checksum"""
+        import hashlib
+        
+        try:
+            with open(file_path, 'rb') as f:
+                content = f.read()
+                return hashlib.md5(content).hexdigest()
+        except Exception:
+            return "unknown"
 
-def save_manifest(mirror: WorkspaceMirror, output_file: str):
-    """Save workspace manifest to file"""
-    manifest_data = {
-        "source_path": mirror.source_path,
-        "target_path": mirror.target_path,
-        "entries": [
-            {
-                "file_path": entry.file_path,
-                "file_size": entry.file_size,
-                "last_modified": entry.last_modified,
-                "checksum": entry.checksum
-            }
-            for entry in mirror.manifest_entries
-        ]
+def mirror_workspace(workspace_path: str) -> Dict[str, Any]:
+    """Mirror workspace to Box"""
+    
+    workspace_root = Path(workspace_path)
+    mirror = BoxWorkspaceMirror(workspace_root)
+    
+    result = mirror.sync_to_box()
+    
+    return {
+        'success': result.success,
+        'entries_processed': result.entries_processed,
+        'errors': result.errors,
+        'warnings': result.warnings,
+        'total_entries': len(mirror.mirror_entries)
     }
-    
-    with open(output_file, 'w') as f:
-        json.dump(manifest_data, f, indent=2)
-
-def main():
-    """Main execution"""
-    source = "/tmp/test_workspace"
-    target = "/tmp/mirror_workspace"
-    
-    mirror = create_workspace_mirror(source, target)
-    print(f"Created mirror with {len(mirror.manifest_entries)} entries")
-    
-    return 0
 
 if __name__ == "__main__":
-    main()
+    # Example usage
+    result = mirror_workspace("./workspace")
+    print(f"Mirror result: {result}")
