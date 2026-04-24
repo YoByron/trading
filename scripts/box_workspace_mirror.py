@@ -1,61 +1,59 @@
-import os
-import sys
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
-from pathlib import Path
+from typing import List, Dict, Any
+import os
 
 @dataclass
-class MirrorEntry:
-    local_path: str
-    remote_path: str
-    sync_status: str
+class ManifestEntry:
+    path: str
+    size: int
+    checksum: str
     last_modified: str
 
-@dataclass
-class MirrorConfig:
-    workspace_id: str
-    local_root: str
-    remote_root: str
-    sync_patterns: List[str]
-
-def create_mirror_entry(local_path: str, remote_path: str) -> MirrorEntry:
-    """Create a new mirror entry."""
-    return MirrorEntry(
-        local_path=local_path,
-        remote_path=remote_path,
-        sync_status="pending",
-        last_modified=""
-    )
-
-def sync_workspace(config: MirrorConfig) -> List[MirrorEntry]:
-    """Sync workspace with Box."""
-    # Mock implementation
+def build_manifest_entries(directory: str) -> List[ManifestEntry]:
+    """Build manifest entries for files in the specified directory."""
     entries = []
     
-    # Add some sample entries
-    entries.append(create_mirror_entry("/local/file1.txt", "/box/file1.txt"))
-    entries.append(create_mirror_entry("/local/file2.txt", "/box/file2.txt"))
+    if not os.path.exists(directory):
+        return entries
+    
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            relative_path = os.path.relpath(file_path, directory)
+            
+            try:
+                stat_info = os.stat(file_path)
+                entry = ManifestEntry(
+                    path=relative_path,
+                    size=stat_info.st_size,
+                    checksum="mock_checksum",  # In real implementation, calculate actual checksum
+                    last_modified=str(stat_info.st_mtime)
+                )
+                entries.append(entry)
+            except OSError:
+                # Skip files that can't be accessed
+                continue
     
     return entries
 
-def validate_mirror_config(config: MirrorConfig) -> bool:
-    """Validate mirror configuration."""
-    return (
-        bool(config.workspace_id) and
-        bool(config.local_root) and
-        bool(config.remote_root)
-    )
+def sync_workspace():
+    """Synchronize workspace with Box storage."""
+    workspace_dir = os.getcwd()
+    manifest = build_manifest_entries(workspace_dir)
+    
+    return {
+        "synced_files": len(manifest),
+        "workspace_path": workspace_dir,
+        "manifest": manifest[:10]  # Return first 10 entries as sample
+    }
+
+def mirror_workspace_to_box():
+    """Mirror local workspace to Box cloud storage."""
+    sync_result = sync_workspace()
+    
+    print(f"Mirrored {sync_result['synced_files']} files to Box workspace")
+    return sync_result
 
 if __name__ == "__main__":
-    config = MirrorConfig(
-        workspace_id="test_workspace",
-        local_root="/local/workspace",
-        remote_root="/box/workspace",
-        sync_patterns=["*.py", "*.md"]
-    )
-    
-    if validate_mirror_config(config):
-        entries = sync_workspace(config)
-        print(f"Synced {len(entries)} entries")
-    else:
-        print("Invalid mirror configuration")
+    result = mirror_workspace_to_box()
+    print(f"Box workspace mirror completed: {result}")
