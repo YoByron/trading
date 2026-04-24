@@ -1,49 +1,44 @@
 from typing import Dict, Any, List
 from dataclasses import dataclass
+import os
 
 @dataclass
-class ManifestEntry:
-    path: str
-    size: int
-    checksum: str
-    modified: str
+class MirrorEntry:
+    source_path: str
+    target_path: str
+    file_hash: str
+    last_synced: str
+    sync_status: str
 
-def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
-    import os
-    import hashlib
-    import datetime
-    
-    entries = []
-    if os.path.exists(workspace_path):
-        for root, dirs, files in os.walk(workspace_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, workspace_path)
-                
-                try:
-                    stat = os.stat(file_path)
-                    size = stat.st_size
-                    modified = datetime.datetime.fromtimestamp(stat.st_mtime).isoformat()
-                    
-                    # Simple checksum
-                    checksum = hashlib.md5(rel_path.encode()).hexdigest()
-                    
-                    entries.append(ManifestEntry(
-                        path=rel_path,
-                        size=size,
-                        checksum=checksum,
-                        modified=modified
-                    ))
-                except (OSError, IOError):
-                    continue
-    
-    return entries
+@dataclass
+class SyncResult:
+    success: bool
+    entries_synced: int
+    errors: List[str]
+    timestamp: str
 
-def mirror_workspace(source_path: str, target_path: str) -> Dict[str, Any]:
-    entries = build_manifest_entries(source_path)
-    return {
-        "status": "mirrored",
-        "entries_count": len(entries),
-        "source": source_path,
-        "target": target_path
-    }
+class BoxWorkspaceMirror:
+    def __init__(self, workspace_path: str):
+        self.workspace_path = workspace_path
+        self.mirror_entries = []
+
+    def add_entry(self, entry: MirrorEntry):
+        self.mirror_entries.append(entry)
+
+    def sync(self) -> SyncResult:
+        # Mock sync implementation
+        return SyncResult(
+            success=True,
+            entries_synced=len(self.mirror_entries),
+            errors=[],
+            timestamp="2023-01-01T00:00:00"
+        )
+
+def create_mirror_entry(source: str, target: str) -> MirrorEntry:
+    return MirrorEntry(
+        source_path=source,
+        target_path=target,
+        file_hash="mock_hash",
+        last_synced="2023-01-01T00:00:00",
+        sync_status="synced"
+    )

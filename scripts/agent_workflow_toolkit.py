@@ -1,43 +1,44 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 from dataclasses import dataclass
+import datetime
 
 @dataclass
-class RetroCapture:
-    workflow_id: str
+class ContextBundle:
+    context_id: str
+    agent_id: str
+    workflow_step: str
+    context_data: Dict[str, Any]
     timestamp: str
-    data: Dict[str, Any]
 
-def generate_workflow_retrospective(workflow_data: Dict[str, Any]) -> str:
-    if not workflow_data:
-        return "# Workflow Retrospective\n\nNo data available."
+@dataclass
+class WorkflowStep:
+    step_id: str
+    step_name: str
+    agent_id: str
+    input_context: Dict[str, Any]
+    output_context: Dict[str, Any]
+    status: str
+    timestamp: str
 
-    markdown = "# Workflow Retrospective\n\n"
+class AgentWorkflowToolkit:
+    def __init__(self):
+        self.steps = []
 
-    if "name" in workflow_data:
-        markdown += f"## Workflow: {workflow_data['name']}\n\n"
+    def add_step(self, step: WorkflowStep):
+        self.steps.append(step)
 
-    if "description" in workflow_data:
-        markdown += f"**Description:** {workflow_data['description']}\n\n"
+    def get_context(self, step_id: str) -> Dict[str, Any]:
+        for step in self.steps:
+            if step.step_id == step_id:
+                return step.output_context
+        return {}
 
-    if "steps" in workflow_data:
-        markdown += "## Steps\n\n"
-        for i, step in enumerate(workflow_data["steps"], 1):
-            if "name" in step:
-                markdown += f"{i}. **{step['name']}**\n"
-            if "description" in step:
-                markdown += f"{step['description']}\n\n"
-
-    if "metadata" in workflow_data:
-        markdown += "## Metadata\n\n"
-        for key, value in workflow_data["metadata"].items():
-            markdown += f"- **{key}:** {value}\n"
-
-    return markdown
-
-def capture_workflow_retrospective(workflow_id: str, data: Dict[str, Any]) -> RetroCapture:
-    import datetime
-    return RetroCapture(
-        workflow_id=workflow_id,
+def build_context_bundle(context_id: str, agent_id: str, workflow_step: str, data: Dict[str, Any]) -> ContextBundle:
+    return ContextBundle(
+        context_id=context_id,
+        agent_id=agent_id,
+        workflow_step=workflow_step,
+        context_data=data,
         timestamp=datetime.datetime.now().isoformat(),
         data=data
     )
