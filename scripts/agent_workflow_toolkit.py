@@ -1,96 +1,70 @@
-"""Agent workflow toolkit for trading system automation."""
+"""Agent workflow toolkit for building and managing workflows."""
 
-from typing import Dict, Any, List
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 
 @dataclass
 class WorkflowStep:
-    """Individual step in a workflow."""
-    step_id: str
+    """A single step in a workflow."""
+    name: str
+    description: str
     action: str
-    parameters: Dict[str, Any]
-    dependencies: List[str] = None
+    parameters: Dict[str, Any] = None
 
 
 @dataclass
 class Workflow:
-    """Workflow definition."""
-    workflow_id: str
+    """A workflow definition."""
     name: str
+    description: str
     steps: List[WorkflowStep]
     metadata: Dict[str, Any] = None
 
 
-@dataclass
-class ContextBundle:
-    """Bundle of context data for workflow execution."""
-    primary: Workflow
-    related: List[Dict[str, Any]]
-    metadata: Dict[str, Any]
-
-
-def build_context_bundle(primary_context: Dict[str, Any],
-                        related_data: List[Dict[str, Any]] = None) -> ContextBundle:
-    """Build a context bundle from primary context and related data."""
-    if related_data is None:
-        related_data = []
-
-    primary = Workflow(
-        workflow_id=primary_context.get('workflow_id', 'default'),
-        name=primary_context.get('name', 'Default Workflow'),
-        steps=primary_context.get('steps', []),
-        metadata=primary_context.get('metadata', {})
-    )
-
-    return ContextBundle(
-        primary=primary,
-        related=related_data,
-        metadata=primary_context.get('bundle_metadata', {})
-    )
-
-
-@dataclass
-class RetroCapture:
-    """Capture retrospective data from workflow execution."""
-    execution_id: str
-    workflow_id: str
-    captured_data: Dict[str, Any]
-    timestamp: str
-    status: str
-
-
-def create_retro_capture(execution_id: str, workflow_id: str, data: Dict[str, Any]) -> RetroCapture:
-    """Create a retrospective capture."""
-    from datetime import datetime
+def build_retro_markdown(workflow_data: Dict[str, Any]) -> str:
+    """Build retrospective markdown from workflow data."""
+    if not workflow_data:
+        return "# Workflow Retrospective\n\nNo data available."
     
-    return RetroCapture(
-        execution_id=execution_id,
-        workflow_id=workflow_id,
-        captured_data=data,
-        timestamp=datetime.now().isoformat(),
-        status="captured"
-    )
-
-
-def execute_workflow_step(step: WorkflowStep, context: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute a single workflow step."""
-    return {
-        'step_id': step.step_id,
-        'status': 'completed',
-        'result': f"Executed {step.action}",
-        'context_updates': {}
-    }
-
-
-def validate_workflow_dependencies(workflow: Workflow) -> bool:
-    """Validate that workflow dependencies are satisfied."""
-    step_ids = {step.step_id for step in workflow.steps}
+    markdown = "# Workflow Retrospective\n\n"
     
-    for step in workflow.steps:
-        if step.dependencies:
-            for dep in step.dependencies:
-                if dep not in step_ids:
-                    return False
+    if "name" in workflow_data:
+        markdown += f"## Workflow: {workflow_data['name']}\n\n"
     
-    return True
+    if "description" in workflow_data:
+        markdown += f"**Description:** {workflow_data['description']}\n\n"
+    
+    if "steps" in workflow_data:
+        markdown += "## Steps\n\n"
+        for i, step in enumerate(workflow_data["steps"], 1):
+            step_name = step.get("name", f"Step {i}")
+            markdown += f"### {i}. {step_name}\n\n"
+            if "description" in step:
+                markdown += f"{step['description']}\n\n"
+    
+    if "metadata" in workflow_data:
+        markdown += "## Metadata\n\n"
+        for key, value in workflow_data["metadata"].items():
+            markdown += f"- **{key}:** {value}\n"
+    
+    return markdown
+
+
+class AgentWorkflowToolkit:
+    """Toolkit for managing agent workflows."""
+    
+    def __init__(self):
+        self.workflows = {}
+    
+    def add_workflow(self, workflow: Workflow):
+        """Add a workflow to the toolkit."""
+        self.workflows[workflow.name] = workflow
+    
+    def get_workflow(self, name: str) -> Workflow:
+        """Get a workflow by name."""
+        return self.workflows.get(name)
+    
+    def list_workflows(self) -> List[str]:
+        """List all workflow names."""
+        return list(self.workflows.keys())

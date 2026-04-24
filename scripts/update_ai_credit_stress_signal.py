@@ -1,83 +1,92 @@
-"""Update AI credit stress signal data and analysis."""
+"""Update AI credit stress signal."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 
 @dataclass
-class SeriesSummary:
-    """Summary of a data series."""
-    series_id: str
-    name: str
-    last_updated: str
-    record_count: int
-    latest_value: float
-    status: str
+class CreditStressMetrics:
+    """Credit stress signal metrics."""
+    stress_level: float
+    confidence: float
+    timestamp: datetime
+    indicators: Dict[str, float]
 
 
 @dataclass
-class StressSignalData:
-    """Credit stress signal data."""
-    signal_id: str
-    value: float
-    confidence: float
-    timestamp: str
-    metadata: Dict[str, Any]
+class SignalEvaluation:
+    """Result of signal evaluation."""
+    signal_strength: float
+    reliability_score: float
+    risk_assessment: str
+    recommendations: list
 
 
-def create_series_summary(series_id: str, name: str, data: List[Dict[str, Any]]) -> SeriesSummary:
-    """Create a summary for a data series."""
-    return SeriesSummary(
-        series_id=series_id,
-        name=name,
-        last_updated=datetime.now().isoformat(),
-        record_count=len(data),
-        latest_value=data[-1].get('value', 0.0) if data else 0.0,
-        status="active"
+def evaluate_ai_credit_stress_signal(
+    market_data: Dict[str, Any],
+    model_params: Optional[Dict[str, Any]] = None
+) -> SignalEvaluation:
+    """Evaluate AI credit stress signal based on market data."""
+    if not market_data:
+        return SignalEvaluation(
+            signal_strength=0.0,
+            reliability_score=0.0,
+            risk_assessment="No data available",
+            recommendations=["Obtain market data for analysis"]
+        )
+    
+    # Simplified evaluation logic
+    stress_indicators = market_data.get("stress_indicators", {})
+    
+    # Calculate signal strength (0-1 scale)
+    signal_strength = min(1.0, sum(stress_indicators.values()) / len(stress_indicators) if stress_indicators else 0.0)
+    
+    # Calculate reliability based on data quality
+    data_quality = market_data.get("data_quality", 0.5)
+    reliability_score = min(1.0, data_quality * signal_strength)
+    
+    # Assess risk level
+    if signal_strength > 0.8:
+        risk_assessment = "High stress detected"
+    elif signal_strength > 0.5:
+        risk_assessment = "Moderate stress detected"
+    else:
+        risk_assessment = "Low stress levels"
+    
+    # Generate recommendations
+    recommendations = []
+    if signal_strength > 0.7:
+        recommendations.append("Consider reducing credit exposure")
+        recommendations.append("Increase monitoring frequency")
+    elif signal_strength > 0.4:
+        recommendations.append("Monitor closely for changes")
+    else:
+        recommendations.append("Continue normal operations")
+    
+    return SignalEvaluation(
+        signal_strength=signal_strength,
+        reliability_score=reliability_score,
+        risk_assessment=risk_assessment,
+        recommendations=recommendations
     )
 
 
-def update_stress_signal(signal_id: str, new_value: float, confidence: float) -> StressSignalData:
-    """Update a stress signal with new data."""
-    return StressSignalData(
-        signal_id=signal_id,
-        value=new_value,
+def update_stress_signal(new_data: Dict[str, Any]) -> CreditStressMetrics:
+    """Update the credit stress signal with new data."""
+    indicators = new_data.get("indicators", {})
+    
+    # Calculate overall stress level
+    stress_level = sum(indicators.values()) / len(indicators) if indicators else 0.0
+    
+    # Calculate confidence based on data completeness
+    expected_indicators = ["spread_widening", "default_rate", "volatility", "liquidity"]
+    available_indicators = len([k for k in expected_indicators if k in indicators])
+    confidence = available_indicators / len(expected_indicators)
+    
+    return CreditStressMetrics(
+        stress_level=stress_level,
         confidence=confidence,
-        timestamp=datetime.now().isoformat(),
-        metadata={"source": "ai_model", "version": "1.0"}
+        timestamp=datetime.now(),
+        indicators=indicators
     )
-
-
-def calculate_stress_indicator(market_data: Dict[str, Any]) -> float:
-    """Calculate stress indicator from market data."""
-    # Simple calculation for demonstration
-    volatility = market_data.get('volatility', 0.1)
-    spread = market_data.get('credit_spread', 0.02)
-    
-    stress_score = (volatility * 0.6) + (spread * 0.4)
-    return min(max(stress_score, 0.0), 1.0)
-
-
-def fetch_latest_market_data() -> Dict[str, Any]:
-    """Fetch latest market data for stress calculation."""
-    return {
-        'volatility': 0.15,
-        'credit_spread': 0.025,
-        'market_sentiment': 0.3,
-        'timestamp': datetime.now().isoformat()
-    }
-
-
-def run_signal_update():
-    """Run the signal update process."""
-    market_data = fetch_latest_market_data()
-    stress_value = calculate_stress_indicator(market_data)
-    
-    signal = update_stress_signal(
-        signal_id="ai_credit_stress_v1",
-        new_value=stress_value,
-        confidence=0.85
-    )
-    
-    return signal
