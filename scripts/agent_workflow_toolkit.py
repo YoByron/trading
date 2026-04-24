@@ -1,12 +1,11 @@
 """Agent workflow toolkit for managing trading workflows."""
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from datetime import datetime
 
 
 @dataclass
 class WorkflowStep:
-    """Represents a single step in a workflow."""
     name: str
     status: str
     timestamp: datetime
@@ -14,37 +13,46 @@ class WorkflowStep:
 
 
 @dataclass
-class WorkflowRun:
-    """Represents a complete workflow execution."""
+class WorkflowExecution:
     workflow_id: str
     steps: List[WorkflowStep]
     start_time: datetime
     end_time: Optional[datetime] = None
-    status: str = "running"
 
 
-def build_retro_markdown(workflow_run: WorkflowRun) -> str:
-    """Build a retrospective markdown report for a workflow run."""
-    lines = []
-    lines.append(f"# Workflow Retrospective: {workflow_run.workflow_id}")
-    lines.append(f"**Start Time:** {workflow_run.start_time}")
-    if workflow_run.end_time:
-        lines.append(f"**End Time:** {workflow_run.end_time}")
-        duration = workflow_run.end_time - workflow_run.start_time
-        lines.append(f"**Duration:** {duration}")
-    lines.append(f"**Status:** {workflow_run.status}")
-    lines.append("")
+class RetroCapture:
+    """Captures and analyzes workflow execution data for retrospective analysis."""
     
-    lines.append("## Steps")
-    for step in workflow_run.steps:
-        lines.append(f"- **{step.name}** ({step.status}) - {step.timestamp}")
-        if step.details:
-            lines.append(f"  - {step.details}")
+    def __init__(self):
+        self.executions: List[WorkflowExecution] = []
     
-    return "\n".join(lines)
+    def start_capture(self, workflow_id: str) -> WorkflowExecution:
+        """Start capturing a new workflow execution."""
+        execution = WorkflowExecution(
+            workflow_id=workflow_id,
+            steps=[],
+            start_time=datetime.now()
+        )
+        self.executions.append(execution)
+        return execution
+    
+    def add_step(self, execution: WorkflowExecution, step: WorkflowStep):
+        """Add a step to the workflow execution."""
+        execution.steps.append(step)
+    
+    def complete_capture(self, execution: WorkflowExecution):
+        """Mark workflow execution as complete."""
+        execution.end_time = datetime.now()
+    
+    def get_execution_summary(self, workflow_id: str) -> Optional[WorkflowExecution]:
+        """Get summary of a specific workflow execution."""
+        for execution in self.executions:
+            if execution.workflow_id == workflow_id:
+                return execution
+        return None
 
 
-def create_workflow_step(name: str, status: str = "pending", details: str = None) -> WorkflowStep:
+def create_workflow_step(name: str, status: str, details: Optional[str] = None) -> WorkflowStep:
     """Create a new workflow step."""
     return WorkflowStep(
         name=name,
@@ -54,17 +62,14 @@ def create_workflow_step(name: str, status: str = "pending", details: str = None
     )
 
 
-def start_workflow(workflow_id: str) -> WorkflowRun:
-    """Start a new workflow run."""
-    return WorkflowRun(
-        workflow_id=workflow_id,
-        steps=[],
-        start_time=datetime.now()
-    )
-
-
-def complete_workflow(workflow_run: WorkflowRun, status: str = "completed") -> WorkflowRun:
-    """Mark a workflow as completed."""
-    workflow_run.end_time = datetime.now()
-    workflow_run.status = status
-    return workflow_run
+def execute_workflow(workflow_id: str, steps: List[str]) -> WorkflowExecution:
+    """Execute a workflow with given steps."""
+    capture = RetroCapture()
+    execution = capture.start_capture(workflow_id)
+    
+    for step_name in steps:
+        step = create_workflow_step(step_name, "completed")
+        capture.add_step(execution, step)
+    
+    capture.complete_capture(execution)
+    return execution
