@@ -1,63 +1,71 @@
-import json
 from enum import Enum
 from typing import Dict, List, Any
-from pathlib import Path
 
 class StepStatus(Enum):
     PENDING = "pending"
-    RUNNING = "running"
+    IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
 
-class HandoffStep:
-    def __init__(self, name: str, description: str):
+class GateStep:
+    def __init__(self, name: str, description: str = ""):
         self.name = name
         self.description = description
         self.status = StepStatus.PENDING
-        self.result: Dict[str, Any] = {}
-        self.error_message = ""
+        self.result = None
+        self.error = None
 
-class GateReport:
+    def start(self):
+        self.status = StepStatus.IN_PROGRESS
+
+    def complete(self, result=None):
+        self.status = StepStatus.COMPLETED
+        self.result = result
+
+    def fail(self, error: str):
+        self.status = StepStatus.FAILED
+        self.error = error
+
+class GateStepResult:
+    def __init__(self, step_name: str, success: bool, data: Any = None, error: str = None):
+        self.step_name = step_name
+        self.success = success
+        self.data = data
+        self.error = error
+
+class HandoffReport:
     def __init__(self):
+        self.steps: List[GateStep] = []
         self.success = False
-        self.steps: List[HandoffStep] = []
-        self.error_message = ""
-        self.metadata: Dict[str, Any] = {}
+        self.timestamp = None
 
 class AgentHandoffGate:
     def __init__(self):
-        self.steps: List[HandoffStep] = []
+        self.steps: List[GateStep] = []
         self.current_step_index = 0
 
-    def add_step(self, step: HandoffStep):
+    def add_step(self, step: GateStep):
         self.steps.append(step)
 
-    def execute_current_step(self) -> bool:
-        if self.current_step_index >= len(self.steps):
-            return True
-
-        current_step = self.steps[self.current_step_index]
-        current_step.status = StepStatus.RUNNING
-
+    def execute_step(self, step_name: str) -> GateStepResult:
+        step = next((s for s in self.steps if s.name == step_name), None)
+        if not step:
+            return GateStepResult(step_name, False, error="Step not found")
+        
         try:
-            success = self._execute_step_logic(current_step)
-            if success:
-                current_step.status = StepStatus.COMPLETED
-                self.current_step_index += 1
-                return True
-            else:
-                current_step.status = StepStatus.FAILED
-                return False
+            step.start()
+            result = self._process_step(step)
+            step.complete(result)
+            return GateStepResult(step_name, True, result)
         except Exception as e:
-            current_step.status = StepStatus.FAILED
-            current_step.error_message = str(e)
-            return False
+            step.fail(str(e))
+            return GateStepResult(step_name, False, error=str(e))
 
-    def _execute_step_logic(self, step: HandoffStep) -> bool:
-        return True
+    def _process_step(self, step: GateStep) -> Any:
+        return {"processed": True, "step": step.name}
 
-    def generate_report(self) -> GateReport:
-        report = GateReport()
+    def get_report(self) -> HandoffReport:
+        report = HandoffReport()
         report.steps = self.steps.copy()
         report.success = all(step.status == StepStatus.COMPLETED for step in self.steps)
         return report

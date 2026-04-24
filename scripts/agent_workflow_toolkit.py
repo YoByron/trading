@@ -1,35 +1,42 @@
-import json
-from typing import Dict, List, Any, Optional
-from pathlib import Path
+from typing import Dict, List, Any
 
 class ContextBundle:
     def __init__(self):
-        self.workflow_id = ""
-        self.context_data: Dict[str, Any] = {}
-        self.dependencies: List[str] = []
+        self.data: Dict[str, Any] = {}
         self.metadata: Dict[str, Any] = {}
 
-def build_context_bundle(workflow_data: Dict[str, Any]) -> ContextBundle:
-    """Build a context bundle from workflow data."""
-    bundle = ContextBundle()
-    bundle.workflow_id = workflow_data.get("id", "")
-    bundle.context_data = workflow_data.get("context", {})
-    bundle.dependencies = workflow_data.get("dependencies", [])
-    bundle.metadata = workflow_data.get("metadata", {})
-    return bundle
+    def add_context(self, key: str, value: Any):
+        self.data[key] = value
+
+    def get_context(self, key: str) -> Any:
+        return self.data.get(key)
+
+class RetroCapture:
+    def __init__(self):
+        self.captures: List[Dict[str, Any]] = []
+
+    def capture(self, event: str, data: Any = None):
+        self.captures.append({
+            "event": event,
+            "data": data,
+            "timestamp": None
+        })
+
+    def get_captures(self) -> List[Dict[str, Any]]:
+        return self.captures.copy()
 
 class WorkflowToolkit:
     def __init__(self):
-        self.tools: List[str] = []
-        self.context: Dict[str, Any] = {}
+        self.context = ContextBundle()
+        self.retro = RetroCapture()
+        self.steps: List[Dict[str, Any]] = []
 
-    def add_tool(self, tool_name: str):
-        self.tools.append(tool_name)
+    def add_step(self, step: Dict[str, Any]):
+        self.steps.append(step)
 
-    def execute_workflow(self, steps: List[Dict[str, Any]]) -> bool:
-        for step in steps:
-            success = self._execute_step(step)
-            if not success:
+    def execute(self) -> bool:
+        for step in self.steps:
+            if not self._execute_step(step):
                 return False
         return True
 

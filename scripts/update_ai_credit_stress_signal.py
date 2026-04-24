@@ -1,79 +1,42 @@
-import json
-import pandas as pd
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-from pathlib import Path
+from typing import Dict, List, Any
 
-class CreditStressLevel:
-    LOW = "low"
-    MODERATE = "moderate" 
-    HIGH = "high"
-    CRITICAL = "critical"
-
-class CreditStressEvaluation:
+class SeriesSummary:
     def __init__(self):
-        self.stress_level = CreditStressLevel.LOW
-        self.confidence_score = 0.0
-        self.key_factors: List[str] = []
-        self.risk_metrics: Dict[str, float] = {}
-        self.timestamp = datetime.now()
-        self.recommendations: List[str] = []
+        self.name = ""
+        self.values: List[float] = []
+        self.metadata: Dict[str, Any] = {}
 
-class CreditStressSignalUpdater:
+    def add_value(self, value: float):
+        self.values.append(value)
+
+    def get_mean(self) -> float:
+        return sum(self.values) / len(self.values) if self.values else 0.0
+
+class CreditStressSignal:
     def __init__(self):
-        self.data_sources: List[str] = []
-        self.current_evaluation: Optional[CreditStressEvaluation] = None
+        self.series: List[SeriesSummary] = []
+        self.signal_strength = 0.0
 
-    def fetch_market_data(self) -> Dict[str, Any]:
-        return {
-            "credit_spreads": {},
-            "bond_yields": {},
-            "equity_volatility": 0.0,
-            "economic_indicators": {}
-        }
+    def add_series(self, series: SeriesSummary):
+        self.series.append(series)
 
-    def analyze_credit_metrics(self, data: Dict[str, Any]) -> Dict[str, float]:
-        return {
-            "spread_widening": 0.0,
-            "default_probability": 0.0,
-            "liquidity_stress": 0.0
-        }
+    def calculate_signal(self) -> float:
+        if not self.series:
+            return 0.0
+        
+        total = sum(series.get_mean() for series in self.series)
+        self.signal_strength = total / len(self.series)
+        return self.signal_strength
 
-def evaluate_ai_credit_stress_signal(market_data: Dict[str, Any]) -> CreditStressEvaluation:
-    """Evaluate credit stress signals using AI models."""
-    evaluation = CreditStressEvaluation()
+def update_ai_credit_stress_signal() -> CreditStressSignal:
+    signal = CreditStressSignal()
     
-    # Basic stress evaluation logic
-    credit_spreads = market_data.get("credit_spreads", {})
-    volatility = market_data.get("equity_volatility", 0.0)
+    summary = SeriesSummary()
+    summary.name = "default_signal"
+    summary.add_value(0.1)
+    summary.add_value(0.2)
     
-    if volatility > 0.3:
-        evaluation.stress_level = CreditStressLevel.HIGH
-        evaluation.confidence_score = 0.8
-    elif volatility > 0.2:
-        evaluation.stress_level = CreditStressLevel.MODERATE
-        evaluation.confidence_score = 0.6
-    else:
-        evaluation.stress_level = CreditStressLevel.LOW
-        evaluation.confidence_score = 0.4
+    signal.add_series(summary)
+    signal.calculate_signal()
     
-    evaluation.key_factors = ["volatility", "spreads"]
-    evaluation.risk_metrics = {"volatility": volatility}
-    
-    return evaluation
-
-def update_stress_signal() -> bool:
-    """Main function to update AI credit stress signal."""
-    try:
-        updater = CreditStressSignalUpdater()
-        market_data = updater.fetch_market_data()
-        evaluation = evaluate_ai_credit_stress_signal(market_data)
-        updater.current_evaluation = evaluation
-        return True
-    except Exception as e:
-        print(f"Error updating stress signal: {e}")
-        return False
-
-if __name__ == "__main__":
-    success = update_stress_signal()
-    print(f"Signal update successful: {success}")
+    return signal

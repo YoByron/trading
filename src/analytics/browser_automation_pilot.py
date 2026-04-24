@@ -1,96 +1,53 @@
-import json
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
-from datetime import datetime
 
-@dataclass
-class BrowserPilotRunResult:
-    success: bool
-    execution_time: float
-    steps_completed: int
-    total_steps: int
-    error_message: str = ""
-    screenshots: List[str] = None
-    data_extracted: Dict[str, Any] = None
-    
-    def __post_init__(self):
-        if self.screenshots is None:
-            self.screenshots = []
-        if self.data_extracted is None:
-            self.data_extracted = {}
+class AnchorBrowserProvider:
+    def __init__(self):
+        self.browser_config: Dict[str, Any] = {}
+        self.session_active = False
 
-class BrowserAutomationStep:
-    def __init__(self, action: str, target: str, value: str = ""):
-        self.action = action
-        self.target = target
-        self.value = value
-        self.completed = False
-        self.error_message = ""
+    def initialize(self, config: Dict[str, Any] = None):
+        if config:
+            self.browser_config.update(config)
+        self.session_active = True
+
+    def navigate(self, url: str) -> bool:
+        if not self.session_active:
+            return False
+        return True
+
+    def execute_script(self, script: str) -> Any:
+        if not self.session_active:
+            return None
+        return {"executed": True}
+
+    def close(self):
+        self.session_active = False
 
 class BrowserAutomationPilot:
     def __init__(self):
-        self.steps: List[BrowserAutomationStep] = []
-        self.current_step = 0
-        self.is_running = False
+        self.provider: Optional[AnchorBrowserProvider] = None
+        self.automation_steps: List[Dict[str, Any]] = []
 
-    def add_step(self, action: str, target: str, value: str = ""):
-        step = BrowserAutomationStep(action, target, value)
-        self.steps.append(step)
+    def set_provider(self, provider: AnchorBrowserProvider):
+        self.provider = provider
 
-    def execute_automation(self) -> BrowserPilotRunResult:
-        start_time = datetime.now()
-        self.is_running = True
-        
-        completed_steps = 0
-        error_message = ""
-        
-        try:
-            for i, step in enumerate(self.steps):
-                self.current_step = i
-                success = self._execute_step(step)
-                
-                if success:
-                    step.completed = True
-                    completed_steps += 1
-                else:
-                    error_message = step.error_message
-                    break
-            
-            execution_time = (datetime.now() - start_time).total_seconds()
-            success = completed_steps == len(self.steps)
-            
-            return BrowserPilotRunResult(
-                success=success,
-                execution_time=execution_time,
-                steps_completed=completed_steps,
-                total_steps=len(self.steps),
-                error_message=error_message
-            )
-            
-        except Exception as e:
-            execution_time = (datetime.now() - start_time).total_seconds()
-            return BrowserPilotRunResult(
-                success=False,
-                execution_time=execution_time,
-                steps_completed=completed_steps,
-                total_steps=len(self.steps),
-                error_message=str(e)
-            )
-        finally:
-            self.is_running = False
+    def add_step(self, step: Dict[str, Any]):
+        self.automation_steps.append(step)
 
-    def _execute_step(self, step: BrowserAutomationStep) -> bool:
-        try:
-            # Simulate step execution
-            return True
-        except Exception as e:
-            step.error_message = str(e)
+    def execute_automation(self) -> bool:
+        if not self.provider or not self.provider.session_active:
             return False
+        
+        for step in self.automation_steps:
+            if not self._execute_step(step):
+                return False
+        return True
 
-    def get_status(self) -> Dict[str, Any]:
-        return {
-            "is_running": self.is_running,
-            "current_step": self.current_step,
-            "total_steps": len(self.steps),
-            "completed_steps": sum(1 for step in self.steps if step.completed)
-        }
+    def _execute_step(self, step: Dict[str, Any]) -> bool:
+        action = step.get("action", "")
+        if action == "navigate":
+            return self.provider.navigate(step.get("url", ""))
+        elif action == "script":
+            result = self.provider.execute_script(step.get("script", ""))
+            return result is not None
+        return True
