@@ -1,76 +1,99 @@
-from enum import Enum
-from typing import List
+import os
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import json
 
-class StepStatus(Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
-class GateStep:
-    def __init__(self, name: str, handler):
-        self.name = name
-        self.status = StepStatus.PENDING
-        self.handler = handler
-        self.error: str = ""
-
-    def start(self):
-        self.status = StepStatus.RUNNING
-
-    def complete(self):
-        self.status = StepStatus.COMPLETED
-
-    def fail(self, error: str = ""):
-        self.status = StepStatus.FAILED
-        self.error = error
-
-class GateStepResult:
-    def __init__(self, step_name: str, success: bool, error: str = ""):
-        self.step_name = step_name
-        self.success = success
-        self.error = error
-
-class GateReport:
-    def __init__(self):
-        self.results: List[GateStepResult] = []
-        self.success = True
-
-    def add_result(self, result: GateStepResult):
-        self.results.append(result)
-        if not result.success:
-            self.success = False
+class HandoffContext:
+    """Context for agent handoffs with metadata and state tracking."""
+    
+    def __init__(self, source_agent: str, target_agent: str):
+        self.source_agent = source_agent
+        self.target_agent = target_agent
+        self.timestamp = datetime.now()
+        self.metadata: Dict[str, Any] = {}
+        self.state_data: Dict[str, Any] = {}
+        
+    def add_metadata(self, key: str, value: Any):
+        """Add metadata to the handoff context."""
+        self.metadata[key] = value
+        
+    def set_state(self, state: Dict[str, Any]):
+        """Set the state data for handoff."""
+        self.state_data = state
 
 class AgentHandoffGate:
+    """Gate for managing agent handoffs and transitions."""
+    
     def __init__(self):
-        self.steps: List[GateStep] = []
+        self.handoffs: List[HandoffContext] = []
+        self.active_agent: Optional[str] = None
+        
+    def initiate_handoff(self, source_agent: str, target_agent: str) -> HandoffContext:
+        """Initiate a handoff between agents."""
+        context = HandoffContext(source_agent, target_agent)
+        self.handoffs.append(context)
+        return context
+        
+    def complete_handoff(self, context: HandoffContext):
+        """Complete the handoff and update active agent."""
+        self.active_agent = context.target_agent
+        
+    def get_handoff_history(self) -> List[HandoffContext]:
+        """Get the history of handoffs."""
+        return self.handoffs
 
-    def add_step(self, step: GateStep):
-        self.steps.append(step)
+def analyze_handoff_patterns(gate: AgentHandoffGate) -> Dict[str, Any]:
+    """Analyze patterns in agent handoffs."""
+    handoffs = gate.get_handoff_history()
+    if not handoffs:
+        return {"total_handoffs": 0, "patterns": []}
+    
+    patterns = {}
+    for handoff in handoffs:
+        key = f"{handoff.source_agent}->{handoff.target_agent}"
+        patterns[key] = patterns.get(key, 0) + 1
+    
+    return {
+        "total_handoffs": len(handoffs),
+        "patterns": patterns,
+        "most_common": max(patterns.items(), key=lambda x: x[1]) if patterns else None
+    }
 
-    def execute_step(self, step_name: str) -> GateStepResult:
-        step = next((s for s in self.steps if s.name == step_name), None)
-        if not step:
-            return GateStepResult(step_name, False, error="Step not found")
+def validate_handoff_sequence(sequence: List[str]) -> bool:
+    """Validate a sequence of agent handoffs."""
+    if len(sequence) < 2:
+        return True
+    
+    # Check for cycles or invalid transitions
+    seen = set()
+    for i in range(len(sequence) - 1):
+        transition = f"{sequence[i]}->{sequence[i+1]}"
+        if transition in seen:
+            return False  # Cycle detected
+        seen.add(transition)
+    
+    return True
 
-        try:
-            step.start()
-            step.handler()
-            step.complete()
-            return GateStepResult(step_name, True)
-        except Exception as e:
-            return GateStepResult(step_name, False, error=str(e))
+def render_markdown_report(gate: AgentHandoffGate) -> str:
+    """Render a markdown report of handoff activities."""
+    patterns = analyze_handoff_patterns(gate)
+    
+    report = "# Agent Handoff Report\n\n"
+    report += f"**Total Handoffs:** {patterns['total_handoffs']}\n\n"
+    
+    if patterns['patterns']:
+        report += "## Handoff Patterns\n\n"
+        for pattern, count in patterns['patterns'].items():
+            report += f"- {pattern}: {count} times\n"
+        report += "\n"
+    
+    if patterns['most_common']:
+        report += f"**Most Common Pattern:** {patterns['most_common'][0]} ({patterns['most_common'][1]} times)\n"
+    
+    return report
 
-    def execute_all(self) -> GateReport:
-        report = GateReport()
-        for step in self.steps:
-            result = self.execute_step(step.name)
-            report.add_result(result)
-            if not result.success:
-                break
-        return report
-
-def parse_changed_paths(paths_str: str) -> List[str]:
-    """Parse changed file paths from string input."""
+def parse_file_paths(paths_str: str) -> List[str]:
+    """Parse file paths from a string."""
     if not paths_str:
         return []
     return [path.strip() for path in paths_str.split('\n') if path.strip()]
