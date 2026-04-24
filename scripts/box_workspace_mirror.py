@@ -1,78 +1,106 @@
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-import os
+"""Box workspace mirror functionality."""
 
-class MirrorEntry:
-    """Represents a mirrored file/folder entry from Box workspace."""
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
+from datetime import datetime
+
+
+@dataclass
+class ManifestEntry:
+    """Represents an entry in the workspace manifest."""
+    file_id: str
+    file_name: str
+    file_path: str
+    size: int
+    modified_time: datetime
+    checksum: str
+
+
+@dataclass
+class SyncResult:
+    """Result of a sync operation."""
+    success: bool
+    files_synced: int
+    errors: List[str]
+    duration: float
+
+
+def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
+    """Build manifest entries for files in the workspace."""
+    # Simulate building manifest entries
+    entries = []
     
-    def __init__(self, box_path: str, local_path: str):
-        self.box_path = box_path
-        self.local_path = local_path
-        self.last_synced = datetime.now()
-        self.file_size = 0
-        self.checksum: Optional[str] = None
-        self.sync_status = "pending"
-        
-    def update_sync_status(self, status: str):
-        """Update the synchronization status."""
-        self.sync_status = status
-        self.last_synced = datetime.now()
-        
-    def set_file_info(self, size: int, checksum: str):
-        """Set file size and checksum information."""
-        self.file_size = size
-        self.checksum = checksum
-        
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary representation."""
-        return {
-            'box_path': self.box_path,
-            'local_path': self.local_path,
-            'last_synced': self.last_synced.isoformat(),
-            'file_size': self.file_size,
-            'checksum': self.checksum,
-            'sync_status': self.sync_status
-        }
+    # Example entries - in real implementation, would scan the filesystem
+    sample_files = [
+        ('file1.txt', 'documents/file1.txt', 1024),
+        ('file2.py', 'scripts/file2.py', 2048),
+        ('data.csv', 'data/data.csv', 4096)
+    ]
+    
+    for i, (name, path, size) in enumerate(sample_files):
+        entry = ManifestEntry(
+            file_id=f"file_{i}",
+            file_name=name,
+            file_path=path,
+            size=size,
+            modified_time=datetime.now(),
+            checksum=f"checksum_{i}"
+        )
+        entries.append(entry)
+    
+    return entries
+
 
 class BoxWorkspaceMirror:
-    """Mirror Box workspace content to local filesystem."""
-    
-    def __init__(self, local_root: str):
-        self.local_root = local_root
-        self.entries: Dict[str, MirrorEntry] = {}
-        
-    def add_entry(self, box_path: str, local_path: str) -> MirrorEntry:
-        """Add a new mirror entry."""
-        entry = MirrorEntry(box_path, local_path)
-        self.entries[box_path] = entry
-        return entry
-        
-    def get_entry(self, box_path: str) -> Optional[MirrorEntry]:
-        """Get mirror entry by Box path."""
-        return self.entries.get(box_path)
-        
-    def sync_file(self, box_path: str) -> bool:
-        """Sync a single file from Box to local."""
-        entry = self.get_entry(box_path)
-        if not entry:
-            return False
-            
-        try:
-            # Placeholder for actual sync logic
-            os.makedirs(os.path.dirname(entry.local_path), exist_ok=True)
-            entry.update_sync_status("completed")
-            return True
-        except Exception as e:
-            entry.update_sync_status(f"failed: {str(e)}")
-            return False
-            
-    def sync_all(self) -> Dict[str, bool]:
-        """Sync all entries."""
-        results = {}
-        for box_path in self.entries:
-            results[box_path] = self.sync_file(box_path)
-        return results
+    """Manages mirroring of Box workspace."""
 
-def create_mirror(local_root: str) -> BoxWorkspaceMirror:
-    """Create a new Box workspace mirror."""
-    return BoxWorkspaceMirror(local_root)
+    def __init__(self, workspace_id: str):
+        self.workspace_id = workspace_id
+        self.manifest: List[ManifestEntry] = []
+        self.sync_history: List[SyncResult] = []
+
+    def sync_workspace(self, force: bool = False) -> SyncResult:
+        """Sync the workspace with Box."""
+        start_time = datetime.now()
+        
+        try:
+            # Build current manifest
+            self.manifest = build_manifest_entries(f"/workspace/{self.workspace_id}")
+            
+            # Simulate sync operation
+            files_synced = len(self.manifest)
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            result = SyncResult(
+                success=True,
+                files_synced=files_synced,
+                errors=[],
+                duration=duration
+            )
+            
+            self.sync_history.append(result)
+            return result
+            
+        except Exception as e:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            result = SyncResult(
+                success=False,
+                files_synced=0,
+                errors=[str(e)],
+                duration=duration
+            )
+            
+            self.sync_history.append(result)
+            return result
+
+    def get_manifest(self) -> List[ManifestEntry]:
+        """Get the current workspace manifest."""
+        return self.manifest.copy()
+
+    def get_sync_status(self) -> Optional[SyncResult]:
+        """Get the status of the last sync operation."""
+        return self.sync_history[-1] if self.sync_history else None

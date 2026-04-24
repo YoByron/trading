@@ -1,86 +1,103 @@
+"""Agent handoff gate analysis module."""
+
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-class HandoffContext:
-    """Context for agent handoffs with metadata and state tracking."""
 
-    def __init__(self, source_agent: str, target_agent: str):
-        self.source_agent = source_agent
-        self.target_agent = target_agent
-        self.timestamp = datetime.now()
-        self.handoff_id = f"{source_agent}->{target_agent}-{self.timestamp.isoformat()}"
-        self.metadata: Dict[str, Any] = {}
-        self.state_data: Dict[str, Any] = {}
+@dataclass
+class HandoffEvent:
+    """Represents a handoff event between agents."""
+    source_agent: str
+    target_agent: str
+    timestamp: datetime
+    metadata: Dict[str, Any]
 
-    def add_metadata(self, key: str, value: Any):
-        """Add metadata to the handoff context."""
-        self.metadata[key] = value
 
-    def set_state(self, state: Dict[str, Any]):
-        """Set the state data for handoff."""
-        self.state_data = state
+@dataclass
+class GateStepResult:
+    """Result of a gate step analysis."""
+    step_name: str
+    success: bool
+    duration: float
+    details: Dict[str, Any]
+
 
 class GateReport:
     """Report for handoff gate analysis."""
-    
+
     def __init__(self, handoff_count: int, success_rate: float, avg_duration: float):
         self.handoff_count = handoff_count
         self.success_rate = success_rate
         self.avg_duration = avg_duration
-        self.timestamp = datetime.now()
+
 
 class AgentHandoffGate:
-    """Gate for managing agent handoffs and transitions."""
+    """Analyzes and manages agent handoffs."""
 
     def __init__(self):
-        self.handoffs: List[HandoffContext] = []
-        self.active_handoffs: Dict[str, HandoffContext] = {}
+        self.handoffs: List[HandoffEvent] = []
+        self.gate_steps: List[GateStepResult] = []
 
-    def initiate_handoff(self, source_agent: str, target_agent: str,
-                        metadata: Optional[Dict[str, Any]] = None) -> str:
-        """Initiate a handoff between agents."""
-        context = HandoffContext(source_agent, target_agent)
-        if metadata:
-            for key, value in metadata.items():
-                context.add_metadata(key, value)
+    def add_handoff(self, source_agent: str, target_agent: str,
+                   metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Add a handoff event."""
+        if metadata is None:
+            metadata = {}
 
-        self.handoffs.append(context)
-        self.active_handoffs[context.handoff_id] = context
-        return context.handoff_id
+        handoff = HandoffEvent(
+            source_agent=source_agent,
+            target_agent=target_agent,
+            timestamp=datetime.now(),
+            metadata=metadata
+        )
+        self.handoffs.append(handoff)
 
-    def complete_handoff(self, handoff_id: str, success: bool = True) -> bool:
-        """Complete a handoff."""
-        if handoff_id in self.active_handoffs:
-            context = self.active_handoffs[handoff_id]
-            context.add_metadata('completed', True)
-            context.add_metadata('success', success)
-            context.add_metadata('completion_time', datetime.now().isoformat())
-            del self.active_handoffs[handoff_id]
-            return True
-        return False
+    def execute_gate_step(self, step_name: str, **kwargs) -> GateStepResult:
+        """Execute a gate step and return the result."""
+        start_time = datetime.now()
 
-    def get_handoff_status(self, handoff_id: str) -> Optional[Dict[str, Any]]:
-        """Get status of a handoff."""
-        if handoff_id in self.active_handoffs:
-            context = self.active_handoffs[handoff_id]
-            return {
-                'id': handoff_id,
-                'source': context.source_agent,
-                'target': context.target_agent,
-                'timestamp': context.timestamp.isoformat(),
-                'metadata': context.metadata,
-                'status': 'active'
-            }
-        return None
+        try:
+            # Simulate gate step execution
+            success = kwargs.get('success', True)
+            details = kwargs.get('details', {})
+
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            result = GateStepResult(
+                step_name=step_name,
+                success=success,
+                duration=duration,
+                details=details
+            )
+
+            self.gate_steps.append(result)
+            return result
+
+        except Exception as e:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            result = GateStepResult(
+                step_name=step_name,
+                success=False,
+                duration=duration,
+                details={'error': str(e)}
+            )
+
+            self.gate_steps.append(result)
+            return result
 
     def generate_report(self) -> GateReport:
-        """Generate a report of handoff activities."""
+        """Generate a report of handoff gate analysis."""
         completed_handoffs = [h for h in self.handoffs if h.metadata.get('completed', False)]
         successful_handoffs = [h for h in completed_handoffs if h.metadata.get('success', False)]
-        
-        success_rate = len(successful_handoffs) / len(completed_handoffs) if completed_handoffs else 0.0
+
+        success_rate = (len(successful_handoffs) / len(completed_handoffs)
+                       if completed_handoffs else 0.0)
         avg_duration = 0.0  # Calculate average duration if needed
-        
+
         return GateReport(
             handoff_count=len(self.handoffs),
             success_rate=success_rate,
