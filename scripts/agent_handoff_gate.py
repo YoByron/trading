@@ -1,10 +1,10 @@
 import subprocess
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 @dataclass
-class GateStepResult:
-    """Result of a gate evaluation step"""
+class GateStep:
+    name: str
     passed: bool
     risk_level: str
     message: str
@@ -12,104 +12,133 @@ class GateStepResult:
 
 @dataclass
 class GateReport:
-    """Complete gate evaluation report"""
     overall_passed: bool
-    risk_level: str
-    steps: List[GateStepResult]
+    overall_risk: str
+    steps: List[GateStep]
     recommendations: List[str]
 
-def get_changed_files() -> List[str]:
-    """
-    Get list of changed files from git diff
+def parse_changed_paths(git_diff_output: str) -> List[str]:
+    """Parse git diff output to extract changed file paths."""
+    paths = []
+    for line in git_diff_output.split('\n'):
+        if line.startswith('diff --git'):
+            # Extract path from "diff --git a/path b/path" format
+            parts = line.split()
+            if len(parts) >= 4:
+                path = parts[3][2:]  # Remove "b/" prefix
+                paths.append(path)
+    return paths
 
-    Returns:
-        List of file paths that have been changed
-    """
+def validate_code_quality() -> GateStep:
+    """Run code quality checks using flake8."""
     try:
-        result = subprocess.run(['git', 'diff', '--name-only', 'HEAD~1'],
+        result = subprocess.run(['flake8', '.'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return GateStep(
+                name="Code Quality",
+                passed=True,
+                risk_level="LOW",
+                message="All code quality checks passed",
+                recommendations=[]
+            )
+        else:
+            return GateStep(
+                name="Code Quality",
+                passed=False,
+                risk_level="MEDIUM",
+                message=f"Code quality issues found: {result.stdout}",
+                recommendations=["Fix linting issues before deployment"]
+            )
+    except Exception as e:
+        return GateStep(
+            name="Code Quality",
+            passed=False,
+            risk_level="HIGH",
+            message=f"Failed to run code quality checks: {e}",
+            recommendations=["Ensure flake8 is installed and accessible"]
+        )
+
+def validate_tests() -> GateStep:
+    """Run test suite validation."""
+    try:
+        result = subprocess.run(['python', '-m', 'pytest', '-v'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return GateStep(
+                name="Test Validation",
+                passed=True,
+                risk_level="LOW",
+                message="All tests passed",
+                recommendations=[]
+            )
+        else:
+            return GateStep(
+                name="Test Validation",
+                passed=False,
+                risk_level="HIGH",
+                message=f"Test failures detected: {result.stdout}",
+                recommendations=["Fix failing tests before deployment"]
+            )
+    except Exception as e:
+        return GateStep(
+            name="Test Validation",
+            passed=False,
+            risk_level="HIGH",
+            message=f"Failed to run tests: {e}",
+            recommendations=["Ensure pytest is installed and tests are accessible"]
+        )
+
+def validate_security() -> GateStep:
+    """Run security validation checks."""
+    # Simple security check - look for common patterns
+    security_issues = []
+    
+    # Check for hardcoded credentials (basic check)
+    try:
+        result = subprocess.run(['grep', '-r', 'password=', '.', '--exclude-dir=.git'], 
                               capture_output=True, text=True)
-        git_diff_output = result.stdout
-    except Exception:
-        return []
+        if result.stdout:
+            security_issues.append("Potential hardcoded passwords found")
+    except:
+        pass
+    
+    if security_issues:
+        return GateStep(
+            name="Security Validation",
+            passed=False,
+            risk_level="HIGH",
+            message=f"Security issues found: {', '.join(security_issues)}",
+            recommendations=["Review and remove hardcoded credentials"]
+        )
+    else:
+        return GateStep(
+            name="Security Validation",
+            passed=True,
+            risk_level="LOW",
+            message="No security issues detected",
+            recommendations=[]
+        )
 
-    changed_files = []
-    lines = git_diff_output.strip().split('\n')
-    for line in lines:
-        file_path = line.strip()
-        if file_path:
-            changed_files.append(file_path)
-
-    return changed_files
-
-def assess_risk_level(changed_files: List[str]) -> GateStepResult:
-    """
-    Assess the risk level of changed files
-
-    Args:
-        changed_files: List of file paths that have been changed
-
-    Returns:
-        GateStepResult with risk assessment
-    """
-    if not changed_files:
-        return GateStepResult(True, "LOW", "No files changed", [])
-
-    risk_level = "LOW"
-    recommendations = []
-
-    high_risk_patterns = [
-        "src/core/",
-        "src/trading/",
-        "requirements.txt",
-        "pyproject.toml",
-        "Dockerfile"
+def run_gate_validation() -> GateReport:
+    """Run all gate validation steps."""
+    steps = [
+        validate_code_quality(),
+        validate_tests(),
+        validate_security()
     ]
-
-    medium_risk_patterns = [
-        "src/",
-        "tests/",
-        ".github/"
-    ]
-
-    for file_path in changed_files:
-        if any(pattern in file_path for pattern in high_risk_patterns):
-            risk_level = "HIGH"
-            recommendations.append(f"High-risk file modified: {file_path}")
-        elif any(pattern in file_path for pattern in medium_risk_patterns):
-            if risk_level == "LOW":
-                risk_level = "MEDIUM"
-            recommendations.append(f"Medium-risk file modified: {file_path}")
-
-    passed = risk_level in ["LOW", "MEDIUM"]
-    message = f"Risk assessment complete: {risk_level} risk level"
-
-    return GateStepResult(passed, risk_level, message, recommendations)
-
-def run_gate_evaluation() -> GateReport:
-    """
-    Run complete gate evaluation
-
-    Returns:
-        GateReport with evaluation results
-    """
-    steps = []
+    
+    # Collect all recommendations
     all_recommendations = []
-
-    # Step 1: Get changed files
-    changed_files = get_changed_files()
-
-    # Step 2: Assess risk
-    risk_step = assess_risk_level(changed_files)
-    steps.append(risk_step)
-    all_recommendations.extend(risk_step.recommendations)
-
+    for step in steps:
+        all_recommendations.extend(step.recommendations)
+    
     # Determine overall result
     overall_passed = all(step.passed for step in steps)
-    overall_risk = max([step.risk_level for step in steps], key=lambda x: ["LOW", "MEDIUM", "HIGH"].index(x))
-
+    overall_risk = max([step.risk_level for step in steps], 
+                      key=lambda x: ["LOW", "MEDIUM", "HIGH"].index(x))
+    
     return GateReport(
         overall_passed=overall_passed,
-        risk_level=overall_risk,
+        overall_risk=overall_risk,
         steps=steps,
         recommendations=all_recommendations
     )
