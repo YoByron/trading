@@ -1,125 +1,80 @@
-"""Box workspace mirror for file synchronization"""
+import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from dataclasses import dataclass
-from datetime import datetime
+import json
 
-REPO_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 @dataclass
-class MirrorEntry:
-    local_path: str
-    remote_path: str
-    last_sync: Optional[datetime]
+class ManifestEntry:
+    """Entry in workspace manifest"""
+    path: str
     size: int
+    modified: str
     checksum: str
-    sync_status: str
 
-@dataclass
-class SyncResult:
-    success: bool
-    entries_processed: int
-    errors: List[str]
-    warnings: List[str]
-
-class BoxWorkspaceMirror:
-    """Mirror Box workspace files locally"""
+def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
+    """Build manifest entries for workspace files"""
+    entries = []
+    workspace = Path(workspace_path)
     
-    def __init__(self, workspace_root: Path):
-        self.workspace_root = workspace_root
-        self.mirror_entries: List[MirrorEntry] = []
-    
-    def scan_local_files(self) -> List[MirrorEntry]:
-        """Scan local files and create mirror entries"""
-        entries = []
-        
-        if not self.workspace_root.exists():
-            return entries
-        
-        for file_path in self.workspace_root.rglob('*'):
-            if file_path.is_file():
-                relative_path = str(file_path.relative_to(self.workspace_root))
-                
-                entry = MirrorEntry(
-                    local_path=str(file_path),
-                    remote_path=f"/workspace/{relative_path}",
-                    last_sync=None,
-                    size=file_path.stat().st_size,
-                    checksum=self._calculate_checksum(file_path),
-                    sync_status='pending'
-                )
-                entries.append(entry)
-        
+    if not workspace.exists():
         return entries
     
-    def sync_to_box(self) -> SyncResult:
-        """Sync local files to Box"""
-        errors = []
-        warnings = []
-        processed = 0
-        
-        try:
-            # Scan for files to sync
-            self.mirror_entries = self.scan_local_files()
-            
-            for entry in self.mirror_entries:
-                try:
-                    # This would typically use Box API
-                    # For now, just mark as synced
-                    entry.last_sync = datetime.now()
-                    entry.sync_status = 'synced'
-                    processed += 1
-                    
-                except Exception as e:
-                    entry.sync_status = 'error'
-                    errors.append(f"Failed to sync {entry.local_path}: {str(e)}")
-            
-            return SyncResult(
-                success=len(errors) == 0,
-                entries_processed=processed,
-                errors=errors,
-                warnings=warnings
-            )
-            
-        except Exception as e:
-            errors.append(f"Sync operation failed: {str(e)}")
-            return SyncResult(
-                success=False,
-                entries_processed=0,
-                errors=errors,
-                warnings=warnings
-            )
+    for file_path in workspace.rglob('*'):
+        if file_path.is_file():
+            try:
+                stat = file_path.stat()
+                relative_path = str(file_path.relative_to(workspace))
+                
+                entry = ManifestEntry(
+                    path=relative_path,
+                    size=stat.st_size,
+                    modified=str(stat.st_mtime),
+                    checksum=str(hash(file_path.read_bytes()))
+                )
+                entries.append(entry)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
     
-    def _calculate_checksum(self, file_path: Path) -> str:
-        """Calculate file checksum"""
-        import hashlib
-        
-        try:
-            with open(file_path, 'rb') as f:
-                content = f.read()
-                return hashlib.md5(content).hexdigest()
-        except Exception:
-            return "unknown"
+    return entries
 
-def mirror_workspace(workspace_path: str) -> Dict[str, Any]:
-    """Mirror workspace to Box"""
+def sync_workspace_to_box(workspace_path: str, box_folder_id: str) -> Dict[str, Any]:
+    """Sync workspace to Box folder"""
+    entries = build_manifest_entries(workspace_path)
     
-    workspace_root = Path(workspace_path)
-    mirror = BoxWorkspaceMirror(workspace_root)
-    
-    result = mirror.sync_to_box()
-    
-    return {
-        'success': result.success,
-        'entries_processed': result.entries_processed,
-        'errors': result.errors,
-        'warnings': result.warnings,
-        'total_entries': len(mirror.mirror_entries)
+    manifest = {
+        'workspace_path': workspace_path,
+        'box_folder_id': box_folder_id,
+        'total_files': len(entries),
+        'entries': [
+            {
+                'path': entry.path,
+                'size': entry.size,
+                'modified': entry.modified,
+                'checksum': entry.checksum
+            }
+            for entry in entries
+        ]
     }
+    
+    # Save manifest
+    manifest_path = Path(workspace_path) / 'box_manifest.json'
+    with open(manifest_path, 'w') as f:
+        json.dump(manifest, f, indent=2)
+    
+    return manifest
+
+def main():
+    """Main function for Box workspace mirror"""
+    workspace_path = "workspace"
+    box_folder_id = "123456789"
+    
+    manifest = sync_workspace_to_box(workspace_path, box_folder_id)
+    print(f"Synced {manifest['total_files']} files to Box folder {box_folder_id}")
 
 if __name__ == "__main__":
-    # Example usage
-    result = mirror_workspace("./workspace")
-    print(f"Mirror result: {result}")
+    main()
