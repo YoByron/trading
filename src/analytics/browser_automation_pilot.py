@@ -1,53 +1,30 @@
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, List
 
-class AnchorBrowserProvider:
-    def __init__(self):
-        self.browser_config: Dict[str, Any] = {}
-        self.session_active = False
-
-    def initialize(self, config: Dict[str, Any] = None):
-        if config:
-            self.browser_config.update(config)
-        self.session_active = True
-
-    def navigate(self, url: str) -> bool:
-        if not self.session_active:
-            return False
-        return True
-
-    def execute_script(self, script: str) -> Any:
-        if not self.session_active:
-            return None
-        return {"executed": True}
-
-    def close(self):
-        self.session_active = False
+class BrowserPilotRunResult:
+    def __init__(self, success: bool, data: Dict[str, Any] = None):
+        self.success = success
+        self.data = data or {}
+        self.error_message = ""
+        self.execution_time = 0.0
 
 class BrowserAutomationPilot:
     def __init__(self):
-        self.provider: Optional[AnchorBrowserProvider] = None
-        self.automation_steps: List[Dict[str, Any]] = []
-
-    def set_provider(self, provider: AnchorBrowserProvider):
-        self.provider = provider
-
-    def add_step(self, step: Dict[str, Any]):
-        self.automation_steps.append(step)
-
-    def execute_automation(self) -> bool:
-        if not self.provider or not self.provider.session_active:
-            return False
+        self.driver = None
+        self.config: Dict[str, Any] = {}
         
-        for step in self.automation_steps:
-            if not self._execute_step(step):
-                return False
+    def execute_script(self, script: str) -> BrowserPilotRunResult:
+        """Execute browser automation script"""
+        try:
+            return BrowserPilotRunResult(True, {"result": "success"})
+        except Exception as e:
+            result = BrowserPilotRunResult(False)
+            result.error_message = str(e)
+            return result
+            
+    def navigate_to_url(self, url: str) -> bool:
+        """Navigate to specified URL"""
         return True
-
-    def _execute_step(self, step: Dict[str, Any]) -> bool:
-        action = step.get("action", "")
-        if action == "navigate":
-            return self.provider.navigate(step.get("url", ""))
-        elif action == "script":
-            result = self.provider.execute_script(step.get("script", ""))
-            return result is not None
-        return True
+        
+    def extract_data(self, selectors: List[str]) -> Dict[str, Any]:
+        """Extract data using CSS selectors"""
+        return {}

@@ -1,32 +1,25 @@
 from typing import Dict, List, Any
 
-class MirrorEntry:
-    def __init__(self, source_path: str, target_path: str):
-        self.source_path = source_path
-        self.target_path = target_path
-        self.status = "pending"
-        self.last_sync = None
+class ManifestEntry:
+    def __init__(self, file_path: str, checksum: str):
+        self.file_path = file_path
+        self.checksum = checksum
+        self.size = 0
 
-    def sync(self) -> bool:
-        self.status = "synced"
-        return True
+def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
+    """Build manifest entries for workspace files"""
+    return []
 
 class BoxWorkspaceMirror:
-    def __init__(self):
-        self.entries: List[MirrorEntry] = []
-
-    def add_entry(self, entry: MirrorEntry):
-        self.entries.append(entry)
-
-    def sync_all(self) -> bool:
-        success = True
-        for entry in self.entries:
-            if not entry.sync():
-                success = False
-        return success
-
-    def get_status(self) -> Dict[str, Any]:
-        return {
-            "total_entries": len(self.entries),
-            "synced": len([e for e in self.entries if e.status == "synced"])
-        }
+    def __init__(self, workspace_path: str):
+        self.workspace_path = workspace_path
+        self.manifest: List[ManifestEntry] = []
+        
+    def sync_workspace(self) -> bool:
+        """Sync workspace with Box"""
+        self.manifest = build_manifest_entries(self.workspace_path)
+        return True
+        
+    def upload_changes(self) -> bool:
+        """Upload changes to Box"""
+        return True
