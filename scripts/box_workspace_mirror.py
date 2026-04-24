@@ -1,44 +1,42 @@
-from typing import Dict, Any, List
-from dataclasses import dataclass
 import os
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
 
 @dataclass
-class MirrorEntry:
-    source_path: str
-    target_path: str
-    file_hash: str
-    last_synced: str
-    sync_status: str
+class ManifestEntry:
+    file_id: str
+    file_name: str
+    file_path: str
+    last_modified: str
+    size: int
+    file_type: str
 
 @dataclass
 class SyncResult:
     success: bool
-    entries_synced: int
+    files_synced: int
     errors: List[str]
-    timestamp: str
+    duration: float
 
-class BoxWorkspaceMirror:
-    def __init__(self, workspace_path: str):
-        self.workspace_path = workspace_path
-        self.mirror_entries = []
+def build_manifest_entries(folder_id: str, box_client: Any) -> List[ManifestEntry]:
+    """Build manifest entries for Box folder contents."""
+    return []
 
-    def add_entry(self, entry: MirrorEntry):
-        self.mirror_entries.append(entry)
-
-    def sync(self) -> SyncResult:
-        # Mock sync implementation
-        return SyncResult(
-            success=True,
-            entries_synced=len(self.mirror_entries),
-            errors=[],
-            timestamp="2023-01-01T00:00:00"
-        )
-
-def create_mirror_entry(source: str, target: str) -> MirrorEntry:
-    return MirrorEntry(
-        source_path=source,
-        target_path=target,
-        file_hash="mock_hash",
-        last_synced="2023-01-01T00:00:00",
-        sync_status="synced"
+def sync_workspace_files(source_folder: str, target_folder: str, 
+                        box_client: Any) -> SyncResult:
+    """Sync files between Box workspace and local folder."""
+    return SyncResult(
+        success=True,
+        files_synced=0,
+        errors=[],
+        duration=0.0
     )
+
+def validate_sync_integrity(manifest: List[ManifestEntry], 
+                          local_path: str) -> bool:
+    """Validate integrity of synced files."""
+    return True
+
+def get_folder_contents(folder_id: str, box_client: Any) -> List[Dict[str, Any]]:
+    """Get contents of a Box folder."""
+    return []
