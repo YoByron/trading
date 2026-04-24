@@ -1,82 +1,98 @@
 import sys
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.safety.trading_policy_drift import (
-    DEFAULT_POLICY_DOC_PATHS,
-)
-
-def parse_changed_paths(git_diff_output: str) -> List[str]:
-    """Parse changed file paths from git diff output"""
-    changed_paths = []
-    for line in git_diff_output.split('\n'):
-        if line.startswith('diff --git'):
-            # Extract file path from diff line
-            parts = line.split(' ')
-            if len(parts) >= 4:
-                path = parts[3][2:]  # Remove 'b/' prefix
-                changed_paths.append(path)
-    return changed_paths
-
 @dataclass
-class HandoffContext:
-    """Context for agent handoff decisions"""
-    changed_files: List[str]
+class GateReport:
     risk_level: str
     recommendations: List[str]
+    changed_files: List[str]
 
-def evaluate_handoff_necessity(changed_files: List[str]) -> HandoffContext:
-    """Evaluate if agent handoff is necessary based on changed files"""
+def parse_changed_paths(git_diff_output: str) -> List[str]:
+    """Parse changed file paths from git diff output."""
+    changed_files = []
+    lines = git_diff_output.strip().split('\n')
+    
+    for line in lines:
+        # Handle git diff --name-only output
+        if line.strip():
+            changed_files.append(line.strip())
+    
+    return changed_files
+
+def assess_handoff_risk(changed_files: List[str]) -> GateReport:
+    """Assess the risk level of changes for agent handoff."""
     risk_level = "low"
     recommendations = []
-    
+
     # Check for high-risk file patterns
     high_risk_patterns = [
-        "src/trading/",
-        "src/execution/",
-        "src/risk/",
+        "src/core/",
+        "src/safety/",
         "config/trading.yaml"
     ]
-    
+
     for file_path in changed_files:
         for pattern in high_risk_patterns:
             if pattern in file_path:
                 risk_level = "high"
-                recommendations.append(f"Manual review required for {file_path}")
+                recommendations.append(f"Review changes to critical file: {file_path}")
                 break
-    
-    return HandoffContext(
-        changed_files=changed_files,
+
+    # Check for medium-risk patterns
+    medium_risk_patterns = [
+        "src/analytics/",
+        "src/data/",
+        "tests/"
+    ]
+
+    if risk_level != "high":
+        for file_path in changed_files:
+            for pattern in medium_risk_patterns:
+                if pattern in file_path:
+                    if risk_level != "high":
+                        risk_level = "medium"
+                    recommendations.append(f"Consider review of: {file_path}")
+                    break
+
+    return GateReport(
         risk_level=risk_level,
-        recommendations=recommendations
+        recommendations=recommendations,
+        changed_files=changed_files
     )
 
 def main():
-    """Main function for agent handoff gate"""
+    """Main entry point for agent handoff gate."""
     import subprocess
     
-    # Get git diff
     try:
+        # Get changed files from git
         result = subprocess.run(
             ["git", "diff", "--name-only", "HEAD~1"],
             capture_output=True,
             text=True,
             check=True
         )
-        changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
-    except subprocess.CalledProcessError:
-        changed_files = []
-    
-    # Evaluate handoff necessity
-    context = evaluate_handoff_necessity(changed_files)
-    
-    print(f"Risk Level: {context.risk_level}")
-    if context.recommendations:
-        print("Recommendations:", context.recommendations)
+        
+        changed_files = parse_changed_paths(result.stdout)
+        report = assess_handoff_risk(changed_files)
+        
+        print(f"Risk Level: {report.risk_level}")
+        print(f"Changed Files: {len(report.changed_files)}")
+        
+        if report.recommendations:
+            print("Recommendations:")
+            for rec in report.recommendations:
+                print(f"- {rec}")
+                
+    except subprocess.CalledProcessError as e:
+        print(f"Error running git command: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()

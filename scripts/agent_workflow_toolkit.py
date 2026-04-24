@@ -1,94 +1,88 @@
-import json
 import sys
 from pathlib import Path
-from typing import Dict, Any
-from datetime import datetime
+from dataclasses import dataclass
+from typing import List, Dict, Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-def build_retro_markdown(workflow_data: Dict[str, Any]) -> str:
-    """Build retrospective markdown report from workflow data"""
+@dataclass
+class ContextBundle:
+    market_data: Dict[str, Any]
+    risk_parameters: Dict[str, Any]
+    trading_policies: List[str]
+    metadata: Dict[str, Any]
 
-    # Extract key metrics
-    start_time = workflow_data.get('start_time', 'Unknown')
-    end_time = workflow_data.get('end_time', 'Unknown')
-    duration = workflow_data.get('duration', 'Unknown')
-    status = workflow_data.get('status', 'Unknown')
-    steps = workflow_data.get('steps', [])
-
-    # Build markdown report
-    markdown = f"""# Workflow Retrospective
-
-## Summary
-- **Start Time**: {start_time}
-- **End Time**: {end_time}
-- **Duration**: {duration}
-- **Status**: {status}
-- **Steps Completed**: {len(steps)}
-
-## Execution Steps
-"""
-
-    for i, step in enumerate(steps, 1):
-        step_name = step.get('name', f'Step {i}')
-        step_status = step.get('status', 'Unknown')
-        step_duration = step.get('duration', 'Unknown')
-        markdown += f"""
-### {i}. {step_name}
-- **Status**: {step_status}
-- **Duration**: {step_duration}
-"""
-
-    return markdown
-
-class RetroCapture:
-    """Capture and process workflow retrospectives"""
+def build_context_bundle(market_symbols: List[str] = None) -> ContextBundle:
+    """Build a context bundle for agent workflow operations."""
+    if market_symbols is None:
+        market_symbols = ["SPY", "QQQ", "IWM"]
     
-    def __init__(self, output_dir: str = "retrospectives"):
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
-    
-    def capture_workflow(self, workflow_id: str, workflow_data: Dict[str, Any]):
-        """Capture workflow data for retrospective analysis"""
-        timestamp = datetime.now().isoformat()
-        
-        # Save raw data
-        raw_file = self.output_dir / f"{workflow_id}_{timestamp}_raw.json"
-        with open(raw_file, 'w') as f:
-            json.dump(workflow_data, f, indent=2)
-        
-        # Generate markdown report
-        markdown = build_retro_markdown(workflow_data)
-        md_file = self.output_dir / f"{workflow_id}_{timestamp}_report.md"
-        with open(md_file, 'w') as f:
-            f.write(markdown)
-        
-        return {
-            'raw_file': str(raw_file),
-            'report_file': str(md_file),
-            'timestamp': timestamp
+    market_data = {}
+    for symbol in market_symbols:
+        market_data[symbol] = {
+            "price": 100.0,
+            "volume": 1000000,
+            "volatility": 0.2
         }
-
-def main():
-    """Main function for workflow toolkit"""
-    retro = RetroCapture()
     
-    # Example workflow data
-    sample_workflow = {
-        'start_time': '2024-01-01T10:00:00',
-        'end_time': '2024-01-01T10:30:00',
-        'duration': '30m',
-        'status': 'completed',
-        'steps': [
-            {'name': 'Initialize', 'status': 'completed', 'duration': '5m'},
-            {'name': 'Process Data', 'status': 'completed', 'duration': '20m'},
-            {'name': 'Generate Report', 'status': 'completed', 'duration': '5m'}
-        ]
+    risk_parameters = {
+        "max_position_size": 0.1,
+        "stop_loss": 0.05,
+        "max_drawdown": 0.15
     }
     
-    result = retro.capture_workflow('sample_workflow', sample_workflow)
-    print(f"Generated retrospective: {result}")
+    trading_policies = [
+        "No trading during market close",
+        "Maximum position size 10% of portfolio",
+        "Stop loss at 5% decline"
+    ]
+    
+    metadata = {
+        "timestamp": "2024-01-01T00:00:00Z",
+        "version": "1.0.0",
+        "source": "agent_workflow_toolkit"
+    }
+    
+    return ContextBundle(
+        market_data=market_data,
+        risk_parameters=risk_parameters,
+        trading_policies=trading_policies,
+        metadata=metadata
+    )
+
+def validate_workflow_context(context: ContextBundle) -> bool:
+    """Validate that a context bundle has required components."""
+    required_fields = ["market_data", "risk_parameters", "trading_policies", "metadata"]
+    
+    for field in required_fields:
+        if not hasattr(context, field):
+            return False
+    
+    # Validate market data structure
+    if not isinstance(context.market_data, dict):
+        return False
+    
+    # Validate risk parameters
+    required_risk_params = ["max_position_size", "stop_loss", "max_drawdown"]
+    for param in required_risk_params:
+        if param not in context.risk_parameters:
+            return False
+    
+    return True
+
+def main():
+    """Main entry point for workflow toolkit operations."""
+    print("Building context bundle...")
+    context = build_context_bundle()
+    
+    if validate_workflow_context(context):
+        print("Context bundle validation: PASSED")
+        print(f"Market symbols: {list(context.market_data.keys())}")
+        print(f"Risk parameters: {context.risk_parameters}")
+        print(f"Trading policies: {len(context.trading_policies)} policies loaded")
+    else:
+        print("Context bundle validation: FAILED")
 
 if __name__ == "__main__":
     main()
