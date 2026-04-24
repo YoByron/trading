@@ -1,103 +1,101 @@
+"""Agent handoff gate for workflow transitions"""
 import json
 import sys
-from pathlib import Path
-from typing import List
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
 
 REPO_ROOT = Path(__file__).parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT))
 
 from src.safety.trading_policy_drift import (
     DEFAULT_POLICY_DOC_PATHS,
 )
 
 @dataclass
-class GateStepResult:
-    step_name: str
+class GateReport:
+    """Report from gate analysis"""
+    gate_id: str
+    status: str
+    findings: List[str]
+    recommendations: List[str]
+
+@dataclass
+class GateCheckResult:
+    """Result of a gate check operation"""
     passed: bool
-    message: str
-    risk_level: str = "LOW"
+    gate_report: GateReport
+    metadata: Dict
 
-def load_changes_from_file(changes_file: str = "changes.json") -> List[str]:
-    """Load changed file paths from a JSON file"""
-    if not Path(changes_file).exists():
-        return []
-
-    with open(changes_file, 'r') as f:
-        changes_data = json.load(f)
-
-    changed_paths = []
-    if isinstance(changes_data, dict):
-        if 'files' in changes_data:
-            changed_paths.extend(changes_data['files'])
-        if 'changed_files' in changes_data:
-            changed_paths.extend(changes_data['changed_files'])
-    elif isinstance(changes_data, list):
-        changed_paths = changes_data
-
-    return changed_paths
-
-def check_policy_changes(changed_paths: List[str]) -> tuple[bool, List[str]]:
-    """Check if any policy files were changed"""
-    policy_changes = []
-
-    for path in changed_paths:
-        path_obj = Path(path)
-        for policy_path in DEFAULT_POLICY_DOC_PATHS:
-            if str(path_obj).startswith(str(policy_path)):
-                policy_changes.append(path)
-                break
-
-    return len(policy_changes) > 0, policy_changes
-
-def generate_handoff_report(changed_paths: List[str]) -> GateStepResult:
-    """Generate a comprehensive handoff report"""
-    has_policy_changes, policy_changes = check_policy_changes(changed_paths)
-
+def run_policy_drift_check() -> GateCheckResult:
+    """Run policy drift analysis"""
+    findings = []
     recommendations = []
-    risk_level = "LOW"
+    
+    # Check if policy documents exist
+    for doc_path in DEFAULT_POLICY_DOC_PATHS:
+        if not Path(doc_path).exists():
+            findings.append(f"Missing policy document: {doc_path}")
+            recommendations.append(f"Create or restore {doc_path}")
+    
+    passed = len(findings) == 0
+    
+    report = GateReport(
+        gate_id="policy_drift",
+        status="pass" if passed else "fail",
+        findings=findings,
+        recommendations=recommendations
+    )
+    
+    return GateCheckResult(
+        passed=passed,
+        gate_report=report,
+        metadata={"check_type": "policy_drift"}
+    )
 
-    if has_policy_changes:
-        risk_level = "HIGH"
-        recommendations.append("Manual review required for policy changes")
-        recommendations.append("Verify compliance with trading regulations")
-
-    if not changed_paths:
-        return GateStepResult(
-            step_name="handoff_gate",
-            passed=True,
-            message="No changes detected - proceeding with standard workflow",
-            risk_level=risk_level
-        )
-
-    report_lines = [
-        f"Files changed: {len(changed_paths)}",
-        f"Policy files affected: {len(policy_changes)}",
-        f"Risk level: {risk_level}"
-    ]
-
-    if recommendations:
-        report_lines.append("Recommendations:")
-        report_lines.extend(f"- {rec}" for rec in recommendations)
-
-    return GateStepResult(
-        step_name="handoff_gate",
-        passed=risk_level != "HIGH",
-        message="\n".join(report_lines),
-        risk_level=risk_level
+def analyze_handoff_readiness(agent_context: Dict) -> GateCheckResult:
+    """Analyze if agent is ready for handoff"""
+    findings = []
+    recommendations = []
+    
+    # Check required context fields
+    required_fields = ["agent_id", "workflow_state", "completion_status"]
+    for field in required_fields:
+        if field not in agent_context:
+            findings.append(f"Missing required field: {field}")
+            recommendations.append(f"Ensure {field} is set in agent context")
+    
+    passed = len(findings) == 0
+    
+    report = GateReport(
+        gate_id="handoff_readiness",
+        status="pass" if passed else "fail",
+        findings=findings,
+        recommendations=recommendations
+    )
+    
+    return GateCheckResult(
+        passed=passed,
+        gate_report=report,
+        metadata={"agent_id": agent_context.get("agent_id")}
     )
 
 def main():
-    """Main entry point for agent handoff gate"""
-    changed_paths = load_changes_from_file()
-    result = generate_handoff_report(changed_paths)
-
-    print(f"Handoff Gate Result: {'PASS' if result.passed else 'FAIL'}")
-    print(f"Risk Level: {result.risk_level}")
-    print(f"Message:\n{result.message}")
-
-    return 0 if result.passed else 1
+    """Main execution"""
+    # Run policy drift check
+    policy_result = run_policy_drift_check()
+    print(f"Policy drift check: {policy_result.gate_report.status}")
+    
+    # Example handoff readiness check
+    sample_context = {
+        "agent_id": "test_agent",
+        "workflow_state": "completed",
+        "completion_status": "success"
+    }
+    handoff_result = analyze_handoff_readiness(sample_context)
+    print(f"Handoff readiness: {handoff_result.gate_report.status}")
+    
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

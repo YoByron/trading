@@ -1,114 +1,95 @@
-import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
+"""Box workspace mirror functionality"""
 import json
-import shutil
-
-REPO_ROOT = Path(__file__).parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
 
 @dataclass
-class MirrorEntry:
-    source_path: str
-    destination_path: str
-    last_sync: Optional[str] = None
-    sync_status: str = "pending"
-    file_size: int = 0
+class ManifestEntry:
+    """Entry in workspace manifest"""
+    file_path: str
+    file_size: int
+    last_modified: str
+    checksum: str
 
-def create_mirror_entry(source: str, destination: str) -> MirrorEntry:
-    """Create a new mirror entry"""
-    source_path = Path(source)
-    file_size = source_path.stat().st_size if source_path.exists() else 0
+@dataclass
+class WorkspaceMirror:
+    """Workspace mirror configuration"""
+    source_path: str
+    target_path: str
+    manifest_entries: List[ManifestEntry]
+
+def build_manifest_entries(workspace_path: str) -> List[ManifestEntry]:
+    """Build manifest entries for workspace"""
+    import hashlib
+    import os
+    from datetime import datetime
     
-    return MirrorEntry(
-        source_path=source,
-        destination_path=destination,
-        file_size=file_size
+    entries = []
+    workspace_root = Path(workspace_path)
+    
+    if not workspace_root.exists():
+        return entries
+    
+    for file_path in workspace_root.rglob("*"):
+        if file_path.is_file():
+            try:
+                stat = file_path.stat()
+                
+                # Calculate checksum
+                with open(file_path, 'rb') as f:
+                    checksum = hashlib.md5(f.read()).hexdigest()
+                
+                entry = ManifestEntry(
+                    file_path=str(file_path.relative_to(workspace_root)),
+                    file_size=stat.st_size,
+                    last_modified=datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                    checksum=checksum
+                )
+                entries.append(entry)
+            except (OSError, IOError):
+                continue
+    
+    return entries
+
+def create_workspace_mirror(source_path: str, target_path: str) -> WorkspaceMirror:
+    """Create workspace mirror"""
+    manifest_entries = build_manifest_entries(source_path)
+    
+    return WorkspaceMirror(
+        source_path=source_path,
+        target_path=target_path,
+        manifest_entries=manifest_entries
     )
 
-def sync_file(entry: MirrorEntry) -> bool:
-    """Sync a single file from source to destination"""
-    source_path = Path(entry.source_path)
-    dest_path = Path(entry.destination_path)
+def save_manifest(mirror: WorkspaceMirror, output_file: str):
+    """Save workspace manifest to file"""
+    manifest_data = {
+        "source_path": mirror.source_path,
+        "target_path": mirror.target_path,
+        "entries": [
+            {
+                "file_path": entry.file_path,
+                "file_size": entry.file_size,
+                "last_modified": entry.last_modified,
+                "checksum": entry.checksum
+            }
+            for entry in mirror.manifest_entries
+        ]
+    }
     
-    if not source_path.exists():
-        entry.sync_status = "source_not_found"
-        return False
-    
-    try:
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source_path, dest_path)
-        entry.sync_status = "synced"
-        
-        import datetime
-        entry.last_sync = datetime.datetime.now().isoformat()
-        return True
-        
-    except Exception as e:
-        entry.sync_status = f"error: {str(e)}"
-        return False
-
-def mirror_workspace(source_dir: str, destination_dir: str) -> List[MirrorEntry]:
-    """Mirror entire workspace from source to destination"""
-    source_path = Path(source_dir)
-    dest_path = Path(destination_dir)
-    
-    mirror_entries = []
-    
-    if not source_path.exists():
-        print(f"Source directory {source_dir} does not exist")
-        return mirror_entries
-    
-    for file_path in source_path.rglob('*'):
-        if file_path.is_file():
-            relative_path = file_path.relative_to(source_path)
-            dest_file = dest_path / relative_path
-            
-            entry = create_mirror_entry(str(file_path), str(dest_file))
-            sync_file(entry)
-            mirror_entries.append(entry)
-    
-    return mirror_entries
-
-def save_mirror_log(entries: List[MirrorEntry], log_file: str = "mirror_log.json"):
-    """Save mirror entries to log file"""
-    log_data = []
-    
-    for entry in entries:
-        log_data.append({
-            'source_path': entry.source_path,
-            'destination_path': entry.destination_path,
-            'last_sync': entry.last_sync,
-            'sync_status': entry.sync_status,
-            'file_size': entry.file_size
-        })
-    
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+    with open(output_file, 'w') as f:
+        json.dump(manifest_data, f, indent=2)
 
 def main():
-    """Main entry point for box workspace mirror"""
-    import argparse
+    """Main execution"""
+    source = "/tmp/test_workspace"
+    target = "/tmp/mirror_workspace"
     
-    parser = argparse.ArgumentParser(description='Mirror Box Workspace')
-    parser.add_argument('--source', '-s', required=True,
-                       help='Source directory to mirror')
-    parser.add_argument('--destination', '-d', required=True,
-                       help='Destination directory for mirror')
-    parser.add_argument('--log', '-l', default='mirror_log.json',
-                       help='Log file for mirror operations')
-    
-    args = parser.parse_args()
-    
-    entries = mirror_workspace(args.source, args.destination)
-    save_mirror_log(entries, args.log)
-    
-    synced_count = sum(1 for entry in entries if entry.sync_status == "synced")
-    print(f"Mirror complete: {synced_count}/{len(entries)} files synced")
+    mirror = create_workspace_mirror(source, target)
+    print(f"Created mirror with {len(mirror.manifest_entries)} entries")
     
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
