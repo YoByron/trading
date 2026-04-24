@@ -1,98 +1,73 @@
-from typing import List, Dict, Any, Callable
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-class RetroCapture:
-    """Capture and analyze workflow execution data for retrospective analysis."""
+def build_retro_markdown(workflow_data: Dict[str, Any]) -> str:
+    """Build a retrospective markdown report from workflow data."""
+    markdown = "# Workflow Retrospective\n\n"
+    
+    if 'timestamp' in workflow_data:
+        markdown += f"**Date:** {workflow_data['timestamp']}\n\n"
+    
+    if 'workflow_name' in workflow_data:
+        markdown += f"## Workflow: {workflow_data['workflow_name']}\n\n"
+    
+    if 'summary' in workflow_data:
+        markdown += f"### Summary\n{workflow_data['summary']}\n\n"
+    
+    if 'steps' in workflow_data:
+        markdown += "### Steps Executed\n"
+        for i, step in enumerate(workflow_data['steps'], 1):
+            markdown += f"{i}. {step}\n"
+        markdown += "\n"
+    
+    if 'metrics' in workflow_data:
+        markdown += "### Metrics\n"
+        for metric, value in workflow_data['metrics'].items():
+            markdown += f"- **{metric}:** {value}\n"
+        markdown += "\n"
+    
+    if 'outcomes' in workflow_data:
+        markdown += f"### Outcomes\n{workflow_data['outcomes']}\n\n"
+    
+    if 'lessons_learned' in workflow_data:
+        markdown += f"### Lessons Learned\n{workflow_data['lessons_learned']}\n\n"
+    
+    return markdown
 
+class WorkflowToolkit:
+    """Toolkit for managing agent workflows."""
+    
     def __init__(self):
-        self.captures: List[Dict[str, Any]] = []
-
-    def capture_event(self, event_type: str, data: Dict[str, Any]):
-        """Capture a workflow event with timestamp."""
-        capture = {
-            "timestamp": datetime.now().isoformat(),
-            "event_type": event_type,
-            "data": data
+        self.workflows: List[Dict[str, Any]] = []
+        self.active_workflows: Dict[str, Dict[str, Any]] = {}
+    
+    def start_workflow(self, name: str, config: Dict[str, Any]) -> str:
+        """Start a new workflow."""
+        workflow_id = f"workflow_{len(self.workflows)}_{datetime.now().timestamp()}"
+        workflow = {
+            'id': workflow_id,
+            'name': name,
+            'config': config,
+            'start_time': datetime.now().isoformat(),
+            'status': 'active',
+            'steps': [],
+            'metrics': {}
         }
-        self.captures.append(capture)
-
-    def get_captures(self) -> List[Dict[str, Any]]:
-        """Return all captured events."""
-        return self.captures
-
-    def clear_captures(self):
-        """Clear all captured events."""
-        self.captures.clear()
-
-class WorkflowStep:
-    def __init__(self, name: str, handler: Callable):
-        self.name = name
-        self.handler = handler
-
-class AgentWorkflowToolkit:
-    def __init__(self):
-        self.steps: List[WorkflowStep] = []
-        self.retro_capture = RetroCapture()
-
-    def add_step(self, name: str, handler: Callable):
-        """Add a workflow step."""
-        step = WorkflowStep(name, handler)
-        self.steps.append(step)
-
-    def execute_workflow(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the workflow steps."""
-        self.retro_capture.capture_event("workflow_start", {"context": context})
         
-        result = context.copy()
-        for step in self.steps:
-            try:
-                step_result = step.handler(result)
-                result.update(step_result or {})
-                self.retro_capture.capture_event("step_complete", {
-                    "step_name": step.name,
-                    "result": step_result
-                })
-            except Exception as e:
-                self.retro_capture.capture_event("step_error", {
-                    "step_name": step.name,
-                    "error": str(e)
-                })
-                raise
-        
-        self.retro_capture.capture_event("workflow_complete", {"final_result": result})
-        return result
-
-def build_context_bundle(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Build a context bundle for workflow execution."""
-    return {
-        "timestamp": datetime.now().isoformat(),
-        "data": data,
-        "metadata": {
-            "created_by": "workflow_toolkit",
-            "version": "1.0"
-        }
-    }
-
-def analyze_workflow_performance(toolkit: AgentWorkflowToolkit) -> Dict[str, Any]:
-    """Analyze workflow performance from captured events."""
-    captures = toolkit.retro_capture.get_captures()
+        self.workflows.append(workflow)
+        self.active_workflows[workflow_id] = workflow
+        return workflow_id
     
-    if not captures:
-        return {"total_events": 0, "analysis": "No data available"}
+    def add_step(self, workflow_id: str, step_description: str):
+        """Add a step to a workflow."""
+        if workflow_id in self.active_workflows:
+            self.active_workflows[workflow_id]['steps'].append(step_description)
     
-    step_times = {}
-    errors = []
-    
-    for capture in captures:
-        if capture["event_type"] == "step_complete":
-            step_name = capture["data"]["step_name"]
-            step_times[step_name] = step_times.get(step_name, 0) + 1
-        elif capture["event_type"] == "step_error":
-            errors.append(capture["data"])
-    
-    return {
-        "total_events": len(captures),
-        "step_execution_counts": step_times,
-        "error_count": len(errors),
-        "errors": errors
-    }
+    def complete_workflow(self, workflow_id: str, outcomes: str = ""):
+        """Complete a workflow."""
+        if workflow_id in self.active_workflows:
+            workflow = self.active_workflows[workflow_id]
+            workflow['status'] = 'completed'
+            workflow['end_time'] = datetime.now().isoformat()
+            workflow['outcomes'] = outcomes
+            del self.active_workflows[workflow_id]

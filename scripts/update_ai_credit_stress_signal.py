@@ -1,139 +1,123 @@
-import json
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
-import numpy as np
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import pandas as pd
+
+class SeriesSummary:
+    """Summary of a time series analysis."""
+    
+    def __init__(self, series_name: str, start_date: str, end_date: str):
+        self.series_name = series_name
+        self.start_date = start_date
+        self.end_date = end_date
+        self.data_points = 0
+        self.mean_value = 0.0
+        self.std_deviation = 0.0
+        self.min_value = 0.0
+        self.max_value = 0.0
+        self.trend = "neutral"
+        self.volatility = "normal"
+        self.quality_score = 1.0
+        
+    def update_statistics(self, data: List[float]):
+        """Update summary statistics from data."""
+        if data:
+            self.data_points = len(data)
+            self.mean_value = sum(data) / len(data)
+            self.min_value = min(data)
+            self.max_value = max(data)
+            
+            # Calculate standard deviation
+            variance = sum((x - self.mean_value) ** 2 for x in data) / len(data)
+            self.std_deviation = variance ** 0.5
+            
+            # Determine trend (simple slope calculation)
+            if len(data) > 1:
+                slope = (data[-1] - data[0]) / (len(data) - 1)
+                if slope > 0.1:
+                    self.trend = "increasing"
+                elif slope < -0.1:
+                    self.trend = "decreasing"
+                else:
+                    self.trend = "stable"
 
 class CreditStressSignal:
-    """AI-driven credit stress signal analysis."""
+    """AI-driven credit stress signal analyzer."""
     
     def __init__(self):
-        self.stress_indicators: Dict[str, float] = {}
-        self.historical_data: List[Dict[str, Any]] = []
-        self.threshold_high = 0.75
-        self.threshold_low = 0.25
+        self.signals: List[Dict[str, Any]] = []
+        self.current_stress_level = 0.0
+        self.last_update = None
         
-    def update_indicator(self, name: str, value: float, metadata: Optional[Dict] = None):
-        """Update a stress indicator value."""
-        self.stress_indicators[name] = value
+    def calculate_stress_level(self, market_data: Dict[str, Any]) -> float:
+        """Calculate current stress level from market data."""
+        # Simple stress calculation based on multiple factors
+        stress_factors = []
         
-        # Record historical data
-        record = {
-            "timestamp": datetime.now().isoformat(),
-            "indicator": name,
-            "value": value,
-            "metadata": metadata or {}
+        if 'credit_spreads' in market_data:
+            spreads = market_data['credit_spreads']
+            if isinstance(spreads, (int, float)):
+                stress_factors.append(min(spreads / 100.0, 1.0))
+        
+        if 'volatility' in market_data:
+            vol = market_data['volatility']
+            if isinstance(vol, (int, float)):
+                stress_factors.append(min(vol / 50.0, 1.0))
+        
+        if 'liquidity' in market_data:
+            liq = market_data['liquidity']
+            if isinstance(liq, (int, float)):
+                stress_factors.append(max(0, 1.0 - liq / 100.0))
+        
+        if stress_factors:
+            self.current_stress_level = sum(stress_factors) / len(stress_factors)
+        else:
+            self.current_stress_level = 0.0
+            
+        return self.current_stress_level
+    
+    def update_signal(self, market_data: Dict[str, Any]) -> SeriesSummary:
+        """Update the credit stress signal with new market data."""
+        stress_level = self.calculate_stress_level(market_data)
+        
+        signal_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'stress_level': stress_level,
+            'market_data': market_data
         }
-        self.historical_data.append(record)
         
-    def calculate_composite_score(self) -> float:
-        """Calculate composite stress score from all indicators."""
-        if not self.stress_indicators:
-            return 0.0
+        self.signals.append(signal_entry)
+        self.last_update = datetime.now()
+        
+        # Create summary
+        summary = SeriesSummary(
+            series_name="AI Credit Stress Signal",
+            start_date=self.signals[0]['timestamp'] if self.signals else signal_entry['timestamp'],
+            end_date=signal_entry['timestamp']
+        )
+        
+        # Update statistics with recent stress levels
+        recent_levels = [s['stress_level'] for s in self.signals[-100:]]  # Last 100 points
+        summary.update_statistics(recent_levels)
+        
+        return summary
+    
+    def get_signal_summary(self) -> Optional[SeriesSummary]:
+        """Get a summary of the current signal state."""
+        if not self.signals:
+            return None
             
-        values = list(self.stress_indicators.values())
-        return np.mean(values)
+        summary = SeriesSummary(
+            series_name="AI Credit Stress Signal",
+            start_date=self.signals[0]['timestamp'],
+            end_date=self.signals[-1]['timestamp']
+        )
         
-    def get_stress_level(self) -> str:
-        """Get categorical stress level."""
-        score = self.calculate_composite_score()
+        stress_levels = [s['stress_level'] for s in self.signals]
+        summary.update_statistics(stress_levels)
         
-        if score >= self.threshold_high:
-            return "HIGH"
-        elif score <= self.threshold_low:
-            return "LOW"
-        else:
-            return "MEDIUM"
-            
-    def get_trending_indicators(self, lookback_hours: int = 24) -> Dict[str, str]:
-        """Get trending direction for indicators."""
-        cutoff_time = datetime.now() - timedelta(hours=lookback_hours)
-        
-        trends = {}
-        for indicator in self.stress_indicators.keys():
-            # Get recent data for this indicator
-            recent_data = [
-                record for record in self.historical_data
-                if (record["indicator"] == indicator and 
-                    datetime.fromisoformat(record["timestamp"]) >= cutoff_time)
-            ]
-            
-            if len(recent_data) >= 2:
-                values = [record["value"] for record in recent_data]
-                if values[-1] > values[0]:
-                    trends[indicator] = "INCREASING"
-                elif values[-1] < values[0]:
-                    trends[indicator] = "DECREASING"
-                else:
-                    trends[indicator] = "STABLE"
-            else:
-                trends[indicator] = "INSUFFICIENT_DATA"
-                
-        return trends
+        return summary
 
-def evaluate_ai_credit_stress_signal(signal: CreditStressSignal) -> Dict[str, Any]:
-    """Evaluate the current state of the credit stress signal."""
-    composite_score = signal.calculate_composite_score()
-    stress_level = signal.get_stress_level()
-    trends = signal.get_trending_indicators()
-    
-    # Calculate risk metrics
-    high_stress_indicators = {
-        name: value for name, value in signal.stress_indicators.items()
-        if value >= signal.threshold_high
-    }
-    
-    evaluation = {
-        "timestamp": datetime.now().isoformat(),
-        "composite_score": composite_score,
-        "stress_level": stress_level,
-        "total_indicators": len(signal.stress_indicators),
-        "high_stress_count": len(high_stress_indicators),
-        "high_stress_indicators": high_stress_indicators,
-        "trends": trends,
-        "recommendation": _generate_recommendation(stress_level, trends)
-    }
-    
-    return evaluation
-
-def _generate_recommendation(stress_level: str, trends: Dict[str, str]) -> str:
-    """Generate recommendation based on stress level and trends."""
-    if stress_level == "HIGH":
-        return "REDUCE_EXPOSURE"
-    elif stress_level == "LOW":
-        increasing_trends = sum(1 for trend in trends.values() if trend == "INCREASING")
-        if increasing_trends > len(trends) * 0.5:
-            return "MONITOR_CLOSELY"
-        else:
-            return "MAINTAIN_POSITION"
-    else:  # MEDIUM
-        return "CAUTIOUS_MONITORING"
-
-def update_signal_with_market_data(signal: CreditStressSignal, market_data: Dict[str, Any]):
-    """Update signal with new market data."""
-    # Credit spread indicators
-    if "credit_spreads" in market_data:
-        spread_stress = min(market_data["credit_spreads"] / 500.0, 1.0)  # Normalize
-        signal.update_indicator("credit_spread_stress", spread_stress)
-    
-    # Volatility indicators
-    if "volatility" in market_data:
-        vol_stress = min(market_data["volatility"] / 50.0, 1.0)  # Normalize
-        signal.update_indicator("volatility_stress", vol_stress)
-    
-    # Default rate indicators
-    if "default_rate" in market_data:
-        default_stress = min(market_data["default_rate"] / 10.0, 1.0)  # Normalize
-        signal.update_indicator("default_rate_stress", default_stress)
-
-def export_signal_data(signal: CreditStressSignal, filepath: str):
-    """Export signal data to JSON file."""
-    export_data = {
-        "current_indicators": signal.stress_indicators,
-        "historical_data": signal.historical_data[-100:],  # Last 100 records
-        "composite_score": signal.calculate_composite_score(),
-        "stress_level": signal.get_stress_level(),
-        "export_timestamp": datetime.now().isoformat()
-    }
-    
-    with open(filepath, 'w') as f:
-        json.dump(export_data, f, indent=2)
+def update_ai_credit_stress_signal(market_data: Dict[str, Any]) -> SeriesSummary:
+    """Update the AI credit stress signal with new market data."""
+    signal = CreditStressSignal()
+    return signal.update_signal(market_data)
