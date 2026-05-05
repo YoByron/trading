@@ -129,12 +129,12 @@
   },
   {
     "week_start": "2026-05-04",
-    "sample_size": 0,
+    "sample_size": 1,
     "win_rate_pct": 0.0,
-    "expectancy_per_trade": 0.0,
+    "expectancy_per_trade": -126.0,
     "mode": "validation_reset",
     "qualified_setups": 0,
     "cadence_passed": false,
-    "updated_at": "2026-05-05T18:24:09.728133+00:00"
+    "updated_at": "2026-05-05T18:55:05.674988+00:00"
   }
 ]

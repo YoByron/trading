@@ -1,20 +1,20 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-05-05T18:24:07.861252+00:00`.
+Generated from canonical ledgers at `2026-05-05T18:55:03.773289+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
 ## Current Status
 
-- Paper equity: `$93,505.70`
-- Paper total P/L today: `$-86.00`
+- Paper equity: `$93,509.62`
+- Paper total P/L today: `$-82.08`
 - Paper realized P/L today: `n/a`
 - Paper unrealized P/L today: `n/a`
 - Fills today: `None`
-- Closed trades total: `67`
-- Total realized P/L: `$-3,669.00`
-- Win rate: `23.88%`
-- Profit factor: `0.24`
+- Closed trades total: `68`
+- Total realized P/L: `$-3,795.00`
+- Win rate: `23.53%`
+- Profit factor: `0.23`
 
 ## Gate State
 
@@ -22,10 +22,10 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 - Block new positions: `False`
 - Verified edge available: `False`
 - Recommended max position size: `0.01`
-- Weekly expectancy per trade: `$0.00`
-- Scaling gate: `67` / `30`
+- Weekly expectancy per trade: `$-126.00`
+- Scaling gate: `68` / `30`
 - Qualified setups this week: `0`
-- Closed trades this week: `0`
+- Closed trades this week: `1`
 
 ## Exact Blocker
 
