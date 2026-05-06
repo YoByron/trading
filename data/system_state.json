@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-06T18:04:42.163643+00:00",
+  "last_updated": "2026-05-06T19:36:45.703473+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-06T18:04:42.163643+00:00",
+    "last_successful_sync": "2026-05-06T19:36:45.703473+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 9,
+    "sync_count_today": 10,
     "history": [
-      {
-        "timestamp": "2026-05-05T16:22:25.637326+00:00",
-        "equity": 93515.7,
-        "success": true
-      },
       {
         "timestamp": "2026-05-05T16:35:49.201881+00:00",
         "equity": 93521.7,
@@ -124,9 +119,14 @@
         "timestamp": "2026-05-06T18:04:42.163643+00:00",
         "equity": 93440.42,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-06T19:36:45.703473+00:00",
+        "equity": 93440.42,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-06T18:04:42.163643+00:00"
+    "last_attempt": "2026-05-06T19:36:45.703473+00:00"
   },
   "portfolio": {
     "equity": 93440.42,
@@ -2597,12 +2597,12 @@
     "buying_power": 186880.84
   },
   "meta": {
-    "last_updated": "2026-05-06T18:04:42.163643+00:00",
+    "last_updated": "2026-05-06T19:36:45.703473+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-06T18:04:42.163643+00:00",
+    "last_sync_attempt": "2026-05-06T19:36:45.703473+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-06T18:04:42.100103",
+    "last_sync": "2026-05-06T19:36:45.606233",
     "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-05-06T16:42:56.142504+00:00",
     "verification_source": "daily_verification.py"
@@ -2626,11 +2626,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-05-06T18:04:42.160770"
+    "synced_at": "2026-05-06T19:36:45.701197"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-06T18:04:43.741197Z",
+    "generated_at": "2026-05-06T19:36:47.226615Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
@@ -2733,7 +2733,7 @@
     "estimated_cagr_from_expectancy": -0.1373,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-06T18:04:43.741197Z",
+    "updated_at": "2026-05-06T19:36:47.226615Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2835,13 +2835,13 @@
         "valid": true,
         "errors": [],
         "strategy_family": "ic_simple",
-        "hypothesis": "Restart only controlled paper validation for IC Simple after the failed legacy ledger, using live-delta SPY iron condors, minimum-size validation entries, stricter credit and regime filters, and hard cohort kill criteria to test whether the changed rules can restore positive expectancy.",
+        "hypothesis": "Restart only controlled paper validation for IC Simple after the failed legacy ledger by explicitly removing the current top loss clusters: no 10-wide wings, no multi-contract sizing, and no unmanaged sub-24-hour exits. The fresh cohort tests whether narrower defined-risk wings, one-contract sizing, live-delta provenance, and fixed exits can restore positive expectancy.",
         "changed_rules": [
           "Run validation_reset as paper-only: live trading and scale-up remain blocked while the fresh validation cohort is collected.",
           "Limit validation entries to IC Simple SPY iron condors with one contract per structure, no more than one new structure per day, and no more than two concurrent iron condors.",
           "Require live-delta strike provenance; reject heuristic fallback, non-positive net credit, and net credit below $0.50 before any validation entry.",
-          "Use 30-45 DTE, target 0.15 short delta, accepted short-delta band 0.08-0.22, and $10 wings for the validation cohort.",
-          "Keep the exit plan fixed: take profit at 50% of max profit, stop at 100% of entry credit, close by 7 DTE, and require the safety gates to refresh canonical state after runs.",
+          "Use 30-45 DTE, target 0.15 short delta, accepted short-delta band 0.08-0.22, and reject 10-wide wings; the validation cohort must use narrower defined-risk wings unless a separate backtest proves wider wings first.",
+          "Keep the exit plan fixed: take profit at 50% of max profit, stop at 100% of entry credit, close by 7 DTE, and do not allow sub-24-hour discretionary exits unless a hard max-loss or broken-leg condition fires.",
           "Keep learned blockers active: FOMC blackout, ThumbGate rules, low IV percentile, unknown or volatile regime, stale broker sync, same-expiry re-entry after a loss, and Thompson confidence unless validation_reset explicitly allows controlled paper validation."
         ],
         "kill_criteria": {
@@ -2849,6 +2849,20 @@
           "min_expectancy_per_trade": 1.0,
           "min_profit_factor": 1.05,
           "min_total_realized_pnl": 1.0
+        },
+        "rehabilitation_plan": {
+          "active": true,
+          "path": "data/runtime/edge_rehabilitation_plan.json",
+          "required_loss_clusters": [
+            "ten_wide_wings",
+            "multi_contract",
+            "early_exit_lt_24h"
+          ],
+          "covered_loss_clusters": [
+            "ten_wide_wings",
+            "multi_contract",
+            "early_exit_lt_24h"
+          ]
         }
       },
       "kill_criteria": {
@@ -2926,9 +2940,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-05-06T18:04:43.738565+00:00"
+      "updated_at": "2026-05-06T19:36:47.224015+00:00"
     },
-    "updated_at": "2026-05-06T18:04:43.738907+00:00"
+    "updated_at": "2026-05-06T19:36:47.224337+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -2958,7 +2972,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-06T18:04:43.738988+00:00"
+    "updated_at": "2026-05-06T19:36:47.224410+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3496,7 +3510,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-05-06T18:04:43.739051Z",
+    "generated_at_utc": "2026-05-06T19:36:47.224468Z",
     "cadence_optimizer": {
       "decision": "hold_risk_blocked",
       "reason": "Block-new-positions is active; no cadence tuning is applied.",
@@ -3594,7 +3608,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-05-06T18:04:43.739051+00:00",
+        "updated_at": "2026-05-06T19:36:47.224468+00:00",
         "source": "north_star_autopilot"
       }
     }
