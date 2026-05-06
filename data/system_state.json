@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-06T15:55:02.743277+00:00",
+  "last_updated": "2026-05-06T16:35:34.470588+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-06T15:55:01.507331+00:00",
-    "sync_source": "daily_verification.py",
-    "sync_count_today": 5,
+    "last_successful_sync": "2026-05-06T16:35:34.470588+00:00",
+    "sync_source": "sync_alpaca_state.py",
+    "sync_count_today": 6,
     "history": [
-      {
-        "timestamp": "2026-05-05T14:28:06.932356+00:00",
-        "equity": 93521.7,
-        "success": true
-      },
       {
         "timestamp": "2026-05-05T15:09:32.506210+00:00",
         "equity": 93519.7,
@@ -124,9 +119,14 @@
         "timestamp": "2026-05-06T15:55:01.507331+00:00",
         "equity": 93440.42,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-06T16:35:34.470588+00:00",
+        "equity": 93440.42,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-06T15:55:02.743277+00:00"
+    "last_attempt": "2026-05-06T16:35:34.470588+00:00"
   },
   "portfolio": {
     "equity": 93440.42,
@@ -140,8 +140,8 @@
     "total_pl_pct": -6.559580000000002,
     "positions_count": 0,
     "daily_change": -71.08,
-    "win_rate": 23.53,
-    "win_rate_sample_size": 68,
+    "win_rate": 23.19,
+    "win_rate_sample_size": 69,
     "starting_balance": 100000.0,
     "current_equity": 93440.42,
     "last_equity": 93511.5
@@ -2565,19 +2565,15 @@
   "trades_loaded": 173,
   "trades": {
     "last_trade_date": "2026-05-06",
-    "today_trades": 4,
-    "total_trades_today": 4,
-    "last_trade_symbol": "SPY260522C00730000",
-    "metrics_date": "2026-05-06",
-    "orders_today": 1,
-    "structures_today": 0,
-    "fills_today": 4
+    "today_trades": 1,
+    "total_trades_today": 1,
+    "last_trade_symbol": "SPY260508P00585000"
   },
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
     "total_pl": -6559.580000000002,
     "unrealized_pl": 0,
-    "weekly_gate_mode": "validation_reset",
+    "weekly_gate_mode": "defensive",
     "weekly_gate_recommended_max_position_pct": 0.01,
     "weekly_cadence_kpi_passed": false,
     "weekly_scaling_sample_gate_passed": true,
@@ -2601,13 +2597,13 @@
     "buying_power": 186880.84
   },
   "meta": {
-    "last_updated": "2026-05-06T15:55:02.743277+00:00",
+    "last_updated": "2026-05-06T16:35:34.470588+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-06T15:55:01.507331+00:00",
+    "last_sync_attempt": "2026-05-06T16:35:34.470588+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-06T15:55:01.506183",
-    "sync_mode": "paper",
+    "last_sync": "2026-05-06T16:35:34.386278",
+    "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-05-06T15:55:02.743277+00:00",
     "verification_source": "daily_verification.py"
   },
@@ -2630,20 +2626,25 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-05-06T15:49:50.292810"
+    "synced_at": "2026-05-06T16:35:34.468122"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-06T15:55:01.526617Z",
+    "generated_at": "2026-05-06T16:35:36.104346Z",
     "primary_family": "options_income",
     "rolling_window": 50,
-    "paused_families": ["equity_momentum", "alternatives", "other"],
+    "paused_families": [
+      "options_income",
+      "equity_momentum",
+      "alternatives",
+      "other"
+    ],
     "strategy_families": {
       "options_income": {
-        "status": "validation_reset",
-        "paused": false,
-        "live_risk_blocked": true,
-        "reason": "options_income remains in controlled paper-validation reset: rolling win rate 18.0% is below 60.0%, so live/scaling stays blocked while a fresh cohort is collected.",
+        "status": "paused",
+        "paused": true,
+        "live_risk_blocked": false,
+        "reason": "options_income paused: win rate 18.0% below 60.0% threshold.",
         "thresholds": {
           "min_win_rate_pct": 60.0,
           "min_expectancy": 0.0,
@@ -2653,10 +2654,10 @@
           "samples": 50,
           "wins": 9,
           "losses": 40,
-          "total_pnl": -3471.0,
+          "total_pnl": -3614.0,
           "win_rate_pct": 18.0,
-          "expectancy": -69.42,
-          "window_days": 70.0,
+          "expectancy": -72.28,
+          "window_days": 71.0,
           "evidence_source": "trades.json"
         }
       },
@@ -2729,10 +2730,10 @@
     "probability_score": 13.1,
     "probability_label": "critical",
     "required_cagr": null,
-    "estimated_cagr_from_expectancy": -0.1337,
+    "estimated_cagr_from_expectancy": -0.1373,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-06T15:55:01.526617Z",
+    "updated_at": "2026-05-06T16:35:36.104346Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2741,18 +2742,18 @@
   "north_star_weekly_gate": {
     "enabled": true,
     "lookback_days": 7,
-    "mode": "validation_reset",
-    "sample_size": 1,
+    "mode": "defensive",
+    "sample_size": 2,
     "win_rate_pct": 0.0,
-    "expectancy_per_trade": -126.0,
+    "expectancy_per_trade": -144.5,
     "recommended_max_position_pct": 0.01,
-    "block_new_positions": false,
-    "block_live_new_positions": true,
-    "allow_validation_entries": true,
-    "validation_reset_active": true,
-    "validation_reset_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-55.81/trade, profit factor 0.23, total realized P/L $-3795.00 over 68 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
+    "block_new_positions": true,
+    "block_live_new_positions": false,
+    "allow_validation_entries": false,
+    "validation_reset_active": false,
+    "validation_reset_reason": null,
     "north_star_claims_frozen": true,
-    "reason": "CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size under a written changed-rule hypothesis until a fresh cohort proves edge.",
+    "reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-57.36/trade, profit factor 0.22, total realized P/L $-3958.00 over 69 closed trades. Trading halted.",
     "positive_weeks_streak": 0,
     "evidence_source": "trades.json",
     "verified_edge_available": false,
@@ -2761,7 +2762,7 @@
       "min_qualified_setups_per_week": 1,
       "min_closed_trades_per_week": 1,
       "qualified_setups_observed": 0,
-      "closed_trades_observed": 1,
+      "closed_trades_observed": 2,
       "meets_qualified_setups": false,
       "meets_closed_trades": true,
       "passed": false,
@@ -2806,15 +2807,15 @@
     "scaling_sample_gate": {
       "enabled": true,
       "min_closed_trades_for_scaling": 30,
-      "closed_trades_observed": 68,
+      "closed_trades_observed": 69,
       "passed": true
     },
     "lifetime_ledger": {
-      "closed_trades": 68,
-      "win_rate_pct": 23.53,
-      "profit_factor": 0.23,
-      "total_realized_pnl": -3795.0,
-      "expectancy_per_trade": -55.8088,
+      "closed_trades": 69,
+      "win_rate_pct": 23.19,
+      "profit_factor": 0.22,
+      "total_realized_pnl": -3958.0,
+      "expectancy_per_trade": -57.3623,
       "has_min_sample": true,
       "positive_expectancy": false,
       "positive_total_realized_pnl": false,
@@ -2824,11 +2825,11 @@
     },
     "strategy_quarantine": {
       "active": true,
-      "block_new_positions": false,
-      "paper_validation_allowed": true,
+      "block_new_positions": true,
+      "paper_validation_allowed": false,
       "north_star_claims_frozen": true,
-      "reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
-      "required_action": "Complete the fresh validation cohort. If the cohort misses kill criteria, remove IC Simple as a North Star candidate.",
+      "reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-57.36/trade, profit factor 0.22, total realized P/L $-3958.00 over 69 closed trades. Trading halted.",
+      "required_action": "Stop new entries until lifetime edge is positive.",
       "validation_hypothesis": {
         "path": "data/runtime/strategy_validation_hypothesis.json",
         "valid": true,
@@ -2852,18 +2853,18 @@
       },
       "kill_criteria": {
         "min_closed_trades": 30,
-        "min_expectancy_per_trade": 1.0,
-        "min_profit_factor": 1.05,
-        "min_total_realized_pnl": 1.0
+        "min_expectancy_per_trade": 0.0,
+        "min_profit_factor": 1.0,
+        "min_total_realized_pnl": 0.0
       }
     },
     "contradiction_detected": false,
-    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-55.81/trade, profit factor 0.23, total realized P/L $-3795.00 over 68 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
+    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-57.36/trade, profit factor 0.22, total realized P/L $-3958.00 over 69 closed trades. Trading halted.",
     "liquidity_min_volume_ratio": 0.2,
     "no_trade_diagnostic": {
       "lookback_days": 7,
       "decision_records_observed": 0,
-      "closed_trades_observed": 1,
+      "closed_trades_observed": 2,
       "qualified_setups_observed": 0,
       "gate_status": {
         "regime": {
@@ -2925,9 +2926,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-05-06T15:55:01.520892+00:00"
+      "updated_at": "2026-05-06T16:35:36.101765+00:00"
     },
-    "updated_at": "2026-05-06T15:55:01.521316+00:00"
+    "updated_at": "2026-05-06T16:35:36.102101+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -2957,7 +2958,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-06T15:55:01.521394+00:00"
+    "updated_at": "2026-05-06T16:35:36.102177+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3495,10 +3496,10 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-05-06T15:49:52.068269Z",
+    "generated_at_utc": "2026-05-06T16:35:36.102235Z",
     "cadence_optimizer": {
-      "decision": "hold",
-      "reason": "Liquidity floor unchanged.",
+      "decision": "hold_risk_blocked",
+      "reason": "Block-new-positions is active; no cadence tuning is applied.",
       "cadence_passed": false,
       "setups_shortfall": 1,
       "liquidity_block_share": 0.0,
@@ -3509,15 +3510,15 @@
     },
     "regime_aware_sizing": {
       "base_max_position_pct": 0.01,
-      "recommended_max_position_pct": 0.01,
-      "block_new_positions": false,
+      "recommended_max_position_pct": 0.0,
+      "block_new_positions": true,
       "applied_multipliers": [
         {
-          "name": "none",
-          "value": 1.0
+          "name": "weekly_block",
+          "value": 0.0
         }
       ],
-      "reason": "Applied regime/macro multipliers to weekly cap."
+      "reason": "Weekly gate blocks new positions."
     },
     "hard_gate_monitor": {
       "status": "critical",
@@ -3555,10 +3556,10 @@
     "blocker_report": {
       "blocked": true,
       "blocker_count": 5,
-      "warning_count": 1,
+      "warning_count": 0,
       "root_causes": [
         "Crisis latch is active.",
-        "Legacy ledger still blocks live/scaling; paper validation reset is active.",
+        "Weekly gate set `block_new_positions=true`.",
         "Setup cadence is below weekly minimum.",
         "Cadence KPI is failing.",
         "Trade quality/edge is below zero expectancy."
@@ -3566,7 +3567,7 @@
     },
     "active_overrides": {
       "min_liquidity_volume_ratio": 0.2,
-      "max_position_pct_cap": 0.01
+      "max_position_pct_cap": 0.0
     },
     "execution_actions": [
       {
@@ -3574,6 +3575,12 @@
         "action": "freeze_new_positions",
         "automated": true,
         "reason": "Hard gate monitor is critical."
+      },
+      {
+        "priority": 3,
+        "action": "enforce_regime_sizing_cap",
+        "automated": true,
+        "reason": "Weekly gate blocks new positions."
       },
       {
         "priority": 4,
@@ -3587,7 +3594,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-05-06T15:49:52.068269+00:00",
+        "updated_at": "2026-05-06T16:35:36.102235+00:00",
         "source": "north_star_autopilot"
       }
     }
