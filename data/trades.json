@@ -12,25 +12,25 @@
       "min_trades_for_decision": 30
     },
     "notes": "CLEANED Jan 27, 2026 - Removed pre-Jan-22 garbage (SOFI trades, stock DCA). Fresh start per $30K account reset.",
-    "last_sync": "2026-05-05T20:04:45.117093+00:00",
+    "last_sync": "2026-05-06T15:55:01.742997+00:00",
     "sync_source": "sync_closed_positions.py"
   },
   "stats": {
-    "total_trades": 68,
-    "closed_trades": 68,
+    "total_trades": 69,
+    "closed_trades": 69,
     "open_trades": 0,
     "wins": 16,
-    "losses": 51,
+    "losses": 52,
     "breakeven": 1,
-    "win_rate_pct": 23.53,
+    "win_rate_pct": 23.19,
     "avg_win": 70.5,
-    "avg_loss": 96.53,
-    "profit_factor": 0.23,
-    "total_pnl": -3795.0,
-    "total_realized_pnl": -3795.0,
+    "avg_loss": 97.81,
+    "profit_factor": 0.22,
+    "total_pnl": -3958.0,
+    "total_realized_pnl": -3958.0,
     "paper_phase_start": "2026-01-22",
-    "paper_phase_days": 103,
-    "last_updated": "2026-05-05T20:04:45.117086+00:00"
+    "paper_phase_days": 104,
+    "last_updated": "2026-05-06T15:55:01.742988+00:00"
   },
   "trades": [
     {
@@ -2668,6 +2668,47 @@
       "target_delta": 0.15,
       "put_delta": 0.1514,
       "call_delta": 0.1499,
+      "profile_name": "spy-core",
+      "validation_phase": true
+    },
+    {
+      "id": "IC_SPY_2026_05_22_P644_654_C730_735_20260415153630_20260506155459",
+      "symbol": "SPY",
+      "type": "option",
+      "strategy": "iron_condor",
+      "status": "closed",
+      "entry_date": "2026-04-15",
+      "exit_date": "2026-05-06",
+      "entry_time": "2026-04-15T15:36:30.685426+00:00",
+      "exit_time": "2026-05-06T15:54:59.512969+00:00",
+      "entry_net_cash": 147.0,
+      "entry_credit": 147.0,
+      "entry_debit": 0.0,
+      "entry_style": "credit",
+      "exit_net_cash": -310.0,
+      "exit_credit": 0.0,
+      "exit_debit": 310.0,
+      "exit_style": "debit",
+      "realized_pnl": -163.0,
+      "outcome": "loss",
+      "signature": "SPY_2026-05-22_P644-654_C730-735",
+      "legs": {
+        "underlying": "SPY",
+        "expiry": "2026-05-22",
+        "put_strikes": [644.0, 654.0],
+        "call_strikes": [730.0, 735.0]
+      },
+      "quantity": 1.0,
+      "source": "alpaca_parent_lot->alpaca_close_inventory",
+      "order_ids": {
+        "entry": ["7e0f64e5-1b92-46e6-b5ff-b8a53038b108"],
+        "exit": ["749f06a4-2347-461a-9466-5bb545410986"]
+      },
+      "selection_method": "live_delta",
+      "strike_selection_method": "live_delta",
+      "target_delta": 0.15,
+      "put_delta": 0.1508,
+      "call_delta": 0.1497,
       "profile_name": "spy-core",
       "validation_phase": true
     }
