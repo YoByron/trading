@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-07T19:35:03.302590+00:00",
+  "last_updated": "2026-05-07T20:03:44.163137+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-07T19:35:03.302590+00:00",
-    "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 11,
+    "last_successful_sync": "2026-05-07T20:03:43.505746+00:00",
+    "sync_source": "daily_verification.py",
+    "sync_count_today": 12,
     "history": [
-      {
-        "timestamp": "2026-05-06T15:16:35.410013+00:00",
-        "equity": 93432.5,
-        "success": true
-      },
       {
         "timestamp": "2026-05-06T15:22:17.552366+00:00",
         "equity": 93432.5,
@@ -124,9 +119,14 @@
         "timestamp": "2026-05-07T19:35:03.302590+00:00",
         "equity": 93440.3,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-07T20:03:43.505746+00:00",
+        "equity": 93440.3,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-07T19:35:03.302590+00:00"
+    "last_attempt": "2026-05-07T20:03:44.163137+00:00"
   },
   "portfolio": {
     "equity": 93440.3,
@@ -2567,7 +2567,11 @@
     "last_trade_date": "2026-05-06",
     "today_trades": 0,
     "total_trades_today": 0,
-    "last_trade_symbol": "SPY260508P00585000"
+    "last_trade_symbol": "SPY260522C00730000",
+    "metrics_date": "2026-05-07",
+    "orders_today": 0,
+    "structures_today": 0,
+    "fills_today": 0
   },
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
@@ -2597,14 +2601,14 @@
     "buying_power": 373761.2
   },
   "meta": {
-    "last_updated": "2026-05-07T19:35:03.302590+00:00",
+    "last_updated": "2026-05-07T20:03:44.163137+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-07T19:35:03.302590+00:00",
+    "last_sync_attempt": "2026-05-07T20:03:43.505746+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-07T19:35:02.636829",
-    "sync_mode": "paper+live",
-    "last_daily_verification_at": "2026-05-07T18:44:41.102950+00:00",
+    "last_sync": "2026-05-07T20:03:43.504182",
+    "sync_mode": "paper",
+    "last_daily_verification_at": "2026-05-07T20:03:44.163137+00:00",
     "verification_source": "daily_verification.py"
   },
   "paper_trading": {
@@ -2630,7 +2634,7 @@
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-07T19:35:04.873966Z",
+    "generated_at": "2026-05-07T20:03:43.527662Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
@@ -2733,7 +2737,7 @@
     "estimated_cagr_from_expectancy": -0.1373,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-07T19:35:04.873966Z",
+    "updated_at": "2026-05-07T20:03:43.527662Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2940,9 +2944,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-05-07T19:35:04.871345+00:00"
+      "updated_at": "2026-05-07T20:03:43.521644+00:00"
     },
-    "updated_at": "2026-05-07T19:35:04.871665+00:00"
+    "updated_at": "2026-05-07T20:03:43.522131+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -2972,7 +2976,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-07T19:35:04.871736+00:00"
+    "updated_at": "2026-05-07T20:03:43.522213+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
