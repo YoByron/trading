@@ -26,14 +26,15 @@ try:
 except Exception:  # pragma: no cover - optional dependency in lightweight test envs
     AlpacaOptionsClient = None  # type: ignore[misc,assignment]
 
-from src.utils.market_data import MarketDataProvider
-from src.utils.technical_indicators import calculate_macd, calculate_rsi
-
 import uuid
-from .base_agent import BaseAgent
+
 from src.resilience.audit_graph import AuditGraph
 from src.safety.constraint_engine import ConstraintEngine
 from src.schemas.events import AuditEvent, EventType
+from src.utils.market_data import MarketDataProvider
+from src.utils.technical_indicators import calculate_macd, calculate_rsi
+
+from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 

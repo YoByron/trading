@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from src.agents.base_agent import BaseAgent
-
 from src.resilience.audit_graph import AuditGraph
 
 logger = logging.getLogger(__name__)

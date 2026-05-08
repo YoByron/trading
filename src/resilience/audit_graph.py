@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from src.schemas.events import AuditEvent, EventType
+from src.schemas.events import AuditEvent
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class AuditGraph:
     def find_mismatches(self) -> list[dict[str, Any]]:
         """Find traces that lack key events (e.g., signal without execution)."""
         mismatches = []
-        for trace_id, event_ids in self.index.items():
+        for trace_id, _event_ids in self.index.items():
             trace = self.get_trace(trace_id)
             types = {e["event_type"] for e in trace}
             
