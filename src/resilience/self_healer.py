@@ -306,7 +306,11 @@ class SelfHealer:
             import sys
 
             sys.path.insert(0, str(self.project_root))
-            from src.core.trading_constants import ALLOWED_TICKERS, MAX_POSITION_PCT, MAX_POSITIONS
+            from src.core.trading_constants import (
+                ALLOWED_TICKERS,
+                MAX_POSITION_PCT,
+                MAX_POSITIONS,
+            )
 
             with open(state_file) as f:
                 data = json.load(f)
