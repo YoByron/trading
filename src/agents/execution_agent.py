@@ -12,21 +12,18 @@ Ensures best execution
 
 from __future__ import annotations
 
-import builtins
-import contextlib
+import datetime
+import json
 import logging
+import uuid
 from typing import Any
 
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, TimeInForce
-from alpaca.trading.requests import MarketOrderRequest
 
 try:
     from src.core.options_client import AlpacaOptionsClient
 except Exception:  # pragma: no cover - optional dependency in lightweight test envs
     AlpacaOptionsClient = None  # type: ignore[misc,assignment]
-
-import uuid
 
 from src.resilience.audit_graph import AuditGraph
 from src.safety.constraint_engine import ConstraintEngine
@@ -85,20 +82,18 @@ class ExecutionAgent(BaseAgent):
         market_conditions = data.get("market_conditions", {})
 
         # Emit Signal Event
-        self.audit_graph.emit(AuditEvent(
-            event_id=str(uuid.uuid4()),
-            trace_id=trace_id,
-            event_type=EventType.SIGNAL,
-            agent_id=self.name,
-            data={"symbol": symbol, "action": action, "size": position_size}
-        ))
+        self.audit_graph.emit(
+            AuditEvent(
+                event_id=str(uuid.uuid4()),
+                trace_id=trace_id,
+                event_type=EventType.SIGNAL,
+                agent_id=self.name,
+                data={"symbol": symbol, "action": action, "size": position_size},
+            )
+        )
 
         if action == "HOLD":
-            return {
-                "action": "NO_EXECUTION",
-                "reasoning": "HOLD recommendation - no order needed",
-                "trace_id": trace_id
-            }
+            return {"action": "NO_EXECUTION", "reasoning": "HOLD recommendation - no order needed", "trace_id": trace_id}
 
         # Check market status
         market_status = self._check_market_status()
@@ -184,32 +179,77 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         analysis["trace_id"] = trace_id
 
         # Emit Decision Event
-        self.audit_graph.emit(AuditEvent(
-            event_id=str(uuid.uuid4()),
-            trace_id=trace_id,
-            event_type=EventType.DECISION,
-            agent_id=self.name,
-            data=analysis
-        ))
+        self.audit_graph.emit(
+            AuditEvent(
+                event_id=str(uuid.uuid4()),
+                trace_id=trace_id,
+                event_type=EventType.DECISION,
+                agent_id=self.name,
+                data=analysis,
+            )
+        )
 
         # Deterministic Constraint Check
         current_positions = 0
+        trades_today = 0
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+
         if self.alpaca_api:
             try:
                 current_positions = len(self.alpaca_api.get_all_positions())
+            except Exception: # nosec
+                pass
+
+        # Count trades taken today (from ledger)
+        try:
+            with open("data/trades.json") as f:
+                history = json.load(f).get("trades", [])
+                trades_today = len([t for t in history if t.get("entry_date") == today_str])
+        except Exception: # nosec
+            pass
+
+        # Extract metrics for Win Rate Optimization (P0)
+        vix_val = 0.0
+        try:
+            vix_hist = self.data_provider.get_daily_bars("^VIX", lookback_days=1)
+            if not vix_hist.data.empty:
+                vix_val = vix_hist.data["Close"].iloc[-1]
+        except Exception: # nosec
+            pass
+
+        # For multi-leg, calculate width
+        width_val = 100.0
+        if "legs" in data:
+            # Simple width heuristic for ICs: distance between put strikes
+            try:
+                # Expecting data['legs'] to be list of OCC symbols or strike floats
+                # (Simplified for now - will be expanded as needed)
+                pass
             except Exception:
                 pass
 
-        constraint_result = self.constraint_engine.validate_trade(symbol, position_size, current_positions)
-        
+        constraint_result = self.constraint_engine.validate_trade(
+            symbol,
+            position_size,
+            current_positions,
+            trades_today=trades_today,
+            metadata={
+                "vix": vix_val,
+                "width": width_val,
+                "weekday": datetime.datetime.now().weekday(),
+            },
+        )
+
         # Emit Validation Event
-        self.audit_graph.emit(AuditEvent(
-            event_id=str(uuid.uuid4()),
-            trace_id=trace_id,
-            event_type=EventType.VALIDATION,
-            agent_id=self.name,
-            data=constraint_result.__dict__
-        ))
+        self.audit_graph.emit(
+            AuditEvent(
+                event_id=str(uuid.uuid4()),
+                trace_id=trace_id,
+                event_type=EventType.VALIDATION,
+                agent_id=self.name,
+                data=constraint_result.__dict__,
+            )
+        )
 
         if not constraint_result.passed:
             logger.warning(f"Trade blocked by constraints: {constraint_result.violations}")
@@ -220,15 +260,17 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         if analysis["action"] == "EXECUTE" and self.alpaca_api:
             execution_result = self._execute_order(symbol, action, position_size)
             analysis["execution_result"] = execution_result
-            
+
             # Emit Execution Event
-            self.audit_graph.emit(AuditEvent(
-                event_id=str(uuid.uuid4()),
-                trace_id=trace_id,
-                event_type=EventType.EXECUTION,
-                agent_id=self.name,
-                data=execution_result
-            ))
+            self.audit_graph.emit(
+                AuditEvent(
+                    event_id=str(uuid.uuid4()),
+                    trace_id=trace_id,
+                    event_type=EventType.EXECUTION,
+                    agent_id=self.name,
+                    data=execution_result,
+                )
+            )
         else:
             analysis["execution_result"] = {
                 "status": "NOT_EXECUTED",
@@ -239,330 +281,3 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         self.log_decision(analysis)
 
         return analysis
-
-    # ------------------------------------------------------------------ #
-    # Options execution helpers
-    # ------------------------------------------------------------------ #
-    def _get_options_client(self) -> AlpacaOptionsClient | None:
-        """
-        Lazily resolve an Alpaca options client if credentials are available.
-
-        Returns:
-            AlpacaOptionsClient or None when unavailable (missing creds / package)
-        """
-
-        if self._options_client is False:
-            return None
-
-        if self._options_client is not None:
-            return self._options_client
-
-        if AlpacaOptionsClient is None:
-            logger.warning("AlpacaOptionsClient not available in current environment.")
-            self._options_client = False
-            return None
-
-        try:
-            self._options_client = AlpacaOptionsClient(paper=self.paper)
-            return self._options_client
-        except Exception as exc:  # pragma: no cover - depends on external creds
-            logger.warning("Failed to initialize AlpacaOptionsClient: %s", exc)
-            self._options_client = False
-            return None
-
-    def submit_option_order(
-        self,
-        *,
-        option_symbol: str,
-        qty: int,
-        side: str = "sell_to_open",
-        order_type: str = "limit",
-        limit_price: float | None = None,
-        paper: bool | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Submit an option order using Alpaca's options API (with simulation fallback).
-
-        Args:
-            option_symbol: OCC option symbol (e.g., SPY240216C00420000)
-            qty: Number of contracts to trade
-            side: Order side (sell_to_open, buy_to_close, etc.)
-            order_type: "market" or "limit"
-            limit_price: Limit price per contract when using limit orders
-            paper: Override for paper/live flag (defaults to agent setting)
-            metadata: Additional context to persist alongside execution history
-
-        Returns:
-            Dict containing submission metadata (or simulation) plus execution status.
-        """
-
-        if qty <= 0:
-            raise ValueError("qty must be positive when submitting option orders.")
-
-        if order_type not in {"market", "limit"}:
-            raise ValueError("order_type must be 'market' or 'limit'.")
-
-        final_paper = self.paper if paper is None else paper
-
-        # MANDATORY: Ticker whitelist check (liquid ETFs only)
-        from src.safety.mandatory_trade_gate import validate_ticker
-
-        ticker_valid, ticker_error = validate_ticker(option_symbol)
-        if not ticker_valid:
-            raise ValueError(f"OPTION ORDER BLOCKED: {ticker_error}")
-
-        # In paper/CI environments we prefer a safe simulation over submitting an
-        # invalid limit order when no limit price is provided.
-        if order_type == "limit" and limit_price is None and final_paper:
-            payload_meta = metadata.copy() if metadata else {}
-            payload_meta["option_symbol"] = option_symbol
-            payload_meta["side"] = side
-            payload_meta["order_type"] = order_type
-            payload_meta["limit_price"] = limit_price
-
-            result = {
-                "status": "SIMULATED",
-                "option_symbol": option_symbol,
-                "qty": qty,
-                "side": side,
-                "order_type": order_type,
-                "limit_price": limit_price,
-                "metadata": payload_meta,
-                "paper": final_paper,
-                "note": "limit_price missing for limit order; simulated instead of submitting.",
-            }
-            self.execution_history.append(result)
-            return result
-
-        payload_meta = metadata.copy() if metadata else {}
-        payload_meta["option_symbol"] = option_symbol
-        payload_meta["side"] = side
-        payload_meta["order_type"] = order_type
-        payload_meta["limit_price"] = limit_price
-
-        client = self._get_options_client()
-        result: dict[str, Any]
-
-        if client:
-            try:
-                order = client.submit_option_order(
-                    option_symbol=option_symbol,
-                    qty=qty,
-                    side=side,
-                    order_type=order_type,
-                    limit_price=limit_price,
-                )
-                result = {
-                    "status": "SUBMITTED",
-                    "order": order,
-                    "metadata": payload_meta,
-                    "paper": final_paper,
-                }
-                logger.info(
-                    "Options order submitted via Alpaca: %s x%d (%s)",
-                    option_symbol,
-                    qty,
-                    side,
-                )
-            except Exception as exc:  # pragma: no cover - network/credential failures
-                logger.error("Option order submission failed: %s", exc)
-                result = {
-                    "status": "ERROR",
-                    "error": str(exc),
-                    "option_symbol": option_symbol,
-                    "qty": qty,
-                    "side": side,
-                    "metadata": payload_meta,
-                }
-        else:
-            # Simulation fallback when options trading isn't enabled in this environment.
-            result = {
-                "status": "SIMULATED",
-                "option_symbol": option_symbol,
-                "qty": qty,
-                "side": side,
-                "order_type": order_type,
-                "limit_price": limit_price,
-                "metadata": payload_meta,
-                "paper": final_paper,
-            }
-            logger.info(
-                "Simulated options order: %s x%d (%s) @ %s",
-                option_symbol,
-                qty,
-                side,
-                limit_price if limit_price is not None else "MKT",
-            )
-
-        self.execution_history.append(result)
-        return result
-
-    def _check_market_status(self) -> dict[str, Any]:
-        """Check if market is open and ready for trading."""
-        if not self.alpaca_api:
-            return {"status": "UNKNOWN", "is_open": False}
-
-        try:
-            clock = self.alpaca_api.get_clock()
-            return {
-                "status": "OPEN" if clock.is_open else "CLOSED",
-                "is_open": clock.is_open,
-                "next_open": (str(clock.next_open) if hasattr(clock, "next_open") else None),
-                "next_close": (str(clock.next_close) if hasattr(clock, "next_close") else None),
-            }
-        except Exception as e:
-            logger.error(f"Error checking market status: {e}")
-            return {"status": "ERROR", "is_open": False, "error": str(e)}
-
-    def _execute_order(self, symbol: str, action: str, position_size: float) -> dict[str, Any]:
-        """
-        Execute order via Alpaca API.
-
-        Args:
-            symbol: Stock symbol
-            action: BUY or SELL
-            position_size: Dollar amount
-
-        Returns:
-            Execution result
-        """
-        # MANDATORY: Ticker whitelist check (liquid ETFs only)
-        from src.safety.mandatory_trade_gate import validate_ticker
-
-        ticker_valid, ticker_error = validate_ticker(symbol)
-        if not ticker_valid:
-            return {"status": "BLOCKED", "error": f"TICKER NOT ALLOWED: {ticker_error}"}
-
-        try:
-            if action == "BUY":
-                req = MarketOrderRequest(
-                    symbol=symbol,
-                    notional=position_size,
-                    side=OrderSide.BUY,
-                    time_in_force=TimeInForce.DAY,
-                )
-                order = self.alpaca_api.submit_order(req)
-            elif action == "SELL":
-                # For sell, we'd need to know the quantity (not implemented yet)
-                return {"status": "ERROR", "message": "SELL not yet implemented"}
-            else:
-                return {"status": "ERROR", "message": f"Unknown action: {action}"}
-
-            result = {
-                "status": "SUCCESS",
-                "order_id": order.id,
-                "symbol": symbol,
-                "action": action,
-                "amount": position_size,
-                "order_status": order.status,
-            }
-
-            # Track execution
-            self.execution_history.append(result)
-            logger.info(f"Order executed: {order.id} - {symbol} {action} ${position_size}")
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Order execution error: {e}")
-            return {
-                "status": "ERROR",
-                "error": str(e),
-                "symbol": symbol,
-                "action": action,
-                "amount": position_size,
-            }
-
-    def _parse_execution_response(self, reasoning: str) -> dict[str, Any]:
-        """Parse LLM response into structured execution plan."""
-        lines = reasoning.split("\n")
-        analysis = {
-            "timing": "IMMEDIATE",
-            "slippage": 0.001,
-            "confidence": 0.8,
-            "action": "EXECUTE",
-        }
-
-        for line in lines:
-            line = line.strip()
-            if line.startswith("TIMING:"):
-                parts = line.split(":", 1)  # maxsplit=1 for safety
-                if len(parts) > 1:
-                    timing = parts[1].strip().upper()
-                    if timing in ["IMMEDIATE", "WAIT_5MIN", "WAIT_OPEN"]:
-                        analysis["timing"] = timing
-            elif line.startswith("SLIPPAGE:"):
-                try:
-                    parts = line.split(":", 1)
-                    if len(parts) > 1:
-                        slippage_str = parts[1].strip().replace("%", "")
-                        analysis["slippage"] = float(slippage_str) / 100
-                except Exception:
-                    pass
-            elif line.startswith("CONFIDENCE:"):
-                with contextlib.suppress(builtins.BaseException):
-                    parts = line.split(":", 1)
-                    if len(parts) > 1:
-                        analysis["confidence"] = float(parts[1].strip())
-            elif line.startswith("RECOMMENDATION:"):
-                parts = line.split(":", 1)
-                if len(parts) > 1:
-                    rec = parts[1].strip().upper()
-                    if rec in ["EXECUTE", "DELAY", "CANCEL"]:
-                        analysis["action"] = rec
-
-        return analysis
-
-    # ------------------------------------------------------------------ #
-    # Options execution helpers (Theta automation, etc.)
-    # ------------------------------------------------------------------ #
-    def execute_option_trade(
-        self,
-        *,
-        option_symbol: str,
-        side: str,
-        qty: int,
-        order_type: str = "limit",
-        limit_price: float | None = None,
-    ) -> dict[str, Any]:
-        """
-        Submit an options order via the Alpaca options client.
-
-        Args:
-            option_symbol: OCC-formatted option ticker (e.g., SPY250117C00450000)
-            side: One of sell_to_open, buy_to_close, buy_to_open, sell_to_close
-            qty: Number of contracts
-            order_type: limit or market
-            limit_price: Required for limit orders (per contract)
-        """
-        if not self.options_client:
-            raise RuntimeError("Options client not configured for ExecutionAgent")
-
-        result = self.options_client.submit_option_order(
-            option_symbol=option_symbol,
-            qty=qty,
-            side=side,
-            order_type=order_type,
-            limit_price=limit_price,
-        )
-        self.execution_history.append(
-            {
-                "type": "options",
-                "symbol": option_symbol,
-                "side": side,
-                "qty": qty,
-                "order_type": order_type,
-                "limit_price": limit_price,
-                "result": result,
-            }
-        )
-        logger.info(
-            "Options order submitted via ExecutionAgent: %s %s x%d @ %s (status=%s)",
-            side,
-            option_symbol,
-            qty,
-            f"${limit_price:.2f}" if limit_price else "mkt",
-            result.get("status"),
-        )
-        return result
