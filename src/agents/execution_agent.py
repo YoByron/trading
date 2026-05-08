@@ -29,7 +29,11 @@ except Exception:  # pragma: no cover - optional dependency in lightweight test 
 from src.utils.market_data import MarketDataProvider
 from src.utils.technical_indicators import calculate_macd, calculate_rsi
 
+import uuid
 from .base_agent import BaseAgent
+from src.resilience.audit_graph import AuditGraph
+from src.safety.constraint_engine import ConstraintEngine
+from src.schemas.events import AuditEvent, EventType
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,8 @@ class ExecutionAgent(BaseAgent):
         # Lazily instantiated options client (False sentinel == permanently unavailable)
         self._options_client: AlpacaOptionsClient | None | bool = options_client
         self.data_provider = MarketDataProvider()
+        self.audit_graph = AuditGraph()
+        self.constraint_engine = ConstraintEngine()
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -71,21 +77,32 @@ class ExecutionAgent(BaseAgent):
         Returns:
             Execution plan with timing recommendation
         """
+        trace_id = data.get("trace_id", str(uuid.uuid4()))
         action = data.get("action", "HOLD")
         symbol = data.get("symbol", "UNKNOWN")
         position_size = data.get("position_size", 0)
         market_conditions = data.get("market_conditions", {})
 
+        # Emit Signal Event
+        self.audit_graph.emit(AuditEvent(
+            event_id=str(uuid.uuid4()),
+            trace_id=trace_id,
+            event_type=EventType.SIGNAL,
+            agent_id=self.name,
+            data={"symbol": symbol, "action": action, "size": position_size}
+        ))
+
         if action == "HOLD":
             return {
                 "action": "NO_EXECUTION",
                 "reasoning": "HOLD recommendation - no order needed",
+                "trace_id": trace_id
             }
 
         # Check market status
         market_status = self._check_market_status()
 
-        # Fetch historical data and calculate technicals
+        # FETCH HISTORICAL DATA AND CALCULATE TECHNICALS
         macd_hist = 0.0
         rsi = 50.0
         try:
@@ -163,11 +180,54 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         analysis = self._parse_execution_response(response["reasoning"])
         analysis["market_status"] = market_status
         analysis["full_reasoning"] = response["reasoning"]
+        analysis["trace_id"] = trace_id
 
-        # Execute if recommended
+        # Emit Decision Event
+        self.audit_graph.emit(AuditEvent(
+            event_id=str(uuid.uuid4()),
+            trace_id=trace_id,
+            event_type=EventType.DECISION,
+            agent_id=self.name,
+            data=analysis
+        ))
+
+        # Deterministic Constraint Check
+        current_positions = 0
+        if self.alpaca_api:
+            try:
+                current_positions = len(self.alpaca_api.get_all_positions())
+            except Exception:
+                pass
+
+        constraint_result = self.constraint_engine.validate_trade(symbol, position_size, current_positions)
+        
+        # Emit Validation Event
+        self.audit_graph.emit(AuditEvent(
+            event_id=str(uuid.uuid4()),
+            trace_id=trace_id,
+            event_type=EventType.VALIDATION,
+            agent_id=self.name,
+            data=constraint_result.__dict__
+        ))
+
+        if not constraint_result.passed:
+            logger.warning(f"Trade blocked by constraints: {constraint_result.violations}")
+            analysis["action"] = "CANCEL"
+            analysis["reasoning"] = f"BLOCKED: {constraint_result.violations}"
+
+        # Execute if recommended and passed constraints
         if analysis["action"] == "EXECUTE" and self.alpaca_api:
             execution_result = self._execute_order(symbol, action, position_size)
             analysis["execution_result"] = execution_result
+            
+            # Emit Execution Event
+            self.audit_graph.emit(AuditEvent(
+                event_id=str(uuid.uuid4()),
+                trace_id=trace_id,
+                event_type=EventType.EXECUTION,
+                agent_id=self.name,
+                data=execution_result
+            ))
         else:
             analysis["execution_result"] = {
                 "status": "NOT_EXECUTED",

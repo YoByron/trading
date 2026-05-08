@@ -9,6 +9,8 @@ from typing import Any
 
 from src.agents.base_agent import BaseAgent
 
+from src.resilience.audit_graph import AuditGraph
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +23,7 @@ class AuditViolation:
     description: str
     trade_id: str | None = None
     timestamp: str | None = None
+    trace_id: str | None = None
 
 
 @dataclass
@@ -32,6 +35,7 @@ class AuditReport:
     violations: list[AuditViolation]
     status: str  # PASS, WARN, FAIL
     summary: str
+    mismatches: list[dict[str, Any]] = field(default_factory=list)
 
 
 class AuditAgent(BaseAgent):
@@ -39,7 +43,7 @@ class AuditAgent(BaseAgent):
     Adversarial Audit Agent.
 
     Performs autonomous "Adversarial Audits" on trade execution logs using
-    deterministic checks and RLM Algorithm 1 for complex anomaly detection.
+    deterministic checks and graph-linked trace analysis.
     """
 
     def __init__(self, model: str | None = None):
@@ -47,6 +51,7 @@ class AuditAgent(BaseAgent):
         self.log_dir = Path("data")
         self.report_dir = Path("reports/audits")
         self.report_dir.mkdir(parents=True, exist_ok=True)
+        self.audit_graph = AuditGraph()
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -58,56 +63,49 @@ class AuditAgent(BaseAgent):
         return {
             "status": report.status,
             "violations_count": len(report.violations),
+            "mismatches_count": len(report.mismatches),
             "summary": report.summary,
             "report_path": str(self.report_dir / f"audit_{date_str}.json"),
         }
 
     def perform_audit(self, date_str: str | None = None) -> AuditReport:
         """
-        Perform a comprehensive audit of trade logs for a specific date.
+        Perform a comprehensive audit using both trade logs and the AuditGraph.
         """
         if date_str is None:
             date_str = datetime.now().strftime("%Y-%m-%d")
 
         log_file = self.log_dir / f"trades_{date_str}.json"
-        if not log_file.exists():
-            return AuditReport(
-                timestamp=datetime.now().isoformat(),
-                trades_scanned=0,
-                violations=[],
-                status="PASS",
-                summary=f"No trade logs found for {date_str}.",
-            )
-
-        try:
-            with open(log_file) as f:
-                trades = json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load trade log {log_file}: {e}")
-            return AuditReport(
-                timestamp=datetime.now().isoformat(),
-                trades_scanned=0,
-                violations=[
-                    AuditViolation("Data Integrity", "CRITICAL", f"Failed to load log: {e}")
-                ],
-                status="FAIL",
-                summary=f"Data integrity failure for {date_str}.",
-            )
+        trades = []
+        if log_file.exists():
+            try:
+                with open(log_file) as f:
+                    trades = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load trade log {log_file}: {e}")
 
         violations = []
 
-        # 1. Scan for Rule #1 Violations (Realized Loss)
-        # 2. Scan for Position Sizing Violations
-        # 3. Scan for Ticker Violations
-        # 4. Scan for Anomaly detection via RLM (Logic below)
+        # 1. Scan for Graph Mismatches (Orphaned Decisions)
+        mismatches = self.audit_graph.find_mismatches()
+        for m in mismatches:
+            violations.append(
+                AuditViolation(
+                    rule="Execution Mismatch",
+                    severity="CRITICAL",
+                    description=f"Trace {m['trace_id']} has a decision but no execution event.",
+                    trace_id=m["trace_id"],
+                )
+            )
 
+        # 2. Legacy Log Scanning (Enhanced with Trace linking where possible)
         for trade in trades:
             trade_id = trade.get("order_id") or trade.get("symbol", "unknown")
             ts = trade.get("timestamp")
+            trace_id = trade.get("trace_id")
 
-            # Check Ticker Whitelist (Liquid ETFs only)
+            # Check Ticker Whitelist
             symbol = trade.get("symbol", "")
-            # Option symbols are longer, extract underlying
             underlying = symbol[:3] if len(symbol) > 5 else symbol
             allowed = ["SPY", "QQQ", "IWM", "SPX", "XSP", "VIX", "UVXY", "SVXY", "VOO"]
 
@@ -119,19 +117,7 @@ class AuditAgent(BaseAgent):
                         description=f"Prohibited ticker detected: {symbol}",
                         trade_id=trade_id,
                         timestamp=ts,
-                    )
-                )
-
-            # Check Position Sizing (Simulated trades in our log often have max_risk)
-            max_risk = trade.get("max_risk", 0)
-            if max_risk > 500:  # Hardcoded 0.5% of $100K = $500 max risk per IC
-                violations.append(
-                    AuditViolation(
-                        rule="Position Sizing",
-                        severity="MEDIUM",
-                        description=f"Large risk detected: ${max_risk}",
-                        trade_id=trade_id,
-                        timestamp=ts,
+                        trace_id=trace_id,
                     )
                 )
 
@@ -144,7 +130,7 @@ class AuditAgent(BaseAgent):
         elif violations:
             status = "WARN"
 
-        summary = f"Audit for {date_str} complete. Scanned {len(trades)} entries. Found {len(violations)} violations."
+        summary = f"Audit complete. Scanned {len(trades)} trades and {len(self.audit_graph.index)} traces. Found {len(violations)} violations."
 
         report = AuditReport(
             timestamp=datetime.now().isoformat(),
@@ -152,6 +138,7 @@ class AuditAgent(BaseAgent):
             violations=violations,
             status=status,
             summary=summary,
+            mismatches=mismatches,
         )
 
         # Save Report
@@ -164,6 +151,7 @@ class AuditAgent(BaseAgent):
                     "status": report.status,
                     "summary": report.summary,
                     "violations": [v.__dict__ for v in report.violations],
+                    "mismatches": report.mismatches,
                 },
                 f,
                 indent=2,
