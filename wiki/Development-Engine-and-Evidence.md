@@ -1,6 +1,6 @@
 # Development Engine and Evidence
 
-Generated from canonical ledgers at `2026-05-11T17:09:59.541850+00:00`.
+Generated from canonical ledgers at `2026-05-11T17:55:36.319987+00:00`.
 
 This page explains how public-facing system copy stays congruent with live state.
 
@@ -19,7 +19,7 @@ This page explains how public-facing system copy stays congruent with live state
 
 ## Current Operator Summary
 
-- Paper equity: `$93,462.96`
+- Paper equity: `$93,473.96`
 - Total realized P/L ledger: `$-3,958.00`
 - Weekly gate mode: `defensive`
 - Block new positions: `True`
