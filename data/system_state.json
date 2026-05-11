@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-11T15:35:21.238689+00:00",
+  "last_updated": "2026-05-11T15:41:08.821673+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-11T15:35:21.238689+00:00",
+    "last_successful_sync": "2026-05-11T15:41:08.821673+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 2,
+    "sync_count_today": 3,
     "history": [
-      {
-        "timestamp": "2026-05-07T20:03:43.505746+00:00",
-        "equity": 93440.3,
-        "success": true
-      },
       {
         "timestamp": "2026-05-07T20:11:18.250174+00:00",
         "equity": 93440.3,
@@ -124,83 +119,88 @@
         "timestamp": "2026-05-11T15:35:21.238689+00:00",
         "equity": 93474.96,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-11T15:41:08.821673+00:00",
+        "equity": 93477.96,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-11T15:35:21.238689+00:00"
+    "last_attempt": "2026-05-11T15:41:08.821673+00:00"
   },
   "portfolio": {
-    "equity": 93474.96,
+    "equity": 93477.96,
     "cash": 93464.96
   },
   "paper_account": {
-    "equity": 93474.96,
+    "equity": 93477.96,
     "cash": 93464.96,
     "buying_power": 182929.92,
-    "total_pl": -6525.039999999994,
-    "total_pl_pct": -6.5250399999999935,
+    "total_pl": -6522.039999999994,
+    "total_pl_pct": -6.522039999999994,
     "positions_count": 7,
-    "daily_change": 38.0,
+    "daily_change": 41.0,
     "win_rate": 23.19,
     "win_rate_sample_size": 69,
     "starting_balance": 100000.0,
-    "current_equity": 93474.96,
+    "current_equity": 93477.96,
     "last_equity": 93436.96
   },
   "positions": [
     {
       "symbol": "SPY260612C00770000",
       "qty": -1.0,
-      "price": 278.0,
-      "value": -278.0,
-      "pnl": -38.0,
+      "price": 281.0,
+      "value": -281.0,
+      "pnl": -41.0,
       "type": "option"
     },
     {
       "symbol": "SPY260612C00775000",
       "qty": 1.0,
-      "price": 193.0,
-      "value": 193.0,
-      "pnl": 22.0,
+      "price": 195.0,
+      "value": 195.0,
+      "pnl": 24.0,
       "type": "option"
     },
     {
       "symbol": "SPY260612P00686000",
       "qty": 1.0,
-      "price": 235.0,
-      "value": 235.0,
-      "pnl": -36.0,
+      "price": 234.0,
+      "value": 234.0,
+      "pnl": -37.0,
       "type": "option"
     },
     {
       "symbol": "SPY260612P00696000",
       "qty": -1.0,
-      "price": 311.0,
-      "value": -311.0,
-      "pnl": 43.0,
+      "price": 310.0,
+      "value": -310.0,
+      "pnl": 44.0,
       "type": "option"
     },
     {
       "symbol": "SPY260618C00775000",
       "qty": 1.0,
-      "price": 262.0,
-      "value": 262.0,
-      "pnl": 35.0,
+      "price": 265.0,
+      "value": 265.0,
+      "pnl": 38.0,
       "type": "option"
     },
     {
       "symbol": "SPY260618P00686000",
       "qty": 1.0,
-      "price": 314.0,
-      "value": 314.0,
-      "pnl": -50.0,
+      "price": 313.0,
+      "value": 313.0,
+      "pnl": -51.0,
       "type": "option"
     },
     {
       "symbol": "SPY260618P00696000",
       "qty": -1.0,
-      "price": 405.0,
-      "value": -405.0,
-      "pnl": 59.0,
+      "price": 403.0,
+      "value": -403.0,
+      "pnl": 61.0,
       "type": "option"
     }
   ],
@@ -2601,8 +2601,8 @@
   },
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
-    "total_pl": -6525.039999999994,
-    "unrealized_pl": 35.0,
+    "total_pl": -6522.039999999994,
+    "unrealized_pl": 38.0,
     "weekly_gate_mode": "defensive",
     "weekly_gate_recommended_max_position_pct": 0.01,
     "weekly_cadence_kpi_passed": false,
@@ -2619,21 +2619,21 @@
     "weekly_ai_cycle_capex_deceleration_shock": false
   },
   "account": {
-    "current_equity": 93474.96,
-    "total_pl": -6525.039999999994,
-    "total_pl_pct": -6.5250399999999935,
+    "current_equity": 93477.96,
+    "total_pl": -6522.039999999994,
+    "total_pl_pct": -6.522039999999994,
     "positions_count": 7,
     "cash": 93464.96,
     "buying_power": 182929.92
   },
   "meta": {
-    "last_updated": "2026-05-11T15:35:21.238689+00:00",
+    "last_updated": "2026-05-11T15:41:08.821673+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-11T15:35:21.238689+00:00",
+    "last_sync_attempt": "2026-05-11T15:41:08.821673+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-11T15:35:21.237324",
-    "sync_mode": "paper",
+    "last_sync": "2026-05-11T15:41:08.474492",
+    "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-05-08T20:00:02.356048+00:00",
     "verification_source": "daily_verification.py"
   },
@@ -2650,70 +2650,70 @@
         "symbol": "SPY260612C00770000",
         "quantity": -1.0,
         "entry_price": 240.0,
-        "current_price": 278.0,
-        "market_value": -278.0,
-        "unrealized_pl": -38.0,
-        "unrealized_pl_pct": 0.15833333333333333,
+        "current_price": 281.0,
+        "market_value": -281.0,
+        "unrealized_pl": -41.0,
+        "unrealized_pl_pct": 0.17083333333333334,
         "side": "long"
       },
       {
         "symbol": "SPY260612C00775000",
         "quantity": 1.0,
         "entry_price": 171.0,
-        "current_price": 193.0,
-        "market_value": 193.0,
-        "unrealized_pl": 22.0,
-        "unrealized_pl_pct": 0.1286549707602339,
+        "current_price": 195.0,
+        "market_value": 195.0,
+        "unrealized_pl": 24.0,
+        "unrealized_pl_pct": 0.14035087719298245,
         "side": "long"
       },
       {
         "symbol": "SPY260612P00686000",
         "quantity": 1.0,
         "entry_price": 271.0,
-        "current_price": 235.0,
-        "market_value": 235.0,
-        "unrealized_pl": -36.0,
-        "unrealized_pl_pct": -0.13284132841328414,
+        "current_price": 234.0,
+        "market_value": 234.0,
+        "unrealized_pl": -37.0,
+        "unrealized_pl_pct": -0.13653136531365315,
         "side": "long"
       },
       {
         "symbol": "SPY260612P00696000",
         "quantity": -1.0,
         "entry_price": 354.0,
-        "current_price": 311.0,
-        "market_value": -311.0,
-        "unrealized_pl": 43.0,
-        "unrealized_pl_pct": -0.12146892655367232,
+        "current_price": 310.0,
+        "market_value": -310.0,
+        "unrealized_pl": 44.0,
+        "unrealized_pl_pct": -0.12429378531073447,
         "side": "long"
       },
       {
         "symbol": "SPY260618C00775000",
         "quantity": 1.0,
         "entry_price": 227.0,
-        "current_price": 262.0,
-        "market_value": 262.0,
-        "unrealized_pl": 35.0,
-        "unrealized_pl_pct": 0.15418502202643172,
+        "current_price": 265.0,
+        "market_value": 265.0,
+        "unrealized_pl": 38.0,
+        "unrealized_pl_pct": 0.16740088105726872,
         "side": "long"
       },
       {
         "symbol": "SPY260618P00686000",
         "quantity": 1.0,
         "entry_price": 364.0,
-        "current_price": 314.0,
-        "market_value": 314.0,
-        "unrealized_pl": -50.0,
-        "unrealized_pl_pct": -0.13736263736263737,
+        "current_price": 313.0,
+        "market_value": 313.0,
+        "unrealized_pl": -51.0,
+        "unrealized_pl_pct": -0.1401098901098901,
         "side": "long"
       },
       {
         "symbol": "SPY260618P00696000",
         "quantity": -1.0,
         "entry_price": 464.0,
-        "current_price": 405.0,
-        "market_value": -405.0,
-        "unrealized_pl": 59.0,
-        "unrealized_pl_pct": -0.1271551724137931,
+        "current_price": 403.0,
+        "market_value": -403.0,
+        "unrealized_pl": 61.0,
+        "unrealized_pl_pct": -0.1314655172413793,
         "side": "long"
       }
     ]
@@ -2727,11 +2727,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-05-11T14:38:45.717567"
+    "synced_at": "2026-05-11T15:41:08.818461"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-11T15:35:21.259089Z",
+    "generated_at": "2026-05-11T15:41:10.772213Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
@@ -2834,7 +2834,7 @@
     "estimated_cagr_from_expectancy": -0.1372,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-11T15:35:21.259089Z",
+    "updated_at": "2026-05-11T15:41:10.772213Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -3041,9 +3041,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-05-11T15:35:21.253267+00:00"
+      "updated_at": "2026-05-11T15:41:10.769384+00:00"
     },
-    "updated_at": "2026-05-11T15:35:21.253606+00:00"
+    "updated_at": "2026-05-11T15:41:10.769775+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -3054,26 +3054,26 @@
     "target_capital": 300000.0,
     "monthly_after_tax_target": 6000.0,
     "daily_after_tax_target": 200.0,
-    "current_equity": 93474.96,
+    "current_equity": 93477.96,
     "required_cagr_without_contributions": null,
     "required_monthly_contribution_by_return": {},
     "assumed_return": null,
     "required_monthly_contribution_at_assumed_return": null,
     "month_start_equity": 93502.7,
-    "equity_change_this_month": -27.74,
+    "equity_change_this_month": -24.74,
     "monthly_target_progress_pct": 0.0,
-    "remaining_to_monthly_target": 6027.74,
+    "remaining_to_monthly_target": 6024.74,
     "days_elapsed_this_month": 11,
     "days_remaining_this_month": 20,
-    "required_daily_after_tax_from_now": 301.39,
-    "projected_month_end_after_tax_pnl": -78.18,
-    "projected_gap_to_monthly_target": 6078.18,
+    "required_daily_after_tax_from_now": 301.24,
+    "projected_month_end_after_tax_pnl": -69.72,
+    "projected_gap_to_monthly_target": 6069.72,
     "live_month_start_equity": 0.0,
     "live_equity_change_this_month": 0.0,
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-11T15:35:21.253681+00:00"
+    "updated_at": "2026-05-11T15:41:10.769855+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3088,9 +3088,7 @@
       "severity_score": 0.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No credit spread data available."
-      ],
+      "reasons": ["No credit spread data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3119,9 +3117,7 @@
       "position_size_multiplier": 1.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No USD macro data available."
-      ],
+      "reasons": ["No USD macro data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3159,9 +3155,7 @@
       "regime": "transition",
       "confidence": 0.396,
       "capex_deceleration_shock": false,
-      "reasons": [
-        "AI-cycle proxies stable"
-      ],
+      "reasons": ["AI-cycle proxies stable"],
       "latest_data_date": "2026-03-05",
       "stale_days": 1,
       "features": {
@@ -3184,13 +3178,7 @@
           "ORCL"
         ],
         "hyperscaler_capex_proxy_observed": 5,
-        "ai_infra_proxy_tickers": [
-          "NVDA",
-          "AVGO",
-          "ANET",
-          "AMD",
-          "SMCI"
-        ],
+        "ai_infra_proxy_tickers": ["NVDA", "AVGO", "ANET", "AMD", "SMCI"],
         "ai_infra_proxy_observed": 5,
         "edge_monetization_proxy_tickers": [
           "META",
@@ -3608,10 +3596,7 @@
     "harvest_source": "daily-trading-workflow",
     "execution_date": "2026-02-27",
     "selection_method": "adaptive",
-    "target_tickers": [
-      "SPY",
-      "IWM"
-    ],
+    "target_tickers": ["SPY", "IWM"],
     "strategy_note": "Uses credit spreads when buying power < 000, CSPs otherwise",
     "tickers_scanned": 0,
     "orders_submitted_today": 0,
@@ -3626,7 +3611,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-05-11T14:38:47.512997Z",
+    "generated_at_utc": "2026-05-11T15:41:10.769918Z",
     "cadence_optimizer": {
       "decision": "hold_risk_blocked",
       "reason": "Block-new-positions is active; no cadence tuning is applied.",
@@ -3724,7 +3709,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-05-11T14:38:47.512997+00:00",
+        "updated_at": "2026-05-11T15:41:10.769918+00:00",
         "source": "north_star_autopilot"
       }
     }
