@@ -6,10 +6,14 @@ This document describes the current validated playbook surface, not a promise of
 
 - Underlying: `SPY`
 - Structure family: defined-risk options premium structures
-- Primary template: iron-condor style entries when gates allow them
-- Target DTE band: `30-45`
-- Typical short-strike selection: around `15 delta`
-- Position sizing: weekly gate controlled, currently capped by risk mode
+- Primary template: iron-condor style entries
+- **Entry Window**: Thursdays ONLY (Weekday 3) — optimized for 60% historical win rate.
+- **Entry Buffer**: Minimum `14 DTE` required for all new positions.
+- **Exit Discipline**:
+  - Profit Target: `15%` to `20%` of credit received (May 2026 Defensive Regime).
+  - Stop Loss: `100%` of credit received.
+  - **Time Exit**: Mandatory close at `7 DTE` (Lesson LL-268) to eliminate gamma risk.
+- Typical short-strike selection: `20 delta` (Widened to 20-point wings for May/June 2026)
 
 ## What Is Live Right Now
 

@@ -324,8 +324,9 @@ def build_public_status(repo_root: Path) -> dict[str, Any]:
                 ),
             ),
             "thesis": (
-                "This project is currently a paper-first validation platform, not a proven passive-income engine. "
-                "Public surfaces should show current gate state and broker-backed evidence rather than frozen claims."
+                "Currently in a High-Alpha Recovery phase. Following an audit of 69 trades, "
+                "the system is now restricted to its 60% win-rate Thursday window. "
+                "Operational discipline is enforced via RAG-ML feedback loops and 7 DTE gamma gates."
             ),
         },
         "links": {

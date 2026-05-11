@@ -1187,6 +1187,43 @@ def main():
             )
             return {"success": False, "reason": halt_state.reason}
 
+        # HIGH-ALPHA INTEGRATION (SafeBooks Playbook)
+        # Use ExecutionAgent to enforce Thursday-Only Alpha and Volume Throttles
+        try:
+            from src.agents.execution_agent import ExecutionAgent
+            agent = ExecutionAgent()
+            
+            # Prepare minimal data for analysis
+            validation_data = {
+                "action": "BUY", # Intent to enter a new IC
+                "symbol": ticker,
+                "position_size": 1.0, # Dummy size for initial gate check
+                "market_conditions": {}
+            }
+            
+            logger.info("🛡️ Running High-Alpha Validation (Thursday Gate, VIX, Throttle)...")
+            analysis = agent.analyze(validation_data)
+            
+            if analysis.get("action") == "CANCEL":
+                reason = analysis.get("reasoning", "Blocked by safety constraints")
+                logger.warning(f"🛑 TRADE BLOCKED BY HIGH-ALPHA GATE: {reason}")
+                telemetry.update_ticker_decision(
+                    ticker,
+                    gate=1,
+                    status="REJECT",
+                    rejection_reason=reason,
+                    indicators={"alpha_gate": "FAILED"}
+                )
+                return {"success": False, "reason": reason}
+            
+            logger.info("✅ High-Alpha Validation PASSED.")
+            
+        except Exception as alpha_err:
+            logger.error(f"⚠️ High-Alpha Gate Error: {alpha_err}")
+            if not args.force:
+                logger.error("   Blocking execution due to safety agent failure. Use --force to bypass.")
+                return {"success": False, "reason": "Safety Agent Error"}
+
         try:
             # LL-297 FIX (Jan 23, 2026): Daily trade limit to prevent churning
             # ROOT CAUSE: 21 trades in one day caused $11.29 loss from bid/ask spreads

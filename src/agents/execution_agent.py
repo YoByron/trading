@@ -112,7 +112,7 @@ class ExecutionAgent(BaseAgent):
             logger.warning(f"Failed to calculate technicals for {symbol}: {e}")
 
         # Build execution analysis prompt
-        memory_context = self.get_memory_context(limit=3)
+        memory_context = self.get_memory_context(limit=10)
 
         # Goldilocks Prompt: Focused execution with timing examples
         prompt = f"""Execute {action} ${position_size:,.0f} on {symbol}. Minimize slippage, maximize fill quality.

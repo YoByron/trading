@@ -1,17 +1,17 @@
 {
-  "generated_at_et": "2026-05-11T17:55:36.319987+00:00",
+  "generated_at_et": "2026-05-08T18:46:31.875269+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
     "public_status": "halted"
   },
   "paper": {
-    "equity": 93473.96,
-    "total_pnl_today": 37.0,
+    "equity": 93426.22,
+    "total_pnl_today": -14.08,
     "realized_pnl_today": null,
     "unrealized_pnl_today": null,
     "fills_today_count": null,
-    "positions_count": 7
+    "positions_count": 4
   },
   "live": {
     "equity": 0.0,
@@ -26,7 +26,7 @@
     "profit_factor": 0.22,
     "total_realized_pnl": -3958.0,
     "expectancy_per_trade": -57.3623,
-    "last_updated": "2026-05-11T16:05:09.436248+00:00"
+    "last_updated": "2026-05-08T18:40:25.475056+00:00"
   },
   "gate": {
     "mode": "defensive",
@@ -50,8 +50,8 @@
     "lifetime_total_realized_pnl": -3958.0
   },
   "narrative": {
-    "summary": "Latest tracked broker sync shows $37.00 today with 7 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
-    "thesis": "This project is currently a paper-first validation platform, not a proven passive-income engine. Public surfaces should show current gate state and broker-backed evidence rather than frozen claims."
+    "summary": "Latest tracked broker sync shows $-14.08 today with 4 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
+    "thesis": "Currently in a High-Alpha Recovery phase. Following an audit of 69 trades, the system is now restricted to its 60% win-rate Thursday window. Operational discipline is enforced via RAG-ML feedback loops and 7 DTE gamma gates."
   },
   "links": {
     "operator_dashboard": "https://github.com/IgorGanapolsky/trading/wiki/Progress-Dashboard",

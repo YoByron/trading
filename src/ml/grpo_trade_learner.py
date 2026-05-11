@@ -667,19 +667,34 @@ class GRPOTradeLearner:
 
     def calculate_rewards(self) -> np.ndarray:
         """
-        Calculate normalized rewards from trade P/L with Phil Town Rule #1 Penalty.
+        Calculate normalized rewards from trade P/L with Phil Town Rule #1 Penalty
+        AND RAG-based lesson penalties.
 
         GRPO uses group-relative rewards. We enhance this by:
         1. Multiplied penalty for losses (Rule #1: Don't Lose Money).
-        2. Normalized advantage.
+        2. RAG-based penalties for violating historical lessons (e.g., Mon entry).
+        3. Normalized advantage.
         """
         if not self.trade_history:
             return np.array([])
 
         # Get raw P/L values and apply Rule #1 Weighting
         # Losses are 2x more 'impactful' than wins
-        raw_pnls = np.array([t.pnl for t in self.trade_history])
-        weighted_pnls = np.array([p * 2.0 if p < 0 else p for p in raw_pnls])
+        weighted_pnls = []
+
+        for t in self.trade_history:
+            pnl = t.pnl
+            # Rule #1 Penalty (2x for losses)
+            weighted_pnl = pnl * 2.0 if pnl < 0 else pnl
+
+            # RAG Penalty (Lesson-based feedback)
+            if self.rag:
+                rag_penalty = self._calculate_rag_penalty(t)
+                weighted_pnl += rag_penalty  # Penalty is negative
+            
+            weighted_pnls.append(weighted_pnl)
+        
+        weighted_pnls = np.array(weighted_pnls)
 
         if len(weighted_pnls) < 2:
             return weighted_pnls
@@ -697,6 +712,30 @@ class GRPOTradeLearner:
         rewards = np.clip(rewards, -3.0, 3.0)
 
         return rewards
+
+    def _calculate_rag_penalty(self, record: TradeRecord) -> float:
+        """Calculate penalty for violating historical RAG lessons."""
+        penalty = 0.0
+        
+        # 1. Day of Week Penalty (P0 Win Rate Driver)
+        # Thursday=3. Mon=0, Tue=1, Wed=2, Fri=4
+        if record.features.day_of_week * 4 < 3: # Before Thursday
+            penalty -= 100.0 # Significant penalty for early-week entries
+            
+        # 2. DTE Penalty (Gamma Risk protection)
+        if record.params.dte < 14:
+            penalty -= 50.0 # Penalty for entering late-cycle trades
+            
+        # 3. Dynamic RAG Query (Check for specific failure patterns)
+        query = f"Iron Condor trade on weekday {record.features.day_of_week * 4} with {record.params.dte} DTE"
+        lessons = self.rag.query(query, top_k=2, severity_filter="CRITICAL")
+        
+        for lesson in lessons:
+            # If a critical lesson is found with high relevance, apply penalty
+            if lesson.get("score", 0) > 0.7:
+                penalty -= 200.0 # Massive penalty for known critical failures
+                
+        return penalty
 
     def train_policy(self, epochs: int = 100) -> dict[str, Any]:
         """
