@@ -1,58 +1,64 @@
 {
-  "generated_at": "2026-05-08T18:17:43.747050-04:00",
+  "generated_at": "2026-05-11T18:20:52.342483-04:00",
   "accounts": [
     {
       "account_type": "paper",
-      "equity": 93432.16,
-      "cash": 93465.16,
-      "buying_power": 153397.06,
+      "equity": 92949.96,
+      "cash": 102660.96,
+      "buying_power": 101321.92,
       "starting_capital": 100000.0,
-      "position_count": 7,
+      "position_count": 8,
       "positions": [
         {
           "symbol": "SPY260612C00770000",
           "qty": -1.0,
-          "market_value": -241.0,
-          "unrealized_pl": -1.0
+          "market_value": -262.0,
+          "unrealized_pl": -22.0
         },
         {
           "symbol": "SPY260612C00775000",
           "qty": 1.0,
-          "market_value": 165.0,
-          "unrealized_pl": -6.0
+          "market_value": 179.0,
+          "unrealized_pl": 8.0
         },
         {
           "symbol": "SPY260612P00686000",
           "qty": 1.0,
-          "market_value": 261.0,
-          "unrealized_pl": -10.0
+          "market_value": 256.0,
+          "unrealized_pl": -15.0
         },
         {
           "symbol": "SPY260612P00696000",
           "qty": -1.0,
-          "market_value": -345.0,
-          "unrealized_pl": 9.0
+          "market_value": -337.0,
+          "unrealized_pl": 17.0
+        },
+        {
+          "symbol": "SPY260618C00770000",
+          "qty": -50.0,
+          "market_value": -17350.0,
+          "unrealized_pl": -550.0
         },
         {
           "symbol": "SPY260618C00775000",
-          "qty": 1.0,
-          "market_value": 227.0,
-          "unrealized_pl": 0.0
+          "qty": 51.0,
+          "market_value": 12699.0,
+          "unrealized_pl": 221.9979
         },
         {
           "symbol": "SPY260618P00686000",
-          "qty": 1.0,
-          "market_value": 344.0,
-          "unrealized_pl": -20.0
+          "qty": 51.0,
+          "market_value": 17187.0,
+          "unrealized_pl": -526.9983
         },
         {
           "symbol": "SPY260618P00696000",
-          "qty": -1.0,
-          "market_value": -444.0,
-          "unrealized_pl": 20.0
+          "qty": -51.0,
+          "market_value": -22083.0,
+          "unrealized_pl": 381.0006
         }
       ],
-      "chart": "docs/assets/snapshots/paper_20260508.png"
+      "chart": "docs/assets/snapshots/paper_20260511.png"
     },
     {
       "account_type": "brokerage",
@@ -62,7 +68,7 @@
       "starting_capital": 5000.0,
       "position_count": 0,
       "positions": [],
-      "chart": "docs/assets/snapshots/brokerage_20260508.png"
+      "chart": "docs/assets/snapshots/brokerage_20260511.png"
     }
   ]
 }
