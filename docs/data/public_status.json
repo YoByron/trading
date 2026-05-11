@@ -1,17 +1,17 @@
 {
-  "generated_at_et": "2026-05-11T19:19:35.984470+00:00",
+  "generated_at_et": "2026-05-11T20:07:53.222379+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
     "public_status": "halted"
   },
   "paper": {
-    "equity": 93444.96,
-    "total_pnl_today": 8.0,
+    "equity": 92949.96,
+    "total_pnl_today": -487.0,
     "realized_pnl_today": null,
     "unrealized_pnl_today": null,
     "fills_today_count": null,
-    "positions_count": 7
+    "positions_count": 8
   },
   "live": {
     "equity": 0.0,
@@ -50,7 +50,7 @@
     "lifetime_total_realized_pnl": -3958.0
   },
   "narrative": {
-    "summary": "Latest tracked broker sync shows $8.00 today with 7 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
+    "summary": "Latest tracked broker sync shows $-487.00 today with 8 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
     "thesis": "Currently in a High-Alpha Recovery phase. Following an audit of 69 trades, the system is now restricted to its 60% win-rate Thursday window. Operational discipline is enforced via RAG-ML feedback loops and 7 DTE gamma gates."
   },
   "links": {
