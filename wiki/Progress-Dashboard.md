@@ -1,13 +1,13 @@
 # Progress Dashboard
 
-Generated from canonical ledgers at `2026-05-11T20:32:14.282783+00:00`.
+Generated from canonical ledgers at `2026-05-12T14:37:27.153787+00:00`.
 
 This page is generated from broker-backed scorecards and the canonical paired-trade ledger. If this page and the public dashboard diverge, the generated dashboard is the source of truth.
 
 ## Current Status
 
-- Paper equity: `$92,949.96`
-- Paper total P/L today: `$-487.00`
+- Paper equity: `$93,307.31`
+- Paper total P/L today: `$1,276.00`
 - Paper realized P/L today: `n/a`
 - Paper unrealized P/L today: `n/a`
 - Fills today: `None`
@@ -18,18 +18,18 @@ This page is generated from broker-backed scorecards and the canonical paired-tr
 
 ## Gate State
 
-- Mode: `defensive`
-- Block new positions: `True`
+- Mode: `validation_reset`
+- Block new positions: `False`
 - Verified edge available: `False`
 - Recommended max position size: `0.01`
-- Weekly expectancy per trade: `$-144.50`
+- Weekly expectancy per trade: `$-163.00`
 - Scaling gate: `69` / `30`
 - Qualified setups this week: `0`
-- Closed trades this week: `2`
+- Closed trades this week: `1`
 
 ## Exact Blocker
 
-`CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-57.36/trade, profit factor 0.22, total realized P/L $-3958.00 over 69 closed trades. Trading halted.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`
 
 ## Canonical Links
 

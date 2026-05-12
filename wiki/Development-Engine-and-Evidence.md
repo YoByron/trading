@@ -1,6 +1,6 @@
 # Development Engine and Evidence
 
-Generated from canonical ledgers at `2026-05-11T20:32:14.282783+00:00`.
+Generated from canonical ledgers at `2026-05-12T14:37:27.153787+00:00`.
 
 This page explains how public-facing system copy stays congruent with live state.
 
@@ -19,11 +19,11 @@ This page explains how public-facing system copy stays congruent with live state
 
 ## Current Operator Summary
 
-- Paper equity: `$92,949.96`
+- Paper equity: `$93,307.31`
 - Total realized P/L ledger: `$-3,958.00`
-- Weekly gate mode: `defensive`
-- Block new positions: `True`
+- Weekly gate mode: `validation_reset`
+- Block new positions: `False`
 
 ## Exact Blocker
 
-`CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-57.36/trade, profit factor 0.22, total realized P/L $-3958.00 over 69 closed trades. Trading halted.`
+`Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.`
