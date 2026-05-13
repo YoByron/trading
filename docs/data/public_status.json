@@ -1,13 +1,13 @@
 {
-  "generated_at_et": "2026-05-12T21:06:54.255154+00:00",
+  "generated_at_et": "2026-05-13T14:38:12.875068+00:00",
   "system": {
     "name": "SPY Options Validation Platform",
     "tagline": "Broker-backed scorecards, hard risk gates, paired-trade accounting, and live operator surfaces.",
     "public_status": "validation_reset"
   },
   "paper": {
-    "equity": 93514.31,
-    "total_pnl_today": 1483.0,
+    "equity": 93516.31,
+    "total_pnl_today": 4.0,
     "realized_pnl_today": null,
     "unrealized_pnl_today": null,
     "fills_today_count": null,
@@ -33,12 +33,12 @@
     "block_new_positions": false,
     "verified_edge_available": false,
     "recommended_max_position_pct": 0.01,
-    "sample_size": 1,
-    "expectancy_per_trade": -163.0,
+    "sample_size": 0,
+    "expectancy_per_trade": 0.0,
     "win_rate_pct": 0.0,
     "blocker_reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
     "qualified_setups_this_week": 0,
-    "closed_trades_this_week": 1,
+    "closed_trades_this_week": 0,
     "scale_allowed": false,
     "scaling_gate_closed_trades_observed": 69,
     "scaling_gate_min_closed_trades": 30,
@@ -50,7 +50,7 @@
     "lifetime_total_realized_pnl": -3958.0
   },
   "narrative": {
-    "summary": "Latest tracked broker sync shows $1,483.00 today with 8 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
+    "summary": "Latest tracked broker sync shows $4.00 today with 8 open paper positions. Use the operator scorecard for realized/unrealized and leg-level decomposition.",
     "thesis": "Currently in a High-Alpha Recovery phase. Following an audit of 69 trades, the system is now restricted to its 60% win-rate Thursday window. Operational discipline is enforced via RAG-ML feedback loops and 7 DTE gamma gates."
   },
   "links": {
