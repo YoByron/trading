@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-14T20:19:03.977055+00:00",
+  "last_updated": "2026-05-14T20:29:37.115987+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-14T20:19:03.977055+00:00",
+    "last_successful_sync": "2026-05-14T20:29:37.115987+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 14,
+    "sync_count_today": 15,
     "history": [
-      {
-        "timestamp": "2026-05-13T15:58:13.196302+00:00",
-        "equity": 93342.31,
-        "success": true
-      },
       {
         "timestamp": "2026-05-13T16:50:07.286898+00:00",
         "equity": 93078.31,
@@ -124,9 +119,14 @@
         "timestamp": "2026-05-14T20:19:03.977055+00:00",
         "equity": 92655.31,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-14T20:29:37.115987+00:00",
+        "equity": 92655.31,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-14T20:19:03.977055+00:00"
+    "last_attempt": "2026-05-14T20:29:37.115987+00:00"
   },
   "portfolio": {
     "equity": 92655.31,
@@ -2640,12 +2640,12 @@
     "buying_power": 101310.62
   },
   "meta": {
-    "last_updated": "2026-05-14T20:19:03.977055+00:00",
+    "last_updated": "2026-05-14T20:29:37.115987+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-14T20:19:03.977055+00:00",
+    "last_sync_attempt": "2026-05-14T20:29:37.115987+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-14T20:19:03.890984",
+    "last_sync": "2026-05-14T20:29:36.780334",
     "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-05-14T20:08:46.592628+00:00",
     "verification_source": "daily_verification.py"
@@ -2750,11 +2750,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-05-14T20:19:03.974830"
+    "synced_at": "2026-05-14T20:29:37.113599"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-14T20:19:05.458944Z",
+    "generated_at": "2026-05-14T20:29:38.672336Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": ["equity_momentum", "alternatives", "other"],
@@ -2852,7 +2852,7 @@
     "estimated_cagr_from_expectancy": -0.1384,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-14T20:19:05.458944Z",
+    "updated_at": "2026-05-14T20:29:38.672336Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -3059,9 +3059,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "No qualified setups captured in lookback window. Focus on setup generation cadence before adjusting execution.",
-      "updated_at": "2026-05-14T20:19:05.456127+00:00"
+      "updated_at": "2026-05-14T20:29:38.669498+00:00"
     },
-    "updated_at": "2026-05-14T20:19:05.456606+00:00",
+    "updated_at": "2026-05-14T20:29:38.669966+00:00",
     "unverified_trade_history_diagnostic": {
       "samples": 3,
       "wins": 1,
@@ -3098,7 +3098,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-14T20:19:05.456690+00:00"
+    "updated_at": "2026-05-14T20:29:38.670053+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3636,7 +3636,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-05-14T20:19:05.456762Z",
+    "generated_at_utc": "2026-05-14T20:29:38.670128Z",
     "cadence_optimizer": {
       "decision": "hold",
       "reason": "Liquidity floor unchanged.",
@@ -3727,7 +3727,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-05-14T20:19:05.456762+00:00",
+        "updated_at": "2026-05-14T20:29:38.670128+00:00",
         "source": "north_star_autopilot"
       }
     }
