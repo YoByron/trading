@@ -95,7 +95,11 @@ class ExecutionAgent(BaseAgent):
         )
 
         if action == "HOLD":
-            return {"action": "NO_EXECUTION", "reasoning": "HOLD recommendation - no order needed", "trace_id": trace_id}
+            return {
+                "action": "NO_EXECUTION",
+                "reasoning": "HOLD recommendation - no order needed",
+                "trace_id": trace_id,
+            }
 
         # Check market status
         market_status = self._check_market_status()
@@ -199,7 +203,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         if self.alpaca_api:
             try:
                 current_positions = len(self.alpaca_api.get_all_positions())
-            except Exception: # nosec
+            except Exception:  # nosec
                 pass
 
         # Count trades taken today (from ledger)
@@ -207,7 +211,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             with open("data/trades.json") as f:
                 history = json.load(f).get("trades", [])
                 trades_today = len([t for t in history if t.get("entry_date") == today_str])
-        except Exception: # nosec
+        except Exception:  # nosec
             pass
 
         # Extract metrics for Win Rate Optimization (P0)
@@ -216,7 +220,7 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             vix_hist = self.data_provider.get_daily_bars("^VIX", lookback_days=1)
             if not vix_hist.data.empty:
                 vix_val = vix_hist.data["Close"].iloc[-1]
-        except Exception: # nosec
+        except Exception:  # nosec
             pass
 
         # For multi-leg, calculate width
@@ -299,7 +303,12 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             }
 
         if not self.alpaca_api:
-            return {"status": "SIMULATED", "symbol": symbol, "action": action, "amount": position_size}
+            return {
+                "status": "SIMULATED",
+                "symbol": symbol,
+                "action": action,
+                "amount": position_size,
+            }
 
         try:
             order = self.alpaca_api.submit_order(
@@ -321,7 +330,13 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
             return result
         except Exception as e:
             logger.error(f"Order execution error: {e}")
-            return {"status": "ERROR", "error": str(e), "symbol": symbol, "action": action, "amount": position_size}
+            return {
+                "status": "ERROR",
+                "error": str(e),
+                "symbol": symbol,
+                "action": action,
+                "amount": position_size,
+            }
 
     def submit_option_order(self, option_symbol: str, qty: int, side: str) -> dict[str, Any]:
         """Submit an option order. SPY-only per policy; raises ValueError otherwise."""
