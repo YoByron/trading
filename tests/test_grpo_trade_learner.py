@@ -176,6 +176,7 @@ class TestCalculateRewards:
     @patch("src.ml.grpo_trade_learner.MODEL_PATH", Path("/nonexistent/model.pt"))
     def test_single_trade(self):
         learner = GRPOTradeLearner()
+        learner.rag = None  # isolate pure GRPO math from RAG penalty side effect
         learner.trade_history = [_make_record(pnl=200.0)]
         rewards = learner.calculate_rewards()
         assert len(rewards) == 1
@@ -185,6 +186,7 @@ class TestCalculateRewards:
     @patch("src.ml.grpo_trade_learner.MODEL_PATH", Path("/nonexistent/model.pt"))
     def test_group_relative_normalization(self):
         learner = GRPOTradeLearner()
+        learner.rag = None
         learner.trade_history = [
             _make_record(pnl=100.0),
             _make_record(pnl=200.0),
@@ -199,6 +201,7 @@ class TestCalculateRewards:
     @patch("src.ml.grpo_trade_learner.MODEL_PATH", Path("/nonexistent/model.pt"))
     def test_rewards_clipped_to_bounds(self):
         learner = GRPOTradeLearner()
+        learner.rag = None
         # Create trades with extreme outlier
         trades = [_make_record(pnl=100.0) for _ in range(20)]
         trades.append(_make_record(pnl=100_000.0))  # extreme outlier
@@ -212,6 +215,7 @@ class TestCalculateRewards:
     def test_zero_std_no_division_error(self):
         """All identical P/L => std=0, should not raise."""
         learner = GRPOTradeLearner()
+        learner.rag = None
         learner.trade_history = [_make_record(pnl=100.0) for _ in range(5)]
         rewards = learner.calculate_rewards()
         assert len(rewards) == 5

@@ -129,7 +129,10 @@ class AuditAgent(BaseAgent):
         elif violations:
             status = "WARN"
 
-        summary = f"Audit complete. Scanned {len(trades)} trades and {len(self.audit_graph.index)} traces. Found {len(violations)} violations."
+        if not log_file.exists() and not self.audit_graph.index:
+            summary = "No trade logs found for the specified period."
+        else:
+            summary = f"Audit complete. Scanned {len(trades)} trades and {len(self.audit_graph.index)} traces. Found {len(violations)} violations."
 
         report = AuditReport(
             timestamp=datetime.now().isoformat(),

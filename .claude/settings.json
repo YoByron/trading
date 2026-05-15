@@ -74,6 +74,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|mcp__alpaca__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard_destructive_actions.sh",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },

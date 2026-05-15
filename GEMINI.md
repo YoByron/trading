@@ -9,9 +9,16 @@
 ## Session Start Protocol
 
 1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`.
-2. Query RAG for relevant lessons before taking action.
+2. Query RAG and the `Auto-Review Policy` (.thumbgate/AUTO_REVIEW.md) for safety constraints.
 3. Review open PRs and branch/worktree state.
 4. Check CI before deciding what is merge-ready.
+
+## Auto-Review & Sandboxing (Reviewer Pattern)
+
+- Before executing high-risk actions (modifying data, running shell commands, editing core logic), perform a **Pre-flight Audit** against the `Auto-Review Policy`.
+- If an action violates a rule (e.g., writing outside `writable_roots`), state the **Rationale** and pivot to a safer approach.
+- Always create a backup in `data/backups/` before modifying canonical ledgers.
+- Honor the **Circuit Breaker**: Stop and ask the user if 3 consecutive safety rejections occur.
 
 ## PR And Hygiene Workflow
 

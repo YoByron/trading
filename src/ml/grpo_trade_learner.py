@@ -39,6 +39,9 @@ from typing import Any, Optional
 
 import numpy as np
 
+from src.analytics.alpha_metrics_tracker import AlphaMetricsTracker
+from src.rag.lessons_learned_rag import LessonsLearnedRAG
+
 # Optional PyTorch import for neural network
 try:
     import torch
@@ -273,6 +276,15 @@ class GRPOTradeLearner:
         self.gamma = gamma
         self.group_size = group_size
 
+        # RAG Integration for lesson-based penalties
+        try:
+            self.rag = LessonsLearnedRAG()
+            logger.info("RAG initialized for GRPO learning")
+        except Exception as e:
+            logger.warning(f"RAG initialization failed for GRPO: {e}")
+            self.rag = None
+
+        self.metrics_tracker = AlphaMetricsTracker()
         self.trade_history: list[TradeRecord] = []
         self.training_stats: dict[str, list] = {
             "epoch": [],
@@ -734,6 +746,8 @@ class GRPOTradeLearner:
             # If a critical lesson is found with high relevance, apply penalty
             if lesson.get("score", 0) > 0.7:
                 penalty -= 200.0 # Massive penalty for known critical failures
+                self.metrics_tracker.metrics["ml_alignment"]["rag_penalties_applied"] += 1
+                self.metrics_tracker.save()
                 
         return penalty
 

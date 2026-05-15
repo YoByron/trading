@@ -25,6 +25,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency in lightweight test envs
     AlpacaOptionsClient = None  # type: ignore[misc,assignment]
 
+from src.analytics.alpha_metrics_tracker import AlphaMetricsTracker
 from src.resilience.audit_graph import AuditGraph
 from src.safety.constraint_engine import ConstraintEngine
 from src.schemas.events import AuditEvent, EventType
@@ -64,6 +65,7 @@ class ExecutionAgent(BaseAgent):
         self.data_provider = MarketDataProvider()
         self.audit_graph = AuditGraph()
         self.constraint_engine = ConstraintEngine()
+        self.metrics_tracker = AlphaMetricsTracker()
 
     def analyze(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -281,3 +283,81 @@ RECOMMENDATION: [EXECUTE/DELAY/CANCEL]"""
         self.log_decision(analysis)
 
         return analysis
+
+    def _execute_order(self, symbol: str, action: str, position_size: float) -> dict[str, Any]:
+        """Execute an equity order via Alpaca. SPY-only per policy."""
+        from src.core.trading_constants import ALLOWED_TICKERS, extract_underlying
+
+        underlying = extract_underlying(symbol)
+        if underlying not in ALLOWED_TICKERS:
+            return {
+                "status": "BLOCKED",
+                "error": f"TICKER NOT ALLOWED: {symbol} (underlying={underlying}); only {sorted(ALLOWED_TICKERS)} permitted",
+                "symbol": symbol,
+                "action": action,
+                "amount": position_size,
+            }
+
+        if not self.alpaca_api:
+            return {"status": "SIMULATED", "symbol": symbol, "action": action, "amount": position_size}
+
+        try:
+            order = self.alpaca_api.submit_order(
+                symbol=symbol,
+                notional=position_size,
+                side=action.lower(),
+                type="market",
+                time_in_force="day",
+            )
+            result = {
+                "status": "SUCCESS",
+                "order_id": getattr(order, "id", None),
+                "symbol": symbol,
+                "action": action,
+                "amount": position_size,
+                "order_status": getattr(order, "status", None),
+            }
+            self.execution_history.append(result)
+            return result
+        except Exception as e:
+            logger.error(f"Order execution error: {e}")
+            return {"status": "ERROR", "error": str(e), "symbol": symbol, "action": action, "amount": position_size}
+
+    def submit_option_order(self, option_symbol: str, qty: int, side: str) -> dict[str, Any]:
+        """Submit an option order. SPY-only per policy; raises ValueError otherwise."""
+        from src.core.trading_constants import ALLOWED_TICKERS, extract_underlying
+
+        underlying = extract_underlying(option_symbol)
+        if underlying not in ALLOWED_TICKERS:
+            raise ValueError(
+                f"OPTION ORDER BLOCKED: {option_symbol} (underlying={underlying}); only {sorted(ALLOWED_TICKERS)} permitted"
+            )
+
+        if not self.options_client:
+            return {
+                "status": "SIMULATED",
+                "option_symbol": option_symbol,
+                "qty": qty,
+                "side": side,
+            }
+
+        try:
+            order = self.options_client.submit_option_order(
+                option_symbol=option_symbol, qty=qty, side=side
+            )
+            return {
+                "status": "SUCCESS",
+                "order_id": getattr(order, "id", None),
+                "option_symbol": option_symbol,
+                "qty": qty,
+                "side": side,
+            }
+        except Exception as e:
+            logger.error(f"Option order error: {e}")
+            return {
+                "status": "ERROR",
+                "error": str(e),
+                "option_symbol": option_symbol,
+                "qty": qty,
+                "side": side,
+            }
