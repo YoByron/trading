@@ -214,6 +214,7 @@ def place_ic(client, opp: dict) -> str | None:
 
     order_id = None
     filled = False
+    fill_price: float | None = None
     walk_total = 0.0
 
     while walk_total <= MAX_WALK and not filled:
@@ -253,7 +254,7 @@ def place_ic(client, opp: dict) -> str | None:
         order_id = str(order.id)
         logger.info(f"Order {order_id}: {order.status}")
 
-        filled = _wait_for_fill(
+        filled, fill_price = _wait_for_fill(
             client, order_id, timeout_seconds=WALK_WAIT_SECONDS, poll_interval=5
         )
         if not filled:
@@ -267,11 +268,21 @@ def place_ic(client, opp: dict) -> str | None:
         logger.warning(f"Price walk exhausted (${MAX_WALK:.2f} concession). No fill.")
         return None
 
-    # Save entry data
+    # Save entry data. Persist the *actual* fill credit so downstream profit-
+    # target and stop-loss thresholds key off what the broker filled, not the
+    # pre-walk estimate. Falls back to est_credit only if the broker did not
+    # report a filled_avg_price for some reason.
+    persisted_credit = fill_price if fill_price is not None else opp["est_credit"]
+    if fill_price is not None and abs(fill_price - opp["est_credit"]) >= 0.05:
+        logger.info(
+            f"Persisted credit ${persisted_credit:.2f} differs from estimate "
+            f"${opp['est_credit']:.2f} by ${persisted_credit - opp['est_credit']:+.2f} "
+            "(price-walk concession)."
+        )
     entries = _load_entries()
     entry_key = f"IC_{expiry_yymmdd}"
     entries[entry_key] = {
-        "credit": opp["est_credit"],
+        "credit": persisted_credit,
         "date": datetime.now().isoformat(),
         "entry_time": datetime.now().isoformat(),
         "order_id": str(order.id),
@@ -346,7 +357,8 @@ def check_exits(client):
 
         # Get entry credit
         entry_key = f"IC_{expiry}"
-        if entry_key in entries:
+        has_entry_record = entry_key in entries
+        if has_entry_record:
             entry_credit = entries[entry_key]["credit"]
             entry_date = entries[entry_key].get("date")
         else:
@@ -359,25 +371,39 @@ def check_exits(client):
                 logger.warning(f"IC {expiry}: non-positive credit ${entry_credit:.2f}. Skip.")
                 continue
 
-        # Minimum holding period — MUST hold to allow theta decay
-        if entry_date:
-            try:
-                entry_dt = datetime.fromisoformat(entry_date)
-                if entry_dt.tzinfo:
-                    entry_dt = entry_dt.replace(tzinfo=None)
-                hours = (datetime.now() - entry_dt).total_seconds() / 3600
-                if hours < MIN_HOLD_HOURS:
-                    logger.info(f"IC {expiry}: held {hours:.1f}h < {MIN_HOLD_HOURS}h. Hold.")
+        # Compute DTE first — the failsafe (dte <= 1) and 7DTE exits must NEVER
+        # be suppressed by the MIN_HOLD_HOURS gate. An IC opened intraday with
+        # short DTE can hit assignment risk before 24h elapse; the comment at
+        # the exit-checks block (below) explicitly promises "DTE failsafe first
+        # — always close expiring positions," so DTE-driven exits short-circuit
+        # the hold window.
+        from datetime import date as date_type
+
+        exp_date = date_type(2000 + int(expiry[:2]), int(expiry[2:4]), int(expiry[4:6]))
+        dte = (exp_date - date_type.today()).days
+        dte_forces_exit = dte <= EXIT_DTE
+
+        # Minimum holding period — MUST hold to allow theta decay, EXCEPT when
+        # the DTE failsafe or 7DTE rule would otherwise exit.
+        if not dte_forces_exit:
+            if entry_date:
+                try:
+                    entry_dt = datetime.fromisoformat(entry_date)
+                    if entry_dt.tzinfo:
+                        entry_dt = entry_dt.replace(tzinfo=None)
+                    hours = (datetime.now() - entry_dt).total_seconds() / 3600
+                    if hours < MIN_HOLD_HOURS:
+                        logger.info(f"IC {expiry}: held {hours:.1f}h < {MIN_HOLD_HOURS}h. Hold.")
+                        continue
+                except (ValueError, TypeError):
+                    logger.warning(
+                        f"IC {expiry}: unparseable entry_date '{entry_date}'. Hold (safety)."
+                    )
                     continue
-            except (ValueError, TypeError):
-                logger.warning(
-                    f"IC {expiry}: unparseable entry_date '{entry_date}'. Hold (safety)."
-                )
+            else:
+                # Unknown entry date — hold by default (don't exit blind)
+                logger.warning(f"IC {expiry}: no entry_date recorded. Hold (safety default).")
                 continue
-        else:
-            # Unknown entry date — hold by default (don't exit blind)
-            logger.warning(f"IC {expiry}: no entry_date recorded. Hold (safety default).")
-            continue
 
         # Calculate P/L
         contract_count = max(abs(leg["qty"]) for leg in legs)
@@ -387,12 +413,6 @@ def check_exits(client):
         )
         pnl = entry_credit * contract_count * 100 + current_value
         max_profit = entry_credit * contract_count * 100
-
-        # DTE
-        from datetime import date as date_type
-
-        exp_date = date_type(2000 + int(expiry[:2]), int(expiry[2:4]), int(expiry[4:6]))
-        dte = (exp_date - date_type.today()).days
 
         logger.info(
             f"IC {expiry}: DTE={dte} P/L=${pnl:+.2f} "
@@ -413,8 +433,26 @@ def check_exits(client):
         if reason:
             logger.warning(f"EXIT IC {expiry}: {reason}")
             _close_ic(client, legs, contract_count)
-            _record_lesson(expiry, entry_credit, pnl, reason, dte, contract_count)
-            _update_thompson("WIN" if pnl > 0 else "LOSS")
+            # Drop the entry record so subsequent check_exits runs (before the
+            # broker actually fills the close MLEG) don't see a stale key and
+            # re-emit duplicate _record_lesson / _update_thompson updates. If
+            # the close limit fails to fill and the position lingers, the next
+            # run hits the estimate-from-positions path which is guarded by
+            # has_entry_record below.
+            if has_entry_record:
+                entries.pop(entry_key, None)
+                _save_entries(entries)
+            # Only record a lesson + update Thompson when we had an
+            # authoritative entry record. Estimated-credit lessons would
+            # corrupt the learning signal with the wrong reference point.
+            if has_entry_record:
+                _record_lesson(expiry, entry_credit, pnl, reason, dte, contract_count)
+                _update_thompson("WIN" if pnl > 0 else "LOSS")
+            else:
+                logger.warning(
+                    f"IC {expiry}: exit triggered without entry record — "
+                    "skipping lesson/Thompson update (estimate path)."
+                )
         else:
             logger.info(
                 f"IC {expiry}: HOLD. Target=${max_profit * PROFIT_TARGET:.2f} Stop=-${max_profit * STOP_LOSS:.2f}"
@@ -1257,8 +1295,15 @@ def _cancel_stale_orders(client):
 
 def _wait_for_fill(
     client, order_id: str, timeout_seconds: int = 120, poll_interval: int = 10
-) -> bool:
-    """Poll order status until filled or timeout. Returns True if filled."""
+) -> tuple[bool, float | None]:
+    """Poll order status until filled or timeout.
+
+    Returns ``(filled, fill_price_abs)``. ``fill_price_abs`` is the absolute
+    credit per share when the MLEG order fills, or ``None`` when unavailable.
+    Downstream uses it to persist the *actual* entry credit instead of the
+    pre-walk estimate, which makes profit-target and stop-loss thresholds
+    correct.
+    """
     import time
 
     elapsed = 0
@@ -1267,23 +1312,29 @@ def _wait_for_fill(
             order = client.get_order_by_id(order_id)
             status = str(order.status)
             if "FILLED" in status.upper():
-                fill_price = getattr(order, "filled_avg_price", None)
+                raw_price = getattr(order, "filled_avg_price", None)
+                fill_price = None
+                if raw_price is not None:
+                    try:
+                        fill_price = abs(float(raw_price))
+                    except (TypeError, ValueError):
+                        fill_price = None
                 logger.info(
-                    f"Order {order_id} FILLED @ ${abs(float(fill_price)):.2f}"
-                    if fill_price
+                    f"Order {order_id} FILLED @ ${fill_price:.2f}"
+                    if fill_price is not None
                     else f"Order {order_id} FILLED"
                 )
-                return True
+                return True, fill_price
             if any(s in status.upper() for s in ["CANCELED", "CANCELLED", "EXPIRED", "REJECTED"]):
                 logger.warning(f"Order {order_id} terminal status: {status}")
-                return False
+                return False, None
             logger.info(f"Order {order_id}: {status} ({elapsed}s/{timeout_seconds}s)")
         except Exception as e:
             logger.debug(f"Fill poll error: {e}")
         time.sleep(poll_interval)
         elapsed += poll_interval
     logger.warning(f"Order {order_id} not filled after {timeout_seconds}s")
-    return False
+    return False, None
 
 
 def _count_open_ics(client) -> int:
@@ -1507,6 +1558,39 @@ def main():
                 logger.info(f"Position limit: {ic_count}/{MAX_IC} ICs. No new entry.")
             else:
                 opp = find_opportunity(spy_price)
+                if opp:
+                    # Daily entry limit. The controlled-experiment rule and the
+                    # docstring at the top of this file both promise "1 IC per
+                    # day". The cron schedule fires only once at 11am ET, but
+                    # workflow_dispatch + parallel automation can re-trigger
+                    # ic_simple.py within the same day. Without this guard,
+                    # nothing in the script enforces the limit beyond the
+                    # MAX_IC=2 concurrent cap.
+                    try:
+                        from src.core.trading_constants import MAX_DAILY_STRUCTURES
+                    except ImportError:
+                        MAX_DAILY_STRUCTURES = 1
+                    today_iso = datetime.now().date().isoformat()
+                    structures_today = 0
+                    if SYSTEM_STATE_FILE.exists():
+                        try:
+                            state = json.loads(SYSTEM_STATE_FILE.read_text(encoding="utf-8"))
+                            history = state.get("trade_history", []) or []
+                            structures_today = sum(
+                                1
+                                for row in history
+                                if isinstance(row, dict)
+                                and row.get("strategy") == "iron_condor"
+                                and str(row.get("entry_date", "")).startswith(today_iso)
+                            )
+                        except (OSError, ValueError):
+                            structures_today = 0
+                    if structures_today >= MAX_DAILY_STRUCTURES:
+                        logger.warning(
+                            f"DAILY ENTRY LIMIT: already opened {structures_today} "
+                            f"iron condor(s) today (max {MAX_DAILY_STRUCTURES}). Skip."
+                        )
+                        opp = None
                 if opp and opp.get("expiry", "") in losing_expiries:
                     logger.warning(
                         f"RE-ENTRY BLOCKED: expiry {opp['expiry']} already had a losing trade. "
