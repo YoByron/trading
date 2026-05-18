@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-15T18:16:59.719130-04:00",
+  "generated_at": "2026-05-18T18:18:16.448421-04:00",
   "accounts": [
     {
       "account_type": "paper",
-      "equity": 93750.31,
+      "equity": 94674.31,
       "cash": 102655.31,
       "buying_power": 101310.62,
       "starting_capital": 100000.0,
@@ -12,53 +12,53 @@
         {
           "symbol": "SPY260612C00770000",
           "qty": -1.0,
-          "market_value": -185.0,
-          "unrealized_pl": 55.0
+          "market_value": -133.0,
+          "unrealized_pl": 107.0
         },
         {
           "symbol": "SPY260612C00775000",
           "qty": 1.0,
-          "market_value": 115.0,
-          "unrealized_pl": -56.0
+          "market_value": 77.0,
+          "unrealized_pl": -94.0
         },
         {
           "symbol": "SPY260612P00686000",
           "qty": 1.0,
-          "market_value": 207.0,
-          "unrealized_pl": -64.0
+          "market_value": 169.0,
+          "unrealized_pl": -102.0
         },
         {
           "symbol": "SPY260612P00696000",
           "qty": -1.0,
-          "market_value": -280.0,
-          "unrealized_pl": 74.0
+          "market_value": -236.0,
+          "unrealized_pl": 118.0
         },
         {
           "symbol": "SPY260618C00770000",
           "qty": -50.0,
-          "market_value": -13250.0,
-          "unrealized_pl": 3550.0
+          "market_value": -10000.0,
+          "unrealized_pl": 6800.0
         },
         {
           "symbol": "SPY260618C00775000",
           "qty": 51.0,
-          "market_value": 9078.0,
-          "unrealized_pl": -3399.0021
+          "market_value": 6477.0,
+          "unrealized_pl": -6000.0021
         },
         {
           "symbol": "SPY260618P00686000",
           "qty": 51.0,
-          "market_value": 14994.0,
-          "unrealized_pl": -2719.9983
+          "market_value": 12750.0,
+          "unrealized_pl": -4963.9983
         },
         {
           "symbol": "SPY260618P00696000",
           "qty": -51.0,
-          "market_value": -19584.0,
-          "unrealized_pl": 2880.0006
+          "market_value": -17085.0,
+          "unrealized_pl": 5379.0006
         }
       ],
-      "chart": "docs/assets/snapshots/paper_20260515.png"
+      "chart": "docs/assets/snapshots/paper_20260518.png"
     },
     {
       "account_type": "brokerage",
@@ -68,7 +68,7 @@
       "starting_capital": 5000.0,
       "position_count": 0,
       "positions": [],
-      "chart": "docs/assets/snapshots/brokerage_20260515.png"
+      "chart": "docs/assets/snapshots/brokerage_20260518.png"
     }
   ]
 }
