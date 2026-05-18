@@ -58,6 +58,12 @@ SYSTEM_STATE_PATH = PROJECT_ROOT / "data" / "system_state.json"
 IC_ENTRIES_PATH = PROJECT_ROOT / "data" / "ic_entries.json"
 MAX_SYNC_STALENESS_HOURS = 18
 
+# Re-export the time-series concentration gate so existing patches that target
+# `scripts.iron_condor_trader._check_recent_expiry_concentration` keep working.
+from src.risk.expiry_concentration import (  # noqa: E402
+    check_recent_expiry_concentration as _check_recent_expiry_concentration,
+)
+
 
 def select_strikes_by_delta(*args, **kwargs):
     """Compatibility seam for trader tests and callers patching this module."""
@@ -717,6 +723,24 @@ class IronCondorStrategy:
                             "underlying": ic.underlying,
                             "status": "BLOCKED_DUPLICATE_EXPIRY",
                             "reason": f"Already holding legs at expiry {ic.expiry}",
+                        }
+
+                    # Time-series concentration check. The historical 50.7%
+                    # concentration (35/69 closed trades on 2026-04-02) was a
+                    # *sequential* pattern, not a concurrent-position one. The
+                    # gateway's _check_expiry_concentration only catches the
+                    # latter. This check looks at the last N closed entries and
+                    # blocks if the prospective new IC's expiry would tip the
+                    # rolling share above MAX_EXPIRY_CONCENTRATION_PCT.
+                    blocked, ts_reason = _check_recent_expiry_concentration(ic.expiry)
+                    if blocked:
+                        logger.warning(f"BLOCKED by time-series concentration: {ts_reason}")
+                        return {
+                            "timestamp": datetime.now().isoformat(),
+                            "strategy": "iron_condor",
+                            "underlying": ic.underlying,
+                            "status": "BLOCKED_TIME_SERIES_EXPIRY_CONCENTRATION",
+                            "reason": ts_reason,
                         }
             except Exception as pos_err:
                 # CRITICAL: If we can't verify positions, BLOCK the trade
