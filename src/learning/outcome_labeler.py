@@ -115,10 +115,14 @@ def build_outcome_label(
 
     if explicit_won is not None:
         won = bool(explicit_won)
-        lost = not won
+        # `not won` would mark flat (reward == 0, return_pct == 0) trades as
+        # losses. A trade can be won=False AND break-even. Require an actual
+        # negative signal before tagging as lost.
+        lost = (not won) and (reward < 0 or (return_pct is not None and return_pct < 0))
     elif explicit_lost is not None:
         lost = bool(explicit_lost)
-        won = not lost
+        # Symmetric: don't tag flats as wins.
+        won = (not lost) and (reward > 0 or (return_pct is not None and return_pct > 0))
     elif reward > 0 or (return_pct is not None and return_pct > 0):
         won, lost = True, False
     elif reward < 0 or (return_pct is not None and return_pct < 0):
