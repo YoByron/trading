@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-05-25T15:30:48.696264+00:00",
+  "last_updated": "2026-05-25T15:35:54.708650+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-05-25T15:30:48.696264+00:00",
+    "last_successful_sync": "2026-05-25T15:35:54.708650+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 2,
+    "sync_count_today": 3,
     "history": [
-      {
-        "timestamp": "2026-05-21T18:41:36.988690+00:00",
-        "equity": 95494.31,
-        "success": true
-      },
       {
         "timestamp": "2026-05-21T18:47:43.723114+00:00",
         "equity": 95541.31,
@@ -124,9 +119,14 @@
         "timestamp": "2026-05-25T15:30:48.696264+00:00",
         "equity": 95521.31,
         "success": true
+      },
+      {
+        "timestamp": "2026-05-25T15:35:54.708650+00:00",
+        "equity": 95521.31,
+        "success": true
       }
     ],
-    "last_attempt": "2026-05-25T15:30:48.696264+00:00"
+    "last_attempt": "2026-05-25T15:35:54.708650+00:00"
   },
   "portfolio": {
     "equity": 95521.31,
@@ -2640,13 +2640,13 @@
     "buying_power": 101310.62
   },
   "meta": {
-    "last_updated": "2026-05-25T15:30:48.696264+00:00",
+    "last_updated": "2026-05-25T15:35:54.708650+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-05-25T15:30:48.696264+00:00",
+    "last_sync_attempt": "2026-05-25T15:35:54.708650+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-05-25T15:30:48.695089",
-    "sync_mode": "paper",
+    "last_sync": "2026-05-25T15:35:54.493554",
+    "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-05-22T20:12:14.494929+00:00",
     "verification_source": "daily_verification.py"
   },
@@ -2750,18 +2750,14 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-05-25T14:39:03.225987"
+    "synced_at": "2026-05-25T15:35:54.706074"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-05-25T15:30:48.716328Z",
+    "generated_at": "2026-05-25T15:35:56.376986Z",
     "primary_family": "options_income",
     "rolling_window": 50,
-    "paused_families": [
-      "equity_momentum",
-      "alternatives",
-      "other"
-    ],
+    "paused_families": ["equity_momentum", "alternatives", "other"],
     "strategy_families": {
       "options_income": {
         "status": "validation_reset",
@@ -2856,7 +2852,7 @@
     "estimated_cagr_from_expectancy": -0.1343,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-05-25T15:30:48.716328Z",
+    "updated_at": "2026-05-25T15:35:56.376986Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -3063,9 +3059,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "No qualified setups captured in lookback window. Focus on setup generation cadence before adjusting execution.",
-      "updated_at": "2026-05-25T15:30:48.710329+00:00"
+      "updated_at": "2026-05-25T15:35:56.374400+00:00"
     },
-    "updated_at": "2026-05-25T15:30:48.710776+00:00",
+    "updated_at": "2026-05-25T15:35:56.374801+00:00",
     "unverified_trade_history_diagnostic": {
       "samples": 3,
       "wins": 1,
@@ -3102,7 +3098,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-05-25T15:30:48.710853+00:00"
+    "updated_at": "2026-05-25T15:35:56.374880+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3117,9 +3113,7 @@
       "severity_score": 0.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No credit spread data available."
-      ],
+      "reasons": ["No credit spread data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3148,9 +3142,7 @@
       "position_size_multiplier": 1.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No USD macro data available."
-      ],
+      "reasons": ["No USD macro data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3188,9 +3180,7 @@
       "regime": "transition",
       "confidence": 0.396,
       "capex_deceleration_shock": false,
-      "reasons": [
-        "AI-cycle proxies stable"
-      ],
+      "reasons": ["AI-cycle proxies stable"],
       "latest_data_date": "2026-03-05",
       "stale_days": 1,
       "features": {
@@ -3213,13 +3203,7 @@
           "ORCL"
         ],
         "hyperscaler_capex_proxy_observed": 5,
-        "ai_infra_proxy_tickers": [
-          "NVDA",
-          "AVGO",
-          "ANET",
-          "AMD",
-          "SMCI"
-        ],
+        "ai_infra_proxy_tickers": ["NVDA", "AVGO", "ANET", "AMD", "SMCI"],
         "ai_infra_proxy_observed": 5,
         "edge_monetization_proxy_tickers": [
           "META",
@@ -3637,10 +3621,7 @@
     "harvest_source": "daily-trading-workflow",
     "execution_date": "2026-02-27",
     "selection_method": "adaptive",
-    "target_tickers": [
-      "SPY",
-      "IWM"
-    ],
+    "target_tickers": ["SPY", "IWM"],
     "strategy_note": "Uses credit spreads when buying power < 000, CSPs otherwise",
     "tickers_scanned": 0,
     "orders_submitted_today": 0,
@@ -3655,7 +3636,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-05-25T14:39:04.911166Z",
+    "generated_at_utc": "2026-05-25T15:35:56.374945Z",
     "cadence_optimizer": {
       "decision": "hold",
       "reason": "Liquidity floor unchanged.",
@@ -3746,7 +3727,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-05-25T14:39:04.911166+00:00",
+        "updated_at": "2026-05-25T15:35:56.374945+00:00",
         "source": "north_star_autopilot"
       }
     }
