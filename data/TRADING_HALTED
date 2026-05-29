@@ -1,4 +1,7 @@
-ML GATE BLOCKED: Win rate 11.7% < 50.0%; Expectancy $-49.28/trade <= $0.00; Profit factor 0.14 <= 1.00
-Updated: 2026-05-29T19:38:09.177601+00:00
-Win rate: 11.7% | Trades: 163
+ML GATE BLOCKED: Win rate 11.7% < 50.0%; Expectancy $-50.06/trade <= $0.00; Profit factor 0.14 <= 1.00
+Updated: 2026-05-29T20:37:02.626264+00:00
+Win rate: 11.7% | Paired trades: 163
+Realized P/L (paired): $-8033.00
+Realized P/L (broker-truth): $-8160.00
+Singleton adjustment: $-127.00 over 4 orders since 2026-04-09
 Unblock: improve win rate above 50.0% over 30+ trades
