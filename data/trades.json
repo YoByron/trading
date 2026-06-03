@@ -12,25 +12,25 @@
       "min_trades_for_decision": 30
     },
     "notes": "CLEANED Jan 27, 2026 - Removed pre-Jan-22 garbage (SOFI trades, stock DCA). Fresh start per $30K account reset.",
-    "last_sync": "2026-06-02T20:30:30.901085+00:00",
+    "last_sync": "2026-06-03T16:39:18.689865+00:00",
     "sync_source": "sync_closed_positions.py"
   },
   "stats": {
-    "total_trades": 163,
-    "closed_trades": 163,
+    "total_trades": 164,
+    "closed_trades": 164,
     "open_trades": 0,
-    "wins": 19,
+    "wins": 20,
     "losses": 143,
     "breakeven": 1,
-    "win_rate_pct": 11.66,
-    "avg_win": 71.63,
+    "win_rate_pct": 12.2,
+    "avg_win": 73.05,
     "avg_loss": 65.69,
-    "profit_factor": 0.14,
-    "total_pnl": -8033.0,
-    "total_realized_pnl": -8033.0,
+    "profit_factor": 0.16,
+    "total_pnl": -7933.0,
+    "total_realized_pnl": -7933.0,
     "paper_phase_start": "2026-01-22",
-    "paper_phase_days": 131,
-    "last_updated": "2026-06-02T20:30:30.900775+00:00",
+    "paper_phase_days": 132,
+    "last_updated": "2026-06-03T16:39:18.689630+00:00",
     "unpaired_realized_pnl": 574.0,
     "unpaired_in_cohort_pnl": -127.0,
     "unpaired_order_count": 7,
@@ -6375,6 +6375,40 @@
       "order_ids": {
         "entry": ["551dac61-fa74-45aa-98f3-13f11b93cb7a"],
         "exit": ["b0ce5191-a895-4453-9fb8-514750b0a442"]
+      }
+    },
+    {
+      "id": "IC_SPY_2026_06_12_P686_696_C770_775_20260508154138_20260603163917",
+      "symbol": "SPY",
+      "type": "option",
+      "strategy": "iron_condor",
+      "status": "closed",
+      "entry_date": "2026-05-08",
+      "exit_date": "2026-06-03",
+      "entry_time": "2026-05-08T15:41:38.402519+00:00",
+      "exit_time": "2026-06-03T16:39:17.451553+00:00",
+      "entry_net_cash": 152.0,
+      "entry_credit": 152.0,
+      "entry_debit": 0.0,
+      "entry_style": "credit",
+      "exit_net_cash": -52.0,
+      "exit_credit": 0.0,
+      "exit_debit": 52.0,
+      "exit_style": "debit",
+      "realized_pnl": 100.0,
+      "outcome": "win",
+      "signature": "SPY_2026-06-12_P686-696_C770-775",
+      "legs": {
+        "underlying": "SPY",
+        "expiry": "2026-06-12",
+        "put_strikes": [686.0, 696.0],
+        "call_strikes": [770.0, 775.0]
+      },
+      "quantity": 1.0,
+      "source": "alpaca_parent_lot->alpaca_close_inventory",
+      "order_ids": {
+        "entry": ["ccd2722e-b02f-4821-b8ac-27bdf3220e9f"],
+        "exit": ["8ace0441-9d7e-4208-8792-b51dc40c4b3b"]
       }
     }
   ]
