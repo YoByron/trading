@@ -169,12 +169,12 @@
   },
   {
     "week_start": "2026-06-01",
-    "sample_size": 0,
-    "win_rate_pct": 0.0,
-    "expectancy_per_trade": 0.0,
+    "sample_size": 1,
+    "win_rate_pct": 100.0,
+    "expectancy_per_trade": 100.0,
     "mode": "quarantine",
     "qualified_setups": 0,
     "cadence_passed": false,
-    "updated_at": "2026-06-03T16:36:03.906657+00:00"
+    "updated_at": "2026-06-03T18:13:53.463175+00:00"
   }
 ]
