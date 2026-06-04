@@ -94,9 +94,13 @@ def test_halt_file_content_includes_broker_truth_numbers(
 
     monkeypatch.setattr(mod, "PROJECT_ROOT", project_root)
     monkeypatch.setattr(mod, "TRADES_FILE", project_root / "data" / "trades.json")
-    monkeypatch.setattr(mod, "MODEL_FILE", project_root / "models" / "ml" / "trade_confidence_model.json")
+    monkeypatch.setattr(
+        mod, "MODEL_FILE", project_root / "models" / "ml" / "trade_confidence_model.json"
+    )
     monkeypatch.setattr(mod, "LESSONS_DIR", project_root / "rag_knowledge" / "lessons_learned")
-    monkeypatch.setattr(mod, "REHAB_PLAN_FILE", project_root / "data" / "runtime" / "edge_rehabilitation_plan.json")
+    monkeypatch.setattr(
+        mod, "REHAB_PLAN_FILE", project_root / "data" / "runtime" / "edge_rehabilitation_plan.json"
+    )
 
     mod.main(dry_run=False)
 

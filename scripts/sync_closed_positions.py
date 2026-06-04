@@ -165,8 +165,8 @@ def _field(source: Any, key: str) -> Any:
 # LL-354: leg_tag -> close action. Short legs are bought back to close;
 # long legs are sold to close.
 _LEG_TAG_TO_CLOSE_ACTION = {
-    "SP": "BUY_TO_CLOSE",   # short put
-    "SC": "BUY_TO_CLOSE",   # short call
+    "SP": "BUY_TO_CLOSE",  # short put
+    "SC": "BUY_TO_CLOSE",  # short call
     "LP": "SELL_TO_CLOSE",  # long put
     "LC": "SELL_TO_CLOSE",  # long call
 }
@@ -180,9 +180,7 @@ def _intent_from_stamped_cid(client_order_id: Any) -> str | None:
         from src.utils.order_intent import parse_client_order_id
     except Exception:  # pragma: no cover - import safety
         return None
-    parsed = parse_client_order_id(
-        client_order_id if isinstance(client_order_id, str) else None
-    )
+    parsed = parse_client_order_id(client_order_id if isinstance(client_order_id, str) else None)
     if parsed is None or parsed["role"] != "CLOSE":
         return None
     leg_tag = parsed.get("leg_tag")
