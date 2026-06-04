@@ -1,6 +1,6 @@
 {
-  "active_perplexity_files": 26,
-  "credential_available_in_runtime": true,
+  "active_perplexity_files": 28,
+  "credential_available_in_runtime": false,
   "expected_high_roi_files": [
     "src/analytics/perplexity_trading_intel.py",
     "src/analytics/perplexity_utilization_audit.py",
@@ -9,16 +9,24 @@
     ".github/workflows/perplexity-trading-intel.yml"
   ],
   "gaps": [
+    "local_runtime_missing_perplexity_credential",
     "agent_playground_not_versioned_in_repo"
   ],
-  "generated_at_utc": "2026-05-11T21:49:47.147519+00:00",
-  "max_utilization_score": 90,
+  "generated_at_utc": "2026-06-04T22:48:19.212658+00:00",
+  "max_utilization_score": 70,
   "missing_expected_files": [],
   "models_referenced": [
     "sonar",
     "sonar-pro"
   ],
   "scripts_with_perplexity": [
+    {
+      "mentions_agent_playground": false,
+      "models": [],
+      "path": "scripts/ci/ai_pr_review.py",
+      "uses_api_endpoint": false,
+      "uses_perplexity_credential": false
+    },
     {
       "mentions_agent_playground": false,
       "models": [],
@@ -188,6 +196,13 @@
       "path": ".github/workflows/pre-market-scan.yml",
       "uses_api_endpoint": false,
       "uses_perplexity_credential": true
+    },
+    {
+      "mentions_agent_playground": false,
+      "models": [],
+      "path": ".github/workflows/sonarcloud.yml",
+      "uses_api_endpoint": false,
+      "uses_perplexity_credential": false
     }
   ]
 }
