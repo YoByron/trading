@@ -1,0 +1,56 @@
+{
+  "api_status": "missing_api_key",
+  "confidence": 0.51,
+  "fresh_for_minutes": 240,
+  "gate_contract": {
+    "blocks_new_iron_condors": false,
+    "reason": "Perplexity intelligence degraded (missing_api_key); do not increase risk based on stale context.",
+    "source": "perplexity_trading_intel"
+  },
+  "generated_at_utc": "2026-06-04T16:41:26.115184+00:00",
+  "mode": "pre_market",
+  "model": "sonar-pro",
+  "queries": [
+    {
+      "answer": "Perplexity API key is not configured in this runtime. The trading loop should treat web intelligence as degraded until GitHub Actions or the local agent provides PERPLEXITY_API_KEY.",
+      "api_status": "missing_api_key",
+      "citations": [],
+      "key": "macro_calendar",
+      "priority": 1,
+      "prompt": "For today, list US economic releases, FOMC/Fed speaker events, Treasury events, and market-moving policy headlines that could affect SPY/SPX options premium selling. Identify exact times when available.",
+      "risk_score": 0.0
+    },
+    {
+      "answer": "Perplexity API key is not configured in this runtime. The trading loop should treat web intelligence as degraded until GitHub Actions or the local agent provides PERPLEXITY_API_KEY.",
+      "api_status": "missing_api_key",
+      "citations": [],
+      "key": "volatility_regime",
+      "priority": 1,
+      "prompt": "Summarize the current SPY/SPX volatility regime, including VIX drivers, overnight futures context, and whether short premium entries face event gap risk today.",
+      "risk_score": 0.0
+    },
+    {
+      "answer": "Perplexity API key is not configured in this runtime. The trading loop should treat web intelligence as degraded until GitHub Actions or the local agent provides PERPLEXITY_API_KEY.",
+      "api_status": "missing_api_key",
+      "citations": [],
+      "key": "index_event_risk",
+      "priority": 1,
+      "prompt": "Are there broad index-level events today that should block or caution a new SPY iron condor entry? Focus on scheduled catalysts, unscheduled policy shocks, liquidity, and expected intraday volatility.",
+      "risk_score": 0.0
+    }
+  ],
+  "recommendation": "CAUTION_API_UNAVAILABLE",
+  "risk_score": 0.0,
+  "trading_context": {
+    "closed_trades_total": 164,
+    "equity": 97425.23,
+    "expectancy_per_trade": null,
+    "gate_mode": null,
+    "positions_count": 4,
+    "profit_factor": 0.16,
+    "scale_allowed": null,
+    "total_pnl_today": 2744.92,
+    "verified_edge_available": null,
+    "win_rate_pct": 12.2
+  }
+}
