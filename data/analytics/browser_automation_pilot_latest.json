@@ -1,44 +1,61 @@
 {
-  "run_id": "pilot-20260504T214658Z",
-  "generated_at_utc": "2026-05-04T21:46:58.698953Z",
+  "run_id": "pilot-20260604T112713Z",
+  "generated_at_utc": "2026-06-04T11:27:14.744124Z",
   "tasks": [
     {
       "task_id": "gh_pages_home",
       "url": "https://igorganapolsky.github.io/trading/",
       "prompt": "Open the AI Trading Journey home page and confirm the site is reachable.",
       "expected_text": "AI Trading Journey",
-      "tags": ["publishing", "github-pages"]
+      "tags": [
+        "publishing",
+        "github-pages"
+      ]
     },
     {
       "task_id": "rag_query_page",
       "url": "https://igorganapolsky.github.io/trading/rag-query/",
       "prompt": "Open the RAG query page and verify the dashboard UI loads.",
       "expected_text": "RAG Knowledge Base",
-      "tags": ["rag", "dashboard"]
+      "tags": [
+        "rag",
+        "dashboard"
+      ]
     },
     {
       "task_id": "devto_profile",
       "url": "https://dev.to/igorganapolsky",
       "prompt": "Open the Dev.to profile feed and confirm profile content is visible.",
       "expected_text": "igorganapolsky",
-      "tags": ["publishing", "devto"]
+      "tags": [
+        "publishing",
+        "devto"
+      ]
     },
     {
       "task_id": "x_profile",
       "url": "https://x.com/IgorGanapolsky",
       "prompt": "Open the X profile page and verify profile metadata can be read.",
       "expected_text": "Igor Ganapolsky",
-      "tags": ["publishing", "x"]
+      "tags": [
+        "publishing",
+        "x"
+      ]
     },
     {
       "task_id": "linkedin_profile",
       "url": "https://www.linkedin.com/in/igorganapolsky/",
       "prompt": "Open the LinkedIn profile page and verify the profile shell is reachable.",
       "expected_text": "LinkedIn",
-      "tags": ["publishing", "linkedin"]
+      "tags": [
+        "publishing",
+        "linkedin"
+      ]
     }
   ],
-  "providers": ["local"],
+  "providers": [
+    "local"
+  ],
   "runs_per_task": 1,
   "results": [
     {
@@ -47,8 +64,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "Expected text not found.",
-      "started_at_utc": "2026-05-04T21:46:58.072143Z",
-      "latency_ms": 110.841,
+      "started_at_utc": "2026-06-04T11:27:13.799839Z",
+      "latency_ms": 136.985,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -59,8 +76,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "HTTP 404",
-      "started_at_utc": "2026-05-04T21:46:58.183747Z",
-      "latency_ms": 49.66,
+      "started_at_utc": "2026-06-04T11:27:13.937728Z",
+      "latency_ms": 63.65,
       "retries": 0,
       "http_status": 404,
       "cost_usd": 0.0
@@ -71,8 +88,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-05-04T21:46:58.234273Z",
-      "latency_ms": 48.754,
+      "started_at_utc": "2026-06-04T11:27:14.002157Z",
+      "latency_ms": 109.019,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -83,8 +100,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-05-04T21:46:58.283738Z",
-      "latency_ms": 234.276,
+      "started_at_utc": "2026-06-04T11:27:14.111970Z",
+      "latency_ms": 297.177,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -94,11 +111,11 @@
       "task_id": "linkedin_profile",
       "run_index": 1,
       "status": "failed",
-      "detail": "HTTP 404",
-      "started_at_utc": "2026-05-04T21:46:58.518961Z",
-      "latency_ms": 179.08,
+      "detail": "HTTP 999",
+      "started_at_utc": "2026-06-04T11:27:14.410604Z",
+      "latency_ms": 332.754,
       "retries": 0,
-      "http_status": 404,
+      "http_status": 999,
       "cost_usd": 0.0
     }
   ],
@@ -110,7 +127,7 @@
       "failed": 3,
       "skipped": 0,
       "success_rate": 0.4,
-      "avg_latency_ms": 124.5222,
+      "avg_latency_ms": 187.917,
       "avg_retries": 0.0,
       "cost_usd_total": 0.0,
       "cost_per_success_usd": 0.0
