@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-06-04T15:37:52.885363+00:00",
+  "last_updated": "2026-06-04T15:42:52.009228+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-06-04T15:37:52.885363+00:00",
+    "last_successful_sync": "2026-06-04T15:42:52.009228+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 2,
+    "sync_count_today": 3,
     "history": [
-      {
-        "timestamp": "2026-06-02T15:52:56.060680+00:00",
-        "equity": 94182.31,
-        "success": true
-      },
       {
         "timestamp": "2026-06-02T16:33:48.576278+00:00",
         "equity": 94376.31,
@@ -124,43 +119,48 @@
         "timestamp": "2026-06-04T15:37:52.885363+00:00",
         "equity": 97478.1,
         "success": true
+      },
+      {
+        "timestamp": "2026-06-04T15:42:52.009228+00:00",
+        "equity": 97576.1,
+        "success": true
       }
     ],
-    "last_attempt": "2026-06-04T15:37:52.885363+00:00"
+    "last_attempt": "2026-06-04T15:42:52.009228+00:00"
   },
   "portfolio": {
-    "equity": 97478.1,
+    "equity": 97576.1,
     "cash": 102603.1
   },
   "paper_account": {
-    "equity": 97478.1,
+    "equity": 97576.1,
     "cash": 102603.1,
     "buying_power": 206412.4,
-    "total_pl": -2521.899999999994,
-    "total_pl_pct": -2.5218999999999943,
+    "total_pl": -2423.899999999994,
+    "total_pl_pct": -2.423899999999994,
     "positions_count": 4,
-    "daily_change": -345.0,
+    "daily_change": -247.0,
     "win_rate": 12.2,
     "win_rate_sample_size": 164,
     "starting_balance": 100000.0,
-    "current_equity": 97478.1,
+    "current_equity": 97576.1,
     "last_equity": 97823.1
   },
   "positions": [
     {
       "symbol": "SPY260618C00770000",
       "qty": -50.0,
-      "price": 179.0,
-      "value": -8950.0,
-      "pnl": 7850.0,
+      "price": 175.0,
+      "value": -8750.0,
+      "pnl": 8050.0,
       "type": "option"
     },
     {
       "symbol": "SPY260618C00775000",
       "qty": 51.0,
-      "price": 87.0,
-      "value": 4437.0,
-      "pnl": -8040.0021,
+      "price": 85.0,
+      "value": 4335.0,
+      "pnl": -8142.0021,
       "type": "option"
     },
     {
@@ -2587,10 +2587,10 @@
   },
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
-    "total_pl": -2521.899999999994,
-    "unrealized_pl": 3948.0,
-    "weekly_gate_mode": "validation_reset",
-    "weekly_gate_recommended_max_position_pct": 0.01,
+    "total_pl": -2423.899999999994,
+    "unrealized_pl": 4046.0,
+    "weekly_gate_mode": "quarantine",
+    "weekly_gate_recommended_max_position_pct": 0.0,
     "weekly_cadence_kpi_passed": false,
     "weekly_scaling_sample_gate_passed": true,
     "weekly_ai_credit_stress_status": "unknown",
@@ -2605,21 +2605,21 @@
     "weekly_ai_cycle_capex_deceleration_shock": false
   },
   "account": {
-    "current_equity": 97478.1,
-    "total_pl": -2521.899999999994,
-    "total_pl_pct": -2.5218999999999943,
+    "current_equity": 97576.1,
+    "total_pl": -2423.899999999994,
+    "total_pl_pct": -2.423899999999994,
     "positions_count": 4,
     "cash": 102603.1,
     "buying_power": 206412.4
   },
   "meta": {
-    "last_updated": "2026-06-04T15:37:52.885363+00:00",
+    "last_updated": "2026-06-04T15:42:52.009228+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-06-04T15:37:52.885363+00:00",
+    "last_sync_attempt": "2026-06-04T15:42:52.009228+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-06-04T15:37:52.884439",
-    "sync_mode": "paper",
+    "last_sync": "2026-06-04T15:42:51.951046",
+    "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-06-03T20:35:50.552434+00:00",
     "verification_source": "daily_verification.py"
   },
@@ -2636,20 +2636,20 @@
         "symbol": "SPY260618C00770000",
         "quantity": -50.0,
         "entry_price": 336.0,
-        "current_price": 179.0,
-        "market_value": -8950.0,
-        "unrealized_pl": 7850.0,
-        "unrealized_pl_pct": -0.46726190476190477,
+        "current_price": 175.0,
+        "market_value": -8750.0,
+        "unrealized_pl": 8050.0,
+        "unrealized_pl_pct": -0.4791666666666667,
         "side": "long"
       },
       {
         "symbol": "SPY260618C00775000",
         "quantity": 51.0,
         "entry_price": 244.6471,
-        "current_price": 87.0,
-        "market_value": 4437.0,
-        "unrealized_pl": -8040.0021,
-        "unrealized_pl_pct": -0.6443857294854507,
+        "current_price": 85.0,
+        "market_value": 4335.0,
+        "unrealized_pl": -8142.0021,
+        "unrealized_pl_pct": -0.6525607701869346,
         "side": "long"
       },
       {
@@ -2683,24 +2683,25 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-06-04T14:39:25.362289"
+    "synced_at": "2026-06-04T15:42:52.006776"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-06-04T15:37:52.903513Z",
+    "generated_at": "2026-06-04T15:42:53.625926Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
+      "options_income",
       "equity_momentum",
       "alternatives",
       "other"
     ],
     "strategy_families": {
       "options_income": {
-        "status": "validation_reset",
-        "paused": false,
-        "live_risk_blocked": true,
-        "reason": "options_income remains in controlled paper-validation reset: rolling win rate 2.0% is below 60.0%, so live/scaling stays blocked while a fresh cohort is collected.",
+        "status": "paused",
+        "paused": true,
+        "live_risk_blocked": false,
+        "reason": "options_income paused: win rate 2.0% below 60.0% threshold.",
         "thresholds": {
           "min_win_rate_pct": 60.0,
           "min_expectancy": 0.0,
@@ -2786,10 +2787,10 @@
     "probability_score": 8.1,
     "probability_label": "critical",
     "required_cagr": null,
-    "estimated_cagr_from_expectancy": -0.0604,
+    "estimated_cagr_from_expectancy": -0.0603,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-06-04T15:37:52.903513Z",
+    "updated_at": "2026-06-04T15:42:53.625926Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2798,18 +2799,18 @@
   "north_star_weekly_gate": {
     "enabled": true,
     "lookback_days": 7,
-    "mode": "validation_reset",
+    "mode": "quarantine",
     "sample_size": 1,
     "win_rate_pct": 100.0,
     "expectancy_per_trade": 100.0,
-    "recommended_max_position_pct": 0.01,
-    "block_new_positions": false,
+    "recommended_max_position_pct": 0.0,
+    "block_new_positions": true,
     "block_live_new_positions": true,
-    "allow_validation_entries": true,
-    "validation_reset_active": true,
-    "validation_reset_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-48.37/trade, profit factor 0.16, total realized P/L $-7933.00 over 164 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
+    "allow_validation_entries": false,
+    "validation_reset_active": false,
+    "validation_reset_reason": null,
     "north_star_claims_frozen": true,
-    "reason": "CRITICAL: Lifetime paired-trade ledger remains negative. Live/scaling stays blocked, but controlled paper validation remains allowed at minimum size under a written changed-rule hypothesis until a fresh cohort proves edge.",
+    "reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
     "positive_weeks_streak": 0,
     "evidence_source": "trades.json",
     "verified_edge_available": false,
@@ -2881,25 +2882,20 @@
     },
     "strategy_quarantine": {
       "active": true,
-      "block_new_positions": false,
-      "paper_validation_allowed": true,
+      "block_new_positions": true,
+      "paper_validation_allowed": false,
       "north_star_claims_frozen": true,
-      "reason": "Negative lifetime expectancy freezes North Star claims; only minimum-size paper validation is allowed because a valid changed-rule hypothesis is present.",
-      "required_action": "Complete the fresh validation cohort. If the cohort misses kill criteria, remove IC Simple as a North Star candidate.",
+      "reason": "MATHEMATICAL QUARANTINE: negative lifetime expectancy means the current strategy cannot reach the North Star. New entries are blocked until data/runtime/strategy_validation_hypothesis.json defines a changed-rule hypothesis and hard kill criteria.",
+      "required_action": "Audit the failed ledger, write strategy_validation_hypothesis.json, then run only minimum-size paper validation. If the next cohort fails positive expectancy, profit factor, and realized-P/L criteria, kill IC Simple.",
       "validation_hypothesis": {
         "path": "data/runtime/strategy_validation_hypothesis.json",
-        "valid": true,
-        "errors": [],
-        "strategy_family": "ic_simple",
-        "hypothesis": "Restart only controlled paper validation for IC Simple after the failed legacy ledger by explicitly removing the current top loss clusters: no 10-wide wings, no multi-contract sizing, and no unmanaged sub-24-hour exits. The fresh cohort tests whether narrower defined-risk wings, one-contract sizing, live-delta provenance, and fixed exits can restore positive expectancy.",
-        "changed_rules": [
-          "Run validation_reset as paper-only: live trading and scale-up remain blocked while the fresh validation cohort is collected.",
-          "Limit validation entries to IC Simple SPY iron condors with one contract per structure, no more than one new structure per day, and no more than two concurrent iron condors.",
-          "Require live-delta strike provenance; reject heuristic fallback, non-positive net credit, and net credit below $0.50 before any validation entry.",
-          "Use 30-45 DTE, target 0.15 short delta, accepted short-delta band 0.08-0.22, and reject 10-wide wings; the validation cohort must use narrower defined-risk wings unless a separate backtest proves wider wings first.",
-          "Keep the exit plan fixed: take profit at 50% of max profit, stop at 100% of entry credit, close by 7 DTE, and do not allow sub-24-hour discretionary exits unless a hard max-loss or broken-leg condition fires.",
-          "Keep learned blockers active: FOMC blackout, ThumbGate rules, low IV percentile, unknown or volatile regime, stale broker sync, same-expiry re-entry after a loss, and Thompson confidence unless validation_reset explicitly allows controlled paper validation."
+        "valid": false,
+        "errors": [
+          "rehabilitation_plan_ack.covered_loss_clusters missing: long_hold_ge_7d"
         ],
+        "strategy_family": "ic_simple",
+        "hypothesis": null,
+        "changed_rules": [],
         "kill_criteria": {
           "min_closed_trades": 30,
           "min_expectancy_per_trade": 1.0,
@@ -2912,24 +2908,20 @@
           "required_loss_clusters": [
             "ten_wide_wings",
             "multi_contract",
-            "early_exit_lt_24h"
+            "long_hold_ge_7d"
           ],
-          "covered_loss_clusters": [
-            "ten_wide_wings",
-            "multi_contract",
-            "early_exit_lt_24h"
-          ]
+          "covered_loss_clusters": []
         }
       },
       "kill_criteria": {
         "min_closed_trades": 30,
-        "min_expectancy_per_trade": 1.0,
-        "min_profit_factor": 1.05,
-        "min_total_realized_pnl": 1.0
+        "min_expectancy_per_trade": 0.0,
+        "min_profit_factor": 1.0,
+        "min_total_realized_pnl": 0.0
       }
     },
     "contradiction_detected": true,
-    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-48.37/trade, profit factor 0.16, total realized P/L $-7933.00 over 164 closed trades. Live/scaling remains blocked while controlled paper validation continues at minimum size under a written changed-rule hypothesis.",
+    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-48.37/trade, profit factor 0.16, total realized P/L $-7933.00 over 164 closed trades. All new entries are quarantined until a written changed-rule validation hypothesis with hard kill criteria is present.",
     "liquidity_min_volume_ratio": 0.2,
     "no_trade_diagnostic": {
       "lookback_days": 7,
@@ -2996,9 +2988,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "Closed trades exist in lookback window; no-trade root cause not currently active.",
-      "updated_at": "2026-06-04T15:37:52.898015+00:00"
+      "updated_at": "2026-06-04T15:42:53.621990+00:00"
     },
-    "updated_at": "2026-06-04T15:37:52.898423+00:00"
+    "updated_at": "2026-06-04T15:42:53.622627+00:00"
   },
   "north_star_contributions": {
     "enabled": true,
@@ -3009,26 +3001,26 @@
     "target_capital": 300000.0,
     "monthly_after_tax_target": 6000.0,
     "daily_after_tax_target": 200.0,
-    "current_equity": 97478.1,
+    "current_equity": 97576.1,
     "required_cagr_without_contributions": null,
     "required_monthly_contribution_by_return": {},
     "assumed_return": null,
     "required_monthly_contribution_at_assumed_return": null,
     "month_start_equity": 95362.31,
-    "equity_change_this_month": 2115.79,
-    "monthly_target_progress_pct": 35.26,
-    "remaining_to_monthly_target": 3884.21,
+    "equity_change_this_month": 2213.79,
+    "monthly_target_progress_pct": 36.9,
+    "remaining_to_monthly_target": 3786.21,
     "days_elapsed_this_month": 4,
     "days_remaining_this_month": 26,
-    "required_daily_after_tax_from_now": 149.39,
-    "projected_month_end_after_tax_pnl": 15868.42,
+    "required_daily_after_tax_from_now": 145.62,
+    "projected_month_end_after_tax_pnl": 16603.42,
     "projected_gap_to_monthly_target": 0.0,
     "live_month_start_equity": 0.0,
     "live_equity_change_this_month": 0.0,
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-06-04T15:37:52.898528+00:00"
+    "updated_at": "2026-06-04T15:42:53.622762+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-04-01T18:33:13.205819",
@@ -3043,9 +3035,7 @@
       "severity_score": 0.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No credit spread data available."
-      ],
+      "reasons": ["No credit spread data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3074,9 +3064,7 @@
       "position_size_multiplier": 1.0,
       "blocked": false,
       "watch": false,
-      "reasons": [
-        "No USD macro data available."
-      ],
+      "reasons": ["No USD macro data available."],
       "latest_data_date": null,
       "stale_days": null,
       "metrics": {
@@ -3114,9 +3102,7 @@
       "regime": "transition",
       "confidence": 0.396,
       "capex_deceleration_shock": false,
-      "reasons": [
-        "AI-cycle proxies stable"
-      ],
+      "reasons": ["AI-cycle proxies stable"],
       "latest_data_date": "2026-03-05",
       "stale_days": 1,
       "features": {
@@ -3139,13 +3125,7 @@
           "ORCL"
         ],
         "hyperscaler_capex_proxy_observed": 5,
-        "ai_infra_proxy_tickers": [
-          "NVDA",
-          "AVGO",
-          "ANET",
-          "AMD",
-          "SMCI"
-        ],
+        "ai_infra_proxy_tickers": ["NVDA", "AVGO", "ANET", "AMD", "SMCI"],
         "ai_infra_proxy_observed": 5,
         "edge_monetization_proxy_tickers": [
           "META",
@@ -3563,10 +3543,7 @@
     "harvest_source": "daily-trading-workflow",
     "execution_date": "2026-02-27",
     "selection_method": "adaptive",
-    "target_tickers": [
-      "SPY",
-      "IWM"
-    ],
+    "target_tickers": ["SPY", "IWM"],
     "strategy_note": "Uses credit spreads when buying power < 000, CSPs otherwise",
     "tickers_scanned": 0,
     "orders_submitted_today": 0,
@@ -3581,7 +3558,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-06-04T14:39:27.180075Z",
+    "generated_at_utc": "2026-06-04T15:42:53.622880Z",
     "cadence_optimizer": {
       "decision": "hold_risk_blocked",
       "reason": "Block-new-positions is active; no cadence tuning is applied.",
@@ -3678,7 +3655,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-06-04T14:39:27.180075+00:00",
+        "updated_at": "2026-06-04T15:42:53.622880+00:00",
         "source": "north_star_autopilot"
       }
     }
