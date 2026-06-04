@@ -356,8 +356,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--system-state", type=Path, default=DEFAULT_SYSTEM_STATE)
     parser.add_argument("--trades", type=Path, default=DEFAULT_TRADES)
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
-    parser.add_argument("--date", type=str, default=None,
-                        help="Override report date (YYYY-MM-DD). Default = today UTC.")
+    parser.add_argument(
+        "--date",
+        type=str,
+        default=None,
+        help="Override report date (YYYY-MM-DD). Default = today UTC.",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
