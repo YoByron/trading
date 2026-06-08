@@ -176,5 +176,15 @@
     "qualified_setups": 0,
     "cadence_passed": false,
     "updated_at": "2026-06-07T15:29:13.547280+00:00"
+  },
+  {
+    "week_start": "2026-06-08",
+    "sample_size": 1,
+    "win_rate_pct": 100.0,
+    "expectancy_per_trade": 100.0,
+    "mode": "quarantine",
+    "qualified_setups": 0,
+    "cadence_passed": false,
+    "updated_at": "2026-06-08T14:54:11.912888+00:00"
   }
 ]
