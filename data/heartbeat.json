@@ -1,6 +1,12 @@
 {
   "heartbeats": [
     {
+      "timestamp": "2026-06-09T15:33:16.633857+00:00",
+      "workflow": "pre_market_sync",
+      "status": "success",
+      "details": {}
+    },
+    {
       "timestamp": "2026-06-08T15:42:06.289638+00:00",
       "workflow": "pre_market_sync",
       "status": "success",
@@ -540,9 +546,9 @@
   ],
   "workflows": {
     "pre_market_sync": {
-      "last_heartbeat": "2026-06-08T15:42:06.289638+00:00",
+      "last_heartbeat": "2026-06-09T15:33:16.633857+00:00",
       "last_status": "success",
-      "total_runs": 61
+      "total_runs": 62
     },
     "trading_session": {
       "last_heartbeat": "2026-03-25T12:35:02.071390",
