@@ -39,5 +39,6 @@
 
 - Query RAG before work and update RAG after work.
 - Record mistakes and lessons learned in RAG.
-- Exclude secrets and tokens from stored directives and logs.
+- Exclude secrets and tokens from stored directives and logs. Never hardcode credentials.
+- Use the central secrets files under `~/.resume_secrets/` dynamically (e.g. via [job-site-login](file:///Users/igorganapolsky/.gemini/config/skills/job-site-login/SKILL.md)) for login/registration/reset workflows.
 - Treat chat-provided tokens as action-time credentials only; never save them to files, commits, or memory.

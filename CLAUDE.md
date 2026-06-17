@@ -36,4 +36,9 @@ Project instructions live in `.claude/CLAUDE.md`. Rules auto-load from `.claude/
 - Completion confirmation phrase for this workflow:
   - "Done merging PRs. CI passing. System hygiene complete. Ready for next session."
 
+## Credentials & Skills
+
+- **Secrets Registry**: Default credentials are kept in `~/.resume_secrets/` (e.g. [job_sites.json](file:///Users/igorganapolsky/.resume_secrets/job_sites.json), [default_passwords.json](file:///Users/igorganapolsky/.resume_secrets/default_passwords.json)). Never hardcode or repeat password/token secrets in code, logs, commits, or directive files.
+- **Job Site Login Skill**: The `job-site-login` skill is stored at [SKILL.md](file:///Users/igorganapolsky/.gemini/config/skills/job-site-login/SKILL.md). Use it to automate login, new account creation, and password reset flows.
+
 Note: Never store secrets or tokens in this file.
