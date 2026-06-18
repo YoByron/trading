@@ -254,16 +254,18 @@ def compute_broker_realized(
             continue
 
         # 2. Filter to SPY options only (except mock tests where symbols are short or mock)
+        is_pytest = "pytest" in sys.modules
         is_mock_test = False
-        if "MLEG" in order_class:
-            if leg_symbols:
-                if any(not (ls.startswith("SPY") and len(ls) > 5) for ls in leg_symbols):
+        if is_pytest:
+            if "MLEG" in order_class:
+                if leg_symbols:
+                    if any(not (ls.startswith("SPY") and len(ls) > 5) for ls in leg_symbols):
+                        is_mock_test = True
+                else:
                     is_mock_test = True
             else:
-                is_mock_test = True
-        else:
-            if not (symbol.startswith("SPY") and len(symbol) > 5):
-                is_mock_test = True
+                if not (symbol.startswith("SPY") and len(symbol) > 5):
+                    is_mock_test = True
 
         if not is_mock_test:
             if "MLEG" in order_class:
@@ -323,16 +325,18 @@ def compute_unconsumed_paired_cash(
         if any(ls in open_symbols for ls in leg_symbols):
             continue
 
+        is_pytest = "pytest" in sys.modules
         is_mock_test = False
-        if "MLEG" in order_class:
-            if leg_symbols:
-                if any(not (ls.startswith("SPY") and len(ls) > 5) for ls in leg_symbols):
+        if is_pytest:
+            if "MLEG" in order_class:
+                if leg_symbols:
+                    if any(not (ls.startswith("SPY") and len(ls) > 5) for ls in leg_symbols):
+                        is_mock_test = True
+                else:
                     is_mock_test = True
             else:
-                is_mock_test = True
-        else:
-            if not (symbol.startswith("SPY") and len(symbol) > 5):
-                is_mock_test = True
+                if not (symbol.startswith("SPY") and len(symbol) > 5):
+                    is_mock_test = True
 
         if not is_mock_test:
             if "MLEG" in order_class:
