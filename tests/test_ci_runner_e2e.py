@@ -18,6 +18,9 @@ def _seed_runner_repo(tmp_path: Path) -> Path:
     (repo / "scripts" / "ci").mkdir(parents=True)
     shutil.copy2(RUNNER_SCRIPT_PATH, repo / "scripts" / "ci" / "run_all_tests.sh")
 
+    (repo / "scripts" / "__init__.py").write_text("", encoding="utf-8")
+    (repo / "src" / "__init__.py").write_text("", encoding="utf-8")
+
     (repo / "scripts" / "ci" / "check_critical_coverage.py").write_text(
         "import sys\nprint('critical coverage ok')\nsys.exit(0)\n",
         encoding="utf-8",
