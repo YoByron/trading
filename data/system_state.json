@@ -1,15 +1,10 @@
 {
-  "last_updated": "2026-06-18T20:46:20.034238+00:00",
+  "last_updated": "2026-06-19T14:39:31.503486+00:00",
   "sync_health": {
-    "last_successful_sync": "2026-06-18T20:46:20.034238+00:00",
+    "last_successful_sync": "2026-06-19T14:39:31.503486+00:00",
     "sync_source": "sync_alpaca_state.py",
-    "sync_count_today": 13,
+    "sync_count_today": 1,
     "history": [
-      {
-        "timestamp": "2026-05-28T20:36:02.756454+00:00",
-        "equity": 95546.31,
-        "success": true
-      },
       {
         "timestamp": "2026-05-28T20:45:44.745935+00:00",
         "equity": 95546.31,
@@ -124,9 +119,14 @@
         "timestamp": "2026-06-18T20:46:20.034238+00:00",
         "equity": 93934.32,
         "success": true
+      },
+      {
+        "timestamp": "2026-06-19T14:39:31.503486+00:00",
+        "equity": 93934.32,
+        "success": true
       }
     ],
-    "last_attempt": "2026-06-18T20:46:20.034238+00:00"
+    "last_attempt": "2026-06-19T14:39:31.503486+00:00"
   },
   "portfolio": {
     "equity": 93934.32,
@@ -138,32 +138,15 @@
     "buying_power": 375737.28,
     "total_pl": -6065.679999999993,
     "total_pl_pct": -6.065679999999992,
-    "positions_count": 2,
-    "daily_change": -510.0,
-    "win_rate": 15.12,
-    "win_rate_sample_size": 172,
+    "positions_count": 0,
+    "daily_change": 0.0,
+    "win_rate": 15.43,
+    "win_rate_sample_size": 175,
     "starting_balance": 100000.0,
     "current_equity": 93934.32,
-    "last_equity": 94444.32
+    "last_equity": 93934.32
   },
-  "positions": [
-    {
-      "symbol": "SPY260618C00775000",
-      "qty": 51.0,
-      "price": 0.0,
-      "value": 0.0,
-      "pnl": -12477.0021,
-      "type": "option"
-    },
-    {
-      "symbol": "SPY260618P00686000",
-      "qty": 51.0,
-      "price": 0.0,
-      "value": 0.0,
-      "pnl": -17713.9983,
-      "type": "option"
-    }
-  ],
+  "positions": [],
   "trade_history": [
     {
       "id": "a8ed1de4-bc54-49cb-b411-673dfeb03099",
@@ -2545,7 +2528,7 @@
   "risk": {
     "status": "WARNING - NEGATIVE P/L",
     "total_pl": -6065.679999999993,
-    "unrealized_pl": -30191.0,
+    "unrealized_pl": 0,
     "weekly_gate_mode": "quarantine",
     "weekly_gate_recommended_max_position_pct": 0.0,
     "weekly_cadence_kpi_passed": false,
@@ -2565,17 +2548,17 @@
     "current_equity": 93934.32,
     "total_pl": -6065.679999999993,
     "total_pl_pct": -6.065679999999992,
-    "positions_count": 2,
+    "positions_count": 0,
     "cash": 93934.32,
     "buying_power": 375737.28
   },
   "meta": {
-    "last_updated": "2026-06-18T20:46:20.034238+00:00",
+    "last_updated": "2026-06-19T14:39:31.503486+00:00",
     "trade_sync": "alpaca_api",
     "sync_frequency_minutes": 5,
-    "last_sync_attempt": "2026-06-18T20:46:20.034238+00:00",
+    "last_sync_attempt": "2026-06-19T14:39:31.503486+00:00",
     "alpaca_keys_present": true,
-    "last_sync": "2026-06-18T20:46:19.986720",
+    "last_sync": "2026-06-19T14:39:31.461188",
     "sync_mode": "paper+live",
     "last_daily_verification_at": "2026-06-18T20:20:46.661724+00:00",
     "verification_source": "daily_verification.py"
@@ -2588,28 +2571,7 @@
     "notes": "Paper phase per CLAUDE.md - validate 80%+ win rate before scaling"
   },
   "performance": {
-    "open_positions": [
-      {
-        "symbol": "SPY260618C00775000",
-        "quantity": 51.0,
-        "entry_price": 244.6471,
-        "current_price": 0.0,
-        "market_value": 0.0,
-        "unrealized_pl": -12477.0021,
-        "unrealized_pl_pct": -1.0,
-        "side": "long"
-      },
-      {
-        "symbol": "SPY260618P00686000",
-        "quantity": 51.0,
-        "entry_price": 347.3333,
-        "current_price": 0.0,
-        "market_value": 0.0,
-        "unrealized_pl": -17713.9983,
-        "unrealized_pl_pct": -1.0,
-        "side": "long"
-      }
-    ]
+    "open_positions": []
   },
   "live_account": {
     "current_equity": 0.0,
@@ -2620,11 +2582,11 @@
     "starting_balance": 20.0,
     "total_pl": -20.0,
     "total_pl_pct": -100.0,
-    "synced_at": "2026-06-18T20:46:20.032243"
+    "synced_at": "2026-06-19T14:39:31.501847"
   },
   "strategy_milestones": {
     "enabled": true,
-    "generated_at": "2026-06-18T20:46:21.605242Z",
+    "generated_at": "2026-06-19T14:39:32.922897Z",
     "primary_family": "options_income",
     "rolling_window": 50,
     "paused_families": [
@@ -2727,7 +2689,7 @@
     "estimated_cagr_from_expectancy": -0.0627,
     "target_capital": 300000.0,
     "target_date": null,
-    "updated_at": "2026-06-18T20:46:21.605242Z",
+    "updated_at": "2026-06-19T14:39:32.922897Z",
     "target_mode": "asap_monthly_income",
     "monthly_after_tax_target": 6000.0,
     "estimated_monthly_after_tax_from_expectancy": 0.0,
@@ -2801,15 +2763,15 @@
     "scaling_sample_gate": {
       "enabled": true,
       "min_closed_trades_for_scaling": 30,
-      "closed_trades_observed": 172,
+      "closed_trades_observed": 175,
       "passed": true
     },
     "lifetime_ledger": {
-      "closed_trades": 172,
-      "win_rate_pct": 15.12,
-      "profit_factor": 0.19,
-      "total_realized_pnl": -14551.0,
-      "expectancy_per_trade": -84.5988,
+      "closed_trades": 175,
+      "win_rate_pct": 15.43,
+      "profit_factor": 0.68,
+      "total_realized_pnl": -5942.0,
+      "expectancy_per_trade": -33.9543,
       "has_min_sample": true,
       "positive_expectancy": false,
       "positive_total_realized_pnl": false,
@@ -2858,7 +2820,7 @@
       }
     },
     "contradiction_detected": false,
-    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-84.60/trade, profit factor 0.19, total realized P/L $-14551.00 over 172 closed trades. All new entries are quarantined until a written changed-rule validation hypothesis with hard kill criteria is present.",
+    "contradiction_reason": "CRITICAL: Lifetime paired-trade ledger remains negative despite the recent weekly window. Ledger expectancy $-33.95/trade, profit factor 0.68, total realized P/L $-5942.00 over 175 closed trades. All new entries are quarantined until a written changed-rule validation hypothesis with hard kill criteria is present.",
     "liquidity_min_volume_ratio": 0.2,
     "no_trade_diagnostic": {
       "lookback_days": 7,
@@ -2925,9 +2887,9 @@
       "gate_block_counts": {},
       "top_rejection_reasons": [],
       "summary": "No qualified setups captured in lookback window. Focus on setup generation cadence before adjusting execution.",
-      "updated_at": "2026-06-18T20:46:21.601230+00:00"
+      "updated_at": "2026-06-19T14:39:32.918901+00:00"
     },
-    "updated_at": "2026-06-18T20:46:21.601906+00:00",
+    "updated_at": "2026-06-19T14:39:32.919512+00:00",
     "unverified_trade_history_diagnostic": {
       "samples": 3,
       "wins": 1,
@@ -2954,9 +2916,9 @@
     "equity_change_this_month": 0.0,
     "monthly_target_progress_pct": 0.0,
     "remaining_to_monthly_target": 6000.0,
-    "days_elapsed_this_month": 18,
-    "days_remaining_this_month": 12,
-    "required_daily_after_tax_from_now": 500.0,
+    "days_elapsed_this_month": 19,
+    "days_remaining_this_month": 11,
+    "required_daily_after_tax_from_now": 545.45,
     "projected_month_end_after_tax_pnl": 0.0,
     "projected_gap_to_monthly_target": 6000.0,
     "live_month_start_equity": 0.0,
@@ -2964,7 +2926,7 @@
     "estimated_live_contribution_this_month": 0.0,
     "contribution_estimate_confidence": "medium",
     "inference_note": "Live account has no open positions; live equity change is treated as estimated contribution.",
-    "updated_at": "2026-06-18T20:46:21.602029+00:00"
+    "updated_at": "2026-06-19T14:39:32.919624+00:00"
   },
   "ic_position_management": {
     "last_run": "2026-06-17T21:43:06.293136",
@@ -3502,7 +3464,7 @@
   "position_entries": {},
   "position_entry_features": {},
   "north_star_autopilot": {
-    "generated_at_utc": "2026-06-18T20:46:21.602129Z",
+    "generated_at_utc": "2026-06-19T14:39:32.919766Z",
     "cadence_optimizer": {
       "decision": "hold_risk_blocked",
       "reason": "Block-new-positions is active; no cadence tuning is applied.",
@@ -3599,7 +3561,7 @@
       "changed": false,
       "payload": {
         "min_liquidity_volume_ratio": 0.2,
-        "updated_at": "2026-06-18T20:46:21.602129+00:00",
+        "updated_at": "2026-06-19T14:39:32.919766+00:00",
         "source": "north_star_autopilot"
       }
     }
