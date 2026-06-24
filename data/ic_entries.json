@@ -114,6 +114,7 @@
       "short_call": 775.0,
       "long_put": 684.0,
       "long_call": 785.0
-    }
+    },
+    "fill_confirmed": true
   }
 }
