@@ -8,6 +8,7 @@ import json
 import logging
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, cast
@@ -582,7 +583,9 @@ class TestSameExpiryReentryBlock:
             )
         )
 
-        assert ic._load_losing_expiries(trades_file) == {  # nosec B101
+        assert ic._load_losing_expiries(  # nosec B101
+            trades_file, now=datetime(2026, 5, 20)
+        ) == {
             "2026-05-15",
             "2026-05-22",
         }
