@@ -203,8 +203,8 @@
     "win_rate_pct": 0.0,
     "expectancy_per_trade": 0.0,
     "mode": "validation_reset",
-    "qualified_setups": 1,
+    "qualified_setups": 0,
     "cadence_passed": false,
-    "updated_at": "2026-07-02T17:21:49.465065+00:00"
+    "updated_at": "2026-07-02T19:32:11.286271+00:00"
   }
 ]
