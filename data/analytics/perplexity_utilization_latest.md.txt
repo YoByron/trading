@@ -1,6 +1,6 @@
 # Perplexity Utilization Audit
 
-- Generated UTC: `2026-07-11T14:56:16.543848+00:00`
+- Generated UTC: `2026-07-13T15:24:51.571561+00:00`
 - Runtime credential available: `False`
 - Active Perplexity files: `28`
 - Max utilization score: `70/100`
