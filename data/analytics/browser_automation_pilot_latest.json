@@ -1,6 +1,6 @@
 {
-  "run_id": "pilot-20260730T185112Z",
-  "generated_at_utc": "2026-07-30T18:51:33.869941Z",
+  "run_id": "pilot-20260731T195733Z",
+  "generated_at_utc": "2026-07-31T19:58:34.968388Z",
   "tasks": [
     {
       "task_id": "gh_pages_home",
@@ -63,9 +63,9 @@
       "task_id": "gh_pages_home",
       "run_index": 1,
       "status": "failed",
-      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/ (Caused by NameResolutionError(\"HTTPSConnection(host='igorganapolsky.com', port=443): Failed to resolve 'igorganapolsky.com' ([Errno -3] Temporary failure in name resolution)\"))",
-      "started_at_utc": "2026-07-30T18:51:12.099917Z",
-      "latency_ms": 10125.459,
+      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7f305fcd89d0>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
+      "started_at_utc": "2026-07-31T19:57:33.280510Z",
+      "latency_ms": 30178.539,
       "retries": 0,
       "http_status": null,
       "cost_usd": 0.0
@@ -75,9 +75,9 @@
       "task_id": "rag_query_page",
       "run_index": 1,
       "status": "failed",
-      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/rag-query/ (Caused by NameResolutionError(\"HTTPSConnection(host='igorganapolsky.com', port=443): Failed to resolve 'igorganapolsky.com' ([Errno -3] Temporary failure in name resolution)\"))",
-      "started_at_utc": "2026-07-30T18:51:22.225423Z",
-      "latency_ms": 10071.495,
+      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/rag-query/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7f305fce8350>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
+      "started_at_utc": "2026-07-31T19:58:03.459103Z",
+      "latency_ms": 30221.337,
       "retries": 0,
       "http_status": null,
       "cost_usd": 0.0
@@ -88,8 +88,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-07-30T18:51:32.296963Z",
-      "latency_ms": 820.309,
+      "started_at_utc": "2026-07-31T19:58:33.680479Z",
+      "latency_ms": 104.014,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -100,8 +100,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-07-30T18:51:33.118370Z",
-      "latency_ms": 455.933,
+      "started_at_utc": "2026-07-31T19:58:33.785444Z",
+      "latency_ms": 809.782,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -112,8 +112,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "HTTP 999",
-      "started_at_utc": "2026-07-30T18:51:33.575397Z",
-      "latency_ms": 293.418,
+      "started_at_utc": "2026-07-31T19:58:34.596170Z",
+      "latency_ms": 371.228,
       "retries": 0,
       "http_status": 999,
       "cost_usd": 0.0
@@ -127,7 +127,7 @@
       "failed": 3,
       "skipped": 0,
       "success_rate": 0.4,
-      "avg_latency_ms": 4353.322800000001,
+      "avg_latency_ms": 12336.980000000001,
       "avg_retries": 0.0,
       "cost_usd_total": 0.0,
       "cost_per_success_usd": 0.0
