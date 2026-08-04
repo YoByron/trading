@@ -12,7 +12,7 @@
     "local_runtime_missing_perplexity_credential",
     "agent_playground_not_versioned_in_repo"
   ],
-  "generated_at_utc": "2026-08-03T22:28:13.341299+00:00",
+  "generated_at_utc": "2026-08-04T22:31:06.631791+00:00",
   "max_utilization_score": 70,
   "missing_expected_files": [],
   "models_referenced": [
