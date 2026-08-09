@@ -1,6 +1,6 @@
 {
-  "run_id": "pilot-20260809T165941Z",
-  "generated_at_utc": "2026-08-09T17:00:42.823840Z",
+  "run_id": "pilot-20260809T175219Z",
+  "generated_at_utc": "2026-08-09T17:53:20.579196Z",
   "tasks": [
     {
       "task_id": "gh_pages_home",
@@ -63,9 +63,9 @@
       "task_id": "gh_pages_home",
       "run_index": 1,
       "status": "failed",
-      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7fd569f9cb50>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
-      "started_at_utc": "2026-08-09T16:59:41.099282Z",
-      "latency_ms": 30182.567,
+      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7feca6650490>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
+      "started_at_utc": "2026-08-09T17:52:19.173460Z",
+      "latency_ms": 30221.113,
       "retries": 0,
       "http_status": null,
       "cost_usd": 0.0
@@ -75,9 +75,9 @@
       "task_id": "rag_query_page",
       "run_index": 1,
       "status": "failed",
-      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/rag-query/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7fd569fac590>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
-      "started_at_utc": "2026-08-09T17:00:11.281894Z",
-      "latency_ms": 30177.697,
+      "detail": "Local HTTP exception: HTTPSConnectionPool(host='igorganapolsky.com', port=443): Max retries exceeded with url: /trading/rag-query/ (Caused by ConnectTimeoutError(<HTTPSConnection(host='igorganapolsky.com', port=443) at 0x7feca6653dd0>, 'Connection to igorganapolsky.com timed out. (connect timeout=30)'))",
+      "started_at_utc": "2026-08-09T17:52:49.394616Z",
+      "latency_ms": 30237.052,
       "retries": 0,
       "http_status": null,
       "cost_usd": 0.0
@@ -88,8 +88,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-08-09T17:00:41.459633Z",
-      "latency_ms": 47.644,
+      "started_at_utc": "2026-08-09T17:53:19.631710Z",
+      "latency_ms": 115.144,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -100,8 +100,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-08-09T17:00:41.508239Z",
-      "latency_ms": 1028.567,
+      "started_at_utc": "2026-08-09T17:53:19.747579Z",
+      "latency_ms": 623.628,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -112,8 +112,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "HTTP 999",
-      "started_at_utc": "2026-08-09T17:00:42.537827Z",
-      "latency_ms": 285.143,
+      "started_at_utc": "2026-08-09T17:53:20.372145Z",
+      "latency_ms": 206.26,
       "retries": 0,
       "http_status": 999,
       "cost_usd": 0.0
@@ -127,7 +127,7 @@
       "failed": 3,
       "skipped": 0,
       "success_rate": 0.4,
-      "avg_latency_ms": 12344.3236,
+      "avg_latency_ms": 12280.6394,
       "avg_retries": 0.0,
       "cost_usd_total": 0.0,
       "cost_per_success_usd": 0.0
