@@ -1,6 +1,6 @@
 {
-  "run_id": "pilot-20260819T234129Z",
-  "generated_at_utc": "2026-08-19T23:41:30.646567Z",
+  "run_id": "pilot-20260820T105140Z",
+  "generated_at_utc": "2026-08-20T10:51:42.797317Z",
   "tasks": [
     {
       "task_id": "gh_pages_home",
@@ -64,8 +64,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "HTTP 404",
-      "started_at_utc": "2026-08-19T23:41:29.858510Z",
-      "latency_ms": 202.209,
+      "started_at_utc": "2026-08-20T10:51:40.543979Z",
+      "latency_ms": 300.762,
       "retries": 0,
       "http_status": 404,
       "cost_usd": 0.0
@@ -76,8 +76,8 @@
       "run_index": 1,
       "status": "failed",
       "detail": "HTTP 404",
-      "started_at_utc": "2026-08-19T23:41:30.061920Z",
-      "latency_ms": 92.496,
+      "started_at_utc": "2026-08-20T10:51:40.845926Z",
+      "latency_ms": 326.542,
       "retries": 0,
       "http_status": 404,
       "cost_usd": 0.0
@@ -88,8 +88,8 @@
       "run_index": 1,
       "status": "success",
       "detail": "HTTP fetch check passed.",
-      "started_at_utc": "2026-08-19T23:41:30.155609Z",
-      "latency_ms": 106.436,
+      "started_at_utc": "2026-08-20T10:51:41.173675Z",
+      "latency_ms": 215.709,
       "retries": 0,
       "http_status": 200,
       "cost_usd": 0.0
@@ -98,12 +98,12 @@
       "provider": "local",
       "task_id": "x_profile",
       "run_index": 1,
-      "status": "failed",
-      "detail": "HTTP 503",
-      "started_at_utc": "2026-08-19T23:41:30.262744Z",
-      "latency_ms": 155.815,
+      "status": "success",
+      "detail": "HTTP fetch check passed.",
+      "started_at_utc": "2026-08-20T10:51:41.390012Z",
+      "latency_ms": 1110.989,
       "retries": 0,
-      "http_status": 503,
+      "http_status": 200,
       "cost_usd": 0.0
     },
     {
@@ -111,11 +111,11 @@
       "task_id": "linkedin_profile",
       "run_index": 1,
       "status": "failed",
-      "detail": "HTTP 999",
-      "started_at_utc": "2026-08-19T23:41:30.419269Z",
-      "latency_ms": 226.415,
+      "detail": "HTTP 404",
+      "started_at_utc": "2026-08-20T10:51:42.501802Z",
+      "latency_ms": 294.586,
       "retries": 0,
-      "http_status": 999,
+      "http_status": 404,
       "cost_usd": 0.0
     }
   ],
@@ -123,11 +123,11 @@
     "local": {
       "runs_total": 5,
       "attempted": 5,
-      "success": 1,
-      "failed": 4,
+      "success": 2,
+      "failed": 3,
       "skipped": 0,
-      "success_rate": 0.2,
-      "avg_latency_ms": 156.67419999999998,
+      "success_rate": 0.4,
+      "avg_latency_ms": 449.71759999999995,
       "avg_retries": 0.0,
       "cost_usd_total": 0.0,
       "cost_per_success_usd": 0.0
