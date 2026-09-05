@@ -1,17 +1,17 @@
 {
-  "generated_at_utc": "2026-09-05T13:54:22.719154Z",
+  "generated_at_utc": "2026-09-05T22:59:37.600700Z",
   "recommendation": {
     "candidates": {
       "local": {
         "attempted": 5,
-        "avg_latency_ms": 166.4216,
+        "avg_latency_ms": 263.0734,
         "cost_per_success_usd": 0.0,
         "eligible": false,
         "ineligible_reasons": [
           "success_rate<0.900"
         ],
         "success_rate": 0.2,
-        "utility": 0.199168
+        "utility": 0.198685
       }
     },
     "confidence": 0.1,
@@ -27,11 +27,11 @@
     "reason": "no eligible provider; fallback to default",
     "recommended_provider": "local"
   },
-  "run_id": "pilot-20260905T135421Z",
+  "run_id": "pilot-20260905T225936Z",
   "summary": {
     "local": {
       "attempted": 5,
-      "avg_latency_ms": 166.4216,
+      "avg_latency_ms": 263.0734,
       "avg_retries": 0.0,
       "cost_per_success_usd": 0.0,
       "cost_usd_total": 0.0,
