@@ -1,6 +1,6 @@
 # Perplexity Trading Intel: post_market
 
-- Generated UTC: `2026-09-22T00:10:19.742126+00:00`
+- Generated UTC: `2026-09-22T23:36:58.535309+00:00`
 - Recommendation: `CAUTION_API_UNAVAILABLE`
 - Risk score: `0.0`
 - Confidence: `0.39`
