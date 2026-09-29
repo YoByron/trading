@@ -7,7 +7,7 @@
     "reason": "Perplexity intelligence degraded (missing_api_key); do not increase risk based on stale context.",
     "source": "perplexity_trading_intel"
   },
-  "generated_at_utc": "2026-09-28T20:17:04.915713+00:00",
+  "generated_at_utc": "2026-09-29T18:55:21.120681+00:00",
   "mode": "pre_market",
   "model": "sonar-pro",
   "queries": [
