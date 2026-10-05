@@ -2751,8 +2751,104 @@
         "acl_version": 1
       },
       "chunk_count": 11
+    },
+    "arxiv_2610_03667v1": {
+      "sha256_hash": "abd04511b8127cc540b229ca2176a5b2fe85c67c7ceda48e00d4d81c64bc5a12",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03667v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03667v1.md",
+        "char_count": 2370,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 11,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 11
+    },
+    "arxiv_2610_03598v1": {
+      "sha256_hash": "396a4264eac533ef1056b324081d4220d7d8a7f2bfcad6833d5f8cde087a7639",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03598v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03598v1.md",
+        "char_count": 2918,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 11,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 11
+    },
+    "arxiv_2610_03516v1": {
+      "sha256_hash": "d3f2614a7ae8094831d43fee134f4dd9e94b7ea068d8a59f7375ebb6867ae77a",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03516v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03516v1.md",
+        "char_count": 2441,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 10,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 10
+    },
+    "arxiv_2610_03713v1": {
+      "sha256_hash": "23ab48d3b7ecc8a66a1f2832bb0c6d710536678c473555489628e17012f09010",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03713v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03713v1.md",
+        "char_count": 2624,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 11,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 11
+    },
+    "arxiv_2610_03564v1": {
+      "sha256_hash": "5ed99f3af7d039579711f3197897fd4ffedd6f09b790f4e212a8cfcdfab80112",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03564v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03564v1.md",
+        "char_count": 2775,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 11,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 11
+    },
+    "arxiv_2610_03505v1": {
+      "sha256_hash": "ca4863d646f787176aa94d54401a69ab3737b60adc6a4c36fa98b40455109d0c",
+      "version": 1,
+      "file_path": "/home/runner/work/trading/trading/rag_knowledge/arxiv/arxiv_2610_03505v1.md",
+      "metadata": {
+        "file_name": "arxiv_2610_03505v1.md",
+        "char_count": 2966,
+        "line_count": 34,
+        "severity": "MEDIUM",
+        "chunk_strategy": "hierarchical",
+        "chunk_count": 11,
+        "sensitivity": "paper_only",
+        "acl_version": 1
+      },
+      "chunk_count": 11
     }
   },
-  "total_ingested": 172,
+  "total_ingested": 178,
   "last_updated": 0.0
 }
