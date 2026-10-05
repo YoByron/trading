@@ -2809,6 +2809,106 @@
       "ingested_at": "2026-09-30T18:09:40.287362+00:00",
       "sha256": "717bd2df2ab38bb4ab0296d5bfc15cb5e3c8b839700de560e1db338c6b05a778",
       "chunks": 11
+    },
+    "2610.03667v1": {
+      "title": "Planning to Learn",
+      "published": "2026-10-02T17:38:28Z",
+      "relevance_score": 0.3,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "math.OC",
+        "stat.ML"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03667v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03667v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03667v1.md",
+      "ingested_at": "2026-10-05T23:31:59.046061+00:00",
+      "sha256": "abd04511b8127cc540b229ca2176a5b2fe85c67c7ceda48e00d4d81c64bc5a12",
+      "chunks": 11
+    },
+    "2610.03598v1": {
+      "title": "When a Correct Reward Is Not Enough: Diagnosing and Guiding PPO in an Analytically Solved Broker-Trader Game",
+      "published": "2026-10-02T17:03:29Z",
+      "relevance_score": 0.45,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "q-fin.TR",
+        "cs.AI"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03598v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03598v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03598v1.md",
+      "ingested_at": "2026-10-05T23:31:59.060683+00:00",
+      "sha256": "396a4264eac533ef1056b324081d4220d7d8a7f2bfcad6833d5f8cde087a7639",
+      "chunks": 11
+    },
+    "2610.03516v1": {
+      "title": "XGenAct: Geometry-Enhanced World Action Models through Cross-Task Generation",
+      "published": "2026-10-02T16:10:53Z",
+      "relevance_score": 0.23,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.RO",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03516v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03516v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03516v1.md",
+      "ingested_at": "2026-10-05T23:31:59.067743+00:00",
+      "sha256": "d3f2614a7ae8094831d43fee134f4dd9e94b7ea068d8a59f7375ebb6867ae77a",
+      "chunks": 10
+    },
+    "2610.03713v1": {
+      "title": "What Should World Models Forget? Stratified Retention for Continual Adaptation",
+      "published": "2026-10-02T17:58:14Z",
+      "relevance_score": 0.18,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CV",
+        "eess.IV",
+        "eess.SP"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03713v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03713v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03713v1.md",
+      "ingested_at": "2026-10-05T23:31:59.083405+00:00",
+      "sha256": "23ab48d3b7ecc8a66a1f2832bb0c6d710536678c473555489628e17012f09010",
+      "chunks": 11
+    },
+    "2610.03564v1": {
+      "title": "Knowledge or Calculator? Decomposing the Skill Premium in Verifiable Financial Agent Workflows",
+      "published": "2026-10-02T16:44:04Z",
+      "relevance_score": 0.23,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.AI"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03564v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03564v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03564v1.md",
+      "ingested_at": "2026-10-05T23:31:59.094439+00:00",
+      "sha256": "5ed99f3af7d039579711f3197897fd4ffedd6f09b790f4e212a8cfcdfab80112",
+      "chunks": 11
+    },
+    "2610.03505v1": {
+      "title": "An Automated and Reproducible Workflow for Crack Identification and Damage Assessment of Fusion Materials",
+      "published": "2026-10-02T16:02:36Z",
+      "relevance_score": 0.23,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cond-mat.mtrl-sci"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.03505v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_03505v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_03505v1.md",
+      "ingested_at": "2026-10-05T23:31:59.101324+00:00",
+      "sha256": "ca4863d646f787176aa94d54401a69ab3737b60adc6a4c36fa98b40455109d0c",
+      "chunks": 11
     }
   },
   "skipped_low_relevance": {
@@ -3363,25 +3463,53 @@
       "relevance_score": 0.13,
       "min_relevance": 0.18,
       "evaluated_at": "2026-09-30T18:09:40.280408+00:00"
+    },
+    "2610.03665v1": {
+      "title": "Pivot-SD: Efficient Self-Distillation for Masked Diffusion Language Models",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.049815+00:00"
+    },
+    "2610.03636v1": {
+      "title": "LoGo: Local-Global Rewards for Consistent Long-Horizon Video Generation",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.053845+00:00"
+    },
+    "2610.03480v1": {
+      "title": "Metropolis-Hastings Dominates Importance Resampling for Policy Composition",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.071426+00:00"
+    },
+    "2610.03717v1": {
+      "title": "Less Decoder is More Encoder: Geometric Representation Learning from Novel View Synthesis",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.076481+00:00"
+    },
+    "2610.03712v1": {
+      "title": "RNADyn: A Benchmark for Generating and Understanding RNA Dynamics",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.087108+00:00"
+    },
+    "2610.03715v1": {
+      "title": "4DCodeBench: Benchmarking Agents on Inverse Graphics of Dynamic Scenes",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.105038+00:00"
+    },
+    "2610.03709v1": {
+      "title": "From Mixing to Tearing: Graph Decomposition in Decentralized Optimization via Message Passing",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-05T23:31:59.108726+00:00"
     }
   },
-  "total_ingested": 172,
-  "last_run_utc": "2026-09-30T18:09:40.292004+00:00",
+  "total_ingested": 178,
+  "last_run_utc": "2026-10-05T23:31:59.112440+00:00",
   "runs": [
-    {
-      "finished_at": "2026-08-23T06:14:51.228772+00:00",
-      "candidates": 10,
-      "new_ingested": 0,
-      "skipped_low_relevance": 0,
-      "min_relevance": 0.18,
-      "queries": [
-        "option credit spread OR iron condor OR put credit",
-        "implied volatility OR volatility surface trading",
-        "reinforcement learning trading OR GRPO OR PPO finance",
-        "market microstructure order book",
-        "retrieval augmented generation finance OR financial RAG"
-      ]
-    },
     {
       "finished_at": "2026-08-23T18:04:55.554288+00:00",
       "candidates": 10,
@@ -4059,6 +4187,20 @@
       "candidates": 13,
       "new_ingested": 8,
       "skipped_low_relevance": 5,
+      "min_relevance": 0.18,
+      "queries": [
+        "option credit spread OR iron condor OR put credit",
+        "implied volatility OR volatility surface trading",
+        "reinforcement learning trading OR GRPO OR PPO finance",
+        "market microstructure order book",
+        "retrieval augmented generation finance OR financial RAG"
+      ]
+    },
+    {
+      "finished_at": "2026-10-05T23:31:59.112440+00:00",
+      "candidates": 13,
+      "new_ingested": 6,
+      "skipped_low_relevance": 7,
       "min_relevance": 0.18,
       "queries": [
         "option credit spread OR iron condor OR put credit",
