@@ -2809,6 +2809,171 @@
       "ingested_at": "2026-09-30T18:09:40.287362+00:00",
       "sha256": "717bd2df2ab38bb4ab0296d5bfc15cb5e3c8b839700de560e1db338c6b05a778",
       "chunks": 11
+    },
+    "2610.06830v1": {
+      "title": "MemPilot: Orchestrating On-Demand Multimodal Memory Curation for LLM Agents",
+      "published": "2026-10-05T17:58:06Z",
+      "relevance_score": 0.38,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06830v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06830v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06830v1.md",
+      "ingested_at": "2026-10-06T12:45:36.201829+00:00",
+      "sha256": "0b4fe6b6709bfce814f277a96467e9d48f8922d032f5b1aac6f5179c7e431efa",
+      "chunks": 11
+    },
+    "2610.06829v1": {
+      "title": "CLIFT: Conformal Self-Verification for Web Agent Training and Test-Time Scaling",
+      "published": "2026-10-05T17:57:51Z",
+      "relevance_score": 0.38,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06829v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06829v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06829v1.md",
+      "ingested_at": "2026-10-06T12:45:36.208955+00:00",
+      "sha256": "6c152ef5dfc17ff40e7b05ac43022e3b72d6a343c3e21b9b52c6632dd972b718",
+      "chunks": 12
+    },
+    "2610.06795v1": {
+      "title": "Round-Trip KNN Clustering: multiscale hierarchical cluster detection on directed nearest-neighbour graphs",
+      "published": "2026-10-05T17:50:16Z",
+      "relevance_score": 0.3,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "stat.ML"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06795v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06795v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06795v1.md",
+      "ingested_at": "2026-10-06T12:45:36.215986+00:00",
+      "sha256": "85e542ef7e45e1843563f341f0e24b5bfa51752dfd0f31df425e612f2592d508",
+      "chunks": 11
+    },
+    "2610.06834v1": {
+      "title": "Direct Intermediate Initialization for Tilted Diffusion Samplers",
+      "published": "2026-10-05T17:58:18Z",
+      "relevance_score": 0.18,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06834v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06834v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06834v1.md",
+      "ingested_at": "2026-10-06T12:45:36.223187+00:00",
+      "sha256": "e861156ee3f7dd9a26f525075337895373f892e38d018e9975c51f787666c22e",
+      "chunks": 11
+    },
+    "2610.06823v1": {
+      "title": "Deep Learning for Sleep Heart Rate Estimation from Accelerometers: Toward Population-Scale Cardiac Insight Without Optical Sensors",
+      "published": "2026-10-05T17:56:57Z",
+      "relevance_score": 0.26,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06823v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06823v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06823v1.md",
+      "ingested_at": "2026-10-06T12:45:36.230150+00:00",
+      "sha256": "d83ce6bf550a5e32b686582fa5d3137fe0e9cbe4ffc74a4733b8b15ed468aeae",
+      "chunks": 11
+    },
+    "2610.06851v1": {
+      "title": "Base Models Can Reason By Taking a Cue From Training Data",
+      "published": "2026-10-05T17:59:52Z",
+      "relevance_score": 0.3,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06851v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06851v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06851v1.md",
+      "ingested_at": "2026-10-06T12:45:36.237279+00:00",
+      "sha256": "3408cb6a7bf3f019b726265d4b7934d9c09c35c983b355e1332d0d012b0f3dab",
+      "chunks": 11
+    },
+    "2610.06846v1": {
+      "title": "BiasFlow: Geometric Monitoring and Backbone Regularization for Spurious Feature Reliance",
+      "published": "2026-10-05T17:59:28Z",
+      "relevance_score": 0.21,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.AI"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06846v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06846v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06846v1.md",
+      "ingested_at": "2026-10-06T12:45:36.244414+00:00",
+      "sha256": "1e6700c2156beb65e5721b8207f35a6b6aafa55932a21bf86aaf182a9ddc173e",
+      "chunks": 10
+    },
+    "2610.06844v1": {
+      "title": "Learning to Read the Contextual Tokens in Diffusion Transformers",
+      "published": "2026-10-05T17:59:17Z",
+      "relevance_score": 0.28,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.GR",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06844v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06844v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06844v1.md",
+      "ingested_at": "2026-10-06T12:45:36.251529+00:00",
+      "sha256": "7096eab2830a454e7799483575cf2ef067c3d14f5ca3ec4ab3f10f064385076d",
+      "chunks": 11
+    },
+    "2610.06748v1": {
+      "title": "BazaarBench: Delegation Safety in Decentralized C2C Marketplaces Run by LLM Agents",
+      "published": "2026-10-05T17:26:17Z",
+      "relevance_score": 0.28,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.MA",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06748v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06748v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06748v1.md",
+      "ingested_at": "2026-10-06T12:45:36.258689+00:00",
+      "sha256": "e263367e95f162bb2800e23d6d3fd2ceea6e6867eeab9de72a7a4dc094facf41",
+      "chunks": 11
+    },
+    "2610.06744v1": {
+      "title": "ufakzeka-karar: An Open Turkish Typed-Decision Model with Order-Invariant Option Scoring",
+      "published": "2026-10-05T17:22:23Z",
+      "relevance_score": 0.33,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.06744v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_06744v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_06744v1.md",
+      "ingested_at": "2026-10-06T12:45:36.266005+00:00",
+      "sha256": "7e650f0652345fd5d6c69d82eebb4cddb24f2d057ede2154b62002b538682e51",
+      "chunks": 11
     }
   },
   "skipped_low_relevance": {
@@ -3363,25 +3528,17 @@
       "relevance_score": 0.13,
       "min_relevance": 0.18,
       "evaluated_at": "2026-09-30T18:09:40.280408+00:00"
+    },
+    "2610.06831v1": {
+      "title": "UniSlider: Perceptually Uniform Sliders for Continuous Image Editing",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-06T12:45:36.269877+00:00"
     }
   },
-  "total_ingested": 172,
-  "last_run_utc": "2026-09-30T18:09:40.292004+00:00",
+  "total_ingested": 182,
+  "last_run_utc": "2026-10-06T12:45:36.273678+00:00",
   "runs": [
-    {
-      "finished_at": "2026-08-23T06:14:51.228772+00:00",
-      "candidates": 10,
-      "new_ingested": 0,
-      "skipped_low_relevance": 0,
-      "min_relevance": 0.18,
-      "queries": [
-        "option credit spread OR iron condor OR put credit",
-        "implied volatility OR volatility surface trading",
-        "reinforcement learning trading OR GRPO OR PPO finance",
-        "market microstructure order book",
-        "retrieval augmented generation finance OR financial RAG"
-      ]
-    },
     {
       "finished_at": "2026-08-23T18:04:55.554288+00:00",
       "candidates": 10,
@@ -4059,6 +4216,20 @@
       "candidates": 13,
       "new_ingested": 8,
       "skipped_low_relevance": 5,
+      "min_relevance": 0.18,
+      "queries": [
+        "option credit spread OR iron condor OR put credit",
+        "implied volatility OR volatility surface trading",
+        "reinforcement learning trading OR GRPO OR PPO finance",
+        "market microstructure order book",
+        "retrieval augmented generation finance OR financial RAG"
+      ]
+    },
+    {
+      "finished_at": "2026-10-06T12:45:36.273678+00:00",
+      "candidates": 11,
+      "new_ingested": 10,
+      "skipped_low_relevance": 1,
       "min_relevance": 0.18,
       "queries": [
         "option credit spread OR iron condor OR put credit",
