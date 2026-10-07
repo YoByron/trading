@@ -2809,6 +2809,103 @@
       "ingested_at": "2026-09-30T18:09:40.287362+00:00",
       "sha256": "717bd2df2ab38bb4ab0296d5bfc15cb5e3c8b839700de560e1db338c6b05a778",
       "chunks": 11
+    },
+    "2610.08670v1": {
+      "title": "Principled Under Pressure: Post-Training Decides Whether LLMs Act on Their Own Moral Judgment",
+      "published": "2026-10-06T16:52:23Z",
+      "relevance_score": 0.3,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08670v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08670v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08670v1.md",
+      "ingested_at": "2026-10-07T22:29:44.582634+00:00",
+      "sha256": "8f2d2b5a5d56b189a02bc6ad7184304583f122e81ce5b4a4a7face793f6b9db6",
+      "chunks": 12
+    },
+    "2610.08602v1": {
+      "title": "When does conformal calibration need censoring weights? Cause-of-failure prediction sets under competing risks",
+      "published": "2026-10-06T16:06:22Z",
+      "relevance_score": 0.23,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "stat.ME",
+        "stat.ML"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08602v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08602v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08602v1.md",
+      "ingested_at": "2026-10-07T22:29:44.590867+00:00",
+      "sha256": "4dd428c5e065d0e604694cff8ebdac04e044b8103b8b145c6c98e775e7152812",
+      "chunks": 10
+    },
+    "2610.08678v1": {
+      "title": "Secure Speculative Decoding for Large Language Models",
+      "published": "2026-10-06T16:59:37Z",
+      "relevance_score": 0.18,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08678v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08678v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08678v1.md",
+      "ingested_at": "2026-10-07T22:29:44.596136+00:00",
+      "sha256": "280f79b2f12a1aaadcca2a455cdef7db3133b514ae6ce1583773277b67d614f0",
+      "chunks": 11
+    },
+    "2610.08789v1": {
+      "title": "QF3: Fast Flow RL with Filtered Q-Gradients",
+      "published": "2026-10-06T17:59:34Z",
+      "relevance_score": 0.25,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.RO",
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08789v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08789v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08789v1.md",
+      "ingested_at": "2026-10-07T22:29:44.604286+00:00",
+      "sha256": "e4d51650c36d5c8c6a262dc64799c9023bd1c658b6cc022a56daa3efe4af3f2a",
+      "chunks": 10
+    },
+    "2610.08785v1": {
+      "title": "Conformal Prediction Sets Quantify Information Gain: A Theoretical Perspective",
+      "published": "2026-10-06T17:59:11Z",
+      "relevance_score": 0.23,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08785v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08785v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08785v1.md",
+      "ingested_at": "2026-10-07T22:29:44.609594+00:00",
+      "sha256": "4166364bab90cd5cef0fc3a1cca14f817acd354d32acd69122c761f0928cf48e",
+      "chunks": 10
+    },
+    "2610.08781v1": {
+      "title": "IdeaAnchor: Teaching LLMs to Turn Literature into Research Ideas",
+      "published": "2026-10-06T17:59:01Z",
+      "relevance_score": 0.33,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.08781v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_08781v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_08781v1.md",
+      "ingested_at": "2026-10-07T22:29:44.627108+00:00",
+      "sha256": "f6be69bcffb7ae1aa0e8c7364e93f0a88c79d443f8184297ae2c55ed3a4bf641",
+      "chunks": 10
     }
   },
   "skipped_low_relevance": {
@@ -3363,25 +3460,47 @@
       "relevance_score": 0.13,
       "min_relevance": 0.18,
       "evaluated_at": "2026-09-30T18:09:40.280408+00:00"
+    },
+    "2610.08642v1": {
+      "title": "HygieneRoboBench: Benchmarking Hygiene-Aware Planning for Household Robots",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.585502+00:00"
+    },
+    "2610.08570v1": {
+      "title": "Less Is More: A Leakage-Controlled Study of Dermoscopic Preprocessing for Joint Skin Lesion Classification and Segmentation with YOLO26",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.599074+00:00"
+    },
+    "2610.08782v1": {
+      "title": "4D-HOF: Hand-Object Flow Matching for Feed-Forward 4D Interaction Reconstruction",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.612459+00:00"
+    },
+    "2610.08750v1": {
+      "title": "Neural Petri flows for chemical reactions",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.615416+00:00"
+    },
+    "2610.08738v1": {
+      "title": "Denoising Hierarchical Representations: Joint Continuous Diffusion for Language Modeling",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.618360+00:00"
+    },
+    "2610.08689v1": {
+      "title": "Probabilistic Counterfactual Inference for Discrete Outcomes in Gaussian-Process Causal Models",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-07T22:29:44.621412+00:00"
     }
   },
-  "total_ingested": 172,
-  "last_run_utc": "2026-09-30T18:09:40.292004+00:00",
+  "total_ingested": 178,
+  "last_run_utc": "2026-10-07T22:29:44.646031+00:00",
   "runs": [
-    {
-      "finished_at": "2026-08-23T06:14:51.228772+00:00",
-      "candidates": 10,
-      "new_ingested": 0,
-      "skipped_low_relevance": 0,
-      "min_relevance": 0.18,
-      "queries": [
-        "option credit spread OR iron condor OR put credit",
-        "implied volatility OR volatility surface trading",
-        "reinforcement learning trading OR GRPO OR PPO finance",
-        "market microstructure order book",
-        "retrieval augmented generation finance OR financial RAG"
-      ]
-    },
     {
       "finished_at": "2026-08-23T18:04:55.554288+00:00",
       "candidates": 10,
@@ -4059,6 +4178,20 @@
       "candidates": 13,
       "new_ingested": 8,
       "skipped_low_relevance": 5,
+      "min_relevance": 0.18,
+      "queries": [
+        "option credit spread OR iron condor OR put credit",
+        "implied volatility OR volatility surface trading",
+        "reinforcement learning trading OR GRPO OR PPO finance",
+        "market microstructure order book",
+        "retrieval augmented generation finance OR financial RAG"
+      ]
+    },
+    {
+      "finished_at": "2026-10-07T22:29:44.646031+00:00",
+      "candidates": 12,
+      "new_ingested": 6,
+      "skipped_low_relevance": 6,
       "min_relevance": 0.18,
       "queries": [
         "option credit spread OR iron condor OR put credit",
