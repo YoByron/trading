@@ -2809,6 +2809,125 @@
       "ingested_at": "2026-09-30T18:09:40.287362+00:00",
       "sha256": "717bd2df2ab38bb4ab0296d5bfc15cb5e3c8b839700de560e1db338c6b05a778",
       "chunks": 11
+    },
+    "2610.10506v1": {
+      "title": "Validity Without Ground Truth: What Stated-Preference Economics Offers the Evaluation of Language Models",
+      "published": "2026-10-07T17:51:07Z",
+      "relevance_score": 0.25,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "econ.GN"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10506v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10506v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10506v1.md",
+      "ingested_at": "2026-10-08T12:49:25.332324+00:00",
+      "sha256": "4d95cd04c6e2abba1ec33519e81b940b033bfa4b1aadf7a239a15047cb919615",
+      "chunks": 10
+    },
+    "2610.10478v1": {
+      "title": "Before They Can Solve: Predicting Post-Training Coding-Agent Performance from Base Models",
+      "published": "2026-10-07T17:37:19Z",
+      "relevance_score": 0.31,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.AI",
+        "cs.SE"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10478v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10478v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10478v1.md",
+      "ingested_at": "2026-10-08T12:49:25.339220+00:00",
+      "sha256": "ec6b945c82c8e18453597460eff677900f421766d7dae1f68b8eaeb8c694934e",
+      "chunks": 12
+    },
+    "2610.10407v1": {
+      "title": "SOTA: Stock Options Trading Agents Guided by Option-Implied Return Distributions",
+      "published": "2026-10-07T16:55:05Z",
+      "relevance_score": 0.76,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.AI",
+        "cs.LG",
+        "q-fin.PM",
+        "q-fin.TR"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10407v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10407v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10407v1.md",
+      "ingested_at": "2026-10-08T12:49:25.345884+00:00",
+      "sha256": "96a42aea0693267228c6a0fa934b669adc55a9abbb9e13e0a56385736b532bfa",
+      "chunks": 11
+    },
+    "2610.10538v1": {
+      "title": "Never Look Back: Understanding Persistence in 3D Object Memory from Egocentric Videos",
+      "published": "2026-10-07T17:59:41Z",
+      "relevance_score": 0.29,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.RO"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10538v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10538v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10538v1.md",
+      "ingested_at": "2026-10-08T12:49:25.352768+00:00",
+      "sha256": "f7859d909ec3b930593282902eef64bb63ed14f61a60fa8e253d14bd94dedcb0",
+      "chunks": 11
+    },
+    "2610.10525v1": {
+      "title": "A Hawkes Microfoundation for Multitype Inverse Gaussian Subordinators",
+      "published": "2026-10-07T17:57:37Z",
+      "relevance_score": 0.32,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "math.PR",
+        "q-fin.MF",
+        "q-fin.TR"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10525v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10525v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10525v1.md",
+      "ingested_at": "2026-10-08T12:49:25.359480+00:00",
+      "sha256": "fd1c86b3f9566b08c27577ccc938d2b0d9def5c4a6bdf65001a098749822aa6d",
+      "chunks": 11
+    },
+    "2610.10536v1": {
+      "title": "Decoupling Exploration from Optimization in RLVR",
+      "published": "2026-10-07T17:59:26Z",
+      "relevance_score": 0.3,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10536v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10536v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10536v1.md",
+      "ingested_at": "2026-10-08T12:49:25.366197+00:00",
+      "sha256": "f01a1da9596bf7d4e9c04883141b31b32f65036675665791ba8a8d7dcf747d8d",
+      "chunks": 10
+    },
+    "2610.10528v1": {
+      "title": "Long-WAM: Scaling the Context of World-Action Models",
+      "published": "2026-10-07T17:58:04Z",
+      "relevance_score": 0.21,
+      "relevance_method": "keyword_boost_v1",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "abs_url": "https://arxiv.org/abs/2610.10528v1",
+      "file_path": "rag_knowledge/arxiv/arxiv_2610_10528v1.md",
+      "audit_path": "data/arxiv/arxiv_2610_10528v1.md",
+      "ingested_at": "2026-10-08T12:49:25.373008+00:00",
+      "sha256": "86a098152f55d9a1eb8dac05a12315903b818d39bfb21eed32eb5065d038f409",
+      "chunks": 11
     }
   },
   "skipped_low_relevance": {
@@ -3363,25 +3482,29 @@
       "relevance_score": 0.13,
       "min_relevance": 0.18,
       "evaluated_at": "2026-09-30T18:09:40.280408+00:00"
+    },
+    "2610.10527v1": {
+      "title": "Decentralized SGD under Heavy-Tailed Noise: Optimal Convergence Rates and the Role of Gradient Clipping",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-08T12:49:25.376646+00:00"
+    },
+    "2610.10515v1": {
+      "title": "RoboJEPA: Scaling Robotic Latent World Models",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-08T12:49:25.380274+00:00"
+    },
+    "2610.10526v1": {
+      "title": "Rephrase Before You Act: Characterizing and Mitigating Language Sensitivity in Vision-Language-Action Models",
+      "relevance_score": 0.13,
+      "min_relevance": 0.18,
+      "evaluated_at": "2026-10-08T12:49:25.383985+00:00"
     }
   },
-  "total_ingested": 172,
-  "last_run_utc": "2026-09-30T18:09:40.292004+00:00",
+  "total_ingested": 179,
+  "last_run_utc": "2026-10-08T12:49:25.387606+00:00",
   "runs": [
-    {
-      "finished_at": "2026-08-23T06:14:51.228772+00:00",
-      "candidates": 10,
-      "new_ingested": 0,
-      "skipped_low_relevance": 0,
-      "min_relevance": 0.18,
-      "queries": [
-        "option credit spread OR iron condor OR put credit",
-        "implied volatility OR volatility surface trading",
-        "reinforcement learning trading OR GRPO OR PPO finance",
-        "market microstructure order book",
-        "retrieval augmented generation finance OR financial RAG"
-      ]
-    },
     {
       "finished_at": "2026-08-23T18:04:55.554288+00:00",
       "candidates": 10,
@@ -4059,6 +4182,20 @@
       "candidates": 13,
       "new_ingested": 8,
       "skipped_low_relevance": 5,
+      "min_relevance": 0.18,
+      "queries": [
+        "option credit spread OR iron condor OR put credit",
+        "implied volatility OR volatility surface trading",
+        "reinforcement learning trading OR GRPO OR PPO finance",
+        "market microstructure order book",
+        "retrieval augmented generation finance OR financial RAG"
+      ]
+    },
+    {
+      "finished_at": "2026-10-08T12:49:25.387606+00:00",
+      "candidates": 10,
+      "new_ingested": 7,
+      "skipped_low_relevance": 3,
       "min_relevance": 0.18,
       "queries": [
         "option credit spread OR iron condor OR put credit",
